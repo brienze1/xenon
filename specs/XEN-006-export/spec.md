@@ -76,8 +76,9 @@ depend on it.
 **Acceptance Scenarios**:
 
 1. **Given** a workspace, **When** exported as Xenon YAML, **Then** the zip contains the workspace
-   folder's files exactly (minus local-only/staging files), and no secret value, current value,
-   token or cookie.
+   folder's files exactly (minus local-only/staging files; environment and variable files differ
+   only when "Export current values as initial values" is on), and no secret value, current
+   value, token or cookie.
 2. **Given** a collection or folder, **Then** Luis chooses zip (folder structure) or a single
    bundled `.yaml` file containing the whole subtree.
 3. **Given** a request or environment, **Then** the export is its YAML file.
