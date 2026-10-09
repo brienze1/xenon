@@ -1,10 +1,14 @@
 import { useState } from 'react'
+import type { RequestDraft } from '@/platform/mappers/request'
 import type { TreeNode } from '@/platform/mappers/tree'
+import type { SidebarView } from '@/platform/mappers/ui-state'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
+import { Tabs } from '@/shared/ui/tabs/Tabs'
 import { useSidebarStore } from '../store'
 import { CollectionTree } from './CollectionTree'
 import { DeleteItemDialog } from './DeleteItemDialog'
+import { HistoryView } from './HistoryView'
 import { ItemSettingsDialog } from './ItemSettingsDialog'
 import { SidebarToolbar } from './SidebarToolbar'
 import styles from './SidebarPanel.module.css'
@@ -14,9 +18,13 @@ interface SidebarPanelProps {
   onPinRequest: (id: string) => void
   onRequestsDeleted: (ids: string[]) => void
   onRenamed: (id: string) => void
+  onOpenHistoryEntry: (request: RequestDraft) => void
 }
 
-export function SidebarPanel({ onOpenRequest, onPinRequest, onRequestsDeleted, onRenamed }: SidebarPanelProps) {
+export function SidebarPanel({ onOpenRequest, onPinRequest, onRequestsDeleted, onRenamed, onOpenHistoryEntry }: SidebarPanelProps) {
+  const view = useSidebarStore((state) => state.view)
+  const setView = useSidebarStore((state) => state.setView)
+  const openHistoryEntry = useSidebarStore((state) => state.openHistoryEntry)
   const error = useSidebarStore((state) => state.error)
   const clearError = useSidebarStore((state) => state.clearError)
   const remove = useSidebarStore((state) => state.remove)
@@ -31,8 +39,19 @@ export function SidebarPanel({ onOpenRequest, onPinRequest, onRequestsDeleted, o
     }
   }
 
+  async function openEntry(id: string) {
+    const request = await openHistoryEntry(id)
+    if (request) {
+      onOpenHistoryEntry(request)
+    }
+  }
+
   return (
-    <div className={styles.panel}>
+    <Tabs.Root value={view} onValueChange={(next) => setView(next as SidebarView)} className={styles.panel}>
+      <Tabs.List label="Sidebar view" className={styles.views}>
+        <Tabs.Tab value="collections">Collections</Tabs.Tab>
+        <Tabs.Tab value="history">History</Tabs.Tab>
+      </Tabs.List>
       <SidebarToolbar />
       {error ? (
         <Banner.Root tone="error" className={styles.banner}>
@@ -44,9 +63,14 @@ export function SidebarPanel({ onOpenRequest, onPinRequest, onRequestsDeleted, o
           </Banner.Actions>
         </Banner.Root>
       ) : null}
-      <CollectionTree onOpenRequest={onOpenRequest} onPinRequest={onPinRequest} onOpenSettings={setSettingsId} onDelete={setDeleting} onRenamed={onRenamed} />
+      <Tabs.Panel value="collections" className={styles.view}>
+        <CollectionTree onOpenRequest={onOpenRequest} onPinRequest={onPinRequest} onOpenSettings={setSettingsId} onDelete={setDeleting} onRenamed={onRenamed} />
+      </Tabs.Panel>
+      <Tabs.Panel value="history" className={styles.view}>
+        <HistoryView onOpenEntry={(id) => void openEntry(id)} />
+      </Tabs.Panel>
       <ItemSettingsDialog itemId={settingsId} onClose={() => setSettingsId(null)} />
       <DeleteItemDialog item={deleting} onCancel={() => setDeleting(null)} onConfirm={(item) => void confirmDelete(item)} />
-    </div>
+    </Tabs.Root>
   )
 }

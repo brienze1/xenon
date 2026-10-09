@@ -60,6 +60,7 @@ export function App() {
               onPinRequest={(id) => void tabs().openPinned(id)}
               onRequestsDeleted={(ids) => tabs().handleDeleted(ids)}
               onRenamed={(id) => void adoptRename(id)}
+              onOpenHistoryEntry={(request) => void tabs().openDraft(request)}
             />
           </Sidebar>
           <MainArea>

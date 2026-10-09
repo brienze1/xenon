@@ -22,9 +22,11 @@ vi.mock('@/platform/services/ui-state', () => ({ getUIState: vi.fn(), saveUIStat
 vi.mock('@/platform/services/dialogs', () => ({ pickFolder: vi.fn(), pickFile: vi.fn(), pickSaveFile: vi.fn() }))
 vi.mock('@/platform/services/workspaces', () => ({ listWorkspaces: vi.fn(), createWorkspace: vi.fn(), activateWorkspace: vi.fn() }))
 vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn().mockResolvedValue([]) }))
+vi.mock('@/platform/services/history', () => ({ listHistory: vi.fn(), getHistoryEntry: vi.fn(), clearHistory: vi.fn() }))
 
 const requests = await import('@/platform/services/requests')
 const uiState = await import('@/platform/services/ui-state')
+const history = await import('@/platform/services/history')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
 const { useSidebarStore } = await import('@/features/sidebar/store')
@@ -305,6 +307,35 @@ describe('tabs store', () => {
     expect(state.previewTabId).toBe(state.tabs[2]!.tabId)
     expect(state.activeTabId).toBe(state.tabs[2]!.tabId)
     expect(state.sidebar).toMatchObject({ expanded: ['c1'], selectedId: 'B', search: 'us' })
+  })
+
+  it('opens a request from history as a new unsaved tab', async () => {
+    const before = tabs().tabs.length
+    const draft = { ...emptyDraft(), name: 'From history', method: 'PUT', url: 'https://x/h' }
+    const id = tabs().openDraft(draft)
+    expect(tabs().tabs).toHaveLength(before + 1)
+    expect(tabs().tabs.at(-1)).toEqual({ id, requestId: null, pinned: true })
+    expect(tabs().activeTabId).toBe(id)
+    expect(builder().tabs[id]!.draft).toEqual(draft)
+    expect(builder().tabs[id]!.baseRevision).toBeNull()
+    expect(dirty(id)).toBe(true)
+    await tabs().flushPersist()
+    const [, state] = vi.mocked(uiState.saveUIState).mock.calls[0]!
+    expect(state.tabs.at(-1)).toMatchObject({ tabId: id, requestId: null, draft: { name: 'From history', url: 'https://x/h' } })
+  })
+
+  it('remembers which sidebar view is shown', async () => {
+    vi.mocked(history.listHistory).mockResolvedValue([])
+    tabs().reset()
+    tabs().hydrate('ws', { ...defaultUIState(), sidebar: { expanded: [], selectedId: null, view: 'history', search: '' } })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(useSidebarStore.getState().view).toBe('history')
+    expect(history.listHistory).toHaveBeenCalledWith('ws', { query: '' })
+    await tabs().flushPersist()
+    expect(vi.mocked(uiState.saveUIState).mock.calls[0]![1].sidebar.view).toBe('history')
+    useSidebarStore.getState().setView('collections')
+    await tabs().flushPersist()
+    expect(vi.mocked(uiState.saveUIState).mock.calls[1]![1].sidebar.view).toBe('collections')
   })
 
   it('flushes a pending save at once', async () => {

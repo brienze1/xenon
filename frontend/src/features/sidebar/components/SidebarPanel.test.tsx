@@ -59,7 +59,7 @@ afterAll(() => {
 })
 
 async function renderPanel() {
-  const actions = { onOpenRequest: vi.fn(), onPinRequest: vi.fn(), onRequestsDeleted: vi.fn(), onRenamed: vi.fn() }
+  const actions = { onOpenRequest: vi.fn(), onPinRequest: vi.fn(), onRequestsDeleted: vi.fn(), onRenamed: vi.fn(), onOpenHistoryEntry: vi.fn() }
   render(<SidebarPanel {...actions} />)
   await act(() => useSidebarStore.getState().load())
   return actions

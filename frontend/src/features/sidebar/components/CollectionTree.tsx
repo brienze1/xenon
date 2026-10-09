@@ -30,7 +30,7 @@ export function CollectionTree(actions: TreeItemActions) {
   if (status === 'ready' && tree.length === 0) {
     return (
       <EmptyState.Root label="No collections" className={styles.empty}>
-        <EmptyState.Art />
+        <EmptyState.Art variant="collections" />
         <EmptyState.Title>No collections yet</EmptyState.Title>
         <EmptyState.Description>Collections group your requests. Each one is a folder in your workspace.</EmptyState.Description>
         <EmptyState.Actions>

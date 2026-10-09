@@ -1,6 +1,25 @@
-import type { ReactNode } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
 import styles from './EmptyState.module.css'
+import { CollectionsArt } from './illustrations/CollectionsArt'
+import { ConsoleArt } from './illustrations/ConsoleArt'
+import { HistoryArt } from './illustrations/HistoryArt'
+import { MissingArt } from './illustrations/MissingArt'
+import { ResponseArt } from './illustrations/ResponseArt'
+import { TabsArt } from './illustrations/TabsArt'
+import { WorkspaceArt } from './illustrations/WorkspaceArt'
+
+export type EmptyStateArt = 'workspace' | 'collections' | 'tabs' | 'response' | 'history' | 'console' | 'missing'
+
+const ART: Record<EmptyStateArt, ComponentType> = {
+  workspace: WorkspaceArt,
+  collections: CollectionsArt,
+  tabs: TabsArt,
+  response: ResponseArt,
+  history: HistoryArt,
+  console: ConsoleArt,
+  missing: MissingArt,
+}
 
 interface RootProps {
   label?: string
@@ -16,14 +35,12 @@ function Root({ label, className, children }: RootProps) {
   )
 }
 
-function Art() {
+function Art({ variant }: { variant: EmptyStateArt }) {
+  const Illustration = ART[variant]
   return (
-    <svg className={styles.art} viewBox="0 0 96 96" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
-      <path d="M14 70c10-24 22-40 34-44s22 6 30 20" />
-      <path d="M24 30l-6-12M48 22V8M72 30l8-11" />
-      <circle cx="48" cy="58" r="10" />
-      <path d="M38 82c6-4 14-4 20 0" />
-    </svg>
+    <div className={styles.art} data-art={variant}>
+      <Illustration />
+    </div>
   )
 }
 

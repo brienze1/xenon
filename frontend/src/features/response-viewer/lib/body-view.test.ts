@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { initialBodyView, isHtml, isImage, languageFor, prettyBody, statusTone, suggestedFileName } from './body-view'
+import { initialBodyView, isHtml, isImage, languageFor, prettyBody, suggestedFileName } from './body-view'
 
 describe('body view helpers', () => {
   it('opens bodies above 5 MB in Raw first', () => {
@@ -25,12 +25,11 @@ describe('body view helpers', () => {
     expect(prettyBody('<a/>', 'xml')).toBe('<a/>')
   })
 
-  it('classifies previews and status codes', () => {
+  it('classifies previews', () => {
     expect(isImage('image/png')).toBe(true)
     expect(isImage('text/plain')).toBe(false)
     expect(isHtml('text/html; charset=utf-8')).toBe(true)
     expect(isHtml('application/xhtml+xml')).toBe(false)
-    expect([101, 200, 299, 300, 399, 400, 500].map(statusTone)).toEqual(['info', 'success', 'success', 'redirect', 'redirect', 'error', 'error'])
   })
 
   it.each([

@@ -37,7 +37,7 @@ export function ResponseViewer({ tabId }: ResponseViewerProps) {
         </p>
       ) : result === null ? (
         <EmptyState.Root label="No response yet">
-          <EmptyState.Art />
+          <EmptyState.Art variant="response" />
           <EmptyState.Description>Enter the URL and click Send to get a response.</EmptyState.Description>
         </EmptyState.Root>
       ) : result.error ? (

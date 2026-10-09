@@ -19,7 +19,7 @@ vi.mock('@/platform/services/workspaces', () => ({
 vi.mock('@/platform/services/dialogs', () => ({ pickFolder: vi.fn(), pickFile: vi.fn(), pickSaveFile: vi.fn() }))
 vi.mock('@/platform/services/ui-state', () => ({ getUIState: vi.fn(), saveUIState: vi.fn(async () => undefined) }))
 vi.mock('@/platform/services/requests', () => ({
-  applyUrl: vi.fn(),
+  applyUrl: vi.fn(async (draft: unknown) => draft),
   applyParams: vi.fn(),
   parseBulk: vi.fn(),
   formatBulk: vi.fn(),

@@ -3,7 +3,6 @@ import type { CodeLanguage } from '@/shared/ui/code-editor/languages'
 export const RAW_FIRST_BYTES = 5 * 1024 * 1024
 
 export type BodyView = 'pretty' | 'raw' | 'preview'
-export type StatusTone = 'success' | 'redirect' | 'error' | 'info'
 
 export function initialBodyView(sizeBytes: number): BodyView {
   return sizeBytes > RAW_FIRST_BYTES ? 'raw' : 'pretty'
@@ -47,19 +46,6 @@ export function isImage(contentType: string): boolean {
 
 export function isHtml(contentType: string): boolean {
   return mediaType(contentType) === 'text/html'
-}
-
-export function statusTone(statusCode: number): StatusTone {
-  if (statusCode >= 200 && statusCode < 300) {
-    return 'success'
-  }
-  if (statusCode >= 300 && statusCode < 400) {
-    return 'redirect'
-  }
-  if (statusCode >= 400) {
-    return 'error'
-  }
-  return 'info'
 }
 
 export function suggestedFileName(contentType: string): string {

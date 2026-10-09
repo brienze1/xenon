@@ -6,7 +6,7 @@ describe('EmptyState', () => {
   it('renders a labelled section with the marker title, description and actions', () => {
     render(
       <EmptyState.Root label="No response">
-        <EmptyState.Art />
+        <EmptyState.Art variant="response" />
         <EmptyState.Title>Nothing here yet</EmptyState.Title>
         <EmptyState.Description>Send a request to see the response.</EmptyState.Description>
         <EmptyState.Actions>
@@ -18,5 +18,12 @@ describe('EmptyState', () => {
     expect(region).toContainElement(screen.getByRole('heading', { name: 'Nothing here yet' }))
     expect(screen.getByText('Send a request to see the response.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Send' })).toBeInTheDocument()
+  })
+
+  it.each(['workspace', 'collections', 'tabs', 'response', 'history', 'console', 'missing'] as const)('draws the %s illustration hidden from assistive tech', (variant) => {
+    const { container } = render(<EmptyState.Art variant={variant} />)
+    const art = container.querySelector(`[data-art="${variant}"] svg`)
+    expect(art).toHaveAttribute('aria-hidden', 'true')
+    expect(art?.querySelectorAll('path, circle').length).toBeGreaterThan(2)
   })
 })

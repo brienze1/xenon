@@ -1,7 +1,11 @@
 import { create } from 'zustand'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import { toAppError, type AppError } from '@/platform/errors'
+import type { HistoryEntry } from '@/platform/mappers/history'
+import type { RequestDraft } from '@/platform/mappers/request'
 import type { ItemSettings, TreeNode, TreeSearchResult } from '@/platform/mappers/tree'
+import type { SidebarView } from '@/platform/mappers/ui-state'
+import { clearHistory, getHistoryEntry, listHistory } from '@/platform/services/history'
 import {
   createCollection,
   createFolder,
@@ -23,7 +27,18 @@ export const NEW_REQUEST_NAME = 'New Request'
 
 export type SidebarStatus = 'idle' | 'loading' | 'ready'
 
+export interface SidebarSnapshot {
+  expanded: Record<string, boolean>
+  selectedId: string | null
+  query: string
+  view: SidebarView
+}
+
 interface SidebarState {
+  view: SidebarView
+  history: HistoryEntry[]
+  historyStatus: SidebarStatus
+  historyQuery: string
   tree: TreeNode[]
   status: SidebarStatus
   error: AppError | null
@@ -34,7 +49,12 @@ interface SidebarState {
   search: TreeSearchResult | null
   load: () => Promise<void>
   setTree: (tree: TreeNode[]) => void
-  applyState: (state: { expanded: Record<string, boolean>; selectedId: string | null; query: string }) => void
+  applyState: (state: SidebarSnapshot) => void
+  setView: (view: SidebarView) => void
+  loadHistory: () => Promise<void>
+  setHistoryQuery: (query: string) => void
+  clearHistory: () => Promise<void>
+  openHistoryEntry: (id: string) => Promise<RequestDraft | null>
   setQuery: (query: string) => void
   toggle: (id: string) => void
   select: (id: string) => void
@@ -53,12 +73,17 @@ interface SidebarState {
 }
 
 let searchTimer: ReturnType<typeof setTimeout> | undefined
+let historyTimer: ReturnType<typeof setTimeout> | undefined
 
 function activeLocalId(): string | null {
   return useWorkspacesStore.getState().activeLocalId
 }
 
 const initialState = {
+  view: 'collections' as SidebarView,
+  history: [] as HistoryEntry[],
+  historyStatus: 'idle' as SidebarStatus,
+  historyQuery: '',
   tree: [] as TreeNode[],
   status: 'idle' as SidebarStatus,
   error: null as AppError | null,
@@ -115,10 +140,51 @@ export const useSidebarStore = create<SidebarState>()((set, get) => {
 
     setTree: (tree) => set({ tree, status: 'ready', error: null }),
 
-    applyState: ({ expanded, selectedId, query }) => {
+    applyState: ({ expanded, selectedId, query, view }) => {
       set({ expanded, selectedId })
       get().setQuery(query)
+      get().setView(view)
     },
+
+    setView: (view) => {
+      set({ view })
+      if (view === 'history') {
+        void get().loadHistory()
+      }
+    },
+
+    loadHistory: async () => {
+      const query = get().historyQuery
+      set((state) => ({ historyStatus: state.historyStatus === 'ready' ? 'ready' : 'loading' }))
+      await run(async (localId) => {
+        const history = await listHistory(localId, { query })
+        if (activeLocalId() === localId && get().historyQuery === query) {
+          set({ history, historyStatus: 'ready' })
+        }
+      })
+      if (get().historyStatus === 'loading') {
+        set({ historyStatus: 'ready' })
+      }
+    },
+
+    setHistoryQuery: (query) => {
+      clearTimeout(historyTimer)
+      set({ historyQuery: query })
+      historyTimer = setTimeout(() => void get().loadHistory(), SEARCH_DELAY_MS)
+    },
+
+    clearHistory: async () => {
+      await run(async (localId) => {
+        await clearHistory(localId)
+        set({ history: [] })
+      })
+    },
+
+    openHistoryEntry: (id) =>
+      run(async (localId) => {
+        const detail = await getHistoryEntry(localId, id)
+        return { ...detail.request, id: '' }
+      }),
 
     setQuery: (query) => {
       clearTimeout(searchTimer)
@@ -199,6 +265,7 @@ export const useSidebarStore = create<SidebarState>()((set, get) => {
 
     reset: () => {
       clearTimeout(searchTimer)
+      clearTimeout(historyTimer)
       set(initialState)
     },
   }

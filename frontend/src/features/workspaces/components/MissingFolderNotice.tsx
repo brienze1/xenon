@@ -16,6 +16,7 @@ export function MissingFolderNotice({ localId }: MissingFolderNoticeProps) {
 
   return (
     <EmptyState.Root label="Workspace folder missing">
+      <EmptyState.Art variant="missing" />
       <EmptyState.Title>Folder missing</EmptyState.Title>
       <EmptyState.Description>
         The folder of “{workspace?.name ?? 'this workspace'}” was moved or deleted outside Xenon

@@ -1,0 +1,44 @@
+.art {
+  width: 120px;
+  height: 96px;
+  overflow: visible;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 4;
+}
+
+.green {
+  stroke: var(--neon-green);
+  filter: drop-shadow(0 0 4px var(--neon-green));
+}
+
+.cyan {
+  stroke: var(--neon-cyan);
+  filter: drop-shadow(0 0 4px var(--neon-cyan));
+}
+
+.magenta {
+  stroke: var(--neon-magenta);
+  filter: drop-shadow(0 0 4px var(--neon-magenta));
+}
+
+.yellow {
+  stroke: var(--neon-yellow);
+  filter: drop-shadow(0 0 4px var(--neon-yellow));
+}
+
+.red {
+  stroke: var(--neon-red);
+  filter: drop-shadow(0 0 4px var(--neon-red));
+}
+
+.spray {
+  fill: var(--neon-yellow);
+  stroke: none;
+  opacity: 0.8;
+}
+
+.drip {
+  stroke-width: 3;
+}

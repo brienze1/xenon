@@ -3,6 +3,7 @@ import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
 import type { RequestChangedOnDisk } from '@/platform/events'
+import type { RequestDraft } from '@/platform/mappers/request'
 import { defaultLayout, type LayoutState, type TabState, type UIState } from '@/platform/mappers/ui-state'
 import { saveUIState } from '@/platform/services/ui-state'
 import { isPristine } from './lib/draft'
@@ -36,6 +37,7 @@ interface TabsState {
   layout: LayoutState
   hydrate: (localId: string, state: UIState) => void
   newTab: () => string
+  openDraft: (draft: RequestDraft) => string
   activate: (tabId: string) => void
   openPreview: (requestId: string) => Promise<void>
   openPinned: (requestId: string) => Promise<void>
@@ -121,7 +123,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         .filter(([, open]) => open)
         .map(([id]) => id),
       selectedId: sidebar.selectedId,
-      view: 'collections',
+      view: sidebar.view,
       search: sidebar.query,
     }
   }
@@ -154,6 +156,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         expanded: Object.fromEntries(state.sidebar.expanded.map((id) => [id, true])),
         selectedId: state.sidebar.selectedId,
         query: state.sidebar.search,
+        view: state.sidebar.view,
       })
       for (const tab of state.tabs) {
         if (tab.draft) {
@@ -175,6 +178,13 @@ export const useTabsStore = create<TabsState>()((set, get) => {
     newTab: () => {
       const id = newTabId()
       addTab({ id, requestId: null, pinned: true })
+      return id
+    },
+
+    openDraft: (draft) => {
+      const id = newTabId()
+      addTab({ id, requestId: null, pinned: true })
+      builder().loadDraft(id, draft, null, true)
       return id
     },
 

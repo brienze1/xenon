@@ -1,8 +1,11 @@
 import { useRequestBuilderStore } from '@/features/request-builder/store'
+import { useResponseViewerStore, type ResponseEntry } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { useTabsStore } from '@/features/tabs/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import { onRequestChangedOnDisk, onWorkspaceFolderMissing, onWorkspaceTreeChanged } from '@/platform/events'
+
+type ResponseEntries = Record<string, ResponseEntry>
 
 export function bootstrap(): () => void {
   const flush = () => void useTabsStore.getState().flushPersist()
@@ -27,8 +30,18 @@ export function bootstrap(): () => void {
       }
     }),
     useSidebarStore.subscribe((state, previous) => {
-      if (state.expanded !== previous.expanded || state.selectedId !== previous.selectedId || state.query !== previous.query) {
+      if (
+        state.expanded !== previous.expanded ||
+        state.selectedId !== previous.selectedId ||
+        state.query !== previous.query ||
+        state.view !== previous.view
+      ) {
         persistTabs()
+      }
+    }),
+    useResponseViewerStore.subscribe((state, previous) => {
+      if (state.entries !== previous.entries && finishedSending(state.entries, previous.entries)) {
+        refreshHistory()
       }
     }),
     () => window.removeEventListener('beforeunload', flush),
@@ -38,6 +51,16 @@ export function bootstrap(): () => void {
     for (const unsubscribe of unsubscribers) {
       unsubscribe()
     }
+  }
+}
+
+function finishedSending(entries: ResponseEntries, previous: ResponseEntries): boolean {
+  return Object.entries(entries).some(([tabId, entry]) => !entry.sending && previous[tabId]?.sending === true)
+}
+
+function refreshHistory(): void {
+  if (useSidebarStore.getState().view === 'history') {
+    void useSidebarStore.getState().loadHistory()
   }
 }
 

@@ -2,8 +2,8 @@ import type { SendResult } from '@/platform/mappers/request'
 import { cn } from '@/shared/lib/cn'
 import { formatBytes } from '@/shared/lib/format-bytes'
 import { formatDuration } from '@/shared/lib/format-duration'
+import { statusTone } from '@/shared/lib/status-tone'
 import { Tooltip } from '@/shared/ui/tooltip/Tooltip'
-import { statusTone } from '../lib/body-view'
 import styles from './StatusLine.module.css'
 
 interface StatusLineProps {

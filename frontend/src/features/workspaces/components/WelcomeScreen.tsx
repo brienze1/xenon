@@ -35,7 +35,7 @@ export function WelcomeScreen() {
 
   return (
     <EmptyState.Root label="Welcome">
-      <EmptyState.Art />
+      <EmptyState.Art variant="workspace" />
       <EmptyState.Title>Xenon</EmptyState.Title>
       <EmptyState.Description>
         Create a workspace in any folder — for example inside your company&apos;s git repository. Everything is saved

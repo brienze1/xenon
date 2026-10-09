@@ -1,0 +1,131 @@
+.view {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-3) var(--space-2);
+}
+
+.count {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.list {
+  position: relative;
+  width: 100%;
+}
+
+.slot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+.day {
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  padding: 0 var(--space-3) var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.entry {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-1);
+  width: 100%;
+  height: 100%;
+  padding: 0 var(--space-3);
+  text-align: start;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.entry:hover {
+  background: var(--color-surface-raised);
+}
+
+.entry:focus-visible {
+  outline: none;
+  box-shadow: inset var(--focus-ring);
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.method {
+  flex: none;
+  min-width: 44px;
+}
+
+.url {
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  display: flex;
+  gap: var(--space-3);
+  padding-inline-start: calc(44px + var(--space-2));
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.status {
+  font-weight: var(--font-weight-semibold);
+}
+
+.success {
+  color: var(--status-success);
+}
+
+.redirect {
+  color: var(--status-redirect);
+}
+
+.error {
+  color: var(--status-error);
+}
+
+.info {
+  color: var(--status-info);
+}
+
+.empty {
+  flex: 1;
+  padding: var(--space-5);
+}
+
+.noMatches {
+  padding: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
