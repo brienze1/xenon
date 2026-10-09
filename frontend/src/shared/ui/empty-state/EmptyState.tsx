@@ -21,15 +21,18 @@ const ART: Record<EmptyStateArt, ComponentType> = {
   missing: MissingArt,
 }
 
+export type EmptyStateSize = 'regular' | 'compact'
+
 interface RootProps {
   label?: string
+  size?: EmptyStateSize
   className?: string
   children: ReactNode
 }
 
-function Root({ label, className, children }: RootProps) {
+function Root({ label, size = 'regular', className, children }: RootProps) {
   return (
-    <section aria-label={label} className={cn(styles.root, className)}>
+    <section aria-label={label} className={cn(styles.root, styles[size], className)}>
       {children}
     </section>
   )

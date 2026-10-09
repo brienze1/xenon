@@ -1,9 +1,16 @@
 .panel {
+  position: relative;
   grid-area: right;
-  width: 300px;
+  display: flex;
+  width: var(--right-panel-width);
   min-height: 0;
-  overflow: auto;
-  padding: var(--space-4);
   background: var(--color-surface);
   box-shadow: var(--shadow-panel);
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: var(--space-4);
 }

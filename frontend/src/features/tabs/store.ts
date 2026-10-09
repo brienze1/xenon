@@ -4,7 +4,8 @@ import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
 import type { RequestChangedOnDisk } from '@/platform/events'
 import type { RequestDraft } from '@/platform/mappers/request'
-import { defaultLayout, type LayoutState, type TabState, type UIState } from '@/platform/mappers/ui-state'
+import { useWorkspacesStore } from '@/features/workspaces/store'
+import type { TabState, UIState } from '@/platform/mappers/ui-state'
 import { saveUIState } from '@/platform/services/ui-state'
 import { isPristine } from './lib/draft'
 import { moveTab } from './lib/order'
@@ -34,7 +35,6 @@ interface TabsState {
   closePrompt: string | null
   saveDialog: SaveDialogState | null
   notices: Record<string, TabNotice>
-  layout: LayoutState
   hydrate: (localId: string, state: UIState) => void
   newTab: () => string
   openDraft: (draft: RequestDraft) => string
@@ -95,7 +95,6 @@ const initialState = {
   closePrompt: null as string | null,
   saveDialog: null as SaveDialogState | null,
   notices: {} as Record<string, TabNotice>,
-  layout: defaultLayout(),
 }
 
 export const useTabsStore = create<TabsState>()((set, get) => {
@@ -147,7 +146,6 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       set({
         ...initialState,
         localId,
-        layout: state.layout,
         tabs: state.tabs.map((tab) => ({ id: tab.tabId, requestId: tab.requestId, pinned: tab.pinned })),
         activeTabId: state.activeTabId,
         previewTabId: state.previewTabId,
@@ -384,7 +382,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         activeTabId: state.activeTabId,
         previewTabId: state.previewTabId,
         sidebar: sidebarSnapshot(),
-        layout: state.layout,
+        layout: useWorkspacesStore.getState().layout,
       }
     },
 

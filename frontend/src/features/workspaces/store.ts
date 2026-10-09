@@ -4,6 +4,7 @@ import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { useTabsStore } from '@/features/tabs/store'
 import { toAppError, type AppError } from '@/platform/errors'
+import { defaultLayout, type LayoutState } from '@/platform/mappers/ui-state'
 import type { WorkspaceSummary } from '@/platform/mappers/workspace'
 import { pickFolder } from '@/platform/services/dialogs'
 import {
@@ -15,6 +16,7 @@ import {
   removeWorkspace,
   renameWorkspace,
 } from '@/platform/services/workspaces'
+import { clampLayout } from './lib/layout'
 
 export const FOLDER_MISSING = 'WKS-06404'
 export const TRASH_FAILED = 'WKS-05500'
@@ -27,6 +29,8 @@ interface WorkspacesState {
   missingLocalId: string | null
   status: WorkspacesStatus
   error: AppError | null
+  layout: LayoutState
+  setLayout: (patch: Partial<LayoutState>) => void
   load: () => Promise<void>
   create: (name: string, path: string) => Promise<boolean>
   open: (path: string) => Promise<boolean>
@@ -67,7 +71,7 @@ export const useWorkspacesStore = create<WorkspacesState>()((set, get) => {
 
   function leaveWorkspace(missingLocalId: string | null) {
     resetWorkspaceStores()
-    set({ activeLocalId: null, missingLocalId })
+    set({ activeLocalId: null, missingLocalId, layout: defaultLayout() })
   }
 
   return {
@@ -76,6 +80,9 @@ export const useWorkspacesStore = create<WorkspacesState>()((set, get) => {
     missingLocalId: null,
     status: 'idle',
     error: null,
+    layout: defaultLayout(),
+
+    setLayout: (patch) => set((state) => ({ layout: clampLayout({ ...state.layout, ...patch }, window.innerHeight) })),
 
     load: async () => {
       set({ status: 'loading', error: null })
@@ -116,6 +123,7 @@ export const useWorkspacesStore = create<WorkspacesState>()((set, get) => {
           workspaces: replaceSummary(state.workspaces, snapshot.summary),
           activeLocalId: localId,
           missingLocalId: null,
+          layout: clampLayout(snapshot.uiState.layout, window.innerHeight),
         }))
         useSidebarStore.getState().setTree(snapshot.tree)
         useTabsStore.getState().hydrate(localId, snapshot.uiState)

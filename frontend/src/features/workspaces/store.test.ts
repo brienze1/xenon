@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
 import { emptyDraft } from '@/platform/mappers/request'
-import { defaultUIState, type UIState } from '@/platform/mappers/ui-state'
+import { defaultLayout, defaultUIState, type UIState } from '@/platform/mappers/ui-state'
 import type { WorkspaceSnapshot, WorkspaceSummary } from '@/platform/mappers/workspace'
 
 vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {} }))
@@ -61,6 +61,24 @@ describe('workspaces store', () => {
     vi.mocked(uiState.saveUIState).mockResolvedValue()
     useTabsStore.getState().reset()
     useWorkspacesStore.setState({ workspaces: [], activeLocalId: null, missingLocalId: null, status: 'idle', error: null })
+  })
+
+  it('keeps each workspace layout, clamped, and resets it when leaving', async () => {
+    vi.mocked(services.activateWorkspace).mockResolvedValueOnce(
+      snapshot(acme, { ...defaultUIState(), layout: { ...defaultLayout(), sidebarWidth: 9000, split: 'side-by-side', consoleVisible: true } }),
+    )
+    await store().activate('A')
+    expect(store().layout).toMatchObject({ sidebarWidth: 600, split: 'side-by-side', consoleVisible: true })
+    store().setLayout({ rightPanelWidth: 100, consoleHeight: window.innerHeight * 2, splitRatio: 0.9 })
+    expect(store().layout).toMatchObject({ rightPanelWidth: 240, consoleHeight: Math.round(window.innerHeight * 0.6), splitRatio: 0.8, sidebarWidth: 600 })
+    await useTabsStore.getState().flushPersist()
+    expect(vi.mocked(uiState.saveUIState).mock.calls.at(-1)![1].layout).toMatchObject({ rightPanelWidth: 240, split: 'side-by-side' })
+    vi.mocked(services.activateWorkspace).mockResolvedValueOnce(snapshot(globex))
+    await store().activate('G')
+    expect(store().layout).toEqual(defaultLayout())
+    store().setLayout({ sidebarVisible: false })
+    store().markMissing('G')
+    expect(store().layout).toEqual(defaultLayout())
   })
 
   it('loads the registered workspaces', async () => {

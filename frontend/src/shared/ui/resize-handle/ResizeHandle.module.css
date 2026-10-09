@@ -1,0 +1,59 @@
+.handle {
+  position: absolute;
+  z-index: 2;
+  touch-action: none;
+  background: transparent;
+  transition: background var(--duration-fast);
+}
+
+.vertical {
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+}
+
+.horizontal {
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: row-resize;
+}
+
+.vertical.end {
+  right: -3px;
+}
+
+.vertical.start {
+  left: -3px;
+}
+
+.horizontal.start {
+  top: -3px;
+}
+
+.horizontal.end {
+  bottom: -3px;
+}
+
+.handle:hover,
+.handle:focus-visible,
+.dragging {
+  outline: none;
+  background: var(--neon-cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+.vertical:hover,
+.vertical:focus-visible,
+.vertical.dragging {
+  width: 2px;
+  margin-inline: 2px;
+}
+
+.horizontal:hover,
+.horizontal:focus-visible,
+.horizontal.dragging {
+  height: 2px;
+  margin-block: 2px;
+}

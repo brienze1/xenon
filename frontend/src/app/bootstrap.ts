@@ -39,6 +39,11 @@ export function bootstrap(): () => void {
         persistTabs()
       }
     }),
+    useWorkspacesStore.subscribe((state, previous) => {
+      if (state.layout !== previous.layout) {
+        persistTabs()
+      }
+    }),
     useResponseViewerStore.subscribe((state, previous) => {
       if (state.entries !== previous.entries && finishedSending(state.entries, previous.entries)) {
         refreshHistory()

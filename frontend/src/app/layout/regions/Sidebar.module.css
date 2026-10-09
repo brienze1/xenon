@@ -1,10 +1,10 @@
 .sidebar {
+  position: relative;
   grid-area: sidebar;
-  width: 280px;
   display: flex;
   flex-direction: column;
+  width: var(--sidebar-width);
   min-height: 0;
-  overflow: hidden;
   background: var(--color-surface);
   box-shadow: var(--shadow-panel);
 }

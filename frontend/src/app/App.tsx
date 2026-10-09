@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react'
+import { ConsoleDrawer as ConsoleContent } from '@/features/console/components/ConsoleDrawer'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { InfoPanel } from '@/features/side-panel/components/InfoPanel'
 import { SidebarPanel } from '@/features/sidebar/components/SidebarPanel'
@@ -23,6 +24,8 @@ export function App() {
   const status = useWorkspacesStore((state) => state.status)
   const hasWorkspaces = useWorkspacesStore((state) => state.workspaces.length > 0)
   const missingLocalId = useWorkspacesStore((state) => state.missingLocalId)
+  const layout = useWorkspacesStore((state) => state.layout)
+  const setLayout = useWorkspacesStore((state) => state.setLayout)
   const active = useWorkspacesStore((state) =>
     state.workspaces.find((workspace) => workspace.localId === state.activeLocalId),
   )
@@ -49,7 +52,7 @@ export function App() {
   useAppHotkeys(hotkeys)
 
   return (
-    <AppShell>
+    <AppShell layout={layout} onLayoutChange={setLayout}>
       <TopBar>{hasWorkspaces ? <WorkspaceSwitcher /> : null}</TopBar>
       {active ? (
         <>
@@ -75,7 +78,11 @@ export function App() {
           {missingLocalId ? <MissingFolderNotice localId={missingLocalId} /> : status === 'ready' ? <WelcomeScreen /> : null}
         </MainArea>
       )}
-      <ConsoleDrawer open={false} />
+      {active ? (
+        <ConsoleDrawer>
+          <ConsoleContent />
+        </ConsoleDrawer>
+      ) : null}
       <Footer>{active ? <span className={styles.path}>{active.path}</span> : null}</Footer>
     </AppShell>
   )
