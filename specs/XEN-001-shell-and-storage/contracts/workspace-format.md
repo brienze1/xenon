@@ -86,7 +86,8 @@ headers:                # §6.1 rows, applied to every request below unless over
     value: acme
     enabled: true
     description: ""
-variables: []           # stage 2: collection variables
+variables: []           # stage 2: collection variables (collection only — folders have no
+                        # variables, as in Postman; decided 2026-10-09)
 scripts:                # stage 4
   preRequest: ""
   postResponse: ""

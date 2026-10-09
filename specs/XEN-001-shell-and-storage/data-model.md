@@ -36,7 +36,7 @@ Relationships: has many **Collection**s (via `collections/` directories).
 | Order | []string | child dir/file names |
 | Auth | Auth | `inherit` on a collection resolves to no auth |
 | Headers | []KeyValue | applied to all descendants unless overridden |
-| Variables | []KeyValue | reserved (stage 2) |
+| Variables | []KeyValue | reserved (stage 2); collection only — folders have no variables |
 | Scripts | Scripts | reserved (stage 4) |
 | InheritScripts | bool | folder only, default true (stage 4) |
 | Postman | YAML node | reserved passthrough (stage 3) |
