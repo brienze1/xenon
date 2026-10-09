@@ -8,14 +8,14 @@ import (
 	"github.com/brienze1/xenon/internal/integration/entrypoint/controller"
 )
 
-var workspaceRenameOnce sync.Once
-var workspaceRenameInstance adapter.WorkspaceRenameController
+var workspaceRenameControllerOnce sync.Once
+var workspaceRenameControllerInstance adapter.WorkspaceRenameController
 
-func GetWorkspaceRename() adapter.WorkspaceRenameController {
-	if workspaceRenameInstance == nil {
-		workspaceRenameOnce.Do(func() {
-			workspaceRenameInstance = controller.NewWorkspaceRename(GetErrorHandler(), application.GetRenameWorkspaceService())
+func GetWorkspaceRenameController() adapter.WorkspaceRenameController {
+	if workspaceRenameControllerInstance == nil {
+		workspaceRenameControllerOnce.Do(func() {
+			workspaceRenameControllerInstance = controller.NewWorkspaceRename(GetErrorHandler(), application.GetRenameWorkspaceService())
 		})
 	}
-	return workspaceRenameInstance
+	return workspaceRenameControllerInstance
 }

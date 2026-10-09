@@ -4,6 +4,7 @@ import (
 	"context"
 
 	appAdapter "github.com/brienze1/xenon/internal/application/adapter"
+	"github.com/brienze1/xenon/internal/infra/properties"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/validator"
@@ -37,7 +38,7 @@ func (r *requestEdit) ApplyUrl(bindingCtx context.Context, request dto.ApplyRequ
 		return nil, err
 	}
 
-	result := dto.NewRequest(r.editRequestService.ApplyUrl(ctx, request.Request.ToEntity()))
+	result := dto.NewRequest(r.editRequestService.ApplyUrl(ctx, request.ToEntity()))
 
 	logger.Info(ctx, "Finished", result)
 	return &result, nil
@@ -61,7 +62,7 @@ func (r *requestEdit) ApplyParams(bindingCtx context.Context, request dto.ApplyR
 		return nil, err
 	}
 
-	result := dto.NewRequest(r.editRequestService.ApplyParams(ctx, request.Request.ToEntity()))
+	result := dto.NewRequest(r.editRequestService.ApplyParams(ctx, request.ToEntity()))
 
 	logger.Info(ctx, "Finished", result)
 	return &result, nil
@@ -133,7 +134,7 @@ func (r *requestEdit) AutoHeaders(bindingCtx context.Context, request dto.AutoHe
 		return nil, err
 	}
 
-	headers, err := r.editRequestService.AutoHeaders(ctx, request.LocalId, request.Request.ToEntity())
+	headers, err := r.editRequestService.AutoHeaders(ctx, request.LocalId, request.ToEntity(), properties.Properties().Application.Version)
 	if err != nil {
 		return nil, err
 	}

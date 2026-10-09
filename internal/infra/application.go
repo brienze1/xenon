@@ -15,7 +15,7 @@ import (
 	"github.com/brienze1/xenon/internal/infra/server/binding"
 	"github.com/brienze1/xenon/internal/infra/server/consumer"
 	_ "github.com/brienze1/xenon/internal/infra/server/event"
-	"github.com/brienze1/xenon/internal/infra/server/route"
+	"github.com/brienze1/xenon/internal/infra/server/router"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
 	"github.com/brienze1/xenon/pkg/logger"
 )
@@ -28,7 +28,7 @@ type Bindings struct {
 	UIState      *binding.UIStateService
 	History      *binding.HistoryService
 	Window       *binding.WindowService
-	ResponseBody *route.ResponseBodyRoute
+	ResponseBody *router.ResponseBodyRoute
 }
 
 func NewBindings() *Bindings {
@@ -41,7 +41,7 @@ func NewBindings() *Bindings {
 		UIState:      binding.NewUIStateService(),
 		History:      binding.NewHistoryService(),
 		Window:       binding.NewWindowService(),
-		ResponseBody: route.NewResponseBodyRoute(),
+		ResponseBody: router.NewResponseBodyRoute(),
 	}
 }
 

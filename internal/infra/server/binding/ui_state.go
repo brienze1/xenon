@@ -13,7 +13,7 @@ type UIStateService struct {
 }
 
 func NewUIStateService() *UIStateService {
-	return &UIStateService{uiState: controller.GetUIState()}
+	return &UIStateService{uiState: controller.GetUIStateController()}
 }
 
 func (u *UIStateService) Get(ctx context.Context, request dto.GetUIState) (*dto.UIState, error) {

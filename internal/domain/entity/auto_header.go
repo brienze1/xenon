@@ -34,3 +34,7 @@ func (a AutoHeader) IsSent() bool {
 func (a AutoHeader) IsActive() bool {
 	return !a.Disabled
 }
+
+func (a AutoHeader) LogValue() any {
+	return map[string]any{"key": a.Key, "disabled": a.Disabled, "computed": a.Computed}
+}

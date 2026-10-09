@@ -11,20 +11,20 @@ import (
 type handleFileChange struct {
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry
 	inspectFileChange     usecase.InspectFileChange
-	watchWorkspace        usecase.WatchWorkspace
+	unwatchWorkspace      usecase.UnwatchWorkspace
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent
 }
 
 func NewHandleFileChangeService(
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry,
 	inspectFileChange usecase.InspectFileChange,
-	watchWorkspace usecase.WatchWorkspace,
+	unwatchWorkspace usecase.UnwatchWorkspace,
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
 ) adapter.HandleFileChangeService {
 	return &handleFileChange{
 		findWorkspaceRegistry: findWorkspaceRegistry,
 		inspectFileChange:     inspectFileChange,
-		watchWorkspace:        watchWorkspace,
+		unwatchWorkspace:      unwatchWorkspace,
 		publishWorkspaceEvent: publishWorkspaceEvent,
 	}
 }
@@ -36,22 +36,26 @@ func (h *handleFileChange) Handle(ctx context.Context, localId, path string) err
 	if err != nil {
 		return err
 	}
-	if workspace.Missing {
-		if err := h.watchWorkspace.Unwatch(ctx); err != nil {
+	if workspace.IsMissing() {
+		if err := h.unwatchWorkspace.Unwatch(ctx); err != nil {
 			return err
 		}
-		return h.publishWorkspaceEvent.FolderMissing(ctx, localId)
+		if err := h.publishWorkspaceEvent.FolderMissing(ctx, localId); err != nil {
+			return err
+		}
+		logger.Info(ctx, "Finished", map[string]any{"localId": localId, "path": path, "result": "folderMissing"})
+		return nil
 	}
 	if !workspace.Watches(path) {
-		logger.Info(ctx, "Finished", map[string]any{"localId": localId, "path": path, "ignored": true})
+		logger.Info(ctx, "Finished", map[string]any{"localId": localId, "path": path, "result": "ignored"})
 		return nil
 	}
 	change, err := h.inspectFileChange.Inspect(ctx, workspace.Path, path)
 	if err != nil {
 		return err
 	}
-	if change.OwnWrite {
-		logger.Info(ctx, "Finished", map[string]any{"localId": localId, "path": path, "ownWrite": true})
+	if change.IsOwnWrite() {
+		logger.Info(ctx, "Finished", map[string]any{"localId": localId, "path": path, "result": "ownWrite"})
 		return nil
 	}
 	for _, request := range change.Requests {
@@ -63,6 +67,6 @@ func (h *handleFileChange) Handle(ctx context.Context, localId, path string) err
 		return err
 	}
 
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "path": path, "requests": len(change.Requests)})
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "path": path, "result": change.Requests})
 	return nil
 }

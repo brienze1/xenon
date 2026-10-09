@@ -17,7 +17,7 @@ type saveRequest struct {
 	findRequest           usecase.FindRequest
 	saveRequest           usecase.SaveRequest
 	loadTree              usecase.LoadTree
-	saveTreeItem          usecase.SaveTreeItem
+	createTreeItem        usecase.CreateTreeItem
 }
 
 func NewSaveRequestService(
@@ -25,14 +25,14 @@ func NewSaveRequestService(
 	findRequest usecase.FindRequest,
 	saveRequestFile usecase.SaveRequest,
 	loadTree usecase.LoadTree,
-	saveTreeItem usecase.SaveTreeItem,
+	createTreeItem usecase.CreateTreeItem,
 ) adapter.SaveRequestService {
 	return &saveRequest{
 		findWorkspaceRegistry: findWorkspaceRegistry,
 		findRequest:           findRequest,
 		saveRequest:           saveRequestFile,
 		loadTree:              loadTree,
-		saveTreeItem:          saveTreeItem,
+		createTreeItem:        createTreeItem,
 	}
 }
 
@@ -48,12 +48,12 @@ func (s *saveRequest) Open(ctx context.Context, localId, id string) (*entity.Req
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", request)
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "id": id, "result": *request})
 	return request, nil
 }
 
 func (s *saveRequest) Save(ctx context.Context, localId string, request entity.Request, baseRevision string, force bool) (*entity.Request, error) {
-	logger.Info(ctx, "Started", request, map[string]any{"localId": localId, "baseRevision": baseRevision, "force": force})
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "request": request, "baseRevision": baseRevision, "force": force})
 
 	workspace, err := s.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
@@ -64,12 +64,12 @@ func (s *saveRequest) Save(ctx context.Context, localId string, request entity.R
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", saved)
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "request": request, "baseRevision": baseRevision, "force": force, "result": *saved})
 	return saved, nil
 }
 
 func (s *saveRequest) SaveAs(ctx context.Context, localId, parentId, name string, request entity.Request) (*entity.Request, error) {
-	logger.Info(ctx, "Started", request, map[string]any{"localId": localId, "parentId": parentId, "name": name})
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "parentId": parentId, "name": name, "request": request})
 
 	workspace, err := s.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
@@ -85,11 +85,11 @@ func (s *saveRequest) SaveAs(ctx context.Context, localId, parentId, name string
 	}
 	copied := request.CopyAs(idutils.NewUlid(), name).WithFileRefsRelativeTo(workspace.Path)
 	fileName := usecase.DeriveFileName(copied.Name, itemkind.Request, parent.Entries)
-	saved, err := s.saveTreeItem.CreateRequest(ctx, workspace.Path, parent.ID, fileName, copied)
+	saved, err := s.createTreeItem.CreateRequest(ctx, workspace.Path, parent.ID, fileName, copied)
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", saved)
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "parentId": parentId, "name": name, "request": request, "result": *saved})
 	return saved, nil
 }

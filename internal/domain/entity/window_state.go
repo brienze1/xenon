@@ -8,16 +8,22 @@ const (
 )
 
 type WindowState struct {
-	X         int
-	Y         int
-	Width     int
-	Height    int
-	Maximized bool
-	Placed    bool
+	X          int
+	Y          int
+	Width      int
+	Height     int
+	Maximized  bool
+	Placed     bool
+	Minimised  bool
+	Fullscreen bool
 }
 
 func NewWindowState() WindowState {
 	return WindowState{Width: defaultWindowWidth, Height: defaultWindowHeight}
+}
+
+func (w WindowState) IsPersistable() bool {
+	return !w.Minimised && !w.Fullscreen
 }
 
 func (w WindowState) Updated(next WindowState) WindowState {

@@ -9,7 +9,6 @@ import (
 	"github.com/brienze1/xenon/pkg/errs"
 )
 
-// MarshalError renders any binding error as the errs DTO JSON the UI reads from RuntimeError.cause.
 func MarshalError(err error) []byte {
 	var custom errs.BaseError
 	if !errors.As(err, &custom) {

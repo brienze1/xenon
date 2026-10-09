@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums/rightpanelview"
 	"github.com/brienze1/xenon/internal/domain/enums/splitorientation"
 )
 
@@ -20,7 +21,7 @@ type Layout struct {
 func NewLayout(layout entity.Layout) Layout {
 	return Layout{
 		Split:             layout.Split.String(),
-		RightPanelView:    layout.RightPanelView,
+		RightPanelView:    layout.RightPanelView.String(),
 		SplitRatio:        layout.SplitRatio,
 		SidebarWidth:      layout.SidebarWidth,
 		RightPanelWidth:   layout.RightPanelWidth,
@@ -34,7 +35,7 @@ func NewLayout(layout entity.Layout) Layout {
 func (l *Layout) ToEntity() entity.Layout {
 	return entity.Layout{
 		Split:             splitorientation.GetSplitOrientation(l.Split),
-		RightPanelView:    l.RightPanelView,
+		RightPanelView:    rightpanelview.GetRightPanelView(l.RightPanelView),
 		SplitRatio:        l.SplitRatio,
 		SidebarWidth:      l.SidebarWidth,
 		RightPanelWidth:   l.RightPanelWidth,

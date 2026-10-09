@@ -47,3 +47,7 @@ func (r RegisteredWorkspace) Watches(path string) bool {
 	segments := strings.Split(filepath.ToSlash(relative), "/")
 	return relative == workspaceFileName || segments[0] == collectionsFolder
 }
+
+func (r RegisteredWorkspace) IsMissing() bool {
+	return r.Missing
+}

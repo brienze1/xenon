@@ -25,6 +25,6 @@ func (l *listWorkspaces) List(ctx context.Context) (*entity.AppRegistry, error) 
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", registry)
+	logger.Info(ctx, "Finished", map[string]any{"result": registry})
 	return registry, nil
 }

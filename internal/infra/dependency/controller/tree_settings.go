@@ -8,14 +8,14 @@ import (
 	"github.com/brienze1/xenon/internal/integration/entrypoint/controller"
 )
 
-var treeSettingsOnce sync.Once
-var treeSettingsInstance adapter.TreeSettingsController
+var treeSettingsControllerOnce sync.Once
+var treeSettingsControllerInstance adapter.TreeSettingsController
 
-func GetTreeSettings() adapter.TreeSettingsController {
-	if treeSettingsInstance == nil {
-		treeSettingsOnce.Do(func() {
-			treeSettingsInstance = controller.NewTreeSettings(GetErrorHandler(), application.GetItemSettingsService())
+func GetTreeSettingsController() adapter.TreeSettingsController {
+	if treeSettingsControllerInstance == nil {
+		treeSettingsControllerOnce.Do(func() {
+			treeSettingsControllerInstance = controller.NewTreeSettings(GetErrorHandler(), application.GetManageItemSettingsService())
 		})
 	}
-	return treeSettingsInstance
+	return treeSettingsControllerInstance
 }

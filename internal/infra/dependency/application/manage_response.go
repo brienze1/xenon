@@ -15,9 +15,9 @@ func GetManageResponseService() adapter.ManageResponseService {
 	if manageResponseInstance == nil {
 		manageResponseOnce.Do(func() {
 			manageResponseInstance = service.NewManageResponseService(
-				integration.GetResponseBodyWebservice(),
-				integration.GetResponseBodyWebservice(),
-				integration.GetResponseBodyWebservice(),
+				integration.GetResponseBodyPersistence(),
+				integration.GetResponseBodyPersistence(),
+				integration.GetResponseBodyPersistence(),
 			)
 		})
 	}

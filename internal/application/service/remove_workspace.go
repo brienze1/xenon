@@ -14,7 +14,7 @@ type removeWorkspace struct {
 	saveWorkspaceRegistry usecase.SaveWorkspaceRegistry
 	moveToTrash           usecase.MoveToTrash
 	deleteUIState         usecase.DeleteUIState
-	watchWorkspace        usecase.WatchWorkspace
+	unwatchWorkspace      usecase.UnwatchWorkspace
 }
 
 func NewRemoveWorkspaceService(
@@ -22,14 +22,14 @@ func NewRemoveWorkspaceService(
 	saveWorkspaceRegistry usecase.SaveWorkspaceRegistry,
 	moveToTrash usecase.MoveToTrash,
 	deleteUIState usecase.DeleteUIState,
-	watchWorkspace usecase.WatchWorkspace,
+	unwatchWorkspace usecase.UnwatchWorkspace,
 ) adapter.RemoveWorkspaceService {
 	return &removeWorkspace{
 		findWorkspaceRegistry: findWorkspaceRegistry,
 		saveWorkspaceRegistry: saveWorkspaceRegistry,
 		moveToTrash:           moveToTrash,
 		deleteUIState:         deleteUIState,
-		watchWorkspace:        watchWorkspace,
+		unwatchWorkspace:      unwatchWorkspace,
 	}
 }
 
@@ -40,7 +40,7 @@ func (r *removeWorkspace) Remove(ctx context.Context, localId string, moveToTras
 	if err != nil {
 		return nil, err
 	}
-	if moveToTrash && !registered.Missing {
+	if moveToTrash && !registered.IsMissing() {
 		if err := r.moveToTrash.MoveToTrash(ctx, registered.Path); err != nil {
 			return nil, err
 		}
@@ -49,7 +49,7 @@ func (r *removeWorkspace) Remove(ctx context.Context, localId string, moveToTras
 	if err != nil {
 		return nil, err
 	}
-	wasActive := registry.ActiveLocalID == localId
+	wasActive := registry.IsActive(localId)
 	registry.Remove(localId)
 	if err := r.saveWorkspaceRegistry.Save(ctx, *registry); err != nil {
 		return nil, err
@@ -58,11 +58,11 @@ func (r *removeWorkspace) Remove(ctx context.Context, localId string, moveToTras
 		return nil, err
 	}
 	if wasActive {
-		if err := r.watchWorkspace.Unwatch(ctx); err != nil {
+		if err := r.unwatchWorkspace.Unwatch(ctx); err != nil {
 			return nil, err
 		}
 	}
 
-	logger.Info(ctx, "Finished", registry)
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "moveToTrash": moveToTrash, "result": registry})
 	return registry, nil
 }

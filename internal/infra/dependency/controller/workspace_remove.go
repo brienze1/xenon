@@ -8,14 +8,14 @@ import (
 	"github.com/brienze1/xenon/internal/integration/entrypoint/controller"
 )
 
-var workspaceRemoveOnce sync.Once
-var workspaceRemoveInstance adapter.WorkspaceRemoveController
+var workspaceRemoveControllerOnce sync.Once
+var workspaceRemoveControllerInstance adapter.WorkspaceRemoveController
 
-func GetWorkspaceRemove() adapter.WorkspaceRemoveController {
-	if workspaceRemoveInstance == nil {
-		workspaceRemoveOnce.Do(func() {
-			workspaceRemoveInstance = controller.NewWorkspaceRemove(GetErrorHandler(), application.GetRemoveWorkspaceService())
+func GetWorkspaceRemoveController() adapter.WorkspaceRemoveController {
+	if workspaceRemoveControllerInstance == nil {
+		workspaceRemoveControllerOnce.Do(func() {
+			workspaceRemoveControllerInstance = controller.NewWorkspaceRemove(GetErrorHandler(), application.GetRemoveWorkspaceService())
 		})
 	}
-	return workspaceRemoveInstance
+	return workspaceRemoveControllerInstance
 }

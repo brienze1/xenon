@@ -100,3 +100,7 @@ func (a *AppRegistry) neighbourOf(index int) string {
 	}
 	return ""
 }
+
+func (a *AppRegistry) IsActive(localId string) bool {
+	return a.ActiveLocalID == localId
+}

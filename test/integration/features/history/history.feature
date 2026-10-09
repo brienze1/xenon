@@ -310,7 +310,7 @@ Feature: Send history per workspace
     And the response should contain the field "0.method" equal to "PUT"
     And the response should contain the field "0.error_kind" equal to "timeout"
     And the response should contain the field "0.total_ms" equal to "10"
-    And the response should contain the field "0.sent_at" equal to "2026-10-08T09:05:00Z"
+    And the response should contain the field "0.sent_at" equal to "2026-10-08T09:05:00.000Z"
     And the response should contain the field "1.status_code" equal to "200"
     And the response should contain the field "1.size_bytes" equal to "34"
     When I call "HistoryService.Get" with

@@ -17,6 +17,7 @@ func TestGetSendErrorKind(t *testing.T) {
 		{raw: "cancelled", want: Cancelled},
 		{raw: "missing_file", want: MissingFile},
 		{raw: "invalid_url", want: InvalidUrl},
+		{raw: "other", want: Other},
 	}
 	for _, tc := range cases {
 		for _, raw := range []string{tc.raw, strings.ToUpper(tc.raw), " " + tc.raw + " "} {
@@ -25,8 +26,11 @@ func TestGetSendErrorKind(t *testing.T) {
 			}
 		}
 	}
-	if got := GetSendErrorKind("not-a-value"); got != Other {
-		t.Errorf("GetSendErrorKind(unknown) = %q, want other", got)
+	if got := GetSendErrorKind("not-a-value"); got != Unknown {
+		t.Errorf("GetSendErrorKind(unknown) = %q, want unknown", got)
+	}
+	if got := GetSendErrorKind(""); got != None {
+		t.Errorf("GetSendErrorKind(empty) = %q, want none", got)
 	}
 }
 

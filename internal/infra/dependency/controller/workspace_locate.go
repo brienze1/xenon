@@ -8,14 +8,14 @@ import (
 	"github.com/brienze1/xenon/internal/integration/entrypoint/controller"
 )
 
-var workspaceLocateOnce sync.Once
-var workspaceLocateInstance adapter.WorkspaceLocateController
+var workspaceLocateControllerOnce sync.Once
+var workspaceLocateControllerInstance adapter.WorkspaceLocateController
 
-func GetWorkspaceLocate() adapter.WorkspaceLocateController {
-	if workspaceLocateInstance == nil {
-		workspaceLocateOnce.Do(func() {
-			workspaceLocateInstance = controller.NewWorkspaceLocate(GetErrorHandler(), application.GetLocateWorkspaceService())
+func GetWorkspaceLocateController() adapter.WorkspaceLocateController {
+	if workspaceLocateControllerInstance == nil {
+		workspaceLocateControllerOnce.Do(func() {
+			workspaceLocateControllerInstance = controller.NewWorkspaceLocate(GetErrorHandler(), application.GetLocateWorkspaceService())
 		})
 	}
-	return workspaceLocateInstance
+	return workspaceLocateControllerInstance
 }

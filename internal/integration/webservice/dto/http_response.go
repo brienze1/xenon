@@ -10,12 +10,12 @@ import (
 )
 
 type HttpResponse struct {
-	Header     http.Header
-	Status     string
-	Proto      string
-	Body       []byte
-	StatusCode int
-	WireSize   int64
+	Header     http.Header `json:"header"`
+	Status     string      `json:"status"`
+	Proto      string      `json:"proto"`
+	Body       []byte      `json:"body"`
+	StatusCode int         `json:"status_code"`
+	WireSize   int64       `json:"wire_size"`
 }
 
 func NewHttpResponse(response *http.Response, body []byte, wireSize int64) HttpResponse {

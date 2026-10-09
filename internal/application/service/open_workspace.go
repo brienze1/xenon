@@ -52,6 +52,6 @@ func (o *openWorkspace) Open(ctx context.Context, path string) (*entity.Register
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", registered)
+	logger.Info(ctx, "Finished", map[string]any{"path": path, "result": registered})
 	return &registered, nil
 }

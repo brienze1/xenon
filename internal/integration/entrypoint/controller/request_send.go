@@ -4,6 +4,7 @@ import (
 	"context"
 
 	appAdapter "github.com/brienze1/xenon/internal/application/adapter"
+	"github.com/brienze1/xenon/internal/infra/properties"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/validator"
@@ -37,7 +38,7 @@ func (r *requestSend) Send(bindingCtx context.Context, request dto.SendRequest) 
 		return nil, err
 	}
 
-	sent, err := r.sendRequestService.Send(ctx, request.LocalId, request.TabId, request.Request.ToEntity())
+	sent, err := r.sendRequestService.Send(ctx, request.LocalId, request.TabId, request.ToEntity(), properties.Properties().Application.Version)
 	if err != nil {
 		return nil, err
 	}

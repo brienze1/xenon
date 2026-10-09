@@ -20,3 +20,15 @@ func (k KeyValue) IsActive() bool {
 func (k KeyValue) HasKey(name string) bool {
 	return strings.EqualFold(strings.TrimSpace(k.Key), strings.TrimSpace(name))
 }
+
+func (k KeyValue) IsEnabled() bool {
+	return k.Enabled
+}
+
+func (k KeyValue) IsBlank() bool {
+	return k.Key == "" && k.Value == ""
+}
+
+func (k KeyValue) LogValue() any {
+	return map[string]any{"key": k.Key, "enabled": k.Enabled}
+}

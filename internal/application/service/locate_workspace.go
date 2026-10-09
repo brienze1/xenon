@@ -52,6 +52,6 @@ func (l *locateWorkspace) Locate(ctx context.Context, localId, path string) (*en
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", located)
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "path": path, "result": located})
 	return located, nil
 }

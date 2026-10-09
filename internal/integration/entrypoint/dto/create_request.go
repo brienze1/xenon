@@ -9,7 +9,7 @@ type CreateRequest struct {
 	Name     string   `json:"name" validate:"required,not_blank,max=200"`
 }
 
-func (c *CreateRequest) RequestEntity() entity.Request {
+func (c *CreateRequest) ToEntity() entity.Request {
 	if c.Request == nil {
 		return entity.NewRequest("", c.Name)
 	}

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/senderrorkind"
 )
 
 type HistoryResult struct {
@@ -30,5 +31,5 @@ func NewHistoryResult(response Response) HistoryResult {
 }
 
 func (h HistoryResult) IsOk() bool {
-	return h.ErrorKind == ""
+	return h.ErrorKind == senderrorkind.None
 }

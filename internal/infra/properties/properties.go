@@ -6,7 +6,7 @@ import (
 	"runtime"
 )
 
-var appVersion = "0.1.0"
+const defaultVersion = "0.1.0"
 
 type properties struct {
 	Application *application
@@ -17,6 +17,7 @@ type application struct {
 	LogLevel string
 	Env      string
 	Version  string
+	TempDir  string
 }
 
 func Properties() *properties {
@@ -25,7 +26,8 @@ func Properties() *properties {
 			DataDir:  dataDir(os.Getenv("XENON_DATA_DIR"), runtime.GOOS, os.UserConfigDir),
 			LogLevel: os.Getenv("LOG_LEVEL"),
 			Env:      os.Getenv("XENON_ENV"),
-			Version:  appVersion,
+			Version:  withDefault(os.Getenv("XENON_VERSION"), defaultVersion),
+			TempDir:  os.TempDir(),
 		},
 	}
 }
@@ -46,4 +48,11 @@ func appFolderName(goos string) string {
 		return "xenon"
 	}
 	return "Xenon"
+}
+
+func withDefault(value, defaultValue string) string {
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }

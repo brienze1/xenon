@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	None              enums.SendErrorKind = ""
 	Dns               enums.SendErrorKind = "dns"
 	ConnectionRefused enums.SendErrorKind = "connection_refused"
 	Timeout           enums.SendErrorKind = "timeout"
@@ -15,10 +16,13 @@ const (
 	MissingFile       enums.SendErrorKind = "missing_file"
 	InvalidUrl        enums.SendErrorKind = "invalid_url"
 	Other             enums.SendErrorKind = "other"
+	Unknown           enums.SendErrorKind = "unknown"
 )
 
 func GetSendErrorKind(s string) enums.SendErrorKind {
 	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "":
+		return None
 	case "dns":
 		return Dns
 	case "connection_refused":
@@ -33,7 +37,9 @@ func GetSendErrorKind(s string) enums.SendErrorKind {
 		return MissingFile
 	case "invalid_url":
 		return InvalidUrl
-	default:
+	case "other":
 		return Other
+	default:
+		return Unknown
 	}
 }

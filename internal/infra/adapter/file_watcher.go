@@ -17,10 +17,9 @@ import (
 )
 
 const (
-	watchDebounce     = 150 * time.Millisecond
-	temporarySuffix   = ".xenon-tmp"
-	gitDirectory      = ".git"
-	watchStartFailure = "WKS-27500"
+	watchDebounce   = 150 * time.Millisecond
+	temporarySuffix = ".xenon-tmp"
+	gitDirectory    = ".git"
 )
 
 type fsFileWatcher struct {
@@ -41,14 +40,14 @@ func (f *fsFileWatcher) Watch(_ context.Context, root string, onChange func(path
 	}
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		return errs.InternalServerError(err, watchStartFailure, "the workspace folder cannot be watched")
+		return errs.InternalServerError(err, "WKS-27500", "the workspace folder cannot be watched")
 	}
 	f.mu.Lock()
 	f.watcher, f.root, f.onChange = watcher, root, onChange
 	f.mu.Unlock()
 	if err := f.addTree(watcher, root); err != nil {
 		_ = f.Stop()
-		return errs.InternalServerError(err, watchStartFailure, "the workspace folder cannot be watched")
+		return errs.InternalServerError(err, "WKS-29500", "the workspace folder cannot be watched")
 	}
 	go f.listen(watcher)
 	return nil

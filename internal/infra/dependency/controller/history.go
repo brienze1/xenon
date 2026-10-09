@@ -8,14 +8,14 @@ import (
 	"github.com/brienze1/xenon/internal/integration/entrypoint/controller"
 )
 
-var historyOnce sync.Once
-var historyInstance adapter.HistoryController
+var historyControllerOnce sync.Once
+var historyControllerInstance adapter.HistoryController
 
-func GetHistory() adapter.HistoryController {
-	if historyInstance == nil {
-		historyOnce.Do(func() {
-			historyInstance = controller.NewHistory(GetErrorHandler(), application.GetHistoryService())
+func GetHistoryController() adapter.HistoryController {
+	if historyControllerInstance == nil {
+		historyControllerOnce.Do(func() {
+			historyControllerInstance = controller.NewHistory(GetErrorHandler(), application.GetManageHistoryService())
 		})
 	}
-	return historyInstance
+	return historyControllerInstance
 }

@@ -1,9 +1,12 @@
 package model
 
 import (
+	"strings"
+
 	"go.yaml.in/yaml/v3"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/formdatatype"
 	"github.com/brienze1/xenon/internal/integration/persistence/yamlnode"
 )
@@ -31,7 +34,7 @@ func NewFormDataRow(row entity.FormDataRow) FormDataRow {
 func (f *FormDataRow) ToEntity() entity.FormDataRow {
 	return entity.FormDataRow{
 		Key:         f.Key,
-		Type:        formdatatype.GetFormDataType(f.Type),
+		Type:        toFormDataType(f.Type),
 		Value:       f.Value,
 		Src:         entity.FileRef{Src: f.Src},
 		Enabled:     isEnabled(f.Enabled),
@@ -48,4 +51,11 @@ func (f *FormDataRow) Node() *yaml.Node {
 	}
 	fields = append(fields, yamlnode.Bool("enabled", isEnabled(f.Enabled)), yamlnode.String("description", f.Description))
 	return yamlnode.MappingNode(fields...)
+}
+
+func toFormDataType(raw string) enums.FormDataType {
+	if strings.TrimSpace(raw) == "" {
+		return formdatatype.Text
+	}
+	return formdatatype.GetFormDataType(raw)
 }

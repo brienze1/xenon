@@ -76,3 +76,15 @@ func (r Request) IsAutoHeaderDisabled(name string) bool {
 	}
 	return false
 }
+
+func (r Request) PathVariableKeys() []string {
+	keys := make([]string, 0, len(r.PathVariables))
+	for _, variable := range r.PathVariables {
+		keys = append(keys, variable.Key)
+	}
+	return keys
+}
+
+func (r Request) ShouldEncodeUrl() bool {
+	return r.Settings.EncodeUrl
+}

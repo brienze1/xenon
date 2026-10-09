@@ -1,7 +1,10 @@
 package dto
 
 import (
+	"strings"
+
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/formdatatype"
 )
 
@@ -28,10 +31,17 @@ func NewFormDataRow(row entity.FormDataRow) FormDataRow {
 func (f *FormDataRow) ToEntity() entity.FormDataRow {
 	return entity.FormDataRow{
 		Key:         f.Key,
-		Type:        formdatatype.GetFormDataType(f.Type),
+		Type:        toFormDataType(f.Type),
 		Value:       f.Value,
 		Src:         entity.FileRef{Src: f.Src},
 		Enabled:     isEnabled(f.Enabled),
 		Description: f.Description,
 	}
+}
+
+func toFormDataType(raw string) enums.FormDataType {
+	if strings.TrimSpace(raw) == "" {
+		return formdatatype.Text
+	}
+	return formdatatype.GetFormDataType(raw)
 }

@@ -16,7 +16,7 @@ const windowSaveDelay = 500 * time.Millisecond
 
 func restoreWindowBounds(app *wails.App, window *wails.WebviewWindow, windowService *binding.WindowService) {
 	defer window.Show()
-	state, err := windowService.Restore(context.Background(), dto.RestoreWindow{Screens: screensOf(app.Screen.GetAll())})
+	state, err := windowService.Restore(context.Background(), dto.NewRestoreWindow(screensOf(app.Screen.GetAll())))
 	if err != nil {
 		return
 	}
@@ -30,17 +30,10 @@ func rememberWindowBounds(window *wails.WebviewWindow, windowService *binding.Wi
 	var mu sync.Mutex
 	var timer *time.Timer
 	save := func() {
-		if window.IsMinimised() || window.IsFullscreen() {
-			return
-		}
 		bounds := window.Bounds()
-		_ = windowService.Save(context.Background(), dto.WindowState{
-			X:         bounds.X,
-			Y:         bounds.Y,
-			Width:     bounds.Width,
-			Height:    bounds.Height,
-			Maximized: window.IsMaximised(),
-		})
+		_ = windowService.Save(context.Background(), dto.NewWindowStateFromBounds(
+			bounds.X, bounds.Y, bounds.Width, bounds.Height, window.IsMaximised(), window.IsMinimised(), window.IsFullscreen(),
+		))
 	}
 	schedule := func(*wails.WindowEvent) {
 		mu.Lock()
@@ -67,7 +60,7 @@ func screensOf(screens []*wails.Screen) []dto.Screen {
 	result := make([]dto.Screen, 0, len(screens))
 	for _, screen := range screens {
 		area := screen.WorkArea
-		result = append(result, dto.Screen{X: area.X, Y: area.Y, Width: area.Width, Height: area.Height, Primary: screen.IsPrimary})
+		result = append(result, dto.NewScreen(area.X, area.Y, area.Width, area.Height, screen.IsPrimary))
 	}
 	return result
 }

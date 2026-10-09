@@ -11,12 +11,12 @@ import (
 )
 
 type uiState struct {
-	errorHandler   adapter.ErrorHandler
-	uiStateService appAdapter.UIStateService
+	errorHandler         adapter.ErrorHandler
+	manageUIStateService appAdapter.ManageUIStateService
 }
 
-func NewUIState(errorHandler adapter.ErrorHandler, uiStateService appAdapter.UIStateService) adapter.UIStateController {
-	return &uiState{errorHandler: errorHandler, uiStateService: uiStateService}
+func NewUIState(errorHandler adapter.ErrorHandler, manageUIStateService appAdapter.ManageUIStateService) adapter.UIStateController {
+	return &uiState{errorHandler: errorHandler, manageUIStateService: manageUIStateService}
 }
 
 func (u *uiState) Get(bindingCtx context.Context, request dto.GetUIState) (response *dto.UIState, err error) {
@@ -37,7 +37,7 @@ func (u *uiState) Get(bindingCtx context.Context, request dto.GetUIState) (respo
 		return nil, err
 	}
 
-	state, err := u.uiStateService.Get(ctx, request.LocalId)
+	state, err := u.manageUIStateService.Get(ctx, request.LocalId)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (u *uiState) Save(bindingCtx context.Context, request dto.UIState) (err err
 		return err
 	}
 
-	err = u.uiStateService.Save(ctx, request.LocalId, request.ToEntity())
+	err = u.manageUIStateService.Save(ctx, request.LocalId, request.ToEntity())
 	if err != nil {
 		return err
 	}

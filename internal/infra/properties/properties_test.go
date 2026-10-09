@@ -11,13 +11,18 @@ func TestPropertiesReadsEnvironmentOnEveryCall(t *testing.T) {
 	t.Setenv("XENON_DATA_DIR", "/tmp/first")
 	t.Setenv("LOG_LEVEL", "debug")
 	t.Setenv("XENON_ENV", "test")
+	t.Setenv("XENON_VERSION", "")
 	first := Properties().Application
-	if first.DataDir != "/tmp/first" || first.LogLevel != "debug" || first.Env != "test" || first.Version != appVersion {
+	if first.DataDir != "/tmp/first" || first.LogLevel != "debug" || first.Env != "test" || first.Version != defaultVersion || first.TempDir != os.TempDir() {
 		t.Fatalf("unexpected properties %+v", first)
 	}
 	t.Setenv("XENON_DATA_DIR", "/tmp/second")
 	if got := Properties().Application.DataDir; got != "/tmp/second" {
 		t.Fatalf("DataDir = %q, want /tmp/second", got)
+	}
+	t.Setenv("XENON_VERSION", "9.9.9")
+	if got := Properties().Application.Version; got != "9.9.9" {
+		t.Fatalf("Version = %q, want 9.9.9", got)
 	}
 }
 

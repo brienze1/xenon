@@ -36,7 +36,7 @@ func (m *manageResponse) LastResult(ctx context.Context, tabId string) (*entity.
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", response, map[string]any{"tabId": tabId})
+	logger.Info(ctx, "Finished", map[string]any{"tabId": tabId, "result": *response})
 	return response, nil
 }
 
@@ -52,7 +52,7 @@ func (m *manageResponse) OpenBody(ctx context.Context, tabId string) (*entity.Re
 		return nil, nil, err
 	}
 
-	logger.Info(ctx, "Finished", response, map[string]any{"tabId": tabId})
+	logger.Info(ctx, "Finished", map[string]any{"tabId": tabId, "result": *response})
 	return response, body, nil
 }
 

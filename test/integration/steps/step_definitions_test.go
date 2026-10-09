@@ -14,6 +14,8 @@ import (
 
 	application "github.com/brienze1/xenon/internal/infra"
 	"github.com/brienze1/xenon/internal/infra/dependency/external"
+	httpClient "github.com/brienze1/xenon/pkg/http"
+	"github.com/brienze1/xenon/pkg/logger"
 	"github.com/brienze1/xenon/pkg/timeutils"
 	"github.com/brienze1/xenon/test/integration/mock"
 )
@@ -86,6 +88,9 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		external.SetDialog(suite.dialog)
 		external.SetTrash(suite.trash)
 		external.SetFileWatcher(suite.watcher)
+		external.SetHttpClientFactory(func(options httpClient.Options) httpClient.Client {
+			return httpClient.HttpClient(options, logger.LoggerWrapper())
+		})
 	})
 	test := suite
 

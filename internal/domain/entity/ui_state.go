@@ -57,3 +57,18 @@ func uniqueTabs(tabs []Tab) []Tab {
 	}
 	return unique
 }
+
+func (u UIState) LogValue() any {
+	tabs := make([]any, 0, len(u.Tabs))
+	for _, tab := range u.Tabs {
+		tabs = append(tabs, tab.LogValue())
+	}
+	return map[string]any{
+		"activeTabId":  u.ActiveTabID,
+		"previewTabId": u.PreviewTabID,
+		"tabs":         tabs,
+		"sidebar":      u.Sidebar,
+		"layout":       u.Layout,
+		"version":      u.Version,
+	}
+}

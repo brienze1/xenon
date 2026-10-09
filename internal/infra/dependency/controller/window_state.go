@@ -8,14 +8,14 @@ import (
 	"github.com/brienze1/xenon/internal/integration/entrypoint/controller"
 )
 
-var windowStateOnce sync.Once
-var windowStateInstance adapter.WindowStateController
+var windowStateControllerOnce sync.Once
+var windowStateControllerInstance adapter.WindowStateController
 
-func GetWindowState() adapter.WindowStateController {
-	if windowStateInstance == nil {
-		windowStateOnce.Do(func() {
-			windowStateInstance = controller.NewWindowState(GetErrorHandler(), application.GetWindowStateService())
+func GetWindowStateController() adapter.WindowStateController {
+	if windowStateControllerInstance == nil {
+		windowStateControllerOnce.Do(func() {
+			windowStateControllerInstance = controller.NewWindowState(GetErrorHandler(), application.GetManageWindowStateService())
 		})
 	}
-	return windowStateInstance
+	return windowStateControllerInstance
 }

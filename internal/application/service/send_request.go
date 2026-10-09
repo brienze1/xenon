@@ -17,7 +17,6 @@ type sendRequest struct {
 	sendHttpRequest       usecase.SendHttpRequest
 	saveResponse          usecase.SaveResponse
 	saveHistoryEntry      usecase.SaveHistoryEntry
-	appVersion            string
 }
 
 func NewSendRequestService(
@@ -26,7 +25,6 @@ func NewSendRequestService(
 	sendHttpRequest usecase.SendHttpRequest,
 	saveResponse usecase.SaveResponse,
 	saveHistoryEntry usecase.SaveHistoryEntry,
-	appVersion string,
 ) adapter.SendRequestService {
 	return &sendRequest{
 		findWorkspaceRegistry: findWorkspaceRegistry,
@@ -34,12 +32,11 @@ func NewSendRequestService(
 		sendHttpRequest:       sendHttpRequest,
 		saveResponse:          saveResponse,
 		saveHistoryEntry:      saveHistoryEntry,
-		appVersion:            appVersion,
 	}
 }
 
-func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request entity.Request) (*entity.Response, error) {
-	logger.Info(ctx, "Started", request, map[string]any{"localId": localId, "tabId": tabId})
+func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request entity.Request, appVersion string) (*entity.Response, error) {
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "tabId": tabId, "request": request, "appVersion": appVersion})
 
 	workspace, err := s.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
@@ -51,7 +48,7 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 	}
 	sentAt := timeutils.Now()
 	effective := usecase.ResolveEffectiveRequest(request, ancestors, workspace.Path)
-	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, s.appVersion))
+	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, appVersion))
 	response := s.sendHttpRequest.Send(ctx, effective)
 	if err := s.saveResponse.Save(ctx, tabId, response); err != nil {
 		return nil, err
@@ -60,6 +57,6 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", response, map[string]any{"localId": localId, "tabId": tabId})
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "tabId": tabId, "request": request, "appVersion": appVersion, "result": response})
 	return &response, nil
 }

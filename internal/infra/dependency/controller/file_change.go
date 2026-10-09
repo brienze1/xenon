@@ -8,14 +8,14 @@ import (
 	"github.com/brienze1/xenon/internal/integration/entrypoint/controller"
 )
 
-var fileChangeOnce sync.Once
-var fileChangeInstance adapter.FileChangeController
+var fileChangeControllerOnce sync.Once
+var fileChangeControllerInstance adapter.FileChangeController
 
-func GetFileChange() adapter.FileChangeController {
-	if fileChangeInstance == nil {
-		fileChangeOnce.Do(func() {
-			fileChangeInstance = controller.NewFileChange(GetErrorHandler(), application.GetHandleFileChangeService())
+func GetFileChangeController() adapter.FileChangeController {
+	if fileChangeControllerInstance == nil {
+		fileChangeControllerOnce.Do(func() {
+			fileChangeControllerInstance = controller.NewFileChange(GetErrorHandler(), application.GetHandleFileChangeService())
 		})
 	}
-	return fileChangeInstance
+	return fileChangeControllerInstance
 }

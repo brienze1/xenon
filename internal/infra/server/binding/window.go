@@ -13,7 +13,7 @@ type WindowService struct {
 }
 
 func NewWindowService() *WindowService {
-	return &WindowService{windowState: controller.GetWindowState()}
+	return &WindowService{windowState: controller.GetWindowStateController()}
 }
 
 func (w *WindowService) Restore(ctx context.Context, request dto.RestoreWindow) (*dto.WindowState, error) {

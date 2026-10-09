@@ -10,6 +10,10 @@ type Screen struct {
 	Primary bool `json:"primary"`
 }
 
+func NewScreen(x, y, width, height int, primary bool) Screen {
+	return Screen{X: x, Y: y, Width: width, Height: height, Primary: primary}
+}
+
 func (s *Screen) ToEntity() entity.Screen {
 	return entity.Screen{X: s.X, Y: s.Y, Width: s.Width, Height: s.Height, Primary: s.Primary}
 }

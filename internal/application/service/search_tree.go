@@ -30,7 +30,7 @@ func (s *searchTree) Tree(ctx context.Context, localId string) (*entity.Tree, er
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "collections": len(tree.Collections())})
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "result": tree})
 	return tree, nil
 }
 
@@ -47,6 +47,6 @@ func (s *searchTree) Search(ctx context.Context, localId, query string) (*entity
 	}
 	result := usecase.SearchTree(*tree, query)
 
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "matches": len(result.MatchIDs)})
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "query": query, "result": result})
 	return &result, nil
 }

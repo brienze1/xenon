@@ -8,14 +8,14 @@ import (
 	"github.com/brienze1/xenon/internal/integration/entrypoint/controller"
 )
 
-var uiStateOnce sync.Once
-var uiStateInstance adapter.UIStateController
+var uiStateControllerOnce sync.Once
+var uiStateControllerInstance adapter.UIStateController
 
-func GetUIState() adapter.UIStateController {
-	if uiStateInstance == nil {
-		uiStateOnce.Do(func() {
-			uiStateInstance = controller.NewUIState(GetErrorHandler(), application.GetUIStateService())
+func GetUIStateController() adapter.UIStateController {
+	if uiStateControllerInstance == nil {
+		uiStateControllerOnce.Do(func() {
+			uiStateControllerInstance = controller.NewUIState(GetErrorHandler(), application.GetManageUIStateService())
 		})
 	}
-	return uiStateInstance
+	return uiStateControllerInstance
 }

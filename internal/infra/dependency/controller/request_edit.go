@@ -8,14 +8,14 @@ import (
 	"github.com/brienze1/xenon/internal/integration/entrypoint/controller"
 )
 
-var requestEditOnce sync.Once
-var requestEditInstance adapter.RequestEditController
+var requestEditControllerOnce sync.Once
+var requestEditControllerInstance adapter.RequestEditController
 
-func GetRequestEdit() adapter.RequestEditController {
-	if requestEditInstance == nil {
-		requestEditOnce.Do(func() {
-			requestEditInstance = controller.NewRequestEdit(GetErrorHandler(), application.GetEditRequestService())
+func GetRequestEditController() adapter.RequestEditController {
+	if requestEditControllerInstance == nil {
+		requestEditControllerOnce.Do(func() {
+			requestEditControllerInstance = controller.NewRequestEdit(GetErrorHandler(), application.GetEditRequestService())
 		})
 	}
-	return requestEditInstance
+	return requestEditControllerInstance
 }

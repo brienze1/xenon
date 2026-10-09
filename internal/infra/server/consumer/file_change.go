@@ -9,8 +9,8 @@ import (
 )
 
 func RegisterFileChangeConsumer() {
-	handler := controller.GetFileChange()
-	integration.GetWorkspaceWatcherWebservice().Consume(func(localId, path string) {
+	handler := controller.GetFileChangeController()
+	integration.GetWorkspaceWatcherConsumer().Consume(context.Background(), func(localId, path string) {
 		_ = handler.Handle(context.Background(), dto.NewFileChange(localId, path))
 	})
 }

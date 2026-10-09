@@ -35,7 +35,7 @@ func (l *logBuffer) String() string {
 
 type echoSendService struct{}
 
-func (echoSendService) Send(_ context.Context, _, _ string, request entity.Request) (*entity.Response, error) {
+func (echoSendService) Send(_ context.Context, _, _ string, request entity.Request, _ string) (*entity.Response, error) {
 	headers := []entity.KeyValue{entity.NewKeyValue("Set-Cookie", "session="+secretToken)}
 	response := entity.NewResponse(200, "OK", "HTTP/1.1", headers, []byte(request.Auth.Bearer.Token), 10, entity.Timings{})
 	return &response, nil
@@ -55,7 +55,7 @@ func (echoEditService) ParseBulk(_ context.Context, text string) []entity.KeyVal
 func (echoEditService) FormatBulk(_ context.Context, rows []entity.KeyValue) string {
 	return rows[0].Value
 }
-func (echoEditService) AutoHeaders(_ context.Context, _ string, request entity.Request) ([]entity.AutoHeader, error) {
+func (echoEditService) AutoHeaders(_ context.Context, _ string, request entity.Request, _ string) ([]entity.AutoHeader, error) {
 	return []entity.AutoHeader{entity.NewAutoHeader("Authorization", "Bearer "+request.Auth.Bearer.Token)}, nil
 }
 
@@ -118,10 +118,10 @@ func TestRequestControllersNeverLogSecrets(t *testing.T) {
 	if text, err := edit.FormatBulk(ctx, dto.BulkRows{Rows: []dto.KeyValue{{Key: "Authorization", Value: secretToken}}}); err != nil || text.Text != secretToken {
 		t.Fatalf("format bulk = %+v %v", text, err)
 	}
-	if last, err := response.LastResult(ctx, dto.TabReference{TabId: "tab"}); err != nil || *last.InlineBody != secretToken {
+	if last, err := response.LastResult(ctx, dto.NewTabReference("tab")); err != nil || *last.InlineBody != secretToken {
 		t.Fatalf("last result = %+v %v", last, err)
 	}
-	if body, err := response.OpenBody(ctx, dto.TabReference{TabId: "tab"}); err != nil || body.Content == nil {
+	if body, err := response.OpenBody(ctx, dto.NewTabReference("tab")); err != nil || body.Content == nil {
 		t.Fatalf("open body = %+v %v", body, err)
 	}
 

@@ -2,6 +2,7 @@ package entity
 
 import (
 	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/rightpanelview"
 	"github.com/brienze1/xenon/internal/domain/enums/splitorientation"
 )
 
@@ -13,12 +14,11 @@ const (
 	minConsoleHeight   = 120
 	minSplitRatio      = 0.2
 	maxSplitRatio      = 0.8
-	infoPanelView      = "info"
 )
 
 type Layout struct {
 	Split             enums.SplitOrientation
-	RightPanelView    string
+	RightPanelView    enums.RightPanelView
 	SplitRatio        float64
 	SidebarWidth      int
 	RightPanelWidth   int
@@ -34,7 +34,7 @@ func NewLayout() Layout {
 		SidebarVisible:    true,
 		RightPanelWidth:   320,
 		RightPanelVisible: true,
-		RightPanelView:    infoPanelView,
+		RightPanelView:    rightpanelview.Info,
 		ConsoleHeight:     200,
 		Split:             splitorientation.Stacked,
 		SplitRatio:        0.5,
@@ -46,7 +46,7 @@ func (l Layout) Normalized() Layout {
 	l.RightPanelWidth = min(max(l.RightPanelWidth, minRightPanelWidth), maxRightPanelWidth)
 	l.ConsoleHeight = max(l.ConsoleHeight, minConsoleHeight)
 	l.SplitRatio = min(max(l.SplitRatio, minSplitRatio), maxSplitRatio)
-	l.RightPanelView = infoPanelView
+	l.RightPanelView = rightpanelview.Info
 	if l.Split != splitorientation.SideBySide {
 		l.Split = splitorientation.Stacked
 	}

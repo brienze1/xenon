@@ -7,15 +7,18 @@ import (
 )
 
 const (
-	Text enums.FormDataType = "text"
-	File enums.FormDataType = "file"
+	Text    enums.FormDataType = "text"
+	File    enums.FormDataType = "file"
+	Unknown enums.FormDataType = "unknown"
 )
 
 func GetFormDataType(s string) enums.FormDataType {
 	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "text":
+		return Text
 	case "file":
 		return File
 	default:
-		return Text
+		return Unknown
 	}
 }

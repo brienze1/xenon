@@ -9,11 +9,11 @@ import (
 func FormatBulkRows(rows []entity.KeyValue) string {
 	lines := make([]string, 0, len(rows))
 	for _, row := range rows {
-		if row.Key == "" && row.Value == "" {
+		if row.IsBlank() {
 			continue
 		}
 		line := row.Key + ":" + row.Value
-		if !row.Enabled {
+		if !row.IsEnabled() {
 			line = disabledRowPrefix + line
 		}
 		lines = append(lines, line)

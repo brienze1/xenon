@@ -19,7 +19,7 @@ func ResolveEffectiveRequest(request entity.Request, ancestors []entity.Collecti
 
 func sendUrl(request entity.Request) string {
 	url := entity.ParseRequestUrl(request.URL).WithPathValues(request.PathVariables).WithDefaultScheme().WithoutFragment()
-	if request.Settings.EncodeUrl {
+	if request.ShouldEncodeUrl() {
 		url = url.Encoded()
 	}
 	return url.String()

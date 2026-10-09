@@ -50,3 +50,7 @@ func (c Collection) WithSettings(settings Collection) Collection {
 	c.Headers = append([]KeyValue{}, settings.Headers...)
 	return c
 }
+
+func (c Collection) LogValue() any {
+	return map[string]any{"id": c.ID, "kind": c.Kind, "name": c.Name, "description": c.Description, "headers": KeyValues(c.Headers).LogValue()}
+}

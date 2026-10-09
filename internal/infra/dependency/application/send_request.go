@@ -6,7 +6,6 @@ import (
 	"github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/application/service"
 	"github.com/brienze1/xenon/internal/infra/dependency/integration"
-	"github.com/brienze1/xenon/internal/infra/properties"
 )
 
 var sendRequestOnce sync.Once
@@ -19,9 +18,8 @@ func GetSendRequestService() adapter.SendRequestService {
 				integration.GetRegistryPersistence(),
 				integration.GetTreePersistence(),
 				integration.GetHttpWebservice(),
-				integration.GetResponseBodyWebservice(),
+				integration.GetResponseBodyPersistence(),
 				integration.GetHistoryPersistence(),
-				properties.Properties().Application.Version,
 			)
 		})
 	}

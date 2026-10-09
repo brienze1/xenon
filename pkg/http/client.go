@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net/http"
 	"time"
 )
@@ -20,13 +21,18 @@ type Options struct {
 
 type ClientFactory func(options Options) Client
 
-type customHttp struct {
-	client *http.Client
+type loggerAdapter interface {
+	Debug(ctx context.Context, message string, metadata ...any)
+	Error(ctx context.Context, err error, message string, metadata ...any)
 }
 
-// NewClient builds a client with its own transport, so every send opens fresh connections and
-// reports full DNS, connect and TLS timings.
-func NewClient(options Options) Client {
+type customHttp struct {
+	client *http.Client
+	logger loggerAdapter
+}
+
+// HttpClient builds a client with its own transport, so every send reports full connection timings.
+func HttpClient(options Options, logger loggerAdapter) Client {
 	transport := &http.Transport{
 		Proxy:              http.ProxyFromEnvironment,
 		TLSClientConfig:    &tls.Config{InsecureSkipVerify: !options.VerifySsl},
@@ -36,13 +42,36 @@ func NewClient(options Options) Client {
 	if !options.FollowRedirects {
 		client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	}
-	return &customHttp{client: client}
+	return &customHttp{client: client, logger: logger}
 }
 
 func (c *customHttp) Do(ctx context.Context, request *http.Request) (*http.Response, error) {
-	return c.client.Do(request.WithContext(ctx))
+	started := time.Now()
+	response, err := c.client.Do(request.WithContext(ctx))
+	metadata := requestMetadata(request, time.Since(started))
+	if err != nil {
+		c.logger.Error(ctx, err, "HTTP request failed", metadata)
+		return response, err
+	}
+	metadata["status"] = response.StatusCode
+	metadata["response_headers"] = maskHeaders(response.Header)
+	if response.StatusCode >= http.StatusBadRequest {
+		c.logger.Error(ctx, fmt.Errorf("http status %d", response.StatusCode), "HTTP request returned an error status", metadata)
+		return response, nil
+	}
+	c.logger.Debug(ctx, "HTTP request finished", metadata)
+	return response, nil
 }
 
 func (c *customHttp) CloseIdleConnections() {
 	c.client.CloseIdleConnections()
+}
+
+func requestMetadata(request *http.Request, duration time.Duration) map[string]any {
+	return map[string]any{
+		"method":      request.Method,
+		"url":         maskUrl(request.URL),
+		"headers":     maskHeaders(request.Header),
+		"duration_ms": duration.Milliseconds(),
+	}
 }

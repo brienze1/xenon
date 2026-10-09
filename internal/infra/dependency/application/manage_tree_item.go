@@ -19,6 +19,8 @@ func GetManageTreeItemService() adapter.ManageTreeItemService {
 				integration.GetTreePersistence(),
 				integration.GetTreePersistence(),
 				integration.GetTreePersistence(),
+				integration.GetTreePersistence(),
+				integration.GetTreePersistence(),
 			)
 		})
 	}

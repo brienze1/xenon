@@ -217,8 +217,8 @@ func TestWatchingAMissingFolderFails(t *testing.T) {
 	watcher := NewFileWatcher()
 	err := watcher.Watch(context.Background(), filepath.Join(t.TempDir(), "missing"), func(string, bool) {})
 	var custom errs.BaseError
-	if !errors.As(err, &custom) || custom.Code() != watchStartFailure {
-		t.Fatalf("Watch() = %v, want %s", err, watchStartFailure)
+	if !errors.As(err, &custom) || custom.Code() != "WKS-29500" {
+		t.Fatalf("Watch() = %v, want WKS-29500", err)
 	}
 	if err := watcher.Stop(); err != nil {
 		t.Fatalf("Stop() after a failed watch = %v", err)

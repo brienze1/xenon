@@ -8,14 +8,14 @@ import (
 	"github.com/brienze1/xenon/internal/integration/entrypoint/controller"
 )
 
-var requestResponseOnce sync.Once
-var requestResponseInstance adapter.RequestResponseController
+var requestResponseControllerOnce sync.Once
+var requestResponseControllerInstance adapter.RequestResponseController
 
-func GetRequestResponse() adapter.RequestResponseController {
-	if requestResponseInstance == nil {
-		requestResponseOnce.Do(func() {
-			requestResponseInstance = controller.NewRequestResponse(GetErrorHandler(), application.GetManageResponseService())
+func GetRequestResponseController() adapter.RequestResponseController {
+	if requestResponseControllerInstance == nil {
+		requestResponseControllerOnce.Do(func() {
+			requestResponseControllerInstance = controller.NewRequestResponse(GetErrorHandler(), application.GetManageResponseService())
 		})
 	}
-	return requestResponseInstance
+	return requestResponseControllerInstance
 }

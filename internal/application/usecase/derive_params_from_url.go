@@ -13,7 +13,7 @@ func mergeQueryParams(existing, parsed []entity.KeyValue) []entity.KeyValue {
 	merged := make([]entity.KeyValue, 0, len(existing)+len(parsed))
 	next := 0
 	for _, row := range existing {
-		if !row.Enabled {
+		if !row.IsEnabled() {
 			merged = append(merged, row)
 			continue
 		}

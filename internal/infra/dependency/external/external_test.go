@@ -1,6 +1,10 @@
 package external
 
-import "testing"
+import (
+	"testing"
+
+	httpClient "github.com/brienze1/xenon/pkg/http"
+)
 
 type fakeEmitter struct{ names []string }
 
@@ -33,5 +37,20 @@ func TestDialogFactoryIsASingletonThatCanBeReplaced(t *testing.T) {
 	SetDialog(&fakeDialog{})
 	if path, _ := GetDialog().PickFolder("t"); path != "/picked" {
 		t.Fatalf("SetDialog must replace the cached instance, got %q", path)
+	}
+}
+
+func TestHttpClientFactoryIsASingletonThatCanBeReplaced(t *testing.T) {
+	if GetHttpClientFactory() == nil {
+		t.Fatal("GetHttpClientFactory must return a factory")
+	}
+	calls := 0
+	SetHttpClientFactory(func(options httpClient.Options) httpClient.Client {
+		calls++
+		return httpClient.HttpClient(options, nil)
+	})
+	_ = GetHttpClientFactory()(httpClient.Options{})
+	if calls != 1 {
+		t.Fatal("SetHttpClientFactory must replace the cached instance")
 	}
 }

@@ -16,9 +16,9 @@ type TreeService struct {
 
 func NewTreeService() *TreeService {
 	return &TreeService{
-		search:   controller.GetTreeSearch(),
-		manage:   controller.GetTreeManage(),
-		settings: controller.GetTreeSettings(),
+		search:   controller.GetTreeSearchController(),
+		manage:   controller.GetTreeManageController(),
+		settings: controller.GetTreeSettingsController(),
 	}
 }
 

@@ -13,7 +13,7 @@ type HistoryService struct {
 }
 
 func NewHistoryService() *HistoryService {
-	return &HistoryService{history: controller.GetHistory()}
+	return &HistoryService{history: controller.GetHistoryController()}
 }
 
 func (h *HistoryService) List(ctx context.Context, request dto.ListHistory) (dto.HistoryEntryList, error) {

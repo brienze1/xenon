@@ -8,14 +8,14 @@ import (
 	"github.com/brienze1/xenon/internal/integration/entrypoint/controller"
 )
 
-var workspaceOpenOnce sync.Once
-var workspaceOpenInstance adapter.WorkspaceOpenController
+var workspaceOpenControllerOnce sync.Once
+var workspaceOpenControllerInstance adapter.WorkspaceOpenController
 
-func GetWorkspaceOpen() adapter.WorkspaceOpenController {
-	if workspaceOpenInstance == nil {
-		workspaceOpenOnce.Do(func() {
-			workspaceOpenInstance = controller.NewWorkspaceOpen(GetErrorHandler(), application.GetOpenWorkspaceService())
+func GetWorkspaceOpenController() adapter.WorkspaceOpenController {
+	if workspaceOpenControllerInstance == nil {
+		workspaceOpenControllerOnce.Do(func() {
+			workspaceOpenControllerInstance = controller.NewWorkspaceOpen(GetErrorHandler(), application.GetOpenWorkspaceService())
 		})
 	}
-	return workspaceOpenInstance
+	return workspaceOpenControllerInstance
 }

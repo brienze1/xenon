@@ -18,11 +18,11 @@ type RequestService struct {
 
 func NewRequestService() *RequestService {
 	return &RequestService{
-		get:      controller.GetRequestGet(),
-		save:     controller.GetRequestSave(),
-		edit:     controller.GetRequestEdit(),
-		send:     controller.GetRequestSend(),
-		response: controller.GetRequestResponse(),
+		get:      controller.GetRequestGetController(),
+		save:     controller.GetRequestSaveController(),
+		edit:     controller.GetRequestEditController(),
+		send:     controller.GetRequestSendController(),
+		response: controller.GetRequestResponseController(),
 	}
 }
 

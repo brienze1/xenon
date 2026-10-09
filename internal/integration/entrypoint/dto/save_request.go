@@ -1,5 +1,7 @@
 package dto
 
+import "github.com/brienze1/xenon/internal/domain/entity"
+
 type SaveRequest struct {
 	LocalId      string  `json:"local_id" validate:"required,not_blank"`
 	BaseRevision string  `json:"base_revision"`
@@ -9,4 +11,8 @@ type SaveRequest struct {
 
 func (s SaveRequest) LogValue() any {
 	return map[string]any{"local_id": s.LocalId, "base_revision": s.BaseRevision, "force": s.Force, "request": s.Request.LogValue()}
+}
+
+func (s *SaveRequest) ToEntity() entity.Request {
+	return s.Request.ToEntity()
 }

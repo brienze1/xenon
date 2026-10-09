@@ -20,13 +20,13 @@ type WorkspaceService struct {
 
 func NewWorkspaceService() *WorkspaceService {
 	return &WorkspaceService{
-		list:     controller.GetWorkspaceList(),
-		create:   controller.GetWorkspaceCreate(),
-		activate: controller.GetWorkspaceActivate(),
-		open:     controller.GetWorkspaceOpen(),
-		rename:   controller.GetWorkspaceRename(),
-		remove:   controller.GetWorkspaceRemove(),
-		locate:   controller.GetWorkspaceLocate(),
+		list:     controller.GetWorkspaceListController(),
+		create:   controller.GetWorkspaceCreateController(),
+		activate: controller.GetWorkspaceActivateController(),
+		open:     controller.GetWorkspaceOpenController(),
+		rename:   controller.GetWorkspaceRenameController(),
+		remove:   controller.GetWorkspaceRemoveController(),
+		locate:   controller.GetWorkspaceLocateController(),
 	}
 }
 

@@ -52,6 +52,6 @@ func (c *createWorkspace) Create(ctx context.Context, name, path string) (*entit
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", registered)
+	logger.Info(ctx, "Finished", map[string]any{"name": name, "path": path, "result": registered})
 	return &registered, nil
 }

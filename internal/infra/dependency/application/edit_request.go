@@ -6,7 +6,6 @@ import (
 	"github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/application/service"
 	"github.com/brienze1/xenon/internal/infra/dependency/integration"
-	"github.com/brienze1/xenon/internal/infra/properties"
 )
 
 var editRequestOnce sync.Once
@@ -18,7 +17,6 @@ func GetEditRequestService() adapter.EditRequestService {
 			editRequestInstance = service.NewEditRequestService(
 				integration.GetRegistryPersistence(),
 				integration.GetTreePersistence(),
-				properties.Properties().Application.Version,
 			)
 		})
 	}

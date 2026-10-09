@@ -37,7 +37,7 @@ func (r *requestSave) Save(bindingCtx context.Context, request dto.SaveRequest) 
 		return nil, err
 	}
 
-	saved, err := r.saveRequestService.Save(ctx, request.LocalId, request.Request.ToEntity(), request.BaseRevision, request.Force)
+	saved, err := r.saveRequestService.Save(ctx, request.LocalId, request.ToEntity(), request.BaseRevision, request.Force)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (r *requestSave) SaveAs(bindingCtx context.Context, request dto.SaveRequest
 		return nil, err
 	}
 
-	saved, err := r.saveRequestService.SaveAs(ctx, request.LocalId, request.ParentId, request.Name, request.Request.ToEntity())
+	saved, err := r.saveRequestService.SaveAs(ctx, request.LocalId, request.ParentId, request.Name, request.ToEntity())
 	if err != nil {
 		return nil, err
 	}

@@ -11,12 +11,12 @@ import (
 )
 
 type treeSettings struct {
-	errorHandler        adapter.ErrorHandler
-	itemSettingsService appAdapter.ItemSettingsService
+	errorHandler              adapter.ErrorHandler
+	manageItemSettingsService appAdapter.ManageItemSettingsService
 }
 
-func NewTreeSettings(errorHandler adapter.ErrorHandler, itemSettingsService appAdapter.ItemSettingsService) adapter.TreeSettingsController {
-	return &treeSettings{errorHandler: errorHandler, itemSettingsService: itemSettingsService}
+func NewTreeSettings(errorHandler adapter.ErrorHandler, manageItemSettingsService appAdapter.ManageItemSettingsService) adapter.TreeSettingsController {
+	return &treeSettings{errorHandler: errorHandler, manageItemSettingsService: manageItemSettingsService}
 }
 
 func (t *treeSettings) GetSettings(bindingCtx context.Context, request dto.TreeItemReference) (response *dto.ItemSettings, err error) {
@@ -37,7 +37,7 @@ func (t *treeSettings) GetSettings(bindingCtx context.Context, request dto.TreeI
 		return nil, err
 	}
 
-	settings, err := t.itemSettingsService.Get(ctx, request.LocalId, request.Id)
+	settings, err := t.manageItemSettingsService.Get(ctx, request.LocalId, request.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (t *treeSettings) SaveSettings(bindingCtx context.Context, request dto.Save
 		return nil, err
 	}
 
-	settings, err := t.itemSettingsService.Save(ctx, request.LocalId, request.ToEntity())
+	settings, err := t.manageItemSettingsService.Save(ctx, request.LocalId, request.ToEntity())
 	if err != nil {
 		return nil, err
 	}

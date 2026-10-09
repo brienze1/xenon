@@ -123,7 +123,7 @@ func (r *requestResponse) OpenBody(bindingCtx context.Context, request dto.TabRe
 	}
 	result := dto.NewResponseBody(*found, content)
 
-	logger.Info(ctx, "Finished", request)
+	logger.Info(ctx, "Finished", result)
 	return &result, nil
 }
 

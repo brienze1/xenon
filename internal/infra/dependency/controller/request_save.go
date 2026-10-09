@@ -8,14 +8,14 @@ import (
 	"github.com/brienze1/xenon/internal/integration/entrypoint/controller"
 )
 
-var requestSaveOnce sync.Once
-var requestSaveInstance adapter.RequestSaveController
+var requestSaveControllerOnce sync.Once
+var requestSaveControllerInstance adapter.RequestSaveController
 
-func GetRequestSave() adapter.RequestSaveController {
-	if requestSaveInstance == nil {
-		requestSaveOnce.Do(func() {
-			requestSaveInstance = controller.NewRequestSave(GetErrorHandler(), application.GetSaveRequestService())
+func GetRequestSaveController() adapter.RequestSaveController {
+	if requestSaveControllerInstance == nil {
+		requestSaveControllerOnce.Do(func() {
+			requestSaveControllerInstance = controller.NewRequestSave(GetErrorHandler(), application.GetSaveRequestService())
 		})
 	}
-	return requestSaveInstance
+	return requestSaveControllerInstance
 }

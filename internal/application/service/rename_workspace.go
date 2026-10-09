@@ -54,6 +54,6 @@ func (r *renameWorkspace) Rename(ctx context.Context, localId, name string) (*en
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", updated)
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "name": name, "result": updated})
 	return updated, nil
 }

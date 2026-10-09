@@ -11,12 +11,12 @@ import (
 )
 
 type windowState struct {
-	errorHandler       adapter.ErrorHandler
-	windowStateService appAdapter.WindowStateService
+	errorHandler             adapter.ErrorHandler
+	manageWindowStateService appAdapter.ManageWindowStateService
 }
 
-func NewWindowState(errorHandler adapter.ErrorHandler, windowStateService appAdapter.WindowStateService) adapter.WindowStateController {
-	return &windowState{errorHandler: errorHandler, windowStateService: windowStateService}
+func NewWindowState(errorHandler adapter.ErrorHandler, manageWindowStateService appAdapter.ManageWindowStateService) adapter.WindowStateController {
+	return &windowState{errorHandler: errorHandler, manageWindowStateService: manageWindowStateService}
 }
 
 func (w *windowState) Restore(bindingCtx context.Context, request dto.RestoreWindow) (response *dto.WindowState, err error) {
@@ -37,7 +37,7 @@ func (w *windowState) Restore(bindingCtx context.Context, request dto.RestoreWin
 		return nil, err
 	}
 
-	state, err := w.windowStateService.Restore(ctx, request.ToEntity())
+	state, err := w.manageWindowStateService.Restore(ctx, request.ToEntity())
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (w *windowState) Save(bindingCtx context.Context, request dto.WindowState) 
 		return err
 	}
 
-	err = w.windowStateService.Save(ctx, request.ToEntity())
+	err = w.manageWindowStateService.Save(ctx, request.ToEntity())
 	if err != nil {
 		return err
 	}

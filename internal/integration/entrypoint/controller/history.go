@@ -11,12 +11,12 @@ import (
 )
 
 type history struct {
-	errorHandler   adapter.ErrorHandler
-	historyService appAdapter.HistoryService
+	errorHandler         adapter.ErrorHandler
+	manageHistoryService appAdapter.ManageHistoryService
 }
 
-func NewHistory(errorHandler adapter.ErrorHandler, historyService appAdapter.HistoryService) adapter.HistoryController {
-	return &history{errorHandler: errorHandler, historyService: historyService}
+func NewHistory(errorHandler adapter.ErrorHandler, manageHistoryService appAdapter.ManageHistoryService) adapter.HistoryController {
+	return &history{errorHandler: errorHandler, manageHistoryService: manageHistoryService}
 }
 
 func (h *history) List(bindingCtx context.Context, request dto.ListHistory) (response dto.HistoryEntryList, err error) {
@@ -37,7 +37,7 @@ func (h *history) List(bindingCtx context.Context, request dto.ListHistory) (res
 		return nil, err
 	}
 
-	entries, err := h.historyService.List(ctx, request.LocalId, request.ToEntity())
+	entries, err := h.manageHistoryService.List(ctx, request.LocalId, request.ToEntity())
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (h *history) Get(bindingCtx context.Context, request dto.HistoryReference) 
 		return nil, err
 	}
 
-	entry, err := h.historyService.Get(ctx, request.LocalId, request.Id)
+	entry, err := h.manageHistoryService.Get(ctx, request.LocalId, request.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (h *history) Clear(bindingCtx context.Context, request dto.ClearHistory) (e
 		return err
 	}
 
-	err = h.historyService.Clear(ctx, request.LocalId)
+	err = h.manageHistoryService.Clear(ctx, request.LocalId)
 	if err != nil {
 		return err
 	}

@@ -46,7 +46,7 @@ func (a *activateWorkspace) Activate(ctx context.Context, localId string) (*enti
 	if err != nil {
 		return nil, err
 	}
-	if registered.Missing {
+	if registered.IsMissing() {
 		if err := a.publishWorkspaceEvent.FolderMissing(ctx, localId); err != nil {
 			return nil, err
 		}
@@ -76,6 +76,6 @@ func (a *activateWorkspace) Activate(ctx context.Context, localId string) (*enti
 	}
 	snapshot := entity.WorkspaceSnapshot{Workspace: *activated, Tree: *tree, UIState: *state}
 
-	logger.Info(ctx, "Finished", activated)
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "result": snapshot})
 	return &snapshot, nil
 }

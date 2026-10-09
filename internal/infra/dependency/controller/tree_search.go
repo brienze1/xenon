@@ -8,14 +8,14 @@ import (
 	"github.com/brienze1/xenon/internal/integration/entrypoint/controller"
 )
 
-var treeSearchOnce sync.Once
-var treeSearchInstance adapter.TreeSearchController
+var treeSearchControllerOnce sync.Once
+var treeSearchControllerInstance adapter.TreeSearchController
 
-func GetTreeSearch() adapter.TreeSearchController {
-	if treeSearchInstance == nil {
-		treeSearchOnce.Do(func() {
-			treeSearchInstance = controller.NewTreeSearch(GetErrorHandler(), application.GetSearchTreeService())
+func GetTreeSearchController() adapter.TreeSearchController {
+	if treeSearchControllerInstance == nil {
+		treeSearchControllerOnce.Do(func() {
+			treeSearchControllerInstance = controller.NewTreeSearch(GetErrorHandler(), application.GetSearchTreeService())
 		})
 	}
-	return treeSearchInstance
+	return treeSearchControllerInstance
 }

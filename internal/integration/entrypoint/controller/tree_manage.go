@@ -93,7 +93,7 @@ func (t *treeManage) CreateRequest(bindingCtx context.Context, request dto.Creat
 		return nil, err
 	}
 
-	node, err := t.manageTreeItemService.CreateRequest(ctx, request.LocalId, request.ParentId, request.Name, request.RequestEntity())
+	node, err := t.manageTreeItemService.CreateRequest(ctx, request.LocalId, request.ParentId, request.Name, request.ToEntity())
 	if err != nil {
 		return nil, err
 	}
