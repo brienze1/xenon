@@ -7,7 +7,10 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
 )
 
-const copySuffix = " Copy"
+const (
+	copySuffix    = " Copy"
+	errorIdPrefix = "error:"
+)
 
 type TreeNode struct {
 	ID       string
@@ -34,6 +37,32 @@ func NewRequestNode(request Request, fileName string) TreeNode {
 	}
 }
 
+func NewContainerNode(container Collection, fileName string, entries []string) TreeNode {
+	return TreeNode{
+		ID:       container.ID,
+		Kind:     container.Kind,
+		Name:     container.Name,
+		FileName: fileName,
+		Entries:  entries,
+	}
+}
+
+func NewErrorNode(relativePath, fileName, reason string, ignored bool) TreeNode {
+	return TreeNode{
+		ID:       errorIdPrefix + relativePath,
+		Kind:     itemkind.Error,
+		Name:     fileName,
+		FileName: fileName,
+		Error:    reason,
+		Ignored:  ignored,
+	}
+}
+
+func (t TreeNode) WithWarning(warning string) TreeNode {
+	t.Warning = warning
+	return t
+}
+
 func (t TreeNode) IsContainer() bool {
 	return t.Kind == itemkind.Collection || t.Kind == itemkind.Folder
 }
@@ -47,7 +76,7 @@ func (t TreeNode) IsItem() bool {
 }
 
 func (t TreeNode) CopyName() string {
-	return t.Name + copySuffix
+	return NormalizeItemName(t.Name + copySuffix)
 }
 
 func (t TreeNode) Matches(query string) bool {

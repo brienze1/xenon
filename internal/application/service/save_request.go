@@ -59,7 +59,14 @@ func (s *saveRequest) Save(ctx context.Context, localId string, request entity.R
 	if err != nil {
 		return nil, err
 	}
-	saved, err := s.saveRequest.Save(ctx, workspace.Path, request.WithFileRefsRelativeTo(workspace.Path), baseRevision, force)
+	current, err := s.findRequest.FindRevision(ctx, workspace.Path, request.ID)
+	if err != nil {
+		return nil, err
+	}
+	if current.BlocksSave(baseRevision, force) {
+		return nil, errs.ConflictError("the request changed on disk since it was opened", "REQ-02409")
+	}
+	saved, err := s.saveRequest.Save(ctx, workspace.Path, request.WithFileRefsRelativeTo(workspace.Path))
 	if err != nil {
 		return nil, err
 	}
@@ -79,9 +86,9 @@ func (s *saveRequest) SaveAs(ctx context.Context, localId, parentId, name string
 	if err != nil {
 		return nil, err
 	}
-	parent, found := tree.Container(parentId)
-	if !found {
-		return nil, errs.NotFoundError("the parent collection or folder does not exist", "TRE-01404")
+	parent, err := usecase.ResolveParent(*tree, parentId)
+	if err != nil {
+		return nil, err
 	}
 	copied := request.CopyAs(idutils.NewUlid(), name).WithFileRefsRelativeTo(workspace.Path)
 	fileName := usecase.DeriveFileName(copied.Name, itemkind.Request, parent.Entries)

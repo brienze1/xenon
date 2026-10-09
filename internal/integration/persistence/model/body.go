@@ -4,10 +4,8 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
-	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/bodymode"
-	"github.com/brienze1/xenon/internal/domain/enums/rawlanguage"
-	"github.com/brienze1/xenon/internal/integration/persistence/yamlnode"
+	"github.com/brienze1/xenon/pkg/yamlnode"
 )
 
 type Body struct {
@@ -46,7 +44,7 @@ func (b *Body) ToEntity() entity.Body {
 	}
 	body.UrlEncoded = keyValuesToEntity(b.UrlEncoded)
 	if b.Raw != nil {
-		body.Raw = entity.BodyRaw{Language: rawLanguage(b.Raw.Language), Content: b.Raw.Content}
+		body.Raw = entity.NewBodyRaw(b.Raw.Language, b.Raw.Content)
 	}
 	if b.Binary != nil {
 		body.Binary = entity.FileRef{Src: b.Binary.Src}
@@ -83,11 +81,4 @@ func (b *Body) formDataNodes() []*yaml.Node {
 		nodes = append(nodes, b.FormData[index].Node())
 	}
 	return nodes
-}
-
-func rawLanguage(raw string) enums.RawLanguage {
-	if raw == "" {
-		return rawlanguage.Json
-	}
-	return rawlanguage.GetRawLanguage(raw)
 }

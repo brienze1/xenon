@@ -28,7 +28,7 @@ func TestMarshalErrorKeepsTheCodeOfCustomErrors(t *testing.T) {
 
 func TestMarshalErrorWrapsUnknownErrors(t *testing.T) {
 	payload := decode(t, MarshalError(errors.New("boom")))
-	if payload.Error.Code != "UNK-00500" || payload.Error.Description != "Unknown error" {
+	if payload.Error.Code != "UNK-01500" || payload.Error.Description != "Unknown error" {
 		t.Fatalf("payload = %+v", payload)
 	}
 }

@@ -9,26 +9,27 @@ import (
 
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
+	"github.com/brienze1/xenon/internal/integration/persistence/model"
 	"github.com/brienze1/xenon/pkg/logger"
 )
 
 func (t *treePersistence) Inspect(ctx context.Context, root, path string) (*entity.FileChange, error) {
 	logger.Debug(ctx, "Started", map[string]any{"root": root, "path": path})
-	t.index.mu.Lock()
-	defer t.index.mu.Unlock()
+	t.index.Lock()
+	defer t.index.Unlock()
 
 	if data, err := os.ReadFile(path); err == nil && t.index.IsOwnWrite(path, data) {
 		logger.Debug(ctx, "Finished", map[string]any{"root": root, "path": path, "ownWrite": true})
 		return &entity.FileChange{OwnWrite: true}, nil
 	}
 	affected := t.requestsAt(root, path)
-	index, err := t.index.refresh(root)
+	index, err := t.index.Refresh(root)
 	if err != nil {
 		return nil, err
 	}
 	change := &entity.FileChange{Requests: make([]entity.RequestChange, 0, len(affected))}
 	for _, id := range affected {
-		change.Requests = append(change.Requests, requestChange(id, index.items[id]))
+		change.Requests = append(change.Requests, requestChange(id, index.Items[id]))
 	}
 
 	logger.Debug(ctx, "Finished", map[string]any{"root": root, "path": path, "requests": len(change.Requests)})
@@ -37,12 +38,12 @@ func (t *treePersistence) Inspect(ctx context.Context, root, path string) (*enti
 
 func (t *treePersistence) requestsAt(root, path string) []string {
 	ids := make([]string, 0)
-	index, found := t.index.roots[root]
+	index, found := t.index.Cached(root)
 	if !found || filepath.Clean(path) == filepath.Clean(root) {
 		return ids
 	}
-	for id, item := range index.items {
-		if item.kind == itemkind.Request && isSameOrInside(item.path, path) {
+	for id, item := range index.Items {
+		if item.Kind == itemkind.Request && isSameOrInside(item.Path, path) {
 			ids = append(ids, id)
 		}
 	}
@@ -50,8 +51,8 @@ func (t *treePersistence) requestsAt(root, path string) []string {
 	return ids
 }
 
-func requestChange(id string, item indexedItem) entity.RequestChange {
-	data, err := os.ReadFile(item.path)
+func requestChange(id string, item model.IndexedItem) entity.RequestChange {
+	data, err := os.ReadFile(item.Path)
 	if err != nil {
 		return entity.RequestChange{RequestID: id, Deleted: true}
 	}

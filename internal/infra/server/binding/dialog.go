@@ -3,38 +3,27 @@ package binding
 import (
 	"context"
 
-	"github.com/brienze1/xenon/internal/infra/adapter"
-	"github.com/brienze1/xenon/internal/infra/dependency/external"
+	"github.com/brienze1/xenon/internal/infra/dependency/controller"
+	"github.com/brienze1/xenon/internal/integration/adapter"
+	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
 )
 
 type DialogService struct {
-	dialog adapter.Dialog
+	dialog adapter.DialogController
 }
 
 func NewDialogService() *DialogService {
-	return &DialogService{dialog: external.GetDialog()}
+	return &DialogService{dialog: controller.GetDialogController()}
 }
 
-func (d *DialogService) PickFolder(_ context.Context, request PickFolderRequest) (*PickedPath, error) {
-	path, err := d.dialog.PickFolder(request.Title)
-	if err != nil {
-		return nil, err
-	}
-	return &PickedPath{Path: path}, nil
+func (d *DialogService) PickFolder(ctx context.Context, request dto.PickFolder) (*dto.PickedPath, error) {
+	return d.dialog.PickFolder(ctx, request)
 }
 
-func (d *DialogService) PickFile(_ context.Context, request PickFileRequest) (*PickedPath, error) {
-	path, err := d.dialog.PickFile(request.Title)
-	if err != nil {
-		return nil, err
-	}
-	return &PickedPath{Path: path}, nil
+func (d *DialogService) PickFile(ctx context.Context, request dto.PickFile) (*dto.PickedPath, error) {
+	return d.dialog.PickFile(ctx, request)
 }
 
-func (d *DialogService) PickSaveFile(_ context.Context, request PickSaveFileRequest) (*PickedPath, error) {
-	path, err := d.dialog.PickSaveFile(request.Title, request.SuggestedName)
-	if err != nil {
-		return nil, err
-	}
-	return &PickedPath{Path: path}, nil
+func (d *DialogService) PickSaveFile(ctx context.Context, request dto.PickSaveFile) (*dto.PickedPath, error) {
+	return d.dialog.PickSaveFile(ctx, request)
 }

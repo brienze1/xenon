@@ -3,7 +3,8 @@ package external
 import (
 	"sync"
 
-	"github.com/brienze1/xenon/internal/infra/adapter"
+	infraAdapter "github.com/brienze1/xenon/internal/infra/adapter"
+	"github.com/brienze1/xenon/internal/integration/adapter"
 )
 
 var dialogOnce sync.Once
@@ -12,7 +13,7 @@ var dialogInstance adapter.Dialog
 func GetDialog() adapter.Dialog {
 	if dialogInstance == nil {
 		dialogOnce.Do(func() {
-			dialogInstance = adapter.NewDialog()
+			dialogInstance = infraAdapter.NewDialog()
 		})
 	}
 	return dialogInstance

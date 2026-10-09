@@ -2,8 +2,9 @@ package model
 
 import (
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
-	"github.com/brienze1/xenon/internal/integration/persistence/yamlnode"
+	"github.com/brienze1/xenon/pkg/yamlnode"
 )
 
 type Collection struct {
@@ -40,6 +41,13 @@ func (c *Collection) ToEntity() entity.Collection {
 		Auth:        c.Auth.ToEntity(),
 		Headers:     keyValuesToEntity(c.Headers),
 	}
+}
+
+func (c *Collection) ToContainerEntity(id string, kind enums.ItemKind) entity.Collection {
+	container := c.ToEntity()
+	container.ID = id
+	container.Kind = kind
+	return container
 }
 
 func (c *Collection) Fields() []yamlnode.Field {

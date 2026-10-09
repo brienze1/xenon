@@ -3,7 +3,7 @@ package model
 import (
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/authtype"
-	"github.com/brienze1/xenon/internal/integration/persistence/yamlnode"
+	"github.com/brienze1/xenon/pkg/yamlnode"
 )
 
 type Auth struct {

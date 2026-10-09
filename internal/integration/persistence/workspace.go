@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io/fs"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,10 +13,10 @@ import (
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/persistence/model"
-	"github.com/brienze1/xenon/internal/integration/persistence/yamlnode"
 	"github.com/brienze1/xenon/pkg/errs"
 	"github.com/brienze1/xenon/pkg/fileutils"
 	"github.com/brienze1/xenon/pkg/logger"
+	"github.com/brienze1/xenon/pkg/yamlnode"
 )
 
 const (
@@ -33,48 +32,31 @@ const (
 )
 
 type workspacePersistence struct {
-	index *WorkspaceIndex
+	index adapter.WorkspaceIndex
 }
 
-func NewWorkspacePersistence(index *WorkspaceIndex) adapter.WorkspacePersistence {
+func NewWorkspacePersistence(index adapter.WorkspaceIndex) adapter.WorkspacePersistence {
 	return &workspacePersistence{index: index}
 }
 
-func (w *workspacePersistence) ValidateNew(ctx context.Context, root string, registry entity.AppRegistry) error {
+func (w *workspacePersistence) Inspect(ctx context.Context, root string) (*entity.FolderInfo, error) {
 	logger.Debug(ctx, "Started", map[string]any{"root": root})
 
-	if registry.Overlaps(root) {
-		return errs.ClientError("the folder is, contains or is inside a registered workspace", "WKS-02409", http.StatusConflict)
-	}
+	folder := entity.FolderInfo{Path: root}
 	info, err := os.Stat(root)
-	if errors.Is(err, fs.ErrNotExist) {
-		logger.Debug(ctx, "Finished", map[string]any{"root": root})
-		return nil
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return nil, errs.FileError(err, "WKS-09500")
 	}
-	if err != nil {
-		return errs.FileError(err, "WKS-09500")
-	}
-	entries, _ := os.ReadDir(root)
-	if !info.IsDir() || len(entries) > 0 {
-		return errs.ClientError("the folder is not empty", "WKS-01409", http.StatusConflict)
-	}
-
-	logger.Debug(ctx, "Finished", map[string]any{"root": root})
-	return nil
-}
-
-func (w *workspacePersistence) ValidateExisting(ctx context.Context, root, localId string, registry entity.AppRegistry) error {
-	logger.Debug(ctx, "Started", map[string]any{"root": root, "localId": localId})
-
-	if registry.OverlapsOther(root, localId) {
-		return errs.ClientError("the folder is, contains or is inside another registered workspace", "WKS-02409", http.StatusConflict)
-	}
-	if !isDirectory(root) {
-		return errs.NotFoundError("the folder does not exist", "WKS-03404")
+	if err == nil {
+		entries, _ := os.ReadDir(root)
+		folder.Exists = true
+		folder.IsDirectory = info.IsDir()
+		folder.EntryCount = len(entries)
+		folder.HasWorkspaceFile = isFile(filepath.Join(root, workspaceFile))
 	}
 
-	logger.Debug(ctx, "Finished", map[string]any{"root": root, "localId": localId})
-	return nil
+	logger.Debug(ctx, "Finished", folder)
+	return &folder, nil
 }
 
 func (w *workspacePersistence) Save(ctx context.Context, root string, workspace entity.Workspace) error {
@@ -94,7 +76,7 @@ func (w *workspacePersistence) Save(ctx context.Context, root string, workspace 
 	if err := fileutils.WriteFileAtomic(path, data, workspaceFileMode); err != nil {
 		return errs.FileError(err, "WKS-26500")
 	}
-	w.index.recordWrite(path, data)
+	w.index.RecordWrite(path, data)
 
 	logger.Debug(ctx, "Finished", workspace, map[string]any{"root": root})
 	return nil
@@ -145,18 +127,18 @@ func readWorkspace(root string) (*yaml.Node, *model.Workspace, error) {
 	}
 	data, err := os.ReadFile(filepath.Join(root, workspaceFile))
 	if err != nil {
-		return nil, nil, errs.FileError(err, "WKS-03404")
+		return nil, nil, errs.FileError(err, "WKS-32404")
 	}
 	document, err := yamlnode.Parse(data)
 	if err != nil {
-		return nil, nil, errs.ClientError("workspace.yaml cannot be parsed: "+err.Error(), "WKS-15422", http.StatusUnprocessableEntity)
+		return nil, nil, errs.UnprocessableEntityError("workspace.yaml cannot be parsed: "+err.Error(), "WKS-15422")
 	}
 	var stored model.Workspace
 	if err := document.Decode(&stored); err != nil {
-		return nil, nil, errs.ClientError("workspace.yaml has invalid fields: "+err.Error(), "WKS-16422", http.StatusUnprocessableEntity)
+		return nil, nil, errs.UnprocessableEntityError("workspace.yaml has invalid fields: "+err.Error(), "WKS-16422")
 	}
 	if stored.Xenon > latestFormatVersion {
-		return nil, nil, errs.ClientError("workspace.yaml was written by a newer Xenon", "WKS-04422", http.StatusUnprocessableEntity)
+		return nil, nil, errs.UnprocessableEntityError("workspace.yaml was written by a newer Xenon", "WKS-04422")
 	}
 	return document, &stored, nil
 }

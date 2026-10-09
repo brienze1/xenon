@@ -7,5 +7,5 @@ import (
 )
 
 type SaveRequest interface {
-	Save(ctx context.Context, root string, request entity.Request, baseRevision string, force bool) (*entity.Request, error)
+	Save(ctx context.Context, root string, request entity.Request) (*entity.Request, error)
 }

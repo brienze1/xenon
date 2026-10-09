@@ -42,9 +42,12 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 	if err != nil {
 		return nil, err
 	}
-	ancestors, err := s.findTreeItem.FindAncestors(ctx, workspace.Path, request.ID)
-	if err != nil {
-		return nil, err
+	ancestors := make([]entity.Collection, 0)
+	if request.HasID() {
+		ancestors, err = s.findTreeItem.FindAncestors(ctx, workspace.Path, request.ID)
+		if err != nil {
+			return nil, err
+		}
 	}
 	sentAt := timeutils.Now()
 	effective := usecase.ResolveEffectiveRequest(request, ancestors, workspace.Path)

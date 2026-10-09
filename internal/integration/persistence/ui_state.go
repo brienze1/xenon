@@ -42,6 +42,7 @@ func (u *uiStatePersistence) Find(ctx context.Context, localId string) (*entity.
 	if err := json.Unmarshal(data, &stored); err != nil {
 		logger.Warn(ctx, err, "state.json is not valid JSON, using the defaults", map[string]any{"localId": localId})
 		state := entity.NewUIState()
+		logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "defaults": true})
 		return &state, nil
 	}
 	state := stored.ToEntity()

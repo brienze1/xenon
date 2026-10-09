@@ -3,53 +3,12 @@ package persistence
 import (
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/brienze1/xenon/pkg/timeutils"
 )
-
-func TestEffectiveOrder(t *testing.T) {
-	cases := []struct {
-		listed  []string
-		present []string
-		want    []string
-	}{
-		{listed: []string{"b", "gone", "a"}, present: []string{"a", "d", "b", "c"}, want: []string{"b", "a", "c", "d"}},
-		{listed: []string{"a", "a"}, present: []string{"a"}, want: []string{"a"}},
-		{listed: nil, present: []string{"z", "y"}, want: []string{"y", "z"}},
-		{listed: []string{"x"}, present: []string{}, want: []string{}},
-	}
-	for _, tc := range cases {
-		if got := effectiveOrder(tc.listed, tc.present); !reflect.DeepEqual(got, tc.want) {
-			t.Errorf("effectiveOrder(%v, %v) = %v, want %v", tc.listed, tc.present, got, tc.want)
-		}
-	}
-}
-
-func TestIdentifyKeepsFirstIdAndReidentifiesDuplicatesStably(t *testing.T) {
-	scan := &treeScan{previous: map[string]string{"/b": "kept"}, seen: map[string]string{}, reidentified: map[string]string{}}
-	if id, warning := scan.identify("same", "/a"); id != "same" || warning != "" {
-		t.Fatalf("first = %q %q", id, warning)
-	}
-	if id, warning := scan.identify("same", "/b"); id != "kept" || warning != duplicateWarning {
-		t.Fatalf("duplicate = %q %q", id, warning)
-	}
-	id, warning := scan.identify("same", "/c")
-	if id == "same" || id == "kept" || warning != duplicateWarning || scan.reidentified["/c"] != id {
-		t.Fatalf("new duplicate = %q %q", id, warning)
-	}
-	missing, warning := scan.identify("", "/d")
-	if missing == "" || warning != missingIdWarning {
-		t.Fatalf("missing id = %q %q", missing, warning)
-	}
-	scan.previous["/e"] = "kept"
-	if id, _ := scan.identify("", "/e"); id == "kept" {
-		t.Fatal("a previous id already in use must not be reused")
-	}
-}
 
 func TestReadDocumentReasons(t *testing.T) {
 	dir := t.TempDir()
@@ -83,7 +42,7 @@ func TestIsOwnWrite(t *testing.T) {
 	timeutils.SetCurrentTimeProvider(func() time.Time { return now })
 	defer timeutils.SetCurrentTimeProvider(time.Now)
 	index := NewWorkspaceIndex()
-	index.recordWrite("/a.yaml", []byte("one"))
+	index.RecordWrite("/a.yaml", []byte("one"))
 	if !index.IsOwnWrite("/a.yaml", []byte("one")) {
 		t.Fatal("a fresh write with the same content is ours")
 	}

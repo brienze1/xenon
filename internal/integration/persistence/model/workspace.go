@@ -3,7 +3,7 @@ package model
 import (
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
-	"github.com/brienze1/xenon/internal/integration/persistence/yamlnode"
+	"github.com/brienze1/xenon/pkg/yamlnode"
 )
 
 type Workspace struct {

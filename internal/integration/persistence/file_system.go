@@ -18,6 +18,11 @@ func isDirectory(path string) bool {
 	return err == nil && info.IsDir()
 }
 
+func isFile(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.Mode().IsRegular()
+}
+
 func appDataPath(elements ...string) string {
 	return filepath.Join(append([]string{properties.Properties().Application.DataDir}, elements...)...)
 }

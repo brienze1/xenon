@@ -110,14 +110,14 @@ func (r *registryPersistence) SaveWindow(ctx context.Context, state entity.Windo
 }
 
 func (r *registryPersistence) read() (*model.Registry, error) {
+	var stored model.Registry
 	data, err := os.ReadFile(appDataPath(registryFile))
 	if errors.Is(err, fs.ErrNotExist) {
-		return &model.Registry{}, nil
+		return &stored, nil
 	}
 	if err != nil {
 		return nil, errs.FileError(err, "WKS-11500")
 	}
-	var stored model.Registry
 	if err := json.Unmarshal(data, &stored); err != nil {
 		return nil, errs.InternalServerError(err, "WKS-12500", "app.json is not valid JSON")
 	}

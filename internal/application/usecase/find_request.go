@@ -8,4 +8,5 @@ import (
 
 type FindRequest interface {
 	Find(ctx context.Context, root, id string) (*entity.Request, error)
+	FindRevision(ctx context.Context, root, id string) (*entity.RequestChange, error)
 }

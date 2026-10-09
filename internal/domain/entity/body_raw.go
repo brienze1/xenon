@@ -18,6 +18,14 @@ type BodyRaw struct {
 	Content  string
 }
 
+func NewBodyRaw(language, content string) BodyRaw {
+	raw := BodyRaw{Language: rawlanguage.Json, Content: content}
+	if language != "" {
+		raw.Language = rawlanguage.GetRawLanguage(language)
+	}
+	return raw
+}
+
 func (b BodyRaw) ContentType() string {
 	if contentType, found := rawContentTypes[b.Language]; found {
 		return contentType

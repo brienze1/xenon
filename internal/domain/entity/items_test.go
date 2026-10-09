@@ -121,7 +121,7 @@ func TestAppRegistry(t *testing.T) {
 		t.Fatalf("NewAppRegistry = %+v", registry)
 	}
 	root := filepath.Join(string(filepath.Separator), "work")
-	if registry.Overlaps(filepath.Join(root, "acme")) {
+	if registry.OverlapsOther(filepath.Join(root, "acme"), "") {
 		t.Error("empty registry overlaps nothing")
 	}
 	registry.Register(NewRegisteredWorkspace("01A", filepath.Join(root, "acme"), "Acme", time.Time{}))
@@ -129,8 +129,8 @@ func TestAppRegistry(t *testing.T) {
 	if registry.ActiveLocalID != "01G" || len(registry.Workspaces) != 2 {
 		t.Fatalf("Register must append and activate, got %+v", registry)
 	}
-	if !registry.Overlaps(filepath.Join(root, "acme", "inner")) || registry.Overlaps(filepath.Join(root, "initech")) {
-		t.Error("Overlaps must check every registered workspace")
+	if !registry.OverlapsOther(filepath.Join(root, "acme", "inner"), "") || registry.OverlapsOther(filepath.Join(root, "initech"), "") {
+		t.Error("OverlapsOther must check every registered workspace")
 	}
 	found, ok := registry.Find("01A")
 	if !ok || found.DisplayNameCache != "Acme" {

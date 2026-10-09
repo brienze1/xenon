@@ -17,6 +17,10 @@ func (w Workspace) HasValidName() bool {
 	return isValidItemName(w.Name)
 }
 
+func (w Workspace) ArrangedCollections(present []string) []string {
+	return arrangedNames(w.Order, present)
+}
+
 func (w Workspace) Renamed(name string) Workspace {
 	w.Name = strings.TrimSpace(name)
 	return w

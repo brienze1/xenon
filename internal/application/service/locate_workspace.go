@@ -10,23 +10,23 @@ import (
 )
 
 type locateWorkspace struct {
-	findWorkspaceRegistry   usecase.FindWorkspaceRegistry
-	saveWorkspaceRegistry   usecase.SaveWorkspaceRegistry
-	validateWorkspaceFolder usecase.ValidateWorkspaceFolder
-	loadWorkspace           usecase.LoadWorkspace
+	findWorkspaceRegistry  usecase.FindWorkspaceRegistry
+	saveWorkspaceRegistry  usecase.SaveWorkspaceRegistry
+	inspectWorkspaceFolder usecase.InspectWorkspaceFolder
+	loadWorkspace          usecase.LoadWorkspace
 }
 
 func NewLocateWorkspaceService(
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry,
 	saveWorkspaceRegistry usecase.SaveWorkspaceRegistry,
-	validateWorkspaceFolder usecase.ValidateWorkspaceFolder,
+	inspectWorkspaceFolder usecase.InspectWorkspaceFolder,
 	loadWorkspace usecase.LoadWorkspace,
 ) adapter.LocateWorkspaceService {
 	return &locateWorkspace{
-		findWorkspaceRegistry:   findWorkspaceRegistry,
-		saveWorkspaceRegistry:   saveWorkspaceRegistry,
-		validateWorkspaceFolder: validateWorkspaceFolder,
-		loadWorkspace:           loadWorkspace,
+		findWorkspaceRegistry:  findWorkspaceRegistry,
+		saveWorkspaceRegistry:  saveWorkspaceRegistry,
+		inspectWorkspaceFolder: inspectWorkspaceFolder,
+		loadWorkspace:          loadWorkspace,
 	}
 }
 
@@ -40,7 +40,11 @@ func (l *locateWorkspace) Locate(ctx context.Context, localId, path string) (*en
 	if err != nil {
 		return nil, err
 	}
-	if err := l.validateWorkspaceFolder.ValidateExisting(ctx, path, localId, *registry); err != nil {
+	folder, err := l.inspectWorkspaceFolder.Inspect(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+	if err := usecase.ValidateExistingWorkspaceFolder(*folder, *registry, localId); err != nil {
 		return nil, err
 	}
 	workspace, err := l.loadWorkspace.Load(ctx, path)

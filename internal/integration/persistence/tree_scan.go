@@ -5,55 +5,49 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
 	"github.com/brienze1/xenon/internal/integration/persistence/model"
-	"github.com/brienze1/xenon/internal/integration/persistence/yamlnode"
 	"github.com/brienze1/xenon/pkg/idutils"
+	"github.com/brienze1/xenon/pkg/yamlnode"
 )
 
 const (
 	collectionMarker = "collection.yaml"
 	folderMarker     = "folder.yaml"
 	requestExtension = ".yaml"
-	errorIdPrefix    = "error:"
-	duplicateWarning = "another item has the same id, so this one uses a new id that is written when it is saved"
-	missingIdWarning = "the file has no id, so it gets one that is written when it is saved"
 )
 
 type treeScan struct {
-	previous     map[string]string
-	seen         map[string]string
-	items        map[string]indexedItem
-	reidentified map[string]string
-	root         string
+	identities *entity.ItemIdentities
+	items      map[string]model.IndexedItem
+	root       string
 }
 
-func scanTree(root string, previous map[string]string) (*rootIndex, error) {
-	_, workspace, err := readWorkspace(root)
+func scanTree(root string, previous map[string]string) (*model.TreeIndex, error) {
+	_, stored, err := readWorkspace(root)
 	if err != nil {
 		return nil, err
 	}
+	workspace := stored.ToEntity()
 	scan := &treeScan{
-		root:         root,
-		previous:     previous,
-		seen:         map[string]string{},
-		items:        map[string]indexedItem{},
-		reidentified: map[string]string{},
+		root:       root,
+		identities: entity.NewItemIdentities(previous),
+		items:      map[string]model.IndexedItem{},
 	}
 	dir := filepath.Join(root, collectionsDir)
 	listing := readEntries(dir)
 	marked, unmarked := scan.classifyDirectories(dir, listing, collectionMarker)
 	collections := make([]entity.TreeNode, 0, len(marked))
-	for _, name := range effectiveOrder(workspace.Order, marked) {
+	for _, name := range workspace.ArrangedCollections(marked) {
 		collections = append(collections, scan.container(filepath.Join(dir, name), name, itemkind.Collection))
 	}
 	collections = append(collections, scan.ignoredNodes(dir, unmarked, collectionMarker)...)
-	return &rootIndex{tree: entity.NewTree(collections, entryNames(listing)), items: scan.items, reidentified: scan.reidentified}, nil
+	return &model.TreeIndex{Tree: entity.NewTree(collections, entryNames(listing)), Items: scan.items, Reidentified: scan.identities.Reidentified()}, nil
 }
 
 func (s *treeScan) container(dir, fileName string, kind enums.ItemKind) entity.TreeNode {
@@ -61,20 +55,21 @@ func (s *treeScan) container(dir, fileName string, kind enums.ItemKind) entity.T
 	if reason != "" {
 		return s.errorNode(dir, fileName, reason, false)
 	}
-	id, warning := s.identify(stored.Id, dir)
+	id, warning := s.identities.Identify(stored.Id, dir, idutils.NewUlid)
+	container := stored.ToContainerEntity(id, kind)
 	listing := readEntries(dir)
 	folders, unmarked := s.classifyDirectories(dir, listing, folderMarker)
 	requests := requestFiles(listing)
-	node := entity.TreeNode{ID: id, Kind: kind, Name: stored.Name, Warning: warning, FileName: fileName, Entries: entryNames(listing)}
-	for _, name := range effectiveOrder(stored.Order, append(append([]string{}, folders...), requests...)) {
-		if contains(folders, name) {
+	node := entity.NewContainerNode(container, fileName, entryNames(listing)).WithWarning(warning)
+	for _, name := range container.ArrangedChildren(append(append([]string{}, folders...), requests...)) {
+		if slices.Contains(folders, name) {
 			node.Children = append(node.Children, s.container(filepath.Join(dir, name), name, itemkind.Folder))
 			continue
 		}
 		node.Children = append(node.Children, s.request(filepath.Join(dir, name), name))
 	}
 	node.Children = append(node.Children, s.ignoredNodes(dir, unmarked, folderMarker)...)
-	s.items[id] = indexedItem{path: dir, kind: kind}
+	s.items[id] = model.IndexedItem{Path: dir, Kind: kind}
 	return node
 }
 
@@ -83,42 +78,15 @@ func (s *treeScan) request(path, fileName string) entity.TreeNode {
 	if reason != "" {
 		return s.errorNode(path, fileName, reason, false)
 	}
-	id, warning := s.identify(stored.Id, path)
-	request := stored.ToEntity()
-	request.ID = id
-	node := entity.NewRequestNode(request, fileName)
-	node.Warning = warning
-	s.items[id] = indexedItem{path: path, kind: itemkind.Request}
-	return node
-}
-
-func (s *treeScan) identify(storedId, path string) (string, string) {
-	if storedId != "" && s.seen[storedId] == "" {
-		s.seen[storedId] = path
-		return storedId, ""
-	}
-	id, known := s.previous[path]
-	if !known || s.seen[id] != "" {
-		id = idutils.NewUlid()
-	}
-	s.seen[id] = path
-	s.reidentified[path] = id
-	if storedId == "" {
-		return id, missingIdWarning
-	}
-	return id, duplicateWarning
+	id, warning := s.identities.Identify(stored.Id, path, idutils.NewUlid)
+	request := stored.ToStoredEntity(id, "")
+	s.items[id] = model.IndexedItem{Path: path, Kind: itemkind.Request}
+	return entity.NewRequestNode(request, fileName).WithWarning(warning)
 }
 
 func (s *treeScan) errorNode(path, fileName, reason string, ignored bool) entity.TreeNode {
 	relative, _ := filepath.Rel(s.root, path)
-	return entity.TreeNode{
-		ID:       errorIdPrefix + filepath.ToSlash(relative),
-		Kind:     itemkind.Error,
-		Name:     fileName,
-		FileName: fileName,
-		Error:    reason,
-		Ignored:  ignored,
-	}
+	return entity.NewErrorNode(filepath.ToSlash(relative), fileName, reason, ignored)
 }
 
 func (s *treeScan) ignoredNodes(dir string, names []string, marker string) []entity.TreeNode {
@@ -194,23 +162,6 @@ func readDocument(path string, kind enums.ItemKind, version *int, storedKind *st
 	return ""
 }
 
-func effectiveOrder(listed, present []string) []string {
-	order := make([]string, 0, len(present))
-	for _, name := range listed {
-		if contains(present, name) && !contains(order, name) {
-			order = append(order, name)
-		}
-	}
-	rest := make([]string, 0, len(present))
-	for _, name := range present {
-		if !contains(order, name) {
-			rest = append(rest, name)
-		}
-	}
-	sort.Strings(rest)
-	return append(order, rest...)
-}
-
 func readEntries(dir string) []fs.DirEntry {
 	listing, _ := os.ReadDir(dir)
 	return listing
@@ -242,13 +193,4 @@ func isHidden(entry fs.DirEntry) bool {
 func isRegularFile(path string) bool {
 	info, err := os.Lstat(path)
 	return err == nil && info.Mode().IsRegular()
-}
-
-func contains(values []string, value string) bool {
-	for _, candidate := range values {
-		if candidate == value {
-			return true
-		}
-	}
-	return false
 }

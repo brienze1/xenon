@@ -4,7 +4,7 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
-	"github.com/brienze1/xenon/internal/integration/persistence/yamlnode"
+	"github.com/brienze1/xenon/pkg/yamlnode"
 )
 
 type PathVariable struct {

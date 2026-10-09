@@ -2,7 +2,6 @@ package persistence
 
 import (
 	"context"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,48 +12,48 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/persistence/model"
-	"github.com/brienze1/xenon/internal/integration/persistence/yamlnode"
 	"github.com/brienze1/xenon/pkg/errs"
 	"github.com/brienze1/xenon/pkg/fileutils"
 	"github.com/brienze1/xenon/pkg/idutils"
 	"github.com/brienze1/xenon/pkg/logger"
+	"github.com/brienze1/xenon/pkg/yamlnode"
 )
 
 type treePersistence struct {
-	index *WorkspaceIndex
+	index adapter.WorkspaceIndex
 }
 
-func NewTreePersistence(index *WorkspaceIndex) adapter.TreePersistence {
+func NewTreePersistence(index adapter.WorkspaceIndex) adapter.TreePersistence {
 	return &treePersistence{index: index}
 }
 
 func (t *treePersistence) Load(ctx context.Context, root string) (*entity.Tree, error) {
 	logger.Debug(ctx, "Started", map[string]any{"root": root})
-	t.index.mu.Lock()
-	defer t.index.mu.Unlock()
+	t.index.Lock()
+	defer t.index.Unlock()
 
-	index, err := t.index.refresh(root)
+	index, err := t.index.Refresh(root)
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Debug(ctx, "Finished", map[string]any{"root": root, "items": len(index.items)})
-	return &index.tree, nil
+	logger.Debug(ctx, "Finished", map[string]any{"root": root, "items": len(index.Items)})
+	return &index.Tree, nil
 }
 
 func (t *treePersistence) FindContainer(ctx context.Context, root, id string) (*entity.Collection, error) {
 	logger.Debug(ctx, "Started", map[string]any{"root": root, "id": id})
-	t.index.mu.Lock()
-	defer t.index.mu.Unlock()
+	t.index.Lock()
+	defer t.index.Unlock()
 
-	_, item, found, err := t.index.resolve(root, id)
+	_, item, found, err := t.index.Resolve(root, id)
 	if err != nil {
 		return nil, err
 	}
 	if !found {
-		return nil, errs.NotFoundError("the item does not exist", "TRE-02404")
+		return nil, errs.NotFoundError("the item does not exist", "TRE-30404")
 	}
-	if item.kind == itemkind.Request {
+	if item.Kind == itemkind.Request {
 		return nil, errs.NotFoundError("requests have no collection or folder settings", "TRE-03404")
 	}
 	container, err := readContainerEntity(id, item)
@@ -68,20 +67,16 @@ func (t *treePersistence) FindContainer(ctx context.Context, root, id string) (*
 
 func (t *treePersistence) FindAncestors(ctx context.Context, root, id string) ([]entity.Collection, error) {
 	logger.Debug(ctx, "Started", map[string]any{"root": root, "id": id})
-	t.index.mu.Lock()
-	defer t.index.mu.Unlock()
+	t.index.Lock()
+	defer t.index.Unlock()
 
 	ancestors := make([]entity.Collection, 0)
-	if strings.TrimSpace(id) == "" {
-		logger.Debug(ctx, "Finished", map[string]any{"root": root, "id": id, "ancestors": 0})
-		return ancestors, nil
-	}
-	index, _, _, err := t.index.resolve(root, id)
+	index, _, _, err := t.index.Resolve(root, id)
 	if err != nil {
 		return nil, err
 	}
-	for _, node := range index.tree.Ancestors(id) {
-		container, err := readContainerEntity(node.ID, index.items[node.ID])
+	for _, node := range index.Tree.Ancestors(id) {
+		container, err := readContainerEntity(node.ID, index.Items[node.ID])
 		if err != nil {
 			return nil, err
 		}
@@ -94,8 +89,8 @@ func (t *treePersistence) FindAncestors(ctx context.Context, root, id string) ([
 
 func (t *treePersistence) CreateContainer(ctx context.Context, root, parentId, fileName string, container entity.Collection) (*entity.TreeNode, error) {
 	logger.Debug(ctx, "Started", map[string]any{"root": root, "parentId": parentId, "fileName": fileName, "id": container.ID})
-	t.index.mu.Lock()
-	defer t.index.mu.Unlock()
+	t.index.Lock()
+	defer t.index.Unlock()
 
 	index, parent, parentDir, err := t.parent(root, parentId)
 	if err != nil {
@@ -106,7 +101,7 @@ func (t *treePersistence) CreateContainer(ctx context.Context, root, parentId, f
 		return nil, errs.FileError(err, "TRE-20500")
 	}
 	if err := os.Mkdir(dir, workspaceDirMode); err != nil {
-		return nil, errs.FileError(err, "TRE-20500")
+		return nil, errs.FileError(err, "TRE-32500")
 	}
 	stored := model.NewCollection(container)
 	if err := t.writeFields(filepath.Join(dir, markerFile(container.Kind)), stored.Fields()); err != nil {
@@ -126,8 +121,8 @@ func (t *treePersistence) CreateContainer(ctx context.Context, root, parentId, f
 
 func (t *treePersistence) CreateRequest(ctx context.Context, root, parentId, fileName string, request entity.Request) (*entity.Request, error) {
 	logger.Debug(ctx, "Started", request, map[string]any{"root": root, "parentId": parentId, "fileName": fileName})
-	t.index.mu.Lock()
-	defer t.index.mu.Unlock()
+	t.index.Lock()
+	defer t.index.Unlock()
 
 	index, parent, parentDir, err := t.parent(root, parentId)
 	if err != nil {
@@ -135,7 +130,7 @@ func (t *treePersistence) CreateRequest(ctx context.Context, root, parentId, fil
 	}
 	path := filepath.Join(parentDir, fileName)
 	if exists(path) {
-		return nil, errs.ClientError("a file with this name already exists", "TRE-26409", http.StatusConflict)
+		return nil, errs.ConflictError("a file with this name already exists", "TRE-26409")
 	}
 	stored := model.NewRequest(request)
 	if err := t.writeFields(path, stored.Fields()); err != nil {
@@ -144,7 +139,7 @@ func (t *treePersistence) CreateRequest(ctx context.Context, root, parentId, fil
 	if err := t.writeOrder(root, index, parentId, parent.OrderAppending(fileName)); err != nil {
 		return nil, err
 	}
-	if _, err := t.index.refresh(root); err != nil {
+	if _, err := t.index.Refresh(root); err != nil {
 		return nil, err
 	}
 	saved, err := readRequestEntity(request.ID, path)
@@ -158,21 +153,21 @@ func (t *treePersistence) CreateRequest(ctx context.Context, root, parentId, fil
 
 func (t *treePersistence) Rename(ctx context.Context, root, id, name, fileName string) (*entity.TreeNode, error) {
 	logger.Debug(ctx, "Started", map[string]any{"root": root, "id": id, "name": name, "fileName": fileName})
-	t.index.mu.Lock()
-	defer t.index.mu.Unlock()
+	t.index.Lock()
+	defer t.index.Unlock()
 
 	index, node, item, err := t.item(root, id)
 	if err != nil {
 		return nil, err
 	}
-	path := filepath.Join(filepath.Dir(item.path), fileName)
-	if err := moveItem(item.path, path); err != nil {
+	path := filepath.Join(filepath.Dir(item.Path), fileName)
+	if err := moveItem(item.Path, path); err != nil {
 		return nil, err
 	}
-	if err := t.rewriteName(id, indexedItem{path: path, kind: item.kind}, strings.TrimSpace(name), node.ChildOrder()); err != nil {
+	if err := t.rewriteName(id, model.IndexedItem{Path: path, Kind: item.Kind}, name, node.ChildOrder()); err != nil {
 		return nil, err
 	}
-	parent, _ := index.tree.Parent(id)
+	parent, _ := index.Tree.Parent(id)
 	if err := t.writeOrder(root, index, parent.ID, parent.OrderRenaming(node.FileName, fileName)); err != nil {
 		return nil, err
 	}
@@ -187,18 +182,18 @@ func (t *treePersistence) Rename(ctx context.Context, root, id, name, fileName s
 
 func (t *treePersistence) Duplicate(ctx context.Context, root, id, name, fileName string) (*entity.TreeNode, error) {
 	logger.Debug(ctx, "Started", map[string]any{"root": root, "id": id, "name": name, "fileName": fileName})
-	t.index.mu.Lock()
-	defer t.index.mu.Unlock()
+	t.index.Lock()
+	defer t.index.Unlock()
 
 	index, node, item, err := t.item(root, id)
 	if err != nil {
 		return nil, err
 	}
-	copyId, err := t.copyNode(*node, item.path, filepath.Join(filepath.Dir(item.path), fileName), strings.TrimSpace(name))
+	copyId, err := t.copyNode(*node, item.Path, filepath.Join(filepath.Dir(item.Path), fileName), name)
 	if err != nil {
 		return nil, err
 	}
-	parent, _ := index.tree.Parent(id)
+	parent, _ := index.Tree.Parent(id)
 	if err := t.writeOrder(root, index, parent.ID, parent.OrderInsertingAfter(node.FileName, fileName)); err != nil {
 		return nil, err
 	}
@@ -213,8 +208,8 @@ func (t *treePersistence) Duplicate(ctx context.Context, root, id, name, fileNam
 
 func (t *treePersistence) SaveContainer(ctx context.Context, root string, container entity.Collection) (*entity.Collection, error) {
 	logger.Debug(ctx, "Started", map[string]any{"root": root, "id": container.ID})
-	t.index.mu.Lock()
-	defer t.index.mu.Unlock()
+	t.index.Lock()
+	defer t.index.Unlock()
 
 	_, node, item, err := t.item(root, container.ID)
 	if err != nil {
@@ -222,7 +217,7 @@ func (t *treePersistence) SaveContainer(ctx context.Context, root string, contai
 	}
 	container.Order = node.ChildOrder()
 	stored := model.NewCollection(container)
-	if err := t.writeFields(filepath.Join(item.path, markerFile(item.kind)), stored.Fields()); err != nil {
+	if err := t.writeFields(filepath.Join(item.Path, markerFile(item.Kind)), stored.Fields()); err != nil {
 		return nil, err
 	}
 	saved, err := readContainerEntity(container.ID, item)
@@ -236,21 +231,21 @@ func (t *treePersistence) SaveContainer(ctx context.Context, root string, contai
 
 func (t *treePersistence) Delete(ctx context.Context, root, id string) error {
 	logger.Debug(ctx, "Started", map[string]any{"root": root, "id": id})
-	t.index.mu.Lock()
-	defer t.index.mu.Unlock()
+	t.index.Lock()
+	defer t.index.Unlock()
 
 	index, node, item, err := t.item(root, id)
 	if err != nil {
 		return err
 	}
-	if err := os.RemoveAll(item.path); err != nil {
+	if err := os.RemoveAll(item.Path); err != nil {
 		return errs.FileError(err, "TRE-23500")
 	}
-	parent, _ := index.tree.Parent(id)
+	parent, _ := index.Tree.Parent(id)
 	if err := t.writeOrder(root, index, parent.ID, parent.OrderRemoving(node.FileName)); err != nil {
 		return err
 	}
-	if _, err := t.index.refresh(root); err != nil {
+	if _, err := t.index.Refresh(root); err != nil {
 		return err
 	}
 
@@ -258,46 +253,46 @@ func (t *treePersistence) Delete(ctx context.Context, root, id string) error {
 	return nil
 }
 
-func (t *treePersistence) parent(root, parentId string) (*rootIndex, *entity.TreeNode, string, error) {
-	index, err := t.index.current(root)
+func (t *treePersistence) parent(root, parentId string) (*model.TreeIndex, *entity.TreeNode, string, error) {
+	index, err := t.index.Current(root)
 	if err != nil {
 		return nil, nil, "", err
 	}
 	if parentId == "" {
-		return index, &index.tree.Root, filepath.Join(root, collectionsDir), nil
+		return index, &index.Tree.Root, filepath.Join(root, collectionsDir), nil
 	}
-	parent, found := index.tree.Container(parentId)
+	parent, found := index.Tree.Container(parentId)
 	if !found {
-		return nil, nil, "", errs.NotFoundError("the parent collection or folder does not exist", "TRE-01404")
+		return nil, nil, "", errs.NotFoundError("the parent collection or folder does not exist", "TRE-28404")
 	}
-	return index, parent, index.items[parentId].path, nil
+	return index, parent, index.Items[parentId].Path, nil
 }
 
-func (t *treePersistence) item(root, id string) (*rootIndex, *entity.TreeNode, indexedItem, error) {
-	index, item, found, err := t.index.resolve(root, id)
+func (t *treePersistence) item(root, id string) (*model.TreeIndex, *entity.TreeNode, model.IndexedItem, error) {
+	index, item, found, err := t.index.Resolve(root, id)
 	if err != nil {
-		return nil, nil, indexedItem{}, err
+		return nil, nil, model.IndexedItem{}, err
 	}
-	node, inTree := index.tree.Item(id)
+	node, inTree := index.Tree.Item(id)
 	if !found || !inTree {
-		return nil, nil, indexedItem{}, errs.NotFoundError("the item does not exist", "TRE-02404")
+		return nil, nil, model.IndexedItem{}, errs.NotFoundError("the item does not exist", "TRE-29404")
 	}
 	return index, node, item, nil
 }
 
 func (t *treePersistence) reloaded(root, id string) (*entity.TreeNode, error) {
-	index, err := t.index.refresh(root)
+	index, err := t.index.Refresh(root)
 	if err != nil {
 		return nil, err
 	}
-	node, found := index.tree.Item(id)
+	node, found := index.Tree.Item(id)
 	if !found {
-		return nil, errs.NotFoundError("the item could not be read back", "TRE-02404")
+		return nil, errs.NotFoundError("the item could not be read back", "TRE-31404")
 	}
 	return node, nil
 }
 
-func (t *treePersistence) writeOrder(root string, index *rootIndex, parentId string, order []string) error {
+func (t *treePersistence) writeOrder(root string, index *model.TreeIndex, parentId string, order []string) error {
 	if parentId == "" {
 		_, stored, err := readWorkspace(root)
 		if err != nil {
@@ -308,25 +303,25 @@ func (t *treePersistence) writeOrder(root string, index *rootIndex, parentId str
 		updated := model.NewWorkspace(workspace)
 		return t.writeFields(filepath.Join(root, workspaceFile), updated.Fields())
 	}
-	item := index.items[parentId]
+	item := index.Items[parentId]
 	container, err := readContainerEntity(parentId, item)
 	if err != nil {
 		return err
 	}
 	container.Order = order
 	stored := model.NewCollection(*container)
-	return t.writeFields(filepath.Join(item.path, markerFile(item.kind)), stored.Fields())
+	return t.writeFields(filepath.Join(item.Path, markerFile(item.Kind)), stored.Fields())
 }
 
-func (t *treePersistence) rewriteName(id string, item indexedItem, name string, order []string) error {
-	if item.kind == itemkind.Request {
-		request, err := readRequestEntity(id, item.path)
+func (t *treePersistence) rewriteName(id string, item model.IndexedItem, name string, order []string) error {
+	if item.Kind == itemkind.Request {
+		request, err := readRequestEntity(id, item.Path)
 		if err != nil {
 			return err
 		}
 		request.Name = name
 		stored := model.NewRequest(*request)
-		return t.writeFields(item.path, stored.Fields())
+		return t.writeFields(item.Path, stored.Fields())
 	}
 	container, err := readContainerEntity(id, item)
 	if err != nil {
@@ -335,7 +330,7 @@ func (t *treePersistence) rewriteName(id string, item indexedItem, name string, 
 	container.Name = name
 	container.Order = order
 	stored := model.NewCollection(*container)
-	return t.writeFields(filepath.Join(item.path, markerFile(item.kind)), stored.Fields())
+	return t.writeFields(filepath.Join(item.Path, markerFile(item.Kind)), stored.Fields())
 }
 
 func (t *treePersistence) copyNode(node entity.TreeNode, source, target, name string) (string, error) {
@@ -347,7 +342,7 @@ func (t *treePersistence) copyNode(node entity.TreeNode, source, target, name st
 		return id, t.copyRaw(source, target)
 	}
 	if err := os.Mkdir(target, workspaceDirMode); err != nil {
-		return "", errs.FileError(err, "TRE-20500")
+		return "", errs.FileError(err, "TRE-33500")
 	}
 	marker := markerFile(node.Kind)
 	if err := t.copyDocument(filepath.Join(source, marker), filepath.Join(target, marker), id, name); err != nil {
@@ -388,12 +383,12 @@ func (t *treePersistence) copyRaw(source, target string) error {
 	}
 	data, err := os.ReadFile(source)
 	if err != nil {
-		return errs.FileError(err, "TRE-25500")
+		return errs.FileError(err, "TRE-36500")
 	}
 	if err := fileutils.WriteFileAtomic(target, data, workspaceFileMode); err != nil {
-		return errs.FileError(err, "TRE-21500")
+		return errs.FileError(err, "TRE-34500")
 	}
-	t.index.recordWrite(target, data)
+	t.index.RecordWrite(target, data)
 	return nil
 }
 
@@ -416,7 +411,7 @@ func (t *treePersistence) writeDocument(path string, document *yaml.Node) error 
 	if err := fileutils.WriteFileAtomic(path, data, workspaceFileMode); err != nil {
 		return errs.FileError(err, "TRE-21500")
 	}
-	t.index.recordWrite(path, data)
+	t.index.RecordWrite(path, data)
 	return nil
 }
 
@@ -431,36 +426,19 @@ func moveItem(source, target string) error {
 		}
 		source = temporary
 	} else if exists(target) {
-		return errs.ClientError("a file with this name already exists", "TRE-26409", http.StatusConflict)
+		return errs.ConflictError("a file with this name already exists", "TRE-37409")
 	}
 	if err := os.Rename(source, target); err != nil {
-		return errs.FileError(err, "TRE-22500")
+		return errs.FileError(err, "TRE-35500")
 	}
 	return nil
 }
 
-func readContainerEntity(id string, item indexedItem) (*entity.Collection, error) {
-	stored, reason := readCollection(filepath.Join(item.path, markerFile(item.kind)), item.kind)
+func readContainerEntity(id string, item model.IndexedItem) (*entity.Collection, error) {
+	stored, reason := readCollection(filepath.Join(item.Path, markerFile(item.Kind)), item.Kind)
 	if reason != "" {
-		return nil, errs.ClientError(reason, "TRE-27422", http.StatusUnprocessableEntity)
+		return nil, errs.UnprocessableEntityError(reason, "TRE-27422")
 	}
-	container := stored.ToEntity()
-	container.ID = id
-	container.Kind = item.kind
+	container := stored.ToContainerEntity(id, item.Kind)
 	return &container, nil
-}
-
-func readRequestEntity(id, path string) (*entity.Request, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, errs.FileError(err, "REQ-12500")
-	}
-	stored, reason := readRequest(path)
-	if reason != "" {
-		return nil, errs.ClientError(reason, "REQ-15422", http.StatusUnprocessableEntity)
-	}
-	request := stored.ToEntity()
-	request.ID = id
-	request.Revision = revisionOf(data)
-	return &request, nil
 }

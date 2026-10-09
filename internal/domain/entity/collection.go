@@ -51,6 +51,10 @@ func (c Collection) WithSettings(settings Collection) Collection {
 	return c
 }
 
+func (c Collection) ArrangedChildren(present []string) []string {
+	return arrangedNames(c.Order, present)
+}
+
 func (c Collection) LogValue() any {
 	return map[string]any{"id": c.ID, "kind": c.Kind, "name": c.Name, "description": c.Description, "headers": KeyValues(c.Headers).LogValue()}
 }

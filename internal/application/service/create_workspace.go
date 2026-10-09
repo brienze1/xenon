@@ -12,23 +12,23 @@ import (
 )
 
 type createWorkspace struct {
-	findWorkspaceRegistry   usecase.FindWorkspaceRegistry
-	saveWorkspaceRegistry   usecase.SaveWorkspaceRegistry
-	validateWorkspaceFolder usecase.ValidateWorkspaceFolder
-	saveWorkspaceFile       usecase.SaveWorkspaceFile
+	findWorkspaceRegistry  usecase.FindWorkspaceRegistry
+	saveWorkspaceRegistry  usecase.SaveWorkspaceRegistry
+	inspectWorkspaceFolder usecase.InspectWorkspaceFolder
+	saveWorkspaceFile      usecase.SaveWorkspaceFile
 }
 
 func NewCreateWorkspaceService(
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry,
 	saveWorkspaceRegistry usecase.SaveWorkspaceRegistry,
-	validateWorkspaceFolder usecase.ValidateWorkspaceFolder,
+	inspectWorkspaceFolder usecase.InspectWorkspaceFolder,
 	saveWorkspaceFile usecase.SaveWorkspaceFile,
 ) adapter.CreateWorkspaceService {
 	return &createWorkspace{
-		findWorkspaceRegistry:   findWorkspaceRegistry,
-		saveWorkspaceRegistry:   saveWorkspaceRegistry,
-		validateWorkspaceFolder: validateWorkspaceFolder,
-		saveWorkspaceFile:       saveWorkspaceFile,
+		findWorkspaceRegistry:  findWorkspaceRegistry,
+		saveWorkspaceRegistry:  saveWorkspaceRegistry,
+		inspectWorkspaceFolder: inspectWorkspaceFolder,
+		saveWorkspaceFile:      saveWorkspaceFile,
 	}
 }
 
@@ -39,7 +39,11 @@ func (c *createWorkspace) Create(ctx context.Context, name, path string) (*entit
 	if err != nil {
 		return nil, err
 	}
-	if err := c.validateWorkspaceFolder.ValidateNew(ctx, path, *registry); err != nil {
+	folder, err := c.inspectWorkspaceFolder.Inspect(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+	if err := usecase.ValidateNewWorkspaceFolder(*folder, *registry); err != nil {
 		return nil, err
 	}
 	workspace := entity.NewWorkspace(idutils.NewUlid(), name)

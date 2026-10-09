@@ -9,6 +9,13 @@ type History struct {
 	entries []HistoryEntry
 }
 
+func RetainHistory[T any](oldestFirst []T) ([]T, bool) {
+	if len(oldestFirst) <= HistoryCompactionThreshold {
+		return oldestFirst, false
+	}
+	return oldestFirst[len(oldestFirst)-HistoryCap:], true
+}
+
 func NewHistory(oldestFirst []HistoryEntry) History {
 	kept := oldestFirst[max(len(oldestFirst)-HistoryCap, 0):]
 	entries := make([]HistoryEntry, 0, len(kept))

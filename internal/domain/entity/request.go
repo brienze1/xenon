@@ -48,6 +48,17 @@ func (r Request) NormalizedMethod() string {
 	return strings.ToUpper(strings.TrimSpace(r.Method))
 }
 
+func (r Request) MethodOrDefault() string {
+	if method := r.NormalizedMethod(); method != "" {
+		return method
+	}
+	return httpmethod.Get.String()
+}
+
+func (r Request) HasID() bool {
+	return strings.TrimSpace(r.ID) != ""
+}
+
 func (r Request) HasValidMethod() bool {
 	return methodToken.MatchString(r.NormalizedMethod())
 }

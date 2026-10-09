@@ -7,29 +7,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/brienze1/xenon/internal/domain/entity"
-	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/integration/adapter"
+	"github.com/brienze1/xenon/internal/integration/persistence/model"
 	"github.com/brienze1/xenon/pkg/timeutils"
 )
 
 const ownWriteWindow = 2 * time.Second
 
-type WorkspaceIndex struct {
-	roots    map[string]*rootIndex
+type workspaceIndex struct {
+	roots    map[string]*model.TreeIndex
 	writes   map[string]ownWrite
 	mu       sync.Mutex
 	writesMu sync.Mutex
-}
-
-type rootIndex struct {
-	items        map[string]indexedItem
-	reidentified map[string]string
-	tree         entity.Tree
-}
-
-type indexedItem struct {
-	path string
-	kind enums.ItemKind
 }
 
 type ownWrite struct {
@@ -37,35 +26,47 @@ type ownWrite struct {
 	hash string
 }
 
-func NewWorkspaceIndex() *WorkspaceIndex {
-	return &WorkspaceIndex{roots: map[string]*rootIndex{}, writes: map[string]ownWrite{}}
+func NewWorkspaceIndex() adapter.WorkspaceIndex {
+	return &workspaceIndex{roots: map[string]*model.TreeIndex{}, writes: map[string]ownWrite{}}
 }
 
-// IsOwnWrite reports whether path was written by Xenon with exactly data in the last two seconds.
-func (w *WorkspaceIndex) IsOwnWrite(path string, data []byte) bool {
+func (w *workspaceIndex) Lock() {
+	w.mu.Lock()
+}
+
+func (w *workspaceIndex) Unlock() {
+	w.mu.Unlock()
+}
+
+func (w *workspaceIndex) IsOwnWrite(path string, data []byte) bool {
 	w.writesMu.Lock()
 	defer w.writesMu.Unlock()
 	write, found := w.writes[path]
 	return found && write.hash == revisionOf(data) && timeutils.Now().Sub(write.at) <= ownWriteWindow
 }
 
-func (w *WorkspaceIndex) recordWrite(path string, data []byte) {
+func (w *workspaceIndex) RecordWrite(path string, data []byte) {
 	w.writesMu.Lock()
 	defer w.writesMu.Unlock()
 	w.writes[path] = ownWrite{at: timeutils.Now(), hash: revisionOf(data)}
 }
 
-func (w *WorkspaceIndex) current(root string) (*rootIndex, error) {
+func (w *workspaceIndex) Cached(root string) (*model.TreeIndex, bool) {
+	index, found := w.roots[root]
+	return index, found
+}
+
+func (w *workspaceIndex) Current(root string) (*model.TreeIndex, error) {
 	if index, found := w.roots[root]; found {
 		return index, nil
 	}
-	return w.refresh(root)
+	return w.Refresh(root)
 }
 
-func (w *WorkspaceIndex) refresh(root string) (*rootIndex, error) {
+func (w *workspaceIndex) Refresh(root string) (*model.TreeIndex, error) {
 	previous := map[string]string{}
 	if index, found := w.roots[root]; found {
-		previous = index.reidentified
+		previous = index.Reidentified
 	}
 	index, err := scanTree(root, previous)
 	if err != nil {
@@ -75,17 +76,17 @@ func (w *WorkspaceIndex) refresh(root string) (*rootIndex, error) {
 	return index, nil
 }
 
-func (w *WorkspaceIndex) resolve(root, id string) (*rootIndex, indexedItem, bool, error) {
+func (w *workspaceIndex) Resolve(root, id string) (*model.TreeIndex, model.IndexedItem, bool, error) {
 	if index, found := w.roots[root]; found {
-		if item, known := index.items[id]; known && exists(item.path) {
+		if item, known := index.Items[id]; known && exists(item.Path) {
 			return index, item, true, nil
 		}
 	}
-	index, err := w.refresh(root)
+	index, err := w.Refresh(root)
 	if err != nil {
-		return nil, indexedItem{}, false, err
+		return nil, model.IndexedItem{}, false, err
 	}
-	item, known := index.items[id]
+	item, known := index.Items[id]
 	return index, item, known, nil
 }
 

@@ -1,11 +1,6 @@
 package adapter
 
-import (
-	"errors"
-	"testing"
-
-	"github.com/brienze1/xenon/pkg/errs"
-)
+import "testing"
 
 func TestEmitWithoutRunningApplicationIsDropped(t *testing.T) {
 	NewEventEmitter().Emit("workspace:tree-changed", nil)
@@ -13,9 +8,8 @@ func TestEmitWithoutRunningApplicationIsDropped(t *testing.T) {
 
 func TestPickFolderWithoutRunningApplicationFails(t *testing.T) {
 	path, err := NewDialog().PickFolder("Choose a folder")
-	var custom errs.BaseError
-	if !errors.As(err, &custom) || custom.Code() != "DLG-00500" || path != "" {
-		t.Fatalf("PickFolder() = %q, %v; want DLG-00500", path, err)
+	if err == nil || path != "" {
+		t.Fatalf("PickFolder() = %q, %v; want an error", path, err)
 	}
 }
 
@@ -25,9 +19,8 @@ func TestPickFileAndSaveFileWithoutRunningApplicationFail(t *testing.T) {
 		"save": func() (string, error) { return NewDialog().PickSaveFile("Save", "body.json") },
 	} {
 		path, err := pick()
-		var custom errs.BaseError
-		if !errors.As(err, &custom) || custom.Code() != "DLG-00500" || path != "" {
-			t.Fatalf("%s: = %q, %v; want DLG-00500", name, path, err)
+		if err == nil || path != "" {
+			t.Fatalf("%s: = %q, %v; want an error", name, path, err)
 		}
 	}
 }

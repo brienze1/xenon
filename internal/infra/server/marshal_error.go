@@ -12,7 +12,7 @@ import (
 func MarshalError(err error) []byte {
 	var custom errs.BaseError
 	if !errors.As(err, &custom) {
-		custom = errs.InternalServerError(err, "UNK-00500", "Unknown error")
+		custom = errs.InternalServerError(err, "UNK-01500", "Unknown error")
 	}
 	payload, _ := json.Marshal(custom.ToDto(transactionId()))
 	return payload

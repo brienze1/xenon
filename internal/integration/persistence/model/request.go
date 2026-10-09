@@ -4,9 +4,8 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
-	"github.com/brienze1/xenon/internal/domain/enums/httpmethod"
 	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
-	"github.com/brienze1/xenon/internal/integration/persistence/yamlnode"
+	"github.com/brienze1/xenon/pkg/yamlnode"
 )
 
 type Request struct {
@@ -33,7 +32,7 @@ func NewRequest(request entity.Request) Request {
 		Id:            request.ID,
 		Name:          request.Name,
 		Description:   request.Description,
-		Method:        request.NormalizedMethod(),
+		Method:        request.MethodOrDefault(),
 		Url:           request.URL,
 		Params:        newKeyValues(request.Params),
 		PathVariables: make([]PathVariable, 0, len(request.PathVariables)),
@@ -69,9 +68,16 @@ func (r *Request) ToEntity() entity.Request {
 	return request
 }
 
+func (r *Request) ToStoredEntity(id, revision string) entity.Request {
+	request := r.ToEntity()
+	request.ID = id
+	request.Revision = revision
+	return request
+}
+
 func (r *Request) Fields() []yamlnode.Field {
 	return append(headerFields(itemkind.Request.String(), r.Id, r.Name, r.Description),
-		yamlnode.String("method", r.methodOrDefault()),
+		yamlnode.String("method", r.Method),
 		yamlnode.String("url", r.Url),
 		yamlnode.List("params", keyValueNodes(r.Params)),
 		yamlnode.List("pathVariables", r.pathVariableNodes()),
@@ -84,13 +90,6 @@ func (r *Request) Fields() []yamlnode.Field {
 		yamlnode.Reserved("inheritScripts", inheritScriptsNode()),
 		yamlnode.Reserved("postman", yamlnode.EmptyMapping()),
 	)
-}
-
-func (r *Request) methodOrDefault() string {
-	if r.Method == "" {
-		return httpmethod.Get.String()
-	}
-	return r.Method
 }
 
 func (r *Request) pathVariableNodes() []*yaml.Node {

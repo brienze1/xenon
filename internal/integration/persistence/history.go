@@ -92,7 +92,7 @@ func (h *historyPersistence) Clear(ctx context.Context, localId string) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if err := os.MkdirAll(appDataPath(workspacesDataDir, localId), appDataDirMode); err != nil {
-		return errs.FileError(err, "HIS-05500")
+		return errs.FileError(err, "HIS-09500")
 	}
 	if err := fileutils.WriteFileAtomic(historyPath(localId), []byte{}, appDataFileMode); err != nil {
 		return errs.FileError(err, "HIS-08500")
@@ -132,9 +132,8 @@ func appendHistoryLine(path string, line []byte) error {
 	if err != nil {
 		return err
 	}
-	lines := append(historyLines(stored), line)
-	if len(lines) > entity.HistoryCompactionThreshold {
-		return compactHistory(path, lines[len(lines)-entity.HistoryCap:])
+	if kept, compact := entity.RetainHistory(append(historyLines(stored), line)); compact {
+		return compactHistory(path, kept)
 	}
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, appDataFileMode)
 	if err != nil {
@@ -142,7 +141,7 @@ func appendHistoryLine(path string, line []byte) error {
 	}
 	_, writeErr := file.Write(append(separatorAfter(stored), append(line, lineBreak...)...))
 	if err := errors.Join(writeErr, file.Close()); err != nil {
-		return errs.FileError(err, "HIS-06500")
+		return errs.FileError(err, "HIS-10500")
 	}
 	return nil
 }

@@ -12,23 +12,23 @@ import (
 )
 
 type openWorkspace struct {
-	findWorkspaceRegistry   usecase.FindWorkspaceRegistry
-	saveWorkspaceRegistry   usecase.SaveWorkspaceRegistry
-	validateWorkspaceFolder usecase.ValidateWorkspaceFolder
-	loadWorkspace           usecase.LoadWorkspace
+	findWorkspaceRegistry  usecase.FindWorkspaceRegistry
+	saveWorkspaceRegistry  usecase.SaveWorkspaceRegistry
+	inspectWorkspaceFolder usecase.InspectWorkspaceFolder
+	loadWorkspace          usecase.LoadWorkspace
 }
 
 func NewOpenWorkspaceService(
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry,
 	saveWorkspaceRegistry usecase.SaveWorkspaceRegistry,
-	validateWorkspaceFolder usecase.ValidateWorkspaceFolder,
+	inspectWorkspaceFolder usecase.InspectWorkspaceFolder,
 	loadWorkspace usecase.LoadWorkspace,
 ) adapter.OpenWorkspaceService {
 	return &openWorkspace{
-		findWorkspaceRegistry:   findWorkspaceRegistry,
-		saveWorkspaceRegistry:   saveWorkspaceRegistry,
-		validateWorkspaceFolder: validateWorkspaceFolder,
-		loadWorkspace:           loadWorkspace,
+		findWorkspaceRegistry:  findWorkspaceRegistry,
+		saveWorkspaceRegistry:  saveWorkspaceRegistry,
+		inspectWorkspaceFolder: inspectWorkspaceFolder,
+		loadWorkspace:          loadWorkspace,
 	}
 }
 
@@ -39,7 +39,11 @@ func (o *openWorkspace) Open(ctx context.Context, path string) (*entity.Register
 	if err != nil {
 		return nil, err
 	}
-	if err := o.validateWorkspaceFolder.ValidateExisting(ctx, path, "", *registry); err != nil {
+	folder, err := o.inspectWorkspaceFolder.Inspect(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+	if err := usecase.ValidateExistingWorkspaceFolder(*folder, *registry, ""); err != nil {
 		return nil, err
 	}
 	workspace, err := o.loadWorkspace.Load(ctx, path)

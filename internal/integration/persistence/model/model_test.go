@@ -9,7 +9,7 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums/bodymode"
 	"github.com/brienze1/xenon/internal/domain/enums/formdatatype"
 	"github.com/brienze1/xenon/internal/domain/enums/rawlanguage"
-	"github.com/brienze1/xenon/internal/integration/persistence/yamlnode"
+	"github.com/brienze1/xenon/pkg/yamlnode"
 )
 
 func write(t *testing.T, fields []yamlnode.Field) string {
@@ -127,7 +127,8 @@ func TestMinimalRequestGetsDefaults(t *testing.T) {
 	if !reflect.DeepEqual(request, want) {
 		t.Fatalf("ToEntity() = %+v, want %+v", request, want)
 	}
-	written := write(t, model.Fields())
+	stored := NewRequest(request)
+	written := write(t, stored.Fields())
 	wantYaml := "xenon: 1\nkind: request\nid: 01R\nname: Ping\ndescription: \"\"\nmethod: GET\nurl: \"\"\nparams: []\npathVariables: []\nheaders: []\nautoHeaders:\n  disabled: []\nauth:\n  type: inherit\nbody:\n  mode: none\nsettings:\n  timeoutMs: 0\n  followRedirects: true\n  verifySsl: true\n  encodeUrl: true\nscripts:\n  preRequest: \"\"\n  postResponse: \"\"\ninheritScripts: true\npostman: {}\n"
 	if written != wantYaml {
 		t.Fatalf("got:\n%s\nwant:\n%s", written, wantYaml)

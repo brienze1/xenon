@@ -29,6 +29,8 @@ func TestFactories(t *testing.T) {
 		{name: "panic", err: PanicError("panicked"), message: "panic", code: "PNC-00500", status: http.StatusInternalServerError, retries: 0, abort: false, notified: true},
 		{name: "server", err: ServerError("upstream", "TST-00502", http.StatusBadGateway), message: "server error", code: "TST-00502", status: http.StatusBadGateway, retries: 5, abort: false, notified: true},
 		{name: "client", err: ClientError("rejected", "TST-00422", http.StatusUnprocessableEntity), message: "client error", code: "TST-00422", status: http.StatusUnprocessableEntity, retries: 0, abort: true, notified: true},
+		{name: "conflict", err: ConflictError("taken", "TST-00409"), message: "conflict", code: "TST-00409", status: http.StatusConflict, retries: 0, abort: true, notified: true},
+		{name: "unprocessable entity", err: UnprocessableEntityError("unreadable", "TST-01422"), message: "unprocessable entity", code: "TST-01422", status: http.StatusUnprocessableEntity, retries: 0, abort: true, notified: true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

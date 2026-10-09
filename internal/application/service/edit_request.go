@@ -64,9 +64,12 @@ func (e *editRequest) AutoHeaders(ctx context.Context, localId string, request e
 	if err != nil {
 		return nil, err
 	}
-	ancestors, err := e.findTreeItem.FindAncestors(ctx, workspace.Path, request.ID)
-	if err != nil {
-		return nil, err
+	ancestors := make([]entity.Collection, 0)
+	if request.HasID() {
+		ancestors, err = e.findTreeItem.FindAncestors(ctx, workspace.Path, request.ID)
+		if err != nil {
+			return nil, err
+		}
 	}
 	effective := usecase.ResolveEffectiveRequest(request, ancestors, workspace.Path)
 	headers := usecase.ComputeAutoHeaders(effective, appVersion)

@@ -14,15 +14,6 @@ func NewAppRegistry() AppRegistry {
 	return AppRegistry{Version: registryVersion, Workspaces: []RegisteredWorkspace{}}
 }
 
-func (a *AppRegistry) Overlaps(path string) bool {
-	for _, workspace := range a.Workspaces {
-		if workspace.Overlaps(path) {
-			return true
-		}
-	}
-	return false
-}
-
 func (a *AppRegistry) Register(workspace RegisteredWorkspace) {
 	a.Workspaces = append(a.Workspaces, workspace)
 	a.ActiveLocalID = workspace.LocalID

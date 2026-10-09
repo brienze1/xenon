@@ -7,7 +7,6 @@ import (
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
-	"github.com/brienze1/xenon/pkg/errs"
 	"github.com/brienze1/xenon/pkg/idutils"
 	"github.com/brienze1/xenon/pkg/logger"
 )
@@ -64,9 +63,9 @@ func (m *manageTreeItem) CreateFolder(ctx context.Context, localId, parentId, na
 	if err != nil {
 		return nil, err
 	}
-	parent, found := tree.Container(parentId)
-	if !found {
-		return nil, errs.NotFoundError("the parent collection or folder does not exist", "TRE-01404")
+	parent, err := usecase.ResolveParent(*tree, parentId)
+	if err != nil {
+		return nil, err
 	}
 	folder := entity.NewFolder(idutils.NewUlid(), name)
 	fileName := usecase.DeriveFileName(folder.Name, folder.Kind, parent.Entries)
@@ -86,9 +85,9 @@ func (m *manageTreeItem) CreateRequest(ctx context.Context, localId, parentId, n
 	if err != nil {
 		return nil, err
 	}
-	parent, found := tree.Container(parentId)
-	if !found {
-		return nil, errs.NotFoundError("the parent collection or folder does not exist", "TRE-01404")
+	parent, err := usecase.ResolveParent(*tree, parentId)
+	if err != nil {
+		return nil, err
 	}
 	created := request.CopyAs(idutils.NewUlid(), name).WithFileRefsRelativeTo(root)
 	fileName := usecase.DeriveFileName(created.Name, itemkind.Request, parent.Entries)
@@ -109,12 +108,12 @@ func (m *manageTreeItem) Rename(ctx context.Context, localId, id, name string) (
 	if err != nil {
 		return nil, err
 	}
-	item, found := tree.Item(id)
-	if !found {
-		return nil, errs.NotFoundError("the item does not exist", "TRE-02404")
+	item, err := usecase.ResolveItem(*tree, id)
+	if err != nil {
+		return nil, err
 	}
 	fileName := usecase.DeriveFileName(name, item.Kind, tree.SiblingEntries(id))
-	node, err := m.renameTreeItem.Rename(ctx, root, id, name, fileName)
+	node, err := m.renameTreeItem.Rename(ctx, root, id, entity.NormalizeItemName(name), fileName)
 	if err != nil {
 		return nil, err
 	}
@@ -130,9 +129,9 @@ func (m *manageTreeItem) Duplicate(ctx context.Context, localId, id string) (*en
 	if err != nil {
 		return nil, err
 	}
-	item, found := tree.Item(id)
-	if !found {
-		return nil, errs.NotFoundError("the item does not exist", "TRE-02404")
+	item, err := usecase.ResolveItem(*tree, id)
+	if err != nil {
+		return nil, err
 	}
 	parent, _ := tree.Parent(id)
 	fileName := usecase.DeriveFileName(item.CopyName(), item.Kind, parent.Entries)
@@ -152,9 +151,9 @@ func (m *manageTreeItem) Delete(ctx context.Context, localId, id string) ([]stri
 	if err != nil {
 		return nil, err
 	}
-	item, found := tree.Item(id)
-	if !found {
-		return nil, errs.NotFoundError("the item does not exist", "TRE-02404")
+	item, err := usecase.ResolveItem(*tree, id)
+	if err != nil {
+		return nil, err
 	}
 	if err := m.deleteTreeItem.Delete(ctx, root, id); err != nil {
 		return nil, err
