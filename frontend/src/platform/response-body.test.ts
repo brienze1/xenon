@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fetchResponseBlob, fetchResponseText } from './response-body'
+
+vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {} }))
+
+const { fetchResponseBlob, fetchResponseText } = await import('./response-body')
 
 describe('response body route', () => {
   afterEach(() => vi.unstubAllGlobals())
