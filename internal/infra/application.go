@@ -16,12 +16,14 @@ import (
 )
 
 type Bindings struct {
-	Dialog *binding.DialogService
+	Workspace *binding.WorkspaceService
+	Dialog    *binding.DialogService
 }
 
 func NewBindings() *Bindings {
 	return &Bindings{
-		Dialog: binding.NewDialogService(),
+		Workspace: binding.NewWorkspaceService(),
+		Dialog:    binding.NewDialogService(),
 	}
 }
 
@@ -41,6 +43,7 @@ func Start() {
 		Name:        "Xenon",
 		Description: "Local-first desktop API client",
 		Services: []wails.Service{
+			wails.NewService(bindings.Workspace),
 			wails.NewService(bindings.Dialog),
 		},
 		MarshalError: server.MarshalError,

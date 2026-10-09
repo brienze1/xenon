@@ -35,13 +35,13 @@ func (a *AppRegistry) Find(localId string) (*RegisteredWorkspace, bool) {
 	return nil, false
 }
 
-func (a *AppRegistry) Activate(localId, displayName string) bool {
+func (a *AppRegistry) Activate(localId, displayName string) (*RegisteredWorkspace, bool) {
 	workspace, found := a.Find(localId)
 	if !found {
-		return false
+		return nil, false
 	}
 	workspace.DisplayNameCache = displayName
 	workspace.Missing = false
 	a.ActiveLocalID = localId
-	return true
+	return workspace, true
 }

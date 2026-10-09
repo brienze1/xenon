@@ -140,13 +140,14 @@ func TestAppRegistry(t *testing.T) {
 		t.Error("Find(missing) must fail")
 	}
 	registry.Workspaces[0].Missing = true
-	if !registry.Activate("01A", "Acme Corp") {
-		t.Fatal("Activate(01A) must succeed")
+	activated, ok := registry.Activate("01A", "Acme Corp")
+	if !ok || activated != &registry.Workspaces[0] {
+		t.Fatal("Activate(01A) must succeed and return the registered workspace")
 	}
 	if registry.ActiveLocalID != "01A" || registry.Workspaces[0].DisplayNameCache != "Acme Corp" || registry.Workspaces[0].Missing {
 		t.Fatalf("Activate must refresh the cache, got %+v", registry)
 	}
-	if registry.Activate("missing", "x") || registry.ActiveLocalID != "01A" {
+	if missing, ok := registry.Activate("missing", "x"); ok || missing != nil || registry.ActiveLocalID != "01A" {
 		t.Error("Activate(missing) must fail and keep the active workspace")
 	}
 }
