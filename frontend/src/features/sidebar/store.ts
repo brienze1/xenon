@@ -33,6 +33,8 @@ interface SidebarState {
   query: string
   search: TreeSearchResult | null
   load: () => Promise<void>
+  setTree: (tree: TreeNode[]) => void
+  applyState: (state: { expanded: Record<string, boolean>; selectedId: string | null; query: string }) => void
   setQuery: (query: string) => void
   toggle: (id: string) => void
   select: (id: string) => void
@@ -109,6 +111,13 @@ export const useSidebarStore = create<SidebarState>()((set, get) => {
       if (get().status === 'loading') {
         set({ status: 'ready' })
       }
+    },
+
+    setTree: (tree) => set({ tree, status: 'ready', error: null }),
+
+    applyState: ({ expanded, selectedId, query }) => {
+      set({ expanded, selectedId })
+      get().setQuery(query)
     },
 
     setQuery: (query) => {

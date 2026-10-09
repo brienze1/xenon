@@ -61,7 +61,8 @@ describe('RequestBuilder', () => {
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
     useResponseViewerStore.getState().reset()
     useRequestBuilderStore.getState().reset()
-    tabId = useRequestBuilderStore.getState().activeTabId
+    tabId = 'tab-1'
+    useRequestBuilderStore.getState().ensureTab(tabId)
   })
 
   afterEach(() => vi.useRealTimers())
@@ -251,10 +252,11 @@ describe('RequestBuilder saving', () => {
     vi.mocked(requests.autoHeaders).mockResolvedValue([])
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
     useRequestBuilderStore.getState().reset()
+    useRequestBuilderStore.getState().ensureTab('tab-1')
   })
 
   it('only saves requests opened from the sidebar', async () => {
-    const tabId = useRequestBuilderStore.getState().activeTabId
+    const tabId = 'tab-1'
     render(<RequestBuilder tabId={tabId} />)
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
     vi.mocked(requests.getRequest).mockResolvedValue({ draft: saved, revision: 'rev-1' })
@@ -266,7 +268,7 @@ describe('RequestBuilder saving', () => {
   })
 
   it('asks whether to keep my version when the file changed on disk', async () => {
-    const tabId = useRequestBuilderStore.getState().activeTabId
+    const tabId = 'tab-1'
     vi.mocked(requests.getRequest).mockResolvedValue({ draft: saved, revision: 'rev-1' })
     vi.mocked(requests.saveRequest).mockRejectedValueOnce(new AppError('REQ-02409', 'changed'))
     render(<RequestBuilder tabId={tabId} />)

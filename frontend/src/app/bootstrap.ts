@@ -1,23 +1,37 @@
 import { useRequestBuilderStore } from '@/features/request-builder/store'
-import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
+import { useTabsStore } from '@/features/tabs/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
-import { onWorkspaceFolderMissing } from '@/platform/events'
+import { onRequestChangedOnDisk, onWorkspaceFolderMissing, onWorkspaceTreeChanged } from '@/platform/events'
 
 export function bootstrap(): () => void {
+  const flush = () => void useTabsStore.getState().flushPersist()
+  window.addEventListener('beforeunload', flush)
   const unsubscribers = [
     onWorkspaceFolderMissing(({ localId }) => useWorkspacesStore.getState().markMissing(localId)),
-    useWorkspacesStore.subscribe((state, previous) => {
-      if (state.activeLocalId === previous.activeLocalId) {
-        return
-      }
-      if (previous.activeLocalId !== null) {
-        resetWorkspaceStores()
-      }
-      if (state.activeLocalId !== null) {
+    onWorkspaceTreeChanged(({ localId }) => {
+      if (useWorkspacesStore.getState().activeLocalId === localId) {
         void useSidebarStore.getState().load()
       }
     }),
+    onRequestChangedOnDisk((event) => void useTabsStore.getState().handleChangedOnDisk(event)),
+    useRequestBuilderStore.subscribe((state, previous) => {
+      if (state.tabs !== previous.tabs) {
+        useTabsStore.getState().pinIfEdited()
+        persistTabs()
+      }
+    }),
+    useTabsStore.subscribe((state, previous) => {
+      if (state.tabs !== previous.tabs || state.activeTabId !== previous.activeTabId || state.previewTabId !== previous.previewTabId) {
+        persistTabs()
+      }
+    }),
+    useSidebarStore.subscribe((state, previous) => {
+      if (state.expanded !== previous.expanded || state.selectedId !== previous.selectedId || state.query !== previous.query) {
+        persistTabs()
+      }
+    }),
+    () => window.removeEventListener('beforeunload', flush),
   ]
   void openLastWorkspace()
   return () => {
@@ -27,16 +41,16 @@ export function bootstrap(): () => void {
   }
 }
 
+function persistTabs(): void {
+  if (useTabsStore.getState().localId !== null) {
+    useTabsStore.getState().schedulePersist()
+  }
+}
+
 export async function openLastWorkspace(): Promise<void> {
   await useWorkspacesStore.getState().load()
   const activeLocalId = useWorkspacesStore.getState().activeLocalId
   if (activeLocalId) {
     await useWorkspacesStore.getState().activate(activeLocalId)
   }
-}
-
-function resetWorkspaceStores(): void {
-  useRequestBuilderStore.getState().reset()
-  useResponseViewerStore.getState().reset()
-  useSidebarStore.getState().reset()
 }

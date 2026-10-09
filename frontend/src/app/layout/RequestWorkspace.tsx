@@ -7,14 +7,15 @@ const DEFAULT_SPLIT = 0.5
 
 interface RequestWorkspaceProps {
   tabId: string
+  onSave: () => void
 }
 
-export function RequestWorkspace({ tabId }: RequestWorkspaceProps) {
+export function RequestWorkspace({ tabId, onSave }: RequestWorkspaceProps) {
   const [ratio, setRatio] = useState(DEFAULT_SPLIT)
   return (
     <SplitPane.Root direction="column" ratio={ratio} onRatioChange={setRatio}>
       <SplitPane.Pane>
-        <RequestBuilder tabId={tabId} />
+        <RequestBuilder tabId={tabId} onSave={onSave} />
       </SplitPane.Pane>
       <SplitPane.Divider label="Resize request and response" />
       <SplitPane.Pane>

@@ -36,6 +36,38 @@ export async function activateWorkspace(localId: string): Promise<WorkspaceSnaps
   }
 }
 
+export async function openWorkspace(path: string): Promise<WorkspaceSummary> {
+  try {
+    return toWorkspaceSummary(required(await WorkspaceService.Open({ path })))
+  } catch (error) {
+    throw toAppError(error)
+  }
+}
+
+export async function renameWorkspace(localId: string, name: string): Promise<WorkspaceSummary> {
+  try {
+    return toWorkspaceSummary(required(await WorkspaceService.Rename({ local_id: localId, name })))
+  } catch (error) {
+    throw toAppError(error)
+  }
+}
+
+export async function removeWorkspace(localId: string, moveToTrash: boolean): Promise<WorkspaceList> {
+  try {
+    return toWorkspaceList(await WorkspaceService.Remove({ local_id: localId, move_to_trash: moveToTrash }))
+  } catch (error) {
+    throw toAppError(error)
+  }
+}
+
+export async function locateWorkspace(localId: string, path: string): Promise<WorkspaceSummary> {
+  try {
+    return toWorkspaceSummary(required(await WorkspaceService.Locate({ local_id: localId, path })))
+  } catch (error) {
+    throw toAppError(error)
+  }
+}
+
 function required<T>(value: T | null): T {
   if (value === null) {
     throw new AppError(EMPTY_RESPONSE, 'The backend returned no data')

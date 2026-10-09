@@ -22,6 +22,7 @@ import {
   getRequest,
   parseBulk,
   saveRequest,
+  saveRequestAs,
   sendRequest,
   type PendingSend,
 } from '@/platform/services/requests'
@@ -44,15 +45,18 @@ export interface TabDraft {
   baseRevision: string | null
   conflict: boolean
   saving: boolean
+  dirty: boolean
 }
 
 interface RequestBuilderState {
-  activeTabId: string
   tabs: Record<string, TabDraft>
-  openTab: (tabId?: string) => string
-  openSaved: (tabId: string, requestId: string) => Promise<void>
-  save: (tabId: string, force?: boolean) => Promise<void>
-  detachRequests: (requestIds: string[]) => void
+  ensureTab: (tabId: string) => void
+  openSaved: (tabId: string, requestId: string) => Promise<boolean>
+  loadDraft: (tabId: string, draft: RequestDraft, baseRevision: string | null, dirty: boolean) => void
+  dropTab: (tabId: string) => void
+  detach: (tabId: string) => void
+  save: (tabId: string, force?: boolean) => Promise<boolean>
+  saveAs: (tabId: string, parentId: string, name: string) => Promise<string | null>
   adoptRename: (requestId: string) => Promise<void>
   setName: (tabId: string, name: string) => void
   setDescription: (tabId: string, description: string) => void
@@ -88,10 +92,6 @@ function debounce(key: string, action: () => void) {
   )
 }
 
-function newTabId(): string {
-  return `tab-${globalThis.crypto.randomUUID()}`
-}
-
 function newTab(): TabDraft {
   return {
     draft: emptyDraft(),
@@ -103,6 +103,7 @@ function newTab(): TabDraft {
     baseRevision: null,
     conflict: false,
     saving: false,
+    dirty: false,
   }
 }
 
@@ -138,7 +139,7 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
   }
 
   function patchDraft(tabId: string, update: (draft: RequestDraft) => RequestDraft) {
-    patchTab(tabId, { draft: update(tab(tabId).draft) })
+    patchTab(tabId, { draft: update(tab(tabId).draft), dirty: true })
     debounce(`${tabId}:auto-headers`, () => void get().refreshAutoHeaders(tabId))
   }
 
@@ -192,36 +193,59 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
     }
   }
 
-  const initialTabId = newTabId()
-
   return {
-    activeTabId: initialTabId,
-    tabs: { [initialTabId]: newTab() },
+    tabs: {},
 
-    openTab: (tabId = newTabId()) => {
-      set((state) => ({ activeTabId: tabId, tabs: { ...state.tabs, [tabId]: state.tabs[tabId] ?? newTab() } }))
-      return tabId
+    ensureTab: (tabId) => {
+      if (!get().tabs[tabId]) {
+        patchTab(tabId, {})
+      }
     },
 
     openSaved: async (tabId, requestId) => {
       const localId = useWorkspacesStore.getState().activeLocalId
       if (!localId) {
-        return
+        return false
       }
       try {
         const saved = await getRequest(localId, requestId)
-        patchTab(tabId, { ...newTab(), draft: saved.draft, baseRevision: saved.revision })
+        patchTab(tabId, { ...newTab(), subTab: tab(tabId).subTab, draft: saved.draft, baseRevision: saved.revision })
         void get().refreshAutoHeaders(tabId)
+        return true
       } catch (error) {
         fail(tabId, error)
+        return false
       }
     },
+
+    loadDraft: (tabId, draft, baseRevision, dirty) => {
+      patchTab(tabId, { ...newTab(), draft, baseRevision, dirty })
+      void get().refreshAutoHeaders(tabId)
+    },
+
+    dropTab: (tabId) => {
+      tab(tabId).pending?.cancel()
+      for (const [key, timer] of timers) {
+        if (key.startsWith(`${tabId}:`)) {
+          clearTimeout(timer)
+          timers.delete(key)
+        }
+      }
+      set((state) => {
+        const tabs = { ...state.tabs }
+        delete tabs[tabId]
+        return { tabs }
+      })
+    },
+
+    detach: (tabId) =>
+      patchTab(tabId, { draft: { ...tab(tabId).draft, id: '' }, baseRevision: null, conflict: false, dirty: true }),
 
     save: async (tabId, force = false) => {
       const localId = useWorkspacesStore.getState().activeLocalId
       const current = tab(tabId)
       if (!localId || current.draft.id === '' || current.baseRevision === null || current.saving) {
-        return
+        return false
       }
       patchTab(tabId, { saving: true })
       try {
@@ -231,26 +255,42 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
           baseRevision: saved.revision,
           conflict: false,
           error: null,
+          dirty: false,
         })
         void useSidebarStore.getState().load()
+        return true
       } catch (error) {
         const appError = toAppError(error)
         patchTab(tabId, appError.code === SAVE_CONFLICT ? { conflict: true } : { error: appError })
+        return false
       } finally {
         patchTab(tabId, { saving: false })
       }
     },
 
-    detachRequests: (requestIds) => {
-      const deleted = new Set(requestIds)
-      set((state) => ({
-        tabs: Object.fromEntries(
-          Object.entries(state.tabs).map(([tabId, current]) => [
-            tabId,
-            deleted.has(current.draft.id) ? { ...current, draft: { ...current.draft, id: '' }, baseRevision: null, conflict: false } : current,
-          ]),
-        ),
-      }))
+    saveAs: async (tabId, parentId, name) => {
+      const localId = useWorkspacesStore.getState().activeLocalId
+      if (!localId) {
+        return null
+      }
+      patchTab(tabId, { saving: true })
+      try {
+        const saved = await saveRequestAs(localId, parentId, name, tab(tabId).draft)
+        patchTab(tabId, {
+          draft: withSavedRows(tab(tabId).draft, saved.draft),
+          baseRevision: saved.revision,
+          conflict: false,
+          error: null,
+          dirty: false,
+        })
+        void useSidebarStore.getState().load()
+        return saved.draft.id
+      } catch (error) {
+        fail(tabId, error)
+        return null
+      } finally {
+        patchTab(tabId, { saving: false })
+      }
     },
 
     adoptRename: async (requestId) => {
@@ -397,8 +437,7 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
         clearTimeout(timer)
       }
       timers.clear()
-      const tabId = newTabId()
-      set({ activeTabId: tabId, tabs: { [tabId]: newTab() } })
+      set({ tabs: {} })
     },
   }
 })

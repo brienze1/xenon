@@ -10,6 +10,7 @@ import styles from './TreeItem.module.css'
 
 export interface TreeItemActions {
   onOpenRequest: (id: string) => void
+  onPinRequest: (id: string) => void
   onOpenSettings: (id: string) => void
   onDelete: (node: TreeNode) => void
   onRenamed: (id: string) => void
@@ -20,7 +21,7 @@ interface TreeItemProps extends TreeItemActions {
   focusable: boolean
 }
 
-export function TreeItem({ row, focusable, onOpenRequest, onOpenSettings, onDelete, onRenamed }: TreeItemProps) {
+export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenSettings, onDelete, onRenamed }: TreeItemProps) {
   const { node, depth, expanded } = row
   const selected = useSidebarStore((state) => state.selectedId === node.id)
   const renaming = useSidebarStore((state) => state.renamingId === node.id)
@@ -73,6 +74,7 @@ export function TreeItem({ row, focusable, onOpenRequest, onOpenSettings, onDele
           className={cn(styles.row, selected && styles.selected, node.kind === 'error' && styles.error)}
           style={{ paddingInlineStart: `calc(var(--space-3) + ${depth} * var(--space-4))` }}
           onClick={activate}
+          onDoubleClick={() => (node.kind === 'request' ? onPinRequest(node.id) : undefined)}
           onKeyDown={onKeyDown}
         >
           <span aria-hidden="true" className={styles.chevron}>

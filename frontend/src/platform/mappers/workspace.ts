@@ -3,6 +3,8 @@ import type {
   WorkspaceSnapshot as WorkspaceSnapshotDto,
   WorkspaceSummary as WorkspaceSummaryDto,
 } from '../../../bindings/github.com/brienze1/xenon/internal/integration/entrypoint/dto/models'
+import { toTreeNode, type TreeNode } from './tree'
+import { toUIState, type UIState } from './ui-state'
 
 export interface WorkspaceSummary {
   localId: string
@@ -18,6 +20,8 @@ export interface WorkspaceList {
 
 export interface WorkspaceSnapshot {
   summary: WorkspaceSummary
+  tree: TreeNode[]
+  uiState: UIState
 }
 
 export interface CreateWorkspaceInput {
@@ -37,5 +41,9 @@ export function toWorkspaceList(dto: WorkspaceListDto | null): WorkspaceList {
 }
 
 export function toWorkspaceSnapshot(dto: WorkspaceSnapshotDto): WorkspaceSnapshot {
-  return { summary: toWorkspaceSummary(dto.summary) }
+  return {
+    summary: toWorkspaceSummary(dto.summary),
+    tree: (dto.tree ?? []).map(toTreeNode),
+    uiState: toUIState(dto.ui_state ?? null),
+  }
 }

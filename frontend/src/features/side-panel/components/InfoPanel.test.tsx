@@ -32,7 +32,7 @@ function node(id: string, kind: TreeNode['kind'], name: string, children: TreeNo
 const sample = [node('c1', 'collection', 'Billing', [node('f1', 'folder', 'Invoices', [node('r1', 'request', 'Create invoice')])])]
 
 function tabId() {
-  return useRequestBuilderStore.getState().activeTabId
+  return 'tab-1'
 }
 
 function loadDraft(id: string, name: string, description = '') {
@@ -47,6 +47,7 @@ describe('InfoPanel', () => {
     vi.mocked(requests.autoHeaders).mockResolvedValue([])
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
     useRequestBuilderStore.getState().reset()
+    useRequestBuilderStore.getState().ensureTab('tab-1')
     useSidebarStore.getState().reset()
     useSidebarStore.setState({ tree: sample })
   })

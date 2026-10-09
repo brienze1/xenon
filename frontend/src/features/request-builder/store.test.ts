@@ -12,6 +12,7 @@ vi.mock('@/platform/services/requests', () => ({
   sendRequest: vi.fn(),
   getRequest: vi.fn(),
   saveRequest: vi.fn(),
+  saveRequestAs: vi.fn(),
   lastResult: vi.fn(),
   releaseResponse: vi.fn(),
   saveResponseBody: vi.fn(),
@@ -64,18 +65,35 @@ describe('request builder store', () => {
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
     useResponseViewerStore.getState().reset()
     state().reset()
-    tabId = state().activeTabId
+    tabId = 'tab-1'
+    state().ensureTab(tabId)
   })
 
   afterEach(() => vi.useRealTimers())
 
-  it('starts with one unsaved tab keyed by its id', () => {
-    expect(tabId).toMatch(/^tab-/)
+  it('keeps one clean draft per tab id and marks edits dirty', () => {
     expect(draft(tabId)).toEqual(emptyDraft())
-    const other = state().openTab('tab-other')
-    expect(other).toBe('tab-other')
-    expect(state().activeTabId).toBe('tab-other')
+    expect(state().tabs[tabId]!.dirty).toBe(false)
+    state().ensureTab('tab-other')
+    state().ensureTab(tabId)
     expect(Object.keys(state().tabs)).toHaveLength(2)
+    state().setName(tabId, 'x')
+    expect(state().tabs[tabId]!.dirty).toBe(true)
+    expect(state().tabs['tab-other']!.dirty).toBe(false)
+  })
+
+  it('loads a draft and drops a tab with its pending work', async () => {
+    const cancel = vi.fn()
+    state().loadDraft(tabId, { ...emptyDraft(), url: 'https://d' }, 'rev', true)
+    expect(state().tabs[tabId]).toMatchObject({ baseRevision: 'rev', dirty: true, draft: { url: 'https://d' } })
+    vi.mocked(requests.sendRequest).mockReturnValue({ result: new Promise(() => undefined), cancel })
+    void state().send(tabId)
+    state().setUrl(tabId, 'https://e')
+    state().dropTab(tabId)
+    expect(cancel).toHaveBeenCalled()
+    expect(state().tabs[tabId]).toBeUndefined()
+    await vi.advanceTimersByTimeAsync(SYNC_DELAY_MS)
+    expect(requests.applyUrl).not.toHaveBeenCalled()
   })
 
   it('re-derives the params from the URL after 150 ms, keeping row ids', async () => {
@@ -241,15 +259,18 @@ describe('request builder store - saved requests', () => {
     vi.mocked(requests.autoHeaders).mockResolvedValue([])
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
     useRequestBuilderStore.getState().reset()
+    useRequestBuilderStore.getState().ensureTab(TAB)
   })
 
+  const TAB = 'tab-1'
+
   function activeTab() {
-    return useRequestBuilderStore.getState().tabs[useRequestBuilderStore.getState().activeTabId]!
+    return useRequestBuilderStore.getState().tabs[TAB]!
   }
 
   it('opens a saved request into the tab with its revision', async () => {
     vi.mocked(requests.getRequest).mockResolvedValue({ draft: savedDraft, revision: 'rev-1' })
-    const tabId = state().activeTabId
+    const tabId = TAB
     await state().openSaved(tabId, 'r1')
     expect(requests.getRequest).toHaveBeenCalledWith('ws', 'r1')
     expect(activeTab().draft).toEqual(savedDraft)
@@ -258,14 +279,14 @@ describe('request builder store - saved requests', () => {
 
   it('reports a request that cannot be opened', async () => {
     vi.mocked(requests.getRequest).mockRejectedValue(new AppError('REQ-01404', 'gone'))
-    await state().openSaved(state().activeTabId, 'r1')
+    await state().openSaved(TAB, 'r1')
     expect(activeTab().error?.code).toBe('REQ-01404')
   })
 
   it('saves with the base revision and keeps the new one', async () => {
     vi.mocked(requests.getRequest).mockResolvedValue({ draft: savedDraft, revision: 'rev-1' })
     vi.mocked(requests.saveRequest).mockResolvedValue({ draft: { ...savedDraft, url: 'https://x/v2' }, revision: 'rev-2' })
-    const tabId = state().activeTabId
+    const tabId = TAB
     await state().openSaved(tabId, 'r1')
     await state().save(tabId)
     expect(requests.saveRequest).toHaveBeenCalledWith('ws', savedDraft, 'rev-1', false)
@@ -275,14 +296,28 @@ describe('request builder store - saved requests', () => {
   })
 
   it('does not save an unsaved draft', async () => {
-    await state().save(state().activeTabId)
+    await expect(state().save(TAB)).resolves.toBe(false)
     expect(requests.saveRequest).not.toHaveBeenCalled()
+  })
+
+  it('saves a draft as a new request at a chosen place', async () => {
+    state().setUrl(TAB, 'https://new')
+    vi.mocked(requests.saveRequestAs).mockResolvedValue({ draft: { ...savedDraft, id: 'n1', url: 'https://new' }, revision: 'rev-n' })
+    await expect(state().saveAs(TAB, 'c1', 'New')).resolves.toBe('n1')
+    expect(requests.saveRequestAs).toHaveBeenCalledWith('ws', 'c1', 'New', expect.objectContaining({ url: 'https://new' }))
+    expect(activeTab()).toMatchObject({ baseRevision: 'rev-n', dirty: false, saving: false, draft: { id: 'n1' } })
+    vi.mocked(requests.saveRequestAs).mockRejectedValue(new AppError('TRE-01404', 'no parent'))
+    await expect(state().saveAs(TAB, 'gone', 'New')).resolves.toBeNull()
+    expect(activeTab().error?.code).toBe('TRE-01404')
+    useWorkspacesStore.setState({ activeLocalId: null })
+    await expect(state().saveAs(TAB, 'c1', 'New')).resolves.toBeNull()
+    await expect(state().openSaved(TAB, 'r1')).resolves.toBe(false)
   })
 
   it('offers keep mine when the file changed on disk', async () => {
     vi.mocked(requests.getRequest).mockResolvedValue({ draft: savedDraft, revision: 'rev-1' })
     vi.mocked(requests.saveRequest).mockRejectedValueOnce(new AppError('REQ-02409', 'changed'))
-    const tabId = state().activeTabId
+    const tabId = TAB
     await state().openSaved(tabId, 'r1')
     await state().save(tabId)
     expect(activeTab().conflict).toBe(true)
@@ -297,18 +332,18 @@ describe('request builder store - saved requests', () => {
 
   it('turns a deleted request into an unsaved draft', async () => {
     vi.mocked(requests.getRequest).mockResolvedValue({ draft: savedDraft, revision: 'rev-1' })
-    await state().openSaved(state().activeTabId, 'r1')
-    state().detachRequests(['other'])
-    expect(activeTab().draft.id).toBe('r1')
-    state().detachRequests(['r1'])
+    await state().openSaved(TAB, 'r1')
+    expect(activeTab().dirty).toBe(false)
+    state().detach(TAB)
     expect(activeTab().draft.id).toBe('')
+    expect(activeTab().dirty).toBe(true)
     expect(activeTab().baseRevision).toBeNull()
     expect(activeTab().draft.url).toBe('https://x/ping')
   })
 
   it('adopts the new name and revision after a rename', async () => {
     vi.mocked(requests.getRequest).mockResolvedValue({ draft: savedDraft, revision: 'rev-1' })
-    const tabId = state().activeTabId
+    const tabId = TAB
     await state().openSaved(tabId, 'r1')
     state().setUrl(tabId, 'https://edited')
     vi.mocked(requests.getRequest).mockResolvedValue({ draft: { ...savedDraft, name: 'Pong' }, revision: 'rev-9' })
@@ -324,7 +359,7 @@ describe('request builder store - saved requests', () => {
   })
 
   it('edits the name and the description', () => {
-    const tabId = state().activeTabId
+    const tabId = TAB
     state().setName(tabId, 'Ping')
     state().setDescription(tabId, 'docs')
     expect(activeTab().draft).toMatchObject({ name: 'Ping', description: 'docs' })

@@ -59,7 +59,7 @@ afterAll(() => {
 })
 
 async function renderPanel() {
-  const actions = { onOpenRequest: vi.fn(), onRequestsDeleted: vi.fn(), onRenamed: vi.fn() }
+  const actions = { onOpenRequest: vi.fn(), onPinRequest: vi.fn(), onRequestsDeleted: vi.fn(), onRenamed: vi.fn() }
   render(<SidebarPanel {...actions} />)
   await act(() => useSidebarStore.getState().load())
   return actions
@@ -100,6 +100,8 @@ describe('SidebarPanel', () => {
     expect(item('Create invoice')).toHaveAttribute('aria-selected', 'true')
     await userEvent.keyboard('{Enter}')
     expect(actions.onOpenRequest).toHaveBeenCalledTimes(2)
+    await userEvent.dblClick(item('Create invoice'))
+    expect(actions.onPinRequest).toHaveBeenCalledWith('r1')
   })
 
   it('filters the tree through the debounced search', async () => {

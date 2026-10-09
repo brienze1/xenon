@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
+import { defaultUIState } from '@/platform/mappers/ui-state'
 
 vi.mock('@/platform/services/workspaces', () => ({
   listWorkspaces: vi.fn(),
@@ -9,6 +10,8 @@ vi.mock('@/platform/services/workspaces', () => ({
   activateWorkspace: vi.fn(),
 }))
 vi.mock('@/platform/services/dialogs', () => ({ pickFolder: vi.fn() }))
+vi.mock('@/platform/services/ui-state', () => ({ getUIState: vi.fn(), saveUIState: vi.fn() }))
+vi.mock('@/platform/services/requests', () => ({ autoHeaders: vi.fn(async () => []), releaseResponse: vi.fn(async () => undefined), getRequest: vi.fn() }))
 
 const services = await import('@/platform/services/workspaces')
 const dialogs = await import('@/platform/services/dialogs')
@@ -23,7 +26,9 @@ describe('WelcomeScreen', () => {
 
   it('creates a workspace in the folder chosen with the native picker', async () => {
     vi.mocked(dialogs.pickFolder).mockResolvedValue('/work/acme')
-    vi.mocked(services.createWorkspace).mockResolvedValue({ localId: 'A', name: 'Acme', path: '/work/acme', missing: false })
+    const acme = { localId: 'A', name: 'Acme', path: '/work/acme', missing: false }
+    vi.mocked(services.createWorkspace).mockResolvedValue(acme)
+    vi.mocked(services.activateWorkspace).mockResolvedValue({ summary: acme, tree: [], uiState: defaultUIState() })
     render(<WelcomeScreen />)
     const submit = screen.getByRole('button', { name: 'Create workspace' })
     expect(submit).toBeDisabled()

@@ -8,11 +8,12 @@ import styles from './RequestBar.module.css'
 
 interface RequestBarProps {
   tabId: string
+  onSave?: () => void
 }
 
 const CUSTOM_METHOD = /^[A-Za-z][A-Za-z0-9_-]{0,31}$/
 
-export function RequestBar({ tabId }: RequestBarProps) {
+export function RequestBar({ tabId, onSave }: RequestBarProps) {
   const method = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.method ?? 'GET')
   const url = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.url ?? '')
   const sending = useRequestBuilderStore((state) => state.tabs[tabId]?.pending != null)
@@ -83,9 +84,9 @@ export function RequestBar({ tabId }: RequestBarProps) {
       )}
       <Button
         variant="secondary"
-        disabled={!saved || saving}
-        title={saved ? 'Save' : 'Open a request from the sidebar to save it'}
-        onClick={() => void save(tabId)}
+        disabled={saving || (!saved && onSave === undefined)}
+        title={saved ? 'Save' : 'Save into a collection'}
+        onClick={() => (onSave ? onSave() : void save(tabId))}
       >
         Save
       </Button>

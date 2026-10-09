@@ -7,9 +7,10 @@ import { RequestTabs } from './RequestTabs'
 
 interface RequestBuilderProps {
   tabId: string
+  onSave?: () => void
 }
 
-export function RequestBuilder({ tabId }: RequestBuilderProps) {
+export function RequestBuilder({ tabId, onSave }: RequestBuilderProps) {
   const error = useRequestBuilderStore((state) => state.tabs[tabId]?.error ?? null)
   const conflict = useRequestBuilderStore((state) => state.tabs[tabId]?.conflict === true)
   const requestId = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.id ?? '')
@@ -17,7 +18,7 @@ export function RequestBuilder({ tabId }: RequestBuilderProps) {
   const openSaved = useRequestBuilderStore((state) => state.openSaved)
   return (
     <section aria-label="Request" className={styles.builder}>
-      <RequestBar tabId={tabId} />
+      <RequestBar tabId={tabId} onSave={onSave} />
       {conflict ? (
         <Banner.Root tone="warning" className={styles.banner}>
           <Banner.Message>This request changed on disk since you opened it.</Banner.Message>

@@ -11,11 +11,12 @@ import styles from './SidebarPanel.module.css'
 
 interface SidebarPanelProps {
   onOpenRequest: (id: string) => void
+  onPinRequest: (id: string) => void
   onRequestsDeleted: (ids: string[]) => void
   onRenamed: (id: string) => void
 }
 
-export function SidebarPanel({ onOpenRequest, onRequestsDeleted, onRenamed }: SidebarPanelProps) {
+export function SidebarPanel({ onOpenRequest, onPinRequest, onRequestsDeleted, onRenamed }: SidebarPanelProps) {
   const error = useSidebarStore((state) => state.error)
   const clearError = useSidebarStore((state) => state.clearError)
   const remove = useSidebarStore((state) => state.remove)
@@ -43,7 +44,7 @@ export function SidebarPanel({ onOpenRequest, onRequestsDeleted, onRenamed }: Si
           </Banner.Actions>
         </Banner.Root>
       ) : null}
-      <CollectionTree onOpenRequest={onOpenRequest} onOpenSettings={setSettingsId} onDelete={setDeleting} onRenamed={onRenamed} />
+      <CollectionTree onOpenRequest={onOpenRequest} onPinRequest={onPinRequest} onOpenSettings={setSettingsId} onDelete={setDeleting} onRenamed={onRenamed} />
       <ItemSettingsDialog itemId={settingsId} onClose={() => setSettingsId(null)} />
       <DeleteItemDialog item={deleting} onCancel={() => setDeleting(null)} onConfirm={(item) => void confirmDelete(item)} />
     </div>

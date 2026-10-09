@@ -1,0 +1,41 @@
+import { CloseTabPrompt } from '@/features/tabs/components/CloseTabPrompt'
+import { SaveRequestDialog } from '@/features/tabs/components/SaveRequestDialog'
+import { TabNotice } from '@/features/tabs/components/TabNotice'
+import { TabStrip } from '@/features/tabs/components/TabStrip'
+import { useTabsStore } from '@/features/tabs/store'
+import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
+import { Button } from '@/shared/ui/button/Button'
+import { RequestWorkspace } from './RequestWorkspace'
+import styles from './TabsArea.module.css'
+
+export function TabsArea() {
+  const activeTabId = useTabsStore((state) => state.activeTabId)
+  const save = useTabsStore((state) => state.save)
+  const newTab = useTabsStore((state) => state.newTab)
+
+  return (
+    <div className={styles.area}>
+      <TabStrip />
+      {activeTabId ? (
+        <>
+          <TabNotice tabId={activeTabId} />
+          <div className={styles.workspace}>
+            <RequestWorkspace key={activeTabId} tabId={activeTabId} onSave={() => void save(activeTabId)} />
+          </div>
+        </>
+      ) : (
+        <EmptyState.Root label="No open tabs">
+          <EmptyState.Title>No open tabs</EmptyState.Title>
+          <EmptyState.Description>Open a request from the sidebar or start a new one.</EmptyState.Description>
+          <EmptyState.Actions>
+            <Button variant="primary" onClick={() => newTab()}>
+              New tab
+            </Button>
+          </EmptyState.Actions>
+        </EmptyState.Root>
+      )}
+      <CloseTabPrompt />
+      <SaveRequestDialog />
+    </div>
+  )
+}

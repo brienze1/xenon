@@ -6,6 +6,9 @@ const MESSAGES: Record<string, string> = {
   'WKS-02409': 'That folder is already used by another workspace, or is inside or around one.',
   'WKS-06404': 'The workspace folder is missing. It was moved or deleted outside Xenon.',
   'WKS-07404': 'That workspace is no longer registered.',
+  'WKS-03404': 'That folder is not a Xenon workspace (it has no workspace.yaml).',
+  'WKS-05500': 'The folder could not be moved to the trash. You can remove the workspace from Xenon and keep its files instead.',
+  'WKS-22400': 'Give the workspace a name (up to 200 characters).',
   'WKS-04422': 'This workspace was written by a newer version of Xenon.',
 }
 
