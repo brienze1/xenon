@@ -1,0 +1,19 @@
+# Go
+*.out
+coverage.html
+nancy-report.log
+
+# Wails / frontend
+build/bin/
+frontend/node_modules/
+frontend/dist/
+frontend/bindings/
+
+# Local env & IDE
+.env
+.idea/
+.vscode/
+.DS_Store
+
+# Refactor artifacts — never commit
+REFACTORING_REPORT.md
