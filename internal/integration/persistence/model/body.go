@@ -1,0 +1,93 @@
+package model
+
+import (
+	"go.yaml.in/yaml/v3"
+
+	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/bodymode"
+	"github.com/brienze1/xenon/internal/domain/enums/rawlanguage"
+	"github.com/brienze1/xenon/internal/integration/persistence/yamlnode"
+)
+
+type Body struct {
+	Raw        *BodyRaw      `yaml:"raw"`
+	Binary     *BodyBinary   `yaml:"binary"`
+	GraphQl    *BodyGraphQl  `yaml:"graphql"`
+	Mode       string        `yaml:"mode"`
+	FormData   []FormDataRow `yaml:"formdata"`
+	UrlEncoded []KeyValue    `yaml:"urlencoded"`
+}
+
+func NewBody(body entity.Body) Body {
+	model := Body{Mode: body.Mode.String(), UrlEncoded: newKeyValues(body.UrlEncoded), FormData: make([]FormDataRow, 0, len(body.FormData))}
+	for _, row := range body.FormData {
+		model.FormData = append(model.FormData, NewFormDataRow(row))
+	}
+	if body.Mode == bodymode.Raw || body.Raw.Content != "" {
+		model.Raw = &BodyRaw{Language: body.Raw.Language.String(), Content: body.Raw.Content}
+	}
+	if body.Mode == bodymode.Binary || !body.Binary.IsEmpty() {
+		model.Binary = &BodyBinary{Src: body.Binary.Src}
+	}
+	if body.Mode == bodymode.GraphQl || body.GraphQl != (entity.BodyGraphQl{}) {
+		model.GraphQl = &BodyGraphQl{Query: body.GraphQl.Query, Variables: body.GraphQl.Variables}
+	}
+	return model
+}
+
+func (b *Body) ToEntity() entity.Body {
+	body := entity.DefaultBody()
+	if b.Mode != "" {
+		body.Mode = bodymode.GetBodyMode(b.Mode)
+	}
+	for index := range b.FormData {
+		body.FormData = append(body.FormData, b.FormData[index].ToEntity())
+	}
+	body.UrlEncoded = keyValuesToEntity(b.UrlEncoded)
+	if b.Raw != nil {
+		body.Raw = entity.BodyRaw{Language: rawLanguage(b.Raw.Language), Content: b.Raw.Content}
+	}
+	if b.Binary != nil {
+		body.Binary = entity.FileRef{Src: b.Binary.Src}
+	}
+	if b.GraphQl != nil {
+		body.GraphQl = entity.BodyGraphQl{Query: b.GraphQl.Query, Variables: b.GraphQl.Variables}
+	}
+	return body
+}
+
+func (b *Body) Field() yamlnode.Field {
+	fields := []yamlnode.Field{yamlnode.String("mode", b.ToEntity().Mode.String())}
+	if len(b.FormData) > 0 {
+		fields = append(fields, yamlnode.List("formdata", b.formDataNodes()))
+	}
+	if len(b.UrlEncoded) > 0 {
+		fields = append(fields, yamlnode.List("urlencoded", keyValueNodes(b.UrlEncoded)))
+	}
+	if b.Raw != nil {
+		fields = append(fields, yamlnode.Object("raw", yamlnode.String("language", b.Raw.Language), yamlnode.String("content", b.Raw.Content)))
+	}
+	if b.Binary != nil {
+		fields = append(fields, yamlnode.Object("binary", yamlnode.String("src", b.Binary.Src)))
+	}
+	if b.GraphQl != nil {
+		fields = append(fields, yamlnode.Object("graphql", yamlnode.String("query", b.GraphQl.Query), yamlnode.String("variables", b.GraphQl.Variables)))
+	}
+	return yamlnode.Object("body", fields...)
+}
+
+func (b *Body) formDataNodes() []*yaml.Node {
+	nodes := make([]*yaml.Node, 0, len(b.FormData))
+	for index := range b.FormData {
+		nodes = append(nodes, b.FormData[index].Node())
+	}
+	return nodes
+}
+
+func rawLanguage(raw string) enums.RawLanguage {
+	if raw == "" {
+		return rawlanguage.Json
+	}
+	return rawlanguage.GetRawLanguage(raw)
+}
