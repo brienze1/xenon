@@ -29,8 +29,8 @@ const (
 )
 
 type storedResponse struct {
-	response entity.Response
 	bodyPath string
+	response entity.Response
 }
 
 func (s storedResponse) hasBodyFile() bool {
