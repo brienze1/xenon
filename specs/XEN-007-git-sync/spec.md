@@ -192,6 +192,13 @@ Per workspace, Luis can turn on "Pull when the workspace is opened" and "Push af
   running, with progress.
 - **Moving away from Git**: "Unlink repository" keeps the files (as a plain workspace folder copy
   at a location he picks) and deletes Xenon's clone after confirmation.
+- **A teammate changes the `sync` settings in `workspace.yaml`** (e.g., another subfolder): the
+  change is shown as a notice and takes effect only when Luis re-links; the current clone keeps
+  working with its settings.
+- **Repository content is untrusted**: symbolic links in the subfolder are ignored (XEN-001) and
+  scripts from pulled collections run only in the stage-4 sandbox.
+- **Large repositories**: Xenon keeps the full single-branch history (needed to merge) but checks
+  out only the subfolder; the first clone of a large repo can take a while and shows progress.
 - **Line endings**: Xenon writes LF; files with CRLF from the remote are read normally (XEN-001).
 
 ## Requirements *(mandatory)*

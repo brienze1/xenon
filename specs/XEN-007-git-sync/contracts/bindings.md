@@ -29,6 +29,8 @@ Prefixes: `GIT` sync · `ACC` accounts.
 | `SaveSettings(req)` | `{ local_id, account_id, auto_pull, auto_push }` | — | |
 | `Unlink(req)` | `{ local_id, target_folder }` | `WorkspaceSummary` | |
 
+Any call while another sync operation runs on the same workspace returns `GIT-05409` (busy).
+
 Errors carry `next_step` in `error_details`: `GIT-10503` offline, `GIT-11401` auth expired,
 `GIT-12403` org approval / SSO required, `GIT-13409` push rejected (other), `GIT-14403` protected
 branch / signature required.
