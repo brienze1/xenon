@@ -1,0 +1,47 @@
+package mock
+
+import "sync"
+
+type Dialog struct {
+	answers []string
+	titles  []string
+	mu      sync.Mutex
+}
+
+func NewDialog() *Dialog {
+	return &Dialog{}
+}
+
+func (d *Dialog) QueueAnswer(path string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.answers = append(d.answers, path)
+}
+
+func (d *Dialog) PickFolder(title string) (string, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.titles = append(d.titles, title)
+	if len(d.answers) == 0 {
+		return "", nil
+	}
+	answer := d.answers[0]
+	d.answers = d.answers[1:]
+	return answer, nil
+}
+
+func (d *Dialog) LastTitle() string {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if len(d.titles) == 0 {
+		return ""
+	}
+	return d.titles[len(d.titles)-1]
+}
+
+func (d *Dialog) Reset() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.answers = nil
+	d.titles = nil
+}
