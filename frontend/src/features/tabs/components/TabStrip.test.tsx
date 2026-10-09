@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { AppError } from '@/platform/errors'
 import { emptyDraft } from '@/platform/mappers/request'
 import { defaultUIState } from '@/platform/mappers/ui-state'
 
@@ -234,6 +235,38 @@ describe('TabStrip', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
+  it('shows a failed save inside the dialog and keeps it open', async () => {
+    useSidebarStore.setState({
+      tree: [{ id: 'c1', kind: 'collection', name: 'Billing', method: null, url: null, error: null, warning: null, children: [] }],
+    })
+    vi.mocked(requests.saveRequestAs).mockRejectedValue(new AppError('TRE-01404', 'The collection no longer exists'))
+    renderStrip()
+    await act(() => useTabsStore.getState().save())
+    const dialog = screen.getByRole('dialog', { name: 'Save Request' })
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save Request' }))
+    const alert = await within(dialog).findByRole('alert')
+    expect(alert).toHaveTextContent('The collection no longer exists. Choose another name or place, then try again.')
+    expect(alert.parentElement).toHaveFocus()
+    expect(useRequestBuilderStore.getState().tabs[useTabsStore.getState().activeTabId!]!.error).toBeNull()
+    expect(useTabsStore.getState().saveDialog).not.toBeNull()
+  })
+
+  it('keeps the close prompt open and shows why saving failed', async () => {
+    await act(() => useTabsStore.getState().openPinned('A'))
+    const tabId = useTabsStore.getState().activeTabId!
+    act(() => useRequestBuilderStore.getState().setUrl(tabId, 'https://changed'))
+    vi.mocked(requests.saveRequest).mockRejectedValue(new AppError('REQ-13500', 'The disk is full'))
+    renderStrip()
+    act(() => useTabsStore.getState().requestClose(tabId))
+    const dialog = screen.getByRole('dialog', { name: 'Save Changes?' })
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save Changes' }))
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('The disk is full. Try again, or choose Don’t Save')
+    expect(useTabsStore.getState().tabs.some((tab) => tab.id === tabId)).toBe(true)
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Don’t Save' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(useTabsStore.getState().tabs.some((tab) => tab.id === tabId)).toBe(false)
+  })
+
   it('suggests a copy name for save as and can be cancelled', async () => {
     await act(() => useTabsStore.getState().openPinned('A'))
     renderStrip()
@@ -243,7 +276,7 @@ describe('TabStrip', () => {
     expect(within(dialog).getByText('Create a collection in the sidebar first.')).toBeInTheDocument()
     expect(within(dialog).getByRole('button', { name: 'Save Request' })).toBeEnabled()
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save Request' }))
-    expect(within(dialog).getByText('Choose where to save the request.')).toBeInTheDocument()
+    expect(within(dialog).getByRole('alert')).toHaveTextContent('Choose where to save the request.')
     expect(within(dialog).getByRole('group', { name: 'Save to' })).toHaveFocus()
     expect(within(dialog).getByRole('group', { name: 'Save to' })).toHaveAccessibleDescription('Choose where to save the request.')
     expect(requests.saveRequestAs).not.toHaveBeenCalled()

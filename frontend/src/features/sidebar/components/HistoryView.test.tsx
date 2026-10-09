@@ -125,6 +125,18 @@ describe('HistoryView', () => {
     expect(screen.getByRole('button', { name: 'Clear History' })).toBeDisabled()
   })
 
+  it('keeps the clear dialog open and shows why clearing failed', async () => {
+    const { AppError } = await import('@/platform/errors')
+    vi.mocked(history.clearHistory).mockRejectedValue(new AppError('HIS-05500', 'The history file is locked'))
+    await renderHistory()
+    await userEvent.click(screen.getByRole('button', { name: 'Clear History' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Clear History?' })
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Clear History' }))
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('The history file is locked. Check that the workspace folder exists')
+    expect(useSidebarStore.getState().error).toBeNull()
+    expect(screen.getByRole('list', { name: 'History' })).toBeInTheDocument()
+  })
+
   it('shows the failure when the history cannot be loaded', async () => {
     const { AppError } = await import('@/platform/errors')
     vi.mocked(history.listHistory).mockRejectedValue(new AppError('HIS-04500', 'cannot read history'))

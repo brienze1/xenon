@@ -5,6 +5,7 @@ import type { HistoryEntry } from '@/platform/mappers/history'
 import type { KeyValueRow, RequestDraft } from '@/platform/mappers/request'
 import type { ItemSettings, TreeNode, TreeSearchResult } from '@/platform/mappers/tree'
 import type { SidebarView } from '@/platform/mappers/ui-state'
+import type { Result } from '@/shared/types/result'
 import { clearHistory, getHistoryEntry, listHistory } from '@/platform/services/history'
 import { formatBulk as formatBulkRows, parseBulk as parseBulkText } from '@/platform/services/requests'
 import {
@@ -46,7 +47,7 @@ interface SidebarState {
   setView: (view: SidebarView) => void
   loadHistory: () => Promise<void>
   setHistoryQuery: (query: string) => void
-  clearHistory: () => Promise<void>
+  clearHistory: () => Promise<AppError | null>
   openHistoryEntry: (id: string) => Promise<RequestDraft | null>
   setQuery: (query: string) => void
   toggle: (id: string) => void
@@ -56,13 +57,13 @@ interface SidebarState {
   createRequest: (parentId: string) => Promise<void>
   startRename: (id: string) => void
   cancelRename: () => void
-  rename: (id: string, name: string) => Promise<boolean>
+  rename: (id: string, name: string) => Promise<Result<boolean, AppError>>
   duplicate: (id: string) => Promise<void>
-  remove: (id: string) => Promise<string[]>
-  loadSettings: (id: string) => Promise<ItemSettings | null>
-  saveSettings: (settings: ItemSettings) => Promise<boolean>
-  formatBulk: (rows: KeyValueRow[]) => Promise<string | null>
-  parseBulk: (text: string) => Promise<KeyValueRow[] | null>
+  remove: (id: string) => Promise<Result<string[], AppError>>
+  loadSettings: (id: string) => Promise<Result<ItemSettings | null, AppError>>
+  saveSettings: (settings: ItemSettings) => Promise<AppError | null>
+  formatBulk: (rows: KeyValueRow[]) => Promise<Result<string, AppError>>
+  parseBulk: (text: string) => Promise<Result<KeyValueRow[], AppError>>
   clearError: () => void
   reset: () => void
 }
@@ -90,13 +91,21 @@ const initialState = {
 }
 
 export const useSidebarStore = create<SidebarState>()((set, get) => {
-  async function attempt<T>(operation: () => Promise<T>): Promise<T | null> {
+  async function attempt<T>(operation: () => Promise<T>): Promise<Result<T, AppError>> {
     try {
-      return await operation()
+      return { ok: true, value: await operation() }
     } catch (error) {
-      set({ error: toAppError(error) })
-      return null
+      return { ok: false, error: toAppError(error) }
     }
+  }
+
+  function settle<T>(operation: (localId: string) => Promise<T>): Promise<Result<T | null, AppError>> {
+    const localId = activeLocalId()
+    return localId ? attempt(() => operation(localId)) : Promise.resolve<Result<T | null, AppError>>({ ok: true, value: null })
+  }
+
+  function endRename(id: string) {
+    set((state) => (state.renamingId === id ? { renamingId: null } : state))
   }
 
   async function run<T>(operation: (localId: string) => Promise<T>): Promise<T | null> {
@@ -178,10 +187,11 @@ export const useSidebarStore = create<SidebarState>()((set, get) => {
     },
 
     clearHistory: async () => {
-      await run(async (localId) => {
+      const cleared = await settle(async (localId) => {
         await clearHistory(localId)
         set({ history: [] })
       })
+      return cleared.ok ? null : cleared.error
     },
 
     openHistoryEntry: (id) =>
@@ -222,17 +232,21 @@ export const useSidebarStore = create<SidebarState>()((set, get) => {
     cancelRename: () => set({ renamingId: null }),
 
     rename: async (id, name) => {
-      set({ renamingId: null })
       const current = findPath(get().tree, id).at(-1)
       if (name.trim() === '' || current?.name === name) {
-        return false
+        endRename(id)
+        return { ok: true, value: false }
       }
-      const renamed = await run(async (localId) => {
+      const renamed = await settle(async (localId) => {
         await renameItem(localId, id, name)
         await refresh(localId)
         return true
       })
-      return renamed === true
+      if (!renamed.ok) {
+        return renamed
+      }
+      endRename(id)
+      return { ok: true, value: renamed.value === true }
     },
 
     duplicate: async (id) => {
@@ -244,25 +258,25 @@ export const useSidebarStore = create<SidebarState>()((set, get) => {
     },
 
     remove: async (id) => {
-      const deleted = await run(async (localId) => {
+      const deleted = await settle(async (localId) => {
         const ids = await deleteItem(localId, id)
         await refresh(localId)
         return ids
       })
+      if (!deleted.ok) {
+        return deleted
+      }
       if (get().selectedId === id) {
         set({ selectedId: null })
       }
-      return deleted ?? []
+      return { ok: true, value: deleted.value ?? [] }
     },
 
-    loadSettings: (id) => run((localId) => getItemSettings(localId, id)),
+    loadSettings: (id) => settle((localId) => getItemSettings(localId, id)),
 
     saveSettings: async (settings) => {
-      const saved = await run(async (localId) => {
-        await saveItemSettings(localId, settings)
-        return true
-      })
-      return saved === true
+      const saved = await settle((localId) => saveItemSettings(localId, settings))
+      return saved.ok ? null : saved.error
     },
 
     formatBulk: (rows) => attempt(() => formatBulkRows(rows)),

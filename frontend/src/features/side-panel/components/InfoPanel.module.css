@@ -61,3 +61,13 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
+
+.name[aria-invalid='true'] {
+  border-color: var(--status-error);
+}
+
+.fieldError {
+  margin: 0;
+  color: var(--status-error);
+  font-size: var(--font-size-sm);
+}

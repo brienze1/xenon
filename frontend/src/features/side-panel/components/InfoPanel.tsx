@@ -1,8 +1,11 @@
-import { lazy, Suspense, useState, type KeyboardEvent } from 'react'
+import { lazy, Suspense, useId, useState, type KeyboardEvent } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { selectLocation, useSidebarStore } from '@/features/sidebar/store'
+import type { AppError } from '@/platform/errors'
+import { withNextStep } from '@/shared/lib/next-step'
 import { Button } from '@/shared/ui/button/Button'
+import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import styles from './InfoPanel.module.css'
 
 const MarkdownView = lazy(() => import('./MarkdownView'))
@@ -10,6 +13,8 @@ const MarkdownView = lazy(() => import('./MarkdownView'))
 const INFO_HEADING = <h2 className={styles.title}>Info</h2>
 
 const NO_DESCRIPTION = <span className={styles.muted}>No description</span>
+
+const RENAME_NEXT_STEP = 'Choose another name, then press Enter.'
 
 const LOADING_DESCRIPTION = <span className={styles.muted}>Loading…</span>
 
@@ -27,6 +32,15 @@ export function InfoPanel({ tabId }: InfoPanelProps) {
   const location = useSidebarStore(useShallow((state) => (requestId ? selectLocation(state.tree, requestId).slice(0, -1) : [])))
   const rename = useSidebarStore((state) => state.rename)
   const [editing, setEditing] = useState(false)
+  const [nameError, setNameError] = useState<AppError | null>(null)
+  const [errorTabId, setErrorTabId] = useState(tabId)
+  const nameErrorId = useId()
+  const descriptionId = useId()
+
+  if (errorTabId !== tabId) {
+    setErrorTabId(tabId)
+    setNameError(null)
+  }
 
   async function commitName(value: string) {
     const trimmed = value.trim()
@@ -37,7 +51,13 @@ export function InfoPanel({ tabId }: InfoPanelProps) {
       setName(tabId, trimmed)
       return
     }
-    if (await rename(requestId, trimmed)) {
+    const renamed = await rename(requestId, trimmed)
+    if (!renamed.ok) {
+      setNameError(renamed.error)
+      return
+    }
+    setNameError(null)
+    if (renamed.value) {
       await adoptRename(requestId)
     }
   }
@@ -51,19 +71,29 @@ export function InfoPanel({ tabId }: InfoPanelProps) {
   return (
     <section aria-label="Info" className={styles.info}>
       {INFO_HEADING}
-      <label className={styles.field}>
-        Name
-        <input
-          name="request-name"
-          autoComplete="off"
-          key={`${requestId}:${name}`}
-          className={styles.name}
-          defaultValue={name}
-          spellCheck={false}
-          onBlur={(event) => void commitName(event.target.value)}
-          onKeyDown={onNameKeyDown}
-        />
-      </label>
+      <div className={styles.field}>
+        <label className={styles.field}>
+          Name
+          <input
+            name="request-name"
+            autoComplete="off"
+            key={`${requestId}:${name}`}
+            className={styles.name}
+            defaultValue={name}
+            spellCheck={false}
+            aria-invalid={nameError !== null}
+            aria-describedby={nameError ? nameErrorId : undefined}
+            onChange={() => setNameError(null)}
+            onBlur={(event) => void commitName(event.target.value)}
+            onKeyDown={onNameKeyDown}
+          />
+        </label>
+        {nameError ? (
+          <p id={nameErrorId} role="alert" className={styles.fieldError}>
+            <NoTranslateText text={withNextStep(nameError.description || nameError.code, RENAME_NEXT_STEP)} terms={[nameError.code]} />
+          </p>
+        ) : null}
+      </div>
       <div className={styles.field}>
         <span className={styles.label}>Location</span>
         {location.length > 0 ? (
@@ -76,16 +106,22 @@ export function InfoPanel({ tabId }: InfoPanelProps) {
       </div>
       <div className={styles.field}>
         <div className={styles.descriptionHeader}>
-          <span className={styles.label}>Description</span>
+          {editing ? (
+            <label htmlFor={descriptionId} className={styles.label}>
+              Description
+            </label>
+          ) : (
+            <span className={styles.label}>Description</span>
+          )}
           <Button variant="ghost" size="sm" onClick={() => setEditing((current) => !current)}>
             {editing ? 'Done Editing' : 'Edit Description'}
           </Button>
         </div>
         {editing ? (
           <textarea
+            id={descriptionId}
             name="description"
             autoComplete="off"
-            aria-label="Description"
             className={styles.textarea}
             value={description}
             onChange={(event) => setDescription(tabId, event.target.value)}

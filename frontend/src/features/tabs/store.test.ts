@@ -186,6 +186,11 @@ describe('tabs store', () => {
     await tabs().resolveClose('save')
     expect(tabs().tabs.some((tab) => tab.id === tabId)).toBe(true)
     expect(builder().tabs[tabId]!.conflict).toBe(true)
+    expect(tabs().closePrompt).toBe(tabId)
+    expect(tabs().closeError?.code).toBe('REQ-02409')
+    await tabs().resolveClose('cancel')
+    expect(tabs().closePrompt).toBeNull()
+    expect(tabs().closeError).toBeNull()
   })
 
   it('saves a new tab into a chosen collection and points the tab to it', async () => {
@@ -194,13 +199,23 @@ describe('tabs store', () => {
     await tabs().save()
     expect(tabs().saveDialog).toEqual({ tabId, mode: 'save', closeAfter: false })
     vi.mocked(requests.saveRequestAs).mockResolvedValue({ draft: { ...saved('N', 'Users'), url: 'https://new' }, revision: 'rev-N' })
-    await tabs().confirmSave('collection-1', 'Users')
+    await expect(tabs().confirmSave('collection-1', 'Users')).resolves.toBeNull()
     expect(requests.saveRequestAs).toHaveBeenCalledWith('ws', 'collection-1', 'Users', expect.objectContaining({ url: 'https://new' }))
     expect(tabs().saveDialog).toBeNull()
     expect(tabs().tabs[0]).toMatchObject({ id: tabId, requestId: 'N', pinned: true })
     expect(builder().tabs[tabId]!.draft.id).toBe('N')
     expect(builder().tabs[tabId]!.baseRevision).toBe('rev-N')
     expect(dirty(tabId)).toBe(false)
+  })
+
+  it('keeps the save dialog open and returns the error when saving fails', async () => {
+    const tabId = tabs().activeTabId!
+    builder().setUrl(tabId, 'https://new')
+    await tabs().save()
+    vi.mocked(requests.saveRequestAs).mockRejectedValue(new AppError('TRE-01404', 'no parent'))
+    await expect(tabs().confirmSave('gone', 'Users')).resolves.toMatchObject({ code: 'TRE-01404' })
+    expect(tabs().saveDialog).toEqual({ tabId, mode: 'save', closeAfter: false })
+    expect(builder().tabs[tabId]!.error).toBeNull()
   })
 
   it('save as switches a saved tab to the copy', async () => {

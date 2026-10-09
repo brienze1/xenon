@@ -1,11 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
+import type { AppError } from '@/platform/errors'
 import type { ItemSettings } from '@/platform/mappers/tree'
+import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { KeyValueTable, type KeyValueExamples } from '@/shared/ui/key-value-table/KeyValueTable'
 import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { AuthFields } from './AuthFields'
+import { SidebarErrorText } from './SidebarErrorText'
 import styles from './SettingsForm.module.css'
 
 const HEADER_EXAMPLES: KeyValueExamples = {
@@ -24,6 +27,16 @@ const HEADERS_INTRO = (
     </p>
   </>
 )
+
+const LOAD_NEXT_STEP = 'Check that the workspace folder exists, then try again.'
+const SAVE_NEXT_STEP = 'Check that the workspace folder exists and is writable, then try again.'
+const FORMAT_NEXT_STEP = 'Try again, or keep editing the headers in the table.'
+const BULK_NEXT_STEP = 'Check that each line reads key:value, then try again.'
+
+interface SettingsFailure {
+  error: AppError
+  nextStep: string
+}
 
 const SETTINGS_LOADING = (
   <>
@@ -47,20 +60,59 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
   const [settings, setSettings] = useState<ItemSettings | null>(null)
   const [bulkText, setBulkText] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [loadError, setLoadError] = useState<AppError | null>(null)
+  const [failure, setFailure] = useState<SettingsFailure | null>(null)
+  const [loadAttempt, setLoadAttempt] = useState(0)
+  const closeUnavailable = useEffectEvent(onClose)
 
   useEffect(() => {
     let current = true
     async function load() {
       const loaded = await loadSettings(itemId)
-      if (current) {
-        setSettings(loaded)
+      if (!current) {
+        return
+      }
+      if (!loaded.ok) {
+        setLoadError(loaded.error)
+      } else if (loaded.value) {
+        setSettings(loaded.value)
+      } else {
+        closeUnavailable()
       }
     }
     void load()
     return () => {
       current = false
     }
-  }, [itemId, loadSettings])
+  }, [itemId, loadAttempt, loadSettings])
+
+  function retryLoad() {
+    setLoadError(null)
+    setLoadAttempt((attempt) => attempt + 1)
+  }
+
+  if (loadError) {
+    return (
+      <>
+        <Dialog.Title>Settings</Dialog.Title>
+        <Dialog.Body>
+          <Banner.Root tone="error">
+            <Banner.Message>
+              <SidebarErrorText error={loadError} nextStep={LOAD_NEXT_STEP} />
+            </Banner.Message>
+          </Banner.Root>
+        </Dialog.Body>
+        <Dialog.Actions>
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+          <Button variant="primary" onClick={retryLoad}>
+            Try Again
+          </Button>
+        </Dialog.Actions>
+      </>
+    )
+  }
 
   if (!settings) {
     return SETTINGS_LOADING
@@ -77,16 +129,22 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
     }
     if (bulk) {
       const text = await formatBulk(settings.headers)
-      if (text !== null) {
-        setBulkText(text)
+      if (!text.ok) {
+        setFailure({ error: text.error, nextStep: FORMAT_NEXT_STEP })
+        return
       }
+      setFailure(null)
+      setBulkText(text.value)
       return
     }
     const headers = await parseBulk(bulkText ?? '')
-    if (headers !== null) {
-      update({ headers })
-      setBulkText(null)
+    if (!headers.ok) {
+      setFailure({ error: headers.error, nextStep: BULK_NEXT_STEP })
+      return
     }
+    setFailure(null)
+    update({ headers: headers.value })
+    setBulkText(null)
   }
 
   async function save() {
@@ -94,16 +152,19 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
       return
     }
     setSaving(true)
-    const headers = bulkText === null ? settings.headers : await parseBulk(bulkText)
-    if (headers === null) {
+    const headers = bulkText === null ? { ok: true as const, value: settings.headers } : await parseBulk(bulkText)
+    if (!headers.ok) {
       setSaving(false)
+      setFailure({ error: headers.error, nextStep: BULK_NEXT_STEP })
       return
     }
-    const saved = await saveSettings({ ...settings, headers })
+    const saveError = await saveSettings({ ...settings, headers: headers.value })
     setSaving(false)
-    if (saved) {
-      onClose()
+    if (saveError) {
+      setFailure({ error: saveError, nextStep: SAVE_NEXT_STEP })
+      return
     }
+    onClose()
   }
 
   return (
@@ -136,6 +197,13 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
             onRowAdd={(row) => updateHeaders((headers) => addRow(headers, row))}
             onRowRemove={(id) => updateHeaders((headers) => removeRow(headers, id))}
           />
+          {failure ? (
+            <Banner.Root tone="error">
+              <Banner.Message>
+                <SidebarErrorText error={failure.error} nextStep={failure.nextStep} />
+              </Banner.Message>
+            </Banner.Root>
+          ) : null}
         </div>
       </Dialog.Body>
       <Dialog.Actions>

@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
-import { toAppError } from '@/platform/errors'
+import { toAppError, type AppError } from '@/platform/errors'
 import {
   cancelledResult,
   emptyDraft,
@@ -27,6 +27,7 @@ import {
 } from '@/platform/services/requests'
 import { pickFile } from '@/platform/services/dialogs'
 import { keepRowIds } from '@/shared/lib/rows'
+import type { Result } from '@/shared/types/result'
 import { rowsOf, withRows, withSavedRows } from './lib/draft-rows'
 import type { BulkTable, SubTab, TabDraft } from './model'
 
@@ -40,8 +41,8 @@ interface RequestBuilderState {
   loadDraft: (tabId: string, draft: RequestDraft, baseRevision: string | null, dirty: boolean) => void
   dropTab: (tabId: string) => void
   detach: (tabId: string) => void
-  save: (tabId: string, force?: boolean) => Promise<boolean>
-  saveAs: (tabId: string, parentId: string, name: string) => Promise<string | null>
+  save: (tabId: string, force?: boolean) => Promise<Result<boolean, AppError>>
+  saveAs: (tabId: string, parentId: string, name: string) => Promise<Result<string | null, AppError>>
   adoptRename: (requestId: string) => Promise<void>
   setName: (tabId: string, name: string) => void
   setDescription: (tabId: string, description: string) => void
@@ -212,7 +213,7 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
       const localId = useWorkspacesStore.getState().activeLocalId
       const current = tab(tabId)
       if (!localId || current.draft.id === '' || current.baseRevision === null || current.saving) {
-        return false
+        return { ok: true, value: false }
       }
       patchTab(tabId, { saving: true })
       try {
@@ -225,11 +226,11 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
           dirty: false,
         })
         void useSidebarStore.getState().load()
-        return true
+        return { ok: true, value: true }
       } catch (error) {
         const appError = toAppError(error)
         patchTab(tabId, appError.code === SAVE_CONFLICT ? { conflict: true } : { error: appError })
-        return false
+        return { ok: false, error: appError }
       } finally {
         patchTab(tabId, { saving: false })
       }
@@ -238,7 +239,7 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
     saveAs: async (tabId, parentId, name) => {
       const localId = useWorkspacesStore.getState().activeLocalId
       if (!localId) {
-        return null
+        return { ok: true, value: null }
       }
       patchTab(tabId, { saving: true })
       try {
@@ -251,10 +252,9 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
           dirty: false,
         })
         void useSidebarStore.getState().load()
-        return saved.draft.id
+        return { ok: true, value: saved.draft.id }
       } catch (error) {
-        fail(tabId, error)
-        return null
+        return { ok: false, error: toAppError(error) }
       } finally {
         patchTab(tabId, { saving: false })
       }

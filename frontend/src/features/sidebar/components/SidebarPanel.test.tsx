@@ -1,6 +1,7 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { AppError } from '@/platform/errors'
 import type { ItemSettings, TreeNode } from '@/platform/mappers/tree'
 
 vi.mock('@/platform/services/tree', () => ({
@@ -240,5 +241,65 @@ describe('SidebarPanel', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('The item does not exist')
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss Error' }))
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('shows a rename failure under the name input and keeps the rejected text', async () => {
+    vi.mocked(tree.renameItem).mockRejectedValue(new AppError('TRE-03409', 'An item with that name already exists'))
+    const actions = await renderPanel()
+    act(() => useSidebarStore.getState().startRename('c1'))
+    const input = screen.getByRole('textbox', { name: 'Name' })
+    await userEvent.clear(input)
+    await userEvent.type(input, 'Taken{Enter}')
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('An item with that name already exists. Choose another name')
+    expect(input).toHaveValue('Taken')
+    expect(input).toHaveAttribute('aria-invalid', 'true')
+    expect(input).toHaveAccessibleDescription(alert.textContent ?? '')
+    expect(useSidebarStore.getState().error).toBeNull()
+    expect(actions.onRenamed).not.toHaveBeenCalled()
+    await userEvent.type(input, '2')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('keeps the delete dialog open and shows why deleting failed', async () => {
+    vi.mocked(tree.deleteItem).mockRejectedValue(new AppError('TRE-02500', 'The folder is locked'))
+    const actions = await renderPanel()
+    await userEvent.pointer({ keys: '[MouseRight]', target: item('Billing') })
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }))
+    const dialog = screen.getByRole('dialog', { name: 'Delete “Billing”?' })
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete Collection' }))
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('The folder is locked. Check that the file')
+    expect(useSidebarStore.getState().error).toBeNull()
+    expect(actions.onRequestsDeleted).not.toHaveBeenCalled()
+  })
+
+  it('shows a failed settings load with a way to try again', async () => {
+    vi.mocked(tree.getItemSettings).mockRejectedValueOnce(new AppError('TRE-02404', 'The item does not exist'))
+    vi.mocked(tree.getItemSettings).mockResolvedValueOnce(settings)
+    await renderPanel()
+    await userEvent.pointer({ keys: '[MouseRight]', target: item('Billing') })
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Settings…' }))
+    const failed = await screen.findByRole('dialog', { name: 'Settings' })
+    expect(within(failed).getByRole('alert')).toHaveTextContent('The item does not exist. Check that the workspace folder exists')
+    await userEvent.click(within(failed).getByRole('button', { name: 'Try Again' }))
+    expect(await screen.findByRole('dialog', { name: 'Billing Settings' })).toBeInTheDocument()
+    expect(tree.getItemSettings).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows settings save and bulk failures inside the dialog', async () => {
+    vi.mocked(tree.getItemSettings).mockResolvedValue(settings)
+    vi.mocked(tree.saveItemSettings).mockRejectedValue(new AppError('TRE-05500', 'The folder is read-only'))
+    vi.mocked(requests.formatBulk).mockResolvedValue('X-Tenant:acme')
+    vi.mocked(requests.parseBulk).mockRejectedValue(new AppError('REQ-01400', 'Line 1 has no colon'))
+    await renderPanel()
+    await userEvent.pointer({ keys: '[MouseRight]', target: item('Billing') })
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Settings…' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Billing Settings' })
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save Settings' }))
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('The folder is read-only. Check that the workspace folder exists and is writable')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Bulk Edit' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Key-Value Edit' }))
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Line 1 has no colon. Check that each line reads key:value')
+    expect(useSidebarStore.getState().error).toBeNull()
   })
 })

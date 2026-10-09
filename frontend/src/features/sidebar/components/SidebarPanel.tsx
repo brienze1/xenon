@@ -2,16 +2,15 @@ import { useState } from 'react'
 import type { RequestDraft } from '@/platform/mappers/request'
 import type { TreeNode } from '@/platform/mappers/tree'
 import type { SidebarView } from '@/platform/mappers/ui-state'
-import { withNextStep } from '@/shared/lib/next-step'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
-import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { Tabs } from '@/shared/ui/tabs/Tabs'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { CollectionTree } from './CollectionTree'
 import { DeleteItemDialog } from './DeleteItemDialog'
 import { HistoryView } from './HistoryView'
 import { ItemSettingsDialog } from './ItemSettingsDialog'
+import { SidebarErrorText } from './SidebarErrorText'
 import { SidebarToolbar } from './SidebarToolbar'
 import styles from './SidebarPanel.module.css'
 
@@ -45,11 +44,15 @@ export function SidebarPanel({ onOpenRequest, onPinRequest, onRequestsDeleted, o
   const [deleting, setDeleting] = useState<TreeNode | null>(null)
 
   async function confirmDelete(item: TreeNode) {
-    setDeleting(null)
     const deleted = await remove(item.id)
-    if (deleted.length > 0) {
-      onRequestsDeleted(deleted)
+    if (!deleted.ok) {
+      return deleted.error
     }
+    setDeleting(null)
+    if (deleted.value.length > 0) {
+      onRequestsDeleted(deleted.value)
+    }
+    return null
   }
 
   async function openEntry(id: string) {
@@ -66,7 +69,7 @@ export function SidebarPanel({ onOpenRequest, onPinRequest, onRequestsDeleted, o
       {error ? (
         <Banner.Root tone="error" className={styles.banner}>
           <Banner.Message>
-            <NoTranslateText text={withNextStep(error.description || error.code, SIDEBAR_NEXT_STEP)} terms={[error.code]} />
+            <SidebarErrorText error={error} nextStep={SIDEBAR_NEXT_STEP} />
           </Banner.Message>
           <Banner.Actions>
             <Button variant="ghost" size="sm" onClick={clearError}>
@@ -82,7 +85,7 @@ export function SidebarPanel({ onOpenRequest, onPinRequest, onRequestsDeleted, o
         <HistoryView onOpenEntry={(id) => void openEntry(id)} />
       </Tabs.Panel>
       <ItemSettingsDialog itemId={settingsId} onClose={() => setSettingsId(null)} />
-      <DeleteItemDialog item={deleting} onCancel={() => setDeleting(null)} onConfirm={(item) => void confirmDelete(item)} />
+      <DeleteItemDialog item={deleting} onCancel={() => setDeleting(null)} onConfirm={confirmDelete} />
     </Tabs.Root>
   )
 }

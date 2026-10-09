@@ -1,6 +1,7 @@
 import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { AppError } from '@/platform/errors'
 import { emptyDraft } from '@/platform/mappers/request'
 import type { TreeNode } from '@/platform/mappers/tree'
 
@@ -90,6 +91,13 @@ describe('InfoPanel', () => {
     expect(await screen.findByText('Hello')).toBeInTheDocument()
   })
 
+  it('focuses the description editor from its visible label', async () => {
+    render(<InfoPanel tabId={tabId()} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Edit Description' }))
+    await userEvent.click(screen.getByText('Description', { selector: 'label' }))
+    expect(screen.getByRole('textbox', { name: 'Description' })).toHaveFocus()
+  })
+
   it('renames an unsaved request in its draft', async () => {
     render(<InfoPanel tabId={tabId()} />)
     const input = screen.getByRole('textbox', { name: 'Name' })
@@ -121,5 +129,23 @@ describe('InfoPanel', () => {
     await userEvent.clear(input)
     await act(async () => input.blur())
     expect(tree.renameItem).not.toHaveBeenCalled()
+  })
+
+  it('shows a failed rename under the name and keeps the rejected text', async () => {
+    loadDraft('r1', 'Create invoice')
+    vi.mocked(tree.renameItem).mockRejectedValue(new AppError('TRE-03409', 'A request with that name already exists'))
+    render(<InfoPanel tabId={tabId()} />)
+    const input = screen.getByRole('textbox', { name: 'Name' })
+    await userEvent.clear(input)
+    await userEvent.type(input, 'Taken')
+    await act(async () => input.blur())
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('A request with that name already exists. Choose another name, then press Enter.')
+    expect(input).toHaveValue('Taken')
+    expect(input).toHaveAttribute('aria-invalid', 'true')
+    expect(input).toHaveAccessibleDescription(alert.textContent ?? '')
+    expect(useSidebarStore.getState().error).toBeNull()
+    await userEvent.type(input, '!')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

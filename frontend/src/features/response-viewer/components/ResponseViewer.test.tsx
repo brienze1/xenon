@@ -98,6 +98,7 @@ describe('ResponseViewer', () => {
     render(<ResponseViewer tabId="tab" />)
     show(result())
     expect(screen.getByRole('radio', { name: 'Pretty' })).toBeChecked()
+    expect(screen.getByRole('radio', { name: 'Pretty' })).toHaveAttribute('name', 'tab-body-view')
     expect(screen.getByRole('textbox', { name: 'Pretty response body' })).toHaveTextContent('"a": [')
     await user.click(screen.getByRole('radio', { name: 'Raw' }))
     expect(screen.getByRole('textbox', { name: 'Raw response body' })).toHaveTextContent('{"a":[1]}')

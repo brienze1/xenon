@@ -1,19 +1,37 @@
-import { useRequestBuilderStore } from '@/features/request-builder/store'
+import { SAVE_CONFLICT, useRequestBuilderStore } from '@/features/request-builder/store'
+import { withNextStep } from '@/shared/lib/next-step'
+import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
+import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { useTabsStore } from '@/features/tabs/store'
+import styles from './CloseTabPrompt.module.css'
 
 const SAVE_CHANGES_TITLE = <Dialog.Title>Save Changes?</Dialog.Title>
 
+const SAVE_NEXT_STEP = 'Try again, or choose Don’t Save to close the tab without your changes.'
+const CONFLICT_NEXT_STEP = 'Choose Cancel, then keep your version or load the one from disk in the tab.'
+
 export function CloseTabPrompt() {
   const tabId = useTabsStore((state) => state.closePrompt)
+  const closeError = useTabsStore((state) => state.closeError)
   const resolveClose = useTabsStore((state) => state.resolveClose)
   const name = useRequestBuilderStore((state) => (tabId ? state.tabs[tabId]?.draft.name : null) || 'Untitled Request')
+  const saving = useRequestBuilderStore((state) => (tabId ? state.tabs[tabId]?.saving === true : false))
 
   return (
     <Dialog.Root open={tabId !== null} onOpenChange={(open) => (open ? undefined : void resolveClose('cancel'))}>
       {SAVE_CHANGES_TITLE}
-      <Dialog.Body>“{name}” has unsaved changes. Do you want to save them before closing?</Dialog.Body>
+      <Dialog.Body>
+        “{name}” has unsaved changes. Do you want to save them before closing?
+        {closeError ? (
+          <Banner.Root tone="error" className={styles.error}>
+            <Banner.Message>
+              <NoTranslateText text={withNextStep(closeError.description || closeError.code, closeError.code === SAVE_CONFLICT ? CONFLICT_NEXT_STEP : SAVE_NEXT_STEP)} terms={[closeError.code]} />
+            </Banner.Message>
+          </Banner.Root>
+        ) : null}
+      </Dialog.Body>
       <Dialog.Actions>
         <Button variant="ghost" onClick={() => void resolveClose('cancel')}>
           Cancel
@@ -21,8 +39,8 @@ export function CloseTabPrompt() {
         <Button variant="secondary" onClick={() => void resolveClose('discard')}>
           Don’t Save
         </Button>
-        <Button variant="primary" onClick={() => void resolveClose('save')}>
-          Save Changes
+        <Button variant="primary" disabled={saving} onClick={() => void resolveClose('save')}>
+          {saving ? 'Saving…' : 'Save Changes'}
         </Button>
       </Dialog.Actions>
     </Dialog.Root>

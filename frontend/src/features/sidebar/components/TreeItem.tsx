@@ -53,9 +53,14 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenSe
   }
 
   async function commitRename(name: string) {
-    if (await rename(node.id, name)) {
+    const renamed = await rename(node.id, name)
+    if (!renamed.ok) {
+      return renamed.error
+    }
+    if (renamed.value) {
       onRenamed(node.id)
     }
+    return null
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -95,7 +100,7 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenSe
           {node.kind === 'request' ? <MethodBadge method={node.method ?? 'GET'} className={styles.method} /> : null}
           {node.kind === 'error' ? ERROR_MARK : null}
           {renaming ? (
-            <RenameInput name={node.name} onCommit={(name) => void commitRename(name)} onCancel={cancelRename} />
+            <RenameInput name={node.name} onCommit={commitRename} onCancel={cancelRename} />
           ) : (
             <span className={styles.name}>{node.name}</span>
           )}

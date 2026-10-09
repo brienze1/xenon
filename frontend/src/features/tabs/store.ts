@@ -3,6 +3,7 @@ import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
+import type { AppError } from '@/platform/errors'
 import type { RequestChangedOnDisk } from '@/platform/events'
 import { emptyDraft, type RequestDraft } from '@/platform/mappers/request'
 import type { TabState, UIState } from '@/platform/mappers/ui-state'
@@ -20,6 +21,7 @@ interface TabsState {
   activeTabId: string | null
   previewTabId: string | null
   closePrompt: string | null
+  closeError: AppError | null
   saveDialog: SaveDialogState | null
   notices: Record<string, TabNotice>
   hydrate: (localId: string, state: UIState) => void
@@ -36,7 +38,7 @@ interface TabsState {
   closeTab: (tabId: string) => void
   save: (tabId?: string) => Promise<void>
   saveAs: (tabId?: string) => void
-  confirmSave: (parentId: string, name: string) => Promise<void>
+  confirmSave: (parentId: string, name: string) => Promise<AppError | null>
   cancelSave: () => void
   handleDeleted: (requestIds: string[]) => void
   handleChangedOnDisk: (event: RequestChangedOnDisk) => Promise<void>
@@ -78,6 +80,7 @@ const initialState = {
   activeTabId: null as string | null,
   previewTabId: null as string | null,
   closePrompt: null as string | null,
+  closeError: null as AppError | null,
   saveDialog: null as SaveDialogState | null,
   notices: {} as Record<string, TabNotice>,
 }
@@ -225,7 +228,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         return
       }
       if (isDirty(target)) {
-        set({ closePrompt: target })
+        set({ closePrompt: target, closeError: null })
         return
       }
       get().closeTab(target)
@@ -233,20 +236,26 @@ export const useTabsStore = create<TabsState>()((set, get) => {
 
     resolveClose: async (choice) => {
       const tabId = get().closePrompt
-      set({ closePrompt: null })
-      if (tabId === null || choice === 'cancel') {
-        return
-      }
-      if (choice === 'discard') {
-        get().closeTab(tabId)
+      if (tabId === null || choice !== 'save') {
+        set({ closePrompt: null, closeError: null })
+        if (tabId !== null && choice === 'discard') {
+          get().closeTab(tabId)
+        }
         return
       }
       const tab = get().tabs.find((candidate) => candidate.id === tabId)
       if (!tab?.requestId) {
-        set({ saveDialog: { tabId, mode: 'save', closeAfter: true } })
+        set({ closePrompt: null, closeError: null, saveDialog: { tabId, mode: 'save', closeAfter: true } })
         return
       }
-      if (await builder().save(tabId)) {
+      set({ closeError: null })
+      const saved = await builder().save(tabId)
+      if (!saved.ok) {
+        set((state) => (state.closePrompt === tabId ? { closeError: saved.error } : state))
+        return
+      }
+      set({ closePrompt: null })
+      if (saved.value) {
         get().closeTab(tabId)
       }
     },
@@ -285,11 +294,15 @@ export const useTabsStore = create<TabsState>()((set, get) => {
     confirmSave: async (parentId, name) => {
       const dialog = get().saveDialog
       if (dialog === null) {
-        return
+        return null
       }
-      const requestId = await builder().saveAs(dialog.tabId, parentId, name)
+      const saved = await builder().saveAs(dialog.tabId, parentId, name)
+      if (!saved.ok) {
+        return saved.error
+      }
+      const requestId = saved.value
       if (requestId === null) {
-        return
+        return null
       }
       set({ saveDialog: null, notices: withoutNotice(get().notices, dialog.tabId) })
       get().pin(dialog.tabId)
@@ -297,6 +310,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       if (dialog.closeAfter) {
         get().closeTab(dialog.tabId)
       }
+      return null
     },
 
     cancelSave: () => set({ saveDialog: null }),
@@ -346,7 +360,8 @@ export const useTabsStore = create<TabsState>()((set, get) => {
     },
 
     keepMine: async (tabId) => {
-      if (await builder().save(tabId, true)) {
+      const saved = await builder().save(tabId, true)
+      if (saved.ok && saved.value) {
         set((state) => ({ notices: withoutNotice(state.notices, tabId) }))
       }
     },

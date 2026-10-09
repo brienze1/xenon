@@ -339,21 +339,21 @@ describe('request builder store - saved requests', () => {
   })
 
   it('does not save an unsaved draft', async () => {
-    await expect(state().save(TAB)).resolves.toBe(false)
+    await expect(state().save(TAB)).resolves.toEqual({ ok: true, value: false })
     expect(requests.saveRequest).not.toHaveBeenCalled()
   })
 
   it('saves a draft as a new request at a chosen place', async () => {
     state().setUrl(TAB, 'https://new')
     vi.mocked(requests.saveRequestAs).mockResolvedValue({ draft: { ...savedDraft, id: 'n1', url: 'https://new' }, revision: 'rev-n' })
-    await expect(state().saveAs(TAB, 'c1', 'New')).resolves.toBe('n1')
+    await expect(state().saveAs(TAB, 'c1', 'New')).resolves.toEqual({ ok: true, value: 'n1' })
     expect(requests.saveRequestAs).toHaveBeenCalledWith('ws', 'c1', 'New', expect.objectContaining({ url: 'https://new' }))
     expect(activeTab()).toMatchObject({ baseRevision: 'rev-n', dirty: false, saving: false, draft: { id: 'n1' } })
     vi.mocked(requests.saveRequestAs).mockRejectedValue(new AppError('TRE-01404', 'no parent'))
-    await expect(state().saveAs(TAB, 'gone', 'New')).resolves.toBeNull()
-    expect(activeTab().error?.code).toBe('TRE-01404')
+    await expect(state().saveAs(TAB, 'gone', 'New')).resolves.toMatchObject({ ok: false, error: { code: 'TRE-01404' } })
+    expect(activeTab().error).toBeNull()
     useWorkspacesStore.setState({ activeLocalId: null })
-    await expect(state().saveAs(TAB, 'c1', 'New')).resolves.toBeNull()
+    await expect(state().saveAs(TAB, 'c1', 'New')).resolves.toEqual({ ok: true, value: null })
     await expect(state().openSaved(TAB, 'r1')).resolves.toBe(false)
   })
 
@@ -369,7 +369,7 @@ describe('request builder store - saved requests', () => {
     expect(requests.saveRequest).toHaveBeenLastCalledWith('ws', savedDraft, 'rev-1', true)
     expect(activeTab().conflict).toBe(false)
     vi.mocked(requests.saveRequest).mockRejectedValue(new AppError('REQ-13500', 'disk full'))
-    await state().save(tabId)
+    await expect(state().save(tabId)).resolves.toMatchObject({ ok: false, error: { code: 'REQ-13500' } })
     expect(activeTab().error?.code).toBe('REQ-13500')
   })
 

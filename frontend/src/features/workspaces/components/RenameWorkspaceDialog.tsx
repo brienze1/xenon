@@ -64,7 +64,7 @@ export function RenameWorkspaceDialog({ workspace, open, onClose }: RenameWorksp
             />
           </label>
           {errors.name ? (
-            <p id={nameErrorId} className={styles.fieldError}>
+            <p id={nameErrorId} role="alert" className={styles.fieldError}>
               {errors.name}
             </p>
           ) : null}

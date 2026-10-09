@@ -109,7 +109,7 @@ describe('WorkspaceSwitcher', () => {
     await userEvent.type(nameInput, 'Initech')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Create Workspace' }))
     expect(within(dialog).getByRole('button', { name: 'Choose Folder…' })).toHaveFocus()
-    expect(within(dialog).getByText('Choose a folder for the workspace.')).toBeInTheDocument()
+    expect(within(dialog).getByRole('alert')).toHaveTextContent('Choose a folder for the workspace.')
     expect(services.createWorkspace).not.toHaveBeenCalled()
   })
 
@@ -147,6 +147,7 @@ describe('WorkspaceSwitcher', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Rename Workspace' }))
     expect(input).toHaveFocus()
     expect(input).toHaveAccessibleDescription('Enter a name for the workspace.')
+    expect(screen.getByRole('alert')).toHaveTextContent('Enter a name for the workspace.')
     expect(services.renameWorkspace).not.toHaveBeenCalled()
   })
 

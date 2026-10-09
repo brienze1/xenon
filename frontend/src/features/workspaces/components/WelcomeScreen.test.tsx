@@ -74,6 +74,7 @@ describe('WelcomeScreen', () => {
     expect(nameInput).toHaveAttribute('aria-invalid', 'true')
     expect(nameInput).toHaveAccessibleDescription('Enter a name for the workspace.')
     expect(screen.getByRole('button', { name: 'Choose Folder…' })).toHaveAccessibleDescription('Choose a folder for the workspace.')
+    expect(screen.getAllByRole('alert').map((alert) => alert.textContent)).toEqual(['Enter a name for the workspace.', 'Choose a folder for the workspace.'])
     await userEvent.type(nameInput, 'Acme')
     expect(nameInput).toHaveAttribute('aria-invalid', 'false')
     await userEvent.click(screen.getByRole('button', { name: 'Create Workspace' }))

@@ -82,7 +82,7 @@ export function CreateWorkspaceDialog({ open, onClose }: CreateWorkspaceDialogPr
             />
           </label>
           {errors.name ? (
-            <p id={nameErrorId} className={styles.fieldError}>
+            <p id={nameErrorId} role="alert" className={styles.fieldError}>
               {errors.name}
             </p>
           ) : null}
@@ -97,7 +97,7 @@ export function CreateWorkspaceDialog({ open, onClose }: CreateWorkspaceDialogPr
               </Button>
             </div>
             {errors.folder ? (
-              <p id={folderErrorId} className={styles.fieldError}>
+              <p id={folderErrorId} role="alert" className={styles.fieldError}>
                 {errors.folder}
               </p>
             ) : null}

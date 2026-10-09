@@ -89,8 +89,11 @@ export function HistoryView({ onOpenEntry }: HistoryViewProps) {
   })
 
   async function confirmClear() {
-    setConfirming(false)
-    await clearHistory()
+    const failure = await clearHistory()
+    if (failure === null) {
+      setConfirming(false)
+    }
+    return failure
   }
 
   return (
@@ -133,7 +136,7 @@ export function HistoryView({ onOpenEntry }: HistoryViewProps) {
           </div>
         </div>
       )}
-      <ClearHistoryDialog open={confirming} onCancel={() => setConfirming(false)} onConfirm={() => void confirmClear()} />
+      <ClearHistoryDialog open={confirming} onCancel={() => setConfirming(false)} onConfirm={confirmClear} />
     </div>
   )
 }

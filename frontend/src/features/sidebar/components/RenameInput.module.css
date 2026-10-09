@@ -1,3 +1,10 @@
+.field {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
 .rename {
   flex: 1;
   min-width: 0;
@@ -13,4 +20,27 @@
 .rename:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
+}
+
+.rename[aria-invalid='true'] {
+  border-color: var(--status-error);
+}
+
+.error {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  right: 0;
+  z-index: 1;
+  padding: var(--space-2) var(--space-3);
+  border-left: 2px solid var(--status-error);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-panel);
+  color: var(--color-text);
+  font-size: var(--font-size-xs);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  cursor: default;
+  user-select: text;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { SendResult } from '@/platform/mappers/request'
 import { formatBytes } from '@/shared/lib/format-bytes'
 import { Button } from '@/shared/ui/button/Button'
@@ -47,7 +47,6 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
   const saveBody = useResponseViewerStore((state) => state.saveBody)
   const language = languageFor(result.contentType)
   const isBinary = result.isBinary
-  const viewName = useId()
 
   useEffect(() => {
     if (!isBinary && bodyStatus === 'idle') {
@@ -78,7 +77,7 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
             <label key={option.view} className={styles.view}>
               <input
                 type="radio"
-                name={viewName}
+                name={`${tabId}-body-view`}
                 className={styles.viewInput}
                 checked={view === option.view}
                 onChange={() => setView(option.view)}
