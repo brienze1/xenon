@@ -9,7 +9,7 @@ snake_case (dto skill). IDs are ULID strings.
 `{ "error": { "id", "code", "description", "error_details": [{ "attribute", "messages" }] } }`.
 `code` follows `{PREFIX}-{NN}{STATUS}`; the UI branches on `code`, never on text. Prefixes:
 `WKS` workspaces · `TRE` tree items · `REQ` requests · `SND` sending · `HIS` history ·
-`UIS` UI state · `DLG` dialogs · `UNK` unknown.
+`UIS` UI state · `DLG` dialogs · `WIN` window · `UNK` unknown.
 
 ## 1. `WorkspaceService`
 | Method | Input | Output | Notes / errors |
@@ -85,6 +85,12 @@ server; not reachable from outside the app.
 | `PickFolder({ title })` | `{ path }` (empty = cancelled) |
 | `PickFile({ title })` | `{ path }` |
 | `PickSaveFile({ title, suggested_name })` | `{ path }` |
+
+## 7a. `WindowService` (infra-only, called by `internal/infra/application.go`, not bound to the UI)
+| Method | Input | Output | Notes |
+|---|---|---|---|
+| `Restore(req)` | `{ screens: [{ x, y, width, height, primary }] }` (work areas, DIP) | `WindowState { x, y, width, height, maximized }` | saved bounds from `app.json` `window`, fitted to the screen holding the window centre (else primary, else first): size within 960×600 and the screen, position on that screen; no saved bounds → 1280×800 centred; `WIN-00400` invalid screens |
+| `Save(req)` | `WindowState` | — | while maximised the last normal bounds are kept; `WIN-01400` invalid size |
 
 ## 8. Events (Go → UI, typed via `application.RegisterEvent`)
 | Name | Payload | When |

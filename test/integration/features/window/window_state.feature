@@ -55,6 +55,8 @@ Feature: Remember the window size and position
       """
       { "x": 100, "y": 60, "width": 1300, "height": 850, "maximized": false }
       """
+    Then the app data file "app.json" should contain the field "version" equal to "1"
+    And the app data file "app.json" should contain the field "workspaces" array length equal to 0
     When I call "WindowService.Save" with
       """
       { "x": 0, "y": 0, "width": 1920, "height": 1080, "maximized": true }

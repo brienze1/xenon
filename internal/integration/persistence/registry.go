@@ -72,6 +72,43 @@ func (r *registryPersistence) Save(ctx context.Context, registry entity.AppRegis
 	return nil
 }
 
+func (r *registryPersistence) FindWindow(ctx context.Context) (*entity.WindowState, error) {
+	logger.Debug(ctx, "Started")
+
+	stored, err := r.read()
+	if err != nil {
+		return nil, err
+	}
+	state := entity.NewWindowState()
+	var window model.WindowState
+	if err := json.Unmarshal(stored.Window, &window); err == nil {
+		state = window.ToEntity()
+	}
+
+	logger.Debug(ctx, "Finished", state)
+	return &state, nil
+}
+
+func (r *registryPersistence) SaveWindow(ctx context.Context, state entity.WindowState) error {
+	logger.Debug(ctx, "Started", state)
+
+	stored, err := r.read()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(appDataPath(), appDataDirMode); err != nil {
+		return errs.FileError(err, "WIN-02500")
+	}
+	window, _ := json.Marshal(model.NewWindowState(state))
+	data, _ := json.MarshalIndent(model.NewRegistry(stored.ToEntity(), window), "", "  ")
+	if err := fileutils.WriteFileAtomic(appDataPath(registryFile), append(data, '\n'), appDataFileMode); err != nil {
+		return errs.FileError(err, "WIN-03500")
+	}
+
+	logger.Debug(ctx, "Finished", state)
+	return nil
+}
+
 func (r *registryPersistence) read() (*model.Registry, error) {
 	data, err := os.ReadFile(appDataPath(registryFile))
 	if errors.Is(err, fs.ErrNotExist) {

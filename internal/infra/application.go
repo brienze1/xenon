@@ -6,8 +6,10 @@ import (
 	"path/filepath"
 
 	wails "github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 
 	"github.com/brienze1/xenon"
+	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/infra/properties"
 	"github.com/brienze1/xenon/internal/infra/server"
 	"github.com/brienze1/xenon/internal/infra/server/binding"
@@ -25,6 +27,7 @@ type Bindings struct {
 	Request      *binding.RequestService
 	UIState      *binding.UIStateService
 	History      *binding.HistoryService
+	Window       *binding.WindowService
 	ResponseBody *route.ResponseBodyRoute
 }
 
@@ -37,6 +40,7 @@ func NewBindings() *Bindings {
 		Request:      binding.NewRequestService(),
 		UIState:      binding.NewUIStateService(),
 		History:      binding.NewHistoryService(),
+		Window:       binding.NewWindowService(),
 		ResponseBody: route.NewResponseBodyRoute(),
 	}
 }
@@ -87,14 +91,20 @@ func Start() {
 		Title:     "Xenon",
 		Width:     1280,
 		Height:    800,
-		MinWidth:  960,
-		MinHeight: 600,
+		MinWidth:  entity.MinWindowWidth,
+		MinHeight: entity.MinWindowHeight,
+		Hidden:    true,
 		Mac: wails.MacWindow{
 			InvisibleTitleBarHeight: 40,
 			TitleBar:                wails.MacTitleBarHiddenInset,
 		},
 		BackgroundColour: wails.NewRGB(10, 10, 12),
 		URL:              "/",
+	})
+
+	app.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(*wails.ApplicationEvent) {
+		restoreWindowBounds(app, window, bindings.Window)
+		rememberWindowBounds(window, bindings.Window)
 	})
 
 	if err := app.Run(); err != nil {
