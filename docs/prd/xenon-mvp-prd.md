@@ -423,10 +423,13 @@ This list is close to full Postman parity, so build it in stages that are each u
 
 Stages 4 (scripts) and the OAuth 2.0 part of 5 carry most of the risk. Everything else is a lot of UI, but well understood.
 
+**Decisions (Oct 9, 2026)**
+
+- [x] Import from Bruno too? **Yes** — a Bruno (.bru) collection importer is part of stage 3, alongside Postman.
+- [x] Platforms? **macOS, Windows and Linux from day one**, built and tested on all three.
+- [x] Keep workspace globals as a scope? **Yes** — scopes stay local → environment → collection → globals, and `pm.globals` works.
+
 **Open questions**
 
-- [ ] Import from Bruno too, so old Bruno collections can come over?
-- [ ] Platforms: macOS only at first, or Windows and Linux from day one?
-- [ ] Keep workspace globals as a scope, or only environments and collection variables?
-- [ ] Open-source Xenon once it replaces Postman, or keep it private?
+- [ ] Open-source Xenon once it replaces Postman, or keep it private? (Not needed for the MVP.)
 - [ ] Which scripts in the current Postman collections use parts of `pm` beyond the list in Scripts? A quick scan of the exports would settle the MVP scope.

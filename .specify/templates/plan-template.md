@@ -40,7 +40,15 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+Answer each gate (✅ / ❌ with justification in Complexity Tracking):
+
+- [ ] **I. Local-first** — all state is plain files in the workspace folder (or local app-data for UI state / vault); no network service of our own; workspace isolation preserved.
+- [ ] **II. Secrets** — no secret value can reach workspace files, plain exports, logs, console, snippets, fixtures or commits.
+- [ ] **III. Go owns logic** — no disk/network access from React; UI uses `platform/` wrappers over Wails bindings; no Wails imports outside entrypoints/infra.
+- [ ] **IV. Architecture skills** — every new Go file has a layer/folder per `architecture.md`; every frontend file has a place per `frontend-architecture`.
+- [ ] **V. BDD-first** — feature files listed for every requirement; only outermost boundaries faked.
+- [ ] **VI. Postman parity** — behaviour matches Postman where the PRD says so; nothing beyond the PRD MVP.
+- [ ] **VII. Cross-platform** — works on macOS, Windows and Linux (paths, keychain, shortcuts).
 
 ## Project Structure
 
