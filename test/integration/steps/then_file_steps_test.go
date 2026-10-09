@@ -193,7 +193,7 @@ func (t *testUtils) theAppDataFileShouldContainTheFieldArrayLengthEqualTo(path, 
 }
 
 func (t *testUtils) theAppDataFileShouldNotExist(path string) error {
-	if _, err := os.Stat(filepath.Join(t.dataDir, filepath.FromSlash(path))); !os.IsNotExist(err) {
+	if _, err := os.Stat(t.appDataPath(path)); !os.IsNotExist(err) {
 		return fmt.Errorf("expected app data %s not to exist (stat error: %v)", path, err)
 	}
 	return nil
@@ -207,7 +207,7 @@ func (t *testUtils) theAppDataPathShouldHaveThePermissions(path, permissions str
 	if err != nil {
 		return err
 	}
-	info, err := os.Stat(filepath.Join(t.dataDir, filepath.FromSlash(path)))
+	info, err := os.Stat(t.appDataPath(path))
 	if err != nil {
 		return err
 	}
@@ -231,7 +231,7 @@ func (t *testUtils) workspaceFileField(path, field string) (any, error) {
 }
 
 func (t *testUtils) appDataField(path, field string) (any, error) {
-	content, err := os.ReadFile(filepath.Join(t.dataDir, filepath.FromSlash(path)))
+	content, err := os.ReadFile(t.appDataPath(path))
 	if err != nil {
 		return nil, err
 	}

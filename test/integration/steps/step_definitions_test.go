@@ -29,6 +29,8 @@ type testUtils struct {
 	time          *mock.Time
 	events        *mock.EventEmitter
 	dialog        *mock.Dialog
+	trash         *mock.Trash
+	watcher       *mock.FileWatcher
 	vars          map[string]string
 	written       map[string]string
 	tempRoot      string
@@ -70,7 +72,9 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 			api:    mock.NewApiServer(),
 			time:   mock.NewTime(),
 			events: mock.NewEventEmitter(),
-			dialog: mock.NewDialog(),
+			dialog:  mock.NewDialog(),
+			trash:   mock.NewTrash(),
+			watcher: mock.NewFileWatcher(),
 		}
 		if os.Getenv("LOG_LEVEL") == "" {
 			_ = os.Setenv("LOG_LEVEL", "off")
@@ -78,6 +82,8 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		timeutils.SetCurrentTimeProvider(suite.time.Now)
 		external.SetEventEmitter(suite.events)
 		external.SetDialog(suite.dialog)
+		external.SetTrash(suite.trash)
+		external.SetFileWatcher(suite.watcher)
 	})
 	test := suite
 
@@ -103,6 +109,8 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	test.registerThenFileSteps(ctx)
 	test.registerThenEventSteps(ctx)
 	test.registerThenApiSteps(ctx)
+	test.registerTrashSteps(ctx)
+	test.registerFileWatcherSteps(ctx)
 }
 
 func (t *testUtils) before() error {
@@ -110,6 +118,8 @@ func (t *testUtils) before() error {
 	t.time.Reset()
 	t.events.Reset()
 	t.dialog.Reset()
+	t.trash.Reset()
+	t.watcher.Reset()
 	t.response = nil
 	t.callError = nil
 	t.routeResponse = nil

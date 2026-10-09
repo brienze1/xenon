@@ -13,8 +13,9 @@ import (
 )
 
 func (t *testUtils) registerWhenBindingSteps(ctx *godog.ScenarioContext) {
-	ctx.When(`^I call "(\w+)\.(\w+)" with$`, t.iCallWith)
-	ctx.When(`^I call "(\w+)\.(\w+)"$`, t.iCall)
+	ctx.Step(`^I call "(\w+)\.(\w+)" with$`, t.iCallWith)
+	ctx.Step(`^I call "(\w+)\.(\w+)"$`, t.iCall)
+	ctx.When(`^I call "(\w+)\.(\w+)" (\d+) times cycling through the payloads$`, t.iCallTimesCyclingThroughThePayloads)
 	ctx.When(`^I call "(\w+)\.(\w+)" and cancel it after (\d+)ms with$`, t.iCallAndCancelItAfterWith)
 	ctx.Step(`^I save the response field "([^"]*)" as "([^"]*)"$`, t.iSaveTheResponseFieldAs)
 }
@@ -33,6 +34,22 @@ func (t *testUtils) iCallAndCancelItAfterWith(service, method string, millisecon
 	defer timer.Stop()
 	defer cancel()
 	return t.call(ctx, service, method, payload.Content)
+}
+
+func (t *testUtils) iCallTimesCyclingThroughThePayloads(service, method string, times int, payloads *godog.DocString) error {
+	var cycle []json.RawMessage
+	if err := json.Unmarshal([]byte(payloads.Content), &cycle); err != nil || len(cycle) == 0 {
+		return fmt.Errorf("expected a non-empty JSON array of payloads: %v", err)
+	}
+	for call := 0; call < times; call++ {
+		if err := t.call(context.Background(), service, method, string(cycle[call%len(cycle)])); err != nil {
+			return err
+		}
+		if t.callError != nil {
+			return fmt.Errorf("call %d of %s.%s failed: %s", call+1, service, method, t.callError)
+		}
+	}
+	return nil
 }
 
 func (t *testUtils) iSaveTheResponseFieldAs(path, name string) error {

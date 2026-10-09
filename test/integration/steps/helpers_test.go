@@ -39,6 +39,10 @@ func (t *testUtils) workspacePath(relative string) string {
 	return filepath.Join(t.workspaceRoot, filepath.FromSlash(t.substitute(relative)))
 }
 
+func (t *testUtils) appDataPath(relative string) string {
+	return filepath.Join(t.dataDir, filepath.FromSlash(t.substitute(relative)))
+}
+
 func lookup(data any, path string) (any, bool) {
 	current := data
 	if path == "" {

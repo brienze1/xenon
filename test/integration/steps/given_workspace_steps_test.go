@@ -22,6 +22,8 @@ func (t *testUtils) registerGivenWorkspaceSteps(ctx *godog.ScenarioContext) {
 	ctx.Given(`^the workspace folder "([^"]*)" exists$`, t.theWorkspaceFolderExists)
 	ctx.Given(`^the file "([^"]*)" exists with content$`, t.theFileExistsWithContent)
 	ctx.Given(`^the workspace path "([^"]*)" is removed$`, t.theWorkspacePathIsRemoved)
+	ctx.Given(`^the workspace path "([^"]*)" is moved to "([^"]*)"$`, t.theWorkspacePathIsMovedTo)
+	ctx.Given(`^the app data file "([^"]*)" contains$`, t.theAppDataFileContains)
 	ctx.Given(`^the current time is "([^"]*)"$`, t.theCurrentTimeIs)
 	ctx.Given(`^the "([^"]*)" variable is set to the mocked api url$`, t.theVariableIsSetToTheMockedApiUrl)
 	ctx.Given(`^the "([^"]*)" variable is set to the mocked tls api url$`, t.theVariableIsSetToTheMockedTlsApiUrl)
@@ -81,6 +83,17 @@ func (t *testUtils) theFileExistsWithContent(path string, content *godog.DocStri
 
 func (t *testUtils) theWorkspacePathIsRemoved(path string) error {
 	return os.RemoveAll(t.workspacePath(path))
+}
+
+func (t *testUtils) theWorkspacePathIsMovedTo(path, target string) error {
+	if err := os.MkdirAll(filepath.Dir(t.workspacePath(target)), 0o755); err != nil {
+		return err
+	}
+	return os.Rename(t.workspacePath(path), t.workspacePath(target))
+}
+
+func (t *testUtils) theAppDataFileContains(path string, content *godog.DocString) error {
+	return writeFile(t.appDataPath(path), t.substitute(content.Content))
 }
 
 func (t *testUtils) theCurrentTimeIs(value string) error {
