@@ -246,8 +246,14 @@ and compare the resulting requests.
 - **Header as raw string, `request` as plain URL string, `url` as string, `description` as
   object**: all accepted (Postman schema allows them).
 - **Postman v2.0 auth (key/value maps)** is normalised like v2.1 attribute lists.
-- **File paths** in form-data/binary bodies are absolute paths from the exporter's machine; they
-  are imported as-is (absolute) and marked missing when not found.
+- **File paths** in form-data/binary bodies come from the exporter's machine and are untrusted:
+  imported file references are kept (for export) but always marked "re-pick needed" — they are
+  never read or uploaded until Luis picks the file again on this machine — and are listed in the
+  summary. This prevents a shared collection from uploading a local file (e.g., an SSH key) that
+  happens to exist at the same path.
+- **Untrusted archives and files**: zips are limited to 1 GB uncompressed in total (checked while
+  extracting), entries with absolute paths, `..` segments or symbolic links are refused; single
+  input files over 200 MB are refused; input must be UTF-8 (a BOM is ignored; CRLF accepted).
 - **Secrets in collection files**: a Postman collection has no secret type; values stay as typed
   (plain), as in Postman.
 - **Bruno secrets**: only names are available; they import as missing secrets.
@@ -343,6 +349,11 @@ and compare the resulting requests.
 - **FR-019**: Imports MUST show progress for more than 200 items, be cancellable before writing
   starts, and not block the UI.
 - **FR-020**: Every imported item MUST get a new Xenon id; source ids are preserved for export.
+- **FR-020a**: Imported form-data/binary file references MUST be marked "re-pick needed" and
+  MUST NOT be read or sent until the user selects the file again; they are listed in the
+  summary.
+- **FR-020b**: Disabled scripts in the source (Postman `event.disabled`) MUST be imported as
+  disabled scripts (stored, not run) and stay disabled on export.
 
 **Saved examples**
 

@@ -23,8 +23,8 @@ Bruno-only fields with no Xenon place go to a `bruno:` passthrough block.
 | `body:json` / `text` / `xml` | `body.raw` language json/text/xml |
 | `body:sparql` | `body.raw` text (+ passthrough note) |
 | `body:form-urlencoded` | `body.urlencoded` |
-| `body:multipart-form` (`@file(path)`, `@contentType(...)`) | `body.formdata` (file rows, `src`; content type → passthrough) |
-| `body:file` | `body.binary` |
+| `body:multipart-form` (`@file(path)`, `@contentType(...)`) | `body.formdata` (file rows, `src` with `srcState: repick`; content type → passthrough) |
+| `body:file` | `body.binary` (`srcState: repick`) |
 | `body:graphql` + `body:graphql:vars` | `body.graphql` |
 | `auth: inherit\|none` | `inherit` / `none` |
 | `auth:basic`, `bearer`, `apikey`, `digest`, `oauth2`, `awsv4` | same Xenon auth types |

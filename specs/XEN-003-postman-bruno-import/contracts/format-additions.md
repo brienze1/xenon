@@ -64,5 +64,20 @@ examples:
 ```
 Order of `examples` = sidebar order. Example names need not be unique.
 
-## 4. `.gitignore` block addition
+## 4. Script disabled flags
+
+```yaml
+scripts:
+  preRequest: "…"
+  postResponse: "…"
+  disabled: [preRequest]        # scripts kept but not run (default [])
+```
+Applies to collection, folder and request files.
+
+## 5. File reference state
+
+Form-data rows and binary bodies gain `srcState: ok | repick` (default `ok`). Imports write
+`repick`; the send pipeline treats `repick` like a missing file; picking a file sets `ok`.
+
+## 6. `.gitignore` block addition
 `.xenon-import-*/` (staging directories of in-progress imports).

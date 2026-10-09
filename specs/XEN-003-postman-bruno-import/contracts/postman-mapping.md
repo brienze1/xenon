@@ -36,12 +36,12 @@ passthrough** ([format-additions.md](format-additions.md) §2). Stage 6 export i
 | `request.header[]` / raw string | `headers` (raw string parsed `Name: value` per line, flagged in passthrough) |
 | `request.body.mode` raw | `body.raw` (`options.raw.language` → `language`: json/javascript/xml/html/text; unknown → text) |
 | `… urlencoded[]` | `body.urlencoded` |
-| `… formdata[]` | `body.formdata` (`type` text/file, `value`, `src` first path → `src`; extra `src` paths + `contentType` → passthrough) |
-| `… file` | `body.binary.src` (`content` → passthrough) |
+| `… formdata[]` | `body.formdata` (`type` text/file, `value`, `src` first path → `src` with `srcState: repick`; extra `src` paths + `contentType` → passthrough) |
+| `… file` | `body.binary.src` with `srcState: repick` (`content` → passthrough) |
 | `… graphql` | `body.graphql` (`variables` string kept as text) |
 | `body.disabled: true` | `body.mode: none` + original body kept in passthrough |
 | `request.auth` | `auth` |
-| `event[]` | `scripts` (`listen: prerequest` → preRequest, `test` → postResponse; `exec[]` joined with `\n`; `disabled` → script kept with passthrough flag, not run) |
+| `event[]` | `scripts` (`listen: prerequest` → preRequest, `test` → postResponse; `exec[]` joined with `\n`; `disabled: true` → listed in `scripts.disabled`, stored and not run) |
 | `response[]` | `examples` (below) |
 | `protocolProfileBehavior.followRedirects` / `strictSSL` / `disableUrlEncoding` | `settings.followRedirects` / `verifySsl` / `encodeUrl` = !disableUrlEncoding (all keys also kept in passthrough) |
 | `variable[]`, `proxy`, `certificate`, `id` | passthrough (+ warning for variables) |
