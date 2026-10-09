@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"time"
 
 	"github.com/cucumber/godog"
 )
@@ -22,7 +23,9 @@ func (t *testUtils) iRequestFromTheRoute(path, name string) error {
 		return fmt.Errorf("binding %s is not an HTTP route", name)
 	}
 	recorder := httptest.NewRecorder()
+	started := time.Now()
 	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, t.substitute(path), nil))
+	t.elapsed = time.Since(started)
 	t.routeResponse = recorder
 	return nil
 }

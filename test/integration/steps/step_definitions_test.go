@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/cucumber/godog"
 
@@ -39,6 +40,7 @@ type testUtils struct {
 	routeResponse *httptest.ResponseRecorder
 	response      []byte
 	callError     []byte
+	elapsed       time.Duration
 }
 
 var (

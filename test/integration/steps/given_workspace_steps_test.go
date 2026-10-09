@@ -29,6 +29,7 @@ func (t *testUtils) registerGivenWorkspaceSteps(ctx *godog.ScenarioContext) {
 	ctx.Given(`^the "([^"]*)" variable is set to the mocked tls api url$`, t.theVariableIsSetToTheMockedTlsApiUrl)
 	ctx.Given(`^the "([^"]*)" variable is set to a closed port url$`, t.theVariableIsSetToAClosedPortUrl)
 	ctx.Given(`^the "([^"]*)" variable is set to "([^"]*)"$`, t.theVariableIsSetTo)
+	ctx.Given(`^the workspace folder "([^"]*)" holds (\d+) generated requests across (\d+) collections$`, t.theWorkspaceFolderHoldsGeneratedRequests)
 }
 
 func (t *testUtils) theWorkspaceExists(name string) error {
@@ -138,4 +139,32 @@ func writeFile(path, content string) error {
 		return err
 	}
 	return os.WriteFile(path, []byte(content), 0o644)
+}
+
+func (t *testUtils) theWorkspaceFolderHoldsGeneratedRequests(folder string, requests, collections int) error {
+	root := t.workspacePath(folder)
+	names := make([]string, 0, collections)
+	for collection := 1; collection <= collections; collection++ {
+		names = append(names, fmt.Sprintf("collection-%d", collection))
+	}
+	workspace := fmt.Sprintf("xenon: 1\nkind: workspace\nid: 01JG0000000000000000000000\nname: %s\norder:\n  - %s\n", folder, strings.Join(names, "\n  - "))
+	if err := writeFile(filepath.Join(root, "workspace.yaml"), workspace); err != nil {
+		return err
+	}
+	for collection, name := range names {
+		files := make([]string, 0, requests/collections+1)
+		for index := collection; index < requests; index += collections {
+			file := fmt.Sprintf("request-%04d.yaml", index)
+			files = append(files, file)
+			content := fmt.Sprintf("xenon: 1\nkind: request\nid: 01JG%022d\nname: Request %04d\nmethod: GET\nurl: https://%s.test/items/%d\n", index+1000, index, folder, index)
+			if err := writeFile(filepath.Join(root, "collections", name, file), content); err != nil {
+				return err
+			}
+		}
+		header := fmt.Sprintf("xenon: 1\nkind: collection\nid: 01JG%022d\nname: Collection %d\norder:\n  - %s\n", collection+1, collection+1, strings.Join(files, "\n  - "))
+		if err := writeFile(filepath.Join(root, "collections", name, "collection.yaml"), header); err != nil {
+			return err
+		}
+	}
+	return nil
 }

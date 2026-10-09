@@ -5,12 +5,14 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/cucumber/godog"
 )
 
 func (t *testUtils) registerThenResponseSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the call should succeed$`, t.theCallShouldSucceed)
+	ctx.Then(`^the last call should have taken less than (\d+) ms$`, t.theLastCallShouldHaveTakenLessThan)
 	ctx.Then(`^the call should fail with code "([^"]*)"$`, t.theCallShouldFailWithCode)
 	ctx.Then(`^the error should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theErrorShouldContainTheFieldEqualTo)
 	ctx.Then(`^the response should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theResponseShouldContainTheFieldEqualTo)
@@ -30,6 +32,13 @@ func (t *testUtils) registerThenResponseSteps(ctx *godog.ScenarioContext) {
 func (t *testUtils) theCallShouldSucceed() error {
 	if t.callError != nil {
 		return fmt.Errorf("expected success, got error %s", t.callError)
+	}
+	return nil
+}
+
+func (t *testUtils) theLastCallShouldHaveTakenLessThan(milliseconds int) error {
+	if limit := time.Duration(milliseconds) * time.Millisecond; t.elapsed >= limit {
+		return fmt.Errorf("the last call took %s, expected less than %s", t.elapsed, limit)
 	}
 	return nil
 }

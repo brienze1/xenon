@@ -81,7 +81,9 @@ func (t *testUtils) call(ctx context.Context, service, method, payload string) e
 		}
 		arguments = append(arguments, input.Elem())
 	}
+	started := time.Now()
 	results := function.Call(arguments)
+	t.elapsed = time.Since(started)
 	if failure, isError := results[len(results)-1].Interface().(error); isError && failure != nil {
 		t.callError = server.MarshalError(failure)
 		return nil
