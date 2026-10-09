@@ -252,10 +252,11 @@ and compare the resulting requests.
   (plain), as in Postman.
 - **Bruno secrets**: only names are available; they import as missing secrets.
 - **Imported into a folder**: importing a collection into an existing folder makes the
-  collection's top-level folders and requests children of that folder; collection-level auth,
-  headers, scripts and variables then go to the folder where Xenon allows them (auth, headers,
-  scripts) and the collection variables are added to the containing collection (clashes per
-  FR-018), with a summary note.
+  collection's top-level folders and requests children of that folder. The collection's auth,
+  headers and scripts are applied to the target folder when it has none of its own; otherwise
+  the imported items are placed in a new sub-folder named after the collection, which carries
+  them. Collection variables are added to the containing collection (clashes per FR-018). The
+  summary states which option was applied.
 - **cURL with multiple URLs or unsupported protocols**: the first HTTP(S) URL is used and the
   rest listed in the notice; non-HTTP URLs are refused.
 
