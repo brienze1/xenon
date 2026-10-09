@@ -62,12 +62,7 @@ Feature: Hand-edited and unusual workspace files
       { "local_id": "{{Acme.local_id}}", "parent_id": "{{billing}}", "name": "Pong" }
       """
     Then the call should succeed
-    And the workspace file "acme/collections/billing/broken.yaml" should equal
-      """
-      xenon: 1
-      kind: request
-      name: [unclosed
-      """
+    And the workspace file "acme/collections/billing/broken.yaml" should be unchanged
     And the workspace file "acme/collections/billing/collection.yaml" should contain the field "order" with the items "broken.yaml, ping.yaml, pong.yaml"
 
   @malformed

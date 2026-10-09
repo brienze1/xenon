@@ -30,6 +30,7 @@ type testUtils struct {
 	events        *mock.EventEmitter
 	dialog        *mock.Dialog
 	vars          map[string]string
+	written       map[string]string
 	tempRoot      string
 	workspaceRoot string
 	dataDir       string
@@ -112,6 +113,7 @@ func (t *testUtils) before() error {
 	t.response = nil
 	t.callError = nil
 	t.routeResponse = nil
+	t.written = map[string]string{}
 
 	tempRoot, err := os.MkdirTemp("", "xenon-bdd-")
 	if err != nil {

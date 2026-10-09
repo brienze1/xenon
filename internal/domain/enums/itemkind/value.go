@@ -11,6 +11,7 @@ const (
 	Collection enums.ItemKind = "collection"
 	Folder     enums.ItemKind = "folder"
 	Request    enums.ItemKind = "request"
+	Error      enums.ItemKind = "error"
 	Unknown    enums.ItemKind = "unknown"
 )
 
@@ -24,6 +25,8 @@ func GetItemKind(s string) enums.ItemKind {
 		return Folder
 	case "request":
 		return Request
+	case "error":
+		return Error
 	default:
 		return Unknown
 	}

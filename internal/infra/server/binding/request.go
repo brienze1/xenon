@@ -9,6 +9,8 @@ import (
 )
 
 type RequestService struct {
+	get      adapter.RequestGetController
+	save     adapter.RequestSaveController
 	edit     adapter.RequestEditController
 	send     adapter.RequestSendController
 	response adapter.RequestResponseController
@@ -16,10 +18,24 @@ type RequestService struct {
 
 func NewRequestService() *RequestService {
 	return &RequestService{
+		get:      controller.GetRequestGet(),
+		save:     controller.GetRequestSave(),
 		edit:     controller.GetRequestEdit(),
 		send:     controller.GetRequestSend(),
 		response: controller.GetRequestResponse(),
 	}
+}
+
+func (r *RequestService) Get(ctx context.Context, request dto.OpenRequest) (*dto.Request, error) {
+	return r.get.Get(ctx, request)
+}
+
+func (r *RequestService) Save(ctx context.Context, request dto.SaveRequest) (*dto.Request, error) {
+	return r.save.Save(ctx, request)
+}
+
+func (r *RequestService) SaveAs(ctx context.Context, request dto.SaveRequestAs) (*dto.Request, error) {
+	return r.save.SaveAs(ctx, request)
 }
 
 func (r *RequestService) ApplyUrl(ctx context.Context, request dto.ApplyRequest) (*dto.Request, error) {

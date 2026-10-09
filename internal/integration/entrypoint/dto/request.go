@@ -25,6 +25,7 @@ func NewRequest(request entity.Request) Request {
 		Description:   request.Description,
 		Method:        request.NormalizedMethod(),
 		Url:           request.URL,
+		Revision:      request.Revision,
 		Params:        NewKeyValues(request.Params),
 		PathVariables: make([]PathVariable, 0, len(request.PathVariables)),
 		Headers:       NewKeyValues(request.Headers),

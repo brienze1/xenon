@@ -17,6 +17,7 @@ func GetSendRequestService() adapter.SendRequestService {
 		sendRequestOnce.Do(func() {
 			sendRequestInstance = service.NewSendRequestService(
 				integration.GetRegistryPersistence(),
+				integration.GetTreePersistence(),
 				integration.GetHttpWebservice(),
 				integration.GetResponseBodyWebservice(),
 				properties.Properties().Application.Version,

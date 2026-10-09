@@ -1,0 +1,138 @@
+package entity
+
+import (
+	"strings"
+
+	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
+)
+
+const copySuffix = " Copy"
+
+type TreeNode struct {
+	ID       string
+	Kind     enums.ItemKind
+	Name     string
+	Method   string
+	URL      string
+	Error    string
+	Warning  string
+	FileName string
+	Children []TreeNode
+	Entries  []string
+	Ignored  bool
+}
+
+func NewRequestNode(request Request, fileName string) TreeNode {
+	return TreeNode{
+		ID:       request.ID,
+		Kind:     itemkind.Request,
+		Name:     request.Name,
+		Method:   request.NormalizedMethod(),
+		URL:      request.URL,
+		FileName: fileName,
+	}
+}
+
+func (t TreeNode) IsContainer() bool {
+	return t.Kind == itemkind.Collection || t.Kind == itemkind.Folder
+}
+
+func (t TreeNode) IsRequest() bool {
+	return t.Kind == itemkind.Request
+}
+
+func (t TreeNode) IsItem() bool {
+	return t.Kind != itemkind.Error
+}
+
+func (t TreeNode) CopyName() string {
+	return t.Name + copySuffix
+}
+
+func (t TreeNode) Matches(query string) bool {
+	needle := strings.ToLower(strings.TrimSpace(query))
+	if !t.IsRequest() || needle == "" {
+		return false
+	}
+	return strings.Contains(strings.ToLower(t.Name), needle) || strings.Contains(strings.ToLower(t.URL), needle)
+}
+
+func (t TreeNode) RequestIDs() []string {
+	ids := make([]string, 0)
+	if t.IsRequest() {
+		ids = append(ids, t.ID)
+	}
+	for _, child := range t.Children {
+		ids = append(ids, child.RequestIDs()...)
+	}
+	return ids
+}
+
+func (t TreeNode) ChildOrder() []string {
+	order := make([]string, 0, len(t.Children))
+	for _, child := range t.Children {
+		if !child.Ignored {
+			order = append(order, child.FileName)
+		}
+	}
+	return order
+}
+
+func (t TreeNode) OrderAppending(fileName string) []string {
+	return append(t.ChildOrder(), fileName)
+}
+
+func (t TreeNode) OrderInsertingAfter(existing, fileName string) []string {
+	order := make([]string, 0, len(t.Children)+1)
+	for _, name := range t.ChildOrder() {
+		order = append(order, name)
+		if name == existing {
+			order = append(order, fileName)
+		}
+	}
+	return order
+}
+
+func (t TreeNode) OrderRenaming(previous, fileName string) []string {
+	order := t.ChildOrder()
+	for index, name := range order {
+		if name == previous {
+			order[index] = fileName
+		}
+	}
+	return order
+}
+
+func (t TreeNode) OrderRemoving(fileName string) []string {
+	order := make([]string, 0, len(t.Children))
+	for _, name := range t.ChildOrder() {
+		if name != fileName {
+			order = append(order, name)
+		}
+	}
+	return order
+}
+
+func (t TreeNode) EntriesExcept(fileName string) []string {
+	entries := make([]string, 0, len(t.Entries))
+	for _, entry := range t.Entries {
+		if entry != fileName {
+			entries = append(entries, entry)
+		}
+	}
+	return entries
+}
+
+func (t TreeNode) find(id string) (*TreeNode, *TreeNode) {
+	for index := range t.Children {
+		child := &t.Children[index]
+		if child.ID == id && child.IsItem() {
+			return child, &t
+		}
+		if found, parent := child.find(id); found != nil {
+			return found, parent
+		}
+	}
+	return nil, nil
+}

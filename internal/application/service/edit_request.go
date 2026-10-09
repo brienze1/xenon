@@ -11,11 +11,16 @@ import (
 
 type editRequest struct {
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry
+	findTreeItem          usecase.FindTreeItem
 	appVersion            string
 }
 
-func NewEditRequestService(findWorkspaceRegistry usecase.FindWorkspaceRegistry, appVersion string) adapter.EditRequestService {
-	return &editRequest{findWorkspaceRegistry: findWorkspaceRegistry, appVersion: appVersion}
+func NewEditRequestService(
+	findWorkspaceRegistry usecase.FindWorkspaceRegistry,
+	findTreeItem usecase.FindTreeItem,
+	appVersion string,
+) adapter.EditRequestService {
+	return &editRequest{findWorkspaceRegistry: findWorkspaceRegistry, findTreeItem: findTreeItem, appVersion: appVersion}
 }
 
 func (e *editRequest) ApplyUrl(ctx context.Context, request entity.Request) entity.Request {
@@ -61,7 +66,11 @@ func (e *editRequest) AutoHeaders(ctx context.Context, localId string, request e
 	if err != nil {
 		return nil, err
 	}
-	effective := usecase.ResolveEffectiveRequest(request, []entity.Collection{}, workspace.Path)
+	ancestors, err := e.findTreeItem.FindAncestors(ctx, workspace.Path, request.ID)
+	if err != nil {
+		return nil, err
+	}
+	effective := usecase.ResolveEffectiveRequest(request, ancestors, workspace.Path)
 	headers := usecase.ComputeAutoHeaders(effective, e.appVersion)
 
 	logger.Info(ctx, "Finished", map[string]any{"headers": len(headers)})

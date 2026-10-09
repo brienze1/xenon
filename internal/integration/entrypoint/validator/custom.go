@@ -23,6 +23,7 @@ func CustomValidator() Validate {
 	validate := validator.New()
 	_ = validate.RegisterValidation("not_blank", notBlank)
 	_ = validate.RegisterValidation("absolute_path", absolutePath)
+	_ = validate.RegisterValidation("has_id", hasId)
 	validate.RegisterTagNameFunc(jsonName)
 	return &customValidator{validator: validate}
 }
@@ -52,6 +53,11 @@ func notBlank(field validator.FieldLevel) bool {
 
 func absolutePath(field validator.FieldLevel) bool {
 	return filepath.IsAbs(field.Field().String())
+}
+
+func hasId(field validator.FieldLevel) bool {
+	id := field.Field().FieldByName("Id")
+	return id.IsValid() && strings.TrimSpace(id.String()) != ""
 }
 
 func jsonName(field reflect.StructField) string {

@@ -63,3 +63,26 @@ func absolute() string {
 	path, _ := filepath.Abs("workspace")
 	return path
 }
+
+func TestHasIdRequiresANonBlankIdField(t *testing.T) {
+	type identified struct {
+		Id string
+	}
+	type anonymous struct {
+		Name string
+	}
+	type input struct {
+		Identified identified `json:"identified" validate:"has_id"`
+	}
+	type withoutId struct {
+		Anonymous anonymous `json:"anonymous" validate:"has_id"`
+	}
+	if err := CustomValidator().Struct("TST-00400", &input{Identified: identified{Id: "x"}}); err != nil {
+		t.Fatalf("an id is valid: %v", err)
+	}
+	for name, value := range map[string]any{"blank": &input{Identified: identified{Id: "  "}}, "missing field": &withoutId{}} {
+		if err := CustomValidator().Struct("TST-00400", value); err == nil {
+			t.Errorf("%s must be rejected", name)
+		}
+	}
+}

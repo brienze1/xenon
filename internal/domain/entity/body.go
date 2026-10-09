@@ -60,6 +60,17 @@ func (b Body) ResolveFiles(workspaceRoot string) Body {
 	return b
 }
 
+func (b Body) RelativeTo(workspaceRoot string) Body {
+	b.Binary = b.Binary.RelativeTo(workspaceRoot)
+	rows := make([]FormDataRow, 0, len(b.FormData))
+	for _, row := range b.FormData {
+		row.Src = row.Src.RelativeTo(workspaceRoot)
+		rows = append(rows, row)
+	}
+	b.FormData = rows
+	return b
+}
+
 func (b Body) FileRefs() []FileRef {
 	refs := make([]FileRef, 0)
 	switch b.Mode {

@@ -48,6 +48,7 @@ func (t *testUtils) theWorkspaceExists(name string) error {
 }
 
 func (t *testUtils) theWorkspaceFileContains(path string, content *godog.DocString) error {
+	t.written[t.workspacePath(path)] = t.substitute(content.Content)
 	return writeFile(t.workspacePath(path), t.substitute(content.Content))
 }
 

@@ -43,3 +43,10 @@ func (c Collection) IsFolder() bool {
 func (c Collection) HasValidName() bool {
 	return isValidItemName(c.Name)
 }
+
+func (c Collection) WithSettings(settings Collection) Collection {
+	c.Description = settings.Description
+	c.Auth = settings.Auth
+	c.Headers = append([]KeyValue{}, settings.Headers...)
+	return c
+}

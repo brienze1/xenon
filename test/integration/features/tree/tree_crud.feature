@@ -198,7 +198,7 @@ Feature: Create, rename, duplicate and delete sidebar items
     And the workspace file "globex/collections/billing-api/list-invoices.yaml" should contain the field "name" equal to "List invoices"
     And the workspace file "globex/collections/billing-api/list-invoices.yaml" should contain the field "method" equal to "POST"
     And the workspace file "globex/collections/billing-api/list-invoices.yaml" should contain the field "params.0.key" equal to "page"
-    And the workspace file "globex/collections/billing-api/collection.yaml" should contain the field "order" with the items "invoices, list-invoices.yaml"
+    And the workspace file "globex/collections/billing-api/collection.yaml" should contain the field "order" with the items "invoices, ping.yaml, list-invoices.yaml"
 
   @success @rename
   Scenario: Renaming a request renames its file and updates the parent order

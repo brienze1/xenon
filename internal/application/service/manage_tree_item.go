@@ -1,0 +1,172 @@
+package service
+
+import (
+	"context"
+
+	"github.com/brienze1/xenon/internal/application/adapter"
+	"github.com/brienze1/xenon/internal/application/usecase"
+	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
+	"github.com/brienze1/xenon/pkg/errs"
+	"github.com/brienze1/xenon/pkg/idutils"
+	"github.com/brienze1/xenon/pkg/logger"
+)
+
+type manageTreeItem struct {
+	findWorkspaceRegistry usecase.FindWorkspaceRegistry
+	loadTree              usecase.LoadTree
+	saveTreeItem          usecase.SaveTreeItem
+	deleteTreeItem        usecase.DeleteTreeItem
+}
+
+func NewManageTreeItemService(
+	findWorkspaceRegistry usecase.FindWorkspaceRegistry,
+	loadTree usecase.LoadTree,
+	saveTreeItem usecase.SaveTreeItem,
+	deleteTreeItem usecase.DeleteTreeItem,
+) adapter.ManageTreeItemService {
+	return &manageTreeItem{
+		findWorkspaceRegistry: findWorkspaceRegistry,
+		loadTree:              loadTree,
+		saveTreeItem:          saveTreeItem,
+		deleteTreeItem:        deleteTreeItem,
+	}
+}
+
+func (m *manageTreeItem) CreateCollection(ctx context.Context, localId, name string) (*entity.TreeNode, error) {
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "name": name})
+
+	root, tree, err := m.load(ctx, localId)
+	if err != nil {
+		return nil, err
+	}
+	collection := entity.NewCollection(idutils.NewUlid(), name)
+	fileName := usecase.DeriveFileName(collection.Name, collection.Kind, tree.Root.Entries)
+	node, err := m.saveTreeItem.CreateContainer(ctx, root, "", fileName, collection)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info(ctx, "Finished", node)
+	return node, nil
+}
+
+func (m *manageTreeItem) CreateFolder(ctx context.Context, localId, parentId, name string) (*entity.TreeNode, error) {
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "parentId": parentId, "name": name})
+
+	root, tree, err := m.load(ctx, localId)
+	if err != nil {
+		return nil, err
+	}
+	parent, found := tree.Container(parentId)
+	if !found {
+		return nil, errs.NotFoundError("the parent collection or folder does not exist", "TRE-01404")
+	}
+	folder := entity.NewFolder(idutils.NewUlid(), name)
+	fileName := usecase.DeriveFileName(folder.Name, folder.Kind, parent.Entries)
+	node, err := m.saveTreeItem.CreateContainer(ctx, root, parent.ID, fileName, folder)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info(ctx, "Finished", node)
+	return node, nil
+}
+
+func (m *manageTreeItem) CreateRequest(ctx context.Context, localId, parentId, name string, request entity.Request) (*entity.TreeNode, error) {
+	logger.Info(ctx, "Started", request, map[string]any{"localId": localId, "parentId": parentId, "name": name})
+
+	root, tree, err := m.load(ctx, localId)
+	if err != nil {
+		return nil, err
+	}
+	parent, found := tree.Container(parentId)
+	if !found {
+		return nil, errs.NotFoundError("the parent collection or folder does not exist", "TRE-01404")
+	}
+	created := request.CopyAs(idutils.NewUlid(), name).WithFileRefsRelativeTo(root)
+	fileName := usecase.DeriveFileName(created.Name, itemkind.Request, parent.Entries)
+	saved, err := m.saveTreeItem.CreateRequest(ctx, root, parent.ID, fileName, created)
+	if err != nil {
+		return nil, err
+	}
+	node := entity.NewRequestNode(*saved, fileName)
+
+	logger.Info(ctx, "Finished", node)
+	return &node, nil
+}
+
+func (m *manageTreeItem) Rename(ctx context.Context, localId, id, name string) (*entity.TreeNode, error) {
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id, "name": name})
+
+	root, tree, err := m.load(ctx, localId)
+	if err != nil {
+		return nil, err
+	}
+	item, found := tree.Item(id)
+	if !found {
+		return nil, errs.NotFoundError("the item does not exist", "TRE-02404")
+	}
+	fileName := usecase.DeriveFileName(name, item.Kind, tree.SiblingEntries(id))
+	node, err := m.saveTreeItem.Rename(ctx, root, id, name, fileName)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info(ctx, "Finished", node)
+	return node, nil
+}
+
+func (m *manageTreeItem) Duplicate(ctx context.Context, localId, id string) (*entity.TreeNode, error) {
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id})
+
+	root, tree, err := m.load(ctx, localId)
+	if err != nil {
+		return nil, err
+	}
+	item, found := tree.Item(id)
+	if !found {
+		return nil, errs.NotFoundError("the item does not exist", "TRE-02404")
+	}
+	parent, _ := tree.Parent(id)
+	fileName := usecase.DeriveFileName(item.CopyName(), item.Kind, parent.Entries)
+	node, err := m.saveTreeItem.Duplicate(ctx, root, id, item.CopyName(), fileName)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info(ctx, "Finished", node)
+	return node, nil
+}
+
+func (m *manageTreeItem) Delete(ctx context.Context, localId, id string) ([]string, error) {
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id})
+
+	root, tree, err := m.load(ctx, localId)
+	if err != nil {
+		return nil, err
+	}
+	item, found := tree.Item(id)
+	if !found {
+		return nil, errs.NotFoundError("the item does not exist", "TRE-02404")
+	}
+	if err := m.deleteTreeItem.Delete(ctx, root, id); err != nil {
+		return nil, err
+	}
+	deleted := item.RequestIDs()
+
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "id": id, "deletedRequests": len(deleted)})
+	return deleted, nil
+}
+
+func (m *manageTreeItem) load(ctx context.Context, localId string) (string, *entity.Tree, error) {
+	workspace, err := m.findWorkspaceRegistry.FindWorkspace(ctx, localId)
+	if err != nil {
+		return "", nil, err
+	}
+	tree, err := m.loadTree.Load(ctx, workspace.Path)
+	if err != nil {
+		return "", nil, err
+	}
+	return workspace.Path, tree, nil
+}

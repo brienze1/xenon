@@ -11,6 +11,7 @@ import (
 
 type sendRequest struct {
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry
+	findTreeItem          usecase.FindTreeItem
 	sendHttpRequest       usecase.SendHttpRequest
 	saveResponse          usecase.SaveResponse
 	appVersion            string
@@ -18,12 +19,14 @@ type sendRequest struct {
 
 func NewSendRequestService(
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry,
+	findTreeItem usecase.FindTreeItem,
 	sendHttpRequest usecase.SendHttpRequest,
 	saveResponse usecase.SaveResponse,
 	appVersion string,
 ) adapter.SendRequestService {
 	return &sendRequest{
 		findWorkspaceRegistry: findWorkspaceRegistry,
+		findTreeItem:          findTreeItem,
 		sendHttpRequest:       sendHttpRequest,
 		saveResponse:          saveResponse,
 		appVersion:            appVersion,
@@ -37,7 +40,11 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 	if err != nil {
 		return nil, err
 	}
-	effective := usecase.ResolveEffectiveRequest(request, []entity.Collection{}, workspace.Path)
+	ancestors, err := s.findTreeItem.FindAncestors(ctx, workspace.Path, request.ID)
+	if err != nil {
+		return nil, err
+	}
+	effective := usecase.ResolveEffectiveRequest(request, ancestors, workspace.Path)
 	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, s.appVersion))
 	response := s.sendHttpRequest.Send(ctx, effective)
 	if err := s.saveResponse.Save(ctx, tabId, response); err != nil {

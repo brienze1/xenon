@@ -27,3 +27,10 @@ func (f FileRef) Resolve(workspaceRoot string) string {
 	}
 	return filepath.Join(workspaceRoot, filepath.FromSlash(f.Src))
 }
+
+func (f FileRef) RelativeTo(workspaceRoot string) FileRef {
+	if !filepath.IsAbs(f.Src) {
+		return f
+	}
+	return NewFileRef(workspaceRoot, f.Src)
+}

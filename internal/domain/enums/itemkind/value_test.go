@@ -14,6 +14,7 @@ func TestGetItemKind(t *testing.T) {
 		{raw: "collection", want: Collection},
 		{raw: "folder", want: Folder},
 		{raw: "request", want: Request},
+		{raw: "error", want: Error},
 	}
 	for _, tc := range cases {
 		for _, raw := range []string{tc.raw, strings.ToUpper(tc.raw), " " + tc.raw + " "} {

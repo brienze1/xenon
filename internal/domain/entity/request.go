@@ -20,6 +20,7 @@ type Request struct {
 	Params              []KeyValue
 	PathVariables       []PathVariable
 	Headers             []KeyValue
+	Revision            string
 	DisabledAutoHeaders []string
 	Settings            RequestSettings
 }
@@ -49,6 +50,18 @@ func (r Request) NormalizedMethod() string {
 
 func (r Request) HasValidMethod() bool {
 	return methodToken.MatchString(r.NormalizedMethod())
+}
+
+func (r Request) CopyAs(id, name string) Request {
+	r.ID = id
+	r.Name = strings.TrimSpace(name)
+	r.Revision = ""
+	return r
+}
+
+func (r Request) WithFileRefsRelativeTo(workspaceRoot string) Request {
+	r.Body = r.Body.RelativeTo(workspaceRoot)
+	return r
 }
 
 func (r Request) LogValue() any {

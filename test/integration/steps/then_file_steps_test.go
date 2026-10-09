@@ -22,6 +22,7 @@ func (t *testUtils) registerThenFileSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the workspace file "([^"]*)" should contain the field "([^"]*)" not equal to "([^"]*)"$`, t.theWorkspaceFileShouldContainTheFieldNotEqualTo)
 	ctx.Then(`^the workspace file "([^"]*)" should contain the field "([^"]*)" with the items "([^"]*)"$`, t.theWorkspaceFileShouldContainTheFieldWithTheItems)
 	ctx.Then(`^the workspace file "([^"]*)" should equal$`, t.theWorkspaceFileShouldEqual)
+	ctx.Then(`^the workspace file "([^"]*)" should be unchanged$`, t.theWorkspaceFileShouldBeUnchanged)
 	ctx.Then(`^the workspace file "([^"]*)" should still have Windows line endings and a byte order mark$`, t.theWorkspaceFileShouldStillHaveWindowsLineEndingsAndAByteOrderMark)
 	ctx.Then(`^the workspace folder "([^"]*)" should contain the entries "([^"]*)"$`, t.theWorkspaceFolderShouldContainTheEntries)
 	ctx.Step(`^I save the workspace file "([^"]*)" field "([^"]*)" as "([^"]*)"$`, t.iSaveTheWorkspaceFileFieldAs)
@@ -113,6 +114,18 @@ func (t *testUtils) theWorkspaceFolderShouldContainTheEntries(path, entries stri
 	sort.Strings(names)
 	sort.Strings(expected)
 	return expectEqual(strings.Join(names, ", "), strings.Join(expected, ", "), path+" entries")
+}
+
+func (t *testUtils) theWorkspaceFileShouldBeUnchanged(path string) error {
+	expected, found := t.written[t.workspacePath(path)]
+	if !found {
+		return fmt.Errorf("%s was not written by a step of this scenario", path)
+	}
+	content, err := os.ReadFile(t.workspacePath(path))
+	if err != nil {
+		return err
+	}
+	return expectEqual(string(content), expected, path)
 }
 
 func (t *testUtils) theWorkspaceFileShouldEqual(path string, expected *godog.DocString) error {

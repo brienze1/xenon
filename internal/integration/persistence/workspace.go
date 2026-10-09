@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"go.yaml.in/yaml/v3"
+
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/persistence/model"
@@ -88,28 +90,36 @@ func (w *workspacePersistence) Create(ctx context.Context, root string, workspac
 func (w *workspacePersistence) Load(ctx context.Context, root string) (*entity.Workspace, error) {
 	logger.Debug(ctx, "Started", map[string]any{"root": root})
 
-	if !isDirectory(root) {
-		return nil, errs.NotFoundError("the workspace folder is missing", "WKS-06404")
-	}
-	data, err := os.ReadFile(filepath.Join(root, workspaceFile))
+	_, stored, err := readWorkspace(root)
 	if err != nil {
-		return nil, errs.FileError(err, "WKS-03404")
-	}
-	document, err := yamlnode.Parse(data)
-	if err != nil {
-		return nil, errs.ClientError("workspace.yaml cannot be parsed: "+err.Error(), "WKS-15422", http.StatusUnprocessableEntity)
-	}
-	var stored model.Workspace
-	if err := document.Decode(&stored); err != nil {
-		return nil, errs.ClientError("workspace.yaml has invalid fields: "+err.Error(), "WKS-16422", http.StatusUnprocessableEntity)
-	}
-	if stored.Xenon > latestFormatVersion {
-		return nil, errs.ClientError("workspace.yaml was written by a newer Xenon", "WKS-04422", http.StatusUnprocessableEntity)
+		return nil, err
 	}
 	workspace := stored.ToEntity()
 
 	logger.Debug(ctx, "Finished", workspace)
 	return &workspace, nil
+}
+
+func readWorkspace(root string) (*yaml.Node, *model.Workspace, error) {
+	if !isDirectory(root) {
+		return nil, nil, errs.NotFoundError("the workspace folder is missing", "WKS-06404")
+	}
+	data, err := os.ReadFile(filepath.Join(root, workspaceFile))
+	if err != nil {
+		return nil, nil, errs.FileError(err, "WKS-03404")
+	}
+	document, err := yamlnode.Parse(data)
+	if err != nil {
+		return nil, nil, errs.ClientError("workspace.yaml cannot be parsed: "+err.Error(), "WKS-15422", http.StatusUnprocessableEntity)
+	}
+	var stored model.Workspace
+	if err := document.Decode(&stored); err != nil {
+		return nil, nil, errs.ClientError("workspace.yaml has invalid fields: "+err.Error(), "WKS-16422", http.StatusUnprocessableEntity)
+	}
+	if stored.Xenon > latestFormatVersion {
+		return nil, nil, errs.ClientError("workspace.yaml was written by a newer Xenon", "WKS-04422", http.StatusUnprocessableEntity)
+	}
+	return document, &stored, nil
 }
 
 func ensureGitignore(root string) error {

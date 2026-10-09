@@ -19,6 +19,7 @@ import (
 
 type Bindings struct {
 	Workspace    *binding.WorkspaceService
+	Tree         *binding.TreeService
 	Dialog       *binding.DialogService
 	Request      *binding.RequestService
 	ResponseBody *route.ResponseBodyRoute
@@ -27,6 +28,7 @@ type Bindings struct {
 func NewBindings() *Bindings {
 	return &Bindings{
 		Workspace:    binding.NewWorkspaceService(),
+		Tree:         binding.NewTreeService(),
 		Dialog:       binding.NewDialogService(),
 		Request:      binding.NewRequestService(),
 		ResponseBody: route.NewResponseBodyRoute(),
@@ -50,6 +52,7 @@ func Start() {
 		Description: "Local-first desktop API client",
 		Services: []wails.Service{
 			wails.NewService(bindings.Workspace),
+			wails.NewService(bindings.Tree),
 			wails.NewService(bindings.Dialog),
 			wails.NewService(bindings.Request),
 			wails.NewServiceWithOptions(bindings.ResponseBody, wails.ServiceOptions{Route: dto.ResponseBodyRoute}),
