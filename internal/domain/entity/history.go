@@ -27,11 +27,11 @@ func NewHistory(oldestFirst []HistoryEntry) History {
 
 func (h History) Page(query HistoryQuery) []HistoryEntry {
 	page := make([]HistoryEntry, 0, min(query.Limit, len(h.entries)))
-	for _, entry := range h.entries[h.startAfter(query.BeforeID):] {
-		if len(page) == query.Limit {
+	for _, entry := range h.entries[h.startAfter(query):] {
+		if query.IsFilledBy(len(page)) {
 			break
 		}
-		if entry.Matches(query.Text) {
+		if query.Matches(entry) {
 			page = append(page, entry)
 		}
 	}
@@ -40,19 +40,19 @@ func (h History) Page(query HistoryQuery) []HistoryEntry {
 
 func (h History) Find(id string) (HistoryEntry, bool) {
 	for _, entry := range h.entries {
-		if entry.ID == id {
+		if entry.HasID(id) {
 			return entry, true
 		}
 	}
 	return HistoryEntry{}, false
 }
 
-func (h History) startAfter(id string) int {
-	if id == "" {
+func (h History) startAfter(query HistoryQuery) int {
+	if !query.HasCursor() {
 		return 0
 	}
 	for index, entry := range h.entries {
-		if entry.ID == id {
+		if query.IsCursor(entry) {
 			return index + 1
 		}
 	}

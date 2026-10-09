@@ -19,7 +19,9 @@ type Options struct {
 	VerifySsl       bool
 }
 
-type ClientFactory func(options Options) Client
+type ClientFactory interface {
+	Build(options Options) Client
+}
 
 type loggerAdapter interface {
 	Debug(ctx context.Context, message string, metadata ...any)
@@ -31,7 +33,19 @@ type customHttp struct {
 	logger loggerAdapter
 }
 
-// HttpClient builds a client with its own transport, so every send reports full connection timings.
+type clientFactory struct {
+	logger loggerAdapter
+}
+
+func HttpClientFactory(logger loggerAdapter) ClientFactory {
+	return &clientFactory{logger: logger}
+}
+
+func (f *clientFactory) Build(options Options) Client {
+	return HttpClient(options, f.logger)
+}
+
+// HttpClient creates a client with logging and a dedicated transport.
 func HttpClient(options Options, logger loggerAdapter) Client {
 	transport := &http.Transport{
 		Proxy:              http.ProxyFromEnvironment,

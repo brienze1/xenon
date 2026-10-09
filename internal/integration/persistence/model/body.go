@@ -22,14 +22,17 @@ func NewBody(body entity.Body) Body {
 	for _, row := range body.FormData {
 		model.FormData = append(model.FormData, NewFormDataRow(row))
 	}
-	if body.Mode == bodymode.Raw || body.Raw.Content != "" {
-		model.Raw = &BodyRaw{Language: body.Raw.Language.String(), Content: body.Raw.Content}
+	if body.HasRaw() {
+		raw := NewBodyRaw(body.Raw)
+		model.Raw = &raw
 	}
-	if body.Mode == bodymode.Binary || !body.Binary.IsEmpty() {
-		model.Binary = &BodyBinary{Src: body.Binary.Src}
+	if body.HasBinary() {
+		binary := NewBodyBinary(body.Binary)
+		model.Binary = &binary
 	}
-	if body.Mode == bodymode.GraphQl || body.GraphQl != (entity.BodyGraphQl{}) {
-		model.GraphQl = &BodyGraphQl{Query: body.GraphQl.Query, Variables: body.GraphQl.Variables}
+	if body.HasGraphQl() {
+		graphQl := NewBodyGraphQl(body.GraphQl)
+		model.GraphQl = &graphQl
 	}
 	return model
 }
@@ -44,13 +47,13 @@ func (b *Body) ToEntity() entity.Body {
 	}
 	body.UrlEncoded = keyValuesToEntity(b.UrlEncoded)
 	if b.Raw != nil {
-		body.Raw = entity.NewBodyRaw(b.Raw.Language, b.Raw.Content)
+		body.Raw = b.Raw.ToEntity()
 	}
 	if b.Binary != nil {
-		body.Binary = entity.FileRef{Src: b.Binary.Src}
+		body.Binary = b.Binary.ToEntity()
 	}
 	if b.GraphQl != nil {
-		body.GraphQl = entity.BodyGraphQl{Query: b.GraphQl.Query, Variables: b.GraphQl.Variables}
+		body.GraphQl = b.GraphQl.ToEntity()
 	}
 	return body
 }

@@ -40,17 +40,22 @@ func TestDialogFactoryIsASingletonThatCanBeReplaced(t *testing.T) {
 	}
 }
 
+type countingClientFactory struct{ calls int }
+
+func (c *countingClientFactory) Build(options httpClient.Options) httpClient.Client {
+	c.calls++
+	return httpClient.HttpClient(options, nil)
+}
+
 func TestHttpClientFactoryIsASingletonThatCanBeReplaced(t *testing.T) {
-	if GetHttpClientFactory() == nil {
-		t.Fatal("GetHttpClientFactory must return a factory")
+	first := GetHttpClientFactory()
+	if first == nil || GetHttpClientFactory() != first {
+		t.Fatal("GetHttpClientFactory must return one cached instance")
 	}
-	calls := 0
-	SetHttpClientFactory(func(options httpClient.Options) httpClient.Client {
-		calls++
-		return httpClient.HttpClient(options, nil)
-	})
-	_ = GetHttpClientFactory()(httpClient.Options{})
-	if calls != 1 {
+	replacement := &countingClientFactory{}
+	SetHttpClientFactory(replacement)
+	_ = GetHttpClientFactory().Build(httpClient.Options{})
+	if replacement.calls != 1 {
 		t.Fatal("SetHttpClientFactory must replace the cached instance")
 	}
 }

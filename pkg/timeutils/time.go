@@ -3,5 +3,5 @@ package timeutils
 import "time"
 
 func Now() time.Time {
-	return GetTimeConfig().provider()().UTC()
+	return getTimeConfig().provider()().UTC()
 }

@@ -6,7 +6,8 @@ import (
 	"net/http"
 	"path"
 
-	"github.com/brienze1/xenon/internal/infra/dependency/controller"
+	wails "github.com/wailsapp/wails/v3/pkg/application"
+
 	"github.com/brienze1/xenon/internal/infra/server"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
@@ -17,8 +18,12 @@ type ResponseBodyRoute struct {
 	response adapter.RequestResponseController
 }
 
-func NewResponseBodyRoute() *ResponseBodyRoute {
-	return &ResponseBodyRoute{response: controller.GetRequestResponseController()}
+func NewResponseBodyRoute(response adapter.RequestResponseController) *ResponseBodyRoute {
+	return &ResponseBodyRoute{response: response}
+}
+
+func (r *router) registerResponseBodyRoutes() wails.Service {
+	return wails.NewServiceWithOptions(r.responseBody, wails.ServiceOptions{Route: dto.ResponseBodyRoute})
 }
 
 func (r *ResponseBodyRoute) ServeHTTP(writer http.ResponseWriter, request *http.Request) {

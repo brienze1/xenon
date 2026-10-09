@@ -79,6 +79,16 @@ func (t TreeNode) CopyName() string {
 	return NormalizeItemName(t.Name + copySuffix)
 }
 
+func (t TreeNode) CopyAs(name, fileName string, newID func() string) ItemCopy {
+	copied := ItemCopy{ID: newID(), Name: name, FileName: fileName, Kind: t.Kind, Children: []ItemCopy{}}
+	for _, child := range t.Children {
+		if !child.Ignored {
+			copied.Children = append(copied.Children, child.CopyAs("", child.FileName, newID))
+		}
+	}
+	return copied
+}
+
 func (t TreeNode) Matches(query string) bool {
 	needle := strings.ToLower(strings.TrimSpace(query))
 	if !t.IsRequest() || needle == "" {

@@ -13,7 +13,7 @@ var workspacePersistenceInstance adapter.WorkspacePersistence
 func GetWorkspacePersistence() adapter.WorkspacePersistence {
 	if workspacePersistenceInstance == nil {
 		workspacePersistenceOnce.Do(func() {
-			workspacePersistenceInstance = persistence.NewWorkspacePersistence(GetWorkspaceIndex())
+			workspacePersistenceInstance = persistence.NewWorkspacePersistence(GetWorkspaceIndexPersistence())
 		})
 	}
 	return workspacePersistenceInstance

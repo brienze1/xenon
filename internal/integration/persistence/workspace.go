@@ -32,10 +32,10 @@ const (
 )
 
 type workspacePersistence struct {
-	index adapter.WorkspaceIndex
+	index adapter.WorkspaceIndexPersistence
 }
 
-func NewWorkspacePersistence(index adapter.WorkspaceIndex) adapter.WorkspacePersistence {
+func NewWorkspacePersistence(index adapter.WorkspaceIndexPersistence) adapter.WorkspacePersistence {
 	return &workspacePersistence{index: index}
 }
 
@@ -76,7 +76,7 @@ func (w *workspacePersistence) Save(ctx context.Context, root string, workspace 
 	if err := fileutils.WriteFileAtomic(path, data, workspaceFileMode); err != nil {
 		return errs.FileError(err, "WKS-26500")
 	}
-	w.index.RecordWrite(path, data)
+	w.index.RecordWrite(ctx, path, data)
 
 	logger.Debug(ctx, "Finished", workspace, map[string]any{"root": root})
 	return nil

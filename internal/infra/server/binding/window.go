@@ -3,7 +3,6 @@ package binding
 import (
 	"context"
 
-	"github.com/brienze1/xenon/internal/infra/dependency/controller"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
 )
@@ -12,8 +11,8 @@ type WindowService struct {
 	windowState adapter.WindowStateController
 }
 
-func NewWindowService() *WindowService {
-	return &WindowService{windowState: controller.GetWindowStateController()}
+func NewWindowService(windowState adapter.WindowStateController) *WindowService {
+	return &WindowService{windowState: windowState}
 }
 
 func (w *WindowService) Restore(ctx context.Context, request dto.RestoreWindow) (*dto.WindowState, error) {

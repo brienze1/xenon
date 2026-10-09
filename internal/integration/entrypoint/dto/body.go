@@ -9,8 +9,8 @@ type Body struct {
 	Raw        BodyRaw       `json:"raw"`
 	GraphQl    BodyGraphQl   `json:"graphql"`
 	Binary     BodyBinary    `json:"binary"`
-	Mode       string        `json:"mode"`
-	FormData   []FormDataRow `json:"formdata"`
+	Mode       string        `json:"mode" validate:"omitempty,oneof=none formdata urlencoded raw binary graphql"`
+	FormData   []FormDataRow `json:"formdata" validate:"dive"`
 	UrlEncoded []KeyValue    `json:"urlencoded"`
 }
 

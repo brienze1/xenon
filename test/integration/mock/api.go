@@ -48,8 +48,9 @@ var apiOnce sync.Once
 func NewApiServer() *ApiMock {
 	apiOnce.Do(func() {
 		apiInstance = &ApiMock{}
-		apiInstance.server = httptest.NewServer(http.HandlerFunc(apiInstance.handler))
-		apiInstance.tlsServer = httptest.NewTLSServer(http.HandlerFunc(apiInstance.handler))
+		apiInstance.server = httptest.NewUnstartedServer(http.HandlerFunc(apiInstance.handler))
+		apiInstance.tlsServer = httptest.NewUnstartedServer(http.HandlerFunc(apiInstance.handler))
+		apiInstance.Reset()
 		apiInstance.Start()
 	})
 	return apiInstance
@@ -64,6 +65,11 @@ func (m *ApiMock) TLSURL() string {
 }
 
 func (m *ApiMock) Start() {
+	m.server.Start()
+	m.tlsServer.StartTLS()
+}
+
+func (m *ApiMock) Reset() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.responses = make(map[string]apiResponse)

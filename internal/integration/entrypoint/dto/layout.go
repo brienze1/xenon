@@ -8,7 +8,7 @@ import (
 
 type Layout struct {
 	Split             string  `json:"split" validate:"omitempty,oneof=stacked side-by-side"`
-	RightPanelView    string  `json:"right_panel_view"`
+	RightPanelView    string  `json:"right_panel_view" validate:"omitempty,oneof=info"`
 	SplitRatio        float64 `json:"split_ratio"`
 	SidebarWidth      int     `json:"sidebar_width"`
 	RightPanelWidth   int     `json:"right_panel_width"`

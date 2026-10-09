@@ -19,10 +19,16 @@ func NewRequestSettings(settings entity.RequestSettings) RequestSettings {
 }
 
 func (r *RequestSettings) ToEntity() entity.RequestSettings {
-	return entity.RequestSettings{
-		TimeoutMs:       r.TimeoutMs,
-		FollowRedirects: isEnabled(r.FollowRedirects),
-		VerifySsl:       isEnabled(r.VerifySsl),
-		EncodeUrl:       isEnabled(r.EncodeUrl),
+	settings := entity.DefaultRequestSettings()
+	settings.TimeoutMs = r.TimeoutMs
+	if r.FollowRedirects != nil {
+		settings.FollowRedirects = *r.FollowRedirects
 	}
+	if r.VerifySsl != nil {
+		settings.VerifySsl = *r.VerifySsl
+	}
+	if r.EncodeUrl != nil {
+		settings.EncodeUrl = *r.EncodeUrl
+	}
+	return settings
 }

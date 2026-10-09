@@ -13,7 +13,7 @@ var requestPersistenceInstance adapter.RequestPersistence
 func GetRequestPersistence() adapter.RequestPersistence {
 	if requestPersistenceInstance == nil {
 		requestPersistenceOnce.Do(func() {
-			requestPersistenceInstance = persistence.NewRequestPersistence(GetWorkspaceIndex())
+			requestPersistenceInstance = persistence.NewRequestPersistence(GetWorkspaceIndexPersistence())
 		})
 	}
 	return requestPersistenceInstance

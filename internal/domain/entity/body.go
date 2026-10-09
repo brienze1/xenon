@@ -78,10 +78,26 @@ func (b Body) FileRefs() []FileRef {
 		refs = append(refs, b.Binary)
 	case bodymode.FormData:
 		for _, row := range b.FormData {
-			if row.Enabled && row.IsFile() {
+			if row.IsActive() && row.IsFile() {
 				refs = append(refs, row.Src)
 			}
 		}
 	}
 	return refs
+}
+
+func (b Body) HasRaw() bool {
+	return b.Mode == bodymode.Raw || b.Raw.HasContent()
+}
+
+func (b Body) HasBinary() bool {
+	return b.Mode == bodymode.Binary || !b.Binary.IsEmpty()
+}
+
+func (b Body) HasGraphQl() bool {
+	return b.Mode == bodymode.GraphQl || !b.GraphQl.IsEmpty()
+}
+
+func (b Body) LogValue() any {
+	return map[string]any{"mode": b.Mode, "formData": len(b.FormData), "urlEncoded": len(b.UrlEncoded)}
 }

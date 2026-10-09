@@ -26,9 +26,15 @@ func (s *Settings) ToEntity() entity.RequestSettings {
 	if s.TimeoutMs != nil {
 		settings.TimeoutMs = *s.TimeoutMs
 	}
-	settings.FollowRedirects = isEnabled(s.FollowRedirects)
-	settings.VerifySsl = isEnabled(s.VerifySsl)
-	settings.EncodeUrl = isEnabled(s.EncodeUrl)
+	if s.FollowRedirects != nil {
+		settings.FollowRedirects = *s.FollowRedirects
+	}
+	if s.VerifySsl != nil {
+		settings.VerifySsl = *s.VerifySsl
+	}
+	if s.EncodeUrl != nil {
+		settings.EncodeUrl = *s.EncodeUrl
+	}
 	return settings
 }
 

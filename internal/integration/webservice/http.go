@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/andybalholm/brotli"
@@ -38,17 +39,18 @@ func (h *httpWebservice) Send(ctx context.Context, request entity.EffectiveReque
 	if sendErr != nil {
 		return failed(ctx, *sendErr, trace)
 	}
-	body, sendErr := dto.NewRequestBody(request.Body)
+	files, sendErr := readFiles(request.Body.FileRefs())
 	if sendErr != nil {
 		return failed(ctx, *sendErr, trace)
 	}
+	body := dto.NewRequestBody(request.Body, files)
 	httpRequest, err := http.NewRequestWithContext(ctx, request.Method, target.String(), body.Content)
 	if err != nil {
 		return failed(ctx, entity.NewSendError(senderrorkind.Other, err.Error()), trace)
 	}
-	applyHeaders(httpRequest, request, body)
+	applyHeaders(httpRequest, request, &body)
 
-	client := h.newClient(httpClient.Options{
+	client := h.newClient.Build(httpClient.Options{
 		Timeout:         request.Settings.Timeout(),
 		FollowRedirects: request.Settings.FollowRedirects,
 		VerifySsl:       request.Settings.VerifySsl,
@@ -80,6 +82,23 @@ func parseTarget(raw string) (*url.URL, *entity.SendError) {
 		return nil, &sendErr
 	}
 	return target, nil
+}
+
+func readFiles(refs []entity.FileRef) (map[string][]byte, *entity.SendError) {
+	files := make(map[string][]byte, len(refs))
+	for _, ref := range refs {
+		content, err := os.ReadFile(ref.Src)
+		if os.IsNotExist(err) {
+			sendErr := entity.NewSendError(senderrorkind.MissingFile, ref.Src)
+			return nil, &sendErr
+		}
+		if err != nil {
+			sendErr := entity.NewSendError(senderrorkind.Other, err.Error())
+			return nil, &sendErr
+		}
+		files[ref.Src] = content
+	}
+	return files, nil
 }
 
 func isHttpScheme(scheme string) bool {

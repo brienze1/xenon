@@ -30,6 +30,7 @@ func TestFactories(t *testing.T) {
 		{name: "server", err: ServerError("upstream", "TST-00502", http.StatusBadGateway), message: "server error", code: "TST-00502", status: http.StatusBadGateway, retries: 5, abort: false, notified: true},
 		{name: "client", err: ClientError("rejected", "TST-00422", http.StatusUnprocessableEntity), message: "client error", code: "TST-00422", status: http.StatusUnprocessableEntity, retries: 0, abort: true, notified: true},
 		{name: "conflict", err: ConflictError("taken", "TST-00409"), message: "conflict", code: "TST-00409", status: http.StatusConflict, retries: 0, abort: true, notified: true},
+		{name: "forbidden", err: ForbiddenError("denied", "TST-00403"), message: "forbidden", code: "TST-00403", status: http.StatusForbidden, retries: 0, abort: true, notified: true},
 		{name: "unprocessable entity", err: UnprocessableEntityError("unreadable", "TST-01422"), message: "unprocessable entity", code: "TST-01422", status: http.StatusUnprocessableEntity, retries: 0, abort: true, notified: true},
 	}
 	for _, tc := range cases {
@@ -127,19 +128,20 @@ func TestClientErrorParsesBody(t *testing.T) {
 
 func TestFileError(t *testing.T) {
 	cases := []struct {
-		err    error
-		name   string
-		status int
+		err     error
+		name    string
+		message string
+		status  int
 	}{
-		{name: "not exist", err: fmt.Errorf("open: %w", fs.ErrNotExist), status: http.StatusNotFound},
-		{name: "permission", err: fmt.Errorf("open: %w", fs.ErrPermission), status: http.StatusForbidden},
-		{name: "other", err: errors.New("io"), status: http.StatusInternalServerError},
+		{name: "not exist", err: fmt.Errorf("open: %w", fs.ErrNotExist), status: http.StatusNotFound, message: "not found"},
+		{name: "permission", err: fmt.Errorf("open: %w", fs.ErrPermission), status: http.StatusForbidden, message: "forbidden"},
+		{name: "other", err: errors.New("io"), status: http.StatusInternalServerError, message: "internal server error"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := FileError(tc.err, "FIL-00001")
-			if got.StatusCode() != tc.status || got.Code() != "FIL-00001" {
-				t.Errorf("FileError() = %d %q", got.StatusCode(), got.Code())
+			if got.StatusCode() != tc.status || got.Code() != "FIL-00001" || got.Error() != tc.message {
+				t.Errorf("FileError() = %d %q %q", got.StatusCode(), got.Code(), got.Error())
 			}
 		})
 	}

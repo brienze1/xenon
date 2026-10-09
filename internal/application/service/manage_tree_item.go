@@ -135,7 +135,7 @@ func (m *manageTreeItem) Duplicate(ctx context.Context, localId, id string) (*en
 	}
 	parent, _ := tree.Parent(id)
 	fileName := usecase.DeriveFileName(item.CopyName(), item.Kind, parent.Entries)
-	node, err := m.duplicateTreeItem.Duplicate(ctx, root, id, item.CopyName(), fileName)
+	node, err := m.duplicateTreeItem.Duplicate(ctx, root, id, item.CopyAs(item.CopyName(), fileName, idutils.NewUlid))
 	if err != nil {
 		return nil, err
 	}

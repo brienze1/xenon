@@ -3,7 +3,6 @@ package binding
 import (
 	"context"
 
-	"github.com/brienze1/xenon/internal/infra/dependency/controller"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
 )
@@ -14,12 +13,12 @@ type TreeService struct {
 	settings adapter.TreeSettingsController
 }
 
-func NewTreeService() *TreeService {
-	return &TreeService{
-		search:   controller.GetTreeSearchController(),
-		manage:   controller.GetTreeManageController(),
-		settings: controller.GetTreeSettingsController(),
-	}
+func NewTreeService(
+	search adapter.TreeSearchController,
+	manage adapter.TreeManageController,
+	settings adapter.TreeSettingsController,
+) *TreeService {
+	return &TreeService{search: search, manage: manage, settings: settings}
 }
 
 func (t *TreeService) GetTree(ctx context.Context, request dto.GetTree) (dto.TreeNodeList, error) {

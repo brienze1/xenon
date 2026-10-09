@@ -3,7 +3,6 @@ package binding
 import (
 	"context"
 
-	"github.com/brienze1/xenon/internal/infra/dependency/controller"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
 )
@@ -12,8 +11,8 @@ type DialogService struct {
 	dialog adapter.DialogController
 }
 
-func NewDialogService() *DialogService {
-	return &DialogService{dialog: controller.GetDialogController()}
+func NewDialogService(dialog adapter.DialogController) *DialogService {
+	return &DialogService{dialog: dialog}
 }
 
 func (d *DialogService) PickFolder(ctx context.Context, request dto.PickFolder) (*dto.PickedPath, error) {

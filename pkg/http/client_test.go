@@ -154,3 +154,22 @@ func TestMaskUrlHidesUserPasswordAndKeepsPlainUrls(t *testing.T) {
 		t.Fatal("nil url masks to empty")
 	}
 }
+
+func TestClientFactoryBuildsLoggingClients(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+	logger := &recordingLogger{}
+	client := HttpClientFactory(logger).Build(Options{VerifySsl: true, Timeout: time.Second})
+	request, _ := http.NewRequest(http.MethodGet, server.URL, nil)
+	response, err := client.Do(context.Background(), request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = response.Body.Close()
+	client.CloseIdleConnections()
+	if response.StatusCode != http.StatusNoContent || len(logger.debug) != 1 {
+		t.Fatalf("status=%d debug=%d", response.StatusCode, len(logger.debug))
+	}
+}

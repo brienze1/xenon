@@ -1,8 +1,6 @@
 package entity
 
 import (
-	"encoding/base64"
-
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/authtype"
 )
@@ -24,9 +22,9 @@ func (a Auth) IsInherited() bool {
 func (a Auth) Header() (string, bool) {
 	switch a.Type {
 	case authtype.Bearer:
-		return "Bearer " + a.Bearer.Token, true
+		return a.Bearer.Header(), true
 	case authtype.Basic:
-		return "Basic " + base64.StdEncoding.EncodeToString([]byte(a.Basic.Username+":"+a.Basic.Password)), true
+		return a.Basic.Header(), true
 	default:
 		return "", false
 	}
@@ -39,4 +37,16 @@ func (a Auth) IsSupported() bool {
 	default:
 		return false
 	}
+}
+
+func (a Auth) HasBearer() bool {
+	return a.Type == authtype.Bearer || !a.Bearer.IsEmpty()
+}
+
+func (a Auth) HasBasic() bool {
+	return a.Type == authtype.Basic || !a.Basic.IsEmpty()
+}
+
+func (a Auth) LogValue() any {
+	return map[string]any{"type": a.Type, "bearer": a.Bearer.LogValue(), "basic": a.Basic.LogValue()}
 }

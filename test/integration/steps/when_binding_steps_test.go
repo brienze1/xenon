@@ -95,11 +95,10 @@ func (t *testUtils) call(ctx context.Context, service, method, payload string) e
 }
 
 func (t *testUtils) service(name string) (reflect.Value, error) {
-	bindings := reflect.ValueOf(t.bindings).Elem()
-	for index := 0; index < bindings.NumField(); index++ {
-		field := bindings.Field(index)
-		if field.Type().Elem().Name() == name {
-			return field, nil
+	for _, candidate := range t.bindings {
+		target := reflect.ValueOf(candidate)
+		if target.Type().Elem().Name() == name {
+			return target, nil
 		}
 	}
 	return reflect.Value{}, fmt.Errorf("no binding named %s", name)

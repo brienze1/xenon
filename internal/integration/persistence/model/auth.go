@@ -14,11 +14,13 @@ type Auth struct {
 
 func NewAuth(auth entity.Auth) Auth {
 	model := Auth{Type: auth.Type.String()}
-	if auth.Type == authtype.Bearer || auth.Bearer != (entity.AuthBearer{}) {
-		model.Bearer = &AuthBearer{Token: auth.Bearer.Token}
+	if auth.HasBearer() {
+		bearer := NewAuthBearer(auth.Bearer)
+		model.Bearer = &bearer
 	}
-	if auth.Type == authtype.Basic || auth.Basic != (entity.AuthBasic{}) {
-		model.Basic = &AuthBasic{Username: auth.Basic.Username, Password: auth.Basic.Password}
+	if auth.HasBasic() {
+		basic := NewAuthBasic(auth.Basic)
+		model.Basic = &basic
 	}
 	return model
 }
@@ -29,10 +31,10 @@ func (a *Auth) ToEntity() entity.Auth {
 		auth.Type = authtype.GetAuthType(a.Type)
 	}
 	if a.Bearer != nil {
-		auth.Bearer = entity.AuthBearer{Token: a.Bearer.Token}
+		auth.Bearer = a.Bearer.ToEntity()
 	}
 	if a.Basic != nil {
-		auth.Basic = entity.AuthBasic{Username: a.Basic.Username, Password: a.Basic.Password}
+		auth.Basic = a.Basic.ToEntity()
 	}
 	return auth
 }

@@ -13,7 +13,7 @@ var httpClientFactoryInstance httpClient.ClientFactory
 func GetHttpClientFactory() httpClient.ClientFactory {
 	if httpClientFactoryInstance == nil {
 		httpClientFactoryOnce.Do(func() {
-			httpClientFactoryInstance = newLoggingHttpClient
+			httpClientFactoryInstance = httpClient.HttpClientFactory(logger.LoggerWrapper())
 		})
 	}
 	return httpClientFactoryInstance
@@ -22,8 +22,4 @@ func GetHttpClientFactory() httpClient.ClientFactory {
 func SetHttpClientFactory(factory httpClient.ClientFactory) {
 	httpClientFactoryOnce.Do(func() {})
 	httpClientFactoryInstance = factory
-}
-
-func newLoggingHttpClient(options httpClient.Options) httpClient.Client {
-	return httpClient.HttpClient(options, logger.LoggerWrapper())
 }

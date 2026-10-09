@@ -24,11 +24,11 @@ const (
 
 type treeScan struct {
 	identities *entity.ItemIdentities
-	items      map[string]model.IndexedItem
+	items      map[string]entity.IndexedItem
 	root       string
 }
 
-func scanTree(root string, previous map[string]string) (*model.TreeIndex, error) {
+func scanTree(root string, previous map[string]string) (*entity.TreeIndex, error) {
 	_, stored, err := readWorkspace(root)
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func scanTree(root string, previous map[string]string) (*model.TreeIndex, error)
 	scan := &treeScan{
 		root:       root,
 		identities: entity.NewItemIdentities(previous),
-		items:      map[string]model.IndexedItem{},
+		items:      map[string]entity.IndexedItem{},
 	}
 	dir := filepath.Join(root, collectionsDir)
 	listing := readEntries(dir)
@@ -47,7 +47,8 @@ func scanTree(root string, previous map[string]string) (*model.TreeIndex, error)
 		collections = append(collections, scan.container(filepath.Join(dir, name), name, itemkind.Collection))
 	}
 	collections = append(collections, scan.ignoredNodes(dir, unmarked, collectionMarker)...)
-	return &model.TreeIndex{Tree: entity.NewTree(collections, entryNames(listing)), Items: scan.items, Reidentified: scan.identities.Reidentified()}, nil
+	index := entity.NewTreeIndex(entity.NewTree(collections, entryNames(listing)), scan.items, scan.identities.Reidentified())
+	return &index, nil
 }
 
 func (s *treeScan) container(dir, fileName string, kind enums.ItemKind) entity.TreeNode {
@@ -69,7 +70,7 @@ func (s *treeScan) container(dir, fileName string, kind enums.ItemKind) entity.T
 		node.Children = append(node.Children, s.request(filepath.Join(dir, name), name))
 	}
 	node.Children = append(node.Children, s.ignoredNodes(dir, unmarked, folderMarker)...)
-	s.items[id] = model.IndexedItem{Path: dir, Kind: kind}
+	s.items[id] = entity.NewIndexedItem(dir, kind)
 	return node
 }
 
@@ -80,7 +81,7 @@ func (s *treeScan) request(path, fileName string) entity.TreeNode {
 	}
 	id, warning := s.identities.Identify(stored.Id, path, idutils.NewUlid)
 	request := stored.ToStoredEntity(id, "")
-	s.items[id] = model.IndexedItem{Path: path, Kind: itemkind.Request}
+	s.items[id] = entity.NewIndexedItem(path, itemkind.Request)
 	return entity.NewRequestNode(request, fileName).WithWarning(warning)
 }
 

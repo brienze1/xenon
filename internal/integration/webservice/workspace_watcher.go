@@ -10,10 +10,10 @@ import (
 
 type workspaceWatcherWebservice struct {
 	fileWatcher adapter.FileWatcher
-	consumer    adapter.WorkspaceWatcherConsumer
+	consumer    adapter.WorkspaceWatcherConsumerWebservice
 }
 
-func NewWorkspaceWatcherWebservice(fileWatcher adapter.FileWatcher, consumer adapter.WorkspaceWatcherConsumer) adapter.WorkspaceWatcherWebservice {
+func NewWorkspaceWatcherWebservice(fileWatcher adapter.FileWatcher, consumer adapter.WorkspaceWatcherConsumerWebservice) adapter.WorkspaceWatcherWebservice {
 	return &workspaceWatcherWebservice{fileWatcher: fileWatcher, consumer: consumer}
 }
 

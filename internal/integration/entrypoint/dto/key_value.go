@@ -22,7 +22,12 @@ func NewKeyValues(rows []entity.KeyValue) []KeyValue {
 }
 
 func (k *KeyValue) ToEntity() entity.KeyValue {
-	return entity.KeyValue{Key: k.Key, Value: k.Value, Enabled: isEnabled(k.Enabled), Description: k.Description}
+	row := entity.NewKeyValue(k.Key, k.Value)
+	row.Description = k.Description
+	if k.Enabled != nil {
+		row.Enabled = *k.Enabled
+	}
+	return row
 }
 
 func keyValuesToEntity(rows []KeyValue) []entity.KeyValue {
@@ -31,8 +36,4 @@ func keyValuesToEntity(rows []KeyValue) []entity.KeyValue {
 		result = append(result, rows[index].ToEntity())
 	}
 	return result
-}
-
-func isEnabled(enabled *bool) bool {
-	return enabled == nil || *enabled
 }

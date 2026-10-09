@@ -7,6 +7,7 @@ import (
 )
 
 type FindTreeItem interface {
+	FindNode(ctx context.Context, root, id string) (*entity.TreeNode, error)
 	FindContainer(ctx context.Context, root, id string) (*entity.Collection, error)
 	FindAncestors(ctx context.Context, root, id string) ([]entity.Collection, error)
 }

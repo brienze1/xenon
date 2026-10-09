@@ -71,7 +71,7 @@ func (r *recordingServer) last(t *testing.T) capturedRequest {
 }
 
 func send(request entity.EffectiveRequest) entity.Response {
-	return NewHttpWebservice(loggingClient).Send(context.Background(), request)
+	return NewHttpWebservice(httpClient.HttpClientFactory(logger.LoggerWrapper())).Send(context.Background(), request)
 }
 
 func getRequest(url string) entity.EffectiveRequest {
@@ -314,12 +314,12 @@ func TestSendTimeoutAndCancel(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
 	request.Settings.TimeoutMs = 0
-	if response := NewHttpWebservice(loggingClient).Send(ctx, request); response.Error == nil || response.Error.Kind != senderrorkind.Timeout {
+	if response := NewHttpWebservice(httpClient.HttpClientFactory(logger.LoggerWrapper())).Send(ctx, request); response.Error == nil || response.Error.Kind != senderrorkind.Timeout {
 		t.Fatalf("deadline = %+v", response.Error)
 	}
 	cancelled, cancelNow := context.WithCancel(context.Background())
 	time.AfterFunc(50*time.Millisecond, cancelNow)
-	if response := NewHttpWebservice(loggingClient).Send(cancelled, request); response.Error == nil || response.Error.Kind != senderrorkind.Cancelled {
+	if response := NewHttpWebservice(httpClient.HttpClientFactory(logger.LoggerWrapper())).Send(cancelled, request); response.Error == nil || response.Error.Kind != senderrorkind.Cancelled {
 		t.Fatalf("cancel = %+v", response.Error)
 	}
 }
@@ -395,8 +395,4 @@ func TestSendDecodesAndKeepsTheWireSize(t *testing.T) {
 	if got := server.last(t).header.Get("Accept-Encoding"); got != "gzip, deflate, br" {
 		t.Fatalf("accept-encoding = %q", got)
 	}
-}
-
-func loggingClient(options httpClient.Options) httpClient.Client {
-	return httpClient.HttpClient(options, logger.LoggerWrapper())
 }

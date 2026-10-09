@@ -13,6 +13,7 @@ import (
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/infra/properties"
 	"github.com/brienze1/xenon/internal/integration/adapter"
+	"github.com/brienze1/xenon/internal/integration/persistence/model"
 	"github.com/brienze1/xenon/pkg/errs"
 	"github.com/brienze1/xenon/pkg/fileutils"
 	"github.com/brienze1/xenon/pkg/logger"
@@ -28,32 +29,27 @@ const (
 	noResponseMessage = "the tab has no response"
 )
 
-type storedResponse struct {
-	bodyPath string
-	response entity.Response
-}
-
 type responseBodyPersistence struct {
-	entries     map[string]storedResponse
+	entries     map[string]model.StoredResponse
 	mu          sync.RWMutex
 	cleanupOnce sync.Once
 }
 
 func NewResponseBodyPersistence() adapter.ResponseBodyPersistence {
-	return &responseBodyPersistence{entries: make(map[string]storedResponse)}
+	return &responseBodyPersistence{entries: make(map[string]model.StoredResponse)}
 }
 
 func (r *responseBodyPersistence) Save(ctx context.Context, tabId string, response entity.Response) error {
 	logger.Debug(ctx, "Started", response, map[string]any{"tabId": tabId})
 
 	r.cleanupOnce.Do(removeStaleDirs)
-	stored := storedResponse{response: response}
+	stored := model.NewStoredResponse(response)
 	if !response.KeepsBodyInMemory() {
 		path, err := r.writeTempBody(response.Body)
 		if err != nil {
 			return err
 		}
-		stored = storedResponse{response: response.WithoutBody(), bodyPath: path}
+		stored = model.NewSpilledResponse(response, path)
 	}
 	r.mu.Lock()
 	previous := r.entries[tabId]
@@ -73,8 +69,10 @@ func (r *responseBodyPersistence) Find(ctx context.Context, tabId string) (*enti
 		return nil, err
 	}
 
-	logger.Debug(ctx, "Finished", stored.response, map[string]any{"tabId": tabId})
-	return &stored.response, nil
+	response := stored.ToEntity()
+
+	logger.Debug(ctx, "Finished", response, map[string]any{"tabId": tabId})
+	return &response, nil
 }
 
 func (r *responseBodyPersistence) OpenBody(ctx context.Context, tabId string) (io.ReadCloser, error) {
@@ -137,7 +135,7 @@ func (r *responseBodyPersistence) ReleaseAll(ctx context.Context) error {
 	logger.Debug(ctx, "Started")
 
 	r.mu.Lock()
-	r.entries = make(map[string]storedResponse)
+	r.entries = make(map[string]model.StoredResponse)
 	r.mu.Unlock()
 	if err := os.RemoveAll(ownTempDir()); err != nil {
 		return errs.FileError(err, "SND-08500")
@@ -147,12 +145,12 @@ func (r *responseBodyPersistence) ReleaseAll(ctx context.Context) error {
 	return nil
 }
 
-func (r *responseBodyPersistence) entry(tabId string) (storedResponse, error) {
+func (r *responseBodyPersistence) entry(tabId string) (model.StoredResponse, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	stored, found := r.entries[tabId]
 	if !found {
-		return storedResponse{}, errs.NotFoundError(noResponseMessage, "SND-03404")
+		return model.StoredResponse{}, errs.NotFoundError(noResponseMessage, "SND-03404")
 	}
 	return stored, nil
 }
@@ -176,19 +174,19 @@ func (r *responseBodyPersistence) writeTempBody(body []byte) (string, error) {
 	return file.Name(), nil
 }
 
-func openBody(stored storedResponse) (io.ReadCloser, error) {
-	if stored.bodyPath == "" {
-		return io.NopCloser(bytes.NewReader(stored.response.Body)), nil
+func openBody(stored model.StoredResponse) (io.ReadCloser, error) {
+	if !stored.HasBodyFile() {
+		return io.NopCloser(bytes.NewReader(stored.ToEntity().Body)), nil
 	}
-	file, err := os.Open(stored.bodyPath)
+	file, err := os.Open(stored.BodyPath)
 	if err != nil {
 		return nil, errs.FileError(err, "SND-13500")
 	}
 	return file, nil
 }
 
-func removeBodyFile(stored storedResponse) {
-	_ = os.Remove(stored.bodyPath)
+func removeBodyFile(stored model.StoredResponse) {
+	_ = os.Remove(stored.BodyPath)
 }
 
 func ownTempDir() string {

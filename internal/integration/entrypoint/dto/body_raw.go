@@ -1,12 +1,9 @@
 package dto
 
-import (
-	"github.com/brienze1/xenon/internal/domain/entity"
-	"github.com/brienze1/xenon/internal/domain/enums/rawlanguage"
-)
+import "github.com/brienze1/xenon/internal/domain/entity"
 
 type BodyRaw struct {
-	Language string `json:"language"`
+	Language string `json:"language" validate:"omitempty,oneof=json xml text html javascript"`
 	Content  string `json:"content"`
 }
 
@@ -15,9 +12,5 @@ func NewBodyRaw(raw entity.BodyRaw) BodyRaw {
 }
 
 func (b *BodyRaw) ToEntity() entity.BodyRaw {
-	raw := entity.BodyRaw{Language: rawlanguage.Json, Content: b.Content}
-	if b.Language != "" {
-		raw.Language = rawlanguage.GetRawLanguage(b.Language)
-	}
-	return raw
+	return entity.NewBodyRaw(b.Language, b.Content)
 }

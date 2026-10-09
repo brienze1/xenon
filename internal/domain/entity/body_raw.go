@@ -32,3 +32,7 @@ func (b BodyRaw) ContentType() string {
 	}
 	return rawContentTypes[rawlanguage.Text]
 }
+
+func (b BodyRaw) HasContent() bool {
+	return b.Content != ""
+}

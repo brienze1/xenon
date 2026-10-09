@@ -1,4 +1,4 @@
-package application
+package router
 
 import (
 	"context"
@@ -8,15 +8,14 @@ import (
 	wails "github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 
-	"github.com/brienze1/xenon/internal/infra/server/binding"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
 )
 
 const windowSaveDelay = 500 * time.Millisecond
 
-func restoreWindowBounds(app *wails.App, window *wails.WebviewWindow, windowService *binding.WindowService) {
+func (r *router) restoreWindowBounds(app *wails.App, window *wails.WebviewWindow) {
 	defer window.Show()
-	state, err := windowService.Restore(context.Background(), dto.NewRestoreWindow(screensOf(app.Screen.GetAll())))
+	state, err := r.window.Restore(context.Background(), dto.NewRestoreWindow(screensOf(app.Screen.GetAll())))
 	if err != nil {
 		return
 	}
@@ -26,12 +25,12 @@ func restoreWindowBounds(app *wails.App, window *wails.WebviewWindow, windowServ
 	}
 }
 
-func rememberWindowBounds(window *wails.WebviewWindow, windowService *binding.WindowService) {
+func (r *router) rememberWindowBounds(window *wails.WebviewWindow) {
 	var mu sync.Mutex
 	var timer *time.Timer
 	save := func() {
 		bounds := window.Bounds()
-		_ = windowService.Save(context.Background(), dto.NewWindowStateFromBounds(
+		_ = r.window.Save(context.Background(), dto.NewWindowStateFromBounds(
 			bounds.X, bounds.Y, bounds.Width, bounds.Height, window.IsMaximised(), window.IsMinimised(), window.IsFullscreen(),
 		))
 	}

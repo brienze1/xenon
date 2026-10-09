@@ -3,14 +3,21 @@ package consumer
 import (
 	"context"
 
-	"github.com/brienze1/xenon/internal/infra/dependency/controller"
-	"github.com/brienze1/xenon/internal/infra/dependency/integration"
+	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
 )
 
-func RegisterFileChangeConsumer() {
-	handler := controller.GetFileChangeController()
-	integration.GetWorkspaceWatcherConsumer().Consume(context.Background(), func(localId, path string) {
-		_ = handler.Handle(context.Background(), dto.NewFileChange(localId, path))
+type FileChangeConsumer struct {
+	handler adapter.FileChangeController
+	watcher adapter.WorkspaceWatcherConsumerWebservice
+}
+
+func NewFileChangeConsumer(handler adapter.FileChangeController, watcher adapter.WorkspaceWatcherConsumerWebservice) *FileChangeConsumer {
+	return &FileChangeConsumer{handler: handler, watcher: watcher}
+}
+
+func (f *FileChangeConsumer) Register(ctx context.Context) {
+	f.watcher.Consume(ctx, func(localId, path string) {
+		_ = f.handler.Handle(context.Background(), dto.NewFileChange(localId, path))
 	})
 }

@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
-	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/persistence/model"
 	"github.com/brienze1/xenon/pkg/errs"
@@ -15,19 +14,19 @@ import (
 )
 
 type requestPersistence struct {
-	index adapter.WorkspaceIndex
+	index adapter.WorkspaceIndexPersistence
 }
 
-func NewRequestPersistence(index adapter.WorkspaceIndex) adapter.RequestPersistence {
+func NewRequestPersistence(index adapter.WorkspaceIndexPersistence) adapter.RequestPersistence {
 	return &requestPersistence{index: index}
 }
 
 func (r *requestPersistence) Find(ctx context.Context, root, id string) (*entity.Request, error) {
 	logger.Debug(ctx, "Started", map[string]any{"root": root, "id": id})
-	r.index.Lock()
-	defer r.index.Unlock()
+	r.index.Lock(ctx)
+	defer r.index.Unlock(ctx)
 
-	path, err := r.path(root, id)
+	path, err := r.path(ctx, root, id)
 	if err != nil {
 		return nil, err
 	}
@@ -42,10 +41,10 @@ func (r *requestPersistence) Find(ctx context.Context, root, id string) (*entity
 
 func (r *requestPersistence) FindRevision(ctx context.Context, root, id string) (*entity.RequestChange, error) {
 	logger.Debug(ctx, "Started", map[string]any{"root": root, "id": id})
-	r.index.Lock()
-	defer r.index.Unlock()
+	r.index.Lock(ctx)
+	defer r.index.Unlock(ctx)
 
-	path, err := r.path(root, id)
+	path, err := r.path(ctx, root, id)
 	if err != nil {
 		return nil, err
 	}
@@ -61,10 +60,10 @@ func (r *requestPersistence) FindRevision(ctx context.Context, root, id string) 
 
 func (r *requestPersistence) Save(ctx context.Context, root string, request entity.Request) (*entity.Request, error) {
 	logger.Debug(ctx, "Started", request, map[string]any{"root": root})
-	r.index.Lock()
-	defer r.index.Unlock()
+	r.index.Lock(ctx)
+	defer r.index.Unlock(ctx)
 
-	path, err := r.path(root, request.ID)
+	path, err := r.path(ctx, root, request.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +84,7 @@ func (r *requestPersistence) Save(ctx context.Context, root string, request enti
 	if err := fileutils.WriteFileAtomic(path, data, workspaceFileMode); err != nil {
 		return nil, errs.FileError(err, "REQ-13500")
 	}
-	r.index.RecordWrite(path, data)
+	r.index.RecordWrite(ctx, path, data)
 	saved, err := readRequestEntity(request.ID, path)
 	if err != nil {
 		return nil, err
@@ -95,12 +94,12 @@ func (r *requestPersistence) Save(ctx context.Context, root string, request enti
 	return saved, nil
 }
 
-func (r *requestPersistence) path(root, id string) (string, error) {
-	_, item, found, err := r.index.Resolve(root, id)
+func (r *requestPersistence) path(ctx context.Context, root, id string) (string, error) {
+	_, item, found, err := r.index.Resolve(ctx, root, id)
 	if err != nil {
 		return "", err
 	}
-	if !found || item.Kind != itemkind.Request {
+	if !found || !item.IsRequest() {
 		return "", errs.NotFoundError("the request does not exist", "REQ-01404")
 	}
 	return item.Path, nil

@@ -12,8 +12,10 @@ import (
 
 	"github.com/cucumber/godog"
 
-	application "github.com/brienze1/xenon/internal/infra"
+	"github.com/brienze1/xenon/internal/infra/dependency/binding"
+	"github.com/brienze1/xenon/internal/infra/dependency/consumer"
 	"github.com/brienze1/xenon/internal/infra/dependency/external"
+	"github.com/brienze1/xenon/internal/infra/dependency/router"
 	httpClient "github.com/brienze1/xenon/pkg/http"
 	"github.com/brienze1/xenon/pkg/logger"
 	"github.com/brienze1/xenon/pkg/timeutils"
@@ -27,7 +29,7 @@ func init() {
 }
 
 type testUtils struct {
-	bindings      *application.Bindings
+	bindings      []any
 	api           *mock.ApiMock
 	time          *mock.Time
 	events        *mock.EventEmitter
@@ -48,7 +50,6 @@ type testUtils struct {
 var (
 	suite     *testUtils
 	suiteOnce sync.Once
-	startOnce sync.Once
 )
 
 func TestFeatures(t *testing.T) {
@@ -88,9 +89,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		external.SetDialog(suite.dialog)
 		external.SetTrash(suite.trash)
 		external.SetFileWatcher(suite.watcher)
-		external.SetHttpClientFactory(func(options httpClient.Options) httpClient.Client {
-			return httpClient.HttpClient(options, logger.LoggerWrapper())
-		})
+		external.SetHttpClientFactory(httpClient.HttpClientFactory(logger.LoggerWrapper()))
 	})
 	test := suite
 
@@ -121,7 +120,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 }
 
 func (t *testUtils) before() error {
-	t.api.Start()
+	t.api.Reset()
 	t.time.Reset()
 	t.events.Reset()
 	t.dialog.Reset()
@@ -154,7 +153,15 @@ func (t *testUtils) before() error {
 }
 
 func (t *testUtils) startApp() {
-	startOnce.Do(func() {
-		t.bindings = application.NewBindings()
-	})
+	consumer.GetFileChangeConsumer()
+	t.bindings = []any{
+		binding.GetWorkspaceBinding(),
+		binding.GetTreeBinding(),
+		binding.GetDialogBinding(),
+		binding.GetRequestBinding(),
+		binding.GetUIStateBinding(),
+		binding.GetHistoryBinding(),
+		binding.GetWindowBinding(),
+		router.GetResponseBodyRoute(),
+	}
 }

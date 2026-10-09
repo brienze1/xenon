@@ -15,7 +15,7 @@ type timeConfig struct {
 var instance *timeConfig
 var once sync.Once
 
-func GetTimeConfig() *timeConfig {
+func getTimeConfig() *timeConfig {
 	once.Do(func() {
 		instance = &timeConfig{currentTimeProvider: time.Now}
 	})
@@ -23,7 +23,7 @@ func GetTimeConfig() *timeConfig {
 }
 
 func SetCurrentTimeProvider(provider CurrentTimeProvider) {
-	config := GetTimeConfig()
+	config := getTimeConfig()
 	config.mu.Lock()
 	defer config.mu.Unlock()
 	config.currentTimeProvider = provider

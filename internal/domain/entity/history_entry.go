@@ -29,6 +29,10 @@ func (h HistoryEntry) Matches(query string) bool {
 		strings.Contains(strings.ToLower(h.Request.URL), needle)
 }
 
+func (h HistoryEntry) HasID(id string) bool {
+	return h.ID == id
+}
+
 func (h HistoryEntry) LogValue() any {
 	return map[string]any{"id": h.ID, "request": h.Request.LogValue(), "statusCode": h.Result.StatusCode}
 }

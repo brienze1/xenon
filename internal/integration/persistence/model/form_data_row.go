@@ -1,12 +1,9 @@
 package model
 
 import (
-	"strings"
-
 	"go.yaml.in/yaml/v3"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
-	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/formdatatype"
 	"github.com/brienze1/xenon/pkg/yamlnode"
 )
@@ -32,30 +29,23 @@ func NewFormDataRow(row entity.FormDataRow) FormDataRow {
 }
 
 func (f *FormDataRow) ToEntity() entity.FormDataRow {
-	return entity.FormDataRow{
-		Key:         f.Key,
-		Type:        toFormDataType(f.Type),
-		Value:       f.Value,
-		Src:         entity.FileRef{Src: f.Src},
-		Enabled:     isEnabled(f.Enabled),
-		Description: f.Description,
+	row := entity.NewFormDataRow(f.Key, f.Value).WithType(f.Type)
+	row.Src = entity.FileRef{Src: f.Src}
+	row.Description = f.Description
+	if f.Enabled != nil {
+		row.Enabled = *f.Enabled
 	}
+	return row
 }
 
 func (f *FormDataRow) Node() *yaml.Node {
+	row := f.ToEntity()
 	fields := []yamlnode.Field{yamlnode.String("key", f.Key)}
-	if f.ToEntity().IsFile() {
+	if row.IsFile() {
 		fields = append(fields, yamlnode.String("type", formdatatype.File.String()), yamlnode.String("src", f.Src))
 	} else {
 		fields = append(fields, yamlnode.String("type", formdatatype.Text.String()), yamlnode.String("value", f.Value))
 	}
-	fields = append(fields, yamlnode.Bool("enabled", isEnabled(f.Enabled)), yamlnode.String("description", f.Description))
+	fields = append(fields, yamlnode.Bool("enabled", row.Enabled), yamlnode.String("description", f.Description))
 	return yamlnode.MappingNode(fields...)
-}
-
-func toFormDataType(raw string) enums.FormDataType {
-	if strings.TrimSpace(raw) == "" {
-		return formdatatype.Text
-	}
-	return formdatatype.GetFormDataType(raw)
 }

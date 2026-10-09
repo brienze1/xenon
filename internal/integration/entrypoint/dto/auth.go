@@ -6,7 +6,7 @@ import (
 )
 
 type Auth struct {
-	Type   string     `json:"type"`
+	Type   string     `json:"type" validate:"omitempty,oneof=inherit none bearer basic apikey oauth2 awsv4 digest"`
 	Bearer AuthBearer `json:"bearer"`
 	Basic  AuthBasic  `json:"basic"`
 }

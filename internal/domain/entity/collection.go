@@ -51,6 +51,11 @@ func (c Collection) WithSettings(settings Collection) Collection {
 	return c
 }
 
+func (c Collection) WithOrder(order []string) Collection {
+	c.Order = append([]string{}, order...)
+	return c
+}
+
 func (c Collection) ArrangedChildren(present []string) []string {
 	return arrangedNames(c.Order, present)
 }

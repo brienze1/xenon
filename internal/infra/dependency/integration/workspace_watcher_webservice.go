@@ -14,7 +14,7 @@ var workspaceWatcherWebserviceInstance adapter.WorkspaceWatcherWebservice
 func GetWorkspaceWatcherWebservice() adapter.WorkspaceWatcherWebservice {
 	if workspaceWatcherWebserviceInstance == nil {
 		workspaceWatcherWebserviceOnce.Do(func() {
-			workspaceWatcherWebserviceInstance = webservice.NewWorkspaceWatcherWebservice(external.GetFileWatcher(), GetWorkspaceWatcherConsumer())
+			workspaceWatcherWebserviceInstance = webservice.NewWorkspaceWatcherWebservice(external.GetFileWatcher(), GetWorkspaceWatcherConsumerWebservice())
 		})
 	}
 	return workspaceWatcherWebserviceInstance

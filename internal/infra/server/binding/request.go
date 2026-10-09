@@ -3,7 +3,6 @@ package binding
 import (
 	"context"
 
-	"github.com/brienze1/xenon/internal/infra/dependency/controller"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
 )
@@ -16,14 +15,14 @@ type RequestService struct {
 	response adapter.RequestResponseController
 }
 
-func NewRequestService() *RequestService {
-	return &RequestService{
-		get:      controller.GetRequestGetController(),
-		save:     controller.GetRequestSaveController(),
-		edit:     controller.GetRequestEditController(),
-		send:     controller.GetRequestSendController(),
-		response: controller.GetRequestResponseController(),
-	}
+func NewRequestService(
+	get adapter.RequestGetController,
+	save adapter.RequestSaveController,
+	edit adapter.RequestEditController,
+	send adapter.RequestSendController,
+	response adapter.RequestResponseController,
+) *RequestService {
+	return &RequestService{get: get, save: save, edit: edit, send: send, response: response}
 }
 
 func (r *RequestService) Get(ctx context.Context, request dto.OpenRequest) (*dto.Request, error) {

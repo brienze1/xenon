@@ -37,7 +37,7 @@ func NewRequest(request entity.Request) Request {
 		Params:        newKeyValues(request.Params),
 		PathVariables: make([]PathVariable, 0, len(request.PathVariables)),
 		Headers:       newKeyValues(request.Headers),
-		AutoHeaders:   AutoHeaders{Disabled: nonNil(request.DisabledAutoHeaders)},
+		AutoHeaders:   NewAutoHeaders(request.DisabledAutoHeaders),
 		Auth:          NewAuth(request.Auth),
 		Body:          NewBody(request.Body),
 		Settings:      NewSettings(request.Settings),
@@ -61,7 +61,7 @@ func (r *Request) ToEntity() entity.Request {
 		request.PathVariables = append(request.PathVariables, r.PathVariables[index].ToEntity())
 	}
 	request.Headers = keyValuesToEntity(r.Headers)
-	request.DisabledAutoHeaders = nonNil(r.AutoHeaders.Disabled)
+	request.DisabledAutoHeaders = r.AutoHeaders.ToEntity()
 	request.Auth = r.Auth.ToEntity()
 	request.Body = r.Body.ToEntity()
 	request.Settings = r.Settings.ToEntity()
@@ -82,7 +82,7 @@ func (r *Request) Fields() []yamlnode.Field {
 		yamlnode.List("params", keyValueNodes(r.Params)),
 		yamlnode.List("pathVariables", r.pathVariableNodes()),
 		yamlnode.List("headers", keyValueNodes(r.Headers)),
-		yamlnode.Object("autoHeaders", yamlnode.StringList("disabled", nonNil(r.AutoHeaders.Disabled))),
+		yamlnode.Object("autoHeaders", yamlnode.StringList("disabled", r.AutoHeaders.ToEntity())),
 		r.Auth.Field(),
 		r.Body.Field(),
 		r.Settings.Field(),

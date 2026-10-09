@@ -3,7 +3,6 @@ package binding
 import (
 	"context"
 
-	"github.com/brienze1/xenon/internal/infra/dependency/controller"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
 )
@@ -18,16 +17,16 @@ type WorkspaceService struct {
 	locate   adapter.WorkspaceLocateController
 }
 
-func NewWorkspaceService() *WorkspaceService {
-	return &WorkspaceService{
-		list:     controller.GetWorkspaceListController(),
-		create:   controller.GetWorkspaceCreateController(),
-		activate: controller.GetWorkspaceActivateController(),
-		open:     controller.GetWorkspaceOpenController(),
-		rename:   controller.GetWorkspaceRenameController(),
-		remove:   controller.GetWorkspaceRemoveController(),
-		locate:   controller.GetWorkspaceLocateController(),
-	}
+func NewWorkspaceService(
+	list adapter.WorkspaceListController,
+	create adapter.WorkspaceCreateController,
+	activate adapter.WorkspaceActivateController,
+	open adapter.WorkspaceOpenController,
+	rename adapter.WorkspaceRenameController,
+	remove adapter.WorkspaceRemoveController,
+	locate adapter.WorkspaceLocateController,
+) *WorkspaceService {
+	return &WorkspaceService{list: list, create: create, activate: activate, open: open, rename: rename, remove: remove, locate: locate}
 }
 
 func (w *WorkspaceService) List(ctx context.Context) (*dto.WorkspaceList, error) {

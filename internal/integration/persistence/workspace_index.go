@@ -1,69 +1,94 @@
 package persistence
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"os"
 	"sync"
-	"time"
 
+	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/integration/adapter"
-	"github.com/brienze1/xenon/internal/integration/persistence/model"
-	"github.com/brienze1/xenon/pkg/timeutils"
+	"github.com/brienze1/xenon/pkg/logger"
 )
 
-const ownWriteWindow = 2 * time.Second
-
-type workspaceIndex struct {
-	roots    map[string]*model.TreeIndex
-	writes   map[string]ownWrite
+type workspaceIndexPersistence struct {
+	roots    map[string]*entity.TreeIndex
+	writes   map[string]entity.RecordedWrite
 	mu       sync.Mutex
 	writesMu sync.Mutex
 }
 
-type ownWrite struct {
-	at   time.Time
-	hash string
+func NewWorkspaceIndexPersistence() adapter.WorkspaceIndexPersistence {
+	return &workspaceIndexPersistence{roots: map[string]*entity.TreeIndex{}, writes: map[string]entity.RecordedWrite{}}
 }
 
-func NewWorkspaceIndex() adapter.WorkspaceIndex {
-	return &workspaceIndex{roots: map[string]*model.TreeIndex{}, writes: map[string]ownWrite{}}
-}
+func (w *workspaceIndexPersistence) Lock(ctx context.Context) {
+	logger.Debug(ctx, "Started")
 
-func (w *workspaceIndex) Lock() {
 	w.mu.Lock()
+
+	logger.Debug(ctx, "Finished")
 }
 
-func (w *workspaceIndex) Unlock() {
+func (w *workspaceIndexPersistence) Unlock(ctx context.Context) {
+	logger.Debug(ctx, "Started")
+
 	w.mu.Unlock()
+
+	logger.Debug(ctx, "Finished")
 }
 
-func (w *workspaceIndex) IsOwnWrite(path string, data []byte) bool {
+func (w *workspaceIndexPersistence) IsOwnWrite(ctx context.Context, path string, data []byte) bool {
+	logger.Debug(ctx, "Started", map[string]any{"path": path, "size": len(data)})
+
 	w.writesMu.Lock()
-	defer w.writesMu.Unlock()
 	write, found := w.writes[path]
-	return found && write.hash == revisionOf(data) && timeutils.Now().Sub(write.at) <= ownWriteWindow
+	w.writesMu.Unlock()
+	ownWrite := found && write.Echoes(revisionOf(data))
+
+	logger.Debug(ctx, "Finished", map[string]any{"path": path, "ownWrite": ownWrite})
+	return ownWrite
 }
 
-func (w *workspaceIndex) RecordWrite(path string, data []byte) {
+func (w *workspaceIndexPersistence) RecordWrite(ctx context.Context, path string, data []byte) {
+	logger.Debug(ctx, "Started", map[string]any{"path": path, "size": len(data)})
+
 	w.writesMu.Lock()
-	defer w.writesMu.Unlock()
-	w.writes[path] = ownWrite{at: timeutils.Now(), hash: revisionOf(data)}
+	w.writes[path] = entity.NewRecordedWrite(revisionOf(data))
+	w.writesMu.Unlock()
+
+	logger.Debug(ctx, "Finished", map[string]any{"path": path})
 }
 
-func (w *workspaceIndex) Cached(root string) (*model.TreeIndex, bool) {
+func (w *workspaceIndexPersistence) Cached(ctx context.Context, root string) (*entity.TreeIndex, bool) {
+	logger.Debug(ctx, "Started", map[string]any{"root": root})
+
 	index, found := w.roots[root]
+
+	logger.Debug(ctx, "Finished", map[string]any{"root": root, "found": found})
 	return index, found
 }
 
-func (w *workspaceIndex) Current(root string) (*model.TreeIndex, error) {
+func (w *workspaceIndexPersistence) Current(ctx context.Context, root string) (*entity.TreeIndex, error) {
+	logger.Debug(ctx, "Started", map[string]any{"root": root})
+
 	if index, found := w.roots[root]; found {
+		logger.Debug(ctx, "Finished", map[string]any{"root": root, "items": index.Size()})
 		return index, nil
 	}
-	return w.Refresh(root)
+	index, err := w.Refresh(ctx, root)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Debug(ctx, "Finished", map[string]any{"root": root, "items": index.Size()})
+	return index, nil
 }
 
-func (w *workspaceIndex) Refresh(root string) (*model.TreeIndex, error) {
+func (w *workspaceIndexPersistence) Refresh(ctx context.Context, root string) (*entity.TreeIndex, error) {
+	logger.Debug(ctx, "Started", map[string]any{"root": root})
+
 	previous := map[string]string{}
 	if index, found := w.roots[root]; found {
 		previous = index.Reidentified
@@ -73,20 +98,27 @@ func (w *workspaceIndex) Refresh(root string) (*model.TreeIndex, error) {
 		return nil, err
 	}
 	w.roots[root] = index
+
+	logger.Debug(ctx, "Finished", map[string]any{"root": root, "items": index.Size()})
 	return index, nil
 }
 
-func (w *workspaceIndex) Resolve(root, id string) (*model.TreeIndex, model.IndexedItem, bool, error) {
+func (w *workspaceIndexPersistence) Resolve(ctx context.Context, root, id string) (*entity.TreeIndex, entity.IndexedItem, bool, error) {
+	logger.Debug(ctx, "Started", map[string]any{"root": root, "id": id})
+
 	if index, found := w.roots[root]; found {
-		if item, known := index.Items[id]; known && exists(item.Path) {
+		if item, known := index.Item(id); known && exists(item.Path) {
+			logger.Debug(ctx, "Finished", map[string]any{"root": root, "id": id, "found": true})
 			return index, item, true, nil
 		}
 	}
-	index, err := w.Refresh(root)
+	index, err := w.Refresh(ctx, root)
 	if err != nil {
-		return nil, model.IndexedItem{}, false, err
+		return nil, entity.IndexedItem{}, false, err
 	}
-	item, known := index.Items[id]
+	item, known := index.Item(id)
+
+	logger.Debug(ctx, "Finished", map[string]any{"root": root, "id": id, "found": known})
 	return index, item, known, nil
 }
 

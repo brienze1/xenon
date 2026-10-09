@@ -7,5 +7,5 @@ import (
 )
 
 type DuplicateTreeItem interface {
-	Duplicate(ctx context.Context, root, id, name, fileName string) (*entity.TreeNode, error)
+	Duplicate(ctx context.Context, root, id string, copied entity.ItemCopy) (*entity.TreeNode, error)
 }

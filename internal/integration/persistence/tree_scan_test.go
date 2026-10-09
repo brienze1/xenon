@@ -1,6 +1,7 @@
 package persistence
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -41,20 +42,21 @@ func TestIsOwnWrite(t *testing.T) {
 	now := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
 	timeutils.SetCurrentTimeProvider(func() time.Time { return now })
 	defer timeutils.SetCurrentTimeProvider(time.Now)
-	index := NewWorkspaceIndex()
-	index.RecordWrite("/a.yaml", []byte("one"))
-	if !index.IsOwnWrite("/a.yaml", []byte("one")) {
+	ctx := context.Background()
+	index := NewWorkspaceIndexPersistence()
+	index.RecordWrite(ctx, "/a.yaml", []byte("one"))
+	if !index.IsOwnWrite(ctx, "/a.yaml", []byte("one")) {
 		t.Fatal("a fresh write with the same content is ours")
 	}
-	if index.IsOwnWrite("/a.yaml", []byte("two")) || index.IsOwnWrite("/b.yaml", []byte("one")) {
+	if index.IsOwnWrite(ctx, "/a.yaml", []byte("two")) || index.IsOwnWrite(ctx, "/b.yaml", []byte("one")) {
 		t.Fatal("other content or paths are not ours")
 	}
-	now = now.Add(ownWriteWindow)
-	if !index.IsOwnWrite("/a.yaml", []byte("one")) {
+	now = now.Add(2 * time.Second)
+	if !index.IsOwnWrite(ctx, "/a.yaml", []byte("one")) {
 		t.Fatal("still ours at the end of the window")
 	}
 	now = now.Add(time.Millisecond)
-	if index.IsOwnWrite("/a.yaml", []byte("one")) {
+	if index.IsOwnWrite(ctx, "/a.yaml", []byte("one")) {
 		t.Fatal("not ours after the window")
 	}
 }

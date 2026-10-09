@@ -7,8 +7,8 @@ import (
 )
 
 type ResponseBody struct {
-	Content     io.ReadCloser
-	ContentType string
+	Content     io.ReadCloser `json:"-"`
+	ContentType string        `json:"content_type"`
 }
 
 func NewResponseBody(response entity.Response, content io.ReadCloser) ResponseBody {

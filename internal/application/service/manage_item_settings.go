@@ -50,7 +50,11 @@ func (i *manageItemSettings) Save(ctx context.Context, localId string, settings 
 	if err != nil {
 		return nil, err
 	}
-	saved, err := i.saveTreeItem.SaveContainer(ctx, workspace.Path, container.WithSettings(settings))
+	node, err := i.findTreeItem.FindNode(ctx, workspace.Path, settings.ID)
+	if err != nil {
+		return nil, err
+	}
+	saved, err := i.saveTreeItem.SaveContainer(ctx, workspace.Path, container.WithSettings(settings).WithOrder(node.ChildOrder()))
 	if err != nil {
 		return nil, err
 	}

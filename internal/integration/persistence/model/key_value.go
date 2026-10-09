@@ -19,18 +19,19 @@ func NewKeyValue(row entity.KeyValue) KeyValue {
 }
 
 func (k *KeyValue) ToEntity() entity.KeyValue {
-	return entity.KeyValue{Key: k.Key, Value: k.Value, Enabled: isEnabled(k.Enabled), Description: k.Description}
+	row := entity.NewKeyValue(k.Key, k.Value)
+	row.Description = k.Description
+	if k.Enabled != nil {
+		row.Enabled = *k.Enabled
+	}
+	return row
 }
 
 func (k *KeyValue) Node() *yaml.Node {
 	return yamlnode.MappingNode(
 		yamlnode.String("key", k.Key),
 		yamlnode.String("value", k.Value),
-		yamlnode.Bool("enabled", isEnabled(k.Enabled)),
+		yamlnode.Bool("enabled", k.ToEntity().Enabled),
 		yamlnode.String("description", k.Description),
 	)
-}
-
-func isEnabled(enabled *bool) bool {
-	return enabled == nil || *enabled
 }

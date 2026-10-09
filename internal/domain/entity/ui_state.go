@@ -21,7 +21,7 @@ func (u UIState) Normalized() UIState {
 	if _, found := u.tab(u.ActiveTabID); !found {
 		u.ActiveTabID = u.firstTabID()
 	}
-	if preview, found := u.tab(u.PreviewTabID); !found || preview.Pinned {
+	if preview, found := u.tab(u.PreviewTabID); !found || preview.IsPinned() {
 		u.PreviewTabID = ""
 	}
 	u.Sidebar = u.Sidebar.Normalized()
@@ -31,7 +31,7 @@ func (u UIState) Normalized() UIState {
 
 func (u UIState) tab(id string) (Tab, bool) {
 	for _, tab := range u.Tabs {
-		if tab.TabID == id {
+		if tab.HasID(id) {
 			return tab, true
 		}
 	}
