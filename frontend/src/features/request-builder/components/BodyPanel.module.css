@@ -95,3 +95,9 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.loading {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}

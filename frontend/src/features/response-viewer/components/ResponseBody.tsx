@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { SendResult } from '@/platform/mappers/request'
 import { formatBytes } from '@/shared/lib/format-bytes'
 import { Button } from '@/shared/ui/button/Button'
-import { CodeEditor } from '@/shared/ui/code-editor/CodeEditor'
-import { initialBodyView, isHtml, isImage, languageFor, prettyBody, type BodyView } from '@/features/response-viewer/lib/body-view'
+import { initialBodyView, languageFor, prettyBody, type BodyView } from '@/features/response-viewer/lib/body-view'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import styles from './ResponseBody.module.css'
+
+const CodeEditor = lazy(() => import('@/shared/ui/code-editor/CodeEditor').then((module) => ({ default: module.CodeEditor })))
+
+const BodyPreview = lazy(() => import('./BodyPreview').then((module) => ({ default: module.BodyPreview })))
 
 interface ResponseBodyProps {
   tabId: string
@@ -39,6 +42,18 @@ const COPY_ANNOUNCEMENTS: Record<CopyState, ReactNode> = {
 const LOADING_BODY = (
   <p role="status" className={styles.note}>
     Loading body…
+  </p>
+)
+
+const LOADING_EDITOR = (
+  <p role="status" className={styles.note}>
+    Loading editor…
+  </p>
+)
+
+const LOADING_PREVIEW = (
+  <p role="status" className={styles.note}>
+    Loading preview…
   </p>
 )
 
@@ -105,39 +120,24 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
         </div>
       </div>
       {view === 'preview' ? (
-        <BodyPreview result={result} body={body} />
+        <Suspense fallback={LOADING_PREVIEW}>
+          <BodyPreview result={result} body={body} />
+        </Suspense>
       ) : result.isBinary ? (
         <p className={styles.note}>Binary body ({formatBytes(result.sizeBytes)}). Use Preview or Save to File.</p>
       ) : bodyStatus === 'loading' ? (
         LOADING_BODY
       ) : (
-        <CodeEditor
-          key={view}
-          label={view === 'pretty' ? 'Pretty response body' : 'Raw response body'}
-          className={styles.editor}
-          language={view === 'pretty' ? language : 'text'}
-          value={shown}
-        />
+        <Suspense fallback={LOADING_EDITOR}>
+          <CodeEditor
+            key={view}
+            label={view === 'pretty' ? 'Pretty response body' : 'Raw response body'}
+            className={styles.editor}
+            language={view === 'pretty' ? language : 'text'}
+            value={shown}
+          />
+        </Suspense>
       )}
     </div>
-  )
-}
-
-interface BodyPreviewProps {
-  result: SendResult
-  body: string | null
-}
-
-function BodyPreview({ result, body }: BodyPreviewProps) {
-  if (isImage(result.contentType)) {
-    return <img className={styles.image} src={result.bodyUrl} alt="Response preview" />
-  }
-  if (isHtml(result.contentType) && body !== null) {
-    return <iframe className={styles.frame} title="Response preview" sandbox="" srcDoc={body} />
-  }
-  return (
-    <p className={styles.note}>
-      No preview available for {result.contentType ? <span translate="no">{result.contentType}</span> : 'this response'}.
-    </p>
   )
 }

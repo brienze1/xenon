@@ -192,7 +192,7 @@ describe('RequestBuilder', () => {
     expect(screen.getByRole('group', { name: 'Body type' })).toContainElement(screen.getByRole('radio', { name: 'Raw' }))
     await user.click(screen.getByRole('radio', { name: 'Raw' }))
     await user.selectOptions(screen.getByRole('combobox', { name: 'Raw language' }), 'xml')
-    expect(screen.getByRole('textbox', { name: 'Raw body' })).toBeInTheDocument()
+    expect(await screen.findByRole('textbox', { name: 'Raw body' })).toBeInTheDocument()
     await user.click(screen.getByRole('radio', { name: 'Binary' }))
     await user.click(screen.getByRole('button', { name: 'Select File' }))
     expect(await screen.findByText('/files/payload.bin')).toBeInTheDocument()
@@ -211,7 +211,7 @@ describe('RequestBuilder', () => {
     await user.click(screen.getByRole('radio', { name: 'x-www-form-urlencoded' }))
     expect(screen.getByRole('table', { name: 'Url-encoded body' })).toBeInTheDocument()
     await user.click(screen.getByRole('radio', { name: 'GraphQL' }))
-    expect(screen.getByRole('textbox', { name: 'GraphQL variables' })).toBeInTheDocument()
+    expect(await screen.findByRole('textbox', { name: 'GraphQL variables' })).toBeInTheDocument()
     expect(useRequestBuilderStore.getState().tabs[tabId]!.draft.body.binary.src).toBe('/files/payload.bin')
   })
 

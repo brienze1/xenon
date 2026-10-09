@@ -1,5 +1,6 @@
 .line {
   display: flex;
+  min-width: 0;
   font-variant-numeric: tabular-nums;
   align-items: center;
   gap: var(--space-5);
@@ -8,7 +9,11 @@
 }
 
 .status {
+  min-width: 0;
+  overflow: hidden;
   font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .success {
@@ -28,6 +33,7 @@
 }
 
 .metric {
+  flex-shrink: 0;
   color: var(--color-text-muted);
   font-family: var(--font-mono);
   font-size: var(--font-size-sm);

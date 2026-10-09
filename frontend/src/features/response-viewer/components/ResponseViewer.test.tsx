@@ -99,9 +99,9 @@ describe('ResponseViewer', () => {
     show(result())
     expect(screen.getByRole('radio', { name: 'Pretty' })).toBeChecked()
     expect(screen.getByRole('radio', { name: 'Pretty' })).toHaveAttribute('name', 'tab-body-view')
-    expect(screen.getByRole('textbox', { name: 'Pretty response body' })).toHaveTextContent('"a": [')
+    expect(await screen.findByRole('textbox', { name: 'Pretty response body' })).toHaveTextContent('"a": [')
     await user.click(screen.getByRole('radio', { name: 'Raw' }))
-    expect(screen.getByRole('textbox', { name: 'Raw response body' })).toHaveTextContent('{"a":[1]}')
+    expect(await screen.findByRole('textbox', { name: 'Raw response body' })).toHaveTextContent('{"a":[1]}')
   })
 
   it('moves between body views with the arrow keys', async () => {
@@ -137,7 +137,7 @@ describe('ResponseViewer', () => {
     expect(screen.getByText('Binary body (70 B). Use Preview or Save to File.')).toBeInTheDocument()
     expect(responseBody.fetchResponseText).not.toHaveBeenCalled()
     await user.click(screen.getByRole('radio', { name: 'Preview' }))
-    expect(screen.getByRole('img', { name: 'Response preview' })).toHaveAttribute('src', '/xenon/response/tab')
+    expect(await screen.findByRole('img', { name: 'Response preview' })).toHaveAttribute('src', '/xenon/response/tab')
   })
 
   it('previews HTML in a sandboxed frame and explains when there is no preview', async () => {
@@ -145,11 +145,11 @@ describe('ResponseViewer', () => {
     render(<ResponseViewer tabId="tab" />)
     show(result({ contentType: 'text/html', inlineBody: '<p>hi</p>' }))
     await user.click(screen.getByRole('radio', { name: 'Preview' }))
-    expect(screen.getByTitle('Response preview')).toHaveAttribute('sandbox', '')
+    expect(await screen.findByTitle('Response preview')).toHaveAttribute('sandbox', '')
     show(result())
     await user.click(screen.getByRole('radio', { name: 'Preview' }))
     const bodyPanel = screen.getByRole('tabpanel')
-    expect(within(bodyPanel).getByText(/No preview available for/)).toHaveTextContent('No preview available for application/json.')
+    expect(await within(bodyPanel).findByText(/No preview available for/)).toHaveTextContent('No preview available for application/json.')
     expect(within(bodyPanel).getByText('application/json')).toHaveAttribute('translate', 'no')
   })
 

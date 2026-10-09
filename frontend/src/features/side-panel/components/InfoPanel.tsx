@@ -26,6 +26,11 @@ const LOCATION_LABEL = <span className={styles.label}>Location</span>
 
 const DESCRIPTION_LABEL = <span className={styles.label}>Description</span>
 
+interface FailedRename {
+  tabId: string
+  error: AppError
+}
+
 interface InfoPanelProps {
   tabId: string
 }
@@ -40,15 +45,10 @@ export function InfoPanel({ tabId }: InfoPanelProps) {
   const location = useSidebarStore(useShallow((state) => (requestId ? selectLocation(state.tree, requestId).slice(0, -1) : [])))
   const rename = useSidebarStore((state) => state.rename)
   const [editing, setEditing] = useState(false)
-  const [nameError, setNameError] = useState<AppError | null>(null)
-  const [errorTabId, setErrorTabId] = useState(tabId)
+  const [failedRename, setFailedRename] = useState<FailedRename | null>(null)
+  const nameError = failedRename?.tabId === tabId ? failedRename.error : null
   const nameErrorId = useId()
   const descriptionId = useId()
-
-  if (errorTabId !== tabId) {
-    setErrorTabId(tabId)
-    setNameError(null)
-  }
 
   async function commitName(value: string) {
     const trimmed = value.trim()
@@ -61,10 +61,10 @@ export function InfoPanel({ tabId }: InfoPanelProps) {
     }
     const renamed = await rename(requestId, trimmed)
     if (!renamed.ok) {
-      setNameError(renamed.error)
+      setFailedRename({ tabId, error: renamed.error })
       return
     }
-    setNameError(null)
+    setFailedRename(null)
     if (renamed.value) {
       await adoptRename(requestId)
     }
@@ -91,7 +91,7 @@ export function InfoPanel({ tabId }: InfoPanelProps) {
             spellCheck={false}
             aria-invalid={nameError !== null}
             aria-describedby={nameError ? nameErrorId : undefined}
-            onChange={() => setNameError(null)}
+            onChange={() => setFailedRename(null)}
             onBlur={(event) => void commitName(event.target.value)}
             onKeyDown={onNameKeyDown}
           />

@@ -338,9 +338,8 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         return
       }
       const reloads: Promise<unknown>[] = []
-      for (const tab of get().tabs.filter((candidate) => candidate.requestId === event.requestId)) {
-        const draft = builder().tabs[tab.id]
-        if (draft?.baseRevision === event.revision) {
+      for (const tab of get().tabs) {
+        if (tab.requestId !== event.requestId || builder().tabs[tab.id]?.baseRevision === event.revision) {
           continue
         }
         if (isDirty(tab.id)) {

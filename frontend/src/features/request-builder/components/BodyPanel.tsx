@@ -1,6 +1,6 @@
+import { lazy, Suspense } from 'react'
 import { BODY_MODES, RAW_LANGUAGES, type BodyMode, type FormDataRow, type RawLanguage } from '@/platform/mappers/request'
 import { Button } from '@/shared/ui/button/Button'
-import { CodeEditor } from '@/shared/ui/code-editor/CodeEditor'
 import { IconButton } from '@/shared/ui/icon-button/IconButton'
 import { KeyValueTable, type KeyValueExamples } from '@/shared/ui/key-value-table/KeyValueTable'
 import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
@@ -8,6 +8,8 @@ import { PanelSection } from '@/shared/ui/panel-section/PanelSection'
 import { useMissingFile } from '@/features/request-builder/hooks/use-missing-file'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import styles from './BodyPanel.module.css'
+
+const CodeEditor = lazy(() => import('@/shared/ui/code-editor/CodeEditor').then((module) => ({ default: module.CodeEditor })))
 
 interface BodyPanelProps {
   tabId: string
@@ -47,6 +49,12 @@ const URLENCODED_EXAMPLES: KeyValueExamples = {
 }
 
 const REMOVE_GLYPH = <span aria-hidden="true">×</span>
+
+const LOADING_EDITOR = (
+  <p role="status" className={styles.loading}>
+    Loading editor…
+  </p>
+)
 
 const NO_BODY_NOTE = <PanelSection.Note>This request does not have a body.</PanelSection.Note>
 
@@ -148,13 +156,15 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
       {body.mode === 'none' ? NO_BODY_NOTE : null}
 
       {body.mode === 'raw' ? (
-        <CodeEditor
-          label="Raw body"
-          className={styles.editor}
-          language={body.raw.language}
-          value={body.raw.content}
-          onChange={(content) => updateBody(tabId, { raw: { ...body.raw, content } })}
-        />
+        <Suspense fallback={LOADING_EDITOR}>
+          <CodeEditor
+            label="Raw body"
+            className={styles.editor}
+            language={body.raw.language}
+            value={body.raw.content}
+            onChange={(content) => updateBody(tabId, { raw: { ...body.raw, content } })}
+          />
+        </Suspense>
       ) : null}
 
       {body.mode === 'urlencoded' ? (
@@ -300,7 +310,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
       ) : null}
 
       {body.mode === 'graphql' ? (
-        <>
+        <Suspense fallback={LOADING_EDITOR}>
           {GRAPHQL_QUERY_HEADING}
           <CodeEditor
             label="GraphQL query"
@@ -317,7 +327,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
             value={body.graphql.variables}
             onChange={(variables) => updateBody(tabId, { graphql: { ...body.graphql, variables } })}
           />
-        </>
+        </Suspense>
       ) : null}
     </PanelSection.Root>
   )
