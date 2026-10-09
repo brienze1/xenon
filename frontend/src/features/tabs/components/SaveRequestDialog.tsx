@@ -59,7 +59,7 @@ function SaveRequestForm({ dialog }: SaveRequestFormProps) {
 
   return (
     <form aria-label="Save request" className={styles.form} noValidate onSubmit={onSubmit}>
-      <Dialog.Title>{dialog.mode === 'saveAs' ? 'Save request as' : 'Save request'}</Dialog.Title>
+      <Dialog.Title>{dialog.mode === 'saveAs' ? 'Save Request As' : 'Save Request'}</Dialog.Title>
       <Dialog.Body>
         <label className={styles.field}>
           <span className={styles.label}>Request name</span>

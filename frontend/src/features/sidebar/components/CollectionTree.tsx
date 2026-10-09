@@ -99,11 +99,11 @@ export function CollectionTree(actions: CollectionTreeProps) {
     return (
       <EmptyState.Root label="No collections" className={styles.empty}>
         <EmptyState.Art variant="collections" />
-        <EmptyState.Title>No collections yet</EmptyState.Title>
+        <EmptyState.Title>No Collections Yet</EmptyState.Title>
         <EmptyState.Description>Collections group your requests. Each one is a folder in your workspace.</EmptyState.Description>
         <EmptyState.Actions>
           <Button variant="primary" onClick={() => void createCollection()}>
-            Create collection
+            Create Collection
           </Button>
         </EmptyState.Actions>
       </EmptyState.Root>

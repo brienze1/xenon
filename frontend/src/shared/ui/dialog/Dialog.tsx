@@ -1,11 +1,11 @@
-import { createContext, use, useEffect, useEffectEvent, useId, useRef, type ReactNode } from 'react'
+import { createContext, use, useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/shared/lib/cn'
 import styles from './Dialog.module.css'
 
 const FOCUSABLE = 'button:not(:disabled), [href], input:not(:disabled), select, textarea, [tabindex]:not([tabindex="-1"])'
 
-function trapFocus(dialog: HTMLElement, event: KeyboardEvent) {
+function trapFocus(dialog: HTMLElement, event: KeyboardEvent<HTMLElement>) {
   const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE))
   const first = focusable[0]
   const last = focusable[focusable.length - 1]
@@ -36,30 +36,38 @@ interface RootProps {
 function Root({ open, onOpenChange, className, children }: RootProps) {
   const titleId = useId()
   const dialogRef = useRef<HTMLDivElement>(null)
-  const close = useEffectEvent(() => onOpenChange(false))
 
   useEffect(() => {
     if (!open) {
       return
     }
     const previous = document.activeElement as HTMLElement | null
-    dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus()
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        close()
-        return
-      }
-      if (event.key === 'Tab' && dialogRef.current) {
-        trapFocus(dialogRef.current, event)
-      }
+    const dialog = dialogRef.current
+    const first = dialog?.querySelector<HTMLElement>(FOCUSABLE)
+    if (first) {
+      first.focus()
+    } else {
+      dialog?.focus()
     }
-    document.addEventListener('keydown', onKeyDown)
     return () => {
-      document.removeEventListener('keydown', onKeyDown)
       previous?.focus()
     }
   }, [open])
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.defaultPrevented) {
+      return
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      event.stopPropagation()
+      onOpenChange(false)
+      return
+    }
+    if (event.key === 'Tab') {
+      trapFocus(event.currentTarget, event)
+    }
+  }
 
   if (!open) {
     return null
@@ -72,6 +80,8 @@ function Root({ open, onOpenChange, className, children }: RootProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        tabIndex={-1}
+        onKeyDown={handleKeyDown}
         className={cn(styles.dialog, className)}
       >
         <DialogTitleContext value={titleId}>{children}</DialogTitleContext>

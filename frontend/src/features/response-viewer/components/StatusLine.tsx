@@ -22,7 +22,7 @@ export function StatusLine({ result }: StatusLineProps) {
 
   return (
     <div role="group" className={styles.line} aria-label="Response status">
-      <span className={cn(styles.status, styles[statusTone(result.statusCode)])}>
+      <span className={cn(styles.status, styles[statusTone(result.statusCode)])} translate="no">
         {result.statusCode} {result.statusText}
       </span>
       <Tooltip

@@ -1,8 +1,9 @@
 import type { KeyValueRow, PathVariableRow } from '@/platform/mappers/request'
 import { KeyValueTable } from '@/shared/ui/key-value-table/KeyValueTable'
 import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
+import { PanelSection } from '@/shared/ui/panel-section/PanelSection'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
-import styles from './Panel.module.css'
+import styles from './ParamsPanel.module.css'
 
 interface ParamsPanelProps {
   tabId: string
@@ -22,8 +23,8 @@ export function ParamsPanel({ tabId }: ParamsPanelProps) {
 
   return (
     <div>
-      <section className={styles.section}>
-        <h3 className={styles.heading}>Query Params</h3>
+      <PanelSection.Root>
+        <PanelSection.Heading>Query Params</PanelSection.Heading>
         <KeyValueTable
           label="Query params"
           rows={params}
@@ -35,10 +36,10 @@ export function ParamsPanel({ tabId }: ParamsPanelProps) {
           onRowAdd={(row) => updateParams(tabId, addRow(params, row))}
           onRowRemove={(id) => updateParams(tabId, removeRow(params, id))}
         />
-      </section>
+      </PanelSection.Root>
       {pathVariables.length > 0 ? (
-        <section className={styles.section}>
-          <h3 className={styles.heading}>Path Variables</h3>
+        <PanelSection.Root>
+          <PanelSection.Heading>Path Variables</PanelSection.Heading>
           <table aria-label="Path variables" className={styles.table}>
             <thead>
               <tr>
@@ -50,7 +51,7 @@ export function ParamsPanel({ tabId }: ParamsPanelProps) {
             <tbody>
               {pathVariables.map((variable) => (
                 <tr key={variable.id}>
-                  <td>{variable.key}</td>
+                  <td translate="no">{variable.key}</td>
                   <td>
                     <input
                       name="path-variable-value"
@@ -78,7 +79,7 @@ export function ParamsPanel({ tabId }: ParamsPanelProps) {
               ))}
             </tbody>
           </table>
-        </section>
+        </PanelSection.Root>
       ) : null}
     </div>
   )

@@ -1,4 +1,4 @@
-import { createContext, use, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { createContext, use, useEffect, useId, useMemo, useRef, useState, type Dispatch, type KeyboardEvent, type ReactNode, type RefObject, type SetStateAction } from 'react'
 import { cn } from '@/shared/lib/cn'
 import { moveFocus } from '@/shared/lib/roving-focus'
 import styles from './Dropdown.module.css'
@@ -6,10 +6,12 @@ import styles from './Dropdown.module.css'
 interface DropdownContextValue {
   open: boolean
   menuId: string
-  setOpen: (open: boolean) => void
+  setOpen: Dispatch<SetStateAction<boolean>>
 }
 
 const DropdownContext = createContext<DropdownContextValue | null>(null)
+
+const TriggerRefContext = createContext<RefObject<HTMLButtonElement | null> | null>(null)
 
 function useDropdown(): DropdownContextValue {
   const context = use(DropdownContext)
@@ -28,25 +30,37 @@ function Root({ className, children }: RootProps) {
   const [open, setOpen] = useState(false)
   const menuId = useId()
   const rootRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const value = useMemo(() => ({ open, menuId, setOpen }), [open, menuId])
 
   useEffect(() => {
     if (!open) {
       return
     }
+    const root = rootRef.current
+    const trigger = triggerRef.current
     function onPointerDown(event: PointerEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
+      if (!root?.contains(event.target as Node)) {
         setOpen(false)
       }
     }
     document.addEventListener('pointerdown', onPointerDown)
-    return () => document.removeEventListener('pointerdown', onPointerDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      const active = document.activeElement
+      if (!active || active === document.body || root?.contains(active)) {
+        trigger?.focus()
+      }
+    }
   }, [open])
 
   return (
-    <DropdownContext value={{ open, menuId, setOpen }}>
-      <div ref={rootRef} className={cn(styles.root, className)}>
-        {children}
-      </div>
+    <DropdownContext value={value}>
+      <TriggerRefContext value={triggerRef}>
+        <div ref={rootRef} className={cn(styles.root, className)}>
+          {children}
+        </div>
+      </TriggerRefContext>
     </DropdownContext>
   )
 }
@@ -59,15 +73,17 @@ interface TriggerProps {
 
 function Trigger({ label, className, children }: TriggerProps) {
   const dropdown = useDropdown()
+  const triggerRef = use(TriggerRefContext)
   return (
     <button
+      ref={triggerRef}
       type="button"
       aria-label={label}
       aria-haspopup="menu"
       aria-expanded={dropdown.open}
       aria-controls={dropdown.open ? dropdown.menuId : undefined}
       className={cn(styles.trigger, className)}
-      onClick={() => dropdown.setOpen(!dropdown.open)}
+      onClick={() => dropdown.setOpen((open) => !open)}
     >
       {children}
     </button>

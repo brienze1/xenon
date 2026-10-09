@@ -26,11 +26,11 @@ export function TabsArea() {
       ) : (
         <EmptyState.Root label="No open tabs">
           <EmptyState.Art variant="tabs" />
-          <EmptyState.Title>No open tabs</EmptyState.Title>
+          <EmptyState.Title>No Open Tabs</EmptyState.Title>
           <EmptyState.Description>Open a request from the sidebar or start a new one.</EmptyState.Description>
           <EmptyState.Actions>
             <Button variant="primary" onClick={() => newTab()}>
-              New tab
+              New Tab
             </Button>
           </EmptyState.Actions>
         </EmptyState.Root>

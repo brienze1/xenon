@@ -102,8 +102,8 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenSe
         <ContextMenu.Menu label={`${node.name} actions`}>
           {container ? (
             <>
-              <ContextMenu.Item onSelect={() => void createRequest(node.id)}>Add request</ContextMenu.Item>
-              <ContextMenu.Item onSelect={() => void createFolder(node.id)}>Add folder</ContextMenu.Item>
+              <ContextMenu.Item onSelect={() => void createRequest(node.id)}>Add Request</ContextMenu.Item>
+              <ContextMenu.Item onSelect={() => void createFolder(node.id)}>Add Folder</ContextMenu.Item>
               <ContextMenu.Item onSelect={() => onOpenSettings(node.id)}>Settings…</ContextMenu.Item>
             </>
           ) : null}

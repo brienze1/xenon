@@ -4,9 +4,10 @@ import { CodeEditor } from '@/shared/ui/code-editor/CodeEditor'
 import { IconButton } from '@/shared/ui/icon-button/IconButton'
 import { KeyValueTable } from '@/shared/ui/key-value-table/KeyValueTable'
 import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
+import { PanelSection } from '@/shared/ui/panel-section/PanelSection'
 import { useMissingFile } from '@/features/request-builder/hooks/use-missing-file'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
-import styles from './Panel.module.css'
+import styles from './BodyPanel.module.css'
 
 interface BodyPanelProps {
   tabId: string
@@ -49,7 +50,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
   const urlencoded = body.urlencoded
 
   return (
-    <section className={styles.section}>
+    <PanelSection.Root>
       <div role="radiogroup" aria-label="Body type" className={styles.modes}>
         {BODY_MODES.map((mode) => (
           <label key={mode} className={styles.toggle}>
@@ -74,7 +75,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
         ) : null}
       </div>
 
-      {body.mode === 'none' ? <p className={styles.note}>This request does not have a body.</p> : null}
+      {body.mode === 'none' ? <PanelSection.Note>This request does not have a body.</PanelSection.Note> : null}
 
       {body.mode === 'raw' ? (
         <CodeEditor
@@ -155,7 +156,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                   {row.type === 'file' ? (
                     <div className={styles.file}>
                       <Button size="sm" onClick={() => void chooseBodyFile(tabId, row.id)}>
-                        Select file
+                        Select File
                       </Button>
                       <span className={styles.filePath}>{row.src}</span>
                       {missingFile !== null && row.src !== '' && missingFile.endsWith(row.src.replace(DIRECTORY_PREFIX, '')) ? (
@@ -183,7 +184,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
             <tr>
               <td colSpan={5}>
                 <Button size="sm" variant="ghost" onClick={() => updateBody(tabId, { formdata: addRow(formdata, EMPTY_FORM_ROW) })}>
-                  Add field
+                  Add Field
                 </Button>
               </td>
             </tr>
@@ -193,7 +194,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
 
       {body.mode === 'binary' ? (
         <div className={styles.file}>
-          <Button onClick={() => void chooseBodyFile(tabId)}>Select file</Button>
+          <Button onClick={() => void chooseBodyFile(tabId)}>Select File</Button>
           <span className={styles.filePath}>{body.binary.src || 'No file selected'}</span>
           {missingFile !== null && body.binary.src !== '' ? (
             <span role="status" className={styles.missing}>
@@ -205,7 +206,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
 
       {body.mode === 'graphql' ? (
         <>
-          <h3 className={styles.heading}>Query</h3>
+          <PanelSection.Heading>Query</PanelSection.Heading>
           <CodeEditor
             label="GraphQL query"
             className={styles.editor}
@@ -213,7 +214,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
             value={body.graphql.query}
             onChange={(query) => updateBody(tabId, { graphql: { ...body.graphql, query } })}
           />
-          <h3 className={styles.heading}>GraphQL Variables</h3>
+          <PanelSection.Heading>GraphQL Variables</PanelSection.Heading>
           <CodeEditor
             label="GraphQL variables"
             className={styles.editor}
@@ -223,6 +224,6 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
           />
         </>
       ) : null}
-    </section>
+    </PanelSection.Root>
   )
 }

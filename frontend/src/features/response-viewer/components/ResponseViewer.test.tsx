@@ -74,7 +74,7 @@ describe('ResponseViewer', () => {
     show(result({ statusCode: 404, statusText: 'Not Found' }))
     expect(screen.getByText('404 Not Found')).toHaveClass('error')
     expect(screen.getByText('9 B')).toBeInTheDocument()
-    await user.hover(screen.getByRole('button', { name: 'Time 1.52 s' }))
+    await user.hover(screen.getByRole('button', { name: 'Time 1.52\u00a0s' }))
     const tooltip = screen.getByRole('tooltip')
     for (const phase of ['DNS Lookup', 'TCP Connection', 'TLS Handshake', 'Time to First Byte', 'Download', 'Total']) {
       expect(within(tooltip).getByText(phase)).toBeInTheDocument()
@@ -128,7 +128,7 @@ describe('ResponseViewer', () => {
     const user = userEvent.setup()
     render(<ResponseViewer tabId="tab" />)
     show(result({ isBinary: true, inlineBody: null, contentType: 'image/png', sizeBytes: 70 }))
-    expect(screen.getByText('Binary body (70 B). Use Preview or Save to file.')).toBeInTheDocument()
+    expect(screen.getByText('Binary body (70 B). Use Preview or Save to File.')).toBeInTheDocument()
     expect(responseBody.fetchResponseText).not.toHaveBeenCalled()
     await user.click(screen.getByRole('radio', { name: 'Preview' }))
     expect(screen.getByRole('img', { name: 'Response preview' })).toHaveAttribute('src', '/xenon/response/tab')
@@ -154,7 +154,8 @@ describe('ResponseViewer', () => {
     await user.click(screen.getByRole('button', { name: 'Copy' }))
     expect(writeText).toHaveBeenCalledWith('{"a":[1]}')
     expect(screen.getByRole('button', { name: 'Copied' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Save to file' }))
+    expect(screen.getByRole('status')).toHaveTextContent('Response body copied to the clipboard')
+    await user.click(screen.getByRole('button', { name: 'Save to File' }))
     expect(requests.saveResponseBody).toHaveBeenCalledWith('tab', '/out/response.json')
   })
 
@@ -169,10 +170,10 @@ describe('ResponseViewer', () => {
   })
 
   it.each([
-    ['timeout', 'Timed out after 5000 ms', 'Increase the timeout in the request Settings (0 = no timeout)', 'Request timed out'],
-    ['tls', 'Certificate not trusted', 'Turn off SSL certificate verification in Settings to send anyway', 'SSL/TLS error'],
-    ['dns', 'Could not resolve host x.invalid', '', 'Could not resolve host'],
-    ['cancelled', 'Request cancelled', '', 'Request cancelled'],
+    ['timeout', 'Timed out after 5000 ms', 'Increase the timeout in the request Settings (0 = no timeout)', 'Request Timed Out'],
+    ['tls', 'Certificate not trusted', 'Turn off SSL certificate verification in Settings to send anyway', 'SSL/TLS Error'],
+    ['dns', 'Could not resolve host x.invalid', '', 'Could Not Resolve Host'],
+    ['cancelled', 'Request cancelled', '', 'Request Cancelled'],
   ] as const)('explains a %s error with its hint', (kind, message, hint, title) => {
     render(<ResponseViewer tabId="tab" />)
     show(result({ ok: false, statusCode: 0, error: { kind, message, hint } }))

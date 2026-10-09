@@ -22,16 +22,28 @@ export function TabItem({ tabId }: TabItemProps) {
   const name = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.name || UNTITLED)
   const method = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.method ?? 'GET')
   const dirty = useRequestBuilderStore((state) => state.tabs[tabId]?.dirty === true)
-  const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({ id: tabId })
+  const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({ id: tabId, attributes: { role: 'tab' } })
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
-      activate(tabId)
+    if (isDragging) {
+      return
     }
     if (event.key === 'Delete') {
       event.preventDefault()
       requestClose(tabId)
+      return
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      activate(tabId)
+      return
+    }
+    if (event.key === ' ') {
+      activate(tabId)
+      // Space also picks the tab up for a keyboard drag (dnd-kit KeyboardSensor); the sensor
+      // ignores events that were already default-prevented, so it runs first.
+      listeners?.onKeyDown?.(event)
+      event.preventDefault()
     }
   }
 

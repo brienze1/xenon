@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import { consoleMaxHeight, LAYOUT_LIMITS } from '@/features/workspaces/lib/layout'
 import { ResizeHandle } from '@/shared/ui/resize-handle/ResizeHandle'
 import { useShellLayout } from '@/app/layout/use-shell-layout'
@@ -10,11 +10,15 @@ interface ConsoleDrawerProps {
 
 export function ConsoleDrawer({ children }: ConsoleDrawerProps) {
   const { layout, onLayoutChange } = useShellLayout()
+  const headingId = useId()
   if (!layout.consoleVisible) {
     return null
   }
   return (
-    <section aria-label="Console" className={styles.drawer}>
+    <section aria-labelledby={headingId} className={styles.drawer}>
+      <h2 id={headingId} className="visually-hidden">
+        Console
+      </h2>
       <ResizeHandle
         label="Resize console"
         orientation="horizontal"

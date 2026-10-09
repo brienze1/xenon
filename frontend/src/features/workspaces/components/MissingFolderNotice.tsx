@@ -17,14 +17,19 @@ export function MissingFolderNotice({ localId }: MissingFolderNoticeProps) {
   return (
     <EmptyState.Root label="Workspace folder missing">
       <EmptyState.Art variant="missing" />
-      <EmptyState.Title>Folder missing</EmptyState.Title>
+      <EmptyState.Title>Folder Missing</EmptyState.Title>
       <EmptyState.Description>
         The folder of “{workspace?.name ?? 'this workspace'}” was moved or deleted outside Xenon
-        {workspace ? ` (${workspace.path})` : ''}. Locate it again, or remove the workspace from Xenon.
+        {workspace ? (
+          <>
+            {' ('}
+            <span translate="no">{workspace.path}</span>)
+          </>
+        ) : null}. Locate it again, or remove the workspace from Xenon.
       </EmptyState.Description>
       <EmptyState.Actions>
         <Button variant="primary" onClick={() => void locate(localId)}>
-          Locate folder…
+          Locate Folder…
         </Button>
         <Button variant="secondary" onClick={() => void remove(localId, false)}>
           Remove from Xenon

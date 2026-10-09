@@ -22,10 +22,10 @@ export function TabNotice({ tabId }: TabNoticeProps) {
       <Banner.Message>This request changed on disk while you were editing it.</Banner.Message>
       <Banner.Actions>
         <Button variant="secondary" size="sm" onClick={() => void keepMine(tabId)}>
-          Keep mine
+          Keep Mine
         </Button>
         <Button variant="ghost" size="sm" onClick={() => void loadFromDisk(tabId)}>
-          Load from disk
+          Load from Disk
         </Button>
       </Banner.Actions>
     </Banner.Root>
@@ -34,7 +34,7 @@ export function TabNotice({ tabId }: TabNoticeProps) {
       <Banner.Message>This request was deleted. Your unsaved changes are still here.</Banner.Message>
       <Banner.Actions>
         <Button variant="secondary" size="sm" onClick={() => keepAsNew(tabId)}>
-          Keep as unsaved tab
+          Keep as Unsaved Tab
         </Button>
         <Button variant="ghost" size="sm" onClick={() => closeTab(tabId)}>
           Close

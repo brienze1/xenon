@@ -35,6 +35,7 @@ describe('Dropdown', () => {
     await userEvent.keyboard('{ArrowDown}{Enter}')
     expect(onSelect).toHaveBeenCalledWith('POST')
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
   })
 
   it('closes on Escape and on outside clicks', async () => {
@@ -42,6 +43,7 @@ describe('Dropdown', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Method' }))
     await userEvent.keyboard('{Escape}')
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Method' })).toHaveFocus()
     await userEvent.click(screen.getByRole('button', { name: 'Method' }))
     await userEvent.click(screen.getByText('outside'))
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()

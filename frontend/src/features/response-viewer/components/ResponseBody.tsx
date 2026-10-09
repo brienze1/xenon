@@ -81,15 +81,18 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
           <Button size="sm" variant="ghost" disabled={body === null} onClick={() => void copy()}>
             {copied ? 'Copied' : 'Copy'}
           </Button>
+          <span role="status" aria-live="polite" className="visually-hidden">
+            {copied ? 'Response body copied to the clipboard' : ''}
+          </span>
           <Button size="sm" variant="ghost" onClick={() => void saveBody(tabId)}>
-            Save to file
+            Save to File
           </Button>
         </div>
       </div>
       {view === 'preview' ? (
         <BodyPreview result={result} body={body} />
       ) : result.isBinary ? (
-        <p className={styles.note}>Binary body ({formatBytes(result.sizeBytes)}). Use Preview or Save to file.</p>
+        <p className={styles.note}>Binary body ({formatBytes(result.sizeBytes)}). Use Preview or Save to File.</p>
       ) : bodyStatus === 'loading' ? (
         <p className={styles.note}>Loading body…</p>
       ) : (

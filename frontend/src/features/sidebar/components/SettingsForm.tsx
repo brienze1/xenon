@@ -6,7 +6,7 @@ import { KeyValueTable } from '@/shared/ui/key-value-table/KeyValueTable'
 import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { AuthFields } from './AuthFields'
-import styles from './ItemSettingsDialog.module.css'
+import styles from './SettingsForm.module.css'
 
 interface SettingsFormProps {
   itemId: string
@@ -84,7 +84,7 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
 
   return (
     <>
-      <Dialog.Title>{settings.name} settings</Dialog.Title>
+      <Dialog.Title>{settings.name} Settings</Dialog.Title>
       <Dialog.Body>
         <div className={styles.form}>
           <label className={styles.field}>

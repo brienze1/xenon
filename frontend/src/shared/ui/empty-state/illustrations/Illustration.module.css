@@ -33,12 +33,6 @@
   filter: drop-shadow(0 0 4px var(--neon-red));
 }
 
-.spray {
-  fill: var(--neon-yellow);
-  stroke: none;
-  opacity: 0.8;
-}
-
 .drip {
   stroke-width: 3;
 }

@@ -1,0 +1,16 @@
+.rename {
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--neon-cyan);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.rename:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}

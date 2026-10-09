@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { RequestDraft } from '@/platform/mappers/request'
 import type { TreeNode } from '@/platform/mappers/tree'
 import type { SidebarView } from '@/platform/mappers/ui-state'
+import { withNextStep } from '@/shared/lib/next-step'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Tabs } from '@/shared/ui/tabs/Tabs'
@@ -12,6 +13,8 @@ import { HistoryView } from './HistoryView'
 import { ItemSettingsDialog } from './ItemSettingsDialog'
 import { SidebarToolbar } from './SidebarToolbar'
 import styles from './SidebarPanel.module.css'
+
+const SIDEBAR_NEXT_STEP = 'Try again, or check that the workspace folder exists and is writable.'
 
 interface SidebarPanelProps {
   onOpenRequest: (id: string) => void
@@ -55,7 +58,7 @@ export function SidebarPanel({ onOpenRequest, onPinRequest, onRequestsDeleted, o
       <SidebarToolbar />
       {error ? (
         <Banner.Root tone="error" className={styles.banner}>
-          <Banner.Message>{error.description || error.code}</Banner.Message>
+          <Banner.Message>{withNextStep(error.description || error.code, SIDEBAR_NEXT_STEP)}</Banner.Message>
           <Banner.Actions>
             <Button variant="ghost" size="sm" onClick={clearError}>
               Dismiss

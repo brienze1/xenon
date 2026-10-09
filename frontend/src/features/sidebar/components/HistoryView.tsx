@@ -15,6 +15,16 @@ import styles from './HistoryView.module.css'
 export const HISTORY_DAY_HEIGHT = 28
 export const HISTORY_ENTRY_HEIGHT = 44
 
+const EMPTY_HISTORY = (
+  <EmptyState.Root label="No history" className={styles.empty}>
+    <EmptyState.Art variant="history" />
+    <EmptyState.Title>Nothing Sent Yet</EmptyState.Title>
+    <EmptyState.Description>Every request you send in this workspace shows up here, newest first.</EmptyState.Description>
+  </EmptyState.Root>
+)
+
+const NO_MATCHES = <p className={styles.noMatches}>No history entries match your search.</p>
+
 interface HistoryViewProps {
   onOpenEntry: (id: string) => void
 }
@@ -43,7 +53,7 @@ function HistoryEntryButton({ entry, onOpen }: HistoryEntryButtonProps) {
     >
       <span className={styles.line}>
         <MethodBadge method={entry.method} className={styles.method} />
-        <span className={styles.url} title={entry.url}>
+        <span className={styles.url} title={entry.url} translate="no">
           {entry.url || 'No URL'}
         </span>
       </span>
@@ -82,18 +92,14 @@ export function HistoryView({ onOpenEntry }: HistoryViewProps) {
       <div className={styles.header}>
         <span className={styles.count}>{history.length === 1 ? '1 entry' : `${history.length} entries`}</span>
         <Button variant="ghost" size="sm" disabled={history.length === 0} onClick={() => setConfirming(true)}>
-          Clear history
+          Clear History
         </Button>
       </div>
       {status === 'ready' && history.length === 0 ? (
         query.trim() === '' ? (
-          <EmptyState.Root label="No history" className={styles.empty}>
-            <EmptyState.Art variant="history" />
-            <EmptyState.Title>Nothing sent yet</EmptyState.Title>
-            <EmptyState.Description>Every request you send in this workspace shows up here, newest first.</EmptyState.Description>
-          </EmptyState.Root>
+          EMPTY_HISTORY
         ) : (
-          <p className={styles.noMatches}>No history entries match your search.</p>
+          NO_MATCHES
         )
       ) : (
         <div ref={scrollRef} className={styles.scroll}>

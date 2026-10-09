@@ -4,3 +4,8 @@
   min-height: 0;
   overflow: hidden;
 }
+
+.main:focus-visible {
+  outline: none;
+  box-shadow: inset var(--focus-ring);
+}

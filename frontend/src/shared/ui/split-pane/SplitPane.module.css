@@ -30,7 +30,6 @@
 .divider {
   flex: 0 0 auto;
   background: var(--color-border);
-  transition: background var(--duration-fast);
 }
 
 .row > .divider {

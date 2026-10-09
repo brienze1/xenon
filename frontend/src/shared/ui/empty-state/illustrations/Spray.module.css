@@ -1,0 +1,5 @@
+.spray {
+  fill: var(--neon-yellow);
+  stroke: none;
+  opacity: 0.8;
+}

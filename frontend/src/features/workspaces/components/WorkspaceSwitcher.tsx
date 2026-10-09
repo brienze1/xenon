@@ -63,10 +63,10 @@ export function WorkspaceSwitcher() {
             </Dropdown.Item>
           ))}
           <div role="separator" className={styles.separator} />
-          <Dropdown.Item onSelect={() => show('create')}>New workspace…</Dropdown.Item>
-          <Dropdown.Item onSelect={() => void onOpen()}>Open workspace…</Dropdown.Item>
-          {current ? <Dropdown.Item onSelect={() => show('rename')}>Rename workspace…</Dropdown.Item> : null}
-          {current ? <Dropdown.Item onSelect={() => show('remove')}>Remove workspace…</Dropdown.Item> : null}
+          <Dropdown.Item onSelect={() => show('create')}>New Workspace…</Dropdown.Item>
+          <Dropdown.Item onSelect={() => void onOpen()}>Open Workspace…</Dropdown.Item>
+          {current ? <Dropdown.Item onSelect={() => show('rename')}>Rename Workspace…</Dropdown.Item> : null}
+          {current ? <Dropdown.Item onSelect={() => show('remove')}>Remove Workspace…</Dropdown.Item> : null}
         </Dropdown.Menu>
       </Dropdown.Root>
       {error && dialog === null ? (

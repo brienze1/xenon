@@ -79,7 +79,7 @@ describe('TabStrip', () => {
 
   it('opens a new tab with the + button', async () => {
     renderStrip()
-    await userEvent.click(screen.getByRole('button', { name: 'New tab' }))
+    await userEvent.click(screen.getByRole('button', { name: 'New Tab' }))
     expect(within(strip()).getAllByRole('tab')).toHaveLength(2)
   })
 
@@ -91,11 +91,11 @@ describe('TabStrip', () => {
     const tabId = useTabsStore.getState().activeTabId!
     act(() => useRequestBuilderStore.getState().setUrl(tabId, 'https://x'))
     await userEvent.click(screen.getByRole('button', { name: 'Close Untitled Request' }))
-    const prompt = screen.getByRole('dialog', { name: 'Save changes?' })
+    const prompt = screen.getByRole('dialog', { name: 'Save Changes?' })
     await userEvent.click(within(prompt).getByRole('button', { name: 'Cancel' }))
     expect(within(strip()).getAllByRole('tab')).toHaveLength(1)
     fireEvent.keyDown(within(strip()).getByRole('tab'), { key: 'Delete' })
-    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Don’t save' }))
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Don’t Save' }))
     expect(within(strip()).queryAllByRole('tab')).toHaveLength(0)
   })
 
@@ -130,6 +130,34 @@ describe('TabStrip', () => {
     expect(tabs[1]).toHaveFocus()
   })
 
+  it('reorders tabs from the keyboard: Space picks up, arrows move, Space drops', async () => {
+    await act(() => useTabsStore.getState().openPinned('A'))
+    renderStrip()
+    const tabs = within(strip()).getAllByRole('tab')
+    tabs.forEach((tab, index) => {
+      vi.spyOn(tab, 'getBoundingClientRect').mockImplementation(() => DOMRect.fromRect({ x: index * 100, y: 0, width: 100, height: 30 }))
+    })
+    const [first, second] = useTabsStore.getState().tabs.map((tab) => tab.id)
+    tabs[0]!.focus()
+    await userEvent.keyboard('[Space]')
+    expect(useTabsStore.getState().activeTabId).toBe(first)
+    await act(() => new Promise((resolve) => setTimeout(resolve)))
+    await userEvent.keyboard('[ArrowRight]')
+    expect(tabs[0]).toHaveFocus()
+    await userEvent.keyboard('[Space]')
+    expect(useTabsStore.getState().tabs.map((tab) => tab.id)).toEqual([second, first])
+  })
+
+  it('keeps roving arrow navigation and Enter activation when no drag is in progress', async () => {
+    await act(() => useTabsStore.getState().openPinned('A'))
+    renderStrip()
+    const tabs = within(strip()).getAllByRole('tab')
+    tabs[1]!.focus()
+    await userEvent.keyboard('{ArrowLeft}{Enter}')
+    expect(tabs[0]).toHaveFocus()
+    expect(useTabsStore.getState().activeTabId).toBe(useTabsStore.getState().tabs[0]!.id)
+  })
+
   it('saves a new tab into a chosen collection', async () => {
     useSidebarStore.setState({
       tree: [
@@ -148,7 +176,7 @@ describe('TabStrip', () => {
     vi.mocked(requests.saveRequestAs).mockResolvedValue({ draft: { ...emptyDraft(), id: 'N', name: 'Users' }, revision: 'rev-N' })
     renderStrip()
     await act(() => useTabsStore.getState().save())
-    const dialog = screen.getByRole('dialog', { name: 'Save request' })
+    const dialog = screen.getByRole('dialog', { name: 'Save Request' })
     const name = within(dialog).getByRole('textbox', { name: 'Request name' })
     await userEvent.clear(name)
     await userEvent.type(name, 'Users')
@@ -163,7 +191,7 @@ describe('TabStrip', () => {
     await act(() => useTabsStore.getState().openPinned('A'))
     renderStrip()
     act(() => useTabsStore.getState().saveAs())
-    const dialog = screen.getByRole('dialog', { name: 'Save request as' })
+    const dialog = screen.getByRole('dialog', { name: 'Save Request As' })
     expect(within(dialog).getByRole('textbox', { name: 'Request name' })).toHaveValue('Request A Copy')
     expect(within(dialog).getByText('Create a collection in the sidebar first.')).toBeInTheDocument()
     expect(within(dialog).getByRole('button', { name: 'Save' })).toBeEnabled()
@@ -199,7 +227,7 @@ describe('TabNotice', () => {
     render(<TabNotice tabId={tabId} />)
     expect(screen.getByRole('status')).toHaveTextContent('changed on disk')
     vi.mocked(requests.saveRequest).mockResolvedValue({ draft: { ...emptyDraft(), id: 'A' }, revision: 'rev-2' })
-    await userEvent.click(screen.getByRole('button', { name: 'Keep mine' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Keep Mine' }))
     expect(requests.saveRequest).toHaveBeenCalledWith('ws', expect.anything(), 'rev-disk', true)
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
@@ -210,7 +238,7 @@ describe('TabNotice', () => {
     act(() => useRequestBuilderStore.getState().setUrl(tabId, 'https://mine'))
     await act(() => useTabsStore.getState().handleChangedOnDisk({ localId: 'ws', requestId: 'A', deleted: false, revision: 'new' }))
     render(<TabNotice tabId={tabId} />)
-    await userEvent.click(screen.getByRole('button', { name: 'Load from disk' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Load from Disk' }))
     expect(useRequestBuilderStore.getState().tabs[tabId]!.dirty).toBe(false)
   })
 
@@ -221,7 +249,7 @@ describe('TabNotice', () => {
     act(() => useTabsStore.getState().handleDeleted(['A']))
     const { unmount } = render(<TabNotice tabId={tabId} />)
     expect(screen.getByRole('status')).toHaveTextContent('was deleted')
-    await userEvent.click(screen.getByRole('button', { name: 'Keep as unsaved tab' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Keep as Unsaved Tab' }))
     expect(useTabsStore.getState().tabs.find((tab) => tab.id === tabId)?.requestId).toBeNull()
     unmount()
     await act(() => useTabsStore.getState().openPinned('B'))

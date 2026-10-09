@@ -1,5 +1,5 @@
 import { useState, type KeyboardEvent } from 'react'
-import styles from './TreeItem.module.css'
+import styles from './RenameInput.module.css'
 
 interface RenameInputProps {
   name: string

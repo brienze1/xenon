@@ -99,7 +99,9 @@ export function App() {
           <ConsoleContent />
         </ConsoleDrawer>
       ) : null}
-      <Footer>{active ? <span className={styles.path}>{active.path}</span> : null}</Footer>
+      <Footer>{active ? <span className={styles.path} translate="no">
+              {active.path}
+            </span> : null}</Footer>
     </AppShell>
   )
 }

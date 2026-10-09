@@ -33,7 +33,6 @@
   border-radius: var(--radius-sm);
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
-  transition: color var(--duration-fast), background-color var(--duration-fast);
 }
 
 .toggle:hover {

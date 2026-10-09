@@ -71,7 +71,7 @@ export function InfoPanel({ tabId }: InfoPanelProps) {
       <div className={styles.field}>
         <div className={styles.descriptionHeader}>
           <span className={styles.label}>Description</span>
-          <Button variant="ghost" size="sm" onClick={() => setEditing(!editing)}>
+          <Button variant="ghost" size="sm" onClick={() => setEditing((current) => !current)}>
             {editing ? 'Done' : 'Edit'}
           </Button>
         </div>

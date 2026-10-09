@@ -122,7 +122,7 @@ export function KeyValueTable({
                     name={`new-${column.field}`}
                     autoComplete="off"
                     aria-label={`New ${column.title.toLowerCase()}`}
-                    placeholder={column.title}
+                    placeholder={`${column.title}…`}
                     className={styles.cell}
                     spellCheck={false}
                     value=""

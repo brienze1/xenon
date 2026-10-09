@@ -5,7 +5,7 @@ import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { workspaceErrorMessage } from '@/features/workspaces/lib/error-message'
 import { hasErrors, NO_ERRORS, validateWorkspaceForm } from '@/features/workspaces/lib/workspace-form'
 import { useWorkspacesStore } from '@/features/workspaces/store'
-import styles from './WorkspaceDialog.module.css'
+import styles from './CreateWorkspaceDialog.module.css'
 
 interface CreateWorkspaceDialogProps {
   open: boolean
@@ -23,6 +23,7 @@ export function CreateWorkspaceDialog({ open, onClose }: CreateWorkspaceDialogPr
   const folderRef = useRef<HTMLButtonElement>(null)
   const nameErrorId = useId()
   const folderErrorId = useId()
+  const folderLabelId = useId()
   const error = useWorkspacesStore((state) => state.error)
   const create = useWorkspacesStore((state) => state.create)
   const chooseFolder = useWorkspacesStore((state) => state.chooseFolder)
@@ -62,7 +63,7 @@ export function CreateWorkspaceDialog({ open, onClose }: CreateWorkspaceDialogPr
   return (
     <Dialog.Root open={open} onOpenChange={(next) => (next ? undefined : close())}>
       <form aria-label="New workspace" className={styles.form} noValidate onSubmit={(event) => void onSubmit(event)}>
-        <Dialog.Title>New workspace</Dialog.Title>
+        <Dialog.Title>New Workspace</Dialog.Title>
         <Dialog.Body>
           <label className={styles.field}>
             <span className={styles.label}>Workspace name</span>
@@ -86,12 +87,16 @@ export function CreateWorkspaceDialog({ open, onClose }: CreateWorkspaceDialogPr
               {errors.name}
             </p>
           ) : null}
-          <div className={styles.field}>
-            <span className={styles.label}>Folder</span>
+          <div className={styles.field} role="group" aria-labelledby={folderLabelId}>
+            <span className={styles.label} id={folderLabelId}>
+              Folder
+            </span>
             <div className={styles.folder}>
-              <span className={styles.path}>{path ?? 'No folder chosen'}</span>
+              <span className={styles.path} translate="no">
+                {path ?? 'No folder chosen'}
+              </span>
               <Button ref={folderRef} size="sm" aria-describedby={errors.folder ? folderErrorId : undefined} onClick={() => void onChooseFolder()}>
-                Choose folder…
+                Choose Folder…
               </Button>
             </div>
             {errors.folder ? (
@@ -111,7 +116,7 @@ export function CreateWorkspaceDialog({ open, onClose }: CreateWorkspaceDialogPr
             Cancel
           </Button>
           <Button type="submit" variant="primary" disabled={submitting}>
-            Create workspace
+            Create Workspace
           </Button>
         </Dialog.Actions>
       </form>

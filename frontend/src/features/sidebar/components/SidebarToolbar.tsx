@@ -13,7 +13,7 @@ export function SidebarToolbar() {
   return (
     <div className={styles.toolbar}>
       {history ? null : (
-        <IconButton label="New collection" className={styles.add} onClick={() => void createCollection()}>
+        <IconButton label="New Collection" className={styles.add} onClick={() => void createCollection()}>
           <span aria-hidden="true">+</span>
         </IconButton>
       )}

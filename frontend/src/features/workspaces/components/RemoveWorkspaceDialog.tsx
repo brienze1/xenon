@@ -5,7 +5,7 @@ import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { workspaceErrorMessage } from '@/features/workspaces/lib/error-message'
 import { TRASH_FAILED, useWorkspacesStore } from '@/features/workspaces/store'
-import styles from './WorkspaceDialog.module.css'
+import styles from './RemoveWorkspaceDialog.module.css'
 
 interface RemoveWorkspaceDialogProps {
   workspace: WorkspaceSummary
@@ -43,7 +43,9 @@ export function RemoveWorkspaceDialog({ workspace, open, onClose }: RemoveWorksp
             Remove and move the folder to the trash
           </label>
         </fieldset>
-        <p className={styles.path}>{workspace.path}</p>
+        <p className={styles.path} translate="no">
+          {workspace.path}
+        </p>
         {error ? (
           <Banner.Root tone="error">
             <Banner.Message>{workspaceErrorMessage(error)}</Banner.Message>

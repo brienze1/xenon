@@ -6,7 +6,7 @@ import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { workspaceErrorMessage } from '@/features/workspaces/lib/error-message'
 import { hasErrors, NO_ERRORS, validateWorkspaceForm } from '@/features/workspaces/lib/workspace-form'
 import { useWorkspacesStore } from '@/features/workspaces/store'
-import styles from './WorkspaceDialog.module.css'
+import styles from './RenameWorkspaceDialog.module.css'
 
 interface RenameWorkspaceDialogProps {
   workspace: WorkspaceSummary
@@ -42,7 +42,7 @@ export function RenameWorkspaceDialog({ workspace, open, onClose }: RenameWorksp
   return (
     <Dialog.Root open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
       <form aria-label="Rename workspace" className={styles.form} noValidate onSubmit={(event) => void onSubmit(event)}>
-        <Dialog.Title>Rename workspace</Dialog.Title>
+        <Dialog.Title>Rename Workspace</Dialog.Title>
         <Dialog.Body>
           <label className={styles.field}>
             <span className={styles.label}>Workspace name</span>

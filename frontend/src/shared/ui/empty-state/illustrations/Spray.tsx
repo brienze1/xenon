@@ -1,4 +1,4 @@
-import styles from './Illustration.module.css'
+import styles from './Spray.module.css'
 
 const DOTS = [
   [8, 14, 1.6],

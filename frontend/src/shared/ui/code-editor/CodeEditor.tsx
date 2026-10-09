@@ -91,5 +91,5 @@ export function CodeEditor({ value, language, label, onChange, className }: Code
     }
   }, [language, readOnly, label])
 
-  return <div ref={containerRef} className={cn(styles.root, className)} />
+  return <div ref={containerRef} className={cn(styles.root, className)} translate="no" />
 }

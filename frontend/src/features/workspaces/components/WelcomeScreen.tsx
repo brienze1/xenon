@@ -18,6 +18,7 @@ export function WelcomeScreen() {
   const folderRef = useRef<HTMLButtonElement>(null)
   const nameErrorId = useId()
   const folderErrorId = useId()
+  const folderLabelId = useId()
   const error = useWorkspacesStore((state) => state.error)
   const create = useWorkspacesStore((state) => state.create)
   const chooseFolder = useWorkspacesStore((state) => state.chooseFolder)
@@ -76,16 +77,16 @@ export function WelcomeScreen() {
               {errors.name}
             </p>
           ) : null}
-          <div className={styles.field}>
-            <span className={styles.label} id="workspace-folder-label">
+          <div className={styles.field} role="group" aria-labelledby={folderLabelId}>
+            <span className={styles.label} id={folderLabelId}>
               Folder
             </span>
             <div className={styles.folder}>
-              <span className={styles.path} aria-labelledby="workspace-folder-label">
+              <span className={styles.path} translate="no">
                 {path ?? <span className={styles.placeholder}>No folder chosen</span>}
               </span>
               <Button ref={folderRef} size="sm" aria-describedby={errors.folder ? folderErrorId : undefined} onClick={onChooseFolder}>
-                Choose folder…
+                Choose Folder…
               </Button>
             </div>
             {errors.folder ? (
@@ -100,7 +101,7 @@ export function WelcomeScreen() {
             </Banner.Root>
           ) : null}
           <Button type="submit" variant="primary" disabled={submitting}>
-            Create workspace
+            Create Workspace
           </Button>
         </form>
       </EmptyState.Actions>

@@ -16,8 +16,8 @@ export function ResponseHeaders({ headers }: ResponseHeadersProps) {
       <tbody>
         {headers.map((header, index) => (
           <tr key={`${header.key}-${index}`}>
-            <td>{header.key}</td>
-            <td>{header.value}</td>
+            <td translate="no">{header.key}</td>
+            <td translate="no">{header.value}</td>
           </tr>
         ))}
       </tbody>

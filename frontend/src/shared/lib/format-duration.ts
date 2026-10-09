@@ -1,6 +1,8 @@
-export function formatDuration(milliseconds: number): string {
+import { formatNumber, NBSP } from './number-format'
+
+export function formatDuration(milliseconds: number, locale?: string): string {
   if (milliseconds >= 1000) {
-    return `${(milliseconds / 1000).toFixed(2)} s`
+    return `${formatNumber(milliseconds / 1000, 2, locale)}${NBSP}s`
   }
-  return `${Math.round(milliseconds)} ms`
+  return `${formatNumber(Math.round(milliseconds), 0, locale)}${NBSP}ms`
 }

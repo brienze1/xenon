@@ -1,5 +1,5 @@
 import Markdown from 'react-markdown'
-import styles from './InfoPanel.module.css'
+import styles from './MarkdownView.module.css'
 
 interface MarkdownViewProps {
   text: string

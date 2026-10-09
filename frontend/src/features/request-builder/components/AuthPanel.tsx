@@ -1,6 +1,7 @@
 import type { AuthType } from '@/platform/mappers/request'
+import { PanelSection } from '@/shared/ui/panel-section/PanelSection'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
-import styles from './Panel.module.css'
+import styles from './AuthPanel.module.css'
 
 interface AuthPanelProps {
   tabId: string
@@ -25,7 +26,7 @@ export function AuthPanel({ tabId }: AuthPanelProps) {
   }
 
   return (
-    <section className={styles.section}>
+    <PanelSection.Root>
       <label className={styles.field}>
         Auth Type
         <select
@@ -42,9 +43,9 @@ export function AuthPanel({ tabId }: AuthPanelProps) {
         </select>
       </label>
       {auth.type === 'inherit' ? (
-        <p className={styles.note}>The request uses the auth of its folder or collection. An unsaved request has none.</p>
+        <PanelSection.Note>The request uses the auth of its folder or collection. An unsaved request has none.</PanelSection.Note>
       ) : null}
-      {auth.type === 'none' ? <p className={styles.note}>This request does not use any authorization.</p> : null}
+      {auth.type === 'none' ? <PanelSection.Note>This request does not use any authorization.</PanelSection.Note> : null}
       {auth.type === 'bearer' ? (
         <label className={styles.field}>
           Token
@@ -84,6 +85,6 @@ export function AuthPanel({ tabId }: AuthPanelProps) {
           </label>
         </>
       ) : null}
-    </section>
+    </PanelSection.Root>
   )
 }

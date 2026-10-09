@@ -1,5 +1,5 @@
 import type { AuthType, RequestAuth } from '@/platform/mappers/request'
-import styles from './ItemSettingsDialog.module.css'
+import styles from './AuthFields.module.css'
 
 interface AuthFieldsProps {
   kind: 'collection' | 'folder'

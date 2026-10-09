@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import { LAYOUT_LIMITS } from '@/features/workspaces/lib/layout'
 import { ResizeHandle } from '@/shared/ui/resize-handle/ResizeHandle'
 import { useShellLayout } from '@/app/layout/use-shell-layout'
@@ -10,11 +10,15 @@ interface SidebarProps {
 
 export function Sidebar({ children }: SidebarProps) {
   const { layout, onLayoutChange } = useShellLayout()
+  const headingId = useId()
   if (!layout.sidebarVisible) {
     return null
   }
   return (
-    <nav aria-label="Sidebar" className={styles.sidebar}>
+    <nav aria-labelledby={headingId} className={styles.sidebar}>
+      <h2 id={headingId} className="visually-hidden">
+        Sidebar
+      </h2>
       {children}
       <ResizeHandle
         label="Resize sidebar"

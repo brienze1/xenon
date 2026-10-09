@@ -74,10 +74,10 @@ describe('HistoryView', () => {
     expect(items[0]).toHaveTextContent('42 ms')
     expect(items[2]).toHaveAccessibleName(/^GET no URL, invalid_url, /)
     expect(screen.getByText('3 entries')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'New collection' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'New Collection' })).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('tab', { name: 'Collections' }))
     expect(useSidebarStore.getState().view).toBe('collections')
-    expect(screen.getByRole('button', { name: 'New collection' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'New Collection' })).toBeInTheDocument()
   })
 
   it('searches the history by URL or method', async () => {
@@ -114,15 +114,15 @@ describe('HistoryView', () => {
   it('clears the history only after confirmation', async () => {
     vi.mocked(history.clearHistory).mockResolvedValue()
     await renderHistory()
-    await userEvent.click(screen.getByRole('button', { name: 'Clear history' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Clear history?' })
+    await userEvent.click(screen.getByRole('button', { name: 'Clear History' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Clear History?' })
     await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
     expect(history.clearHistory).not.toHaveBeenCalled()
-    await userEvent.click(screen.getByRole('button', { name: 'Clear history' }))
-    await userEvent.click(within(await screen.findByRole('dialog', { name: 'Clear history?' })).getByRole('button', { name: 'Clear history' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Clear History' }))
+    await userEvent.click(within(await screen.findByRole('dialog', { name: 'Clear History?' })).getByRole('button', { name: 'Clear History' }))
     await waitFor(() => expect(history.clearHistory).toHaveBeenCalledWith('ws'))
     expect(await screen.findByRole('region', { name: 'No history' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Clear history' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Clear History' })).toBeDisabled()
   })
 
   it('shows the failure when the history cannot be loaded', async () => {
@@ -130,7 +130,7 @@ describe('HistoryView', () => {
     vi.mocked(history.listHistory).mockRejectedValue(new AppError('HIS-04500', 'cannot read history'))
     render(<SidebarPanel onOpenRequest={vi.fn()} onPinRequest={vi.fn()} onRequestsDeleted={vi.fn()} onRenamed={vi.fn()} onOpenHistoryEntry={vi.fn()} />)
     await userEvent.click(screen.getByRole('tab', { name: 'History' }))
-    expect(await screen.findByText('cannot read history')).toBeInTheDocument()
+    expect(await screen.findByText('cannot read history. Try again, or check that the workspace folder exists and is writable.')).toBeInTheDocument()
     expect(useSidebarStore.getState().historyStatus).toBe('ready')
   })
 })

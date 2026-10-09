@@ -1,5 +1,6 @@
+import { PanelSection } from '@/shared/ui/panel-section/PanelSection'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
-import styles from './Panel.module.css'
+import styles from './SettingsPanel.module.css'
 
 interface SettingsPanelProps {
   tabId: string
@@ -13,7 +14,7 @@ export function SettingsPanel({ tabId }: SettingsPanelProps) {
   }
 
   return (
-    <section className={styles.section}>
+    <PanelSection.Root>
       <label className={styles.field}>
         Request timeout in ms (0 = no timeout)
         <input
@@ -53,6 +54,6 @@ export function SettingsPanel({ tabId }: SettingsPanelProps) {
         />
         Encode URL automatically
       </label>
-    </section>
+    </PanelSection.Root>
   )
 }

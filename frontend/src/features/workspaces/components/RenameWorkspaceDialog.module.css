@@ -26,45 +26,14 @@
   border-color: var(--neon-cyan);
 }
 
-.folder {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.path {
-  min-width: 0;
-  margin: var(--space-3) 0;
-  overflow: hidden;
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.input[aria-invalid='true'] {
+  border-color: var(--status-error);
 }
 
 .hint {
   margin: 0 0 var(--space-3);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
-}
-
-.choices {
-  display: grid;
-  gap: var(--space-3);
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.choice {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.input[aria-invalid='true'] {
-  border-color: var(--status-error);
 }
 
 .fieldError {

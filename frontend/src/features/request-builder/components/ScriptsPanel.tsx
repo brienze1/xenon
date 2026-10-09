@@ -1,10 +1,12 @@
-import styles from './Panel.module.css'
+import { PanelSection } from '@/shared/ui/panel-section/PanelSection'
+
+const SCRIPTS_PLACEHOLDER = (
+  <PanelSection.Root label="Scripts">
+    <PanelSection.Heading>Pre-Request and Post-Response Scripts</PanelSection.Heading>
+    <PanelSection.Note>Scripts arrive in a later stage of Xenon.</PanelSection.Note>
+  </PanelSection.Root>
+)
 
 export function ScriptsPanel() {
-  return (
-    <section className={styles.section} aria-label="Scripts">
-      <h3 className={styles.heading}>Pre-request and Post-response scripts</h3>
-      <p className={styles.note}>Scripts arrive in a later stage of Xenon.</p>
-    </section>
-  )
+  return SCRIPTS_PLACEHOLDER
 }

@@ -3,7 +3,6 @@
   z-index: 2;
   touch-action: none;
   background: transparent;
-  transition: background var(--duration-fast);
 }
 
 .vertical {

@@ -1,8 +1,9 @@
 import type { AutoHeader, KeyValueRow } from '@/platform/mappers/request'
 import { KeyValueTable } from '@/shared/ui/key-value-table/KeyValueTable'
 import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
+import { PanelSection } from '@/shared/ui/panel-section/PanelSection'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
-import styles from './Panel.module.css'
+import styles from './HeadersPanel.module.css'
 
 interface HeadersPanelProps {
   tabId: string
@@ -22,8 +23,8 @@ export function HeadersPanel({ tabId }: HeadersPanelProps) {
 
   return (
     <div>
-      <section className={styles.section}>
-        <h3 className={styles.heading}>Headers</h3>
+      <PanelSection.Root>
+        <PanelSection.Heading>Headers</PanelSection.Heading>
         <KeyValueTable
           label="Headers"
           rows={headers}
@@ -35,10 +36,10 @@ export function HeadersPanel({ tabId }: HeadersPanelProps) {
           onRowAdd={(row) => updateHeaders(tabId, addRow(headers, row))}
           onRowRemove={(id) => updateHeaders(tabId, removeRow(headers, id))}
         />
-      </section>
+      </PanelSection.Root>
       {autoHeaders.length > 0 ? (
-        <section className={styles.section}>
-          <h3 className={styles.heading}>Auto-generated headers</h3>
+        <PanelSection.Root>
+          <PanelSection.Heading>Auto-Generated Headers</PanelSection.Heading>
           <table aria-label="Auto-generated headers" className={styles.table}>
             <thead>
               <tr>
@@ -61,13 +62,13 @@ export function HeadersPanel({ tabId }: HeadersPanelProps) {
                       onChange={(event) => setAutoHeaderEnabled(tabId, header.key, event.target.checked)}
                     />
                   </td>
-                  <td>{header.key}</td>
-                  <td>{header.value}</td>
+                  <td translate="no">{header.key}</td>
+                  <td translate="no">{header.value}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </section>
+        </PanelSection.Root>
       ) : null}
     </div>
   )

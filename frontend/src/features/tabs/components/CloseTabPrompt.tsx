@@ -10,14 +10,14 @@ export function CloseTabPrompt() {
 
   return (
     <Dialog.Root open={tabId !== null} onOpenChange={(open) => (open ? undefined : void resolveClose('cancel'))}>
-      <Dialog.Title>Save changes?</Dialog.Title>
+      <Dialog.Title>Save Changes?</Dialog.Title>
       <Dialog.Body>“{name}” has unsaved changes. Do you want to save them before closing?</Dialog.Body>
       <Dialog.Actions>
         <Button variant="ghost" onClick={() => void resolveClose('cancel')}>
           Cancel
         </Button>
         <Button variant="secondary" onClick={() => void resolveClose('discard')}>
-          Don’t save
+          Don’t Save
         </Button>
         <Button variant="primary" onClick={() => void resolveClose('save')}>
           Save

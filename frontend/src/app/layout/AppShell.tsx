@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import type { LayoutState } from '@/platform/mappers/ui-state'
 import styles from './AppShell.module.css'
-import { ShellLayoutContext } from './shell-layout'
+import { MAIN_CONTENT_ID, ShellLayoutContext } from './shell-layout'
 
 interface AppShellProps {
   layout: LayoutState
@@ -18,6 +18,12 @@ export function AppShell({ layout, onLayoutChange, children }: AppShellProps) {
   return (
     <ShellLayoutContext value={{ layout, onLayoutChange }}>
       <div className={styles.shell} style={sizes} data-testid="app-shell">
+        <a href={`#${MAIN_CONTENT_ID}`} className={styles.skipLink}>
+          Skip to Main Content
+        </a>
+        <h1 className="visually-hidden" translate="no">
+          Xenon
+        </h1>
         {children}
       </div>
     </ShellLayoutContext>

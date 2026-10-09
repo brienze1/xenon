@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
+import { withNextStep } from '@/shared/lib/next-step'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
 import { Tabs } from '@/shared/ui/tabs/Tabs'
@@ -9,6 +10,15 @@ import { ResponseHeaders } from './ResponseHeaders'
 import { StatusLine } from './StatusLine'
 import styles from './ResponseViewer.module.css'
 
+const SEND_NEXT_STEP = 'Check the URL and your connection, then send the request again.'
+
+const EMPTY_RESPONSE = (
+  <EmptyState.Root label="No response yet">
+    <EmptyState.Art variant="response" />
+    <EmptyState.Description>Enter the URL and click Send to get a response.</EmptyState.Description>
+  </EmptyState.Root>
+)
+
 interface ResponseViewerProps {
   tabId: string
 }
@@ -17,6 +27,7 @@ export function ResponseViewer({ tabId }: ResponseViewerProps) {
   const entry = useResponseViewerStore((state) => state.entries[tabId])
   const rehydrate = useResponseViewerStore((state) => state.rehydrate)
   const [panel, setPanel] = useState('body')
+  const headingId = useId()
 
   useEffect(() => {
     void rehydrate(tabId)
@@ -25,10 +36,13 @@ export function ResponseViewer({ tabId }: ResponseViewerProps) {
   const result = entry?.result ?? null
 
   return (
-    <section aria-label="Response" className={styles.viewer}>
+    <section aria-labelledby={headingId} className={styles.viewer}>
+      <h2 id={headingId} className="visually-hidden">
+        Response
+      </h2>
       {entry?.failure ? (
         <Banner.Root tone="error">
-          <Banner.Message>{entry.failure.description || entry.failure.code}</Banner.Message>
+          <Banner.Message>{withNextStep(entry.failure.description || entry.failure.code, SEND_NEXT_STEP)}</Banner.Message>
         </Banner.Root>
       ) : null}
       {entry?.sending ? (
@@ -36,10 +50,7 @@ export function ResponseViewer({ tabId }: ResponseViewerProps) {
           Sending request…
         </p>
       ) : result === null ? (
-        <EmptyState.Root label="No response yet">
-          <EmptyState.Art variant="response" />
-          <EmptyState.Description>Enter the URL and click Send to get a response.</EmptyState.Description>
-        </EmptyState.Root>
+        EMPTY_RESPONSE
       ) : result.error ? (
         <ResponseError failure={result.error} />
       ) : (
