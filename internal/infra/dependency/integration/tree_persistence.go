@@ -13,7 +13,7 @@ var treePersistenceInstance adapter.TreePersistence
 func GetTreePersistence() adapter.TreePersistence {
 	if treePersistenceInstance == nil {
 		treePersistenceOnce.Do(func() {
-			treePersistenceInstance = persistence.NewTreePersistence(GetWorkspaceIndexPersistence())
+			treePersistenceInstance = persistence.NewTreePersistence(GetWorkspaceIndexCache())
 		})
 	}
 	return treePersistenceInstance

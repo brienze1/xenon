@@ -111,6 +111,15 @@ func TestIsNotFoundError(t *testing.T) {
 	}
 }
 
+func TestIsUnprocessableEntityError(t *testing.T) {
+	if !IsUnprocessableEntityError(fmt.Errorf("x: %w", UnprocessableEntityError("m", "c"))) {
+		t.Error("expected unprocessable entity")
+	}
+	if IsUnprocessableEntityError(NotFoundError("m", "c")) {
+		t.Error("not found error is not an unprocessable entity error")
+	}
+}
+
 func TestClientErrorParsesBody(t *testing.T) {
 	body := io.NopCloser(strings.NewReader(`{"error":{"error_details":[{"attribute":"id","messages":["bad"]}]}}`))
 	err := ClientError("rejected", "TST-00400", http.StatusBadRequest, body)

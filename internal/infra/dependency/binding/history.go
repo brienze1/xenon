@@ -7,14 +7,14 @@ import (
 	"github.com/brienze1/xenon/internal/infra/server/binding"
 )
 
-var historyBindingOnce sync.Once
-var historyBindingInstance *binding.HistoryService
+var historyServiceOnce sync.Once
+var historyServiceInstance *binding.HistoryService
 
-func GetHistoryBinding() *binding.HistoryService {
-	if historyBindingInstance == nil {
-		historyBindingOnce.Do(func() {
-			historyBindingInstance = binding.NewHistoryService(controller.GetHistoryController())
+func GetHistoryService() *binding.HistoryService {
+	if historyServiceInstance == nil {
+		historyServiceOnce.Do(func() {
+			historyServiceInstance = binding.NewHistoryService(controller.GetHistoryController())
 		})
 	}
-	return historyBindingInstance
+	return historyServiceInstance
 }

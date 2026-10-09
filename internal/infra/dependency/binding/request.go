@@ -7,13 +7,13 @@ import (
 	"github.com/brienze1/xenon/internal/infra/server/binding"
 )
 
-var requestBindingOnce sync.Once
-var requestBindingInstance *binding.RequestService
+var requestServiceOnce sync.Once
+var requestServiceInstance *binding.RequestService
 
-func GetRequestBinding() *binding.RequestService {
-	if requestBindingInstance == nil {
-		requestBindingOnce.Do(func() {
-			requestBindingInstance = binding.NewRequestService(
+func GetRequestService() *binding.RequestService {
+	if requestServiceInstance == nil {
+		requestServiceOnce.Do(func() {
+			requestServiceInstance = binding.NewRequestService(
 				controller.GetRequestGetController(),
 				controller.GetRequestSaveController(),
 				controller.GetRequestEditController(),
@@ -22,5 +22,5 @@ func GetRequestBinding() *binding.RequestService {
 			)
 		})
 	}
-	return requestBindingInstance
+	return requestServiceInstance
 }

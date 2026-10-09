@@ -79,11 +79,14 @@ func (r *registryPersistence) FindWindow(ctx context.Context) (*entity.WindowSta
 	if err != nil {
 		return nil, err
 	}
-	state := entity.NewWindowState()
-	var window model.WindowState
-	if err := json.Unmarshal(stored.Window, &window); err == nil {
-		state = window.ToEntity()
+	if len(stored.Window) == 0 {
+		return nil, errs.NotFoundError("window state is not saved", "WIN-04404")
 	}
+	var window model.WindowState
+	if err := json.Unmarshal(stored.Window, &window); err != nil {
+		return nil, errs.UnprocessableEntityError("window state is not valid JSON", "WIN-05422")
+	}
+	state := window.ToEntity()
 
 	logger.Debug(ctx, "Finished", state)
 	return &state, nil

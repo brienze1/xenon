@@ -6,7 +6,7 @@ import (
 	"github.com/brienze1/xenon/internal/domain/entity"
 )
 
-type WorkspaceIndexPersistence interface {
+type WorkspaceIndexCache interface {
 	Lock(ctx context.Context)
 	Unlock(ctx context.Context)
 	// IsOwnWrite reports whether path was written by Xenon with exactly data in the last two seconds.

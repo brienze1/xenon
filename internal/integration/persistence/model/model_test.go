@@ -307,3 +307,14 @@ func TestWorkspaceFile(t *testing.T) {
 		t.Fatal("a missing order reads as empty")
 	}
 }
+
+func TestItemCopyPatchesTheIdAndOnlyRenamesWhenNamed(t *testing.T) {
+	renamed := NewItemCopy(entity.ItemCopy{ID: "copy-1", Name: "Copy"})
+	if got, want := write(t, renamed.Fields()), "id: copy-1\nname: Copy\n"; got != want {
+		t.Errorf("renamed = %q, want %q", got, want)
+	}
+	kept := NewItemCopy(entity.ItemCopy{ID: "copy-2"})
+	if got, want := write(t, kept.Fields()), "id: copy-2\n"; got != want {
+		t.Errorf("kept = %q, want %q", got, want)
+	}
+}

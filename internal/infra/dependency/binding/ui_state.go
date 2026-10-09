@@ -7,14 +7,14 @@ import (
 	"github.com/brienze1/xenon/internal/infra/server/binding"
 )
 
-var uiStateBindingOnce sync.Once
-var uiStateBindingInstance *binding.UIStateService
+var uiStateServiceOnce sync.Once
+var uiStateServiceInstance *binding.UIStateService
 
-func GetUIStateBinding() *binding.UIStateService {
-	if uiStateBindingInstance == nil {
-		uiStateBindingOnce.Do(func() {
-			uiStateBindingInstance = binding.NewUIStateService(controller.GetUIStateController())
+func GetUIStateService() *binding.UIStateService {
+	if uiStateServiceInstance == nil {
+		uiStateServiceOnce.Do(func() {
+			uiStateServiceInstance = binding.NewUIStateService(controller.GetUIStateController())
 		})
 	}
-	return uiStateBindingInstance
+	return uiStateServiceInstance
 }

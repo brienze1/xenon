@@ -7,14 +7,14 @@ import (
 	"github.com/brienze1/xenon/internal/infra/server/binding"
 )
 
-var dialogBindingOnce sync.Once
-var dialogBindingInstance *binding.DialogService
+var dialogServiceOnce sync.Once
+var dialogServiceInstance *binding.DialogService
 
-func GetDialogBinding() *binding.DialogService {
-	if dialogBindingInstance == nil {
-		dialogBindingOnce.Do(func() {
-			dialogBindingInstance = binding.NewDialogService(controller.GetDialogController())
+func GetDialogService() *binding.DialogService {
+	if dialogServiceInstance == nil {
+		dialogServiceOnce.Do(func() {
+			dialogServiceInstance = binding.NewDialogService(controller.GetDialogController())
 		})
 	}
-	return dialogBindingInstance
+	return dialogServiceInstance
 }

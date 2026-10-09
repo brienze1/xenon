@@ -68,7 +68,7 @@ func (a *activateWorkspace) Activate(ctx context.Context, localId string) (*enti
 		return nil, err
 	}
 	state, err := a.findUIState.Find(ctx, localId)
-	if err != nil {
+	if state, err = uiStateOrDefaults(ctx, localId, state, err); err != nil {
 		return nil, err
 	}
 	if err := a.watchWorkspace.Watch(ctx, localId, activated.Path); err != nil {

@@ -7,14 +7,14 @@ import (
 	"github.com/brienze1/xenon/internal/infra/server/binding"
 )
 
-var windowBindingOnce sync.Once
-var windowBindingInstance *binding.WindowService
+var windowServiceOnce sync.Once
+var windowServiceInstance *binding.WindowService
 
-func GetWindowBinding() *binding.WindowService {
-	if windowBindingInstance == nil {
-		windowBindingOnce.Do(func() {
-			windowBindingInstance = binding.NewWindowService(controller.GetWindowStateController())
+func GetWindowService() *binding.WindowService {
+	if windowServiceInstance == nil {
+		windowServiceOnce.Do(func() {
+			windowServiceInstance = binding.NewWindowService(controller.GetWindowStateController())
 		})
 	}
-	return windowBindingInstance
+	return windowServiceInstance
 }

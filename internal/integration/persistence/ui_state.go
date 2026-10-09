@@ -3,8 +3,6 @@ package persistence
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"io/fs"
 	"os"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
@@ -30,20 +28,12 @@ func (u *uiStatePersistence) Find(ctx context.Context, localId string) (*entity.
 	logger.Debug(ctx, "Started", map[string]any{"localId": localId})
 
 	data, err := os.ReadFile(appDataPath(workspacesDataDir, localId, uiStateFile))
-	if errors.Is(err, fs.ErrNotExist) {
-		state := entity.NewUIState()
-		logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "defaults": true})
-		return &state, nil
-	}
 	if err != nil {
 		return nil, errs.FileError(err, "UIS-02500")
 	}
 	var stored model.UIState
 	if err := json.Unmarshal(data, &stored); err != nil {
-		logger.Warn(ctx, err, "state.json is not valid JSON, using the defaults", map[string]any{"localId": localId})
-		state := entity.NewUIState()
-		logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "defaults": true})
-		return &state, nil
+		return nil, errs.UnprocessableEntityError("state.json is not valid JSON", "UIS-06422")
 	}
 	state := stored.ToEntity()
 

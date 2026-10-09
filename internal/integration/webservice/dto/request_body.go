@@ -14,8 +14,8 @@ import (
 )
 
 type RequestBody struct {
-	Content     io.Reader
-	ContentType string
+	Content     io.Reader `json:"-"`
+	ContentType string    `json:"content_type"`
 }
 
 func NewRequestBody(body entity.Body, files map[string][]byte) RequestBody {

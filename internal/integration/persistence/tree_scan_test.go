@@ -43,7 +43,7 @@ func TestIsOwnWrite(t *testing.T) {
 	timeutils.SetCurrentTimeProvider(func() time.Time { return now })
 	defer timeutils.SetCurrentTimeProvider(time.Now)
 	ctx := context.Background()
-	index := NewWorkspaceIndexPersistence()
+	index := NewWorkspaceIndexCache()
 	index.RecordWrite(ctx, "/a.yaml", []byte("one"))
 	if !index.IsOwnWrite(ctx, "/a.yaml", []byte("one")) {
 		t.Fatal("a fresh write with the same content is ours")

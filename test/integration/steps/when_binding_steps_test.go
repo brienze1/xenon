@@ -9,7 +9,7 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"github.com/brienze1/xenon/internal/infra/server"
+	"github.com/brienze1/xenon/internal/infra/server/errorpayload"
 )
 
 func (t *testUtils) registerWhenBindingSteps(ctx *godog.ScenarioContext) {
@@ -85,7 +85,7 @@ func (t *testUtils) call(ctx context.Context, service, method, payload string) e
 	results := function.Call(arguments)
 	t.elapsed = time.Since(started)
 	if failure, isError := results[len(results)-1].Interface().(error); isError && failure != nil {
-		t.callError = server.MarshalError(failure)
+		t.callError = errorpayload.MarshalError(failure)
 		return nil
 	}
 	if len(results) == 2 {

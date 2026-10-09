@@ -14,10 +14,10 @@ import (
 )
 
 type requestPersistence struct {
-	index adapter.WorkspaceIndexPersistence
+	index adapter.WorkspaceIndexCache
 }
 
-func NewRequestPersistence(index adapter.WorkspaceIndexPersistence) adapter.RequestPersistence {
+func NewRequestPersistence(index adapter.WorkspaceIndexCache) adapter.RequestPersistence {
 	return &requestPersistence{index: index}
 }
 

@@ -6,9 +6,9 @@ import (
 
 	"github.com/brienze1/xenon"
 	"github.com/brienze1/xenon/internal/domain/entity"
-	"github.com/brienze1/xenon/internal/infra/server"
 	serverAdapter "github.com/brienze1/xenon/internal/infra/server/adapter"
 	"github.com/brienze1/xenon/internal/infra/server/binding"
+	"github.com/brienze1/xenon/internal/infra/server/errorpayload"
 	_ "github.com/brienze1/xenon/internal/infra/server/event"
 )
 
@@ -20,7 +20,7 @@ type router struct {
 	uiState      *binding.UIStateService
 	history      *binding.HistoryService
 	window       *binding.WindowService
-	responseBody *ResponseBodyRoute
+	responseBody *binding.ResponseBodyRoute
 }
 
 func NewRouter(
@@ -31,7 +31,7 @@ func NewRouter(
 	uiState *binding.UIStateService,
 	history *binding.HistoryService,
 	window *binding.WindowService,
-	responseBody *ResponseBodyRoute,
+	responseBody *binding.ResponseBodyRoute,
 ) serverAdapter.Router {
 	return &router{
 		workspace:    workspace,
@@ -51,7 +51,7 @@ func (r *router) Route() *wails.App {
 		Name:         "Xenon",
 		Description:  "Local-first desktop API client",
 		Services:     r.registerServices(),
-		MarshalError: server.MarshalError,
+		MarshalError: errorpayload.MarshalError,
 		Assets: wails.AssetOptions{
 			Handler: wails.AssetFileServerFS(xenon.Assets),
 		},

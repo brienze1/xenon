@@ -21,6 +21,11 @@ func UnprocessableEntityError(description, code string) BaseError {
 	}
 }
 
+func IsUnprocessableEntityError(err error) bool {
+	var target *unprocessableEntityError
+	return errors.As(err, &target)
+}
+
 func (u *unprocessableEntityError) ToDto(transactionId string) Error {
 	return toDto(transactionId, u.description, u.code, nil)
 }

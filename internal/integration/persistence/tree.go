@@ -18,10 +18,10 @@ import (
 )
 
 type treePersistence struct {
-	index adapter.WorkspaceIndexPersistence
+	index adapter.WorkspaceIndexCache
 }
 
-func NewTreePersistence(index adapter.WorkspaceIndexPersistence) adapter.TreePersistence {
+func NewTreePersistence(index adapter.WorkspaceIndexCache) adapter.TreePersistence {
 	return &treePersistence{index: index}
 }
 
@@ -376,11 +376,8 @@ func (t *treePersistence) copyDocument(ctx context.Context, copied entity.ItemCo
 	if err != nil {
 		return t.copyRaw(ctx, source, target)
 	}
-	fields := []yamlnode.Field{yamlnode.String("id", copied.ID)}
-	if copied.Renames() {
-		fields = append(fields, yamlnode.String("name", copied.Name))
-	}
-	yamlnode.Patch(yamlnode.Root(document), fields)
+	stored := model.NewItemCopy(copied)
+	yamlnode.Patch(yamlnode.Root(document), stored.Fields())
 	return t.writeDocument(ctx, target, document)
 }
 

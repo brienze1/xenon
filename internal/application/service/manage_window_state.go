@@ -6,6 +6,7 @@ import (
 	"github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/pkg/errs"
 	"github.com/brienze1/xenon/pkg/logger"
 )
 
@@ -21,7 +22,7 @@ func NewManageWindowStateService(findWindowState usecase.FindWindowState, saveWi
 func (w *manageWindowState) Restore(ctx context.Context, screens []entity.Screen) (*entity.WindowState, error) {
 	logger.Info(ctx, "Started", map[string]any{"screens": screens})
 
-	saved, err := w.findWindowState.FindWindow(ctx)
+	saved, err := w.savedWindow(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +39,7 @@ func (w *manageWindowState) Save(ctx context.Context, state entity.WindowState) 
 		logger.Info(ctx, "Finished", map[string]any{"state": state})
 		return nil
 	}
-	saved, err := w.findWindowState.FindWindow(ctx)
+	saved, err := w.savedWindow(ctx)
 	if err != nil {
 		return err
 	}
@@ -48,4 +49,14 @@ func (w *manageWindowState) Save(ctx context.Context, state entity.WindowState) 
 
 	logger.Info(ctx, "Finished", map[string]any{"state": state})
 	return nil
+}
+
+func (w *manageWindowState) savedWindow(ctx context.Context) (*entity.WindowState, error) {
+	saved, err := w.findWindowState.FindWindow(ctx)
+	if errs.IsNotFoundError(err) || errs.IsUnprocessableEntityError(err) {
+		logger.Info(ctx, "Window state unavailable, using the defaults", map[string]any{"reason": err.Error()})
+		defaults := entity.NewWindowState()
+		return &defaults, nil
+	}
+	return saved, err
 }

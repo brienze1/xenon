@@ -32,10 +32,10 @@ const (
 )
 
 type workspacePersistence struct {
-	index adapter.WorkspaceIndexPersistence
+	index adapter.WorkspaceIndexCache
 }
 
-func NewWorkspacePersistence(index adapter.WorkspaceIndexPersistence) adapter.WorkspacePersistence {
+func NewWorkspacePersistence(index adapter.WorkspaceIndexCache) adapter.WorkspacePersistence {
 	return &workspacePersistence{index: index}
 }
 

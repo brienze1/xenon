@@ -7,13 +7,13 @@ import (
 	"github.com/brienze1/xenon/internal/infra/server/binding"
 )
 
-var workspaceBindingOnce sync.Once
-var workspaceBindingInstance *binding.WorkspaceService
+var workspaceServiceOnce sync.Once
+var workspaceServiceInstance *binding.WorkspaceService
 
-func GetWorkspaceBinding() *binding.WorkspaceService {
-	if workspaceBindingInstance == nil {
-		workspaceBindingOnce.Do(func() {
-			workspaceBindingInstance = binding.NewWorkspaceService(
+func GetWorkspaceService() *binding.WorkspaceService {
+	if workspaceServiceInstance == nil {
+		workspaceServiceOnce.Do(func() {
+			workspaceServiceInstance = binding.NewWorkspaceService(
 				controller.GetWorkspaceListController(),
 				controller.GetWorkspaceCreateController(),
 				controller.GetWorkspaceActivateController(),
@@ -24,5 +24,5 @@ func GetWorkspaceBinding() *binding.WorkspaceService {
 			)
 		})
 	}
-	return workspaceBindingInstance
+	return workspaceServiceInstance
 }

@@ -5,6 +5,7 @@ import (
 	"log"
 	"path/filepath"
 
+	"github.com/brienze1/xenon/internal/infra/dependency/consumer"
 	"github.com/brienze1/xenon/internal/infra/dependency/router"
 	"github.com/brienze1/xenon/internal/infra/properties"
 	"github.com/brienze1/xenon/pkg/logger"
@@ -20,6 +21,7 @@ func Start() {
 	}
 	logger.Info(ctx, "Starting application", map[string]any{"version": properties.Properties().Application.Version})
 
+	consumer.GetFileChangeConsumer().Register(ctx)
 	if err := router.GetRouter().Route().Run(); err != nil {
 		log.Fatal(err)
 	}

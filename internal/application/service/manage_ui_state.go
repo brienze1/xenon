@@ -6,6 +6,7 @@ import (
 	"github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/pkg/errs"
 	"github.com/brienze1/xenon/pkg/logger"
 )
 
@@ -34,7 +35,7 @@ func (u *manageUIState) Get(ctx context.Context, localId string) (*entity.UIStat
 		return nil, err
 	}
 	state, err := u.findUIState.Find(ctx, localId)
-	if err != nil {
+	if state, err = uiStateOrDefaults(ctx, localId, state, err); err != nil {
 		return nil, err
 	}
 
@@ -54,4 +55,19 @@ func (u *manageUIState) Save(ctx context.Context, localId string, state entity.U
 
 	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "state": state})
 	return nil
+}
+
+func uiStateOrDefaults(ctx context.Context, localId string, state *entity.UIState, err error) (*entity.UIState, error) {
+	switch {
+	case err == nil:
+		return state, nil
+	case errs.IsNotFoundError(err):
+		logger.Info(ctx, "UI state not saved yet, using the defaults", map[string]any{"localId": localId})
+	case errs.IsUnprocessableEntityError(err):
+		logger.Warn(ctx, err, "state.json is not valid JSON, using the defaults", map[string]any{"localId": localId})
+	default:
+		return nil, err
+	}
+	defaults := entity.NewUIState()
+	return &defaults, nil
 }

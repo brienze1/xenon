@@ -7,18 +7,18 @@ import (
 	"github.com/brienze1/xenon/internal/infra/server/binding"
 )
 
-var treeBindingOnce sync.Once
-var treeBindingInstance *binding.TreeService
+var treeServiceOnce sync.Once
+var treeServiceInstance *binding.TreeService
 
-func GetTreeBinding() *binding.TreeService {
-	if treeBindingInstance == nil {
-		treeBindingOnce.Do(func() {
-			treeBindingInstance = binding.NewTreeService(
+func GetTreeService() *binding.TreeService {
+	if treeServiceInstance == nil {
+		treeServiceOnce.Do(func() {
+			treeServiceInstance = binding.NewTreeService(
 				controller.GetTreeSearchController(),
 				controller.GetTreeManageController(),
 				controller.GetTreeSettingsController(),
 			)
 		})
 	}
-	return treeBindingInstance
+	return treeServiceInstance
 }

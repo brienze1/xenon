@@ -15,7 +15,6 @@ import (
 	"github.com/brienze1/xenon/internal/infra/dependency/binding"
 	"github.com/brienze1/xenon/internal/infra/dependency/consumer"
 	"github.com/brienze1/xenon/internal/infra/dependency/external"
-	"github.com/brienze1/xenon/internal/infra/dependency/router"
 	httpClient "github.com/brienze1/xenon/pkg/http"
 	"github.com/brienze1/xenon/pkg/logger"
 	"github.com/brienze1/xenon/pkg/timeutils"
@@ -48,8 +47,9 @@ type testUtils struct {
 }
 
 var (
-	suite     *testUtils
-	suiteOnce sync.Once
+	suite        *testUtils
+	suiteOnce    sync.Once
+	consumerOnce sync.Once
 )
 
 func TestFeatures(t *testing.T) {
@@ -153,15 +153,17 @@ func (t *testUtils) before() error {
 }
 
 func (t *testUtils) startApp() {
-	consumer.GetFileChangeConsumer()
+	consumerOnce.Do(func() {
+		consumer.GetFileChangeConsumer().Register(context.Background())
+	})
 	t.bindings = []any{
-		binding.GetWorkspaceBinding(),
-		binding.GetTreeBinding(),
-		binding.GetDialogBinding(),
-		binding.GetRequestBinding(),
-		binding.GetUIStateBinding(),
-		binding.GetHistoryBinding(),
-		binding.GetWindowBinding(),
-		router.GetResponseBodyRoute(),
+		binding.GetWorkspaceService(),
+		binding.GetTreeService(),
+		binding.GetDialogService(),
+		binding.GetRequestService(),
+		binding.GetUIStateService(),
+		binding.GetHistoryService(),
+		binding.GetWindowService(),
+		binding.GetResponseBodyRoute(),
 	}
 }
