@@ -67,14 +67,14 @@ export function RequestBar({ tabId, onSave }: RequestBarProps) {
       <input
         aria-label="Request URL"
         className={styles.url}
-        placeholder="Enter URL or paste text"
+        placeholder="https://api.example.com/users…"
         spellCheck={false}
         value={url}
         onChange={(event) => setUrl(tabId, event.target.value)}
         onKeyDown={onUrlKeyDown}
       />
       {sending ? (
-        <Button variant="secondary" className={styles.send} onClick={() => cancel(tabId)}>
+        <Button variant="running" className={styles.send} onClick={() => cancel(tabId)}>
           Cancel
         </Button>
       ) : (

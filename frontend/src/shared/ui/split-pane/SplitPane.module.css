@@ -44,9 +44,13 @@
   cursor: row-resize;
 }
 
-.divider:hover,
+.divider:hover {
+  background: var(--neon-cyan);
+}
+
 .divider:focus-visible,
 .dragging {
+  outline: none;
   background: var(--neon-cyan);
   box-shadow: var(--glow-cyan);
 }

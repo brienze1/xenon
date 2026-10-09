@@ -2,7 +2,7 @@ import type { ComponentProps } from 'react'
 import { cn } from '@/shared/lib/cn'
 import styles from './Button.module.css'
 
-export type ButtonVariant = 'primary' | 'accent' | 'secondary' | 'ghost' | 'danger'
+export type ButtonVariant = 'primary' | 'accent' | 'secondary' | 'ghost' | 'danger' | 'running'
 export type ButtonSize = 'sm' | 'md'
 
 interface ButtonProps extends ComponentProps<'button'> {

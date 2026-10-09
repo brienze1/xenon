@@ -1,5 +1,6 @@
 .line {
   display: flex;
+  font-variant-numeric: tabular-nums;
   align-items: center;
   gap: var(--space-5);
   font-family: var(--font-mono);

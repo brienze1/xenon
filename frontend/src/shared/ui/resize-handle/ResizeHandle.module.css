@@ -36,7 +36,10 @@
   bottom: -3px;
 }
 
-.handle:hover,
+.handle:hover {
+  background: var(--neon-cyan);
+}
+
 .handle:focus-visible,
 .dragging {
   outline: none;
