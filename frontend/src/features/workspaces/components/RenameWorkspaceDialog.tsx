@@ -3,9 +3,9 @@ import type { WorkspaceSummary } from '@/platform/mappers/workspace'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
-import { workspaceErrorMessage } from '@/features/workspaces/lib/error-message'
 import { hasErrors, NO_ERRORS, validateWorkspaceForm } from '@/features/workspaces/lib/workspace-form'
 import { useWorkspacesStore } from '@/features/workspaces/store'
+import { WorkspaceErrorText } from './WorkspaceErrorText'
 import styles from './RenameWorkspaceDialog.module.css'
 
 interface RenameWorkspaceDialogProps {
@@ -69,7 +69,7 @@ export function RenameWorkspaceDialog({ workspace, open, onClose }: RenameWorksp
           <p className={styles.hint}>Only the name changes. The folder stays where it is.</p>
           {error ? (
             <Banner.Root tone="error">
-              <Banner.Message>{workspaceErrorMessage(error)}</Banner.Message>
+              <Banner.Message><WorkspaceErrorText error={error} /></Banner.Message>
             </Banner.Root>
           ) : null}
         </Dialog.Body>

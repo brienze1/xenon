@@ -1,8 +1,8 @@
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
-import { workspaceErrorMessage } from '@/features/workspaces/lib/error-message'
 import { useWorkspacesStore } from '@/features/workspaces/store'
+import { WorkspaceErrorText } from './WorkspaceErrorText'
 
 interface MissingFolderNoticeProps {
   localId: string
@@ -19,25 +19,26 @@ export function MissingFolderNotice({ localId }: MissingFolderNoticeProps) {
       <EmptyState.Art variant="missing" />
       <EmptyState.Title>Folder Missing</EmptyState.Title>
       <EmptyState.Description>
-        The folder of “{workspace?.name ?? 'this workspace'}” was moved or deleted outside Xenon
+        Someone moved or deleted the folder of “{workspace?.name ?? 'this workspace'}” outside <span translate="no">Xenon</span>
         {workspace ? (
           <>
             {' ('}
             <span translate="no">{workspace.path}</span>)
           </>
-        ) : null}. Locate it again, or remove the workspace from Xenon.
+        ) : null}
+        . Locate it again, or remove the workspace from <span translate="no">Xenon</span>.
       </EmptyState.Description>
       <EmptyState.Actions>
         <Button variant="primary" onClick={() => void locate(localId)}>
           Locate Folder…
         </Button>
         <Button variant="secondary" onClick={() => void remove(localId, false)}>
-          Remove from Xenon
+          Remove from <span translate="no">Xenon</span>
         </Button>
       </EmptyState.Actions>
       {error && error.code !== 'WKS-06404' ? (
         <Banner.Root tone="error">
-          <Banner.Message>{workspaceErrorMessage(error)}</Banner.Message>
+          <Banner.Message><WorkspaceErrorText error={error} /></Banner.Message>
         </Banner.Root>
       ) : null}
     </EmptyState.Root>

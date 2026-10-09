@@ -16,9 +16,7 @@ export function DeleteItemDialog({ item, onCancel, onConfirm }: DeleteItemDialog
         <>
           <Dialog.Title>Delete “{item.name}”?</Dialog.Title>
           <Dialog.Body>
-            {isContainer(item)
-              ? 'Its folder and everything inside it are deleted from disk.'
-              : 'Its file is deleted from disk.'}
+            <span translate="no">Xenon</span> deletes {isContainer(item) ? 'its folder and everything inside it' : 'its file'} from disk.
           </Dialog.Body>
           <Dialog.Actions>
             <Button variant="secondary" onClick={onCancel}>

@@ -3,8 +3,8 @@ import { useShallow } from 'zustand/react/shallow'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Dropdown } from '@/shared/ui/dropdown/Dropdown'
-import { workspaceErrorMessage } from '@/features/workspaces/lib/error-message'
 import { useWorkspacesStore } from '@/features/workspaces/store'
+import { WorkspaceErrorText } from './WorkspaceErrorText'
 import { CreateWorkspaceDialog } from './CreateWorkspaceDialog'
 import { RemoveWorkspaceDialog } from './RemoveWorkspaceDialog'
 import { RenameWorkspaceDialog } from './RenameWorkspaceDialog'
@@ -71,7 +71,7 @@ export function WorkspaceSwitcher() {
       </Dropdown.Root>
       {error && dialog === null ? (
         <Banner.Root tone="error" className={styles.error}>
-          <Banner.Message>{workspaceErrorMessage(error)}</Banner.Message>
+          <Banner.Message><WorkspaceErrorText error={error} /></Banner.Message>
           <Banner.Actions>
             <Button variant="ghost" size="sm" onClick={clearError}>
               Dismiss

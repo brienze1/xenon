@@ -56,7 +56,7 @@ export function RequestBar({ tabId, onSave }: RequestBarProps) {
             name="custom-method"
             autoComplete="off"
             aria-label="Custom method"
-            placeholder="Custom…"
+            placeholder="PURGE…"
             className={styles.customMethod}
             value={customMethod}
             spellCheck={false}
@@ -67,6 +67,8 @@ export function RequestBar({ tabId, onSave }: RequestBarProps) {
       </Dropdown.Root>
       <input
         name="url"
+        type="text"
+        inputMode="url"
         autoComplete="off"
         aria-label="Request URL"
         className={styles.url}

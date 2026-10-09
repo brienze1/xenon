@@ -2,9 +2,9 @@ import { useId, useRef, useState, type FormEvent } from 'react'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
-import { workspaceErrorMessage } from '@/features/workspaces/lib/error-message'
 import { hasErrors, NO_ERRORS, validateWorkspaceForm } from '@/features/workspaces/lib/workspace-form'
 import { useWorkspacesStore } from '@/features/workspaces/store'
+import { WorkspaceErrorText } from './WorkspaceErrorText'
 import styles from './CreateWorkspaceDialog.module.css'
 
 interface CreateWorkspaceDialogProps {
@@ -23,7 +23,6 @@ export function CreateWorkspaceDialog({ open, onClose }: CreateWorkspaceDialogPr
   const folderRef = useRef<HTMLButtonElement>(null)
   const nameErrorId = useId()
   const folderErrorId = useId()
-  const folderLabelId = useId()
   const error = useWorkspacesStore((state) => state.error)
   const create = useWorkspacesStore((state) => state.create)
   const chooseFolder = useWorkspacesStore((state) => state.chooseFolder)
@@ -87,10 +86,8 @@ export function CreateWorkspaceDialog({ open, onClose }: CreateWorkspaceDialogPr
               {errors.name}
             </p>
           ) : null}
-          <div className={styles.field} role="group" aria-labelledby={folderLabelId}>
-            <span className={styles.label} id={folderLabelId}>
-              Folder
-            </span>
+          <fieldset className={styles.fieldset}>
+            <legend className={styles.label}>Folder</legend>
             <div className={styles.folder}>
               <span className={styles.path} translate="no">
                 {path ?? 'No folder chosen'}
@@ -104,10 +101,10 @@ export function CreateWorkspaceDialog({ open, onClose }: CreateWorkspaceDialogPr
                 {errors.folder}
               </p>
             ) : null}
-          </div>
+          </fieldset>
           {error ? (
             <Banner.Root tone="error">
-              <Banner.Message>{workspaceErrorMessage(error)}</Banner.Message>
+              <Banner.Message><WorkspaceErrorText error={error} /></Banner.Message>
             </Banner.Root>
           ) : null}
         </Dialog.Body>

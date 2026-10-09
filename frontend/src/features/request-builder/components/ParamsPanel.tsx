@@ -26,6 +26,7 @@ export function ParamsPanel({ tabId }: ParamsPanelProps) {
       <PanelSection.Root>
         <PanelSection.Heading>Query Params</PanelSection.Heading>
         <KeyValueTable
+          examples={{ key: 'page', value: '1', description: 'Page to fetch' }}
           label="Query params"
           rows={params}
           mode={bulkText === undefined ? 'table' : 'bulk'}
@@ -60,7 +61,14 @@ export function ParamsPanel({ tabId }: ParamsPanelProps) {
                       className={styles.cell}
                       spellCheck={false}
                       value={variable.value}
-                      onChange={(event) => updatePathVariables(tabId, patchRow(pathVariables, variable.id, { value: event.target.value }))}
+                      onChange={(event) =>
+                        updatePathVariables(
+                          tabId,
+                          patchRow(pathVariables, variable.id, {
+                            value: event.target.value,
+                          }),
+                        )
+                      }
                     />
                   </td>
                   <td>
@@ -71,7 +79,12 @@ export function ParamsPanel({ tabId }: ParamsPanelProps) {
                       className={styles.cell}
                       value={variable.description}
                       onChange={(event) =>
-                        updatePathVariables(tabId, patchRow(pathVariables, variable.id, { description: event.target.value }))
+                        updatePathVariables(
+                          tabId,
+                          patchRow(pathVariables, variable.id, {
+                            description: event.target.value,
+                          }),
+                        )
                       }
                     />
                   </td>

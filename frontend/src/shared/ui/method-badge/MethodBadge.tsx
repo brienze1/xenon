@@ -1,13 +1,13 @@
 import { cn } from '@/shared/lib/cn'
 import styles from './MethodBadge.module.css'
 
-const STANDARD_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'] as const
+type StandardMethod = 'get' | 'post' | 'put' | 'patch' | 'delete' | 'head' | 'options'
 
-type StandardMethod = (typeof STANDARD_METHODS)[number]
+const STANDARD_METHODS: ReadonlySet<string> = new Set<StandardMethod>(['get', 'post', 'put', 'patch', 'delete', 'head', 'options'])
 
 export function methodTone(method: string): StandardMethod | 'custom' {
   const normalized = method.trim().toLowerCase()
-  return (STANDARD_METHODS as readonly string[]).includes(normalized) ? (normalized as StandardMethod) : 'custom'
+  return STANDARD_METHODS.has(normalized) ? (normalized as StandardMethod) : 'custom'
 }
 
 interface MethodBadgeProps {

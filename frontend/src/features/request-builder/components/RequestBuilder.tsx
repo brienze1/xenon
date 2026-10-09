@@ -2,6 +2,7 @@ import { useId } from 'react'
 import { withNextStep } from '@/shared/lib/next-step'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
+import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { RequestBar } from './RequestBar'
 import styles from './RequestBuilder.module.css'
@@ -37,7 +38,7 @@ export function RequestBuilder({ tabId, onSave }: RequestBuilderProps) {
           <Banner.Message>This request changed on disk since you opened it. Keep your version or load the one from disk.</Banner.Message>
           <Banner.Actions>
             <Button variant="secondary" size="sm" onClick={() => void save(tabId, true)}>
-              Keep Mine
+              Keep Your Version
             </Button>
             <Button variant="ghost" size="sm" onClick={loadFromDisk}>
               Load from Disk
@@ -47,7 +48,9 @@ export function RequestBuilder({ tabId, onSave }: RequestBuilderProps) {
       ) : null}
       {error ? (
         <Banner.Root tone="error" className={styles.banner}>
-          <Banner.Message>{withNextStep(error.description || error.code, SAVE_NEXT_STEP)}</Banner.Message>
+          <Banner.Message>
+            <NoTranslateText text={withNextStep(error.description || error.code, SAVE_NEXT_STEP)} terms={[error.code]} />
+          </Banner.Message>
         </Banner.Root>
       ) : null}
       <RequestTabs tabId={tabId} />

@@ -10,27 +10,22 @@
 
 .green {
   stroke: var(--neon-green);
-  filter: drop-shadow(0 0 4px var(--neon-green));
 }
 
 .cyan {
   stroke: var(--neon-cyan);
-  filter: drop-shadow(0 0 4px var(--neon-cyan));
 }
 
 .magenta {
   stroke: var(--neon-magenta);
-  filter: drop-shadow(0 0 4px var(--neon-magenta));
 }
 
 .yellow {
   stroke: var(--neon-yellow);
-  filter: drop-shadow(0 0 4px var(--neon-yellow));
 }
 
 .red {
   stroke: var(--neon-red);
-  filter: drop-shadow(0 0 4px var(--neon-red));
 }
 
 .drip {

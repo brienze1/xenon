@@ -11,7 +11,9 @@ export function ClearHistoryDialog({ open, onCancel, onConfirm }: ClearHistoryDi
   return (
     <Dialog.Root open={open} onOpenChange={(next) => (next ? undefined : onCancel())}>
       <Dialog.Title>Clear History?</Dialog.Title>
-      <Dialog.Body>Every entry sent in this workspace is removed from this machine. This cannot be undone.</Dialog.Body>
+      <Dialog.Body>
+        <span translate="no">Xenon</span> removes every entry you sent in this workspace from this machine. You can’t undo this.
+      </Dialog.Body>
       <Dialog.Actions>
         <Button variant="secondary" onClick={onCancel}>
           Cancel

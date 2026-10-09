@@ -105,8 +105,15 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
           <h3 className={styles.heading}>Authorization</h3>
           <AuthFields kind={settings.kind} auth={settings.auth} onChange={(auth) => update({ auth })} />
           <h3 className={styles.heading}>Headers</h3>
-          <p className={styles.note}>Sent with every request below unless a nearer level sets the same header.</p>
+          <p className={styles.note}>
+            <span translate="no">Xenon</span> sends these with every request below unless a nearer level sets the same header.
+          </p>
           <KeyValueTable
+            examples={{
+              key: 'X-Team',
+              value: 'payments',
+              description: 'Sent with every request',
+            }}
             label={`${settings.name} headers`}
             rows={settings.headers}
             mode={bulkText === null ? 'table' : 'bulk'}

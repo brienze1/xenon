@@ -19,6 +19,7 @@
   border-top: 1px solid var(--color-border);
   font-family: var(--font-mono);
   font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
 }
 
 .auto td {

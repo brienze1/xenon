@@ -44,6 +44,7 @@
   position: relative;
   max-width: 420px;
   color: var(--color-text-muted);
+  overflow-wrap: anywhere;
 }
 
 .actions {

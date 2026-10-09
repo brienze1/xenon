@@ -3,6 +3,7 @@ import { useMemo, useRef, useState } from 'react'
 import type { HistoryEntry } from '@/platform/mappers/history'
 import { cn } from '@/shared/lib/cn'
 import { formatDuration } from '@/shared/lib/format-duration'
+import { formatNumber } from '@/shared/lib/number-format'
 import { statusTone } from '@/shared/lib/status-tone'
 import { Button } from '@/shared/ui/button/Button'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
@@ -58,7 +59,9 @@ function HistoryEntryButton({ entry, onOpen }: HistoryEntryButtonProps) {
         </span>
       </span>
       <span className={styles.meta}>
-        <span className={cn(styles.status, styles[result.tone])}>{result.label}</span>
+        <span className={cn(styles.status, styles[result.tone])} translate="no">
+          {result.label}
+        </span>
         <span>{formatDuration(entry.totalMs)}</span>
         <time dateTime={entry.sentAt}>{time}</time>
       </span>
@@ -90,7 +93,7 @@ export function HistoryView({ onOpenEntry }: HistoryViewProps) {
   return (
     <div className={styles.view}>
       <div className={styles.header}>
-        <span className={styles.count}>{history.length === 1 ? '1 entry' : `${history.length} entries`}</span>
+        <span className={styles.count}>{history.length === 1 ? '1 entry' : `${formatNumber(history.length, 0)} entries`}</span>
         <Button variant="ghost" size="sm" disabled={history.length === 0} onClick={() => setConfirming(true)}>
           Clear History
         </Button>

@@ -26,6 +26,11 @@ export function HeadersPanel({ tabId }: HeadersPanelProps) {
       <PanelSection.Root>
         <PanelSection.Heading>Headers</PanelSection.Heading>
         <KeyValueTable
+          examples={{
+            key: 'Authorization',
+            value: 'Bearer abc123',
+            description: 'Why this header is sent',
+          }}
           label="Headers"
           rows={headers}
           mode={bulkText === undefined ? 'table' : 'bulk'}

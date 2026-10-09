@@ -34,7 +34,14 @@ const LANGUAGE_LABELS: Record<RawLanguage, string> = {
 
 const DIRECTORY_PREFIX = /^.*[\\/]/
 
-const EMPTY_FORM_ROW: Omit<FormDataRow, 'id'> = { key: '', value: '', description: '', enabled: true, type: 'text', src: '' }
+const EMPTY_FORM_ROW: Omit<FormDataRow, 'id'> = {
+  key: '',
+  value: '',
+  description: '',
+  enabled: true,
+  type: 'text',
+  src: '',
+}
 
 export function BodyPanel({ tabId }: BodyPanelProps) {
   const body = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.body)
@@ -53,20 +60,30 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
 
   return (
     <PanelSection.Root>
-      <div role="radiogroup" aria-label="Body type" className={styles.modes}>
-        {BODY_MODES.map((mode) => (
-          <label key={mode} className={styles.toggle}>
-            <input type="radio" name={`${tabId}-body-mode`} checked={body.mode === mode} onChange={() => updateBody(tabId, { mode })} />
-            <span translate={TECHNICAL_MODES.has(mode) ? 'no' : undefined}>{MODE_LABELS[mode]}</span>
-          </label>
-        ))}
+      <div className={styles.modes}>
+        <fieldset className={styles.modeGroup}>
+          <legend className="visually-hidden">Body type</legend>
+          {BODY_MODES.map((mode) => (
+            <label key={mode} className={styles.toggle}>
+              <input type="radio" name={`${tabId}-body-mode`} checked={body.mode === mode} onChange={() => updateBody(tabId, { mode })} />
+              <span translate={TECHNICAL_MODES.has(mode) ? 'no' : undefined}>{MODE_LABELS[mode]}</span>
+            </label>
+          ))}
+        </fieldset>
         {body.mode === 'raw' ? (
           <select
             aria-label="Raw language"
             name="raw-language"
             className={styles.select}
             value={body.raw.language}
-            onChange={(event) => updateBody(tabId, { raw: { ...body.raw, language: event.target.value as RawLanguage } })}
+            onChange={(event) =>
+              updateBody(tabId, {
+                raw: {
+                  ...body.raw,
+                  language: event.target.value as RawLanguage,
+                },
+              })
+            }
           >
             {RAW_LANGUAGES.map((language) => (
               <option key={language} value={language}>
@@ -91,6 +108,11 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
 
       {body.mode === 'urlencoded' ? (
         <KeyValueTable
+          examples={{
+            key: 'grant_type',
+            value: 'client_credentials',
+            description: 'What this field carries',
+          }}
           label="Url-encoded body"
           rows={urlencoded}
           mode={bulkText === undefined ? 'table' : 'bulk'}
@@ -127,7 +149,13 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                     aria-label={`Enable ${row.key || 'row'}`}
                     name="formdata-enabled"
                     checked={row.enabled}
-                    onChange={(event) => updateBody(tabId, { formdata: patchRow(formdata, row.id, { enabled: event.target.checked }) })}
+                    onChange={(event) =>
+                      updateBody(tabId, {
+                        formdata: patchRow(formdata, row.id, {
+                          enabled: event.target.checked,
+                        }),
+                      })
+                    }
                   />
                 </td>
                 <td>
@@ -138,7 +166,13 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                     spellCheck={false}
                     className={styles.cell}
                     value={row.key}
-                    onChange={(event) => updateBody(tabId, { formdata: patchRow(formdata, row.id, { key: event.target.value }) })}
+                    onChange={(event) =>
+                      updateBody(tabId, {
+                        formdata: patchRow(formdata, row.id, {
+                          key: event.target.value,
+                        }),
+                      })
+                    }
                   />
                 </td>
                 <td>
@@ -148,7 +182,11 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                     className={styles.select}
                     value={row.type}
                     onChange={(event) =>
-                      updateBody(tabId, { formdata: patchRow(formdata, row.id, { type: event.target.value as FormDataRow['type'] }) })
+                      updateBody(tabId, {
+                        formdata: patchRow(formdata, row.id, {
+                          type: event.target.value as FormDataRow['type'],
+                        }),
+                      })
                     }
                   >
                     <option value="text">Text</option>
@@ -166,7 +204,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                       </span>
                       {missingFile !== null && row.src !== '' && missingFile.endsWith(row.src.replace(DIRECTORY_PREFIX, '')) ? (
                         <span role="status" className={styles.missing}>
-                          File not found — select it again
+                          Xenon can’t find this file — select it again
                         </span>
                       ) : null}
                     </div>
@@ -178,12 +216,25 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                       spellCheck={false}
                       className={styles.cell}
                       value={row.value}
-                      onChange={(event) => updateBody(tabId, { formdata: patchRow(formdata, row.id, { value: event.target.value }) })}
+                      onChange={(event) =>
+                        updateBody(tabId, {
+                          formdata: patchRow(formdata, row.id, {
+                            value: event.target.value,
+                          }),
+                        })
+                      }
                     />
                   )}
                 </td>
                 <td>
-                  <IconButton label={`Remove ${row.key || 'Row'}`} onClick={() => updateBody(tabId, { formdata: removeRow(formdata, row.id) })}>
+                  <IconButton
+                    label={`Remove ${row.key || 'Row'}`}
+                    onClick={() =>
+                      updateBody(tabId, {
+                        formdata: removeRow(formdata, row.id),
+                      })
+                    }
+                  >
                     <span aria-hidden="true">×</span>
                   </IconButton>
                 </td>
@@ -191,7 +242,15 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
             ))}
             <tr>
               <td colSpan={5}>
-                <Button size="sm" variant="ghost" onClick={() => updateBody(tabId, { formdata: addRow(formdata, EMPTY_FORM_ROW) })}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() =>
+                    updateBody(tabId, {
+                      formdata: addRow(formdata, EMPTY_FORM_ROW),
+                    })
+                  }
+                >
                   Add Field
                 </Button>
               </td>
@@ -208,7 +267,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
           </span>
           {missingFile !== null && body.binary.src !== '' ? (
             <span role="status" className={styles.missing}>
-              File not found — select it again
+              Xenon can’t find this file — select it again
             </span>
           ) : null}
         </div>

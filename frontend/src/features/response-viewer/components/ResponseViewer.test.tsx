@@ -13,6 +13,7 @@ const dialogs = await import('@/platform/services/dialogs')
 const responseBody = await import('@/platform/services/response-body')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
 const { ResponseViewer } = await import('./ResponseViewer')
+const { ResponseHeaders } = await import('./ResponseHeaders')
 
 function result(overrides: Partial<SendResult> = {}): SendResult {
   return {
@@ -76,7 +77,7 @@ describe('ResponseViewer', () => {
     expect(screen.getByText('9 B')).toBeInTheDocument()
     await user.hover(screen.getByRole('button', { name: 'Time 1.52\u00a0s' }))
     const tooltip = screen.getByRole('tooltip')
-    for (const phase of ['DNS Lookup', 'TCP Connection', 'TLS Handshake', 'Time to First Byte', 'Download', 'Total']) {
+    for (const phase of ['DNS lookup', 'TCP connection', 'TLS handshake', 'Time to first byte', 'Download', 'Total']) {
       expect(within(tooltip).getByText(phase)).toBeInTheDocument()
     }
     expect(within(tooltip).getByText('40 ms')).toBeInTheDocument()
@@ -91,7 +92,7 @@ describe('ResponseViewer', () => {
     const user = userEvent.setup()
     render(<ResponseViewer tabId="tab" />)
     show(result())
-    expect(screen.getByRole('radio', { name: 'Pretty' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('radio', { name: 'Pretty' })).toBeChecked()
     expect(screen.getByRole('textbox', { name: 'Pretty response body' })).toHaveTextContent('"a": [')
     await user.click(screen.getByRole('radio', { name: 'Raw' }))
     expect(screen.getByRole('textbox', { name: 'Raw response body' })).toHaveTextContent('{"a":[1]}')
@@ -101,25 +102,24 @@ describe('ResponseViewer', () => {
     const user = userEvent.setup()
     render(<ResponseViewer tabId="tab" />)
     show(result())
-    expect(screen.getByRole('radio', { name: 'Pretty' })).toHaveAttribute('tabindex', '0')
-    expect(screen.getByRole('radio', { name: 'Raw' })).toHaveAttribute('tabindex', '-1')
+    expect(screen.getByRole('group', { name: 'Body view' })).toBeInTheDocument()
     screen.getByRole('radio', { name: 'Pretty' }).focus()
     await user.keyboard('{ArrowRight}')
     expect(screen.getByRole('radio', { name: 'Raw' })).toHaveFocus()
-    expect(screen.getByRole('radio', { name: 'Raw' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('radio', { name: 'Raw' })).toBeChecked()
     await user.keyboard('{ArrowDown}')
-    expect(screen.getByRole('radio', { name: 'Preview' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('radio', { name: 'Preview' })).toBeChecked()
     await user.keyboard('{ArrowDown}')
     expect(screen.getByRole('radio', { name: 'Pretty' })).toHaveFocus()
     await user.keyboard('{ArrowUp}')
-    expect(screen.getByRole('radio', { name: 'Preview' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('radio', { name: 'Preview' })).toBeChecked()
   })
 
   it('opens bodies larger than 5 MB in Raw first and loads them from the route', async () => {
     vi.mocked(responseBody.fetchResponseText).mockResolvedValue('big body')
     render(<ResponseViewer tabId="tab" />)
     show(result({ sizeBytes: 6 * 1024 * 1024, inlineBody: null, contentType: 'text/plain' }))
-    expect(screen.getByRole('radio', { name: 'Raw' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('radio', { name: 'Raw' })).toBeChecked()
     expect(await screen.findByRole('textbox', { name: 'Raw response body' })).toHaveTextContent('big body')
     expect(responseBody.fetchResponseText).toHaveBeenCalledWith('/xenon/response/tab')
   })
@@ -142,7 +142,8 @@ describe('ResponseViewer', () => {
     expect(screen.getByTitle('Response preview')).toHaveAttribute('sandbox', '')
     show(result())
     await user.click(screen.getByRole('radio', { name: 'Preview' }))
-    expect(screen.getByText('No preview available for application/json.')).toBeInTheDocument()
+    expect(screen.getByText(/No preview available for/)).toHaveTextContent('No preview available for application/json.')
+    expect(screen.getByText('application/json')).toHaveAttribute('translate', 'no')
   })
 
   it('copies the exact body and saves it to a file', async () => {
@@ -154,7 +155,7 @@ describe('ResponseViewer', () => {
     await user.click(screen.getByRole('button', { name: 'Copy' }))
     expect(writeText).toHaveBeenCalledWith('{"a":[1]}')
     expect(screen.getByRole('button', { name: 'Copied' })).toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent('Response body copied to the clipboard')
+    expect(screen.getByRole('status')).toHaveTextContent('Xenon copied the response body to the clipboard.')
     await user.click(screen.getByRole('button', { name: 'Save to File' }))
     expect(requests.saveResponseBody).toHaveBeenCalledWith('tab', '/out/response.json')
   })
@@ -166,7 +167,7 @@ describe('ResponseViewer', () => {
     show(result())
     await user.click(screen.getByRole('button', { name: 'Copy' }))
     expect(screen.getByRole('button', { name: 'Copy Failed' })).toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent('Could not copy to the clipboard')
+    expect(screen.getByRole('status')).toHaveTextContent('Xenon couldn’t copy to the clipboard')
   })
 
   it('lists every response header, repeated ones included', async () => {
@@ -191,5 +192,13 @@ describe('ResponseViewer', () => {
     expect(within(alert).getByRole('heading', { name: title })).toBeInTheDocument()
     expect(alert).toHaveTextContent(message)
     expect(alert).toHaveTextContent(hint || nextStep)
+  })
+})
+
+describe('ResponseHeaders', () => {
+  it('says when the response has no headers', () => {
+    render(<ResponseHeaders headers={[]} />)
+    expect(screen.getByText('No headers')).toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
   })
 })

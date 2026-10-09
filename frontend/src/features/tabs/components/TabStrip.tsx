@@ -19,10 +19,10 @@ const SCREEN_READER_INSTRUCTIONS: ScreenReaderInstructions = {
 }
 
 const ANNOUNCEMENTS: Announcements = {
-  onDragStart: () => 'Picked up tab.',
-  onDragOver: ({ over }) => (over ? 'Tab moved.' : 'Tab is no longer over a position.'),
-  onDragEnd: ({ over }) => (over ? 'Tab dropped.' : 'Tab dropped back in place.'),
-  onDragCancel: () => 'Reordering cancelled.',
+  onDragStart: () => 'You picked up the tab.',
+  onDragOver: ({ over }) => (over ? 'You moved the tab.' : 'The tab is no longer over a position.'),
+  onDragEnd: ({ over }) => (over ? 'You dropped the tab.' : 'You dropped the tab back in place.'),
+  onDragCancel: () => 'You cancelled reordering.',
 }
 
 const ACCESSIBILITY = { screenReaderInstructions: SCREEN_READER_INSTRUCTIONS, announcements: ANNOUNCEMENTS }

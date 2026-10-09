@@ -39,7 +39,7 @@ export function toAppError(error: unknown): AppError {
     return error
   }
   if (error instanceof CancelError) {
-    return new AppError(CANCELLED_CODE, 'The request was cancelled')
+    return new AppError(CANCELLED_CODE, 'You cancelled the request')
   }
   const payload = readPayload(error)
   if (payload?.error && typeof payload.error.code === 'string') {

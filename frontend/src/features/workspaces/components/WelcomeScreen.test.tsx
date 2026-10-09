@@ -88,6 +88,7 @@ describe('WelcomeScreen', () => {
     render(<WelcomeScreen />)
     await userEvent.click(screen.getByRole('button', { name: 'Choose Folder…' }))
     expect(screen.getByText('No folder chosen')).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Folder' })).toContainElement(screen.getByRole('button', { name: 'Choose Folder…' }))
   })
 
   it('explains why a folder was refused', async () => {
@@ -97,7 +98,7 @@ describe('WelcomeScreen', () => {
     await userEvent.type(screen.getByRole('textbox', { name: 'Workspace name' }), 'Acme')
     await userEvent.click(screen.getByRole('button', { name: 'Choose Folder…' }))
     await userEvent.click(screen.getByRole('button', { name: 'Create Workspace' }))
-    expect(screen.getByRole('alert')).toHaveTextContent('That folder is not empty')
+    expect(screen.getByRole('alert')).toHaveTextContent('That folder isn’t empty')
     expect(screen.getByRole('button', { name: 'Create Workspace' })).toBeEnabled()
   })
 
@@ -119,6 +120,8 @@ describe('WelcomeScreen', () => {
   it('keeps the product name out of translation', () => {
     render(<WelcomeScreen />)
     expect(screen.getByRole('heading', { name: 'Xenon' })).toBeInTheDocument()
-    expect(screen.getByText('Xenon')).toHaveAttribute('translate', 'no')
+    for (const name of screen.getAllByText('Xenon')) {
+      expect(name).toHaveAttribute('translate', 'no')
+    }
   })
 })

@@ -24,11 +24,14 @@ interface KeyValueTableProps {
   onRowChange: (id: string, patch: Partial<KeyValueFields>) => void
   onRowAdd: (row: KeyValueFields) => void
   onRowRemove: (id: string) => void
+  examples: KeyValueExamples
 }
+
+export type KeyValueExamples = Record<TextField, string>
 
 const EMPTY_ROW: KeyValueFields = { key: '', value: '', description: '', enabled: true }
 
-type TextField = 'key' | 'value' | 'description'
+export type TextField = 'key' | 'value' | 'description'
 
 const COLUMNS: Array<{ field: TextField; title: string }> = [
   { field: 'key', title: 'Key' },
@@ -46,6 +49,7 @@ export function KeyValueTable({
   onRowChange,
   onRowAdd,
   onRowRemove,
+  examples,
 }: KeyValueTableProps) {
   const bulk = mode === 'bulk'
   return (
@@ -122,7 +126,7 @@ export function KeyValueTable({
                     name={`new-${column.field}`}
                     autoComplete="off"
                     aria-label={`New ${column.title.toLowerCase()}`}
-                    placeholder={`${column.title}…`}
+                    placeholder={`${examples[column.field]}…`}
                     className={styles.cell}
                     spellCheck={false}
                     value=""

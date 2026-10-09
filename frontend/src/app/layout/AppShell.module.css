@@ -27,6 +27,10 @@
   transform: translateY(-200%);
 }
 
+.skipLink:hover {
+  background: var(--color-border);
+}
+
 .skipLink:focus-visible {
   opacity: 1;
   pointer-events: auto;

@@ -33,12 +33,12 @@ export interface ItemSettings {
   headers: KeyValueRow[]
 }
 
-const NODE_KINDS: readonly TreeNodeKind[] = ['collection', 'folder', 'request', 'error']
+const NODE_KINDS: ReadonlySet<string> = new Set<TreeNodeKind>(['collection', 'folder', 'request', 'error'])
 
 export function toTreeNode(dto: TreeNodeDto): TreeNode {
   return {
     id: dto.id,
-    kind: NODE_KINDS.includes(dto.kind as TreeNodeKind) ? (dto.kind as TreeNodeKind) : 'error',
+    kind: NODE_KINDS.has(dto.kind) ? (dto.kind as TreeNodeKind) : 'error',
     name: dto.name,
     method: dto.method ?? null,
     url: dto.url ?? null,

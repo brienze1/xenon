@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import type { SendResult } from '@/platform/mappers/request'
 import { formatBytes } from '@/shared/lib/format-bytes'
-import { rovingIndex } from '@/shared/lib/roving-focus'
 import { Button } from '@/shared/ui/button/Button'
 import { CodeEditor } from '@/shared/ui/code-editor/CodeEditor'
 import { initialBodyView, isHtml, isImage, languageFor, prettyBody, type BodyView } from '@/features/response-viewer/lib/body-view'
@@ -25,11 +24,9 @@ const COPY_LABELS: Record<CopyState, string> = { idle: 'Copy', copied: 'Copied',
 
 const COPY_ANNOUNCEMENTS: Record<CopyState, string> = {
   idle: '',
-  copied: 'Response body copied to the clipboard',
-  failed: 'Could not copy to the clipboard. Select the body text and copy it manually.',
+  copied: 'Xenon copied the response body to the clipboard.',
+  failed: 'Xenon couldn’t copy to the clipboard. Select the body text and copy it manually.',
 }
-
-const RADIO_KEYS: Record<string, string> = { ArrowDown: 'ArrowRight', ArrowUp: 'ArrowLeft' }
 
 export function ResponseBody({ tabId, result }: ResponseBodyProps) {
   const [view, setView] = useState<BodyView>(() => initialBodyView(result.sizeBytes))
@@ -40,6 +37,7 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
   const saveBody = useResponseViewerStore((state) => state.saveBody)
   const language = languageFor(result.contentType)
   const isBinary = result.isBinary
+  const viewName = useId()
 
   useEffect(() => {
     if (!isBinary && bodyStatus === 'idle') {
@@ -48,19 +46,6 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
   }, [tabId, isBinary, bodyStatus, loadBody])
 
   const shown = useMemo(() => (body !== null && view === 'pretty' ? prettyBody(body, language) : (body ?? '')), [body, view, language])
-
-  function onViewKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    const key = RADIO_KEYS[event.key] ?? event.key
-    const current = VIEWS.findIndex((option) => option.view === view)
-    const index = rovingIndex(VIEWS.length, current, key, { orientation: 'horizontal' })
-    const next = index === null ? undefined : VIEWS[index]
-    if (index === null || !next) {
-      return
-    }
-    event.preventDefault()
-    setView(next.view)
-    event.currentTarget.querySelectorAll<HTMLElement>('[role="radio"]')[index]?.focus()
-  }
 
   async function copyBody() {
     if (body === null) {
@@ -77,21 +62,21 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
   return (
     <div className={styles.body}>
       <div className={styles.toolbar}>
-        <div role="radiogroup" aria-label="Body view" className={styles.views} onKeyDown={onViewKeyDown}>
+        <fieldset className={styles.views}>
+          <legend className="visually-hidden">Body view</legend>
           {VIEWS.map((option) => (
-            <button
-              key={option.view}
-              type="button"
-              role="radio"
-              aria-checked={view === option.view}
-              tabIndex={view === option.view ? 0 : -1}
-              className={styles.view}
-              onClick={() => setView(option.view)}
-            >
+            <label key={option.view} className={styles.view}>
+              <input
+                type="radio"
+                name={viewName}
+                className={styles.viewInput}
+                checked={view === option.view}
+                onChange={() => setView(option.view)}
+              />
               {option.label}
-            </button>
+            </label>
           ))}
-        </div>
+        </fieldset>
         <div className={styles.actions}>
           <Button size="sm" variant="ghost" disabled={body === null} onClick={() => void copyBody()}>
             {COPY_LABELS[copy]}
@@ -135,5 +120,9 @@ function BodyPreview({ result, body }: BodyPreviewProps) {
   if (isHtml(result.contentType) && body !== null) {
     return <iframe className={styles.frame} title="Response preview" sandbox="" srcDoc={body} />
   }
-  return <p className={styles.note}>No preview available for {result.contentType || 'this response'}.</p>
+  return (
+    <p className={styles.note}>
+      No preview available for {result.contentType ? <span translate="no">{result.contentType}</span> : 'this response'}.
+    </p>
+  )
 }

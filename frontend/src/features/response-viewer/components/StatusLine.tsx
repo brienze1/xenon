@@ -13,10 +13,10 @@ interface StatusLineProps {
 export function StatusLine({ result }: StatusLineProps) {
   const timings = result.timings
   const phases = [
-    ['DNS Lookup', timings.dnsMs],
-    ['TCP Connection', timings.connectMs],
-    ['TLS Handshake', timings.tlsMs],
-    ['Time to First Byte', timings.firstByteMs],
+    ['DNS lookup', timings.dnsMs],
+    ['TCP connection', timings.connectMs],
+    ['TLS handshake', timings.tlsMs],
+    ['Time to first byte', timings.firstByteMs],
     ['Download', timings.downloadMs],
   ] as const
 

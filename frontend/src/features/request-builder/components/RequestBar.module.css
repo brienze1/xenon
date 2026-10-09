@@ -18,6 +18,10 @@
   background: var(--color-surface-raised);
 }
 
+.methodTrigger:hover {
+  background: var(--color-border);
+}
+
 .customMethod {
   width: 100%;
   height: 28px;

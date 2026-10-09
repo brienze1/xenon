@@ -5,6 +5,9 @@ interface ResponseHeadersProps {
 }
 
 export function ResponseHeaders({ headers }: ResponseHeadersProps) {
+  if (headers.length === 0) {
+    return <p className={styles.empty}>No headers</p>
+  }
   return (
     <table aria-label="Response headers" className={styles.table}>
       <thead>

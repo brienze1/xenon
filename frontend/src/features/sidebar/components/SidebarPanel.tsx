@@ -5,6 +5,7 @@ import type { SidebarView } from '@/platform/mappers/ui-state'
 import { withNextStep } from '@/shared/lib/next-step'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
+import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { Tabs } from '@/shared/ui/tabs/Tabs'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { CollectionTree } from './CollectionTree'
@@ -58,7 +59,9 @@ export function SidebarPanel({ onOpenRequest, onPinRequest, onRequestsDeleted, o
       <SidebarToolbar />
       {error ? (
         <Banner.Root tone="error" className={styles.banner}>
-          <Banner.Message>{withNextStep(error.description || error.code, SIDEBAR_NEXT_STEP)}</Banner.Message>
+          <Banner.Message>
+            <NoTranslateText text={withNextStep(error.description || error.code, SIDEBAR_NEXT_STEP)} terms={[error.code]} />
+          </Banner.Message>
           <Banner.Actions>
             <Button variant="ghost" size="sm" onClick={clearError}>
               Dismiss

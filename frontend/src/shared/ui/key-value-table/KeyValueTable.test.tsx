@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { KeyValueTable, type KeyValueMode, type KeyValueRow } from './KeyValueTable'
 
+const EXAMPLES = { key: 'page', value: '2', description: 'Page to fetch' }
+
 const rows: KeyValueRow[] = [
   { id: 'r1', key: 'page', value: '2', description: '', enabled: true },
   { id: 'r2', key: 'limit', value: '10', description: 'page size', enabled: false },
@@ -16,7 +18,7 @@ function renderTable(mode: KeyValueMode = 'table', bulkText = '') {
     onRowAdd: vi.fn(),
     onRowRemove: vi.fn(),
   }
-  render(<KeyValueTable label="Query params" rows={rows} mode={mode} bulkText={bulkText} {...handlers} />)
+  render(<KeyValueTable label="Query params" rows={rows} mode={mode} bulkText={bulkText} examples={EXAMPLES} {...handlers} />)
   return handlers
 }
 
@@ -79,9 +81,16 @@ describe('KeyValueTable', () => {
         onRowChange={vi.fn()}
         onRowAdd={vi.fn()}
         onRowRemove={vi.fn()}
+        examples={EXAMPLES}
       />,
     )
     expect(screen.getByRole('checkbox', { name: 'Enable row' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Remove Row' })).toBeInTheDocument()
+  })
+
+  it('shows example placeholders in the new row', () => {
+    renderTable()
+    expect(screen.getByRole('textbox', { name: 'New key' })).toHaveAttribute('placeholder', 'page…')
+    expect(screen.getByRole('textbox', { name: 'New value' })).toHaveAttribute('placeholder', '2…')
   })
 })

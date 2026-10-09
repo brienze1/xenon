@@ -3,8 +3,8 @@ import type { WorkspaceSummary } from '@/platform/mappers/workspace'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
-import { workspaceErrorMessage } from '@/features/workspaces/lib/error-message'
 import { TRASH_FAILED, useWorkspacesStore } from '@/features/workspaces/store'
+import { WorkspaceErrorText } from './WorkspaceErrorText'
 import styles from './RemoveWorkspaceDialog.module.css'
 
 interface RemoveWorkspaceDialogProps {
@@ -36,7 +36,7 @@ export function RemoveWorkspaceDialog({ workspace, open, onClose }: RemoveWorksp
           <legend className={styles.label}>What happens to the folder</legend>
           <label className={styles.choice}>
             <input type="radio" name="remove-mode" checked={!moveToTrash} onChange={() => setMoveToTrash(false)} />
-            Remove from Xenon (the files stay on disk)
+            Remove from <span translate="no">Xenon</span> (the files stay on disk)
           </label>
           <label className={styles.choice}>
             <input type="radio" name="remove-mode" checked={moveToTrash} onChange={() => setMoveToTrash(true)} />
@@ -48,11 +48,11 @@ export function RemoveWorkspaceDialog({ workspace, open, onClose }: RemoveWorksp
         </p>
         {error ? (
           <Banner.Root tone="error">
-            <Banner.Message>{workspaceErrorMessage(error)}</Banner.Message>
+            <Banner.Message><WorkspaceErrorText error={error} /></Banner.Message>
             {error.code === TRASH_FAILED ? (
               <Banner.Actions>
                 <Button variant="secondary" size="sm" disabled={removing} onClick={() => void confirm(false)}>
-                  Remove from Xenon
+                  Remove from <span translate="no">Xenon</span>
                 </Button>
               </Banner.Actions>
             ) : null}

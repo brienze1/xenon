@@ -2,9 +2,9 @@ import { useId, useRef, useState, type FormEvent } from 'react'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
-import { workspaceErrorMessage } from '@/features/workspaces/lib/error-message'
 import { hasErrors, NO_ERRORS, validateWorkspaceForm } from '@/features/workspaces/lib/workspace-form'
 import { useWorkspacesStore } from '@/features/workspaces/store'
+import { WorkspaceErrorText } from './WorkspaceErrorText'
 import styles from './WelcomeScreen.module.css'
 
 const PICKER_TITLE = 'Choose the folder for the new workspace'
@@ -18,7 +18,6 @@ export function WelcomeScreen() {
   const folderRef = useRef<HTMLButtonElement>(null)
   const nameErrorId = useId()
   const folderErrorId = useId()
-  const folderLabelId = useId()
   const error = useWorkspacesStore((state) => state.error)
   const create = useWorkspacesStore((state) => state.create)
   const chooseFolder = useWorkspacesStore((state) => state.chooseFolder)
@@ -52,8 +51,8 @@ export function WelcomeScreen() {
         <span translate="no">Xenon</span>
       </EmptyState.Title>
       <EmptyState.Description>
-        Create a workspace in any folder — for example inside your company’s git repository. Everything is saved there as
-        plain files.
+        Create a workspace in any folder — for example inside your company’s git repository. <span translate="no">Xenon</span> saves
+        everything there as plain files.
       </EmptyState.Description>
       <EmptyState.Actions>
         <form className={styles.form} aria-label="Create workspace" noValidate onSubmit={(event) => void onSubmit(event)}>
@@ -79,10 +78,8 @@ export function WelcomeScreen() {
               {errors.name}
             </p>
           ) : null}
-          <div className={styles.field} role="group" aria-labelledby={folderLabelId}>
-            <span className={styles.label} id={folderLabelId}>
-              Folder
-            </span>
+          <fieldset className={styles.fieldset}>
+            <legend className={styles.label}>Folder</legend>
             <div className={styles.folder}>
               <span className={styles.path} translate="no">
                 {path ?? <span className={styles.placeholder}>No folder chosen</span>}
@@ -96,10 +93,10 @@ export function WelcomeScreen() {
                 {errors.folder}
               </p>
             ) : null}
-          </div>
+          </fieldset>
           {error ? (
             <Banner.Root tone="error">
-              <Banner.Message>{workspaceErrorMessage(error)}</Banner.Message>
+              <Banner.Message><WorkspaceErrorText error={error} /></Banner.Message>
             </Banner.Root>
           ) : null}
           <Button type="submit" variant="primary" disabled={submitting}>

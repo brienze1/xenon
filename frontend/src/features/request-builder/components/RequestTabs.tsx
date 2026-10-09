@@ -1,3 +1,4 @@
+import { formatNumber } from '@/shared/lib/number-format'
 import { Tabs } from '@/shared/ui/tabs/Tabs'
 import type { SubTab } from '@/features/request-builder/model'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
@@ -23,7 +24,7 @@ export function RequestTabs({ tabId }: RequestTabsProps) {
       <Tabs.List label="Request">
         <Tabs.Tab value="params">Params</Tabs.Tab>
         <Tabs.Tab value="auth">Authorization</Tabs.Tab>
-        <Tabs.Tab value="headers">Headers{headerCount > 0 ? ` (${headerCount})` : ''}</Tabs.Tab>
+        <Tabs.Tab value="headers">Headers{headerCount > 0 ? ` (${formatNumber(headerCount, 0)})` : ''}</Tabs.Tab>
         <Tabs.Tab value="body">Body</Tabs.Tab>
         <Tabs.Tab value="scripts">Scripts</Tabs.Tab>
         <Tabs.Tab value="settings">Settings</Tabs.Tab>

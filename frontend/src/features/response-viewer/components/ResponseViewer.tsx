@@ -1,7 +1,9 @@
 import { useEffect, useId, useState } from 'react'
 import { withNextStep } from '@/shared/lib/next-step'
+import { formatNumber } from '@/shared/lib/number-format'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
+import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { Tabs } from '@/shared/ui/tabs/Tabs'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { ResponseBody } from './ResponseBody'
@@ -42,7 +44,9 @@ export function ResponseViewer({ tabId }: ResponseViewerProps) {
       </h2>
       {entry?.failure ? (
         <Banner.Root tone="error">
-          <Banner.Message>{withNextStep(entry.failure.description || entry.failure.code, SEND_NEXT_STEP)}</Banner.Message>
+          <Banner.Message>
+            <NoTranslateText text={withNextStep(entry.failure.description || entry.failure.code, SEND_NEXT_STEP)} terms={[entry.failure.code]} />
+          </Banner.Message>
         </Banner.Root>
       ) : null}
       {entry?.sending ? (
@@ -59,7 +63,7 @@ export function ResponseViewer({ tabId }: ResponseViewerProps) {
           <Tabs.Root value={panel} onValueChange={setPanel} className={styles.tabs}>
             <Tabs.List label="Response">
               <Tabs.Tab value="body">Body</Tabs.Tab>
-              <Tabs.Tab value="headers">Headers ({result.headers.length})</Tabs.Tab>
+              <Tabs.Tab value="headers">Headers ({formatNumber(result.headers.length, 0)})</Tabs.Tab>
             </Tabs.List>
             <Tabs.Panel value="body" className={styles.panel}>
               <ResponseBody key={entry?.version} tabId={tabId} result={result} />

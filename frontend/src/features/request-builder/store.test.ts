@@ -266,7 +266,7 @@ describe('request builder store', () => {
 
   it('cancels an in-flight send and shows it as cancelled', async () => {
     let reject: (error: unknown) => void = () => undefined
-    const cancel = vi.fn(() => reject(new AppError('cancelled', 'The request was cancelled')))
+    const cancel = vi.fn(() => reject(new AppError('cancelled', 'You cancelled the request')))
     vi.mocked(requests.sendRequest).mockReturnValue({ result: new Promise((_, fail) => (reject = fail)), cancel })
     const sending = state().send(tabId)
     await state().send(tabId)

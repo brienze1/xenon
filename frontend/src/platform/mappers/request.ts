@@ -15,6 +15,11 @@ export const BODY_MODES = ['none', 'formdata', 'urlencoded', 'raw', 'binary', 'g
 export const RAW_LANGUAGES = ['json', 'xml', 'text', 'html', 'javascript'] as const
 export const SEND_ERROR_KINDS = ['dns', 'connection_refused', 'timeout', 'tls', 'cancelled', 'missing_file', 'invalid_url', 'other'] as const
 
+const AUTH_TYPE_SET: ReadonlySet<string> = new Set(AUTH_TYPES)
+const BODY_MODE_SET: ReadonlySet<string> = new Set(BODY_MODES)
+const RAW_LANGUAGE_SET: ReadonlySet<string> = new Set(RAW_LANGUAGES)
+export const SEND_ERROR_KIND_SET: ReadonlySet<string> = new Set(SEND_ERROR_KINDS)
+
 export type AuthType = (typeof AUTH_TYPES)[number]
 export type BodyMode = (typeof BODY_MODES)[number]
 export type RawLanguage = (typeof RAW_LANGUAGES)[number]
@@ -138,8 +143,8 @@ export function emptyDraft(): RequestDraft {
   }
 }
 
-function oneOf<T extends string>(values: readonly T[], value: string | undefined, fallback: T): T {
-  return (values as readonly string[]).includes(value ?? '') ? (value as T) : fallback
+function oneOf<T extends string>(values: ReadonlySet<string>, value: string | undefined, fallback: T): T {
+  return values.has(value ?? '') ? (value as T) : fallback
 }
 
 export function toKeyValueRow(dto: KeyValueDto): KeyValueRow {
@@ -165,7 +170,7 @@ export interface SavedRequest {
 
 export function toAuth(dto: AuthDto): RequestAuth {
   return {
-    type: oneOf(AUTH_TYPES, dto.type, 'inherit'),
+    type: oneOf<AuthType>(AUTH_TYPE_SET, dto.type, 'inherit'),
     bearer: { token: dto.bearer.token },
     basic: { username: dto.basic.username, password: dto.basic.password },
   }
@@ -197,8 +202,8 @@ export function toRequestDraft(dto: RequestDto): RequestDraft {
     disabledAutoHeaders: dto.auto_headers.disabled ?? [],
     auth: toAuth(dto.auth),
     body: {
-      mode: oneOf(BODY_MODES, dto.body.mode, 'none'),
-      raw: { language: oneOf(RAW_LANGUAGES, dto.body.raw.language, 'json'), content: dto.body.raw.content },
+      mode: oneOf<BodyMode>(BODY_MODE_SET, dto.body.mode, 'none'),
+      raw: { language: oneOf<RawLanguage>(RAW_LANGUAGE_SET, dto.body.raw.language, 'json'), content: dto.body.raw.content },
       formdata: (dto.body.formdata ?? []).map(toFormDataRow),
       urlencoded: (dto.body.urlencoded ?? []).map(toKeyValueRow),
       binary: { src: dto.body.binary.src },
@@ -268,7 +273,7 @@ export function toSendResult(dto: SendResultDto): SendResult {
       downloadMs: dto.timings.download_ms,
       totalMs: dto.timings.total_ms,
     },
-    error: dto.error ? { kind: oneOf(SEND_ERROR_KINDS, dto.error.kind, 'other'), message: dto.error.message, hint: dto.error.hint } : null,
+    error: dto.error ? { kind: oneOf<SendErrorKind>(SEND_ERROR_KIND_SET, dto.error.kind, 'other'), message: dto.error.message, hint: dto.error.hint } : null,
   }
 }
 

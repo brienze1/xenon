@@ -21,7 +21,7 @@ export function SidebarToolbar() {
         type="search"
         name={history ? 'history-search' : 'request-search'}
         aria-label={history ? 'Search history' : 'Search requests'}
-        placeholder={history ? 'Search URL or method…' : 'Search…'}
+        placeholder={history ? 'Search URL or method…' : 'Search requests…'}
         autoComplete="off"
         className={styles.search}
         spellCheck={false}
