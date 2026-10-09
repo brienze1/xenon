@@ -61,8 +61,8 @@ make a remote change from another clone, pull, and verify both sides.
    sidebar and open clean tabs reload (XEN-001 FR-017 behaviour); his own uncommitted changes are
    kept.
 6. **Given** both sides changed different requests, **When** Luis pulls, **Then** both sets of
-   changes end up in the workspace without any prompt, and his local commits are replayed on top
-   of the remote (linear history).
+   changes end up in the workspace without any prompt; his unpushed local commits become one commit
+   on top of the remote (linear history), whose message lists the original commit messages.
 7. **Given** the workspace has no repo, **Then** everything works offline as before; sync is
    optional.
 
@@ -226,7 +226,8 @@ Per workspace, Luis can turn on "Pull when the workspace is opened" and "Push af
 - **FR-008**: Commits MUST include only checked items under the subfolder, authored with the
   account's name and email.
 - **FR-009**: Pull MUST fetch, then: fast-forward when possible; when both sides have commits,
-  replay local commits on top of the remote (linear history), merging non-conflicting changes
+  combine the unpushed local commits into one commit on top of the remote (linear history; the
+  original messages are kept in its body), merging non-conflicting changes
   automatically; conflicting items go to the Conflict view (FR-011). Uncommitted local changes are
   preserved.
 - **FR-010**: Push MUST push the branch only; if rejected because the remote moved, Xenon MUST pull
