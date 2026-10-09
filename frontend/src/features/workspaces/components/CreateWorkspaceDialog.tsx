@@ -89,7 +89,7 @@ export function CreateWorkspaceDialog({ open, onClose }: CreateWorkspaceDialogPr
           <fieldset className={styles.fieldset}>
             <legend className={styles.label}>Folder</legend>
             <div className={styles.folder}>
-              <span className={styles.path} translate="no">
+              <span className={styles.path} translate={path ? 'no' : undefined}>
                 {path ?? 'No folder chosen'}
               </span>
               <Button ref={folderRef} size="sm" aria-describedby={errors.folder ? folderErrorId : undefined} onClick={() => void onChooseFolder()}>

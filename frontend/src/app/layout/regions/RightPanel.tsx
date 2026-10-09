@@ -9,7 +9,10 @@ interface RightPanelProps {
 }
 
 export function RightPanel({ children }: RightPanelProps) {
-  const { layout, onLayoutChange } = useShellLayout()
+  const {
+    state: { layout },
+    actions: { update },
+  } = useShellLayout()
   if (!layout.rightPanelVisible) {
     return null
   }
@@ -22,7 +25,7 @@ export function RightPanel({ children }: RightPanelProps) {
         value={layout.rightPanelWidth}
         min={LAYOUT_LIMITS.rightPanel.min}
         max={LAYOUT_LIMITS.rightPanel.max}
-        onChange={(rightPanelWidth) => onLayoutChange({ rightPanelWidth })}
+        onChange={(rightPanelWidth) => update({ rightPanelWidth })}
       />
       <div className={styles.content}>{children}</div>
     </aside>

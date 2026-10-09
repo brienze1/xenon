@@ -1,18 +1,31 @@
-import { createContext, use, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react'
+import { createContext, use, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react'
 import { cn } from '@/shared/lib/cn'
+import { suspendTextSelection } from '@/shared/lib/text-selection'
 import styles from './SplitPane.module.css'
 
 export type SplitDirection = 'row' | 'column'
 
 const KEYBOARD_STEP = 0.05
 
-interface SplitPaneContextValue {
-  direction: SplitDirection
+interface SplitPaneState {
   ratio: number
+}
+
+interface SplitPaneActions {
+  changeRatio: (ratio: number) => void
+}
+
+interface SplitPaneMeta {
+  direction: SplitDirection
   min: number
   max: number
   rootRef: RefObject<HTMLDivElement | null>
-  changeRatio: (ratio: number) => void
+}
+
+interface SplitPaneContextValue {
+  state: SplitPaneState
+  actions: SplitPaneActions
+  meta: SplitPaneMeta
 }
 
 const SplitPaneContext = createContext<SplitPaneContextValue | null>(null)
@@ -29,6 +42,15 @@ export function clampRatio(ratio: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, ratio))
 }
 
+interface ProviderProps extends SplitPaneContextValue {
+  children: ReactNode
+}
+
+function Provider({ state, actions, meta, children }: ProviderProps) {
+  const value = useMemo(() => ({ state, actions, meta }), [state, actions, meta])
+  return <SplitPaneContext value={value}>{children}</SplitPaneContext>
+}
+
 interface RootProps {
   direction: SplitDirection
   ratio: number
@@ -42,9 +64,11 @@ interface RootProps {
 function Root({ direction, ratio, onRatioChange, min = 0.2, max = 0.8, className, children }: RootProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const value = clampRatio(ratio, min, max)
-  const changeRatio = (next: number) => onRatioChange(clampRatio(next, min, max))
+  const state = useMemo(() => ({ ratio: value }), [value])
+  const actions = useMemo(() => ({ changeRatio: (next: number) => onRatioChange(clampRatio(next, min, max)) }), [onRatioChange, min, max])
+  const meta = useMemo(() => ({ direction, min, max, rootRef }), [direction, min, max])
   return (
-    <SplitPaneContext value={{ direction, ratio: value, min, max, rootRef, changeRatio }}>
+    <Provider state={state} actions={actions} meta={meta}>
       <div
         ref={rootRef}
         className={cn(styles.root, styles[direction], className)}
@@ -52,7 +76,7 @@ function Root({ direction, ratio, onRatioChange, min = 0.2, max = 0.8, className
       >
         {children}
       </div>
-    </SplitPaneContext>
+    </Provider>
   )
 }
 
@@ -70,29 +94,31 @@ interface DividerProps {
 }
 
 function Divider({ label }: DividerProps) {
-  const split = useSplitPane()
+  const { state, actions, meta } = useSplitPane()
   const [dragging, setDragging] = useState(false)
 
   function ratioAt(event: PointerEvent): number | null {
-    const rect = split.rootRef.current?.getBoundingClientRect()
+    const rect = meta.rootRef.current?.getBoundingClientRect()
     if (!rect) {
       return null
     }
-    return split.direction === 'row'
+    return meta.direction === 'row'
       ? (event.clientX - rect.left) / rect.width
       : (event.clientY - rect.top) / rect.height
   }
 
   function onPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
     event.preventDefault()
+    const restoreSelection = suspendTextSelection()
     setDragging(true)
     function onPointerMove(move: PointerEvent) {
       const next = ratioAt(move)
       if (next !== null && Number.isFinite(next)) {
-        split.changeRatio(next)
+        actions.changeRatio(next)
       }
     }
     function onPointerUp() {
+      restoreSelection()
       setDragging(false)
       window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('pointerup', onPointerUp)
@@ -103,19 +129,19 @@ function Divider({ label }: DividerProps) {
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const targets: Record<string, number> = {
-      ArrowLeft: split.ratio - KEYBOARD_STEP,
-      ArrowUp: split.ratio - KEYBOARD_STEP,
-      ArrowRight: split.ratio + KEYBOARD_STEP,
-      ArrowDown: split.ratio + KEYBOARD_STEP,
-      Home: split.min,
-      End: split.max,
+      ArrowLeft: state.ratio - KEYBOARD_STEP,
+      ArrowUp: state.ratio - KEYBOARD_STEP,
+      ArrowRight: state.ratio + KEYBOARD_STEP,
+      ArrowDown: state.ratio + KEYBOARD_STEP,
+      Home: meta.min,
+      End: meta.max,
     }
     const target = targets[event.key]
     if (target === undefined) {
       return
     }
     event.preventDefault()
-    split.changeRatio(Math.round(target * 100) / 100)
+    actions.changeRatio(Math.round(target * 100) / 100)
   }
 
   return (
@@ -123,10 +149,10 @@ function Divider({ label }: DividerProps) {
       role="separator"
       tabIndex={0}
       aria-label={label}
-      aria-orientation={split.direction === 'row' ? 'vertical' : 'horizontal'}
-      aria-valuemin={Math.round(split.min * 100)}
-      aria-valuemax={Math.round(split.max * 100)}
-      aria-valuenow={Math.round(split.ratio * 100)}
+      aria-orientation={meta.direction === 'row' ? 'vertical' : 'horizontal'}
+      aria-valuemin={Math.round(meta.min * 100)}
+      aria-valuemax={Math.round(meta.max * 100)}
+      aria-valuenow={Math.round(state.ratio * 100)}
       className={cn(styles.divider, dragging && styles.dragging)}
       onPointerDown={onPointerDown}
       onKeyDown={onKeyDown}
@@ -134,4 +160,4 @@ function Divider({ label }: DividerProps) {
   )
 }
 
-export const SplitPane = { Root, Pane, Divider }
+export const SplitPane = { Provider, Root, Pane, Divider }

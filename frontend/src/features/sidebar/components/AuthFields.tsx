@@ -7,12 +7,18 @@ interface AuthFieldsProps {
   onChange: (auth: RequestAuth) => void
 }
 
-const AUTH_OPTIONS: Array<{ type: AuthType; label: string }> = [
-  { type: 'inherit', label: 'Inherit auth from parent' },
-  { type: 'none', label: 'No auth' },
-  { type: 'bearer', label: 'Bearer token' },
-  { type: 'basic', label: 'Basic auth' },
-]
+const AUTH_TYPE_OPTIONS = (
+  <>
+    <option value="inherit">Inherit auth from parent</option>
+    <option value="none">No auth</option>
+    <option value="bearer" translate="no">
+      Bearer token
+    </option>
+    <option value="basic" translate="no">
+      Basic auth
+    </option>
+  </>
+)
 
 export function AuthFields({ kind, auth, onChange }: AuthFieldsProps) {
   return (
@@ -25,11 +31,7 @@ export function AuthFields({ kind, auth, onChange }: AuthFieldsProps) {
           value={auth.type}
           onChange={(event) => onChange({ ...auth, type: event.target.value as AuthType })}
         >
-          {AUTH_OPTIONS.map((option) => (
-            <option key={option.type} value={option.type}>
-              {option.label}
-            </option>
-          ))}
+          {AUTH_TYPE_OPTIONS}
         </select>
       </label>
       {auth.type === 'inherit' ? (

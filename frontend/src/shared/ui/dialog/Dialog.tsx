@@ -1,4 +1,4 @@
-import { createContext, use, useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from 'react'
+import { createContext, use, useEffect, useId, useMemo, useRef, type KeyboardEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/shared/lib/cn'
 import styles from './Dialog.module.css'
@@ -24,7 +24,42 @@ function trapFocus(dialog: HTMLElement, event: KeyboardEvent<HTMLElement>) {
   }
 }
 
-const DialogTitleContext = createContext<string>('')
+interface DialogState {
+  open: boolean
+}
+
+interface DialogActions {
+  close: () => void
+}
+
+interface DialogMeta {
+  titleId: string
+}
+
+interface DialogContextValue {
+  state: DialogState
+  actions: DialogActions
+  meta: DialogMeta
+}
+
+const DialogContext = createContext<DialogContextValue | null>(null)
+
+function useDialog(): DialogContextValue {
+  const context = use(DialogContext)
+  if (!context) {
+    throw new Error('Dialog parts must be rendered inside <Dialog.Root>')
+  }
+  return context
+}
+
+interface ProviderProps extends DialogContextValue {
+  children: ReactNode
+}
+
+function Provider({ state, actions, meta, children }: ProviderProps) {
+  const value = useMemo(() => ({ state, actions, meta }), [state, actions, meta])
+  return <DialogContext value={value}>{children}</DialogContext>
+}
 
 interface RootProps {
   open: boolean
@@ -36,6 +71,9 @@ interface RootProps {
 function Root({ open, onOpenChange, className, children }: RootProps) {
   const titleId = useId()
   const dialogRef = useRef<HTMLDivElement>(null)
+  const state = useMemo(() => ({ open }), [open])
+  const actions = useMemo(() => ({ close: () => onOpenChange(false) }), [onOpenChange])
+  const meta = useMemo(() => ({ titleId }), [titleId])
 
   useEffect(() => {
     if (!open) {
@@ -61,7 +99,7 @@ function Root({ open, onOpenChange, className, children }: RootProps) {
     if (event.key === 'Escape') {
       event.preventDefault()
       event.stopPropagation()
-      onOpenChange(false)
+      actions.close()
       return
     }
     if (event.key === 'Tab') {
@@ -74,7 +112,7 @@ function Root({ open, onOpenChange, className, children }: RootProps) {
   }
 
   return createPortal(
-    <div className={styles.backdrop} onMouseDown={(event) => event.target === event.currentTarget && onOpenChange(false)}>
+    <div className={styles.backdrop} onMouseDown={(event) => event.target === event.currentTarget && actions.close()}>
       <div
         ref={dialogRef}
         role="dialog"
@@ -84,7 +122,9 @@ function Root({ open, onOpenChange, className, children }: RootProps) {
         onKeyDown={handleKeyDown}
         className={cn(styles.dialog, className)}
       >
-        <DialogTitleContext value={titleId}>{children}</DialogTitleContext>
+        <Provider state={state} actions={actions} meta={meta}>
+          {children}
+        </Provider>
       </div>
     </div>,
     document.body,
@@ -96,8 +136,9 @@ interface TitleProps {
 }
 
 function Title({ children }: TitleProps) {
+  const { meta } = useDialog()
   return (
-    <h2 id={use(DialogTitleContext)} className={styles.title}>
+    <h2 id={meta.titleId} className={styles.title}>
       {children}
     </h2>
   )
@@ -119,4 +160,4 @@ function Actions({ children }: ActionsProps) {
   return <div className={styles.actions}>{children}</div>
 }
 
-export const Dialog = { Root, Title, Body, Actions }
+export const Dialog = { Provider, Root, Title, Body, Actions }

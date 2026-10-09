@@ -1,6 +1,15 @@
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
 
+const CLEAR_HISTORY_INTRO = (
+  <>
+    <Dialog.Title>Clear History?</Dialog.Title>
+    <Dialog.Body>
+      <span translate="no">Xenon</span> removes every entry you sent in this workspace from this machine. You can’t undo this.
+    </Dialog.Body>
+  </>
+)
+
 interface ClearHistoryDialogProps {
   open: boolean
   onCancel: () => void
@@ -10,10 +19,7 @@ interface ClearHistoryDialogProps {
 export function ClearHistoryDialog({ open, onCancel, onConfirm }: ClearHistoryDialogProps) {
   return (
     <Dialog.Root open={open} onOpenChange={(next) => (next ? undefined : onCancel())}>
-      <Dialog.Title>Clear History?</Dialog.Title>
-      <Dialog.Body>
-        <span translate="no">Xenon</span> removes every entry you sent in this workspace from this machine. You can’t undo this.
-      </Dialog.Body>
+      {CLEAR_HISTORY_INTRO}
       <Dialog.Actions>
         <Button variant="secondary" onClick={onCancel}>
           Cancel

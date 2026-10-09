@@ -1,6 +1,6 @@
 import { Illustration } from './Illustration'
 
-const HISTORY_ART = (
+const CLOCK_ART = (
   <Illustration.Canvas>
     <Illustration.Stroke tone="cyan" d="M32 46a28 28 0 1 0 9-20.5" />
     <Illustration.Stroke tone="cyan" d="M40 14v12h12" />
@@ -9,6 +9,6 @@ const HISTORY_ART = (
   </Illustration.Canvas>
 )
 
-export function HistoryArt() {
-  return HISTORY_ART
+export function ClockArt() {
+  return CLOCK_ART
 }

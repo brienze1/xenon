@@ -7,6 +7,12 @@ import styles from './InfoPanel.module.css'
 
 const MarkdownView = lazy(() => import('./MarkdownView'))
 
+const INFO_HEADING = <h2 className={styles.title}>Info</h2>
+
+const NO_DESCRIPTION = <span className={styles.muted}>No description</span>
+
+const LOADING_DESCRIPTION = <span className={styles.muted}>Loading…</span>
+
 interface InfoPanelProps {
   tabId: string
 }
@@ -44,7 +50,7 @@ export function InfoPanel({ tabId }: InfoPanelProps) {
 
   return (
     <section aria-label="Info" className={styles.info}>
-      <h2 className={styles.title}>Info</h2>
+      {INFO_HEADING}
       <label className={styles.field}>
         Name
         <input
@@ -72,7 +78,7 @@ export function InfoPanel({ tabId }: InfoPanelProps) {
         <div className={styles.descriptionHeader}>
           <span className={styles.label}>Description</span>
           <Button variant="ghost" size="sm" onClick={() => setEditing((current) => !current)}>
-            {editing ? 'Done' : 'Edit'}
+            {editing ? 'Done Editing' : 'Edit Description'}
           </Button>
         </div>
         {editing ? (
@@ -85,9 +91,9 @@ export function InfoPanel({ tabId }: InfoPanelProps) {
             onChange={(event) => setDescription(tabId, event.target.value)}
           />
         ) : description.trim() === '' ? (
-          <span className={styles.muted}>No description</span>
+          NO_DESCRIPTION
         ) : (
-          <Suspense fallback={<span className={styles.muted}>Loading…</span>}>
+          <Suspense fallback={LOADING_DESCRIPTION}>
             <MarkdownView text={description} />
           </Suspense>
         )}

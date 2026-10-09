@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { emptyDraft } from '@/platform/mappers/request'
@@ -139,7 +139,7 @@ describe('TabStrip', () => {
     expect(tabs[1]).toHaveFocus()
   })
 
-  it('reorders tabs from the keyboard: Space picks up, arrows move, Space drops', async () => {
+  it('reorders tabs from the keyboard: Space picks up, arrows move, Space drops, keeping the tab focusable (never inert) during a keyboard drag', async () => {
     await act(() => useTabsStore.getState().openPinned('A'))
     renderStrip()
     const tabs = within(strip()).getAllByRole('tab')
@@ -153,8 +153,28 @@ describe('TabStrip', () => {
     await act(() => new Promise((resolve) => setTimeout(resolve)))
     await userEvent.keyboard('[ArrowRight]')
     expect(tabs[0]).toHaveFocus()
+    expect(tabs[0]).not.toHaveAttribute('inert')
+    expect(document.documentElement).toHaveAttribute('data-dragging')
     await userEvent.keyboard('[Space]')
     expect(useTabsStore.getState().tabs.map((tab) => tab.id)).toEqual([second, first])
+    expect(document.documentElement).not.toHaveAttribute('data-dragging')
+  })
+
+  it('makes the dragged tab inert and turns off text selection during a pointer drag', async () => {
+    await act(() => useTabsStore.getState().openPinned('A'))
+    renderStrip()
+    const tabs = within(strip()).getAllByRole('tab')
+    tabs.forEach((tab, index) => {
+      vi.spyOn(tab, 'getBoundingClientRect').mockImplementation(() => DOMRect.fromRect({ x: index * 100, y: 0, width: 100, height: 30 }))
+    })
+    fireEvent.pointerDown(tabs[0]!, { isPrimary: true, button: 0, clientX: 10, clientY: 10 })
+    fireEvent.pointerMove(document, { isPrimary: true, clientX: 60, clientY: 10 })
+    await waitFor(() => expect(tabs[0]).toHaveAttribute('inert'))
+    expect(tabs[1]).not.toHaveAttribute('inert')
+    expect(document.documentElement).toHaveAttribute('data-dragging')
+    fireEvent.pointerUp(document, { isPrimary: true, clientX: 60, clientY: 10 })
+    await waitFor(() => expect(tabs[0]).not.toHaveAttribute('inert'))
+    expect(document.documentElement).not.toHaveAttribute('data-dragging')
   })
 
   it('keeps roving arrow navigation and Enter activation when no drag is in progress', async () => {
@@ -190,7 +210,7 @@ describe('TabStrip', () => {
     await userEvent.clear(name)
     await userEvent.type(name, 'Users')
     await userEvent.click(within(dialog).getByRole('radio', { name: 'Invoices' }))
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save Request' }))
     expect(requests.saveRequestAs).toHaveBeenCalledWith('ws', 'f1', 'Users', expect.anything())
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(useTabsStore.getState().tabs[0]?.requestId).toBe('N')
@@ -208,7 +228,7 @@ describe('TabStrip', () => {
     await act(() => useTabsStore.getState().save())
     const dialog = screen.getByRole('dialog', { name: 'Save Request' })
     expect(within(dialog).getByRole('radio', { name: 'Billing' })).toBeChecked()
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save Request' }))
     expect(within(dialog).getByRole('button', { name: 'Saving…' })).toBeDisabled()
     await act(async () => finish())
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -221,15 +241,15 @@ describe('TabStrip', () => {
     const dialog = screen.getByRole('dialog', { name: 'Save Request As' })
     expect(within(dialog).getByRole('textbox', { name: 'Request name' })).toHaveValue('Request A Copy')
     expect(within(dialog).getByText('Create a collection in the sidebar first.')).toBeInTheDocument()
-    expect(within(dialog).getByRole('button', { name: 'Save' })).toBeEnabled()
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+    expect(within(dialog).getByRole('button', { name: 'Save Request' })).toBeEnabled()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save Request' }))
     expect(within(dialog).getByText('Choose where to save the request.')).toBeInTheDocument()
     expect(within(dialog).getByRole('group', { name: 'Save to' })).toHaveFocus()
     expect(within(dialog).getByRole('group', { name: 'Save to' })).toHaveAccessibleDescription('Choose where to save the request.')
     expect(requests.saveRequestAs).not.toHaveBeenCalled()
     const name = within(dialog).getByRole('textbox', { name: 'Request name' })
     await userEvent.clear(name)
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save Request' }))
     expect(name).toHaveFocus()
     expect(name).toHaveAttribute('aria-invalid', 'true')
     expect(name).toHaveAccessibleDescription('Enter a name for the request.')
@@ -292,7 +312,7 @@ describe('TabNotice', () => {
         <CloseTabPrompt />
       </>,
     )
-    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Close Tab' }))
     const prompt = screen.getByRole('dialog', { name: 'Save Changes?' })
     expect(useTabsStore.getState().tabs.some((tab) => tab.id === other)).toBe(true)
     await userEvent.click(within(prompt).getByRole('button', { name: 'Don’t Save' }))

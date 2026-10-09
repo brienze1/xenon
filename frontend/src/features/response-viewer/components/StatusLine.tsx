@@ -1,4 +1,5 @@
-import type { SendResult } from '@/platform/mappers/request'
+import type { ReactNode } from 'react'
+import type { SendResult, SendTimings } from '@/platform/mappers/request'
 import { cn } from '@/shared/lib/cn'
 import { formatBytes } from '@/shared/lib/format-bytes'
 import { formatDuration } from '@/shared/lib/format-duration'
@@ -10,15 +11,37 @@ interface StatusLineProps {
   result: SendResult
 }
 
+const PHASES: Array<{ key: keyof SendTimings; label: ReactNode }> = [
+  {
+    key: 'dnsMs',
+    label: (
+      <>
+        <span translate="no">DNS</span> lookup
+      </>
+    ),
+  },
+  {
+    key: 'connectMs',
+    label: (
+      <>
+        <span translate="no">TCP</span> connection
+      </>
+    ),
+  },
+  {
+    key: 'tlsMs',
+    label: (
+      <>
+        <span translate="no">TLS</span> handshake
+      </>
+    ),
+  },
+  { key: 'firstByteMs', label: 'Time to first byte' },
+  { key: 'downloadMs', label: 'Download' },
+]
+
 export function StatusLine({ result }: StatusLineProps) {
   const timings = result.timings
-  const phases = [
-    ['DNS lookup', timings.dnsMs],
-    ['TCP connection', timings.connectMs],
-    ['TLS handshake', timings.tlsMs],
-    ['Time to first byte', timings.firstByteMs],
-    ['Download', timings.downloadMs],
-  ] as const
 
   return (
     <div role="group" className={styles.line} aria-label="Response status">
@@ -28,10 +51,10 @@ export function StatusLine({ result }: StatusLineProps) {
       <Tooltip
         content={
           <dl className={styles.timings}>
-            {phases.map(([label, value]) => (
-              <div key={label} className={styles.timing}>
-                <dt>{label}</dt>
-                <dd>{formatDuration(value)}</dd>
+            {PHASES.map((phase) => (
+              <div key={phase.key} className={styles.timing}>
+                <dt>{phase.label}</dt>
+                <dd>{formatDuration(timings[phase.key])}</dd>
               </div>
             ))}
             <div className={cn(styles.timing, styles.total)}>

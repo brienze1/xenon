@@ -2,6 +2,8 @@ import { IconButton } from '@/shared/ui/icon-button/IconButton'
 import { useSidebarStore } from '@/features/sidebar/store'
 import styles from './SidebarToolbar.module.css'
 
+const ADD_GLYPH = <span aria-hidden="true">+</span>
+
 export function SidebarToolbar() {
   const view = useSidebarStore((state) => state.view)
   const query = useSidebarStore((state) => (state.view === 'history' ? state.historyQuery : state.query))
@@ -14,7 +16,7 @@ export function SidebarToolbar() {
     <div className={styles.toolbar}>
       {history ? null : (
         <IconButton label="New Collection" className={styles.add} onClick={() => void createCollection()}>
-          <span aria-hidden="true">+</span>
+          {ADD_GLYPH}
         </IconButton>
       )}
       <input

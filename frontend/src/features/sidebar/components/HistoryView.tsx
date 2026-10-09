@@ -7,6 +7,7 @@ import { formatNumber } from '@/shared/lib/number-format'
 import { statusTone } from '@/shared/lib/status-tone'
 import { Button } from '@/shared/ui/button/Button'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
+import { ClockArt } from '@/shared/ui/empty-state/illustrations/ClockArt'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
 import { historyRows, sentTime } from '@/features/sidebar/lib/history-rows'
 import { useSidebarStore } from '@/features/sidebar/store'
@@ -18,7 +19,9 @@ export const HISTORY_ENTRY_HEIGHT = 44
 
 const EMPTY_HISTORY = (
   <EmptyState.Root label="No history" className={styles.empty}>
-    <EmptyState.Art variant="history" />
+    <EmptyState.Art>
+      <ClockArt />
+    </EmptyState.Art>
     <EmptyState.Title>Nothing Sent Yet</EmptyState.Title>
     <EmptyState.Description>Every request you send in this workspace shows up here, newest first.</EmptyState.Description>
   </EmptyState.Root>

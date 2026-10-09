@@ -43,7 +43,7 @@ export function SettingsPanel({ tabId }: SettingsPanelProps) {
           checked={settings.verifySsl}
           onChange={(event) => updateSettings(tabId, { verifySsl: event.target.checked })}
         />
-        Enable SSL certificate verification
+        Enable <span translate="no">SSL</span> certificate verification
       </label>
       <label className={styles.toggle}>
         <input

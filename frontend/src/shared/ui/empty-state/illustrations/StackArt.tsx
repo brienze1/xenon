@@ -1,6 +1,6 @@
 import { Illustration } from './Illustration'
 
-const COLLECTIONS_ART = (
+const STACK_ART = (
   <Illustration.Canvas>
     <Illustration.Stroke tone="magenta" d="M30 20h56v14H30z" />
     <Illustration.Stroke tone="cyan" d="M24 40h68v14H24z" />
@@ -9,6 +9,6 @@ const COLLECTIONS_ART = (
   </Illustration.Canvas>
 )
 
-export function CollectionsArt() {
-  return COLLECTIONS_ART
+export function StackArt() {
+  return STACK_ART
 }

@@ -24,6 +24,22 @@ import { useAppHotkeys } from './use-app-hotkeys'
 
 let didInit = false
 
+const WORKSPACE_SWITCHER = <WorkspaceSwitcher />
+
+const WELCOME_SCREEN = <WelcomeScreen />
+
+const CONSOLE = (
+  <ConsoleDrawer>
+    <ConsoleContent />
+  </ConsoleDrawer>
+)
+
+const NO_REQUEST_SELECTED = (
+  <EmptyState.Root label="No request selected" size="compact">
+    <EmptyState.Description>Open a request to see its details here.</EmptyState.Description>
+  </EmptyState.Root>
+)
+
 export function App() {
   const status = useWorkspacesStore((state) => state.status)
   const hasWorkspaces = useWorkspacesStore((state) => state.workspaces.length > 0)
@@ -70,7 +86,7 @@ export function App() {
 
   return (
     <AppShell layout={layout} onLayoutChange={setLayout}>
-      <TopBar>{hasWorkspaces ? <WorkspaceSwitcher /> : null}</TopBar>
+      <TopBar>{hasWorkspaces ? WORKSPACE_SWITCHER : null}</TopBar>
       {active ? (
         <>
           <Sidebar>
@@ -90,22 +106,16 @@ export function App() {
             {activeTabId ? (
               <InfoPanel key={active.localId} tabId={activeTabId} />
             ) : (
-              <EmptyState.Root label="No request selected" size="compact">
-                <EmptyState.Description>Open a request to see its details here.</EmptyState.Description>
-              </EmptyState.Root>
+              NO_REQUEST_SELECTED
             )}
           </RightPanel>
         </>
       ) : (
         <MainArea>
-          {missingLocalId ? <MissingFolderNotice localId={missingLocalId} /> : status === 'ready' ? <WelcomeScreen /> : null}
+          {missingLocalId ? <MissingFolderNotice localId={missingLocalId} /> : status === 'ready' ? WELCOME_SCREEN : null}
         </MainArea>
       )}
-      {active ? (
-        <ConsoleDrawer>
-          <ConsoleContent />
-        </ConsoleDrawer>
-      ) : null}
+      {active ? CONSOLE : null}
       <Footer>
         {active ? (
           <span className={styles.path} translate="no">

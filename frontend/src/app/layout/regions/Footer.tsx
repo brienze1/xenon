@@ -35,11 +35,14 @@ interface FooterProps {
 }
 
 export function Footer({ children }: FooterProps) {
-  const { layout, onLayoutChange } = useShellLayout()
+  const {
+    state: { layout },
+    actions: { update },
+  } = useShellLayout()
   const sideBySide = layout.split === 'side-by-side'
 
   function toggle(key: RegionToggle) {
-    onLayoutChange({ [key]: !layout[key] } as Partial<LayoutState>)
+    update({ [key]: !layout[key] } as Partial<LayoutState>)
   }
 
   return (
@@ -53,7 +56,7 @@ export function Footer({ children }: FooterProps) {
           label="Side by Side"
           icon="M2 3h12v10H2zM8 3v10"
           pressed={sideBySide}
-          onToggle={() => onLayoutChange({ split: sideBySide ? 'stacked' : 'side-by-side' })}
+          onToggle={() => update({ split: sideBySide ? 'stacked' : 'side-by-side' })}
         />
       </div>
     </footer>

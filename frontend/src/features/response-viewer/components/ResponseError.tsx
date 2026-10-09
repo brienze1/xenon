@@ -1,4 +1,5 @@
 import type { SendFailure } from '@/platform/mappers/request'
+import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import styles from './ResponseError.module.css'
 
 const TITLES: Record<SendFailure['kind'], string> = {
@@ -23,6 +24,8 @@ const NEXT_STEPS: Record<SendFailure['kind'], string> = {
   other: 'Check the request and your connection, then send again.',
 }
 
+const TECHNICAL_TERMS: readonly string[] = ['SSL/TLS', 'SSL']
+
 interface ResponseErrorProps {
   failure: SendFailure
 }
@@ -30,9 +33,13 @@ interface ResponseErrorProps {
 export function ResponseError({ failure }: ResponseErrorProps) {
   return (
     <section role="alert" aria-label="Request error" className={styles.error}>
-      <h3 className={styles.title}>{TITLES[failure.kind]}</h3>
+      <h3 className={styles.title}>
+        <NoTranslateText text={TITLES[failure.kind]} terms={TECHNICAL_TERMS} />
+      </h3>
       <p className={styles.message}>{failure.message}</p>
-      <p className={styles.hint}>{failure.hint || NEXT_STEPS[failure.kind]}</p>
+      <p className={styles.hint}>
+        <NoTranslateText text={failure.hint || NEXT_STEPS[failure.kind]} terms={TECHNICAL_TERMS} />
+      </p>
     </section>
   )
 }

@@ -1,6 +1,6 @@
 import { Illustration } from './Illustration'
 
-const TABS_ART = (
+const PANEL_PLUS_ART = (
   <Illustration.Canvas>
     <Illustration.Stroke tone="cyan" d="M16 34h26l4-10h26l4 10h28v44H16z" />
     <Illustration.Stroke tone="magenta" d="M46 52h28M60 38v28" />
@@ -8,6 +8,6 @@ const TABS_ART = (
   </Illustration.Canvas>
 )
 
-export function TabsArt() {
-  return TABS_ART
+export function PanelPlusArt() {
+  return PANEL_PLUS_ART
 }

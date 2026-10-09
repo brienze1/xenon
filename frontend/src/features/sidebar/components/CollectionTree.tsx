@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { rovingIndex } from '@/shared/lib/roving-focus'
 import { Button } from '@/shared/ui/button/Button'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
+import { StackArt } from '@/shared/ui/empty-state/illustrations/StackArt'
 import { isContainer, visibleRows, type TreeRow } from '@/features/sidebar/lib/tree-rows'
 import { useSidebarStore } from '@/features/sidebar/store'
 import styles from './CollectionTree.module.css'
@@ -22,6 +23,18 @@ function parentIndex(rows: TreeRow[], index: number): number {
   }
   return -1
 }
+
+const NO_COLLECTIONS_INTRO = (
+  <>
+    <EmptyState.Art>
+      <StackArt />
+    </EmptyState.Art>
+    <EmptyState.Title>No Collections Yet</EmptyState.Title>
+    <EmptyState.Description>Collections group your requests. Each one is a folder in your workspace.</EmptyState.Description>
+  </>
+)
+
+const NO_MATCHES = <p className={styles.noMatches}>No requests match your search.</p>
 
 export function CollectionTree(actions: CollectionTreeProps) {
   const tree = useSidebarStore((state) => state.tree)
@@ -98,9 +111,7 @@ export function CollectionTree(actions: CollectionTreeProps) {
   if (status === 'ready' && tree.length === 0) {
     return (
       <EmptyState.Root label="No collections" className={styles.empty}>
-        <EmptyState.Art variant="collections" />
-        <EmptyState.Title>No Collections Yet</EmptyState.Title>
-        <EmptyState.Description>Collections group your requests. Each one is a folder in your workspace.</EmptyState.Description>
+        {NO_COLLECTIONS_INTRO}
         <EmptyState.Actions>
           <Button variant="primary" onClick={() => void createCollection()}>
             Create Collection
@@ -111,7 +122,7 @@ export function CollectionTree(actions: CollectionTreeProps) {
   }
 
   if (search && rows.length === 0) {
-    return <p className={styles.noMatches}>No requests match your search.</p>
+    return NO_MATCHES
   }
 
   return (

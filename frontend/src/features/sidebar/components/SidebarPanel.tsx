@@ -25,6 +25,15 @@ interface SidebarPanelProps {
   onOpenHistoryEntry: (request: RequestDraft) => void
 }
 
+const SIDEBAR_VIEWS = (
+  <Tabs.List label="Sidebar view" className={styles.views}>
+    <Tabs.Tab value="collections">Collections</Tabs.Tab>
+    <Tabs.Tab value="history">History</Tabs.Tab>
+  </Tabs.List>
+)
+
+const SIDEBAR_TOOLBAR = <SidebarToolbar />
+
 export function SidebarPanel({ onOpenRequest, onPinRequest, onRequestsDeleted, onRenamed, onOpenHistoryEntry }: SidebarPanelProps) {
   const view = useSidebarStore((state) => state.view)
   const setView = useSidebarStore((state) => state.setView)
@@ -52,11 +61,8 @@ export function SidebarPanel({ onOpenRequest, onPinRequest, onRequestsDeleted, o
 
   return (
     <Tabs.Root value={view} onValueChange={(next) => setView(next as SidebarView)} className={styles.panel}>
-      <Tabs.List label="Sidebar view" className={styles.views}>
-        <Tabs.Tab value="collections">Collections</Tabs.Tab>
-        <Tabs.Tab value="history">History</Tabs.Tab>
-      </Tabs.List>
-      <SidebarToolbar />
+      {SIDEBAR_VIEWS}
+      {SIDEBAR_TOOLBAR}
       {error ? (
         <Banner.Root tone="error" className={styles.banner}>
           <Banner.Message>
@@ -64,7 +70,7 @@ export function SidebarPanel({ onOpenRequest, onPinRequest, onRequestsDeleted, o
           </Banner.Message>
           <Banner.Actions>
             <Button variant="ghost" size="sm" onClick={clearError}>
-              Dismiss
+              Dismiss Error
             </Button>
           </Banner.Actions>
         </Banner.Root>

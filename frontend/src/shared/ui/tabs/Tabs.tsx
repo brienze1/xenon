@@ -1,12 +1,24 @@
-import { createContext, use, useId, type KeyboardEvent, type ReactNode } from 'react'
+import { createContext, use, useId, useMemo, type KeyboardEvent, type ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
 import { rovingIndex } from '@/shared/lib/roving-focus'
 import styles from './Tabs.module.css'
 
-interface TabsContextValue {
+interface TabsState {
   value: string
+}
+
+interface TabsActions {
+  select: (value: string) => void
+}
+
+interface TabsMeta {
   baseId: string
-  onValueChange: (value: string) => void
+}
+
+interface TabsContextValue {
+  state: TabsState
+  actions: TabsActions
+  meta: TabsMeta
 }
 
 const TabsContext = createContext<TabsContextValue | null>(null)
@@ -27,6 +39,15 @@ function panelId(baseId: string, value: string): string {
   return `${baseId}-panel-${value}`
 }
 
+interface ProviderProps extends TabsContextValue {
+  children: ReactNode
+}
+
+function Provider({ state, actions, meta, children }: ProviderProps) {
+  const value = useMemo(() => ({ state, actions, meta }), [state, actions, meta])
+  return <TabsContext value={value}>{children}</TabsContext>
+}
+
 interface RootProps {
   value: string
   onValueChange: (value: string) => void
@@ -36,10 +57,13 @@ interface RootProps {
 
 function Root({ value, onValueChange, className, children }: RootProps) {
   const baseId = useId()
+  const state = useMemo(() => ({ value }), [value])
+  const actions = useMemo(() => ({ select: onValueChange }), [onValueChange])
+  const meta = useMemo(() => ({ baseId }), [baseId])
   return (
-    <TabsContext value={{ value, baseId, onValueChange }}>
+    <Provider state={state} actions={actions} meta={meta}>
       <div className={cn(styles.root, className)}>{children}</div>
-    </TabsContext>
+    </Provider>
   )
 }
 
@@ -78,19 +102,19 @@ interface TabProps {
 }
 
 function Tab({ value, disabled, className, children }: TabProps) {
-  const tabs = useTabs()
-  const selected = tabs.value === value
+  const { state, actions, meta } = useTabs()
+  const selected = state.value === value
   return (
     <button
       type="button"
       role="tab"
-      id={tabId(tabs.baseId, value)}
+      id={tabId(meta.baseId, value)}
       aria-selected={selected}
-      aria-controls={panelId(tabs.baseId, value)}
+      aria-controls={panelId(meta.baseId, value)}
       tabIndex={selected ? 0 : -1}
       disabled={disabled}
       className={cn(styles.tab, className)}
-      onClick={() => tabs.onValueChange(value)}
+      onClick={() => actions.select(value)}
     >
       {children}
     </button>
@@ -104,15 +128,15 @@ interface PanelProps {
 }
 
 function Panel({ value, className, children }: PanelProps) {
-  const tabs = useTabs()
-  if (tabs.value !== value) {
+  const { state, meta } = useTabs()
+  if (state.value !== value) {
     return null
   }
   return (
     <div
       role="tabpanel"
-      id={panelId(tabs.baseId, value)}
-      aria-labelledby={tabId(tabs.baseId, value)}
+      id={panelId(meta.baseId, value)}
+      aria-labelledby={tabId(meta.baseId, value)}
       className={cn(styles.panel, className)}
     >
       {children}
@@ -120,4 +144,4 @@ function Panel({ value, className, children }: PanelProps) {
   )
 }
 
-export const Tabs = { Root, List, Tab, Panel }
+export const Tabs = { Provider, Root, List, Tab, Panel }

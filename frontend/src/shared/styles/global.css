@@ -82,6 +82,12 @@ textarea,
   user-select: text;
 }
 
+:root[data-dragging],
+:root[data-dragging] * {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

@@ -1,17 +1,29 @@
-import { createContext, use, useEffect, useId, useMemo, useRef, useState, type Dispatch, type KeyboardEvent, type ReactNode, type RefObject, type SetStateAction } from 'react'
+import { createContext, use, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react'
 import { cn } from '@/shared/lib/cn'
 import { moveFocus } from '@/shared/lib/roving-focus'
 import styles from './Dropdown.module.css'
 
-interface DropdownContextValue {
+interface DropdownState {
   open: boolean
+}
+
+interface DropdownActions {
+  toggle: () => void
+  close: () => void
+}
+
+interface DropdownMeta {
   menuId: string
-  setOpen: Dispatch<SetStateAction<boolean>>
+  triggerRef: RefObject<HTMLButtonElement | null>
+}
+
+interface DropdownContextValue {
+  state: DropdownState
+  actions: DropdownActions
+  meta: DropdownMeta
 }
 
 const DropdownContext = createContext<DropdownContextValue | null>(null)
-
-const TriggerRefContext = createContext<RefObject<HTMLButtonElement | null> | null>(null)
 
 function useDropdown(): DropdownContextValue {
   const context = use(DropdownContext)
@@ -19,6 +31,15 @@ function useDropdown(): DropdownContextValue {
     throw new Error('Dropdown parts must be rendered inside <Dropdown.Root>')
   }
   return context
+}
+
+interface ProviderProps extends DropdownContextValue {
+  children: ReactNode
+}
+
+function Provider({ state, actions, meta, children }: ProviderProps) {
+  const value = useMemo(() => ({ state, actions, meta }), [state, actions, meta])
+  return <DropdownContext value={value}>{children}</DropdownContext>
 }
 
 interface RootProps {
@@ -31,7 +52,9 @@ function Root({ className, children }: RootProps) {
   const menuId = useId()
   const rootRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
-  const value = useMemo(() => ({ open, menuId, setOpen }), [open, menuId])
+  const state = useMemo(() => ({ open }), [open])
+  const actions = useMemo(() => ({ toggle: () => setOpen((current) => !current), close: () => setOpen(false) }), [])
+  const meta = useMemo(() => ({ menuId, triggerRef }), [menuId])
 
   useEffect(() => {
     if (!open) {
@@ -55,13 +78,11 @@ function Root({ className, children }: RootProps) {
   }, [open])
 
   return (
-    <DropdownContext value={value}>
-      <TriggerRefContext value={triggerRef}>
-        <div ref={rootRef} className={cn(styles.root, className)}>
-          {children}
-        </div>
-      </TriggerRefContext>
-    </DropdownContext>
+    <Provider state={state} actions={actions} meta={meta}>
+      <div ref={rootRef} className={cn(styles.root, className)}>
+        {children}
+      </div>
+    </Provider>
   )
 }
 
@@ -72,18 +93,21 @@ interface TriggerProps {
 }
 
 function Trigger({ label, className, children }: TriggerProps) {
-  const dropdown = useDropdown()
-  const triggerRef = use(TriggerRefContext)
+  const {
+    state,
+    actions,
+    meta: { menuId, triggerRef },
+  } = useDropdown()
   return (
     <button
       ref={triggerRef}
       type="button"
       aria-label={label}
       aria-haspopup="menu"
-      aria-expanded={dropdown.open}
-      aria-controls={dropdown.open ? dropdown.menuId : undefined}
+      aria-expanded={state.open}
+      aria-controls={state.open ? menuId : undefined}
       className={cn(styles.trigger, className)}
-      onClick={() => dropdown.setOpen((open) => !open)}
+      onClick={actions.toggle}
     >
       {children}
     </button>
@@ -97,23 +121,23 @@ interface MenuProps {
 }
 
 function Menu({ label, className, children }: MenuProps) {
-  const dropdown = useDropdown()
+  const { state, actions, meta } = useDropdown()
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (dropdown.open && menuRef.current) {
+    if (state.open && menuRef.current) {
       moveFocus(menuRef.current, 'ArrowDown', '[role^="menuitem"]')
     }
-  }, [dropdown.open])
+  }, [state.open])
 
-  if (!dropdown.open) {
+  if (!state.open) {
     return null
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key === 'Escape') {
       event.preventDefault()
-      dropdown.setOpen(false)
+      actions.close()
       return
     }
     if (moveFocus(event.currentTarget, event.key, '[role^="menuitem"]')) {
@@ -124,7 +148,7 @@ function Menu({ label, className, children }: MenuProps) {
   return (
     <div
       ref={menuRef}
-      id={dropdown.menuId}
+      id={meta.menuId}
       role="menu"
       aria-label={label}
       className={cn(styles.menu, className)}
@@ -144,7 +168,7 @@ interface MenuButtonProps {
 }
 
 function MenuButton({ role, checked, onSelect, className, children }: MenuButtonProps) {
-  const dropdown = useDropdown()
+  const { actions } = useDropdown()
   return (
     <button
       type="button"
@@ -152,7 +176,7 @@ function MenuButton({ role, checked, onSelect, className, children }: MenuButton
       aria-checked={checked}
       className={cn(styles.item, className)}
       onClick={() => {
-        dropdown.setOpen(false)
+        actions.close()
         onSelect()
       }}
     >
@@ -190,4 +214,4 @@ function RadioItem({ checked, onSelect, className, children }: RadioItemProps) {
   )
 }
 
-export const Dropdown = { Root, Trigger, Menu, Item, RadioItem }
+export const Dropdown = { Provider, Root, Trigger, Menu, Item, RadioItem }

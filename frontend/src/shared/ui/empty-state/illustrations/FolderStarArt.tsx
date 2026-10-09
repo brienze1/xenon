@@ -1,6 +1,6 @@
 import { Illustration } from './Illustration'
 
-const WORKSPACE_ART = (
+const FOLDER_STAR_ART = (
   <Illustration.Canvas>
     <Illustration.Stroke tone="cyan" d="M18 30h28l8 9h46v41H18z" />
     <Illustration.Drip tone="cyan" d="M34 80v8M70 80v5" />
@@ -8,6 +8,6 @@ const WORKSPACE_ART = (
   </Illustration.Canvas>
 )
 
-export function WorkspaceArt() {
-  return WORKSPACE_ART
+export function FolderStarArt() {
+  return FOLDER_STAR_ART
 }

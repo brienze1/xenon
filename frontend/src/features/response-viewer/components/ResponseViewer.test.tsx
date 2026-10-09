@@ -77,9 +77,14 @@ describe('ResponseViewer', () => {
     expect(screen.getByText('9 B')).toBeInTheDocument()
     await user.hover(screen.getByRole('button', { name: 'Time 1.52\u00a0s' }))
     const tooltip = screen.getByRole('tooltip')
-    for (const phase of ['DNS lookup', 'TCP connection', 'TLS handshake', 'Time to first byte', 'Download', 'Total']) {
-      expect(within(tooltip).getByText(phase)).toBeInTheDocument()
-    }
+    expect(within(tooltip).getAllByRole('term').map((term) => term.textContent)).toEqual([
+      'DNS lookup',
+      'TCP connection',
+      'TLS handshake',
+      'Time to first byte',
+      'Download',
+      'Total',
+    ])
     expect(within(tooltip).getByText('40 ms')).toBeInTheDocument()
     show(result({ statusCode: 302, statusText: 'Found' }))
     expect(screen.getByText('302 Found')).toBeInTheDocument()
@@ -152,7 +157,7 @@ describe('ResponseViewer', () => {
     vi.mocked(dialogs.pickSaveFile).mockResolvedValue('/out/response.json')
     render(<ResponseViewer tabId="tab" />)
     show(result())
-    await user.click(screen.getByRole('button', { name: 'Copy' }))
+    await user.click(screen.getByRole('button', { name: 'Copy Body' }))
     expect(writeText).toHaveBeenCalledWith('{"a":[1]}')
     expect(screen.getByRole('button', { name: 'Copied' })).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('Xenon copied the response body to the clipboard.')
@@ -165,7 +170,7 @@ describe('ResponseViewer', () => {
     vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'))
     render(<ResponseViewer tabId="tab" />)
     show(result())
-    await user.click(screen.getByRole('button', { name: 'Copy' }))
+    await user.click(screen.getByRole('button', { name: 'Copy Body' }))
     expect(screen.getByRole('button', { name: 'Copy Failed' })).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('Xenon couldn’t copy to the clipboard')
   })

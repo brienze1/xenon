@@ -8,6 +8,8 @@ import type { SaveDialogState } from '@/features/tabs/model'
 import { useTabsStore } from '@/features/tabs/store'
 import styles from './SaveRequestDialog.module.css'
 
+const NO_COLLECTIONS = <p className={styles.empty}>Create a collection in the sidebar first.</p>
+
 export function SaveRequestDialog() {
   const dialog = useTabsStore((state) => state.saveDialog)
   const cancelSave = useTabsStore((state) => state.cancelSave)
@@ -96,7 +98,7 @@ function SaveRequestForm({ dialog }: SaveRequestFormProps) {
           aria-describedby={placeError ? placeErrorId : undefined}
         >
           <legend className={styles.label}>Save to</legend>
-          {options.length === 0 ? <p className={styles.empty}>Create a collection in the sidebar first.</p> : null}
+          {options.length === 0 ? NO_COLLECTIONS : null}
           {options.map((option, index) => (
             <label key={option.id} className={styles.place} style={{ '--depth': option.depth } as CSSProperties}>
               <input
@@ -124,7 +126,7 @@ function SaveRequestForm({ dialog }: SaveRequestFormProps) {
           Cancel
         </Button>
         <Button type="submit" variant="primary" disabled={saving}>
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? 'Saving…' : 'Save Request'}
         </Button>
       </Dialog.Actions>
     </form>

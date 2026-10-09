@@ -15,9 +15,6 @@ export function splitProtectedTerms(text: string, terms: readonly string[]): Tex
     return text === '' ? [] : [{ text, protected: false }]
   }
   const protectedTerms = new Set(usable)
-  const pattern = new RegExp(`(${[...usable].sort((a, b) => b.length - a.length).map(escapeTerm).join('|')})`)
-  return text
-    .split(pattern)
-    .filter((part) => part !== '')
-    .map((part) => ({ text: part, protected: protectedTerms.has(part) }))
+  const pattern = new RegExp(`(${usable.sort((a, b) => b.length - a.length).map(escapeTerm).join('|')})`)
+  return text.split(pattern).flatMap((part) => (part === '' ? [] : [{ text: part, protected: protectedTerms.has(part) }]))
 }

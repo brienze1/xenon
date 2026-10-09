@@ -2,7 +2,7 @@ import { BODY_MODES, RAW_LANGUAGES, type BodyMode, type FormDataRow, type RawLan
 import { Button } from '@/shared/ui/button/Button'
 import { CodeEditor } from '@/shared/ui/code-editor/CodeEditor'
 import { IconButton } from '@/shared/ui/icon-button/IconButton'
-import { KeyValueTable } from '@/shared/ui/key-value-table/KeyValueTable'
+import { KeyValueTable, type KeyValueExamples } from '@/shared/ui/key-value-table/KeyValueTable'
 import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
 import { PanelSection } from '@/shared/ui/panel-section/PanelSection'
 import { useMissingFile } from '@/features/request-builder/hooks/use-missing-file'
@@ -22,7 +22,7 @@ const MODE_LABELS: Record<BodyMode, string> = {
   graphql: 'GraphQL',
 }
 
-const TECHNICAL_MODES: ReadonlySet<BodyMode> = new Set(['formdata', 'urlencoded'])
+const TECHNICAL_MODES: ReadonlySet<BodyMode> = new Set(['formdata', 'urlencoded', 'graphql'])
 
 const LANGUAGE_LABELS: Record<RawLanguage, string> = {
   json: 'JSON',
@@ -31,6 +31,55 @@ const LANGUAGE_LABELS: Record<RawLanguage, string> = {
   html: 'HTML',
   javascript: 'JavaScript',
 }
+
+const TECHNICAL_LANGUAGES: ReadonlySet<RawLanguage> = new Set(['json', 'xml', 'html', 'javascript'])
+
+const MISSING_FILE = (
+  <span role="status" className={styles.missing}>
+    <span translate="no">Xenon</span> can’t find this file — select it again
+  </span>
+)
+
+const URLENCODED_EXAMPLES: KeyValueExamples = {
+  key: 'grant_type',
+  value: 'client_credentials',
+  description: 'What this field carries',
+}
+
+const REMOVE_GLYPH = <span aria-hidden="true">×</span>
+
+const NO_BODY_NOTE = <PanelSection.Note>This request does not have a body.</PanelSection.Note>
+
+const FORM_DATA_HEAD = (
+  <thead>
+    <tr>
+      <th className={styles.checkColumn}>
+        <span className="visually-hidden">Enabled</span>
+      </th>
+      <th>Key</th>
+      <th>Type</th>
+      <th>Value</th>
+      <th className={styles.checkColumn}>
+        <span className="visually-hidden">Actions</span>
+      </th>
+    </tr>
+  </thead>
+)
+
+const FORM_DATA_TYPE_OPTIONS = (
+  <>
+    <option value="text">Text</option>
+    <option value="file">File</option>
+  </>
+)
+
+const GRAPHQL_QUERY_HEADING = <PanelSection.Heading>Query</PanelSection.Heading>
+
+const GRAPHQL_VARIABLES_HEADING = (
+  <PanelSection.Heading>
+    <span translate="no">GraphQL</span> Variables
+  </PanelSection.Heading>
+)
 
 const DIRECTORY_PREFIX = /^.*[\\/]/
 
@@ -86,7 +135,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
             }
           >
             {RAW_LANGUAGES.map((language) => (
-              <option key={language} value={language}>
+              <option key={language} value={language} translate={TECHNICAL_LANGUAGES.has(language) ? 'no' : undefined}>
                 {LANGUAGE_LABELS[language]}
               </option>
             ))}
@@ -94,7 +143,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
         ) : null}
       </div>
 
-      {body.mode === 'none' ? <PanelSection.Note>This request does not have a body.</PanelSection.Note> : null}
+      {body.mode === 'none' ? NO_BODY_NOTE : null}
 
       {body.mode === 'raw' ? (
         <CodeEditor
@@ -108,11 +157,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
 
       {body.mode === 'urlencoded' ? (
         <KeyValueTable
-          examples={{
-            key: 'grant_type',
-            value: 'client_credentials',
-            description: 'What this field carries',
-          }}
+          examples={URLENCODED_EXAMPLES}
           label="Url-encoded body"
           rows={urlencoded}
           mode={bulkText === undefined ? 'table' : 'bulk'}
@@ -127,19 +172,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
 
       {body.mode === 'formdata' ? (
         <table aria-label="Form-data body" className={styles.table}>
-          <thead>
-            <tr>
-              <th className={styles.checkColumn}>
-                <span className="visually-hidden">Enabled</span>
-              </th>
-              <th>Key</th>
-              <th>Type</th>
-              <th>Value</th>
-              <th className={styles.checkColumn}>
-                <span className="visually-hidden">Actions</span>
-              </th>
-            </tr>
-          </thead>
+          {FORM_DATA_HEAD}
           <tbody>
             {formdata.map((row) => (
               <tr key={row.id}>
@@ -189,8 +222,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                       })
                     }
                   >
-                    <option value="text">Text</option>
-                    <option value="file">File</option>
+                    {FORM_DATA_TYPE_OPTIONS}
                   </select>
                 </td>
                 <td>
@@ -202,11 +234,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                       <span className={styles.filePath} translate="no">
                         {row.src}
                       </span>
-                      {missingFile !== null && row.src !== '' && missingFile.endsWith(row.src.replace(DIRECTORY_PREFIX, '')) ? (
-                        <span role="status" className={styles.missing}>
-                          Xenon can’t find this file — select it again
-                        </span>
-                      ) : null}
+                      {missingFile !== null && row.src !== '' && missingFile.endsWith(row.src.replace(DIRECTORY_PREFIX, '')) ? MISSING_FILE : null}
                     </div>
                   ) : (
                     <input
@@ -235,7 +263,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                       })
                     }
                   >
-                    <span aria-hidden="true">×</span>
+                    {REMOVE_GLYPH}
                   </IconButton>
                 </td>
               </tr>
@@ -265,17 +293,13 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
           <span className={styles.filePath} translate={body.binary.src ? 'no' : undefined}>
             {body.binary.src || 'No file selected'}
           </span>
-          {missingFile !== null && body.binary.src !== '' ? (
-            <span role="status" className={styles.missing}>
-              Xenon can’t find this file — select it again
-            </span>
-          ) : null}
+          {missingFile !== null && body.binary.src !== '' ? MISSING_FILE : null}
         </div>
       ) : null}
 
       {body.mode === 'graphql' ? (
         <>
-          <PanelSection.Heading>Query</PanelSection.Heading>
+          {GRAPHQL_QUERY_HEADING}
           <CodeEditor
             label="GraphQL query"
             className={styles.editor}
@@ -283,7 +307,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
             value={body.graphql.query}
             onChange={(query) => updateBody(tabId, { graphql: { ...body.graphql, query } })}
           />
-          <PanelSection.Heading>GraphQL Variables</PanelSection.Heading>
+          {GRAPHQL_VARIABLES_HEADING}
           <CodeEditor
             label="GraphQL variables"
             className={styles.editor}

@@ -64,7 +64,7 @@ export function RemoveWorkspaceDialog({ workspace, open, onClose }: RemoveWorksp
           Cancel
         </Button>
         <Button variant="danger" disabled={removing} onClick={() => void confirm(moveToTrash)}>
-          {removing ? 'Removing…' : 'Remove'}
+          {removing ? 'Removing…' : 'Remove Workspace'}
         </Button>
       </Dialog.Actions>
     </Dialog.Root>

@@ -3,6 +3,7 @@ import { withNextStep } from '@/shared/lib/next-step'
 import { formatNumber } from '@/shared/lib/number-format'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
+import { BoltRingArt } from '@/shared/ui/empty-state/illustrations/BoltRingArt'
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { Tabs } from '@/shared/ui/tabs/Tabs'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
@@ -16,9 +17,17 @@ const SEND_NEXT_STEP = 'Check the URL and your connection, then send the request
 
 const EMPTY_RESPONSE = (
   <EmptyState.Root label="No response yet">
-    <EmptyState.Art variant="response" />
+    <EmptyState.Art>
+      <BoltRingArt />
+    </EmptyState.Art>
     <EmptyState.Description>Enter the URL and click Send to get a response.</EmptyState.Description>
   </EmptyState.Root>
+)
+
+const SENDING = (
+  <p role="status" className={styles.sending}>
+    Sending request…
+  </p>
 )
 
 interface ResponseViewerProps {
@@ -50,9 +59,7 @@ export function ResponseViewer({ tabId }: ResponseViewerProps) {
         </Banner.Root>
       ) : null}
       {entry?.sending ? (
-        <p role="status" className={styles.sending}>
-          Sending request…
-        </p>
+        SENDING
       ) : result === null ? (
         EMPTY_RESPONSE
       ) : result.error ? (

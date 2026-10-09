@@ -1,12 +1,32 @@
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import type { ComponentType } from 'react'
 import { EmptyState } from './EmptyState'
+import { BoltRingArt } from './illustrations/BoltRingArt'
+import { ClockArt } from './illustrations/ClockArt'
+import { FolderQuestionArt } from './illustrations/FolderQuestionArt'
+import { FolderStarArt } from './illustrations/FolderStarArt'
+import { PanelPlusArt } from './illustrations/PanelPlusArt'
+import { StackArt } from './illustrations/StackArt'
+import { TerminalArt } from './illustrations/TerminalArt'
+
+const ILLUSTRATIONS: Array<[string, ComponentType]> = [
+  ['folder star', FolderStarArt],
+  ['stack', StackArt],
+  ['panel plus', PanelPlusArt],
+  ['bolt ring', BoltRingArt],
+  ['clock', ClockArt],
+  ['terminal', TerminalArt],
+  ['folder question', FolderQuestionArt],
+]
 
 describe('EmptyState', () => {
   it('renders a labelled section with the marker title, description and actions', () => {
     render(
       <EmptyState.Root label="No response">
-        <EmptyState.Art variant="response" />
+        <EmptyState.Art>
+          <BoltRingArt />
+        </EmptyState.Art>
         <EmptyState.Title>Nothing here yet</EmptyState.Title>
         <EmptyState.Description>Send a request to see the response.</EmptyState.Description>
         <EmptyState.Actions>
@@ -20,10 +40,12 @@ describe('EmptyState', () => {
     expect(screen.getByRole('button', { name: 'Send' })).toBeInTheDocument()
   })
 
-  it.each(['workspace', 'collections', 'tabs', 'response', 'history', 'console', 'missing'] as const)('adds the %s illustration without anything for assistive tech to read', (variant) => {
+  it.each(ILLUSTRATIONS)('adds the %s illustration without anything for assistive tech to read', (_name, Illustration) => {
     render(
       <EmptyState.Root label="Empty">
-        <EmptyState.Art variant={variant} />
+        <EmptyState.Art>
+          <Illustration />
+        </EmptyState.Art>
         <EmptyState.Title>Title</EmptyState.Title>
       </EmptyState.Root>,
     )

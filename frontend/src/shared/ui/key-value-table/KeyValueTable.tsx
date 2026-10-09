@@ -33,11 +33,29 @@ const EMPTY_ROW: KeyValueFields = { key: '', value: '', description: '', enabled
 
 export type TextField = 'key' | 'value' | 'description'
 
-const COLUMNS: Array<{ field: TextField; title: string }> = [
-  { field: 'key', title: 'Key' },
-  { field: 'value', title: 'Value' },
-  { field: 'description', title: 'Description' },
+const COLUMNS: Array<{ field: TextField; title: string; code: boolean }> = [
+  { field: 'key', title: 'Key', code: true },
+  { field: 'value', title: 'Value', code: true },
+  { field: 'description', title: 'Description', code: false },
 ]
+
+const REMOVE_GLYPH = <span aria-hidden="true">×</span>
+
+const TABLE_HEAD = (
+  <thead>
+    <tr>
+      <th className={styles.checkColumn}>
+        <span className="visually-hidden">Enabled</span>
+      </th>
+      {COLUMNS.map((column) => (
+        <th key={column.field}>{column.title}</th>
+      ))}
+      <th className={styles.actionColumn}>
+        <span className="visually-hidden">Actions</span>
+      </th>
+    </tr>
+  </thead>
+)
 
 export function KeyValueTable({
   label,
@@ -71,19 +89,7 @@ export function KeyValueTable({
         />
       ) : (
         <table aria-label={label} className={styles.table}>
-          <thead>
-            <tr>
-              <th className={styles.checkColumn}>
-                <span className="visually-hidden">Enabled</span>
-              </th>
-              {COLUMNS.map((column) => (
-                <th key={column.field}>{column.title}</th>
-              ))}
-              <th className={styles.actionColumn}>
-                <span className="visually-hidden">Actions</span>
-              </th>
-            </tr>
-          </thead>
+          {TABLE_HEAD}
           <tbody>
             {rows.map((row) => (
               <tr key={row.id} className={cn(!row.enabled && styles.disabled)}>
@@ -113,7 +119,7 @@ export function KeyValueTable({
                 ))}
                 <td>
                   <IconButton label={`Remove ${row.key || 'Row'}`} onClick={() => onRowRemove(row.id)}>
-                    <span aria-hidden="true">×</span>
+                    {REMOVE_GLYPH}
                   </IconButton>
                 </td>
               </tr>
@@ -127,6 +133,7 @@ export function KeyValueTable({
                     autoComplete="off"
                     aria-label={`New ${column.title.toLowerCase()}`}
                     placeholder={`${examples[column.field]}…`}
+                    translate={column.code ? 'no' : undefined}
                     className={styles.cell}
                     spellCheck={false}
                     value=""

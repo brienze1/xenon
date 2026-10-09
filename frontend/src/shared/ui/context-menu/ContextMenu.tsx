@@ -14,10 +14,21 @@ interface OpenMenu {
   returnFocus: HTMLElement | null
 }
 
-interface ContextMenuContextValue {
+interface ContextMenuState {
   menu: OpenMenu | null
+}
+
+interface ContextMenuActions {
   openAt: (position: Position, returnFocus: HTMLElement | null) => void
   close: () => void
+}
+
+type ContextMenuMeta = Record<string, never>
+
+interface ContextMenuContextValue {
+  state: ContextMenuState
+  actions: ContextMenuActions
+  meta: ContextMenuMeta
 }
 
 const ContextMenuContext = createContext<ContextMenuContextValue | null>(null)
@@ -30,21 +41,36 @@ function useContextMenu(): ContextMenuContextValue {
   return context
 }
 
+interface ProviderProps extends ContextMenuContextValue {
+  children: ReactNode
+}
+
+function Provider({ state, actions, meta, children }: ProviderProps) {
+  const value = useMemo(() => ({ state, actions, meta }), [state, actions, meta])
+  return <ContextMenuContext value={value}>{children}</ContextMenuContext>
+}
+
+const NO_META: ContextMenuMeta = {}
+
 interface RootProps {
   children: ReactNode
 }
 
 function Root({ children }: RootProps) {
   const [menu, setMenu] = useState<OpenMenu | null>(null)
-  const value = useMemo<ContextMenuContextValue>(
+  const state = useMemo(() => ({ menu }), [menu])
+  const actions = useMemo<ContextMenuActions>(
     () => ({
-      menu,
       openAt: (position, returnFocus) => setMenu({ position, returnFocus }),
       close: () => setMenu(null),
     }),
-    [menu],
+    [],
   )
-  return <ContextMenuContext value={value}>{children}</ContextMenuContext>
+  return (
+    <Provider state={state} actions={actions} meta={NO_META}>
+      {children}
+    </Provider>
+  )
 }
 
 const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]'
@@ -67,10 +93,10 @@ interface TriggerProps {
 }
 
 function Trigger({ className, children }: TriggerProps) {
-  const menu = useContextMenu()
+  const { actions } = useContextMenu()
   function onContextMenu(event: MouseEvent<HTMLDivElement>) {
     event.preventDefault()
-    menu.openAt({ x: event.clientX, y: event.clientY }, focusableWithin(event.currentTarget, event.target))
+    actions.openAt({ x: event.clientX, y: event.clientY }, focusableWithin(event.currentTarget, event.target))
   }
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (!isMenuKey(event) || !(event.target instanceof HTMLElement)) {
@@ -78,7 +104,7 @@ function Trigger({ className, children }: TriggerProps) {
     }
     event.preventDefault()
     const rect = event.target.getBoundingClientRect()
-    menu.openAt({ x: rect.left, y: rect.bottom }, event.target)
+    actions.openAt({ x: rect.left, y: rect.bottom }, event.target)
   }
   return (
     <div className={className} onContextMenu={onContextMenu} onKeyDown={onKeyDown}>
@@ -93,7 +119,10 @@ interface MenuProps {
 }
 
 function Menu({ label, children }: MenuProps) {
-  const { menu, close } = useContextMenu()
+  const {
+    state: { menu },
+    actions: { close },
+  } = useContextMenu()
   const menuRef = useRef<HTMLDivElement>(null)
   const open = menu !== null
   const returnFocus = menu?.returnFocus ?? null
@@ -160,7 +189,9 @@ interface ItemProps {
 }
 
 function Item({ onSelect, tone = 'default', children }: ItemProps) {
-  const { close } = useContextMenu()
+  const {
+    actions: { close },
+  } = useContextMenu()
   return (
     <button
       type="button"
@@ -176,4 +207,4 @@ function Item({ onSelect, tone = 'default', children }: ItemProps) {
   )
 }
 
-export const ContextMenu = { Root, Trigger, Menu, Item }
+export const ContextMenu = { Provider, Root, Trigger, Menu, Item }

@@ -83,10 +83,10 @@ describe('InfoPanel', () => {
 
   it('edits the description into the draft', async () => {
     render(<InfoPanel tabId={tabId()} />)
-    await userEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Edit Description' }))
     await userEvent.type(screen.getByRole('textbox', { name: 'Description' }), 'Hello')
     expect(useRequestBuilderStore.getState().tabs[tabId()]!.draft.description).toBe('Hello')
-    await userEvent.click(screen.getByRole('button', { name: 'Done' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Done Editing' }))
     expect(await screen.findByText('Hello')).toBeInTheDocument()
   })
 

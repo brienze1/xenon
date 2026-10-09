@@ -16,6 +16,14 @@ export interface TreeItemActions {
   onRenamed: (id: string) => void
 }
 
+const ERROR_MARK = (
+  <span aria-hidden="true" className={styles.errorMark}>
+    !
+  </span>
+)
+
+const DUPLICATE_ID_WARNING = <span className={styles.warning}>Duplicate ID</span>
+
 interface TreeItemProps extends TreeItemActions {
   row: TreeRow
   focusable: boolean
@@ -85,17 +93,13 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenSe
             {container ? (expanded ? '▾' : '▸') : ''}
           </span>
           {node.kind === 'request' ? <MethodBadge method={node.method ?? 'GET'} className={styles.method} /> : null}
-          {node.kind === 'error' ? (
-            <span aria-hidden="true" className={styles.errorMark}>
-              !
-            </span>
-          ) : null}
+          {node.kind === 'error' ? ERROR_MARK : null}
           {renaming ? (
             <RenameInput name={node.name} onCommit={(name) => void commitRename(name)} onCancel={cancelRename} />
           ) : (
             <span className={styles.name}>{node.name}</span>
           )}
-          {node.warning ? <span className={styles.warning}>Duplicate ID</span> : null}
+          {node.warning ? DUPLICATE_ID_WARNING : null}
         </div>
       </ContextMenu.Trigger>
       {node.kind === 'error' ? null : (

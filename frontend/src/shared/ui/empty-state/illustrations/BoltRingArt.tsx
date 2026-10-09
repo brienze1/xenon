@@ -1,6 +1,6 @@
 import { Illustration } from './Illustration'
 
-const RESPONSE_ART = (
+const BOLT_RING_ART = (
   <Illustration.Canvas>
     <Illustration.Ring tone="cyan" cx={60} cy={46} r={30} />
     <Illustration.Stroke tone="green" d="M64 22L48 50h14l-6 24 18-30H60z" />
@@ -8,6 +8,6 @@ const RESPONSE_ART = (
   </Illustration.Canvas>
 )
 
-export function ResponseArt() {
-  return RESPONSE_ART
+export function BoltRingArt() {
+  return BOLT_RING_ART
 }

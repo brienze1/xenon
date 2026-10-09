@@ -1,5 +1,6 @@
 import { useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { cn } from '@/shared/lib/cn'
+import { suspendTextSelection } from '@/shared/lib/text-selection'
 import styles from './ResizeHandle.module.css'
 
 export const RESIZE_KEYBOARD_STEP = 16
@@ -34,11 +35,13 @@ export function ResizeHandle({ label, orientation, edge, value, min, max, onChan
     event.preventDefault()
     const origin = position(event)
     const initial = value
+    const restoreSelection = suspendTextSelection()
     setDragging(true)
     function onPointerMove(move: PointerEvent) {
       onChange(clamp(initial + (position(move) - origin) * growth, min, max))
     }
     function onPointerUp() {
+      restoreSelection()
       setDragging(false)
       window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('pointerup', onPointerUp)

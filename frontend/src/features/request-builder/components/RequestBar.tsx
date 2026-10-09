@@ -57,6 +57,7 @@ export function RequestBar({ tabId, onSave }: RequestBarProps) {
             autoComplete="off"
             aria-label="Custom method"
             placeholder="PURGE…"
+            translate="no"
             className={styles.customMethod}
             value={customMethod}
             spellCheck={false}
@@ -73,6 +74,7 @@ export function RequestBar({ tabId, onSave }: RequestBarProps) {
         aria-label="Request URL"
         className={styles.url}
         placeholder="https://api.example.com/users…"
+        translate="no"
         spellCheck={false}
         value={url}
         onChange={(event) => setUrl(tabId, event.target.value)}
@@ -80,7 +82,7 @@ export function RequestBar({ tabId, onSave }: RequestBarProps) {
       />
       {sending ? (
         <Button variant="running" className={styles.send} onClick={() => cancel(tabId)}>
-          Cancel
+          Cancel Request
         </Button>
       ) : (
         <Button variant="accent" className={styles.send} onClick={() => void send(tabId)}>

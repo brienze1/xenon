@@ -10,7 +10,10 @@ interface ConsoleDrawerProps {
 }
 
 export function ConsoleDrawer({ children }: ConsoleDrawerProps) {
-  const { layout, onLayoutChange } = useShellLayout()
+  const {
+    state: { layout },
+    actions: { update },
+  } = useShellLayout()
   const headingId = useId()
   const windowHeight = useWindowHeight()
   if (!layout.consoleVisible) {
@@ -28,7 +31,7 @@ export function ConsoleDrawer({ children }: ConsoleDrawerProps) {
         value={layout.consoleHeight}
         min={LAYOUT_LIMITS.console.min}
         max={consoleMaxHeight(windowHeight)}
-        onChange={(consoleHeight) => onLayoutChange({ consoleHeight })}
+        onChange={(consoleHeight) => update({ consoleHeight })}
       />
       <div className={styles.content}>{children}</div>
     </section>

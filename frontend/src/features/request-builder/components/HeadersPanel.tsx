@@ -1,5 +1,5 @@
 import type { AutoHeader, KeyValueRow } from '@/platform/mappers/request'
-import { KeyValueTable } from '@/shared/ui/key-value-table/KeyValueTable'
+import { KeyValueTable, type KeyValueExamples } from '@/shared/ui/key-value-table/KeyValueTable'
 import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
 import { PanelSection } from '@/shared/ui/panel-section/PanelSection'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
@@ -11,6 +11,28 @@ interface HeadersPanelProps {
 
 const NO_HEADERS: KeyValueRow[] = []
 const NO_AUTO_HEADERS: AutoHeader[] = []
+
+const HEADER_EXAMPLES: KeyValueExamples = {
+  key: 'Authorization',
+  value: 'Bearer abc123',
+  description: 'Why this header is sent',
+}
+
+const HEADERS_HEADING = <PanelSection.Heading>Headers</PanelSection.Heading>
+
+const AUTO_HEADERS_HEADING = <PanelSection.Heading>Auto-Generated Headers</PanelSection.Heading>
+
+const AUTO_HEADERS_HEAD = (
+  <thead>
+    <tr>
+      <th className={styles.checkColumn}>
+        <span className="visually-hidden">Sent</span>
+      </th>
+      <th>Key</th>
+      <th>Value</th>
+    </tr>
+  </thead>
+)
 
 export function HeadersPanel({ tabId }: HeadersPanelProps) {
   const headers = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.headers ?? NO_HEADERS)
@@ -24,13 +46,9 @@ export function HeadersPanel({ tabId }: HeadersPanelProps) {
   return (
     <div>
       <PanelSection.Root>
-        <PanelSection.Heading>Headers</PanelSection.Heading>
+        {HEADERS_HEADING}
         <KeyValueTable
-          examples={{
-            key: 'Authorization',
-            value: 'Bearer abc123',
-            description: 'Why this header is sent',
-          }}
+          examples={HEADER_EXAMPLES}
           label="Headers"
           rows={headers}
           mode={bulkText === undefined ? 'table' : 'bulk'}
@@ -44,17 +62,9 @@ export function HeadersPanel({ tabId }: HeadersPanelProps) {
       </PanelSection.Root>
       {autoHeaders.length > 0 ? (
         <PanelSection.Root>
-          <PanelSection.Heading>Auto-Generated Headers</PanelSection.Heading>
+          {AUTO_HEADERS_HEADING}
           <table aria-label="Auto-generated headers" className={styles.table}>
-            <thead>
-              <tr>
-                <th className={styles.checkColumn}>
-                  <span className="visually-hidden">Sent</span>
-                </th>
-                <th>Key</th>
-                <th>Value</th>
-              </tr>
-            </thead>
+            {AUTO_HEADERS_HEAD}
             <tbody>
               {autoHeaders.map((header) => (
                 <tr key={header.key} className={styles.auto}>

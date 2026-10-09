@@ -2,12 +2,34 @@ import { useId, useRef, useState, type FormEvent } from 'react'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
+import { FolderStarArt } from '@/shared/ui/empty-state/illustrations/FolderStarArt'
 import { hasErrors, NO_ERRORS, validateWorkspaceForm } from '@/features/workspaces/lib/workspace-form'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import { WorkspaceErrorText } from './WorkspaceErrorText'
 import styles from './WelcomeScreen.module.css'
 
 const PICKER_TITLE = 'Choose the folder for the new workspace'
+
+const WELCOME_INTRO = (
+  <>
+    <EmptyState.Art>
+      <FolderStarArt />
+    </EmptyState.Art>
+    <EmptyState.Title>
+      <span translate="no">Xenon</span>
+    </EmptyState.Title>
+    <EmptyState.Description>
+      Create a workspace in any folder — for example inside your company’s git repository. <span translate="no">Xenon</span> saves
+      everything there as plain files.
+    </EmptyState.Description>
+  </>
+)
+
+const NO_FOLDER = (
+  <span className={styles.placeholder} translate="yes">
+    No folder chosen
+  </span>
+)
 
 export function WelcomeScreen() {
   const [name, setName] = useState('')
@@ -46,14 +68,7 @@ export function WelcomeScreen() {
 
   return (
     <EmptyState.Root label="Welcome">
-      <EmptyState.Art variant="workspace" />
-      <EmptyState.Title>
-        <span translate="no">Xenon</span>
-      </EmptyState.Title>
-      <EmptyState.Description>
-        Create a workspace in any folder — for example inside your company’s git repository. <span translate="no">Xenon</span> saves
-        everything there as plain files.
-      </EmptyState.Description>
+      {WELCOME_INTRO}
       <EmptyState.Actions>
         <form className={styles.form} aria-label="Create workspace" noValidate onSubmit={(event) => void onSubmit(event)}>
           <label className={styles.field}>
@@ -82,7 +97,7 @@ export function WelcomeScreen() {
             <legend className={styles.label}>Folder</legend>
             <div className={styles.folder}>
               <span className={styles.path} translate="no">
-                {path ?? <span className={styles.placeholder}>No folder chosen</span>}
+                {path ?? NO_FOLDER}
               </span>
               <Button ref={folderRef} size="sm" aria-describedby={errors.folder ? folderErrorId : undefined} onClick={() => void onChooseFolder()}>
                 Choose Folder…

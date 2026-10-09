@@ -1,5 +1,5 @@
 import type { KeyValueRow, PathVariableRow } from '@/platform/mappers/request'
-import { KeyValueTable } from '@/shared/ui/key-value-table/KeyValueTable'
+import { KeyValueTable, type KeyValueExamples } from '@/shared/ui/key-value-table/KeyValueTable'
 import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
 import { PanelSection } from '@/shared/ui/panel-section/PanelSection'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
@@ -11,6 +11,22 @@ interface ParamsPanelProps {
 
 const NO_PARAMS: KeyValueRow[] = []
 const NO_PATH_VARIABLES: PathVariableRow[] = []
+
+const PARAM_EXAMPLES: KeyValueExamples = { key: 'page', value: '1', description: 'Page to fetch' }
+
+const QUERY_PARAMS_HEADING = <PanelSection.Heading>Query Params</PanelSection.Heading>
+
+const PATH_VARIABLES_HEADING = <PanelSection.Heading>Path Variables</PanelSection.Heading>
+
+const PATH_VARIABLES_HEAD = (
+  <thead>
+    <tr>
+      <th>Key</th>
+      <th>Value</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+)
 
 export function ParamsPanel({ tabId }: ParamsPanelProps) {
   const params = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.params ?? NO_PARAMS)
@@ -24,9 +40,9 @@ export function ParamsPanel({ tabId }: ParamsPanelProps) {
   return (
     <div>
       <PanelSection.Root>
-        <PanelSection.Heading>Query Params</PanelSection.Heading>
+        {QUERY_PARAMS_HEADING}
         <KeyValueTable
-          examples={{ key: 'page', value: '1', description: 'Page to fetch' }}
+          examples={PARAM_EXAMPLES}
           label="Query params"
           rows={params}
           mode={bulkText === undefined ? 'table' : 'bulk'}
@@ -40,15 +56,9 @@ export function ParamsPanel({ tabId }: ParamsPanelProps) {
       </PanelSection.Root>
       {pathVariables.length > 0 ? (
         <PanelSection.Root>
-          <PanelSection.Heading>Path Variables</PanelSection.Heading>
+          {PATH_VARIABLES_HEADING}
           <table aria-label="Path variables" className={styles.table}>
-            <thead>
-              <tr>
-                <th>Key</th>
-                <th>Value</th>
-                <th>Description</th>
-              </tr>
-            </thead>
+            {PATH_VARIABLES_HEAD}
             <tbody>
               {pathVariables.map((variable) => (
                 <tr key={variable.id}>

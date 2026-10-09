@@ -14,6 +14,8 @@ interface RequestTabsProps {
   tabId: string
 }
 
+const SCRIPTS_PANEL = <ScriptsPanel />
+
 export function RequestTabs({ tabId }: RequestTabsProps) {
   const subTab = useRequestBuilderStore((state) => state.tabs[tabId]?.subTab ?? 'params')
   const headerCount = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.headers.filter((row) => row.enabled).length ?? 0)
@@ -42,7 +44,7 @@ export function RequestTabs({ tabId }: RequestTabsProps) {
         <BodyPanel tabId={tabId} />
       </Tabs.Panel>
       <Tabs.Panel value="scripts" className={styles.panel}>
-        <ScriptsPanel />
+        {SCRIPTS_PANEL}
       </Tabs.Panel>
       <Tabs.Panel value="settings" className={styles.panel}>
         <SettingsPanel tabId={tabId} />

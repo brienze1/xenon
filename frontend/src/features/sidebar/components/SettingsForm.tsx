@@ -2,11 +2,37 @@ import { useEffect, useState } from 'react'
 import type { ItemSettings } from '@/platform/mappers/tree'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
-import { KeyValueTable } from '@/shared/ui/key-value-table/KeyValueTable'
+import { KeyValueTable, type KeyValueExamples } from '@/shared/ui/key-value-table/KeyValueTable'
 import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { AuthFields } from './AuthFields'
 import styles from './SettingsForm.module.css'
+
+const HEADER_EXAMPLES: KeyValueExamples = {
+  key: 'X-Team',
+  value: 'payments',
+  description: 'Sent with every request',
+}
+
+const AUTH_HEADING = <h3 className={styles.heading}>Authorization</h3>
+
+const HEADERS_INTRO = (
+  <>
+    <h3 className={styles.heading}>Headers</h3>
+    <p className={styles.note}>
+      <span translate="no">Xenon</span> sends these with every request below unless a nearer level sets the same header.
+    </p>
+  </>
+)
+
+const SETTINGS_LOADING = (
+  <>
+    <Dialog.Title>Settings</Dialog.Title>
+    <Dialog.Body>
+      <p className={styles.note}>Loading…</p>
+    </Dialog.Body>
+  </>
+)
 
 interface SettingsFormProps {
   itemId: string
@@ -37,14 +63,7 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
   }, [itemId, loadSettings])
 
   if (!settings) {
-    return (
-      <>
-        <Dialog.Title>Settings</Dialog.Title>
-        <Dialog.Body>
-          <p className={styles.note}>Loading…</p>
-        </Dialog.Body>
-      </>
-    )
+    return SETTINGS_LOADING
   }
 
   const update = (patch: Partial<ItemSettings>) => setSettings((current) => (current ? { ...current, ...patch } : current))
@@ -102,18 +121,11 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
               onChange={(event) => update({ description: event.target.value })}
             />
           </label>
-          <h3 className={styles.heading}>Authorization</h3>
+          {AUTH_HEADING}
           <AuthFields kind={settings.kind} auth={settings.auth} onChange={(auth) => update({ auth })} />
-          <h3 className={styles.heading}>Headers</h3>
-          <p className={styles.note}>
-            <span translate="no">Xenon</span> sends these with every request below unless a nearer level sets the same header.
-          </p>
+          {HEADERS_INTRO}
           <KeyValueTable
-            examples={{
-              key: 'X-Team',
-              value: 'payments',
-              description: 'Sent with every request',
-            }}
+            examples={HEADER_EXAMPLES}
             label={`${settings.name} headers`}
             rows={settings.headers}
             mode={bulkText === null ? 'table' : 'bulk'}
@@ -131,7 +143,7 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
           Cancel
         </Button>
         <Button variant="primary" disabled={saving} onClick={() => void save()}>
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? 'Saving…' : 'Save Settings'}
         </Button>
       </Dialog.Actions>
     </>

@@ -9,7 +9,10 @@ interface SidebarProps {
 }
 
 export function Sidebar({ children }: SidebarProps) {
-  const { layout, onLayoutChange } = useShellLayout()
+  const {
+    state: { layout },
+    actions: { update },
+  } = useShellLayout()
   const headingId = useId()
   if (!layout.sidebarVisible) {
     return null
@@ -27,7 +30,7 @@ export function Sidebar({ children }: SidebarProps) {
         value={layout.sidebarWidth}
         min={LAYOUT_LIMITS.sidebar.min}
         max={LAYOUT_LIMITS.sidebar.max}
-        onChange={(sidebarWidth) => onLayoutChange({ sidebarWidth })}
+        onChange={(sidebarWidth) => update({ sidebarWidth })}
       />
     </nav>
   )

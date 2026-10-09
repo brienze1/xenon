@@ -8,6 +8,8 @@ import { useWorkspacesStore } from '@/features/workspaces/store'
 import { WorkspaceErrorText } from './WorkspaceErrorText'
 import styles from './RenameWorkspaceDialog.module.css'
 
+const RENAME_HINT = <p className={styles.hint}>Only the name changes. The folder stays where it is.</p>
+
 interface RenameWorkspaceDialogProps {
   workspace: WorkspaceSummary
   open: boolean
@@ -66,7 +68,7 @@ export function RenameWorkspaceDialog({ workspace, open, onClose }: RenameWorksp
               {errors.name}
             </p>
           ) : null}
-          <p className={styles.hint}>Only the name changes. The folder stays where it is.</p>
+          {RENAME_HINT}
           {error ? (
             <Banner.Root tone="error">
               <Banner.Message><WorkspaceErrorText error={error} /></Banner.Message>
@@ -78,7 +80,7 @@ export function RenameWorkspaceDialog({ workspace, open, onClose }: RenameWorksp
             Cancel
           </Button>
           <Button type="submit" variant="primary" disabled={submitting}>
-            {submitting ? 'Renaming…' : 'Rename'}
+            {submitting ? 'Renaming…' : 'Rename Workspace'}
           </Button>
         </Dialog.Actions>
       </form>

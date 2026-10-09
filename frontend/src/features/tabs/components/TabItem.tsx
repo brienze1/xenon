@@ -1,3 +1,4 @@
+import { useDndContext } from '@dnd-kit/core'
 import { useSortable } from '@dnd-kit/sortable'
 import type { KeyboardEvent, MouseEvent } from 'react'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
@@ -8,6 +9,10 @@ import styles from './TabItem.module.css'
 
 const MIDDLE_BUTTON = 1
 const UNTITLED = 'Untitled Request'
+
+const DIRTY_DOT = <span className={styles.dirty} role="img" aria-label="Unsaved changes" />
+
+const CLOSE_GLYPH = <span aria-hidden="true">×</span>
 
 interface TabItemProps {
   tabId: string
@@ -23,6 +28,10 @@ export function TabItem({ tabId }: TabItemProps) {
   const method = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.method ?? 'GET')
   const dirty = useRequestBuilderStore((state) => state.tabs[tabId]?.dirty === true)
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({ id: tabId, attributes: { role: 'tab' } })
+  // Only a pointer drag makes the moving tab inert: during a keyboard drag the tab must keep
+  // focus so the arrow keys keep moving it and assistive tech keeps announcing it.
+  const { activatorEvent } = useDndContext()
+  const pointerDragging = isDragging && activatorEvent !== null && activatorEvent.type.startsWith('pointer')
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (isDragging) {
@@ -67,6 +76,7 @@ export function TabItem({ tabId }: TabItemProps) {
       role="tab"
       aria-selected={active}
       tabIndex={active ? 0 : -1}
+      inert={pointerDragging}
       title={preview ? `${name} (preview)` : name}
       className={cn(styles.tab, active && styles.active, preview && styles.preview, isDragging && styles.dragging)}
       style={{ transform: transform ? `translate3d(${transform.x}px, 0, 0)` : undefined, transition }}
@@ -77,9 +87,9 @@ export function TabItem({ tabId }: TabItemProps) {
     >
       <MethodBadge method={method} className={styles.method} />
       <span className={styles.name}>{name}</span>
-      {dirty ? <span className={styles.dirty} role="img" aria-label="Unsaved changes" /> : null}
+      {dirty ? DIRTY_DOT : null}
       <button type="button" tabIndex={-1} aria-label={`Close ${name}`} className={styles.close} onClick={onClose} onPointerDown={(event) => event.stopPropagation()}>
-        <span aria-hidden="true">×</span>
+        {CLOSE_GLYPH}
       </button>
     </div>
   )

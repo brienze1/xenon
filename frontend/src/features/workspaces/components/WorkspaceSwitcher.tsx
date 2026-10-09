@@ -14,6 +14,10 @@ type SwitcherDialog = 'create' | 'rename' | 'remove' | null
 
 const OPEN_TITLE = 'Choose an existing workspace folder'
 
+const MISSING_MARK = <span className={styles.missing}> (missing)</span>
+
+const MENU_SEPARATOR = <div role="separator" className={styles.separator} />
+
 export function WorkspaceSwitcher() {
   const { workspaces, activeLocalId, missingLocalId, activate, open, chooseFolder } = useWorkspacesStore(
     useShallow((state) => ({
@@ -59,10 +63,10 @@ export function WorkspaceSwitcher() {
               onSelect={() => void activate(workspace.localId)}
             >
               {workspace.name}
-              {workspace.missing ? <span className={styles.missing}> (missing)</span> : null}
+              {workspace.missing ? MISSING_MARK : null}
             </Dropdown.RadioItem>
           ))}
-          <div role="separator" className={styles.separator} />
+          {MENU_SEPARATOR}
           <Dropdown.Item onSelect={() => show('create')}>New Workspace…</Dropdown.Item>
           <Dropdown.Item onSelect={() => void onOpen()}>Open Workspace…</Dropdown.Item>
           {current ? <Dropdown.Item onSelect={() => show('rename')}>Rename Workspace…</Dropdown.Item> : null}
@@ -74,7 +78,7 @@ export function WorkspaceSwitcher() {
           <Banner.Message><WorkspaceErrorText error={error} /></Banner.Message>
           <Banner.Actions>
             <Button variant="ghost" size="sm" onClick={clearError}>
-              Dismiss
+              Dismiss Error
             </Button>
           </Banner.Actions>
         </Banner.Root>

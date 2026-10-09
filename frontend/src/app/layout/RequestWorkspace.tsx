@@ -10,14 +10,17 @@ interface RequestWorkspaceProps {
 }
 
 export function RequestWorkspace({ tabId, onSave }: RequestWorkspaceProps) {
-  const { layout, onLayoutChange } = useShellLayout()
+  const {
+    state: { layout },
+    actions: { update },
+  } = useShellLayout()
   return (
     <SplitPane.Root
       direction={layout.split === 'side-by-side' ? 'row' : 'column'}
       ratio={layout.splitRatio}
       min={LAYOUT_LIMITS.split.min}
       max={LAYOUT_LIMITS.split.max}
-      onRatioChange={(splitRatio) => onLayoutChange({ splitRatio })}
+      onRatioChange={(splitRatio) => update({ splitRatio })}
     >
       <SplitPane.Pane>
         <RequestBuilder tabId={tabId} onSave={onSave} />

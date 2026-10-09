@@ -1,7 +1,14 @@
-import type { TreeNode } from '@/platform/mappers/tree'
+import type { TreeNode, TreeNodeKind } from '@/platform/mappers/tree'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { isContainer } from '@/features/sidebar/lib/tree-rows'
+
+const DELETE_LABELS: Record<TreeNodeKind, string> = {
+  collection: 'Delete Collection',
+  folder: 'Delete Folder',
+  request: 'Delete Request',
+  error: 'Delete File',
+}
 
 interface DeleteItemDialogProps {
   item: TreeNode | null
@@ -23,7 +30,7 @@ export function DeleteItemDialog({ item, onCancel, onConfirm }: DeleteItemDialog
               Cancel
             </Button>
             <Button variant="danger" onClick={() => onConfirm(item)}>
-              Delete
+              {DELETE_LABELS[item.kind]}
             </Button>
           </Dialog.Actions>
         </>

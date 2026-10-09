@@ -1,25 +1,6 @@
-import type { ComponentType, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
 import styles from './EmptyState.module.css'
-import { CollectionsArt } from './illustrations/CollectionsArt'
-import { ConsoleArt } from './illustrations/ConsoleArt'
-import { HistoryArt } from './illustrations/HistoryArt'
-import { MissingArt } from './illustrations/MissingArt'
-import { ResponseArt } from './illustrations/ResponseArt'
-import { TabsArt } from './illustrations/TabsArt'
-import { WorkspaceArt } from './illustrations/WorkspaceArt'
-
-export type EmptyStateArt = 'workspace' | 'collections' | 'tabs' | 'response' | 'history' | 'console' | 'missing'
-
-const ART: Record<EmptyStateArt, ComponentType> = {
-  workspace: WorkspaceArt,
-  collections: CollectionsArt,
-  tabs: TabsArt,
-  response: ResponseArt,
-  history: HistoryArt,
-  console: ConsoleArt,
-  missing: MissingArt,
-}
 
 export type EmptyStateSize = 'regular' | 'compact'
 
@@ -39,16 +20,11 @@ function Root({ label, size = 'regular', className, children }: RootProps) {
 }
 
 interface ArtProps {
-  variant: EmptyStateArt
+  children: ReactNode
 }
 
-function Art({ variant }: ArtProps) {
-  const Illustration = ART[variant]
-  return (
-    <div className={styles.art}>
-      <Illustration />
-    </div>
-  )
+function Art({ children }: ArtProps) {
+  return <div className={styles.art}>{children}</div>
 }
 
 interface TitleProps {

@@ -37,7 +37,7 @@ export function TabNotice({ tabId }: TabNoticeProps) {
           Keep as Unsaved Tab
         </Button>
         <Button variant="ghost" size="sm" onClick={() => requestClose(tabId)}>
-          Close
+          Close Tab
         </Button>
       </Banner.Actions>
     </Banner.Root>

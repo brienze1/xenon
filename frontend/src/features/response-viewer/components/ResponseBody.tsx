@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState, type ReactNode } from 'react'
 import type { SendResult } from '@/platform/mappers/request'
 import { formatBytes } from '@/shared/lib/format-bytes'
 import { Button } from '@/shared/ui/button/Button'
@@ -20,13 +20,23 @@ const VIEWS: Array<{ view: BodyView; label: string }> = [
 
 type CopyState = 'idle' | 'copied' | 'failed'
 
-const COPY_LABELS: Record<CopyState, string> = { idle: 'Copy', copied: 'Copied', failed: 'Copy Failed' }
+const COPY_LABELS: Record<CopyState, string> = { idle: 'Copy Body', copied: 'Copied', failed: 'Copy Failed' }
 
-const COPY_ANNOUNCEMENTS: Record<CopyState, string> = {
-  idle: '',
-  copied: 'Xenon copied the response body to the clipboard.',
-  failed: 'Xenon couldn’t copy to the clipboard. Select the body text and copy it manually.',
+const COPY_ANNOUNCEMENTS: Record<CopyState, ReactNode> = {
+  idle: null,
+  copied: (
+    <>
+      <span translate="no">Xenon</span> copied the response body to the clipboard.
+    </>
+  ),
+  failed: (
+    <>
+      <span translate="no">Xenon</span> couldn’t copy to the clipboard. Select the body text and copy it manually.
+    </>
+  ),
 }
+
+const LOADING_BODY = <p className={styles.note}>Loading body…</p>
 
 export function ResponseBody({ tabId, result }: ResponseBodyProps) {
   const [view, setView] = useState<BodyView>(() => initialBodyView(result.sizeBytes))
@@ -94,7 +104,7 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
       ) : result.isBinary ? (
         <p className={styles.note}>Binary body ({formatBytes(result.sizeBytes)}). Use Preview or Save to File.</p>
       ) : bodyStatus === 'loading' ? (
-        <p className={styles.note}>Loading body…</p>
+        LOADING_BODY
       ) : (
         <CodeEditor
           key={view}

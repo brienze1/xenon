@@ -3,6 +3,7 @@ import { SortableContext, horizontalListSortingStrategy, sortableKeyboardCoordin
 import { useRef, type KeyboardEvent } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { moveFocus } from '@/shared/lib/roving-focus'
+import { suspendTextSelection } from '@/shared/lib/text-selection'
 import { IconButton } from '@/shared/ui/icon-button/IconButton'
 import { useTabsStore } from '@/features/tabs/store'
 import { TabItem } from './TabItem'
@@ -27,6 +28,8 @@ const ANNOUNCEMENTS: Announcements = {
 
 const ACCESSIBILITY = { screenReaderInstructions: SCREEN_READER_INSTRUCTIONS, announcements: ANNOUNCEMENTS }
 
+const ADD_GLYPH = <span aria-hidden="true">+</span>
+
 export function TabStrip() {
   const tabIds = useTabsStore(useShallow((state) => state.tabs.map((tab) => tab.id)))
   const reorder = useTabsStore((state) => state.reorder)
@@ -36,9 +39,21 @@ export function TabStrip() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates, keyboardCodes: KEYBOARD_CODES }),
   )
   const draggingRef = useRef(false)
+  const restoreSelectionRef = useRef<(() => void) | null>(null)
+
+  function onDragStart() {
+    draggingRef.current = true
+    restoreSelectionRef.current = suspendTextSelection()
+  }
+
+  function finishDrag() {
+    draggingRef.current = false
+    restoreSelectionRef.current?.()
+    restoreSelectionRef.current = null
+  }
 
   function onDragEnd({ active, over }: DragEndEvent) {
-    draggingRef.current = false
+    finishDrag()
     if (over && active.id !== over.id) {
       reorder(String(active.id), String(over.id))
     }
@@ -59,13 +74,9 @@ export function TabStrip() {
         sensors={sensors}
         collisionDetection={closestCenter}
         accessibility={ACCESSIBILITY}
-        onDragStart={() => {
-          draggingRef.current = true
-        }}
+        onDragStart={onDragStart}
         onDragEnd={onDragEnd}
-        onDragCancel={() => {
-          draggingRef.current = false
-        }}
+        onDragCancel={finishDrag}
       >
         <SortableContext items={tabIds} strategy={horizontalListSortingStrategy}>
           <div role="tablist" aria-label="Open requests" className={styles.list} onKeyDown={onKeyDown}>
@@ -76,7 +87,7 @@ export function TabStrip() {
         </SortableContext>
       </DndContext>
       <IconButton label="New Tab" className={styles.add} onClick={() => newTab()}>
-        <span aria-hidden="true">+</span>
+        {ADD_GLYPH}
       </IconButton>
     </div>
   )

@@ -7,16 +7,36 @@ interface AuthPanelProps {
   tabId: string
 }
 
-const AUTH_OPTIONS: Array<{ type: AuthType; label: string; available: boolean }> = [
-  { type: 'inherit', label: 'Inherit auth from parent', available: true },
-  { type: 'none', label: 'No auth', available: true },
-  { type: 'bearer', label: 'Bearer token', available: true },
-  { type: 'basic', label: 'Basic auth', available: true },
-  { type: 'apikey', label: 'API key (later stage)', available: false },
-  { type: 'oauth2', label: 'OAuth 2.0 (later stage)', available: false },
-  { type: 'awsv4', label: 'AWS signature (later stage)', available: false },
-  { type: 'digest', label: 'Digest auth (later stage)', available: false },
-]
+const AUTH_TYPE_OPTIONS = (
+  <>
+    <option value="inherit">Inherit auth from parent</option>
+    <option value="none">No auth</option>
+    <option value="bearer" translate="no">
+      Bearer token
+    </option>
+    <option value="basic" translate="no">
+      Basic auth
+    </option>
+    <optgroup label="Later stage">
+      <option value="apikey" translate="no" disabled>
+        API key
+      </option>
+      <option value="oauth2" translate="no" disabled>
+        OAuth 2.0
+      </option>
+      <option value="awsv4" translate="no" disabled>
+        AWS signature
+      </option>
+      <option value="digest" translate="no" disabled>
+        Digest auth
+      </option>
+    </optgroup>
+  </>
+)
+
+const INHERIT_NOTE = <PanelSection.Note>The request uses the auth of its folder or collection. An unsaved request has none.</PanelSection.Note>
+
+const NO_AUTH_NOTE = <PanelSection.Note>This request does not use any authorization.</PanelSection.Note>
 
 export function AuthPanel({ tabId }: AuthPanelProps) {
   const auth = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.auth)
@@ -35,17 +55,11 @@ export function AuthPanel({ tabId }: AuthPanelProps) {
           value={auth.type}
           onChange={(event) => updateAuth(tabId, { type: event.target.value as AuthType })}
         >
-          {AUTH_OPTIONS.map((option) => (
-            <option key={option.type} value={option.type} disabled={!option.available}>
-              {option.label}
-            </option>
-          ))}
+          {AUTH_TYPE_OPTIONS}
         </select>
       </label>
-      {auth.type === 'inherit' ? (
-        <PanelSection.Note>The request uses the auth of its folder or collection. An unsaved request has none.</PanelSection.Note>
-      ) : null}
-      {auth.type === 'none' ? <PanelSection.Note>This request does not use any authorization.</PanelSection.Note> : null}
+      {auth.type === 'inherit' ? INHERIT_NOTE : null}
+      {auth.type === 'none' ? NO_AUTH_NOTE : null}
       {auth.type === 'bearer' ? (
         <label className={styles.field}>
           Token
