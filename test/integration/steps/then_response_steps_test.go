@@ -12,9 +12,13 @@ func (t *testUtils) registerThenResponseSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the call should fail with code "([^"]*)"$`, t.theCallShouldFailWithCode)
 	ctx.Then(`^the error should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theErrorShouldContainTheFieldEqualTo)
 	ctx.Then(`^the response should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theResponseShouldContainTheFieldEqualTo)
+	ctx.Then(`^the response should contain the field "([^"]*)" equal to$`, t.theResponseShouldContainTheFieldEqualToTheText)
 	ctx.Then(`^the response should contain the path field "([^"]*)" equal to "([^"]*)"$`, t.theResponseShouldContainThePathFieldEqualTo)
 	ctx.Then(`^the response should contain the field "([^"]*)" array length equal to (\d+)$`, t.theResponseShouldContainTheFieldArrayLengthEqualTo)
 	ctx.Then(`^the response field "([^"]*)" should exist$`, t.theResponseFieldShouldExist)
+	ctx.Then(`^the response field "([^"]*)" should not exist$`, t.theResponseFieldShouldNotExist)
+	ctx.Then(`^the response field "([^"]*)" should contain an item with "([^"]*)" equal to "([^"]*)" and "([^"]*)" equal to "([^"]*)"$`, t.theResponseFieldShouldContainAnItemWith)
+	ctx.Then(`^the response field "([^"]*)" should contain (\d+) items with "([^"]*)" equal to "([^"]*)"$`, t.theResponseFieldShouldContainItemsWith)
 }
 
 func (t *testUtils) theCallShouldSucceed() error {
@@ -52,6 +56,73 @@ func (t *testUtils) theResponseShouldContainTheFieldEqualTo(path, expected strin
 		return err
 	}
 	return expectEqual(stringify(actual), t.substitute(expected), path)
+}
+
+func (t *testUtils) theResponseShouldContainTheFieldEqualToTheText(path string, expected *godog.DocString) error {
+	return t.theResponseShouldContainTheFieldEqualTo(path, expected.Content)
+}
+
+func (t *testUtils) theResponseFieldShouldNotExist(path string) error {
+	if err := t.theCallShouldSucceed(); err != nil {
+		return err
+	}
+	if value, err := fieldOf(t.response, path); err == nil {
+		return fmt.Errorf("field %q should not exist, got %v", path, value)
+	}
+	return nil
+}
+
+func (t *testUtils) theResponseFieldShouldContainAnItemWith(path, firstKey, firstValue, secondKey, secondValue string) error {
+	items, err := t.responseItems(path)
+	if err != nil {
+		return err
+	}
+	expected := map[string]string{firstKey: t.substitute(firstValue), secondKey: t.substitute(secondValue)}
+	for _, item := range items {
+		if itemMatches(item, expected) {
+			return nil
+		}
+	}
+	return fmt.Errorf("field %q has no item with %v: %s", path, expected, stringify(items))
+}
+
+func (t *testUtils) theResponseFieldShouldContainItemsWith(path string, count int, key, value string) error {
+	items, err := t.responseItems(path)
+	if err != nil {
+		return err
+	}
+	matches := 0
+	for _, item := range items {
+		if itemMatches(item, map[string]string{key: t.substitute(value)}) {
+			matches++
+		}
+	}
+	if matches != count {
+		return fmt.Errorf("field %q: expected %d items with %s = %q, got %d: %s", path, count, key, value, matches, stringify(items))
+	}
+	return nil
+}
+
+func (t *testUtils) responseItems(path string) ([]any, error) {
+	actual, err := t.responseField(path)
+	if err != nil {
+		return nil, err
+	}
+	items, isArray := actual.([]any)
+	if !isArray {
+		return nil, fmt.Errorf("field %q is not an array: %v", path, actual)
+	}
+	return items, nil
+}
+
+func itemMatches(item any, expected map[string]string) bool {
+	for key, value := range expected {
+		actual, found := lookup(item, key)
+		if !found || stringify(actual) != value {
+			return false
+		}
+	}
+	return true
 }
 
 func (t *testUtils) theResponseShouldContainThePathFieldEqualTo(path, expected string) error {

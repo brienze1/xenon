@@ -1,6 +1,7 @@
 package steps
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,6 +19,8 @@ func (t *testUtils) registerThenFileSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the workspace file "([^"]*)" should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theWorkspaceFileShouldContainTheFieldEqualTo)
 	ctx.Then(`^the workspace file "([^"]*)" should equal$`, t.theWorkspaceFileShouldEqual)
 	ctx.Step(`^I save the workspace file "([^"]*)" field "([^"]*)" as "([^"]*)"$`, t.iSaveTheWorkspaceFileFieldAs)
+	ctx.Then(`^the file "([^"]*)" should equal the resource file "([^"]*)"$`, t.theFileShouldEqualTheResourceFile)
+	ctx.Then(`^the file "([^"]*)" should be the generated body of (\d+) bytes$`, t.theFileShouldBeTheGeneratedBody)
 	ctx.Then(`^the app data file "([^"]*)" should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theAppDataFileShouldContainTheFieldEqualTo)
 	ctx.Then(`^the app data file "([^"]*)" should contain the field "([^"]*)" array length equal to (\d+)$`, t.theAppDataFileShouldContainTheFieldArrayLengthEqualTo)
 	ctx.Then(`^the app data file "([^"]*)" should not exist$`, t.theAppDataFileShouldNotExist)
@@ -75,6 +78,33 @@ func (t *testUtils) iSaveTheWorkspaceFileFieldAs(path, field, name string) error
 		return err
 	}
 	t.vars[name] = stringify(value)
+	return nil
+}
+
+func (t *testUtils) theFileShouldEqualTheResourceFile(path, name string) error {
+	expected, err := os.ReadFile(resourcePath(name))
+	if err != nil {
+		return err
+	}
+	return t.fileShouldHaveBytes(path, expected)
+}
+
+func (t *testUtils) theFileShouldBeTheGeneratedBody(path string, size int) error {
+	return t.fileShouldHaveBytes(path, generatedBody(size))
+}
+
+func (t *testUtils) fileShouldHaveBytes(path string, expected []byte) error {
+	content, err := os.ReadFile(filepath.Join(t.tempRoot, filepath.FromSlash(t.substitute(path))))
+	if err != nil {
+		return err
+	}
+	return expectSameBytes(content, expected, path)
+}
+
+func expectSameBytes(actual, expected []byte, what string) error {
+	if !bytes.Equal(actual, expected) {
+		return fmt.Errorf("%s: expected %d bytes, got %d different bytes", what, len(expected), len(actual))
+	}
 	return nil
 }
 

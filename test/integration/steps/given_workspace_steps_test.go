@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,6 +21,8 @@ func (t *testUtils) registerGivenWorkspaceSteps(ctx *godog.ScenarioContext) {
 	ctx.Given(`^the workspace path "([^"]*)" is removed$`, t.theWorkspacePathIsRemoved)
 	ctx.Given(`^the current time is "([^"]*)"$`, t.theCurrentTimeIs)
 	ctx.Given(`^the "([^"]*)" variable is set to the mocked api url$`, t.theVariableIsSetToTheMockedApiUrl)
+	ctx.Given(`^the "([^"]*)" variable is set to the mocked tls api url$`, t.theVariableIsSetToTheMockedTlsApiUrl)
+	ctx.Given(`^the "([^"]*)" variable is set to a closed port url$`, t.theVariableIsSetToAClosedPortUrl)
 	ctx.Given(`^the "([^"]*)" variable is set to "([^"]*)"$`, t.theVariableIsSetTo)
 }
 
@@ -68,6 +71,24 @@ func (t *testUtils) theCurrentTimeIs(value string) error {
 
 func (t *testUtils) theVariableIsSetToTheMockedApiUrl(name string) error {
 	t.vars[name] = t.api.URL()
+	return nil
+}
+
+func (t *testUtils) theVariableIsSetToTheMockedTlsApiUrl(name string) error {
+	t.vars[name] = t.api.TLSURL()
+	return nil
+}
+
+func (t *testUtils) theVariableIsSetToAClosedPortUrl(name string) error {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return err
+	}
+	address := listener.Addr().String()
+	if err := listener.Close(); err != nil {
+		return err
+	}
+	t.vars[name] = "http://" + address
 	return nil
 }
 

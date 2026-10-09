@@ -39,6 +39,9 @@ func (t *testUtils) workspacePath(relative string) string {
 
 func lookup(data any, path string) (any, bool) {
 	current := data
+	if path == "" {
+		return current, true
+	}
 	for _, segment := range strings.Split(path, ".") {
 		switch node := current.(type) {
 		case map[string]any:
@@ -74,6 +77,20 @@ func stringify(value any) string {
 	default:
 		return fmt.Sprint(typed)
 	}
+}
+
+const generatedAlphabet = "0123456789abcdefghijklmnopqrstuvwxyz\n"
+
+func generatedBody(size int) []byte {
+	body := make([]byte, size)
+	for index := range body {
+		body[index] = generatedAlphabet[index%len(generatedAlphabet)]
+	}
+	return body
+}
+
+func resourcePath(name string) string {
+	return filepath.Join("..", "resources", filepath.FromSlash(name))
 }
 
 func decodeJson(raw []byte) (any, error) {

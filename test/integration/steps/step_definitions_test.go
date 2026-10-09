@@ -3,6 +3,7 @@ package steps
 import (
 	"context"
 	"flag"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"sync"
@@ -32,6 +33,7 @@ type testUtils struct {
 	tempRoot      string
 	workspaceRoot string
 	dataDir       string
+	routeResponse *httptest.ResponseRecorder
 	response      []byte
 	callError     []byte
 }
@@ -94,6 +96,8 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	test.registerGivenApiSteps(ctx)
 	test.registerGivenDialogSteps(ctx)
 	test.registerWhenBindingSteps(ctx)
+	test.registerWhenRouteSteps(ctx)
+	test.registerThenRouteSteps(ctx)
 	test.registerThenResponseSteps(ctx)
 	test.registerThenFileSteps(ctx)
 	test.registerThenEventSteps(ctx)
@@ -107,6 +111,7 @@ func (t *testUtils) before() error {
 	t.dialog.Reset()
 	t.response = nil
 	t.callError = nil
+	t.routeResponse = nil
 
 	tempRoot, err := os.MkdirTemp("", "xenon-bdd-")
 	if err != nil {

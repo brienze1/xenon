@@ -1,8 +1,10 @@
 package mock
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -11,13 +13,15 @@ import (
 )
 
 type ApiMock struct {
-	server    *httptest.Server
-	responses map[string]apiResponse
-	delays    map[string]time.Duration
-	redirects map[string]apiRedirect
-	requests  map[string]receivedRequest
-	callCount map[string]int
-	mu        sync.RWMutex
+	server          *httptest.Server
+	tlsServer       *httptest.Server
+	responses       map[string]apiResponse
+	responseHeaders map[string]http.Header
+	delays          map[string]time.Duration
+	redirects       map[string]apiRedirect
+	requests        map[string]receivedRequest
+	callCount       map[string]int
+	mu              sync.RWMutex
 }
 
 type apiResponse struct {
@@ -32,9 +36,10 @@ type apiRedirect struct {
 }
 
 type receivedRequest struct {
-	headers http.Header
-	query   url.Values
-	body    []byte
+	headers  http.Header
+	query    url.Values
+	rawQuery string
+	body     []byte
 }
 
 var apiInstance *ApiMock
@@ -44,6 +49,7 @@ func NewApiServer() *ApiMock {
 	apiOnce.Do(func() {
 		apiInstance = &ApiMock{}
 		apiInstance.server = httptest.NewServer(http.HandlerFunc(apiInstance.handler))
+		apiInstance.tlsServer = httptest.NewTLSServer(http.HandlerFunc(apiInstance.handler))
 		apiInstance.Start()
 	})
 	return apiInstance
@@ -53,10 +59,15 @@ func (m *ApiMock) URL() string {
 	return m.server.URL
 }
 
+func (m *ApiMock) TLSURL() string {
+	return m.tlsServer.URL
+}
+
 func (m *ApiMock) Start() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.responses = make(map[string]apiResponse)
+	m.responseHeaders = make(map[string]http.Header)
 	m.delays = make(map[string]time.Duration)
 	m.redirects = make(map[string]apiRedirect)
 	m.requests = make(map[string]receivedRequest)
@@ -67,6 +78,15 @@ func (m *ApiMock) SetResponse(index int, method, path string, status int, body [
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.responses[requestKey(method, path, index)] = apiResponse{statusCode: status, body: body, contentType: contentType}
+}
+
+func (m *ApiMock) AddResponseHeader(path, key, value string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.responseHeaders[path] == nil {
+		m.responseHeaders[path] = http.Header{}
+	}
+	m.responseHeaders[path].Add(key, value)
 }
 
 func (m *ApiMock) SetDelay(method, path string, delay time.Duration) {
@@ -103,6 +123,47 @@ func (m *ApiMock) GetRequestQuery(index int, method, path, key string) (string, 
 	return request.query.Get(key), true
 }
 
+func (m *ApiMock) GetRequestRawQuery(index int, method, path string) (string, bool) {
+	request, found := m.request(index, method, path)
+	return request.rawQuery, found
+}
+
+func (m *ApiMock) GetRequestFormValue(index int, method, path, key string) (string, bool) {
+	form, found := m.form(index, method, path)
+	if !found || len(form.Value[key]) == 0 {
+		return "", false
+	}
+	return form.Value[key][0], true
+}
+
+func (m *ApiMock) GetRequestFormFile(index int, method, path, key string) (string, []byte, bool) {
+	form, found := m.form(index, method, path)
+	if !found || len(form.File[key]) == 0 {
+		return "", nil, false
+	}
+	header := form.File[key][0]
+	file, err := header.Open()
+	if err != nil {
+		return "", nil, false
+	}
+	defer func() { _ = file.Close() }()
+	content, _ := io.ReadAll(file)
+	return header.Filename, content, true
+}
+
+func (m *ApiMock) form(index int, method, path string) (*multipart.Form, bool) {
+	received, found := m.request(index, method, path)
+	if !found {
+		return nil, false
+	}
+	request, _ := http.NewRequest(method, "/", bytes.NewReader(received.body))
+	request.Header = received.headers.Clone()
+	if err := request.ParseMultipartForm(32 << 20); err != nil {
+		return nil, false
+	}
+	return request.MultipartForm, true
+}
+
 func (m *ApiMock) GetRequestBody(index int, method, path string) ([]byte, bool) {
 	request, found := m.request(index, method, path)
 	return request.body, found
@@ -121,10 +182,11 @@ func (m *ApiMock) handler(w http.ResponseWriter, r *http.Request) {
 	route := routeKey(r.Method, r.URL.Path)
 	m.callCount[route]++
 	index := m.callCount[route]
-	m.requests[requestKey(r.Method, r.URL.Path, index)] = receivedRequest{headers: r.Header.Clone(), query: r.URL.Query(), body: body}
+	m.requests[requestKey(r.Method, r.URL.Path, index)] = receivedRequest{headers: r.Header.Clone(), query: r.URL.Query(), rawQuery: r.URL.RawQuery, body: body}
 	delay := m.delays[route]
 	redirect, redirected := m.redirects[r.URL.Path]
 	response, configured := m.responses[requestKey(r.Method, r.URL.Path, index)]
+	extraHeaders := m.responseHeaders[r.URL.Path].Clone()
 	m.mu.Unlock()
 
 	select {
@@ -140,6 +202,11 @@ func (m *ApiMock) handler(w http.ResponseWriter, r *http.Request) {
 		response = apiResponse{statusCode: http.StatusOK, body: []byte("{}"), contentType: "application/json"}
 	}
 	w.Header().Set("Content-Type", response.contentType)
+	for key, values := range extraHeaders {
+		for _, value := range values {
+			w.Header().Add(key, value)
+		}
+	}
 	w.WriteHeader(response.statusCode)
 	_, _ = w.Write(response.body)
 }
