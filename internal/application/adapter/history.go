@@ -1,0 +1,13 @@
+package adapter
+
+import (
+	"context"
+
+	"github.com/brienze1/xenon/internal/domain/entity"
+)
+
+type HistoryService interface {
+	List(ctx context.Context, localId string, query entity.HistoryQuery) ([]entity.HistoryEntry, error)
+	Get(ctx context.Context, localId, id string) (*entity.HistoryEntry, error)
+	Clear(ctx context.Context, localId string) error
+}

@@ -6,7 +6,9 @@ import (
 	"github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/pkg/idutils"
 	"github.com/brienze1/xenon/pkg/logger"
+	"github.com/brienze1/xenon/pkg/timeutils"
 )
 
 type sendRequest struct {
@@ -14,6 +16,7 @@ type sendRequest struct {
 	findTreeItem          usecase.FindTreeItem
 	sendHttpRequest       usecase.SendHttpRequest
 	saveResponse          usecase.SaveResponse
+	saveHistoryEntry      usecase.SaveHistoryEntry
 	appVersion            string
 }
 
@@ -22,6 +25,7 @@ func NewSendRequestService(
 	findTreeItem usecase.FindTreeItem,
 	sendHttpRequest usecase.SendHttpRequest,
 	saveResponse usecase.SaveResponse,
+	saveHistoryEntry usecase.SaveHistoryEntry,
 	appVersion string,
 ) adapter.SendRequestService {
 	return &sendRequest{
@@ -29,6 +33,7 @@ func NewSendRequestService(
 		findTreeItem:          findTreeItem,
 		sendHttpRequest:       sendHttpRequest,
 		saveResponse:          saveResponse,
+		saveHistoryEntry:      saveHistoryEntry,
 		appVersion:            appVersion,
 	}
 }
@@ -44,10 +49,14 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 	if err != nil {
 		return nil, err
 	}
+	sentAt := timeutils.Now()
 	effective := usecase.ResolveEffectiveRequest(request, ancestors, workspace.Path)
 	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, s.appVersion))
 	response := s.sendHttpRequest.Send(ctx, effective)
 	if err := s.saveResponse.Save(ctx, tabId, response); err != nil {
+		return nil, err
+	}
+	if err := s.saveHistoryEntry.Save(ctx, localId, entity.NewHistoryEntry(idutils.NewUlid(), sentAt, request, response)); err != nil {
 		return nil, err
 	}
 

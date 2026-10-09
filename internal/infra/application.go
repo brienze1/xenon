@@ -24,6 +24,7 @@ type Bindings struct {
 	Dialog       *binding.DialogService
 	Request      *binding.RequestService
 	UIState      *binding.UIStateService
+	History      *binding.HistoryService
 	ResponseBody *route.ResponseBodyRoute
 }
 
@@ -35,6 +36,7 @@ func NewBindings() *Bindings {
 		Dialog:       binding.NewDialogService(),
 		Request:      binding.NewRequestService(),
 		UIState:      binding.NewUIStateService(),
+		History:      binding.NewHistoryService(),
 		ResponseBody: route.NewResponseBodyRoute(),
 	}
 }
@@ -60,6 +62,7 @@ func Start() {
 			wails.NewService(bindings.Dialog),
 			wails.NewService(bindings.Request),
 			wails.NewService(bindings.UIState),
+			wails.NewService(bindings.History),
 			wails.NewServiceWithOptions(bindings.ResponseBody, wails.ServiceOptions{Route: dto.ResponseBodyRoute}),
 		},
 		MarshalError: server.MarshalError,

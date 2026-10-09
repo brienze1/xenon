@@ -20,6 +20,7 @@ func GetSendRequestService() adapter.SendRequestService {
 				integration.GetTreePersistence(),
 				integration.GetHttpWebservice(),
 				integration.GetResponseBodyWebservice(),
+				integration.GetHistoryPersistence(),
 				properties.Properties().Application.Version,
 			)
 		})
