@@ -3,7 +3,7 @@
 
 @all @xen_001 @workspaces @isolation
 Feature: Workspaces are a hard boundary
-  Everything is scoped by the workspace's local id: the tree, search, UI state and file events
+  Everything is scoped by the workspace's local id: the tree, search, UI state, history and file events
   of one workspace never show up in another, however often the user switches between them.
   Only the active workspace is watched for changes made outside Xenon.
 
@@ -130,6 +130,45 @@ Feature: Workspaces are a hard boundary
       { "local_id": "{{Globex.local_id}}", "id": "01JD0000000000000000000002" }
       """
     Then the call should fail with code "REQ-01404"
+
+  @history
+  Scenario: Each workspace's history lists only its own sends
+    Given the "api" variable is set to the mocked api url
+    And I call "RequestService.Send" with
+      """
+      { "local_id": "{{Acme.local_id}}", "tab_id": "acme-tab", "request": { "method": "GET", "url": "{{api}}/acme" } }
+      """
+    And I call "RequestService.Send" with
+      """
+      { "local_id": "{{Globex.local_id}}", "tab_id": "globex-tab", "request": { "method": "POST", "url": "{{api}}/globex" } }
+      """
+    When I call "HistoryService.List" with
+      """
+      { "local_id": "{{Acme.local_id}}" }
+      """
+    Then the response should contain the field "" array length equal to 1
+    And the response should contain the field "0.url" equal to "{{api}}/acme"
+    And I save the response field "0.id" as "acme_entry"
+    When I call "HistoryService.List" with
+      """
+      { "local_id": "{{Globex.local_id}}" }
+      """
+    Then the response should contain the field "" array length equal to 1
+    And the response should contain the field "0.url" equal to "{{api}}/globex"
+    When I call "HistoryService.Get" with
+      """
+      { "local_id": "{{Globex.local_id}}", "id": "{{acme_entry}}" }
+      """
+    Then the call should fail with code "HIS-03404"
+    When I call "HistoryService.Clear" with
+      """
+      { "local_id": "{{Globex.local_id}}" }
+      """
+    And I call "HistoryService.List" with
+      """
+      { "local_id": "{{Acme.local_id}}" }
+      """
+    Then the response should contain the field "" array length equal to 1
 
   @watcher
   Scenario: Only the active workspace is watched and reports outside changes

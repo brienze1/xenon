@@ -31,6 +31,8 @@ func (t *testUtils) registerThenFileSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the app data file "([^"]*)" should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theAppDataFileShouldContainTheFieldEqualTo)
 	ctx.Then(`^the app data file "([^"]*)" should contain the field "([^"]*)" array length equal to (\d+)$`, t.theAppDataFileShouldContainTheFieldArrayLengthEqualTo)
 	ctx.Then(`^the app data file "([^"]*)" should not exist$`, t.theAppDataFileShouldNotExist)
+	ctx.Then(`^the app data file "([^"]*)" should have (\d+) lines$`, t.theAppDataFileShouldHaveLines)
+	ctx.Then(`^the app data file "([^"]*)" line (\d+) should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theAppDataFileLineShouldContainTheFieldEqualTo)
 	ctx.Then(`^the app data path "([^"]*)" should have the permissions "([^"]*)"$`, t.theAppDataPathShouldHaveThePermissions)
 }
 
@@ -197,6 +199,46 @@ func (t *testUtils) theAppDataFileShouldNotExist(path string) error {
 		return fmt.Errorf("expected app data %s not to exist (stat error: %v)", path, err)
 	}
 	return nil
+}
+
+func (t *testUtils) theAppDataFileShouldHaveLines(path string, count int) error {
+	lines, err := t.appDataLines(path)
+	if err != nil {
+		return err
+	}
+	if len(lines) != count {
+		return fmt.Errorf("app data %s: expected %d lines, got %d", path, count, len(lines))
+	}
+	return nil
+}
+
+func (t *testUtils) theAppDataFileLineShouldContainTheFieldEqualTo(path string, line int, field, expected string) error {
+	lines, err := t.appDataLines(path)
+	if err != nil {
+		return err
+	}
+	if line < 1 || line > len(lines) {
+		return fmt.Errorf("app data %s has %d lines, no line %d", path, len(lines), line)
+	}
+	value, err := fieldOf([]byte(lines[line-1]), field)
+	if err != nil {
+		return err
+	}
+	return expectEqual(stringify(value), t.substitute(expected), field)
+}
+
+func (t *testUtils) appDataLines(path string) ([]string, error) {
+	content, err := os.ReadFile(t.appDataPath(path))
+	if err != nil {
+		return nil, err
+	}
+	lines := []string{}
+	for _, line := range strings.Split(string(content), "\n") {
+		if strings.TrimSpace(line) != "" {
+			lines = append(lines, line)
+		}
+	}
+	return lines, nil
 }
 
 func (t *testUtils) theAppDataPathShouldHaveThePermissions(path, permissions string) error {
