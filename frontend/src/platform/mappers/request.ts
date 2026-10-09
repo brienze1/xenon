@@ -1,4 +1,5 @@
 import type {
+  Auth as AuthDto,
   AutoHeader as AutoHeaderDto,
   FormDataRow as FormDataRowDto,
   KeyValue as KeyValueDto,
@@ -163,6 +164,31 @@ function toFormDataRow(dto: FormDataRowDto): FormDataRow {
   return { ...toKeyValueRow(dto), type: dto.type === 'file' ? 'file' : 'text', src: dto.src }
 }
 
+export interface SavedRequest {
+  draft: RequestDraft
+  revision: string
+}
+
+export function toAuth(dto: AuthDto): RequestAuth {
+  return {
+    type: oneOf(AUTH_TYPES, dto.type, 'inherit'),
+    bearer: { token: dto.bearer.token },
+    basic: { username: dto.basic.username, password: dto.basic.password },
+  }
+}
+
+export function toAuthDto(auth: RequestAuth): AuthDto {
+  return {
+    type: auth.type,
+    bearer: { token: auth.bearer.token },
+    basic: { username: auth.basic.username, password: auth.basic.password },
+  }
+}
+
+export function toSavedRequest(dto: RequestDto): SavedRequest {
+  return { draft: toRequestDraft(dto), revision: dto.revision }
+}
+
 export function toRequestDraft(dto: RequestDto): RequestDraft {
   const fallback = emptyDraft()
   return {
@@ -175,11 +201,7 @@ export function toRequestDraft(dto: RequestDto): RequestDraft {
     pathVariables: (dto.path_variables ?? []).map(toPathVariableRow),
     headers: (dto.headers ?? []).map(toKeyValueRow),
     disabledAutoHeaders: dto.auto_headers.disabled ?? [],
-    auth: {
-      type: oneOf(AUTH_TYPES, dto.auth.type, 'inherit'),
-      bearer: { token: dto.auth.bearer.token },
-      basic: { username: dto.auth.basic.username, password: dto.auth.basic.password },
-    },
+    auth: toAuth(dto.auth),
     body: {
       mode: oneOf(BODY_MODES, dto.body.mode, 'none'),
       raw: { language: oneOf(RAW_LANGUAGES, dto.body.raw.language, 'json'), content: dto.body.raw.content },
@@ -209,11 +231,7 @@ export function toRequestDto(draft: RequestDraft): RequestDto {
     path_variables: draft.pathVariables.map(({ key, value, description }) => ({ key, value, description })),
     headers: draft.headers.map(toKeyValueDto),
     auto_headers: { disabled: draft.disabledAutoHeaders },
-    auth: {
-      type: draft.auth.type,
-      bearer: { token: draft.auth.bearer.token },
-      basic: { username: draft.auth.basic.username, password: draft.auth.basic.password },
-    },
+    auth: toAuthDto(draft.auth),
     body: {
       mode: draft.body.mode,
       raw: { language: draft.body.raw.language, content: draft.body.raw.content },

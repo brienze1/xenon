@@ -3,6 +3,9 @@ import { emptyDraft } from '../mappers/request'
 
 vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {} }))
 vi.mock('../../../bindings/github.com/brienze1/xenon/internal/infra/server/binding/requestservice', () => ({
+  Get: vi.fn(),
+  Save: vi.fn(),
+  SaveAs: vi.fn(),
   ApplyUrl: vi.fn(),
   ApplyParams: vi.fn(),
   ParseBulk: vi.fn(),
@@ -48,6 +51,20 @@ describe('request service', () => {
     await expect(requests.applyUrl(draft)).resolves.toMatchObject({ params: [{ key: 'a', value: '1', enabled: true }] })
     await expect(requests.applyParams(draft)).resolves.toMatchObject({ url: 'https://h?b=2' })
     expect(RequestService.ApplyUrl).toHaveBeenCalledWith({ request: toRequestDto(draft) })
+  })
+
+  it('opens and saves requests with their revision', async () => {
+    const draft = { ...emptyDraft(), id: 'r1', name: 'Ping', url: 'https://h' }
+    const dto = { ...toRequestDto(draft), revision: 'rev-1' }
+    vi.mocked(RequestService.Get).mockResolvedValue(dto as never)
+    vi.mocked(RequestService.Save).mockResolvedValue({ ...dto, revision: 'rev-2' } as never)
+    vi.mocked(RequestService.SaveAs).mockResolvedValue({ ...dto, id: 'r2', revision: 'rev-3' } as never)
+    await expect(requests.getRequest('ws', 'r1')).resolves.toMatchObject({ revision: 'rev-1', draft: { id: 'r1', url: 'https://h' } })
+    await expect(requests.saveRequest('ws', draft, 'rev-1', false)).resolves.toMatchObject({ revision: 'rev-2' })
+    await expect(requests.saveRequestAs('ws', 'c1', 'Copy', draft)).resolves.toMatchObject({ revision: 'rev-3', draft: { id: 'r2' } })
+    expect(RequestService.Get).toHaveBeenCalledWith({ local_id: 'ws', id: 'r1' })
+    expect(RequestService.Save).toHaveBeenCalledWith({ local_id: 'ws', base_revision: 'rev-1', force: false, request: toRequestDto(draft) })
+    expect(RequestService.SaveAs).toHaveBeenCalledWith({ local_id: 'ws', parent_id: 'c1', name: 'Copy', request: toRequestDto(draft) })
   })
 
   it('rejects an empty answer', async () => {

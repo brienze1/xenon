@@ -6,10 +6,12 @@ import {
   toKeyValueRow,
   toRequestDraft,
   toRequestDto,
+  toSavedRequest,
   toSendResult,
   type AutoHeader,
   type KeyValueRow,
   type RequestDraft,
+  type SavedRequest,
   type SendResult,
 } from '../mappers/request'
 
@@ -34,6 +36,24 @@ async function call<T>(operation: () => Promise<T>): Promise<T> {
   } catch (error) {
     throw toAppError(error)
   }
+}
+
+export function getRequest(localId: string, id: string): Promise<SavedRequest> {
+  return call(async () => toSavedRequest(required(await RequestService.Get({ local_id: localId, id }))))
+}
+
+export function saveRequest(localId: string, draft: RequestDraft, baseRevision: string, force: boolean): Promise<SavedRequest> {
+  return call(async () =>
+    toSavedRequest(
+      required(await RequestService.Save({ local_id: localId, base_revision: baseRevision, force, request: toRequestDto(draft) })),
+    ),
+  )
+}
+
+export function saveRequestAs(localId: string, parentId: string, name: string, draft: RequestDraft): Promise<SavedRequest> {
+  return call(async () =>
+    toSavedRequest(required(await RequestService.SaveAs({ local_id: localId, parent_id: parentId, name, request: toRequestDto(draft) }))),
+  )
 }
 
 export function applyUrl(draft: RequestDraft): Promise<RequestDraft> {
