@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
 import type { SendResult } from '@/platform/mappers/request'
 
-vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {} }))
 vi.mock('@/platform/services/requests', () => ({ lastResult: vi.fn(), releaseResponse: vi.fn(), saveResponseBody: vi.fn() }))
 vi.mock('@/platform/services/dialogs', () => ({ pickSaveFile: vi.fn() }))
 vi.mock('@/platform/response-body', () => ({ fetchResponseText: vi.fn() }))
@@ -12,7 +11,7 @@ vi.mock('@/platform/response-body', () => ({ fetchResponseText: vi.fn() }))
 const requests = await import('@/platform/services/requests')
 const dialogs = await import('@/platform/services/dialogs')
 const responseBody = await import('@/platform/response-body')
-const { useResponseViewerStore } = await import('../store')
+const { useResponseViewerStore } = await import('@/features/response-viewer/store')
 const { ResponseViewer } = await import('./ResponseViewer')
 
 function result(overrides: Partial<SendResult> = {}): SendResult {
@@ -85,6 +84,7 @@ describe('ResponseViewer', () => {
     expect(screen.getByText('302 Found')).toHaveClass('redirect')
     show(result())
     expect(screen.getByText('200 OK')).toHaveClass('success')
+    expect(screen.getByRole('group', { name: 'Response status' })).toBeInTheDocument()
   })
 
   it('pretty prints by default and shows the raw body as received', async () => {
@@ -95,6 +95,24 @@ describe('ResponseViewer', () => {
     expect(screen.getByRole('textbox', { name: 'Pretty response body' })).toHaveTextContent('"a": [')
     await user.click(screen.getByRole('radio', { name: 'Raw' }))
     expect(screen.getByRole('textbox', { name: 'Raw response body' })).toHaveTextContent('{"a":[1]}')
+  })
+
+  it('moves between body views with the arrow keys', async () => {
+    const user = userEvent.setup()
+    render(<ResponseViewer tabId="tab" />)
+    show(result())
+    expect(screen.getByRole('radio', { name: 'Pretty' })).toHaveAttribute('tabindex', '0')
+    expect(screen.getByRole('radio', { name: 'Raw' })).toHaveAttribute('tabindex', '-1')
+    screen.getByRole('radio', { name: 'Pretty' }).focus()
+    await user.keyboard('{ArrowRight}')
+    expect(screen.getByRole('radio', { name: 'Raw' })).toHaveFocus()
+    expect(screen.getByRole('radio', { name: 'Raw' })).toHaveAttribute('aria-checked', 'true')
+    await user.keyboard('{ArrowDown}')
+    expect(screen.getByRole('radio', { name: 'Preview' })).toHaveAttribute('aria-checked', 'true')
+    await user.keyboard('{ArrowDown}')
+    expect(screen.getByRole('radio', { name: 'Pretty' })).toHaveFocus()
+    await user.keyboard('{ArrowUp}')
+    expect(screen.getByRole('radio', { name: 'Preview' })).toHaveAttribute('aria-checked', 'true')
   })
 
   it('opens bodies larger than 5 MB in Raw first and loads them from the route', async () => {

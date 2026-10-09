@@ -1,7 +1,7 @@
 import type { TreeNode } from '@/platform/mappers/tree'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
-import { isContainer } from '../lib/tree-rows'
+import { isContainer } from '@/features/sidebar/lib/tree-rows'
 
 interface DeleteItemDialogProps {
   item: TreeNode | null

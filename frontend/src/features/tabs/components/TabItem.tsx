@@ -3,7 +3,7 @@ import type { KeyboardEvent, MouseEvent } from 'react'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { cn } from '@/shared/lib/cn'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
-import { useTabsStore } from '../store'
+import { useTabsStore } from '@/features/tabs/store'
 import styles from './TabItem.module.css'
 
 const MIDDLE_BUTTON = 1

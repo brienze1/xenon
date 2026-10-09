@@ -48,6 +48,8 @@ export function InfoPanel({ tabId }: InfoPanelProps) {
       <label className={styles.field}>
         Name
         <input
+          name="request-name"
+          autoComplete="off"
           key={`${requestId}:${name}`}
           className={styles.name}
           defaultValue={name}
@@ -75,6 +77,8 @@ export function InfoPanel({ tabId }: InfoPanelProps) {
         </div>
         {editing ? (
           <textarea
+            name="description"
+            autoComplete="off"
             aria-label="Description"
             className={styles.textarea}
             value={description}

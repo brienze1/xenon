@@ -2,6 +2,10 @@ import { act, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defaultUIState } from '@/platform/mappers/ui-state'
 
+vi.mock('./bootstrap', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./bootstrap')>()),
+  bootstrap: vi.fn(() => () => undefined),
+}))
 vi.mock('@/platform/events', () => ({
   onWorkspaceFolderMissing: vi.fn(() => () => undefined),
   onWorkspaceTreeChanged: vi.fn(() => () => undefined),
@@ -38,7 +42,13 @@ const requests = await import('@/platform/services/requests')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
 const { useTabsStore } = await import('@/features/tabs/store')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
+const { bootstrap, openLastWorkspace } = await import('./bootstrap')
 const { App } = await import('./App')
+
+async function renderApp() {
+  render(<App />)
+  await act(() => openLastWorkspace())
+}
 
 const acme = { localId: 'A', name: 'Acme', path: '/work/acme', missing: false }
 
@@ -55,11 +65,20 @@ function openTabs() {
 async function renderWorkspace() {
   vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: 'A' })
   vi.mocked(services.activateWorkspace).mockResolvedValue({ summary: acme, tree: [], uiState: defaultUIState() })
-  render(<App />)
+  await renderApp()
   await screen.findByRole('textbox', { name: 'Request URL' })
 }
 
 describe('App', () => {
+  it('bootstraps once per app load, not once per mount', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [], activeLocalId: null })
+    const first = render(<App />)
+    first.unmount()
+    render(<App />)
+    expect(bootstrap).toHaveBeenCalledTimes(1)
+    await act(() => openLastWorkspace())
+  })
+
   beforeEach(() => {
     vi.mocked(services.listWorkspaces).mockReset()
     vi.mocked(services.activateWorkspace).mockReset()
@@ -70,7 +89,7 @@ describe('App', () => {
 
   it('shows the welcome screen when there is no workspace', async () => {
     vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [], activeLocalId: null })
-    render(<App />)
+    await renderApp()
     expect(await screen.findByRole('form', { name: 'Create workspace' })).toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: 'Sidebar' })).not.toBeInTheDocument()
   })
@@ -89,7 +108,7 @@ describe('App', () => {
     vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: 'A' })
     const { AppError } = await import('@/platform/errors')
     vi.mocked(services.activateWorkspace).mockRejectedValue(new AppError('WKS-06404', 'missing'))
-    render(<App />)
+    await renderApp()
     expect(await screen.findByRole('region', { name: 'Workspace folder missing' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Workspace: Acme' })).toBeInTheDocument()
   })

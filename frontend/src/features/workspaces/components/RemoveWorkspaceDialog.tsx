@@ -3,8 +3,8 @@ import type { WorkspaceSummary } from '@/platform/mappers/workspace'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
-import { workspaceErrorMessage } from '../lib/error-message'
-import { TRASH_FAILED, useWorkspacesStore } from '../store'
+import { workspaceErrorMessage } from '@/features/workspaces/lib/error-message'
+import { TRASH_FAILED, useWorkspacesStore } from '@/features/workspaces/store'
 import styles from './WorkspaceDialog.module.css'
 
 interface RemoveWorkspaceDialogProps {

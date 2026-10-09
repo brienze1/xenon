@@ -15,7 +15,7 @@ describe('EmptyState', () => {
       </EmptyState.Root>,
     )
     const region = screen.getByRole('region', { name: 'No response' })
-    expect(region).toContainElement(screen.getByRole('heading', { name: 'Nothing here yet' }))
+    expect(region).toContainElement(screen.getByRole('heading', { level: 2, name: 'Nothing here yet' }))
     expect(screen.getByText('Send a request to see the response.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Send' })).toBeInTheDocument()
   })

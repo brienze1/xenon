@@ -19,4 +19,14 @@ describe('response body route', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('', { status: 404 })))
     await expect(fetchResponseText('/xenon/response/tab')).rejects.toMatchObject({ code: 'SND-03404' })
   })
+
+  it('maps a network failure to an AppError', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('Failed to fetch'))))
+    await expect(fetchResponseText('/xenon/response/tab')).rejects.toMatchObject({
+      name: 'AppError',
+      code: 'UNK-00500',
+      description: 'Failed to fetch',
+    })
+    await expect(fetchResponseBlob('/xenon/response/tab')).rejects.toMatchObject({ name: 'AppError' })
+  })
 })

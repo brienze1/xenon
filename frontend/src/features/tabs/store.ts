@@ -3,14 +3,19 @@ import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
 import type { RequestChangedOnDisk } from '@/platform/events'
-import type { RequestDraft } from '@/platform/mappers/request'
+import { emptyDraft, toRequestDto, type RequestDraft } from '@/platform/mappers/request'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import type { TabState, UIState } from '@/platform/mappers/ui-state'
 import { saveUIState } from '@/platform/services/ui-state'
-import { isPristine } from './lib/draft'
 import { moveTab } from './lib/order'
 
 export const PERSIST_DELAY_MS = 300
+
+const PRISTINE_DRAFT = JSON.stringify(toRequestDto(emptyDraft()))
+
+function isPristine(draft: RequestDraft): boolean {
+  return JSON.stringify(toRequestDto(draft)) === PRISTINE_DRAFT
+}
 
 export interface TabMeta {
   id: string

@@ -1,4 +1,4 @@
-import { useRequestBuilderStore } from '../store'
+import { useRequestBuilderStore } from '@/features/request-builder/store'
 import styles from './Panel.module.css'
 
 interface SettingsPanelProps {
@@ -17,6 +17,8 @@ export function SettingsPanel({ tabId }: SettingsPanelProps) {
       <label className={styles.field}>
         Request timeout in ms (0 = no timeout)
         <input
+          name="timeout-ms"
+          autoComplete="off"
           type="number"
           min={0}
           className={styles.input}
@@ -26,6 +28,7 @@ export function SettingsPanel({ tabId }: SettingsPanelProps) {
       </label>
       <label className={styles.toggle}>
         <input
+          name="follow-redirects"
           type="checkbox"
           checked={settings.followRedirects}
           onChange={(event) => updateSettings(tabId, { followRedirects: event.target.checked })}
@@ -34,6 +37,7 @@ export function SettingsPanel({ tabId }: SettingsPanelProps) {
       </label>
       <label className={styles.toggle}>
         <input
+          name="verify-ssl"
           type="checkbox"
           checked={settings.verifySsl}
           onChange={(event) => updateSettings(tabId, { verifySsl: event.target.checked })}
@@ -42,6 +46,7 @@ export function SettingsPanel({ tabId }: SettingsPanelProps) {
       </label>
       <label className={styles.toggle}>
         <input
+          name="encode-url"
           type="checkbox"
           checked={settings.encodeUrl}
           onChange={(event) => updateSettings(tabId, { encodeUrl: event.target.checked })}

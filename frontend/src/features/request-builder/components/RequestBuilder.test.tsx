@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
 import { emptyDraft, type RequestDraft } from '@/platform/mappers/request'
 
-vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {} }))
 vi.mock('@/platform/services/requests', () => ({
   applyUrl: vi.fn(),
   applyParams: vi.fn(),
@@ -26,7 +25,7 @@ const requests = await import('@/platform/services/requests')
 const dialogs = await import('@/platform/services/dialogs')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
-const { useRequestBuilderStore } = await import('../store')
+const { useRequestBuilderStore } = await import('@/features/request-builder/store')
 const { RequestBuilder } = await import('./RequestBuilder')
 
 function queryOf(url: string) {

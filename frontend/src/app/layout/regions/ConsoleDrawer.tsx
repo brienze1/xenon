@@ -1,10 +1,14 @@
 import type { ReactNode } from 'react'
 import { consoleMaxHeight, LAYOUT_LIMITS } from '@/features/workspaces/lib/layout'
 import { ResizeHandle } from '@/shared/ui/resize-handle/ResizeHandle'
-import { useShellLayout } from '../shell-layout'
+import { useShellLayout } from '@/app/layout/use-shell-layout'
 import styles from './ConsoleDrawer.module.css'
 
-export function ConsoleDrawer({ children }: { children?: ReactNode }) {
+interface ConsoleDrawerProps {
+  children?: ReactNode
+}
+
+export function ConsoleDrawer({ children }: ConsoleDrawerProps) {
   const { layout, onLayoutChange } = useShellLayout()
   if (!layout.consoleVisible) {
     return null

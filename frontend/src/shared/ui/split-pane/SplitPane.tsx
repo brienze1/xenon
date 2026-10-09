@@ -56,11 +56,20 @@ function Root({ direction, ratio, onRatioChange, min = 0.2, max = 0.8, className
   )
 }
 
-function Pane({ className, children }: { className?: string; children: ReactNode }) {
+interface PaneProps {
+  className?: string
+  children: ReactNode
+}
+
+function Pane({ className, children }: PaneProps) {
   return <div className={cn(styles.pane, className)}>{children}</div>
 }
 
-function Divider({ label }: { label: string }) {
+interface DividerProps {
+  label: string
+}
+
+function Divider({ label }: DividerProps) {
   const split = useSplitPane()
   const [dragging, setDragging] = useState(false)
 

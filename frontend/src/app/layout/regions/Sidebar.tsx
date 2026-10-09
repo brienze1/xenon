@@ -1,10 +1,14 @@
 import type { ReactNode } from 'react'
 import { LAYOUT_LIMITS } from '@/features/workspaces/lib/layout'
 import { ResizeHandle } from '@/shared/ui/resize-handle/ResizeHandle'
-import { useShellLayout } from '../shell-layout'
+import { useShellLayout } from '@/app/layout/use-shell-layout'
 import styles from './Sidebar.module.css'
 
-export function Sidebar({ children }: { children?: ReactNode }) {
+interface SidebarProps {
+  children?: ReactNode
+}
+
+export function Sidebar({ children }: SidebarProps) {
   const { layout, onLayoutChange } = useShellLayout()
   if (!layout.sidebarVisible) {
     return null

@@ -1,4 +1,4 @@
-import { createContext, use, useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react'
+import { createContext, use, useEffect, useEffectEvent, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/shared/lib/cn'
 import { moveFocus } from '@/shared/lib/roving-focus'
@@ -24,7 +24,11 @@ function useContextMenu(): ContextMenuContextValue {
   return context
 }
 
-function Root({ children }: { children: ReactNode }) {
+interface RootProps {
+  children: ReactNode
+}
+
+function Root({ children }: RootProps) {
   const [position, setPosition] = useState<Position | null>(null)
   return <ContextMenuContext value={{ position, setPosition }}>{children}</ContextMenuContext>
 }
@@ -56,6 +60,7 @@ function Menu({ label, children }: MenuProps) {
   const menu = useContextMenu()
   const menuRef = useRef<HTMLDivElement>(null)
   const open = menu.position !== null
+  const close = useEffectEvent(() => menu.setPosition(null))
 
   useEffect(() => {
     if (!open) {
@@ -66,12 +71,12 @@ function Menu({ label, children }: MenuProps) {
     }
     function onPointerDown(event: PointerEvent) {
       if (!menuRef.current?.contains(event.target as Node)) {
-        menu.setPosition(null)
+        close()
       }
     }
     document.addEventListener('pointerdown', onPointerDown)
     return () => document.removeEventListener('pointerdown', onPointerDown)
-  }, [open, menu])
+  }, [open])
 
   if (!menu.position) {
     return null

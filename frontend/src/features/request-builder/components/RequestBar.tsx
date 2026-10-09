@@ -3,7 +3,7 @@ import { STANDARD_METHODS } from '@/platform/mappers/request'
 import { Button } from '@/shared/ui/button/Button'
 import { Dropdown } from '@/shared/ui/dropdown/Dropdown'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
-import { useRequestBuilderStore } from '../store'
+import { useRequestBuilderStore } from '@/features/request-builder/store'
 import styles from './RequestBar.module.css'
 
 interface RequestBarProps {
@@ -54,6 +54,8 @@ export function RequestBar({ tabId, onSave }: RequestBarProps) {
             </Dropdown.Item>
           ))}
           <input
+            name="custom-method"
+            autoComplete="off"
             aria-label="Custom method"
             placeholder="Custom…"
             className={styles.customMethod}
@@ -65,6 +67,8 @@ export function RequestBar({ tabId, onSave }: RequestBarProps) {
         </Dropdown.Menu>
       </Dropdown.Root>
       <input
+        name="url"
+        autoComplete="off"
         aria-label="Request URL"
         className={styles.url}
         placeholder="https://api.example.com/users…"

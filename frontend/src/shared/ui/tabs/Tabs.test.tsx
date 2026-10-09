@@ -53,6 +53,10 @@ describe('Tabs', () => {
     expect(screen.getByRole('tabpanel')).toHaveTextContent('params panel')
     await userEvent.keyboard('{ArrowLeft}')
     expect(screen.getByRole('tabpanel')).toHaveTextContent('headers panel')
+    await userEvent.keyboard('{Home}')
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('params panel')
+    await userEvent.keyboard('{End}')
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('headers panel')
   })
 
   it('refuses parts rendered outside the root', () => {

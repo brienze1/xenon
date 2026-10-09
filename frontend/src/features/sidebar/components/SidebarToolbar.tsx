@@ -1,5 +1,5 @@
 import { IconButton } from '@/shared/ui/icon-button/IconButton'
-import { useSidebarStore } from '../store'
+import { useSidebarStore } from '@/features/sidebar/store'
 import styles from './SidebarToolbar.module.css'
 
 export function SidebarToolbar() {

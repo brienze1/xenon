@@ -1,10 +1,10 @@
-import type { KeyboardEvent } from 'react'
+import type { CSSProperties, KeyboardEvent } from 'react'
 import { cn } from '@/shared/lib/cn'
 import { ContextMenu } from '@/shared/ui/context-menu/ContextMenu'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
 import type { TreeNode } from '@/platform/mappers/tree'
-import { isContainer, type TreeRow } from '../lib/tree-rows'
-import { useSidebarStore } from '../store'
+import { isContainer, type TreeRow } from '@/features/sidebar/lib/tree-rows'
+import { useSidebarStore } from '@/features/sidebar/store'
 import { RenameInput } from './RenameInput'
 import styles from './TreeItem.module.css'
 
@@ -51,6 +51,9 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenSe
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.target !== event.currentTarget) {
+      return
+    }
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
       activate()
@@ -66,13 +69,14 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenSe
       <ContextMenu.Trigger>
         <div
           role="treeitem"
+          data-tree-id={node.id}
           aria-level={depth + 1}
           aria-expanded={container ? expanded : undefined}
           aria-selected={selected}
           tabIndex={focusable ? 0 : -1}
           title={node.error ?? node.warning ?? undefined}
           className={cn(styles.row, selected && styles.selected, node.kind === 'error' && styles.error)}
-          style={{ paddingInlineStart: `calc(var(--space-3) + ${depth} * var(--space-4))` }}
+          style={{ '--depth': depth } as CSSProperties}
           onClick={activate}
           onDoubleClick={() => (node.kind === 'request' ? onPinRequest(node.id) : undefined)}
           onKeyDown={onKeyDown}

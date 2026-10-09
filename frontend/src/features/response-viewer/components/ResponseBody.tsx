@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import type { SendResult } from '@/platform/mappers/request'
 import { formatBytes } from '@/shared/lib/format-bytes'
+import { rovingIndex } from '@/shared/lib/roving-focus'
 import { Button } from '@/shared/ui/button/Button'
 import { CodeEditor } from '@/shared/ui/code-editor/CodeEditor'
-import { initialBodyView, isHtml, isImage, languageFor, prettyBody, type BodyView } from '../lib/body-view'
-import { useResponseViewerStore } from '../store'
+import { initialBodyView, isHtml, isImage, languageFor, prettyBody, type BodyView } from '@/features/response-viewer/lib/body-view'
+import { useResponseViewerStore } from '@/features/response-viewer/store'
 import styles from './ResponseBody.module.css'
 
 interface ResponseBodyProps {
@@ -18,6 +19,8 @@ const VIEWS: Array<{ view: BodyView; label: string }> = [
   { view: 'preview', label: 'Preview' },
 ]
 
+const RADIO_KEYS: Record<string, string> = { ArrowDown: 'ArrowRight', ArrowUp: 'ArrowLeft' }
+
 export function ResponseBody({ tabId, result }: ResponseBodyProps) {
   const [view, setView] = useState<BodyView>(() => initialBodyView(result.sizeBytes))
   const [copied, setCopied] = useState(false)
@@ -26,14 +29,28 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
   const loadBody = useResponseViewerStore((state) => state.loadBody)
   const saveBody = useResponseViewerStore((state) => state.saveBody)
   const language = languageFor(result.contentType)
+  const isBinary = result.isBinary
 
   useEffect(() => {
-    if (!result.isBinary && bodyStatus === 'idle') {
+    if (!isBinary && bodyStatus === 'idle') {
       void loadBody(tabId)
     }
-  }, [tabId, result, bodyStatus, loadBody])
+  }, [tabId, isBinary, bodyStatus, loadBody])
 
   const shown = useMemo(() => (body !== null && view === 'pretty' ? prettyBody(body, language) : (body ?? '')), [body, view, language])
+
+  function onViewKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const key = RADIO_KEYS[event.key] ?? event.key
+    const current = VIEWS.findIndex((option) => option.view === view)
+    const index = rovingIndex(VIEWS.length, current, key, { orientation: 'horizontal' })
+    const next = index === null ? undefined : VIEWS[index]
+    if (index === null || !next) {
+      return
+    }
+    event.preventDefault()
+    setView(next.view)
+    event.currentTarget.querySelectorAll<HTMLElement>('[role="radio"]')[index]?.focus()
+  }
 
   async function copy() {
     if (body !== null) {
@@ -45,13 +62,14 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
   return (
     <div className={styles.body}>
       <div className={styles.toolbar}>
-        <div role="radiogroup" aria-label="Body view" className={styles.views}>
+        <div role="radiogroup" aria-label="Body view" className={styles.views} onKeyDown={onViewKeyDown}>
           {VIEWS.map((option) => (
             <button
               key={option.view}
               type="button"
               role="radio"
               aria-checked={view === option.view}
+              tabIndex={view === option.view ? 0 : -1}
               className={styles.view}
               onClick={() => setView(option.view)}
             >

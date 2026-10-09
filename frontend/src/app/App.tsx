@@ -10,7 +10,7 @@ import { WorkspaceSwitcher } from '@/features/workspaces/components/WorkspaceSwi
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import styles from './App.module.css'
 import { bootstrap } from './bootstrap'
-import { useAppHotkeys, type HotkeyHandlers } from './hotkeys'
+import { type HotkeyHandlers } from './hotkeys'
 import { AppShell } from './layout/AppShell'
 import { ConsoleDrawer } from './layout/regions/ConsoleDrawer'
 import { Footer } from './layout/regions/Footer'
@@ -19,6 +19,9 @@ import { RightPanel } from './layout/regions/RightPanel'
 import { Sidebar } from './layout/regions/Sidebar'
 import { TopBar } from './layout/regions/TopBar'
 import { TabsArea } from './layout/TabsArea'
+import { useAppHotkeys } from './use-app-hotkeys'
+
+let didInit = false
 
 export function App() {
   const status = useWorkspacesStore((state) => state.status)
@@ -30,25 +33,38 @@ export function App() {
     state.workspaces.find((workspace) => workspace.localId === state.activeLocalId),
   )
 
+  const hasActive = active !== undefined
+
   const activeTabId = useTabsStore((state) => state.activeTabId)
   const tabs = useTabsStore.getState
   const send = useRequestBuilderStore((state) => state.send)
   const adoptRename = useRequestBuilderStore((state) => state.adoptRename)
   const hotkeys = useMemo<HotkeyHandlers>(
     () =>
-      active
+      hasActive
         ? {
-            send: () => (activeTabId ? void send(activeTabId) : undefined),
-            save: () => void tabs().save(),
-            saveAs: () => tabs().saveAs(),
-            newTab: () => void tabs().newTab(),
-            closeTab: () => tabs().requestClose(),
+            send: () => {
+              const tabId = useTabsStore.getState().activeTabId
+              if (tabId) {
+                void send(tabId)
+              }
+            },
+            save: () => void useTabsStore.getState().save(),
+            saveAs: () => useTabsStore.getState().saveAs(),
+            newTab: () => void useTabsStore.getState().newTab(),
+            closeTab: () => useTabsStore.getState().requestClose(),
           }
         : {},
-    [active, send, activeTabId, tabs],
+    [hasActive, send],
   )
 
-  useEffect(() => bootstrap(), [])
+  useEffect(() => {
+    if (didInit) {
+      return
+    }
+    didInit = true
+    bootstrap()
+  }, [])
   useAppHotkeys(hotkeys)
 
   return (

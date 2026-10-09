@@ -10,12 +10,14 @@ const DOTS = [
   [110, 86, 0.8],
 ] as const
 
+const SPRAY = (
+  <g className={styles.spray}>
+    {DOTS.map(([cx, cy, r]) => (
+      <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={r} />
+    ))}
+  </g>
+)
+
 export function Spray() {
-  return (
-    <g className={styles.spray}>
-      {DOTS.map(([cx, cy, r]) => (
-        <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={r} />
-      ))}
-    </g>
-  )
+  return SPRAY
 }

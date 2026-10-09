@@ -62,3 +62,13 @@
   align-items: center;
   gap: var(--space-3);
 }
+
+.input[aria-invalid='true'] {
+  border-color: var(--status-error);
+}
+
+.fieldError {
+  margin: 0;
+  color: var(--status-error);
+  font-size: var(--font-size-sm);
+}

@@ -7,6 +7,7 @@ import type {
   Request as RequestDto,
   SendResult as SendResultDto,
 } from '../../../bindings/github.com/brienze1/xenon/internal/integration/entrypoint/dto/models'
+import { newRowId } from '@/shared/lib/rows'
 
 export const STANDARD_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const
 export const AUTH_TYPES = ['inherit', 'none', 'bearer', 'basic', 'apikey', 'oauth2', 'awsv4', 'digest'] as const
@@ -111,13 +112,6 @@ export interface SendResult {
   inlineBody: string | null
   timings: SendTimings
   error: SendFailure | null
-}
-
-let nextRowId = 0
-
-export function newRowId(): string {
-  nextRowId += 1
-  return `row-${nextRowId}`
 }
 
 export function emptyDraft(): RequestDraft {

@@ -1,7 +1,7 @@
 import type { KeyValueRow, PathVariableRow } from '@/platform/mappers/request'
 import { KeyValueTable } from '@/shared/ui/key-value-table/KeyValueTable'
-import { addRow, patchRow, removeRow } from '../lib/rows'
-import { useRequestBuilderStore } from '../store'
+import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
+import { useRequestBuilderStore } from '@/features/request-builder/store'
 import styles from './Panel.module.css'
 
 interface ParamsPanelProps {
@@ -53,6 +53,8 @@ export function ParamsPanel({ tabId }: ParamsPanelProps) {
                   <td>{variable.key}</td>
                   <td>
                     <input
+                      name="path-variable-value"
+                      autoComplete="off"
                       aria-label={`Value of ${variable.key}`}
                       className={styles.cell}
                       spellCheck={false}
@@ -62,6 +64,8 @@ export function ParamsPanel({ tabId }: ParamsPanelProps) {
                   </td>
                   <td>
                     <input
+                      name="path-variable-description"
+                      autoComplete="off"
                       aria-label={`Description of ${variable.key}`}
                       className={styles.cell}
                       value={variable.description}

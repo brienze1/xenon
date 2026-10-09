@@ -8,6 +8,8 @@
   --color-text: #e8e8f0;
   --color-text-muted: #8a8a99;
   --color-selection: rgb(62 200 255 / 30%);
+  --color-backdrop: rgb(0 0 0 / 55%);
+  --color-preview-bg: #ffffff;
 
   --neon-green: #3dff4f;
   --neon-cyan: #3ec8ff;

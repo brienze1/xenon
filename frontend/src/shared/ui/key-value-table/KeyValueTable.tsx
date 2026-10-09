@@ -1,6 +1,6 @@
 import { cn } from '@/shared/lib/cn'
-import { Button } from '../button/Button'
-import { IconButton } from '../icon-button/IconButton'
+import { Button } from '@/shared/ui/button/Button'
+import { IconButton } from '@/shared/ui/icon-button/IconButton'
 import styles from './KeyValueTable.module.css'
 
 export interface KeyValueRow {
@@ -57,6 +57,8 @@ export function KeyValueTable({
       </div>
       {bulk ? (
         <textarea
+          name="bulk-text"
+          autoComplete="off"
           aria-label={`${label} bulk edit`}
           className={styles.bulk}
           spellCheck={false}
@@ -84,6 +86,7 @@ export function KeyValueTable({
                 <td>
                   <div className={styles.check}>
                     <input
+                      name="enabled"
                       type="checkbox"
                       aria-label={`Enable ${row.key || 'row'}`}
                       checked={row.enabled}
@@ -94,6 +97,8 @@ export function KeyValueTable({
                 {COLUMNS.map((column) => (
                   <td key={column.field}>
                     <input
+                      name={column.field}
+                      autoComplete="off"
                       aria-label={column.title}
                       className={styles.cell}
                       spellCheck={false}
@@ -114,6 +119,8 @@ export function KeyValueTable({
               {COLUMNS.map((column) => (
                 <td key={column.field}>
                   <input
+                    name={`new-${column.field}`}
+                    autoComplete="off"
                     aria-label={`New ${column.title.toLowerCase()}`}
                     placeholder={column.title}
                     className={styles.cell}

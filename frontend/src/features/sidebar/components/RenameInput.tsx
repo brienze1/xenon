@@ -22,6 +22,8 @@ export function RenameInput({ name, onCommit, onCancel }: RenameInputProps) {
 
   return (
     <input
+      name="item-name"
+      autoComplete="off"
       aria-label="Name"
       className={styles.rename}
       value={value}

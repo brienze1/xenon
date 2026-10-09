@@ -18,11 +18,19 @@ function Root({ tone, className, children }: RootProps) {
   )
 }
 
-function Message({ children }: { children: ReactNode }) {
+interface MessageProps {
+  children: ReactNode
+}
+
+function Message({ children }: MessageProps) {
   return <div className={styles.message}>{children}</div>
 }
 
-function Actions({ children }: { children: ReactNode }) {
+interface ActionsProps {
+  children: ReactNode
+}
+
+function Actions({ children }: ActionsProps) {
   return <div className={styles.actions}>{children}</div>
 }
 

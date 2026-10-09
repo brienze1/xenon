@@ -4,7 +4,6 @@ import { emptyDraft } from '@/platform/mappers/request'
 import { defaultLayout, defaultUIState, type UIState } from '@/platform/mappers/ui-state'
 import type { WorkspaceSnapshot, WorkspaceSummary } from '@/platform/mappers/workspace'
 
-vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {} }))
 vi.mock('@/platform/services/workspaces', () => ({
   listWorkspaces: vi.fn(),
   createWorkspace: vi.fn(),

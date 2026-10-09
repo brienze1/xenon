@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import type { LayoutState } from '@/platform/mappers/ui-state'
 import { cn } from '@/shared/lib/cn'
-import { useShellLayout } from '../shell-layout'
+import { useShellLayout } from '@/app/layout/use-shell-layout'
 import styles from './Footer.module.css'
 
 type RegionToggle = 'sidebarVisible' | 'rightPanelVisible' | 'consoleVisible'
@@ -12,7 +12,14 @@ const REGION_TOGGLES: Array<{ key: RegionToggle; label: string; icon: string }> 
   { key: 'rightPanelVisible', label: 'Side panel', icon: 'M2 3h12v10H2zM10 3v10' },
 ]
 
-function ToggleButton({ label, icon, pressed, onToggle }: { label: string; icon: string; pressed: boolean; onToggle: () => void }) {
+interface ToggleButtonProps {
+  label: string
+  icon: string
+  pressed: boolean
+  onToggle: () => void
+}
+
+function ToggleButton({ label, icon, pressed, onToggle }: ToggleButtonProps) {
   return (
     <button type="button" aria-pressed={pressed} title={label} className={cn(styles.toggle, pressed && styles.on)} onClick={onToggle}>
       <svg viewBox="0 0 16 16" aria-hidden="true" className={styles.icon}>
@@ -23,7 +30,11 @@ function ToggleButton({ label, icon, pressed, onToggle }: { label: string; icon:
   )
 }
 
-export function Footer({ children }: { children?: ReactNode }) {
+interface FooterProps {
+  children?: ReactNode
+}
+
+export function Footer({ children }: FooterProps) {
   const { layout, onLayoutChange } = useShellLayout()
   const sideBySide = layout.split === 'side-by-side'
 

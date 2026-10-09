@@ -5,6 +5,13 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 const WAILS_RUNTIME_MESSAGE = 'Only src/platform/ may import @wailsio/runtime or the generated bindings.'
+const PARENT_RELATIVE_MESSAGE =
+  'Relative imports only within the same folder: use the @/ alias instead of a parent-relative path.'
+const SHARED = ['shared', 'shared-lib', 'shared-types']
+const WAILS_RUNTIME_PATTERNS = [
+  { group: ['@wailsio/runtime', '@wailsio/runtime/*'], message: WAILS_RUNTIME_MESSAGE },
+  { group: ['**/bindings/**'], message: WAILS_RUNTIME_MESSAGE },
+]
 
 export default tseslint.config(
   { ignores: ['dist', 'bindings', 'node_modules', 'public'] },
@@ -32,6 +39,8 @@ export default tseslint.config(
         { type: 'app', pattern: 'src/app' },
         { type: 'feature', pattern: 'src/features/*', capture: ['feature'] },
         { type: 'platform', pattern: 'src/platform' },
+        { type: 'shared-lib', pattern: 'src/shared/lib' },
+        { type: 'shared-types', pattern: 'src/shared/types' },
         { type: 'shared', pattern: 'src/shared' },
         { type: 'bindings', pattern: 'bindings' },
       ],
@@ -47,11 +56,11 @@ export default tseslint.config(
           policies: [
             {
               from: { element: { type: 'test-support' } },
-              allow: { to: { element: { type: ['test-support', 'shared'] } } },
+              allow: { to: { element: { type: ['test-support', ...SHARED] } } },
             },
             {
               from: { element: { type: 'app' } },
-              allow: { to: { element: { type: ['app', 'feature', 'platform', 'shared'] } } },
+              allow: { to: { element: { type: ['app', 'feature', 'platform', ...SHARED] } } },
             },
             {
               from: { element: { type: 'feature' } },
@@ -59,17 +68,17 @@ export default tseslint.config(
                 to: [
                   { element: { type: 'feature', captured: { feature: '{{ from.element.captured.feature }}' } } },
                   { element: { type: 'feature' }, file: { categories: 'store' } },
-                  { element: { type: ['platform', 'shared'] } },
+                  { element: { type: ['platform', ...SHARED] } },
                 ],
               },
             },
             {
               from: { element: { type: 'platform' } },
-              allow: { to: { element: { type: ['platform', 'shared', 'bindings'] } } },
+              allow: { to: { element: { type: ['platform', 'shared-lib', 'shared-types', 'bindings'] } } },
             },
             {
-              from: { element: { type: 'shared' } },
-              allow: { to: { element: { type: 'shared' } } },
+              from: { element: { type: SHARED } },
+              allow: { to: { element: { type: SHARED } } },
             },
             {
               from: { element: { type: 'bindings' } },
@@ -81,10 +90,7 @@ export default tseslint.config(
       'no-restricted-imports': [
         'error',
         {
-          patterns: [
-            { group: ['@wailsio/runtime', '@wailsio/runtime/*'], message: WAILS_RUNTIME_MESSAGE },
-            { group: ['**/bindings/**'], message: WAILS_RUNTIME_MESSAGE },
-          ],
+          patterns: [...WAILS_RUNTIME_PATTERNS, { group: ['../*', '../**'], message: PARENT_RELATIVE_MESSAGE }],
         },
       ],
     },

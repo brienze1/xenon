@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { emptyDraft } from '@/platform/mappers/request'
 import { defaultUIState } from '@/platform/mappers/ui-state'
 
-vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {} }))
 vi.mock('@/platform/services/requests', () => ({
   applyUrl: vi.fn(async (draft) => draft),
   applyParams: vi.fn(async (draft) => draft),
@@ -24,7 +23,7 @@ const requests = await import('@/platform/services/requests')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
 const { useSidebarStore } = await import('@/features/sidebar/store')
-const { useTabsStore } = await import('../store')
+const { useTabsStore } = await import('@/features/tabs/store')
 const { TabStrip } = await import('./TabStrip')
 const { CloseTabPrompt } = await import('./CloseTabPrompt')
 const { SaveRequestDialog } = await import('./SaveRequestDialog')
@@ -96,7 +95,7 @@ describe('TabStrip', () => {
     await userEvent.click(within(prompt).getByRole('button', { name: 'Cancel' }))
     expect(within(strip()).getAllByRole('tab')).toHaveLength(1)
     fireEvent.keyDown(within(strip()).getByRole('tab'), { key: 'Delete' })
-    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: "Don't save" }))
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Don’t save' }))
     expect(within(strip()).queryAllByRole('tab')).toHaveLength(0)
   })
 
@@ -111,6 +110,24 @@ describe('TabStrip', () => {
     fireEvent.keyDown(tabs[0]!, { key: ' ' })
     fireEvent(tabs[1]!, new MouseEvent('auxclick', { bubbles: true, button: 1 }))
     expect(within(strip()).getAllByRole('tab')).toHaveLength(1)
+  })
+
+  it('moves focus across tabs with the arrow, Home and End keys', async () => {
+    await act(() => useTabsStore.getState().openPinned('A'))
+    await act(() => useTabsStore.getState().openPinned('B'))
+    renderStrip()
+    const tabs = within(strip()).getAllByRole('tab')
+    tabs[2]!.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(tabs[0]).toHaveFocus()
+    await userEvent.keyboard('{ArrowLeft}')
+    expect(tabs[2]).toHaveFocus()
+    await userEvent.keyboard('{Home}')
+    expect(tabs[0]).toHaveFocus()
+    await userEvent.keyboard('{End}')
+    expect(tabs[2]).toHaveFocus()
+    await userEvent.keyboard('{ArrowLeft}')
+    expect(tabs[1]).toHaveFocus()
   })
 
   it('saves a new tab into a chosen collection', async () => {
@@ -149,7 +166,16 @@ describe('TabStrip', () => {
     const dialog = screen.getByRole('dialog', { name: 'Save request as' })
     expect(within(dialog).getByRole('textbox', { name: 'Request name' })).toHaveValue('Request A Copy')
     expect(within(dialog).getByText('Create a collection in the sidebar first.')).toBeInTheDocument()
-    expect(within(dialog).getByRole('button', { name: 'Save' })).toBeDisabled()
+    expect(within(dialog).getByRole('button', { name: 'Save' })).toBeEnabled()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+    expect(within(dialog).getByText('Choose where to save the request.')).toBeInTheDocument()
+    expect(requests.saveRequestAs).not.toHaveBeenCalled()
+    const name = within(dialog).getByRole('textbox', { name: 'Request name' })
+    await userEvent.clear(name)
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+    expect(name).toHaveFocus()
+    expect(name).toHaveAttribute('aria-invalid', 'true')
+    expect(name).toHaveAccessibleDescription('Enter a name for the request.')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
     expect(useTabsStore.getState().saveDialog).toBeNull()
   })

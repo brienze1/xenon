@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
 import { defaultUIState } from '@/platform/mappers/ui-state'
 
-vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {} }))
 vi.mock('@/platform/services/workspaces', () => ({
   listWorkspaces: vi.fn(),
   createWorkspace: vi.fn(),
@@ -20,7 +19,7 @@ vi.mock('@/platform/services/requests', () => ({ autoHeaders: vi.fn(async () => 
 
 const services = await import('@/platform/services/workspaces')
 const dialogs = await import('@/platform/services/dialogs')
-const { useWorkspacesStore } = await import('../store')
+const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { WorkspaceSwitcher } = await import('./WorkspaceSwitcher')
 const { MissingFolderNotice } = await import('./MissingFolderNotice')
 
@@ -75,6 +74,22 @@ describe('WorkspaceSwitcher', () => {
     expect(useWorkspacesStore.getState().activeLocalId).toBe('I')
   })
 
+  it('validates the new workspace form on submit', async () => {
+    render(<WorkspaceSwitcher />)
+    await openMenu()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'New workspace…' }))
+    const dialog = screen.getByRole('dialog', { name: 'New workspace' })
+    const nameInput = within(dialog).getByRole('textbox', { name: 'Workspace name' })
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Create workspace' }))
+    expect(nameInput).toHaveFocus()
+    expect(nameInput).toHaveAccessibleDescription('Enter a name for the workspace.')
+    await userEvent.type(nameInput, 'Initech')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Create workspace' }))
+    expect(within(dialog).getByRole('button', { name: 'Choose folder…' })).toHaveFocus()
+    expect(within(dialog).getByText('Choose a folder for the workspace.')).toBeInTheDocument()
+    expect(services.createWorkspace).not.toHaveBeenCalled()
+  })
+
   it('opens an existing workspace folder and reports a refusal', async () => {
     vi.mocked(dialogs.pickFolder).mockResolvedValue('/w')
     vi.mocked(services.openWorkspace).mockRejectedValue(new AppError('WKS-02409', 'overlap'))
@@ -98,6 +113,18 @@ describe('WorkspaceSwitcher', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Rename' }))
     expect(services.renameWorkspace).toHaveBeenCalledWith('G', 'Globex Corp')
     expect(screen.getByRole('button', { name: 'Workspace: Globex Corp' })).toBeInTheDocument()
+  })
+
+  it('refuses a blank workspace name on rename', async () => {
+    render(<WorkspaceSwitcher />)
+    await openMenu()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Rename workspace…' }))
+    const input = screen.getByRole('textbox', { name: 'Workspace name' })
+    await userEvent.clear(input)
+    await userEvent.click(screen.getByRole('button', { name: 'Rename' }))
+    expect(input).toHaveFocus()
+    expect(input).toHaveAccessibleDescription('Enter a name for the workspace.')
+    expect(services.renameWorkspace).not.toHaveBeenCalled()
   })
 
   it('removes with the trash and offers keeping the files when the trash fails', async () => {

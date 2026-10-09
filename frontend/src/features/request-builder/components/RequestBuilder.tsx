@@ -1,6 +1,6 @@
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
-import { useRequestBuilderStore } from '../store'
+import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { RequestBar } from './RequestBar'
 import styles from './RequestBuilder.module.css'
 import { RequestTabs } from './RequestTabs'
@@ -13,9 +13,14 @@ interface RequestBuilderProps {
 export function RequestBuilder({ tabId, onSave }: RequestBuilderProps) {
   const error = useRequestBuilderStore((state) => state.tabs[tabId]?.error ?? null)
   const conflict = useRequestBuilderStore((state) => state.tabs[tabId]?.conflict === true)
-  const requestId = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.id ?? '')
   const save = useRequestBuilderStore((state) => state.save)
   const openSaved = useRequestBuilderStore((state) => state.openSaved)
+
+  function loadFromDisk() {
+    const requestId = useRequestBuilderStore.getState().tabs[tabId]?.draft.id ?? ''
+    void openSaved(tabId, requestId)
+  }
+
   return (
     <section aria-label="Request" className={styles.builder}>
       <RequestBar tabId={tabId} onSave={onSave} />
@@ -26,7 +31,7 @@ export function RequestBuilder({ tabId, onSave }: RequestBuilderProps) {
             <Button variant="secondary" size="sm" onClick={() => void save(tabId, true)}>
               Keep mine
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => void openSaved(tabId, requestId)}>
+            <Button variant="ghost" size="sm" onClick={loadFromDisk}>
               Load from disk
             </Button>
           </Banner.Actions>

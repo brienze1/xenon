@@ -1,8 +1,8 @@
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
-import { workspaceErrorMessage } from '../lib/error-message'
-import { useWorkspacesStore } from '../store'
+import { workspaceErrorMessage } from '@/features/workspaces/lib/error-message'
+import { useWorkspacesStore } from '@/features/workspaces/store'
 
 interface MissingFolderNoticeProps {
   localId: string

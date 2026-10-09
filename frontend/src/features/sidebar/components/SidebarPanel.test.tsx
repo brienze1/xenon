@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ItemSettings, TreeNode } from '@/platform/mappers/tree'
 
-vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {} }))
 vi.mock('@/platform/services/tree', () => ({
   getTree: vi.fn(),
   searchTree: vi.fn(),
@@ -22,7 +21,7 @@ vi.mock('@/platform/services/workspaces', () => ({ listWorkspaces: vi.fn(), crea
 const tree = await import('@/platform/services/tree')
 const requests = await import('@/platform/services/requests')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
-const { SEARCH_DELAY_MS, useSidebarStore } = await import('../store')
+const { SEARCH_DELAY_MS, useSidebarStore } = await import('@/features/sidebar/store')
 const { SidebarPanel } = await import('./SidebarPanel')
 
 function node(id: string, kind: TreeNode['kind'], name: string, children: TreeNode[] = [], extra: Partial<TreeNode> = {}): TreeNode {
@@ -102,6 +101,33 @@ describe('SidebarPanel', () => {
     expect(actions.onOpenRequest).toHaveBeenCalledTimes(2)
     await userEvent.dblClick(item('Create invoice'))
     expect(actions.onPinRequest).toHaveBeenCalledWith('r1')
+  })
+
+  it('moves through rows and expands or collapses them with the keyboard', async () => {
+    await renderPanel()
+    item('Billing').focus()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(item('Billing')).toHaveAttribute('aria-expanded', 'true')
+    expect(item('Billing')).toHaveFocus()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(item('Invoices')).toHaveFocus()
+    expect(item('Invoices')).toHaveAttribute('tabindex', '0')
+    expect(item('Billing')).toHaveAttribute('tabindex', '-1')
+    await userEvent.keyboard('{ArrowDown}')
+    expect(item('Ping')).toHaveFocus()
+    await userEvent.keyboard('{End}')
+    expect(item('broken.yaml')).toHaveFocus()
+    await userEvent.keyboard('{ArrowDown}')
+    expect(item('broken.yaml')).toHaveFocus()
+    await userEvent.keyboard('{ArrowUp}')
+    expect(item('Ping')).toHaveFocus()
+    await userEvent.keyboard('{ArrowLeft}')
+    expect(item('Billing')).toHaveFocus()
+    await userEvent.keyboard('{End}{Home}')
+    expect(item('Billing')).toHaveFocus()
+    await userEvent.keyboard('{ArrowLeft}')
+    expect(item('Billing')).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getAllByRole('treeitem')).toHaveLength(1)
   })
 
   it('filters the tree through the debounced search', async () => {

@@ -1,7 +1,7 @@
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
-import { useTabsStore } from '../store'
+import { useTabsStore } from '@/features/tabs/store'
 
 export function CloseTabPrompt() {
   const tabId = useTabsStore((state) => state.closePrompt)
@@ -17,7 +17,7 @@ export function CloseTabPrompt() {
           Cancel
         </Button>
         <Button variant="secondary" onClick={() => void resolveClose('discard')}>
-          Don&apos;t save
+          Don’t save
         </Button>
         <Button variant="primary" onClick={() => void resolveClose('save')}>
           Save

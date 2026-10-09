@@ -27,7 +27,7 @@ import {
   type PendingSend,
 } from '@/platform/services/requests'
 import { pickFile } from '@/platform/services/dialogs'
-import { keepRowIds } from './lib/rows'
+import { keepRowIds } from '@/shared/lib/rows'
 
 export const SYNC_DELAY_MS = 150
 export const SAVE_CONFLICT = 'REQ-02409'

@@ -1,8 +1,10 @@
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable'
+import type { KeyboardEvent } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { moveFocus } from '@/shared/lib/roving-focus'
 import { IconButton } from '@/shared/ui/icon-button/IconButton'
-import { useTabsStore } from '../store'
+import { useTabsStore } from '@/features/tabs/store'
 import { TabItem } from './TabItem'
 import styles from './TabStrip.module.css'
 
@@ -20,11 +22,20 @@ export function TabStrip() {
     }
   }
 
+  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if ((event.target as HTMLElement).getAttribute('role') !== 'tab') {
+      return
+    }
+    if (moveFocus(event.currentTarget, event.key, '[role="tab"]', 'horizontal')) {
+      event.preventDefault()
+    }
+  }
+
   return (
     <div className={styles.strip}>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={tabIds} strategy={horizontalListSortingStrategy}>
-          <div role="tablist" aria-label="Open requests" className={styles.list}>
+          <div role="tablist" aria-label="Open requests" className={styles.list} onKeyDown={onKeyDown}>
             {tabIds.map((tabId) => (
               <TabItem key={tabId} tabId={tabId} />
             ))}

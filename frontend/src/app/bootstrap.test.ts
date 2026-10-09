@@ -9,7 +9,6 @@ const handlers: {
   changedOnDisk?: (event: RequestChangedOnDisk) => void
 } = {}
 
-vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {} }))
 vi.mock('@/platform/events', () => ({
   onWorkspaceFolderMissing: vi.fn((callback) => {
     handlers.folderMissing = callback

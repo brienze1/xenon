@@ -51,6 +51,47 @@ interface HotkeyOptions {
   platform?: HotkeyPlatform
 }
 
+interface HotkeyRegistration {
+  combo: string
+  platform: HotkeyPlatform
+  handler: RefObject<(event: KeyboardEvent) => void>
+}
+
+interface TargetListener {
+  registrations: Set<HotkeyRegistration>
+  onKeyDown: (event: Event) => void
+}
+
+const registry = new Map<EventTarget, TargetListener>()
+
+function dispatchHotkey(registrations: Set<HotkeyRegistration>, event: KeyboardEvent) {
+  for (const registration of [...registrations]) {
+    if (matchesHotkey(event, registration.combo, registration.platform)) {
+      event.preventDefault()
+      registration.handler.current(event)
+    }
+  }
+}
+
+function register(target: EventTarget, registration: HotkeyRegistration): () => void {
+  let entry = registry.get(target)
+  if (!entry) {
+    const registrations = new Set<HotkeyRegistration>()
+    entry = { registrations, onKeyDown: (event) => dispatchHotkey(registrations, event as KeyboardEvent) }
+    registry.set(target, entry)
+    target.addEventListener('keydown', entry.onKeyDown)
+  }
+  const { registrations, onKeyDown } = entry
+  registrations.add(registration)
+  return () => {
+    registrations.delete(registration)
+    if (registrations.size === 0) {
+      registry.delete(target)
+      target.removeEventListener('keydown', onKeyDown)
+    }
+  }
+}
+
 export function useHotkey(combo: string, handler: (event: KeyboardEvent) => void, options: HotkeyOptions = {}): void {
   const { scope, enabled = true, platform } = options
   const handlerRef = useRef(handler)
@@ -67,15 +108,6 @@ export function useHotkey(combo: string, handler: (event: KeyboardEvent) => void
     if (!target) {
       return
     }
-    const resolvedPlatform = platform ?? detectPlatform()
-    function onKeyDown(event: Event) {
-      const keyboardEvent = event as KeyboardEvent
-      if (matchesHotkey(keyboardEvent, combo, resolvedPlatform)) {
-        keyboardEvent.preventDefault()
-        handlerRef.current(keyboardEvent)
-      }
-    }
-    target.addEventListener('keydown', onKeyDown)
-    return () => target.removeEventListener('keydown', onKeyDown)
+    return register(target, { combo, platform: platform ?? detectPlatform(), handler: handlerRef })
   }, [combo, enabled, platform, scope])
 }

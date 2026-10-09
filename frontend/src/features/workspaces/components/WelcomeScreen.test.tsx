@@ -15,7 +15,7 @@ vi.mock('@/platform/services/requests', () => ({ autoHeaders: vi.fn(async () => 
 
 const services = await import('@/platform/services/workspaces')
 const dialogs = await import('@/platform/services/dialogs')
-const { useWorkspacesStore } = await import('../store')
+const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { WelcomeScreen } = await import('./WelcomeScreen')
 
 describe('WelcomeScreen', () => {
@@ -31,15 +31,33 @@ describe('WelcomeScreen', () => {
     vi.mocked(services.activateWorkspace).mockResolvedValue({ summary: acme, tree: [], uiState: defaultUIState() })
     render(<WelcomeScreen />)
     const submit = screen.getByRole('button', { name: 'Create workspace' })
-    expect(submit).toBeDisabled()
+    expect(submit).toBeEnabled()
     await userEvent.type(screen.getByRole('textbox', { name: 'Workspace name' }), 'Acme')
-    expect(submit).toBeDisabled()
     await userEvent.click(screen.getByRole('button', { name: 'Choose folder…' }))
     expect(dialogs.pickFolder).toHaveBeenCalledWith('Choose the folder for the new workspace')
     expect(screen.getByText('/work/acme')).toBeInTheDocument()
     await userEvent.click(submit)
     expect(services.createWorkspace).toHaveBeenCalledWith({ name: 'Acme', path: '/work/acme' })
     expect(useWorkspacesStore.getState().activeLocalId).toBe('A')
+  })
+
+  it('validates on submit and focuses the first invalid field', async () => {
+    vi.mocked(dialogs.pickFolder).mockResolvedValue('/work/acme')
+    render(<WelcomeScreen />)
+    const nameInput = screen.getByRole('textbox', { name: 'Workspace name' })
+    await userEvent.click(screen.getByRole('button', { name: 'Create workspace' }))
+    expect(services.createWorkspace).not.toHaveBeenCalled()
+    expect(nameInput).toHaveFocus()
+    expect(nameInput).toHaveAttribute('aria-invalid', 'true')
+    expect(nameInput).toHaveAccessibleDescription('Enter a name for the workspace.')
+    expect(screen.getByRole('button', { name: 'Choose folder…' })).toHaveAccessibleDescription('Choose a folder for the workspace.')
+    await userEvent.type(nameInput, 'Acme')
+    expect(nameInput).toHaveAttribute('aria-invalid', 'false')
+    await userEvent.click(screen.getByRole('button', { name: 'Create workspace' }))
+    expect(screen.getByRole('button', { name: 'Choose folder…' })).toHaveFocus()
+    expect(services.createWorkspace).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole('button', { name: 'Choose folder…' }))
+    expect(screen.queryByText('Choose a folder for the workspace.')).not.toBeInTheDocument()
   })
 
   it('keeps the form when the picker is cancelled', async () => {

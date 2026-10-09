@@ -7,8 +7,8 @@ import { statusTone } from '@/shared/lib/status-tone'
 import { Button } from '@/shared/ui/button/Button'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
-import { historyRows, sentTime } from '../lib/history-rows'
-import { useSidebarStore } from '../store'
+import { historyRows, sentTime } from '@/features/sidebar/lib/history-rows'
+import { useSidebarStore } from '@/features/sidebar/store'
 import { ClearHistoryDialog } from './ClearHistoryDialog'
 import styles from './HistoryView.module.css'
 
@@ -26,7 +26,12 @@ function outcome(entry: HistoryEntry): { label: string; tone: string } {
   return { label: String(entry.statusCode), tone: statusTone(entry.statusCode) }
 }
 
-function HistoryEntryButton({ entry, onOpen }: { entry: HistoryEntry; onOpen: (id: string) => void }) {
+interface HistoryEntryButtonProps {
+  entry: HistoryEntry
+  onOpen: (id: string) => void
+}
+
+function HistoryEntryButton({ entry, onOpen }: HistoryEntryButtonProps) {
   const result = outcome(entry)
   const time = sentTime(entry.sentAt)
   return (

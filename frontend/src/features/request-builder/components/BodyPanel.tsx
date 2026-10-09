@@ -1,11 +1,11 @@
-import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { BODY_MODES, RAW_LANGUAGES, type BodyMode, type FormDataRow, type RawLanguage } from '@/platform/mappers/request'
 import { Button } from '@/shared/ui/button/Button'
 import { CodeEditor } from '@/shared/ui/code-editor/CodeEditor'
 import { IconButton } from '@/shared/ui/icon-button/IconButton'
 import { KeyValueTable } from '@/shared/ui/key-value-table/KeyValueTable'
-import { addRow, patchRow, removeRow } from '../lib/rows'
-import { useRequestBuilderStore } from '../store'
+import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
+import { useMissingFile } from '@/features/request-builder/hooks/use-missing-file'
+import { useRequestBuilderStore } from '@/features/request-builder/store'
 import styles from './Panel.module.css'
 
 interface BodyPanelProps {
@@ -29,14 +29,9 @@ const LANGUAGE_LABELS: Record<RawLanguage, string> = {
   javascript: 'JavaScript',
 }
 
-const EMPTY_FORM_ROW: Omit<FormDataRow, 'id'> = { key: '', value: '', description: '', enabled: true, type: 'text', src: '' }
+const DIRECTORY_PREFIX = /^.*[\\/]/
 
-function useMissingFile(tabId: string): string | null {
-  return useResponseViewerStore((state) => {
-    const error = state.entries[tabId]?.result?.error
-    return error?.kind === 'missing_file' ? error.message.replace(/^File not found: /, '') : null
-  })
-}
+const EMPTY_FORM_ROW: Omit<FormDataRow, 'id'> = { key: '', value: '', description: '', enabled: true, type: 'text', src: '' }
 
 export function BodyPanel({ tabId }: BodyPanelProps) {
   const body = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.body)
@@ -65,6 +60,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
         {body.mode === 'raw' ? (
           <select
             aria-label="Raw language"
+            name="raw-language"
             className={styles.select}
             value={body.raw.language}
             onChange={(event) => updateBody(tabId, { raw: { ...body.raw, language: event.target.value as RawLanguage } })}
@@ -126,6 +122,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                   <input
                     type="checkbox"
                     aria-label={`Enable ${row.key || 'row'}`}
+                    name="formdata-enabled"
                     checked={row.enabled}
                     onChange={(event) => updateBody(tabId, { formdata: patchRow(formdata, row.id, { enabled: event.target.checked }) })}
                   />
@@ -133,6 +130,8 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                 <td>
                   <input
                     aria-label="Key"
+                    name="formdata-key"
+                    autoComplete="off"
                     className={styles.cell}
                     value={row.key}
                     onChange={(event) => updateBody(tabId, { formdata: patchRow(formdata, row.id, { key: event.target.value }) })}
@@ -141,6 +140,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                 <td>
                   <select
                     aria-label={`Type of ${row.key || 'row'}`}
+                    name="formdata-type"
                     className={styles.select}
                     value={row.type}
                     onChange={(event) =>
@@ -158,13 +158,15 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                         Select file
                       </Button>
                       <span className={styles.filePath}>{row.src}</span>
-                      {missingFile !== null && row.src !== '' && missingFile.endsWith(row.src.replace(/^.*[\\/]/, '')) ? (
+                      {missingFile !== null && row.src !== '' && missingFile.endsWith(row.src.replace(DIRECTORY_PREFIX, '')) ? (
                         <span className={styles.missing}>missing</span>
                       ) : null}
                     </div>
                   ) : (
                     <input
                       aria-label="Value"
+                      name="formdata-value"
+                      autoComplete="off"
                       className={styles.cell}
                       value={row.value}
                       onChange={(event) => updateBody(tabId, { formdata: patchRow(formdata, row.id, { value: event.target.value }) })}

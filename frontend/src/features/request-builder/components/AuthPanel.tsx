@@ -1,5 +1,5 @@
 import type { AuthType } from '@/platform/mappers/request'
-import { useRequestBuilderStore } from '../store'
+import { useRequestBuilderStore } from '@/features/request-builder/store'
 import styles from './Panel.module.css'
 
 interface AuthPanelProps {
@@ -29,6 +29,7 @@ export function AuthPanel({ tabId }: AuthPanelProps) {
       <label className={styles.field}>
         Auth Type
         <select
+          name="auth-type"
           className={styles.select}
           value={auth.type}
           onChange={(event) => updateAuth(tabId, { type: event.target.value as AuthType })}
@@ -48,6 +49,8 @@ export function AuthPanel({ tabId }: AuthPanelProps) {
         <label className={styles.field}>
           Token
           <input
+            name="bearer-token"
+            autoComplete="off"
             className={styles.input}
             spellCheck={false}
             value={auth.bearer.token}
@@ -60,6 +63,8 @@ export function AuthPanel({ tabId }: AuthPanelProps) {
           <label className={styles.field}>
             Username
             <input
+              name="basic-username"
+              autoComplete="off"
               className={styles.input}
               spellCheck={false}
               value={auth.basic.username}
@@ -69,6 +74,8 @@ export function AuthPanel({ tabId }: AuthPanelProps) {
           <label className={styles.field}>
             Password
             <input
+              name="basic-password"
+              autoComplete="new-password"
               type="password"
               className={styles.input}
               value={auth.basic.password}

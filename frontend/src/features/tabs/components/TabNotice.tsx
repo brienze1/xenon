@@ -1,6 +1,6 @@
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
-import { useTabsStore } from '../store'
+import { useTabsStore } from '@/features/tabs/store'
 import styles from './TabNotice.module.css'
 
 interface TabNoticeProps {

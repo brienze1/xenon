@@ -4,7 +4,6 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import type { HistoryEntry } from '@/platform/mappers/history'
 import { emptyDraft } from '@/platform/mappers/request'
 
-vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {} }))
 vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn(), searchTree: vi.fn() }))
 vi.mock('@/platform/services/history', () => ({ listHistory: vi.fn(), getHistoryEntry: vi.fn(), clearHistory: vi.fn() }))
 vi.mock('@/platform/services/requests', () => ({ parseBulk: vi.fn(), formatBulk: vi.fn() }))
@@ -13,7 +12,7 @@ vi.mock('@/platform/services/workspaces', () => ({ listWorkspaces: vi.fn(), crea
 const tree = await import('@/platform/services/tree')
 const history = await import('@/platform/services/history')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
-const { SEARCH_DELAY_MS, useSidebarStore } = await import('../store')
+const { SEARCH_DELAY_MS, useSidebarStore } = await import('@/features/sidebar/store')
 const { SidebarPanel } = await import('./SidebarPanel')
 
 const now = new Date()

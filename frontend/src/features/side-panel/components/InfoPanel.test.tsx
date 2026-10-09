@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { emptyDraft } from '@/platform/mappers/request'
 import type { TreeNode } from '@/platform/mappers/tree'
 
-vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {} }))
 vi.mock('@/platform/services/requests', () => ({
   applyUrl: vi.fn(),
   applyParams: vi.fn(),

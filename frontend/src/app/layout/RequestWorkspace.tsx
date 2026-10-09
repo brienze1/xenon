@@ -2,7 +2,7 @@ import { RequestBuilder } from '@/features/request-builder/components/RequestBui
 import { ResponseViewer } from '@/features/response-viewer/components/ResponseViewer'
 import { LAYOUT_LIMITS } from '@/features/workspaces/lib/layout'
 import { SplitPane } from '@/shared/ui/split-pane/SplitPane'
-import { useShellLayout } from './shell-layout'
+import { useShellLayout } from '@/app/layout/use-shell-layout'
 
 interface RequestWorkspaceProps {
   tabId: string

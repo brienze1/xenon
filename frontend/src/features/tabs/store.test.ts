@@ -3,7 +3,6 @@ import { AppError } from '@/platform/errors'
 import { emptyDraft, type RequestDraft } from '@/platform/mappers/request'
 import { defaultUIState, type UIState } from '@/platform/mappers/ui-state'
 
-vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {} }))
 vi.mock('@/platform/services/requests', () => ({
   applyUrl: vi.fn(),
   applyParams: vi.fn(),

@@ -1,7 +1,7 @@
 import type { AutoHeader, KeyValueRow } from '@/platform/mappers/request'
 import { KeyValueTable } from '@/shared/ui/key-value-table/KeyValueTable'
-import { addRow, patchRow, removeRow } from '../lib/rows'
-import { useRequestBuilderStore } from '../store'
+import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
+import { useRequestBuilderStore } from '@/features/request-builder/store'
 import styles from './Panel.module.css'
 
 interface HeadersPanelProps {
@@ -54,6 +54,7 @@ export function HeadersPanel({ tabId }: HeadersPanelProps) {
                 <tr key={header.key} className={styles.auto}>
                   <td>
                     <input
+                      name="auto-header-enabled"
                       type="checkbox"
                       aria-label={`Send ${header.key}`}
                       checked={!header.disabled}

@@ -2,10 +2,11 @@ import { create } from 'zustand'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import { toAppError, type AppError } from '@/platform/errors'
 import type { HistoryEntry } from '@/platform/mappers/history'
-import type { RequestDraft } from '@/platform/mappers/request'
+import type { KeyValueRow, RequestDraft } from '@/platform/mappers/request'
 import type { ItemSettings, TreeNode, TreeSearchResult } from '@/platform/mappers/tree'
 import type { SidebarView } from '@/platform/mappers/ui-state'
 import { clearHistory, getHistoryEntry, listHistory } from '@/platform/services/history'
+import { formatBulk as formatBulkRows, parseBulk as parseBulkText } from '@/platform/services/requests'
 import {
   createCollection,
   createFolder,
@@ -68,6 +69,8 @@ interface SidebarState {
   remove: (id: string) => Promise<string[]>
   loadSettings: (id: string) => Promise<ItemSettings | null>
   saveSettings: (settings: ItemSettings) => Promise<boolean>
+  formatBulk: (rows: KeyValueRow[]) => Promise<string | null>
+  parseBulk: (text: string) => Promise<KeyValueRow[] | null>
   clearError: () => void
   reset: () => void
 }
@@ -95,6 +98,15 @@ const initialState = {
 }
 
 export const useSidebarStore = create<SidebarState>()((set, get) => {
+  async function attempt<T>(operation: () => Promise<T>): Promise<T | null> {
+    try {
+      return await operation()
+    } catch (error) {
+      set({ error: toAppError(error) })
+      return null
+    }
+  }
+
   async function run<T>(operation: (localId: string) => Promise<T>): Promise<T | null> {
     const localId = activeLocalId()
     if (!localId) {
@@ -260,6 +272,10 @@ export const useSidebarStore = create<SidebarState>()((set, get) => {
       })
       return saved === true
     },
+
+    formatBulk: (rows) => attempt(() => formatBulkRows(rows)),
+
+    parseBulk: (text) => attempt(() => parseBulkText(text)),
 
     clearError: () => set({ error: null }),
 

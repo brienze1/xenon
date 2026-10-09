@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { IconButton } from '../icon-button/IconButton'
+import { IconButton } from '@/shared/ui/icon-button/IconButton'
 import { Button } from './Button'
 
 describe('Button', () => {

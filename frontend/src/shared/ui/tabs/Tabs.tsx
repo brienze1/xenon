@@ -1,5 +1,6 @@
 import { createContext, use, useId, type KeyboardEvent, type ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
+import { rovingIndex } from '@/shared/lib/roving-focus'
 import styles from './Tabs.module.css'
 
 interface TabsContextValue {
@@ -52,12 +53,12 @@ function List({ label, className, children }: ListProps) {
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]:not(:disabled)'))
     const current = tabs.indexOf(document.activeElement as HTMLButtonElement)
-    const offset = { ArrowRight: 1, ArrowLeft: -1 }[event.key]
-    if (current < 0 || offset === undefined) {
+    const index = current < 0 ? null : rovingIndex(tabs.length, current, event.key, { orientation: 'horizontal' })
+    if (index === null) {
       return
     }
     event.preventDefault()
-    const next = tabs[(current + offset + tabs.length) % tabs.length]
+    const next = tabs[index]
     next?.focus()
     next?.click()
   }

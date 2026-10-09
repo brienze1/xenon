@@ -1,6 +1,10 @@
 import type { ReactNode } from 'react'
 import styles from './MainArea.module.css'
 
-export function MainArea({ children }: { children?: ReactNode }) {
+interface MainAreaProps {
+  children?: ReactNode
+}
+
+export function MainArea({ children }: MainAreaProps) {
   return <main className={styles.main}>{children}</main>
 }

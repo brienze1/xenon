@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import type { ItemSettings } from '@/platform/mappers/tree'
-import { formatBulk, parseBulk } from '@/platform/services/requests'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { KeyValueTable } from '@/shared/ui/key-value-table/KeyValueTable'
-import { addRow, patchRow, removeRow } from '../lib/rows'
-import { useSidebarStore } from '../store'
+import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
+import { useSidebarStore } from '@/features/sidebar/store'
 import { AuthFields } from './AuthFields'
 import styles from './ItemSettingsDialog.module.css'
 
@@ -17,6 +16,8 @@ interface SettingsFormProps {
 export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
   const loadSettings = useSidebarStore((state) => state.loadSettings)
   const saveSettings = useSidebarStore((state) => state.saveSettings)
+  const formatBulk = useSidebarStore((state) => state.formatBulk)
+  const parseBulk = useSidebarStore((state) => state.parseBulk)
   const [settings, setSettings] = useState<ItemSettings | null>(null)
   const [bulkText, setBulkText] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -51,11 +52,17 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
       return
     }
     if (bulk) {
-      setBulkText(await formatBulk(settings.headers))
+      const text = await formatBulk(settings.headers)
+      if (text !== null) {
+        setBulkText(text)
+      }
       return
     }
-    update({ headers: await parseBulk(bulkText ?? '') })
-    setBulkText(null)
+    const headers = await parseBulk(bulkText ?? '')
+    if (headers !== null) {
+      update({ headers })
+      setBulkText(null)
+    }
   }
 
   async function save() {
@@ -64,6 +71,10 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
     }
     setSaving(true)
     const headers = bulkText === null ? settings.headers : await parseBulk(bulkText)
+    if (headers === null) {
+      setSaving(false)
+      return
+    }
     const saved = await saveSettings({ ...settings, headers })
     setSaving(false)
     if (saved) {
@@ -79,6 +90,8 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
           <label className={styles.field}>
             Description
             <textarea
+              name="description"
+              autoComplete="off"
               className={styles.textarea}
               value={settings.description}
               onChange={(event) => update({ description: event.target.value })}

@@ -21,7 +21,7 @@ export function StatusLine({ result }: StatusLineProps) {
   ] as const
 
   return (
-    <div className={styles.line} aria-label="Response status">
+    <div role="group" className={styles.line} aria-label="Response status">
       <span className={cn(styles.status, styles[statusTone(result.statusCode)])}>
         {result.statusCode} {result.statusText}
       </span>

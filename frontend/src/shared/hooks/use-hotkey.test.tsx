@@ -59,6 +59,26 @@ describe('useHotkey', () => {
     expect(handler).toHaveBeenCalledOnce()
   })
 
+  it('shares one keydown listener per target across hook instances', () => {
+    const addListener = vi.spyOn(window, 'addEventListener')
+    const removeListener = vi.spyOn(window, 'removeEventListener')
+    const first = vi.fn()
+    const second = vi.fn()
+    const { unmount } = renderHook(() => {
+      useHotkey('Mod+T', first, { platform: 'other' })
+      useHotkey('Mod+W', second, { platform: 'other' })
+    })
+    expect(addListener.mock.calls.filter(([type]) => type === 'keydown')).toHaveLength(1)
+    fireEvent.keyDown(window, { key: 't', ctrlKey: true })
+    fireEvent.keyDown(window, { key: 'w', ctrlKey: true })
+    expect(first).toHaveBeenCalledOnce()
+    expect(second).toHaveBeenCalledOnce()
+    unmount()
+    expect(removeListener.mock.calls.filter(([type]) => type === 'keydown')).toHaveLength(1)
+    addListener.mockRestore()
+    removeListener.mockRestore()
+  })
+
   it('does nothing while disabled', () => {
     const handler = vi.fn()
     renderHook(() => useHotkey('Mod+T', handler, { platform: 'other', enabled: false }))

@@ -1,7 +1,8 @@
 import { fireEvent, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { detectPlatform } from '@/shared/hooks/use-hotkey'
-import { HOTKEYS, useAppHotkeys } from './hotkeys'
+import { HOTKEY_BY_ACTION, HOTKEYS } from './hotkeys'
+import { useAppHotkeys } from './use-app-hotkeys'
 
 const modifier = detectPlatform() === 'mac' ? { metaKey: true } : { ctrlKey: true }
 
@@ -15,6 +16,8 @@ describe('hotkey table', () => {
       ['closeTab', 'Mod+W'],
     ])
     expect(new Set(HOTKEYS.map((hotkey) => hotkey.combo)).size).toBe(HOTKEYS.length)
+    expect(HOTKEY_BY_ACTION.get('saveAs')?.combo).toBe('Mod+Shift+S')
+    expect(HOTKEY_BY_ACTION.size).toBe(HOTKEYS.length)
   })
 
   it('routes each shortcut to its action handler', () => {

@@ -1,4 +1,4 @@
-import { AppError } from './errors'
+import { AppError, toAppError } from './errors'
 
 const BODY_UNAVAILABLE = 'SND-03404'
 
@@ -11,9 +11,17 @@ async function fetchBody(bodyUrl: string): Promise<Response> {
 }
 
 export async function fetchResponseText(bodyUrl: string): Promise<string> {
-  return (await fetchBody(bodyUrl)).text()
+  try {
+    return await (await fetchBody(bodyUrl)).text()
+  } catch (err) {
+    throw toAppError(err)
+  }
 }
 
 export async function fetchResponseBlob(bodyUrl: string): Promise<Blob> {
-  return (await fetchBody(bodyUrl)).blob()
+  try {
+    return await (await fetchBody(bodyUrl)).blob()
+  } catch (err) {
+    throw toAppError(err)
+  }
 }

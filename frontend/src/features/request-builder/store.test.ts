@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
 import { emptyDraft, type RequestDraft, type SendResult } from '@/platform/mappers/request'
 
-vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {} }))
 vi.mock('@/platform/services/requests', () => ({
   applyUrl: vi.fn(),
   applyParams: vi.fn(),

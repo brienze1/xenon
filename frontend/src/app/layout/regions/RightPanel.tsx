@@ -1,10 +1,14 @@
 import type { ReactNode } from 'react'
 import { LAYOUT_LIMITS } from '@/features/workspaces/lib/layout'
 import { ResizeHandle } from '@/shared/ui/resize-handle/ResizeHandle'
-import { useShellLayout } from '../shell-layout'
+import { useShellLayout } from '@/app/layout/use-shell-layout'
 import styles from './RightPanel.module.css'
 
-export function RightPanel({ children }: { children?: ReactNode }) {
+interface RightPanelProps {
+  children?: ReactNode
+}
+
+export function RightPanel({ children }: RightPanelProps) {
   const { layout, onLayoutChange } = useShellLayout()
   if (!layout.rightPanelVisible) {
     return null

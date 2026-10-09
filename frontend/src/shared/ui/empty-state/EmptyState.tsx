@@ -38,7 +38,11 @@ function Root({ label, size = 'regular', className, children }: RootProps) {
   )
 }
 
-function Art({ variant }: { variant: EmptyStateArt }) {
+interface ArtProps {
+  variant: EmptyStateArt
+}
+
+function Art({ variant }: ArtProps) {
   const Illustration = ART[variant]
   return (
     <div className={styles.art} data-art={variant}>
@@ -47,15 +51,27 @@ function Art({ variant }: { variant: EmptyStateArt }) {
   )
 }
 
-function Title({ children }: { children: ReactNode }) {
-  return <h1 className={styles.title}>{children}</h1>
+interface TitleProps {
+  children: ReactNode
 }
 
-function Description({ children }: { children: ReactNode }) {
+function Title({ children }: TitleProps) {
+  return <h2 className={styles.title}>{children}</h2>
+}
+
+interface DescriptionProps {
+  children: ReactNode
+}
+
+function Description({ children }: DescriptionProps) {
   return <p className={styles.description}>{children}</p>
 }
 
-function Actions({ children }: { children: ReactNode }) {
+interface ActionsProps {
+  children: ReactNode
+}
+
+function Actions({ children }: ActionsProps) {
   return <div className={styles.actions}>{children}</div>
 }
 

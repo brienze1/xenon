@@ -1,9 +1,28 @@
-import { createContext, use, useEffect, useId, useRef, type ReactNode } from 'react'
+import { createContext, use, useEffect, useEffectEvent, useId, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/shared/lib/cn'
 import styles from './Dialog.module.css'
 
 const FOCUSABLE = 'button:not(:disabled), [href], input:not(:disabled), select, textarea, [tabindex]:not([tabindex="-1"])'
+
+function trapFocus(dialog: HTMLElement, event: KeyboardEvent) {
+  const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE))
+  const first = focusable[0]
+  const last = focusable[focusable.length - 1]
+  if (!first || !last) {
+    event.preventDefault()
+    return
+  }
+  const active = document.activeElement
+  const inside = active instanceof Node && dialog.contains(active)
+  if (event.shiftKey && (active === first || !inside)) {
+    event.preventDefault()
+    last.focus()
+  } else if (!event.shiftKey && (active === last || !inside)) {
+    event.preventDefault()
+    first.focus()
+  }
+}
 
 const DialogTitleContext = createContext<string>('')
 
@@ -17,6 +36,7 @@ interface RootProps {
 function Root({ open, onOpenChange, className, children }: RootProps) {
   const titleId = useId()
   const dialogRef = useRef<HTMLDivElement>(null)
+  const close = useEffectEvent(() => onOpenChange(false))
 
   useEffect(() => {
     if (!open) {
@@ -27,7 +47,11 @@ function Root({ open, onOpenChange, className, children }: RootProps) {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         event.preventDefault()
-        onOpenChange(false)
+        close()
+        return
+      }
+      if (event.key === 'Tab' && dialogRef.current) {
+        trapFocus(dialogRef.current, event)
       }
     }
     document.addEventListener('keydown', onKeyDown)
@@ -35,7 +59,7 @@ function Root({ open, onOpenChange, className, children }: RootProps) {
       document.removeEventListener('keydown', onKeyDown)
       previous?.focus()
     }
-  }, [open, onOpenChange])
+  }, [open])
 
   if (!open) {
     return null
@@ -57,7 +81,11 @@ function Root({ open, onOpenChange, className, children }: RootProps) {
   )
 }
 
-function Title({ children }: { children: ReactNode }) {
+interface TitleProps {
+  children: ReactNode
+}
+
+function Title({ children }: TitleProps) {
   return (
     <h2 id={use(DialogTitleContext)} className={styles.title}>
       {children}
@@ -65,11 +93,19 @@ function Title({ children }: { children: ReactNode }) {
   )
 }
 
-function Body({ children }: { children: ReactNode }) {
+interface BodyProps {
+  children: ReactNode
+}
+
+function Body({ children }: BodyProps) {
   return <div className={styles.body}>{children}</div>
 }
 
-function Actions({ children }: { children: ReactNode }) {
+interface ActionsProps {
+  children: ReactNode
+}
+
+function Actions({ children }: ActionsProps) {
   return <div className={styles.actions}>{children}</div>
 }
 

@@ -1,5 +1,3 @@
-import { useHotkey } from '@/shared/hooks/use-hotkey'
-
 export type HotkeyAction = 'send' | 'save' | 'saveAs' | 'newTab' | 'closeTab'
 
 export interface HotkeyDefinition {
@@ -16,21 +14,8 @@ export const HOTKEYS: readonly HotkeyDefinition[] = [
   { action: 'closeTab', combo: 'Mod+W', label: 'Close tab' },
 ]
 
+export const HOTKEY_BY_ACTION: ReadonlyMap<HotkeyAction, HotkeyDefinition> = new Map(
+  HOTKEYS.map((definition) => [definition.action, definition]),
+)
+
 export type HotkeyHandlers = Partial<Record<HotkeyAction, () => void>>
-
-function hotkey(action: HotkeyAction): HotkeyDefinition {
-  return HOTKEYS.find((definition) => definition.action === action) as HotkeyDefinition
-}
-
-function useAppHotkey(action: HotkeyAction, handlers: HotkeyHandlers) {
-  const handler = handlers[action]
-  useHotkey(hotkey(action).combo, () => handler?.(), { enabled: handler !== undefined })
-}
-
-export function useAppHotkeys(handlers: HotkeyHandlers): void {
-  useAppHotkey('send', handlers)
-  useAppHotkey('save', handlers)
-  useAppHotkey('saveAs', handlers)
-  useAppHotkey('newTab', handlers)
-  useAppHotkey('closeTab', handlers)
-}

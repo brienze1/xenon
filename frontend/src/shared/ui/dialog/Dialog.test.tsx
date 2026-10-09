@@ -10,6 +10,7 @@ function Example({ open, onOpenChange }: { open: boolean; onOpenChange: (open: b
       <Dialog.Body>Save before closing?</Dialog.Body>
       <Dialog.Actions>
         <button type="button">Save</button>
+        <button type="button">Discard</button>
       </Dialog.Actions>
     </Dialog.Root>
   )
@@ -37,5 +38,23 @@ describe('Dialog', () => {
     const backdrop = screen.getByRole('dialog').parentElement as HTMLElement
     await userEvent.click(backdrop)
     expect(onOpenChange).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps Tab focus inside the dialog', async () => {
+    render(
+      <>
+        <button type="button">Outside</button>
+        <Example open onOpenChange={vi.fn()} />
+      </>,
+    )
+    const save = screen.getByRole('button', { name: 'Save' })
+    const discard = screen.getByRole('button', { name: 'Discard' })
+    expect(save).toHaveFocus()
+    await userEvent.tab()
+    expect(discard).toHaveFocus()
+    await userEvent.tab()
+    expect(save).toHaveFocus()
+    await userEvent.tab({ shift: true })
+    expect(discard).toHaveFocus()
   })
 })
