@@ -1,0 +1,12 @@
+.shell {
+  display: grid;
+  grid-template-areas:
+    'top top top'
+    'sidebar main right'
+    'console console console'
+    'footer footer footer';
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  height: 100%;
+  background: var(--color-bg);
+}

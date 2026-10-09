@@ -1,0 +1,8 @@
+.sidebar {
+  grid-area: sidebar;
+  width: 280px;
+  min-height: 0;
+  overflow: auto;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}

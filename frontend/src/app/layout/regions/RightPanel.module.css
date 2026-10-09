@@ -1,0 +1,9 @@
+.panel {
+  grid-area: right;
+  width: 300px;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}

@@ -1,0 +1,19 @@
+.topBar {
+  --wails-draggable: drag;
+
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  height: 40px;
+  padding: 0 var(--space-4) 0 80px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.wordmark {
+  color: var(--neon-magenta);
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  text-shadow: var(--glow-magenta);
+}

@@ -1,0 +1,20 @@
+.switcher {
+  --wails-draggable: no-drag;
+}
+
+.name {
+  max-width: 220px;
+  overflow: hidden;
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  color: var(--color-text-muted);
+}
+
+.missing {
+  color: var(--neon-red);
+  font-size: var(--font-size-xs);
+}

@@ -1,0 +1,7 @@
+.drawer {
+  grid-area: console;
+  height: 200px;
+  overflow: auto;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
