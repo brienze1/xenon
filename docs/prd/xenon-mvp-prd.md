@@ -435,6 +435,7 @@ Stages 4 (scripts) and the OAuth 2.0 part of 5 carry most of the risk. Everythin
 - [x] Scripts (stage 4): the **full `pm` API** (runner-only calls such as `setNextRequest` exist as no-ops), **every library Postman's sandbox ships** via `require()`/globals, and a **legacy API shim** (`postman.*`, `tests[...]`, `responseBody`…). This widens the PRD's original `pm` subset.
 - [x] Stage 5: OAuth 2.0 authorization-code login in the **system browser with a loopback redirect** (RFC 8252); tokens are **secrets in the vault, auto-refreshed** when expired; the **cookie jar persists** across restarts, **encrypted** with the workspace vault key.
 - [x] Stage 6: "Include secrets" (passphrase-encrypted) applies to **Xenon YAML exports only**; **Postman exports never contain secret values**. The export dialog **asks each time** whether to export current values as initial values (default: initial only).
+- [x] Stage 7: Xenon keeps **its own sparse clone per workspace** (never your dev checkouts); sign-in via **GitHub browser (device code)**, **personal access tokens** (any host) and **SSH keys**. Pull replays local commits on top of the remote (linear history). **To do (Luis):** register a GitHub OAuth App with device flow enabled and give its client id to the project.
 - [x] Keep workspace globals as a scope? **Yes** — scopes stay local → environment → collection → globals, and `pm.globals` works.
 
 **Open questions**
