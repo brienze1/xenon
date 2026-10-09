@@ -225,9 +225,9 @@ headers, errors, cancel — no saving involved.
 **Goal**: every send recorded per workspace and re-openable.
 **Independent test**: sends in two workspaces, restart, re-open.
 
-- [ ] T096 [P] [US5] BDD `test/integration/features/history/history.feature` (@history): every Send (ok and error, saved and unsaved) appends an entry with request as written (no resolution) and result summary; List newest-first with query filter and paging; Get returns the exact request; Clear empties; cap at 1,000 with compaction beyond 1,200 lines (use the time mock); stored at `workspaces/<localId>/history.jsonl`. Run → **red**
-- [ ] T097 [US5] Backend: entity `history_entry.go`; persistence `history.go` (+ model, JSONL append, compaction via `WriteFileAtomic`); use cases `save_history_entry.go`, `find_history.go`, `clear_history.go`; service `history.go`; extend `send_request.go` to append history; controllers/DTOs `history_*.go`; binding `history.go`. Run T096 → **green**
-- [ ] T098 [US5] Frontend: `platform/services/history.ts`; sidebar `HistoryView.tsx` (grouped by day, virtualized, method/URL/status/time, search, Clear with confirm) and Collections/History switch in `features/sidebar/`; opening an entry creates an unsaved tab via tabs store; RTL tests
+- [x] T096 [P] [US5] BDD `test/integration/features/history/history.feature` (@history): every Send (ok and error, saved and unsaved) appends an entry with request as written (no resolution) and result summary; List newest-first with query filter and paging; Get returns the exact request; Clear empties; cap at 1,000 with compaction beyond 1,200 lines (use the time mock); stored at `workspaces/<localId>/history.jsonl`. Run → **red**
+- [x] T097 [US5] Backend: entity `history_entry.go`; persistence `history.go` (+ model, JSONL append, compaction via `WriteFileAtomic`); use cases `save_history_entry.go`, `find_history.go`, `clear_history.go`; service `history.go`; extend `send_request.go` to append history; controllers/DTOs `history_*.go`; binding `history.go`. Run T096 → **green**
+- [x] T098 [US5] Frontend: `platform/services/history.ts`; sidebar `HistoryView.tsx` (grouped by day, virtualized, method/URL/status/time, search, Clear with confirm) and Collections/History switch in `features/sidebar/`; opening an entry creates an unsaved tab via tabs store; RTL tests
 
 ---
 
@@ -236,18 +236,18 @@ headers, errors, cancel — no saving involved.
 **Goal**: Postman placement, hideable/resizable regions remembered per workspace, identity.
 **Independent test**: resize/hide/toggle everything, restart, compare.
 
-- [ ] T099 [P] [US6] Vitest `frontend/src/app/layout/AppShell.test.tsx` (regions placed; console hidden by default; hide/show/resize update layout state; side-by-side switch) — **red** first
-- [ ] T100 [US6] Implement layout persistence: `features/workspaces/store.ts` exposes layout from UIState; `AppShell` + `SplitPane` read/write it (sizes clamped: sidebar 200–600 px, right panel 240–600 px, console 120 px–60 %, split ratio 0.2–0.8); window bounds persistence in Go (`internal/infra/application.go` window events → app.json, clamp to screen)
-- [ ] T101 [P] [US6] Footer `app/layout/regions/Footer.tsx` (console toggle button, layout toggles) and `features/console/components/ConsoleDrawer.tsx` empty state ("Console arrives with scripts")
-- [ ] T102 [US6] Visual identity pass: method colours everywhere, glow only on Send/active tab/focused input/running request, empty-state illustrations (`frontend/src/shared/ui/empty-state/illustrations/` SVGs in neon palette), marker font only on wordmark/welcome/empty states; run `vercel-web-design-guidelines` review on `frontend/src/**` and fix findings
+- [x] T099 [P] [US6] Vitest `frontend/src/app/layout/AppShell.test.tsx` (regions placed; console hidden by default; hide/show/resize update layout state; side-by-side switch) — **red** first
+- [x] T100 [US6] Implement layout persistence: `features/workspaces/store.ts` exposes layout from UIState; `AppShell` + `SplitPane` read/write it (sizes clamped: sidebar 200–600 px, right panel 240–600 px, console 120 px–60 %, split ratio 0.2–0.8); window bounds persistence in Go (`internal/infra/application.go` window events → app.json, clamp to screen)
+- [x] T101 [P] [US6] Footer `app/layout/regions/Footer.tsx` (console toggle button, layout toggles) and `features/console/components/ConsoleDrawer.tsx` empty state ("Console arrives with scripts")
+- [x] T102 [US6] Visual identity pass: method colours everywhere, glow only on Send/active tab/focused input/running request, empty-state illustrations (`frontend/src/shared/ui/empty-state/illustrations/` SVGs in neon palette), marker font only on wordmark/welcome/empty states; run `vercel-web-design-guidelines` review on `frontend/src/**` and fix findings
 
 ---
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T103 [P] Performance check against SC-002/SC-003: BDD `test/integration/features/tree/large_workspace.feature` (generate 1,000 requests; `GetTree` < 2 s; `Search` < 200 ms) and `sending/large_body.feature` (50 MB via route < 2 s)
-- [ ] T104 [P] Crash-safety test `pkg/fileutils/write_atomic_kill_test.go` (subprocess killed mid-write 100×; target is always old or new content — SC-007)
-- [ ] T105 [P] Update `README.md` (what Xenon is, `make setup`, `make dev`, platform prerequisites, where data lives)
+- [x] T103 [P] Performance check against SC-002/SC-003: BDD `test/integration/features/tree/large_workspace.feature` (generate 1,000 requests; `GetTree` < 2 s; `Search` < 200 ms) and `sending/large_body.feature` (50 MB via route < 2 s)
+- [x] T104 [P] Crash-safety test `pkg/fileutils/write_atomic_kill_test.go` (subprocess killed mid-write 100×; target is always old or new content — SC-007)
+- [x] T105 [P] Update `README.md` (what Xenon is, `make setup`, `make dev`, platform prerequisites, where data lives)
 - [ ] T106 Run `/refactor-diff` until clean, then `make validate` and `make frontend-check` on all three OSes via CI
 - [ ] T107 Walk through [quickstart.md](quickstart.md) manually on macOS, Windows and Linux; tick SC-001…SC-008a
 
