@@ -103,9 +103,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
   function sidebarSnapshot(): UIState['sidebar'] {
     const sidebar = useSidebarStore.getState()
     return {
-      expanded: Object.entries(sidebar.expanded)
-        .filter(([, open]) => open)
-        .map(([id]) => id),
+      expanded: Object.entries(sidebar.expanded).flatMap(([id, open]) => (open ? [id] : [])),
       selectedId: sidebar.selectedId,
       view: sidebar.view,
       search: sidebar.query,

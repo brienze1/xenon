@@ -85,7 +85,7 @@ export function RequestBar({ tabId, onSave }: RequestBarProps) {
           Send
         </Button>
       )}
-      <Button variant="secondary" disabled={saving} title={saved ? 'Save' : 'Save Into a Collection'} onClick={onSave}>
+      <Button variant="secondary" disabled={saving} title={saved ? 'Save' : 'Save into a collection'} onClick={onSave}>
         {saving ? 'Saving…' : 'Save'}
       </Button>
     </div>

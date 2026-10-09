@@ -14,13 +14,15 @@ interface BodyPanelProps {
 }
 
 const MODE_LABELS: Record<BodyMode, string> = {
-  none: 'none',
+  none: 'None',
   formdata: 'form-data',
   urlencoded: 'x-www-form-urlencoded',
-  raw: 'raw',
-  binary: 'binary',
+  raw: 'Raw',
+  binary: 'Binary',
   graphql: 'GraphQL',
 }
+
+const TECHNICAL_MODES: ReadonlySet<BodyMode> = new Set(['formdata', 'urlencoded'])
 
 const LANGUAGE_LABELS: Record<RawLanguage, string> = {
   json: 'JSON',
@@ -55,7 +57,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
         {BODY_MODES.map((mode) => (
           <label key={mode} className={styles.toggle}>
             <input type="radio" name={`${tabId}-body-mode`} checked={body.mode === mode} onChange={() => updateBody(tabId, { mode })} />
-            {MODE_LABELS[mode]}
+            <span translate={TECHNICAL_MODES.has(mode) ? 'no' : undefined}>{MODE_LABELS[mode]}</span>
           </label>
         ))}
         {body.mode === 'raw' ? (
@@ -133,6 +135,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                     aria-label="Key"
                     name="formdata-key"
                     autoComplete="off"
+                    spellCheck={false}
                     className={styles.cell}
                     value={row.key}
                     onChange={(event) => updateBody(tabId, { formdata: patchRow(formdata, row.id, { key: event.target.value }) })}
@@ -158,7 +161,9 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                       <Button size="sm" onClick={() => void chooseBodyFile(tabId, row.id)}>
                         Select File
                       </Button>
-                      <span className={styles.filePath}>{row.src}</span>
+                      <span className={styles.filePath} translate="no">
+                        {row.src}
+                      </span>
                       {missingFile !== null && row.src !== '' && missingFile.endsWith(row.src.replace(DIRECTORY_PREFIX, '')) ? (
                         <span role="status" className={styles.missing}>
                           File not found — select it again
@@ -170,6 +175,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                       aria-label="Value"
                       name="formdata-value"
                       autoComplete="off"
+                      spellCheck={false}
                       className={styles.cell}
                       value={row.value}
                       onChange={(event) => updateBody(tabId, { formdata: patchRow(formdata, row.id, { value: event.target.value }) })}
@@ -178,7 +184,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                 </td>
                 <td>
                   <IconButton label={`Remove ${row.key || 'Row'}`} onClick={() => updateBody(tabId, { formdata: removeRow(formdata, row.id) })}>
-                    ×
+                    <span aria-hidden="true">×</span>
                   </IconButton>
                 </td>
               </tr>
@@ -197,7 +203,9 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
       {body.mode === 'binary' ? (
         <div className={styles.file}>
           <Button onClick={() => void chooseBodyFile(tabId)}>Select File</Button>
-          <span className={styles.filePath}>{body.binary.src || 'No file selected'}</span>
+          <span className={styles.filePath} translate={body.binary.src ? 'no' : undefined}>
+            {body.binary.src || 'No file selected'}
+          </span>
           {missingFile !== null && body.binary.src !== '' ? (
             <span role="status" className={styles.missing}>
               File not found — select it again

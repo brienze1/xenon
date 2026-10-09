@@ -9,13 +9,13 @@ interface AuthPanelProps {
 
 const AUTH_OPTIONS: Array<{ type: AuthType; label: string; available: boolean }> = [
   { type: 'inherit', label: 'Inherit auth from parent', available: true },
-  { type: 'none', label: 'No Auth', available: true },
-  { type: 'bearer', label: 'Bearer Token', available: true },
-  { type: 'basic', label: 'Basic Auth', available: true },
-  { type: 'apikey', label: 'API Key (later stage)', available: false },
+  { type: 'none', label: 'No auth', available: true },
+  { type: 'bearer', label: 'Bearer token', available: true },
+  { type: 'basic', label: 'Basic auth', available: true },
+  { type: 'apikey', label: 'API key (later stage)', available: false },
   { type: 'oauth2', label: 'OAuth 2.0 (later stage)', available: false },
-  { type: 'awsv4', label: 'AWS Signature (later stage)', available: false },
-  { type: 'digest', label: 'Digest Auth (later stage)', available: false },
+  { type: 'awsv4', label: 'AWS signature (later stage)', available: false },
+  { type: 'digest', label: 'Digest auth (later stage)', available: false },
 ]
 
 export function AuthPanel({ tabId }: AuthPanelProps) {
@@ -28,7 +28,7 @@ export function AuthPanel({ tabId }: AuthPanelProps) {
   return (
     <PanelSection.Root>
       <label className={styles.field}>
-        Auth Type
+        Auth type
         <select
           name="auth-type"
           className={styles.select}

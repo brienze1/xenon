@@ -95,7 +95,7 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenSe
           ) : (
             <span className={styles.name}>{node.name}</span>
           )}
-          {node.warning ? <span className={styles.warning}>duplicate id</span> : null}
+          {node.warning ? <span className={styles.warning}>Duplicate ID</span> : null}
         </div>
       </ContextMenu.Trigger>
       {node.kind === 'error' ? null : (

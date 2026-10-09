@@ -24,6 +24,7 @@
   overflow-wrap: anywhere;
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
+  text-wrap: balance;
 }
 
 .body {

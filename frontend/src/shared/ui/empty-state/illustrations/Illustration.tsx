@@ -27,7 +27,12 @@ function Stroke({ tone, d }: StrokeProps) {
   return <path className={styles[tone]} d={d} />
 }
 
-function Drip({ tone, d }: StrokeProps) {
+interface DripProps {
+  tone: IllustrationTone
+  d: string
+}
+
+function Drip({ tone, d }: DripProps) {
   return <path className={cn(styles[tone], styles.drip)} d={d} />
 }
 

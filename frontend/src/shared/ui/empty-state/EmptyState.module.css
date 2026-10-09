@@ -37,6 +37,7 @@
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-tight);
   color: var(--color-text);
+  text-wrap: balance;
 }
 
 .description {

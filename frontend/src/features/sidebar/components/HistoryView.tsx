@@ -69,7 +69,7 @@ function HistoryEntryButton({ entry, onOpen }: HistoryEntryButtonProps) {
 export function HistoryView({ onOpenEntry }: HistoryViewProps) {
   const history = useSidebarStore((state) => state.history)
   const status = useSidebarStore((state) => state.historyStatus)
-  const query = useSidebarStore((state) => state.historyQuery)
+  const hasQuery = useSidebarStore((state) => state.historyQuery.trim() !== '')
   const clearHistory = useSidebarStore((state) => state.clearHistory)
   const [confirming, setConfirming] = useState(false)
   const rows = useMemo(() => historyRows(history, new Date()), [history])
@@ -96,10 +96,10 @@ export function HistoryView({ onOpenEntry }: HistoryViewProps) {
         </Button>
       </div>
       {status === 'ready' && history.length === 0 ? (
-        query.trim() === '' ? (
-          EMPTY_HISTORY
-        ) : (
+        hasQuery ? (
           NO_MATCHES
+        ) : (
+          EMPTY_HISTORY
         )
       ) : (
         <div ref={scrollRef} className={styles.scroll}>

@@ -109,7 +109,7 @@ export function KeyValueTable({
                 ))}
                 <td>
                   <IconButton label={`Remove ${row.key || 'Row'}`} onClick={() => onRowRemove(row.id)}>
-                    ×
+                    <span aria-hidden="true">×</span>
                   </IconButton>
                 </td>
               </tr>

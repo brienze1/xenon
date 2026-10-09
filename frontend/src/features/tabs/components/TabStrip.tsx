@@ -76,7 +76,7 @@ export function TabStrip() {
         </SortableContext>
       </DndContext>
       <IconButton label="New Tab" className={styles.add} onClick={() => newTab()}>
-        +
+        <span aria-hidden="true">+</span>
       </IconButton>
     </div>
   )

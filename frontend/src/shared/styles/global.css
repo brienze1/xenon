@@ -18,6 +18,12 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+@media (pointer: fine) {
+  html {
+    overscroll-behavior: none;
+  }
+}
+
 body {
   background: var(--color-bg);
   color: var(--color-text);

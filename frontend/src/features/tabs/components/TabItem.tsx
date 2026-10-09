@@ -79,7 +79,7 @@ export function TabItem({ tabId }: TabItemProps) {
       <span className={styles.name}>{name}</span>
       {dirty ? <span className={styles.dirty} role="img" aria-label="Unsaved changes" /> : null}
       <button type="button" tabIndex={-1} aria-label={`Close ${name}`} className={styles.close} onClick={onClose} onPointerDown={(event) => event.stopPropagation()}>
-        ×
+        <span aria-hidden="true">×</span>
       </button>
     </div>
   )

@@ -9,16 +9,16 @@ interface AuthFieldsProps {
 
 const AUTH_OPTIONS: Array<{ type: AuthType; label: string }> = [
   { type: 'inherit', label: 'Inherit auth from parent' },
-  { type: 'none', label: 'No Auth' },
-  { type: 'bearer', label: 'Bearer Token' },
-  { type: 'basic', label: 'Basic Auth' },
+  { type: 'none', label: 'No auth' },
+  { type: 'bearer', label: 'Bearer token' },
+  { type: 'basic', label: 'Basic auth' },
 ]
 
 export function AuthFields({ kind, auth, onChange }: AuthFieldsProps) {
   return (
     <>
       <label className={styles.field}>
-        Auth Type
+        Auth type
         <select
           name="auth-type"
           className={styles.input}

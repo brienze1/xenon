@@ -12,6 +12,10 @@
   text-transform: uppercase;
 }
 
+.title {
+  text-wrap: balance;
+}
+
 .field {
   display: flex;
   flex-direction: column;
