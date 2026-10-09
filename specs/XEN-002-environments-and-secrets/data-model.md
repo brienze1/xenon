@@ -57,11 +57,17 @@ workspaces/<localId>/
 - Reset deletes the key; Persist writes it to the file and deletes the key.
 - Renaming a row in Xenon moves its current value (and vault entry) to the new key in the same
   operation. Rows renamed outside Xenon lose their local override (documented behaviour).
+- Setting a current value to `""` deletes the key (clears the override).
+- On load, a key whose row is now `secret: true` is moved into the vault (if unlocked) or
+  deleted, then `variables.json` is rewritten — plain-text copies of secrets never persist.
 - Owner-only permissions (XEN-001 local data rules).
 
 ### Vault (`vault.age`)
 - Content (before encryption): `{ "version": 1, "secrets": { "<ScopeRef>": { "<key>": "<value>" } } }`.
 - Encrypted to the workspace's **vault identity** (an X25519 key pair). Written atomically.
+- Consistency with the files: vault entries with no matching `secret: true` row are ignored and
+  pruned on the next vault write (covers crashes between the multi-store writes and secret →
+  plain changes made through git); secret rows with no vault entry are "missing".
 - The vault identity is stored either:
   - **keychain mode**: in the OS keychain, service `dev.brienze.xenon.vault`, account
     `<localId>`; or

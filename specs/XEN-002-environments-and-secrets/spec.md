@@ -265,6 +265,15 @@ each value's format.
 - **Same variable name in environment and as a dynamic variable** (`$guid`): see story 6 #3.
 - **Disabled current/initial**: a row's enabled flag is shared (in the file); disabled rows never
   resolve regardless of current value.
+- **A teammate turns a plain variable into a secret through git**: the local plain current value
+  for that row is moved into the vault on load (or deleted if the vault is locked/broken), so it
+  never stays unencrypted on disk. The reverse (secret → plain) leaves the vault value unused;
+  it is pruned on the next vault save.
+- **Empty current value**: setting a current value to an empty string clears the override (the
+  initial value applies), matching Postman's fallback; to send an empty value, set the initial
+  value to empty.
+- **Changing the passphrase** is not part of the MVP; "Reset vault" is the way out of a
+  forgotten passphrase.
 - **Workspace removed**: its vault, keychain entry and local current values are deleted with it
   (also when the folder is kept on disk).
 
@@ -353,7 +362,10 @@ each value's format.
 - **FR-023**: When the vault cannot be decrypted (lost key, forgotten passphrase, corrupted
   file), Xenon MUST explain it and offer "Reset vault", which discards stored secret values after
   confirmation. Xenon MUST never write secret values unencrypted anywhere (files, logs, History,
-  UI state, temp files).
+  UI state, temp files). Text Xenon itself produces from a resolved request — error messages and
+  hints, History result summaries, log lines — MUST replace every occurrence of a secret value
+  with `•••••`. (A response body that echoes a secret is server content and is shown as
+  received; it is only ever kept in memory or in owner-only temp files.)
 - **FR-024**: Removing a workspace MUST delete its vault, keychain entry and local current
   values.
 
