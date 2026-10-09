@@ -144,29 +144,29 @@ headers, errors, cancel — no saving involved.
 
 ### Tests (write first, prove red)
 
-- [ ] T064 [P] [US2] BDD `test/integration/features/tree/tree_crud.feature` (@tree): create collection/folder (nested)/request → files per format §1/§4/§5 with explicit defaults; rename renames file + parent order; duplicate → "<name> Copy", new ids for all descendants, placed after original; delete recursive returns `deleted_request_ids`
-- [ ] T065 [P] [US2] BDD `test/integration/features/tree/tree_order_and_names.feature`: order persisted/restored; unlisted files appended by name; listed-missing skipped; same-name siblings get `-2`; names with `/:?*` and Windows reserved names; case-insensitive uniqueness; request named "collection"; case-only rename
-- [ ] T066 [P] [US2] BDD `test/integration/features/tree/tree_robustness.feature`: malformed YAML → error node, rest loads, file untouched; unknown fields and comments preserved after save; duplicate ids → second re-identified with warning; directories without marker ignored; symlinks ignored; CRLF/BOM files read; `xenon: 2` file → `WKS-04422`
-- [ ] T067 [P] [US2] BDD `test/integration/features/tree/settings_inheritance.feature`: collection Bearer + request inherit → header sent; folder overrides collection; collection inherit = no auth; header override by name across collection → folder → request (case-insensitive)
-- [ ] T068 [P] [US2] BDD `test/integration/features/tree/search.feature`: name/URL substring case-insensitive, requests only, ancestors returned, scoped to the workspace
-- [ ] T069 [P] [US2] BDD `test/integration/features/requests/save_request.feature`: Get/Save/SaveAs round trip; `revision` mismatch → `REQ-02409`; `force` overwrites; file refs stored relative inside workspace (`/` separators) and absolute outside
-- [ ] T070 [US2] Run T064–T069 → **red**
+- [x] T064 [P] [US2] BDD `test/integration/features/tree/tree_crud.feature` (@tree): create collection/folder (nested)/request → files per format §1/§4/§5 with explicit defaults; rename renames file + parent order; duplicate → "<name> Copy", new ids for all descendants, placed after original; delete recursive returns `deleted_request_ids`
+- [x] T065 [P] [US2] BDD `test/integration/features/tree/tree_order_and_names.feature`: order persisted/restored; unlisted files appended by name; listed-missing skipped; same-name siblings get `-2`; names with `/:?*` and Windows reserved names; case-insensitive uniqueness; request named "collection"; case-only rename
+- [x] T066 [P] [US2] BDD `test/integration/features/tree/tree_robustness.feature`: malformed YAML → error node, rest loads, file untouched; unknown fields and comments preserved after save; duplicate ids → second re-identified with warning; directories without marker ignored; symlinks ignored; CRLF/BOM files read; `xenon: 2` file → `WKS-04422`
+- [x] T067 [P] [US2] BDD `test/integration/features/tree/settings_inheritance.feature`: collection Bearer + request inherit → header sent; folder overrides collection; collection inherit = no auth; header override by name across collection → folder → request (case-insensitive)
+- [x] T068 [P] [US2] BDD `test/integration/features/tree/search.feature`: name/URL substring case-insensitive, requests only, ancestors returned, scoped to the workspace
+- [x] T069 [P] [US2] BDD `test/integration/features/requests/save_request.feature`: Get/Save/SaveAs round trip; `revision` mismatch → `REQ-02409`; `force` overwrites; file refs stored relative inside workspace (`/` separators) and absolute outside
+- [x] T070 [US2] Run T064–T069 → **red**
 
 ### Backend implementation
 
-- [ ] T071 [P] [US2] Entities `internal/domain/entity/tree_node.go` + pure use case `search_tree.go`
-- [ ] T072 [US2] Persistence `internal/integration/persistence/tree.go` (scan collections dir, build tree with id→path index, order rules, error nodes, duplicate-id handling, own-write registry for the watcher) + use cases `load_tree.go`, `save_tree_item.go` + adapter `tree_persistence.go`
-- [ ] T073 [US2] Persistence `internal/integration/persistence/request.go` (node round trip, revision hash, relative/absolute `src` conversion) + use cases `find_request.go`, `save_request.go` + adapter `request_persistence.go`
-- [ ] T074 [US2] Services `manage_tree_item.go`, `search_tree.go`, `item_settings.go`, `save_request.go`; extend `send_request.go` to load ancestors via tree persistence for saved requests
-- [ ] T075 [US2] Controllers/DTOs `tree_*.go`, `request_get.go`, `request_save.go` and binding `internal/infra/server/binding/tree.go` + `request.go` additions (`Get`, `Save`, `SaveAs`); register
-- [ ] T076 [US2] Run US2 features → **green**; full suite green
+- [x] T071 [P] [US2] Entities `internal/domain/entity/tree_node.go` + pure use case `search_tree.go`
+- [x] T072 [US2] Persistence `internal/integration/persistence/tree.go` (scan collections dir, build tree with id→path index, order rules, error nodes, duplicate-id handling, own-write registry for the watcher) + use cases `load_tree.go`, `save_tree_item.go` + adapter `tree_persistence.go`
+- [x] T073 [US2] Persistence `internal/integration/persistence/request.go` (node round trip, revision hash, relative/absolute `src` conversion) + use cases `find_request.go`, `save_request.go` + adapter `request_persistence.go`
+- [x] T074 [US2] Services `manage_tree_item.go`, `search_tree.go`, `item_settings.go`, `save_request.go`; extend `send_request.go` to load ancestors via tree persistence for saved requests
+- [x] T075 [US2] Controllers/DTOs `tree_*.go`, `request_get.go`, `request_save.go` and binding `internal/infra/server/binding/tree.go` + `request.go` additions (`Get`, `Save`, `SaveAs`); register
+- [x] T076 [US2] Run US2 features → **green**; full suite green
 
 ### Frontend implementation
 
-- [ ] T077 [P] [US2] `platform/services/tree.ts` + `mappers/tree.ts` with tests
-- [ ] T078 [US2] `features/sidebar/store.ts` (tree, expanded, selection, search query → `Search` binding debounced 100 ms) with tests
-- [ ] T079 [US2] Sidebar components: `CollectionTree.tsx` (virtualized with TanStack Virtual, method badges, error nodes), `SidebarToolbar.tsx` (new collection, search box), item `ContextMenu` (new folder/request, rename inline, duplicate, delete with confirm), `ItemSettingsDialog.tsx` (auth + headers for collection/folder), empty states
-- [ ] T080 [US2] `features/side-panel/components/InfoPanel.tsx` (name, markdown description editable, location breadcrumb) and RTL tests for sidebar and info panel
+- [x] T077 [P] [US2] `platform/services/tree.ts` + `mappers/tree.ts` with tests
+- [x] T078 [US2] `features/sidebar/store.ts` (tree, expanded, selection, search query → `Search` binding debounced 100 ms) with tests
+- [x] T079 [US2] Sidebar components: `CollectionTree.tsx` (virtualized with TanStack Virtual, method badges, error nodes), `SidebarToolbar.tsx` (new collection, search box), item `ContextMenu` (new folder/request, rename inline, duplicate, delete with confirm), `ItemSettingsDialog.tsx` (auth + headers for collection/folder), empty states
+- [x] T080 [US2] `features/side-panel/components/InfoPanel.tsx` (name, markdown description editable, location breadcrumb) and RTL tests for sidebar and info panel
 
 **Checkpoint**: US1 + US2 — requests can be saved, organised and found.
 
