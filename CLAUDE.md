@@ -63,10 +63,13 @@ How the PRD's tech rules map onto the layers:
 
 ## Frontend — React + TypeScript (Wails)
 
-Rules live in `.claude/skills/frontend-*` (folder organization, Wails bindings, state, styling)
-and the Vercel best-practice skills (`.claude/skills/vercel-*`). Follow them for every change
-under `frontend/`. Next.js/server-only rules in the Vercel skills do not apply — this is a
-client-only SPA in a desktop webview.
+`.claude/skills/frontend-architecture/SKILL.md` is the frontend's `architecture.md`: folder
+structure (`app/` · `features/` · `platform/` · `shared/`), import boundaries, the Wails
+bridge, Zustand state, styling tokens, hotkeys and testing. **Every frontend change follows it
+strictly** — same weight as the backend skills. Alongside it, the Vercel skills:
+`vercel-react-best-practices`, `vercel-composition-patterns`, `vercel-web-design-guidelines`
+(vendored from `vercel-labs/agent-skills`). Next.js/server-only rules in them do not apply —
+this is a client-only SPA in a desktop webview.
 
 ## BDD-First Development
 
