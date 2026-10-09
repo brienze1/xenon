@@ -433,6 +433,7 @@ Stages 4 (scripts) and the OAuth 2.0 part of 5 carry most of the risk. Everythin
 - [x] Import scope (stage 3): **Postman v2.0/v2.1 JSON**, environments, globals and data dump (each item assigned to a workspace, since dumps carry no workspace membership); **Bruno .bru and OpenCollection YAML** with bru→pm script translation; **cURL**. Xenon YAML import ships with export (stage 6). Postman v3 YAML is not in the MVP.
 - [x] **Saved examples** (Postman "examples") are a Xenon feature from stage 3: listed under their request, open in a tab, "Save response as example", round-trip with Postman.
 - [x] Scripts (stage 4): the **full `pm` API** (runner-only calls such as `setNextRequest` exist as no-ops), **every library Postman's sandbox ships** via `require()`/globals, and a **legacy API shim** (`postman.*`, `tests[...]`, `responseBody`…). This widens the PRD's original `pm` subset.
+- [x] Stage 5: OAuth 2.0 authorization-code login in the **system browser with a loopback redirect** (RFC 8252); tokens are **secrets in the vault, auto-refreshed** when expired; the **cookie jar persists** across restarts, **encrypted** with the workspace vault key.
 - [x] Keep workspace globals as a scope? **Yes** — scopes stay local → environment → collection → globals, and `pm.globals` works.
 
 **Open questions**
