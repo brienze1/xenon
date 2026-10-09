@@ -427,6 +427,7 @@ Stages 4 (scripts) and the OAuth 2.0 part of 5 carry most of the risk. Everythin
 
 - [x] Import from Bruno too? **Yes** — a Bruno (.bru) collection importer is part of stage 3, alongside Postman.
 - [x] Platforms? **macOS, Windows and Linux from day one**, built and tested on all three.
+- [x] Request history? **Added to stage 1**: a sidebar History view per workspace (last 1,000 sends, local only, never synced), re-openable in a tab.
 - [x] Keep workspace globals as a scope? **Yes** — scopes stay local → environment → collection → globals, and `pm.globals` works.
 
 **Open questions**
