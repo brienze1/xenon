@@ -239,13 +239,15 @@ expected outputs and run them against a test server.
 - **FR-003**: Authorization-code grants MUST open the system browser and receive the redirect on a
   loopback listener at the configured callback URL (default `http://127.0.0.1:53682/callback`;
   must be loopback http), verify `state`, and stop listening after success, error, cancel or 5
-  minutes.
+  minutes. Xenon MUST only open `https:` authorization URLs (or `http:` on a loopback host) in
+  the browser; any other scheme is refused with an explanation.
 - **FR-004**: Tokens (access, refresh, ID) MUST be stored only in the workspace vault, keyed by the
   owning auth (collection/folder/request id), shown masked with reveal/copy, with expiry, scopes and
   token type; actions: Get new access token, Refresh, Use token (access or ID token), Clear.
 - **FR-005**: Before a send whose effective auth is OAuth 2.0 with an expired token, Xenon MUST
   refresh it when a refresh token exists and auto-refresh is on; otherwise warn with "Get new
-  access token" / "Send anyway".
+  access token" / "Send anyway". Concurrent sends sharing an expired token MUST trigger a single
+  refresh (the others wait for its result), since providers may rotate refresh tokens.
 - **FR-006**: Token injection MUST follow Postman: remove existing `Authorization` header /
   `access_token` query parameter, then add `Authorization: <prefix> <token>` or `?access_token=`.
 - **FR-007**: AWS Signature MUST sign requests with Signature Version 4 (header mode with
