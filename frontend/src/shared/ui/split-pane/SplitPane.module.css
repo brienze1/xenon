@@ -1,0 +1,52 @@
+.root {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.row {
+  flex-direction: row;
+}
+
+.column {
+  flex-direction: column;
+}
+
+.pane {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pane:first-child {
+  flex: 0 0 calc(var(--split-ratio) * 100%);
+}
+
+.pane:last-child {
+  flex: 1 1 0;
+}
+
+.divider {
+  flex: 0 0 auto;
+  background: var(--color-border);
+  transition: background var(--duration-fast);
+}
+
+.row > .divider {
+  width: 1px;
+  cursor: col-resize;
+  box-shadow: 0 0 0 2px transparent;
+}
+
+.column > .divider {
+  height: 1px;
+  cursor: row-resize;
+}
+
+.divider:hover,
+.divider:focus-visible,
+.dragging {
+  background: var(--neon-cyan);
+  box-shadow: var(--glow-cyan);
+}
