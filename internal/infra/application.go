@@ -12,18 +12,24 @@ import (
 	"github.com/brienze1/xenon/internal/infra/server"
 	"github.com/brienze1/xenon/internal/infra/server/binding"
 	_ "github.com/brienze1/xenon/internal/infra/server/event"
+	"github.com/brienze1/xenon/internal/infra/server/route"
+	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
 	"github.com/brienze1/xenon/pkg/logger"
 )
 
 type Bindings struct {
-	Workspace *binding.WorkspaceService
-	Dialog    *binding.DialogService
+	Workspace    *binding.WorkspaceService
+	Dialog       *binding.DialogService
+	Request      *binding.RequestService
+	ResponseBody *route.ResponseBodyRoute
 }
 
 func NewBindings() *Bindings {
 	return &Bindings{
-		Workspace: binding.NewWorkspaceService(),
-		Dialog:    binding.NewDialogService(),
+		Workspace:    binding.NewWorkspaceService(),
+		Dialog:       binding.NewDialogService(),
+		Request:      binding.NewRequestService(),
+		ResponseBody: route.NewResponseBodyRoute(),
 	}
 }
 
@@ -45,6 +51,8 @@ func Start() {
 		Services: []wails.Service{
 			wails.NewService(bindings.Workspace),
 			wails.NewService(bindings.Dialog),
+			wails.NewService(bindings.Request),
+			wails.NewServiceWithOptions(bindings.ResponseBody, wails.ServiceOptions{Route: dto.ResponseBodyRoute}),
 		},
 		MarshalError: server.MarshalError,
 		Assets: wails.AssetOptions{

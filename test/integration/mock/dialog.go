@@ -3,9 +3,10 @@ package mock
 import "sync"
 
 type Dialog struct {
-	answers []string
-	titles  []string
-	mu      sync.Mutex
+	answers        []string
+	titles         []string
+	suggestedNames []string
+	mu             sync.Mutex
 }
 
 func NewDialog() *Dialog {
@@ -19,6 +20,30 @@ func (d *Dialog) QueueAnswer(path string) {
 }
 
 func (d *Dialog) PickFolder(title string) (string, error) {
+	return d.answer(title)
+}
+
+func (d *Dialog) PickFile(title string) (string, error) {
+	return d.answer(title)
+}
+
+func (d *Dialog) PickSaveFile(title, suggestedName string) (string, error) {
+	d.mu.Lock()
+	d.suggestedNames = append(d.suggestedNames, suggestedName)
+	d.mu.Unlock()
+	return d.answer(title)
+}
+
+func (d *Dialog) LastSuggestedName() string {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if len(d.suggestedNames) == 0 {
+		return ""
+	}
+	return d.suggestedNames[len(d.suggestedNames)-1]
+}
+
+func (d *Dialog) answer(title string) (string, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.titles = append(d.titles, title)
@@ -44,4 +69,5 @@ func (d *Dialog) Reset() {
 	defer d.mu.Unlock()
 	d.answers = nil
 	d.titles = nil
+	d.suggestedNames = nil
 }

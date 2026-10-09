@@ -8,7 +8,9 @@ func (f *fakeEmitter) Emit(name string, _ any) { f.names = append(f.names, name)
 
 type fakeDialog struct{}
 
-func (f *fakeDialog) PickFolder(string) (string, error) { return "/picked", nil }
+func (f *fakeDialog) PickFolder(string) (string, error)           { return "/picked", nil }
+func (f *fakeDialog) PickFile(string) (string, error)             { return "/file", nil }
+func (f *fakeDialog) PickSaveFile(string, string) (string, error) { return "/saved", nil }
 
 func TestEventEmitterFactoryIsASingletonThatCanBeReplaced(t *testing.T) {
 	first := GetEventEmitter()

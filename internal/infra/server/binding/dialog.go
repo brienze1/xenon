@@ -22,3 +22,19 @@ func (d *DialogService) PickFolder(_ context.Context, request PickFolderRequest)
 	}
 	return &PickedPath{Path: path}, nil
 }
+
+func (d *DialogService) PickFile(_ context.Context, request PickFileRequest) (*PickedPath, error) {
+	path, err := d.dialog.PickFile(request.Title)
+	if err != nil {
+		return nil, err
+	}
+	return &PickedPath{Path: path}, nil
+}
+
+func (d *DialogService) PickSaveFile(_ context.Context, request PickSaveFileRequest) (*PickedPath, error) {
+	path, err := d.dialog.PickSaveFile(request.Title, request.SuggestedName)
+	if err != nil {
+		return nil, err
+	}
+	return &PickedPath{Path: path}, nil
+}

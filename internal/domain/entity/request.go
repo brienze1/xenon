@@ -51,6 +51,10 @@ func (r Request) HasValidMethod() bool {
 	return methodToken.MatchString(r.NormalizedMethod())
 }
 
+func (r Request) LogValue() any {
+	return map[string]any{"id": r.ID, "method": r.Method, "url": r.URL}
+}
+
 func (r Request) IsAutoHeaderDisabled(name string) bool {
 	for _, disabled := range r.DisabledAutoHeaders {
 		if strings.EqualFold(disabled, name) {
