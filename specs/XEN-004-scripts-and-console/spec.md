@@ -229,6 +229,15 @@ introduce a syntax error.
 - **`{{vault:name}}` and `pm.vault`**: Postman's vault maps to Xenon's workspace-level secrets
   (globals secret rows): `pm.vault.get/set/unset` read and write them; `{{vault:name}}` resolves
   to the same value.
+- **Nested sends and "Confirm before send"** (XEN-002): confirming the main send covers every
+  request its scripts send in the same execution; scripts cannot trigger a separate prompt.
+- **Nested sends with missing or locked secrets**: the script receives an error naming the
+  secrets (callback `err` / rejected promise); there is no prompt.
+- **Secrets set during a run** (a script sets a secret row): the new value is masked in the
+  console from that moment on. Values transformed by a script (substrings, base64) cannot be
+  recognised and are not masked — documented in the editor hint.
+- **Sandbox surface is an allowlist**: scripts see only the members listed in the sandbox
+  contract; no internal Go object, method or field is exposed by reflection.
 - **History** keeps the request as written (unchanged by pre-request scripts); the console shows
   what was actually sent.
 
