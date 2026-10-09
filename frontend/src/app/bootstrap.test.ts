@@ -16,7 +16,11 @@ vi.mock('@/platform/services/workspaces', () => ({
 }))
 vi.mock('@/platform/services/dialogs', () => ({ pickFolder: vi.fn() }))
 
+vi.mock('@/platform/services/requests', () => ({ lastResult: vi.fn(), releaseResponse: vi.fn(), saveResponseBody: vi.fn() }))
+
 const services = await import('@/platform/services/workspaces')
+const { useRequestBuilderStore } = await import('@/features/request-builder/store')
+const { useResponseViewerStore } = await import('@/features/response-viewer/store')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { bootstrap, openLastWorkspace } = await import('./bootstrap')
 
@@ -53,5 +57,19 @@ describe('bootstrap', () => {
     expect(useWorkspacesStore.getState().workspaces[0]?.missing).toBe(true)
     cleanup()
     expect(unsubscribe).toHaveBeenCalledOnce()
+  })
+
+  it('starts fresh request and response state when the workspace changes', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
+    const cleanup = bootstrap()
+    await vi.waitFor(() => expect(useWorkspacesStore.getState().status).toBe('ready'))
+    const firstTab = useRequestBuilderStore.getState().activeTabId
+    useWorkspacesStore.setState({ activeLocalId: 'A' })
+    expect(useRequestBuilderStore.getState().activeTabId).toBe(firstTab)
+    useResponseViewerStore.getState().startSending(firstTab)
+    useWorkspacesStore.setState({ activeLocalId: 'B' })
+    expect(useRequestBuilderStore.getState().activeTabId).not.toBe(firstTab)
+    expect(useResponseViewerStore.getState().entries).toEqual({})
+    cleanup()
   })
 })

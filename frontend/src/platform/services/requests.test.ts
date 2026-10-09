@@ -1,0 +1,106 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { emptyDraft } from '../mappers/request'
+
+vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {} }))
+vi.mock('../../../bindings/github.com/brienze1/xenon/internal/infra/server/binding/requestservice', () => ({
+  ApplyUrl: vi.fn(),
+  ApplyParams: vi.fn(),
+  ParseBulk: vi.fn(),
+  FormatBulk: vi.fn(),
+  AutoHeaders: vi.fn(),
+  Send: vi.fn(),
+  LastResult: vi.fn(),
+  ReleaseResponse: vi.fn(),
+  SaveResponseBody: vi.fn(),
+}))
+
+const RequestService = await import('../../../bindings/github.com/brienze1/xenon/internal/infra/server/binding/requestservice')
+const requests = await import('./requests')
+const { toRequestDto } = await import('../mappers/request')
+
+const timings = { dns_ms: 0, connect_ms: 0, tls_ms: 0, first_byte_ms: 0, download_ms: 0, total_ms: 3 }
+const sendResult = {
+  tab_id: 'tab',
+  ok: true,
+  status_code: 200,
+  status_text: 'OK',
+  proto: 'HTTP/1.1',
+  headers: [],
+  size_bytes: 2,
+  content_type: 'text/plain',
+  is_binary: false,
+  body_url: '/xenon/response/tab',
+  inline_body: 'hi',
+  timings,
+}
+
+function failure(code: string) {
+  return Object.assign(new Error('failed'), { cause: { error: { code, description: 'd' } } })
+}
+
+describe('request service', () => {
+  beforeEach(() => vi.resetAllMocks())
+
+  it('applies the URL and the params through Go', async () => {
+    const draft = { ...emptyDraft(), url: 'https://h?a=1' }
+    vi.mocked(RequestService.ApplyUrl).mockResolvedValue({ ...toRequestDto(draft), params: [{ key: 'a', value: '1', description: '' }] } as never)
+    vi.mocked(RequestService.ApplyParams).mockResolvedValue({ ...toRequestDto(draft), url: 'https://h?b=2' } as never)
+    await expect(requests.applyUrl(draft)).resolves.toMatchObject({ params: [{ key: 'a', value: '1', enabled: true }] })
+    await expect(requests.applyParams(draft)).resolves.toMatchObject({ url: 'https://h?b=2' })
+    expect(RequestService.ApplyUrl).toHaveBeenCalledWith({ request: toRequestDto(draft) })
+  })
+
+  it('rejects an empty answer', async () => {
+    vi.mocked(RequestService.ApplyUrl).mockResolvedValue(null as never)
+    await expect(requests.applyUrl(emptyDraft())).rejects.toMatchObject({ code: 'UNK-00204' })
+  })
+
+  it('parses and formats bulk text', async () => {
+    vi.mocked(RequestService.ParseBulk).mockResolvedValue({ rows: [{ key: 'a', value: '1', description: '', enabled: false }] } as never)
+    vi.mocked(RequestService.FormatBulk).mockResolvedValue({ text: 'a:1' } as never)
+    await expect(requests.parseBulk('//a:1')).resolves.toMatchObject([{ key: 'a', enabled: false }])
+    await expect(requests.formatBulk([{ id: 'r', key: 'a', value: '1', description: '', enabled: true }])).resolves.toBe('a:1')
+    vi.mocked(RequestService.ParseBulk).mockResolvedValue({ rows: null } as never)
+    await expect(requests.parseBulk('')).resolves.toEqual([])
+  })
+
+  it('lists auto headers', async () => {
+    vi.mocked(RequestService.AutoHeaders).mockResolvedValue([{ key: 'Accept', value: '*/*', disabled: false }] as never)
+    await expect(requests.autoHeaders('ws', emptyDraft())).resolves.toEqual([{ key: 'Accept', value: '*/*', disabled: false }])
+    vi.mocked(RequestService.AutoHeaders).mockResolvedValue(null as never)
+    await expect(requests.autoHeaders('ws', emptyDraft())).resolves.toEqual([])
+  })
+
+  it('sends and keeps the cancellable call', async () => {
+    const cancel = vi.fn()
+    vi.mocked(RequestService.Send).mockReturnValue(Object.assign(Promise.resolve(sendResult), { cancel }) as never)
+    const pending = requests.sendRequest('ws', 'tab', emptyDraft())
+    await expect(pending.result).resolves.toMatchObject({ statusCode: 200, inlineBody: 'hi' })
+    pending.cancel()
+    expect(cancel).toHaveBeenCalled()
+    expect(RequestService.Send).toHaveBeenCalledWith({ local_id: 'ws', tab_id: 'tab', request: toRequestDto(emptyDraft()) })
+  })
+
+  it('maps send failures to AppError', async () => {
+    vi.mocked(RequestService.Send).mockReturnValue(Object.assign(Promise.reject(failure('SND-00400')), { cancel: vi.fn() }) as never)
+    await expect(requests.sendRequest('ws', 'tab', emptyDraft()).result).rejects.toMatchObject({ code: 'SND-00400' })
+  })
+
+  it('returns the last result or null when the tab has none', async () => {
+    vi.mocked(RequestService.LastResult).mockResolvedValueOnce(sendResult as never)
+    await expect(requests.lastResult('tab')).resolves.toMatchObject({ tabId: 'tab' })
+    vi.mocked(RequestService.LastResult).mockRejectedValueOnce(failure('SND-03404'))
+    await expect(requests.lastResult('tab')).resolves.toBeNull()
+    vi.mocked(RequestService.LastResult).mockRejectedValueOnce(failure('SND-01400'))
+    await expect(requests.lastResult('')).rejects.toMatchObject({ code: 'SND-01400' })
+  })
+
+  it('releases and saves response bodies', async () => {
+    vi.mocked(RequestService.ReleaseResponse).mockResolvedValue(undefined as never)
+    vi.mocked(RequestService.SaveResponseBody).mockRejectedValue(failure('SND-04400'))
+    await requests.releaseResponse('tab')
+    expect(RequestService.ReleaseResponse).toHaveBeenCalledWith({ tab_id: 'tab' })
+    await expect(requests.saveResponseBody('tab', 'x')).rejects.toMatchObject({ code: 'SND-04400' })
+    expect(RequestService.SaveResponseBody).toHaveBeenCalledWith({ tab_id: 'tab', path: 'x' })
+  })
+})

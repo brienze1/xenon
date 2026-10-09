@@ -1,0 +1,85 @@
+import * as RequestService from '../../../bindings/github.com/brienze1/xenon/internal/infra/server/binding/requestservice'
+import { AppError, toAppError } from '../errors'
+import {
+  toAutoHeader,
+  toKeyValueDto,
+  toKeyValueRow,
+  toRequestDraft,
+  toRequestDto,
+  toSendResult,
+  type AutoHeader,
+  type KeyValueRow,
+  type RequestDraft,
+  type SendResult,
+} from '../mappers/request'
+
+const EMPTY_RESPONSE = 'UNK-00204'
+export const NO_RESPONSE = 'SND-03404'
+
+export interface PendingSend {
+  result: Promise<SendResult>
+  cancel: () => void
+}
+
+function required<T>(value: T | null): T {
+  if (value === null) {
+    throw new AppError(EMPTY_RESPONSE, 'The backend returned no data')
+  }
+  return value
+}
+
+async function call<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation()
+  } catch (error) {
+    throw toAppError(error)
+  }
+}
+
+export function applyUrl(draft: RequestDraft): Promise<RequestDraft> {
+  return call(async () => toRequestDraft(required(await RequestService.ApplyUrl({ request: toRequestDto(draft) }))))
+}
+
+export function applyParams(draft: RequestDraft): Promise<RequestDraft> {
+  return call(async () => toRequestDraft(required(await RequestService.ApplyParams({ request: toRequestDto(draft) }))))
+}
+
+export function parseBulk(text: string): Promise<KeyValueRow[]> {
+  return call(async () => (required(await RequestService.ParseBulk({ text })).rows ?? []).map(toKeyValueRow))
+}
+
+export function formatBulk(rows: KeyValueRow[]): Promise<string> {
+  return call(async () => required(await RequestService.FormatBulk({ rows: rows.map(toKeyValueDto) })).text)
+}
+
+export function autoHeaders(localId: string, draft: RequestDraft): Promise<AutoHeader[]> {
+  return call(async () => (await RequestService.AutoHeaders({ local_id: localId, request: toRequestDto(draft) }) ?? []).map(toAutoHeader))
+}
+
+export function sendRequest(localId: string, tabId: string, draft: RequestDraft): PendingSend {
+  const pending = RequestService.Send({ local_id: localId, tab_id: tabId, request: toRequestDto(draft) })
+  return {
+    result: call(async () => toSendResult(required(await pending))),
+    cancel: () => pending.cancel(),
+  }
+}
+
+export async function lastResult(tabId: string): Promise<SendResult | null> {
+  try {
+    return toSendResult(required(await RequestService.LastResult({ tab_id: tabId })))
+  } catch (error) {
+    const appError = toAppError(error)
+    if (appError.code === NO_RESPONSE) {
+      return null
+    }
+    throw appError
+  }
+}
+
+export function releaseResponse(tabId: string): Promise<void> {
+  return call(() => RequestService.ReleaseResponse({ tab_id: tabId }))
+}
+
+export function saveResponseBody(tabId: string, path: string): Promise<void> {
+  return call(() => RequestService.SaveResponseBody({ tab_id: tabId, path }))
+}

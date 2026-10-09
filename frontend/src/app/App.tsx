@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
+import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { WelcomeScreen } from '@/features/workspaces/components/WelcomeScreen'
 import { WorkspaceSwitcher } from '@/features/workspaces/components/WorkspaceSwitcher'
 import { useWorkspacesStore } from '@/features/workspaces/store'
@@ -10,11 +11,10 @@ import { AppShell } from './layout/AppShell'
 import { ConsoleDrawer } from './layout/regions/ConsoleDrawer'
 import { Footer } from './layout/regions/Footer'
 import { MainArea } from './layout/regions/MainArea'
+import { RequestWorkspace } from './layout/RequestWorkspace'
 import { RightPanel } from './layout/regions/RightPanel'
 import { Sidebar } from './layout/regions/Sidebar'
 import { TopBar } from './layout/regions/TopBar'
-
-const NO_HOTKEY_HANDLERS = {}
 
 export function App() {
   const status = useWorkspacesStore((state) => state.status)
@@ -22,8 +22,12 @@ export function App() {
     state.workspaces.find((workspace) => workspace.localId === state.activeLocalId),
   )
 
+  const activeTabId = useRequestBuilderStore((state) => state.activeTabId)
+  const send = useRequestBuilderStore((state) => state.send)
+  const hotkeys = useMemo(() => (active ? { send: () => void send(activeTabId) } : {}), [active, send, activeTabId])
+
   useEffect(() => bootstrap(), [])
-  useAppHotkeys(NO_HOTKEY_HANDLERS)
+  useAppHotkeys(hotkeys)
 
   return (
     <AppShell>
@@ -36,11 +40,7 @@ export function App() {
             </EmptyState.Root>
           </Sidebar>
           <MainArea>
-            <EmptyState.Root label="No request open">
-              <EmptyState.Art />
-              <EmptyState.Title>{active.name}</EmptyState.Title>
-              <EmptyState.Description>Open a new tab to build and send a request.</EmptyState.Description>
-            </EmptyState.Root>
+            <RequestWorkspace key={active.localId} tabId={activeTabId} />
           </MainArea>
           <RightPanel>
             <h2 className={styles.infoTitle}>Info</h2>

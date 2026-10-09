@@ -1,0 +1,72 @@
+import type { CodeLanguage } from '@/shared/ui/code-editor/languages'
+
+export const RAW_FIRST_BYTES = 5 * 1024 * 1024
+
+export type BodyView = 'pretty' | 'raw' | 'preview'
+export type StatusTone = 'success' | 'redirect' | 'error' | 'info'
+
+export function initialBodyView(sizeBytes: number): BodyView {
+  return sizeBytes > RAW_FIRST_BYTES ? 'raw' : 'pretty'
+}
+
+function mediaType(contentType: string): string {
+  return contentType.split(';')[0]?.trim().toLowerCase() ?? ''
+}
+
+export function languageFor(contentType: string): CodeLanguage {
+  const type = mediaType(contentType)
+  if (type.includes('json')) {
+    return 'json'
+  }
+  if (type.includes('html')) {
+    return 'html'
+  }
+  if (type.includes('xml')) {
+    return 'xml'
+  }
+  if (type.includes('javascript')) {
+    return 'javascript'
+  }
+  return 'text'
+}
+
+export function prettyBody(body: string, language: CodeLanguage): string {
+  if (language !== 'json') {
+    return body
+  }
+  try {
+    return JSON.stringify(JSON.parse(body), null, 2)
+  } catch {
+    return body
+  }
+}
+
+export function isImage(contentType: string): boolean {
+  return mediaType(contentType).startsWith('image/')
+}
+
+export function isHtml(contentType: string): boolean {
+  return mediaType(contentType) === 'text/html'
+}
+
+export function statusTone(statusCode: number): StatusTone {
+  if (statusCode >= 200 && statusCode < 300) {
+    return 'success'
+  }
+  if (statusCode >= 300 && statusCode < 400) {
+    return 'redirect'
+  }
+  if (statusCode >= 400) {
+    return 'error'
+  }
+  return 'info'
+}
+
+export function suggestedFileName(contentType: string): string {
+  const extensions: Record<CodeLanguage, string> = { json: 'json', xml: 'xml', html: 'html', javascript: 'js', text: 'txt' }
+  if (isImage(contentType)) {
+    return `response.${mediaType(contentType).slice('image/'.length).replace('svg+xml', 'svg')}`
+  }
+  const language = languageFor(contentType)
+  return language === 'text' && !mediaType(contentType).startsWith('text/') ? 'response.bin' : `response.${extensions[language]}`
+}
