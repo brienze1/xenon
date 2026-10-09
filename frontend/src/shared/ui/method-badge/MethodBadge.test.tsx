@@ -5,9 +5,8 @@ import { MethodBadge, methodTone } from './MethodBadge'
 describe('MethodBadge', () => {
   it('upper-cases the method and colours standard ones', () => {
     render(<MethodBadge method=" post " />)
-    const badge = screen.getByText('POST')
-    expect(badge).toHaveAttribute('data-tone', 'post')
-    expect(badge.className).toContain('post')
+    expect(screen.getByText('POST')).toBeInTheDocument()
+    expect(methodTone(' post ')).toBe('post')
   })
 
   it('treats custom methods as custom', () => {

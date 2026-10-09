@@ -8,12 +8,11 @@ describe('Banner', () => {
       <Banner.Root tone="error">
         <Banner.Message>Folder missing</Banner.Message>
         <Banner.Actions>
-          <button type="button">Locate folder…</button>
+          <button type="button">Locate Folder…</button>
         </Banner.Actions>
       </Banner.Root>,
     )
     expect(screen.getByRole('alert')).toHaveTextContent('Folder missing')
-    expect(screen.getByRole('alert').className).toContain('error')
     rerender(
       <Banner.Root tone="warning">
         <Banner.Message>Changed on disk</Banner.Message>

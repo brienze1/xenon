@@ -24,11 +24,13 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
 
   useEffect(() => {
     let current = true
-    void loadSettings(itemId).then((loaded) => {
+    async function load() {
+      const loaded = await loadSettings(itemId)
       if (current) {
         setSettings(loaded)
       }
-    })
+    }
+    void load()
     return () => {
       current = false
     }
@@ -45,7 +47,10 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
     )
   }
 
-  const update = (patch: Partial<ItemSettings>) => setSettings({ ...settings, ...patch })
+  const update = (patch: Partial<ItemSettings>) => setSettings((current) => (current ? { ...current, ...patch } : current))
+
+  const updateHeaders = (change: (headers: ItemSettings['headers']) => ItemSettings['headers']) =>
+    setSettings((current) => (current ? { ...current, headers: change(current.headers) } : current))
 
   async function toggleBulk(bulk: boolean) {
     if (!settings) {
@@ -108,9 +113,9 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
             bulkText={bulkText ?? ''}
             onModeChange={(mode) => void toggleBulk(mode === 'bulk')}
             onBulkTextChange={setBulkText}
-            onRowChange={(id, patch) => update({ headers: patchRow(settings.headers, id, patch) })}
-            onRowAdd={(row) => update({ headers: addRow(settings.headers, row) })}
-            onRowRemove={(id) => update({ headers: removeRow(settings.headers, id) })}
+            onRowChange={(id, patch) => updateHeaders((headers) => patchRow(headers, id, patch))}
+            onRowAdd={(row) => updateHeaders((headers) => addRow(headers, row))}
+            onRowRemove={(id) => updateHeaders((headers) => removeRow(headers, id))}
           />
         </div>
       </Dialog.Body>
@@ -119,7 +124,7 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
           Cancel
         </Button>
         <Button variant="primary" disabled={saving} onClick={() => void save()}>
-          Save
+          {saving ? 'Saving…' : 'Save'}
         </Button>
       </Dialog.Actions>
     </>

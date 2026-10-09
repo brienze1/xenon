@@ -40,6 +40,10 @@
   box-shadow: var(--glow-magenta);
 }
 
+.accent:not(:disabled):hover {
+  filter: brightness(1.12);
+}
+
 .secondary {
   background: var(--color-surface-raised);
   color: var(--color-text);
@@ -73,6 +77,10 @@
   box-shadow: var(--glow-yellow);
   color: var(--neon-yellow);
   animation: running-pulse 1.2s ease-in-out infinite;
+}
+
+.running:not(:disabled):hover {
+  background: color-mix(in srgb, var(--neon-yellow) 14%, var(--color-surface-raised));
 }
 
 @keyframes running-pulse {

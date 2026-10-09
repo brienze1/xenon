@@ -11,7 +11,7 @@ const SAVE_NEXT_STEP = 'Try again, or check that the request file and its folder
 
 interface RequestBuilderProps {
   tabId: string
-  onSave?: () => void
+  onSave: () => void
 }
 
 export function RequestBuilder({ tabId, onSave }: RequestBuilderProps) {

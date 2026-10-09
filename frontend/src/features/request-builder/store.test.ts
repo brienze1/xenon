@@ -18,12 +18,14 @@ vi.mock('@/platform/services/requests', () => ({
 }))
 vi.mock('@/platform/services/dialogs', () => ({ pickFolder: vi.fn(), pickFile: vi.fn(), pickSaveFile: vi.fn() }))
 vi.mock('@/platform/services/workspaces', () => ({ listWorkspaces: vi.fn(), createWorkspace: vi.fn(), activateWorkspace: vi.fn() }))
-vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn().mockResolvedValue([]) }))
+vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn() }))
 
 const requests = await import('@/platform/services/requests')
 const dialogs = await import('@/platform/services/dialogs')
+const tree = await import('@/platform/services/tree')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
+const { useSidebarStore } = await import('@/features/sidebar/store')
 const { SYNC_DELAY_MS, useRequestBuilderStore } = await import('./store')
 
 function row(key: string, value: string, enabled = true) {
@@ -32,6 +34,21 @@ function row(key: string, value: string, enabled = true) {
 
 function state() {
   return useRequestBuilderStore.getState()
+}
+
+function resetStores() {
+  state().reset()
+  useResponseViewerStore.getState().reset()
+  useSidebarStore.getState().reset()
+}
+
+function mockDefaults() {
+  vi.mocked(requests.autoHeaders).mockResolvedValue([])
+  vi.mocked(requests.applyUrl).mockImplementation(async (sent) => sent)
+  vi.mocked(requests.applyParams).mockImplementation(async (sent) => sent)
+  vi.mocked(requests.parseBulk).mockResolvedValue([])
+  vi.mocked(requests.releaseResponse).mockResolvedValue()
+  vi.mocked(tree.getTree).mockResolvedValue([])
 }
 
 function draft(tabId: string): RequestDraft {
@@ -58,17 +75,42 @@ describe('request builder store', () => {
   let tabId: string
 
   beforeEach(() => {
+    resetStores()
     vi.resetAllMocks()
     vi.useFakeTimers()
-    vi.mocked(requests.autoHeaders).mockResolvedValue([])
+    mockDefaults()
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
-    useResponseViewerStore.getState().reset()
-    state().reset()
     tabId = 'tab-1'
     state().ensureTab(tabId)
   })
 
-  afterEach(() => vi.useRealTimers())
+  afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
+  })
+
+  it('reports a sync result it cannot read instead of throwing in the timer', async () => {
+    vi.mocked(requests.applyUrl).mockResolvedValue(undefined as unknown as RequestDraft)
+    state().setUrl(tabId, 'https://h?a=1')
+    await vi.advanceTimersByTimeAsync(SYNC_DELAY_MS)
+    expect(state().tabs[tabId]!.error).not.toBeNull()
+    expect(draft(tabId).url).toBe('https://h?a=1')
+  })
+
+  it('drops every pending sync on reset', async () => {
+    state().setUrl(tabId, 'https://h?a=1')
+    state().setBulkText(tabId, 'headers', 'A:1')
+    state().reset()
+    await vi.advanceTimersByTimeAsync(SYNC_DELAY_MS)
+    expect(requests.applyUrl).not.toHaveBeenCalled()
+    expect(requests.parseBulk).not.toHaveBeenCalled()
+    expect(requests.autoHeaders).not.toHaveBeenCalled()
+  })
+
+  it('ignores a name edit when there is no tab', () => {
+    state().setName('', 'Orphan')
+    expect(state().tabs['']).toBeUndefined()
+  })
 
   it('keeps one clean draft per tab id and marks edits dirty', () => {
     expect(draft(tabId)).toEqual(emptyDraft())
@@ -254,12 +296,14 @@ describe('request builder store - saved requests', () => {
   const savedDraft: RequestDraft = { ...emptyDraft(), id: 'r1', name: 'Ping', url: 'https://x/ping' }
 
   beforeEach(() => {
+    resetStores()
     vi.resetAllMocks()
-    vi.mocked(requests.autoHeaders).mockResolvedValue([])
+    mockDefaults()
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
-    useRequestBuilderStore.getState().reset()
     useRequestBuilderStore.getState().ensureTab(TAB)
   })
+
+  afterEach(() => resetStores())
 
   const TAB = 'tab-1'
 

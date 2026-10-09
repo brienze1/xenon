@@ -18,7 +18,7 @@ interface MethodBadgeProps {
 export function MethodBadge({ method, className }: MethodBadgeProps) {
   const tone = methodTone(method)
   return (
-    <span className={cn(styles.badge, tone !== 'custom' && styles[tone], className)} data-tone={tone} translate="no">
+    <span className={cn(styles.badge, tone !== 'custom' && styles[tone], className)} translate="no">
       {method.trim().toUpperCase()}
     </span>
   )

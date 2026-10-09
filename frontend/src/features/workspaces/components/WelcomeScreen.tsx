@@ -48,7 +48,9 @@ export function WelcomeScreen() {
   return (
     <EmptyState.Root label="Welcome">
       <EmptyState.Art variant="workspace" />
-      <EmptyState.Title>Xenon</EmptyState.Title>
+      <EmptyState.Title>
+        <span translate="no">Xenon</span>
+      </EmptyState.Title>
       <EmptyState.Description>
         Create a workspace in any folder — for example inside your company’s git repository. Everything is saved there as
         plain files.
@@ -85,7 +87,7 @@ export function WelcomeScreen() {
               <span className={styles.path} translate="no">
                 {path ?? <span className={styles.placeholder}>No folder chosen</span>}
               </span>
-              <Button ref={folderRef} size="sm" aria-describedby={errors.folder ? folderErrorId : undefined} onClick={onChooseFolder}>
+              <Button ref={folderRef} size="sm" aria-describedby={errors.folder ? folderErrorId : undefined} onClick={() => void onChooseFolder()}>
                 Choose Folder…
               </Button>
             </div>
@@ -101,7 +103,7 @@ export function WelcomeScreen() {
             </Banner.Root>
           ) : null}
           <Button type="submit" variant="primary" disabled={submitting}>
-            Create Workspace
+            {submitting ? 'Creating…' : 'Create Workspace'}
           </Button>
         </form>
       </EmptyState.Actions>

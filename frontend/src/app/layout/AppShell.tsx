@@ -17,7 +17,7 @@ export function AppShell({ layout, onLayoutChange, children }: AppShellProps) {
   } as CSSProperties
   return (
     <ShellLayoutContext value={{ layout, onLayoutChange }}>
-      <div className={styles.shell} style={sizes} data-testid="app-shell">
+      <div className={styles.shell} style={sizes}>
         <a href={`#${MAIN_CONTENT_ID}`} className={styles.skipLink}>
           Skip to Main Content
         </a>

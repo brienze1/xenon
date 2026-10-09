@@ -81,11 +81,13 @@ export function CodeEditor({ value, language, label, onChange, className }: Code
 
   useEffect(() => {
     let active = true
-    void loadLanguage(language).then((extension) => {
+    async function applyLanguage() {
+      const extension = await loadLanguage(language)
       if (active) {
         viewRef.current?.dispatch({ effects: languageRef.current.reconfigure(extension) })
       }
-    })
+    }
+    void applyLanguage()
     return () => {
       active = false
     }

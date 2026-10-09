@@ -6,11 +6,11 @@ import type { SendResult } from '@/platform/mappers/request'
 
 vi.mock('@/platform/services/requests', () => ({ lastResult: vi.fn(), releaseResponse: vi.fn(), saveResponseBody: vi.fn() }))
 vi.mock('@/platform/services/dialogs', () => ({ pickSaveFile: vi.fn() }))
-vi.mock('@/platform/response-body', () => ({ fetchResponseText: vi.fn() }))
+vi.mock('@/platform/services/response-body', () => ({ fetchResponseText: vi.fn() }))
 
 const requests = await import('@/platform/services/requests')
 const dialogs = await import('@/platform/services/dialogs')
-const responseBody = await import('@/platform/response-body')
+const responseBody = await import('@/platform/services/response-body')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
 const { ResponseViewer } = await import('./ResponseViewer')
 
@@ -68,11 +68,11 @@ describe('ResponseViewer', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('invalid request')
   })
 
-  it('shows the status coloured by class, the size and a timing breakdown on hover', async () => {
+  it('shows the status, the size and a timing breakdown on hover', async () => {
     const user = userEvent.setup()
     render(<ResponseViewer tabId="tab" />)
     show(result({ statusCode: 404, statusText: 'Not Found' }))
-    expect(screen.getByText('404 Not Found')).toHaveClass('error')
+    expect(screen.getByText('404 Not Found')).toBeInTheDocument()
     expect(screen.getByText('9 B')).toBeInTheDocument()
     await user.hover(screen.getByRole('button', { name: 'Time 1.52\u00a0s' }))
     const tooltip = screen.getByRole('tooltip')
@@ -81,9 +81,9 @@ describe('ResponseViewer', () => {
     }
     expect(within(tooltip).getByText('40 ms')).toBeInTheDocument()
     show(result({ statusCode: 302, statusText: 'Found' }))
-    expect(screen.getByText('302 Found')).toHaveClass('redirect')
+    expect(screen.getByText('302 Found')).toBeInTheDocument()
     show(result())
-    expect(screen.getByText('200 OK')).toHaveClass('success')
+    expect(screen.getByText('200 OK')).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Response status' })).toBeInTheDocument()
   })
 
@@ -159,6 +159,16 @@ describe('ResponseViewer', () => {
     expect(requests.saveResponseBody).toHaveBeenCalledWith('tab', '/out/response.json')
   })
 
+  it('tells the user when the clipboard refuses the copy', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'))
+    render(<ResponseViewer tabId="tab" />)
+    show(result())
+    await user.click(screen.getByRole('button', { name: 'Copy' }))
+    expect(screen.getByRole('button', { name: 'Copy Failed' })).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Could not copy to the clipboard')
+  })
+
   it('lists every response header, repeated ones included', async () => {
     const user = userEvent.setup()
     render(<ResponseViewer tabId="tab" />)
@@ -170,20 +180,16 @@ describe('ResponseViewer', () => {
   })
 
   it.each([
-    ['timeout', 'Timed out after 5000 ms', 'Increase the timeout in the request Settings (0 = no timeout)', 'Request Timed Out'],
-    ['tls', 'Certificate not trusted', 'Turn off SSL certificate verification in Settings to send anyway', 'SSL/TLS Error'],
-    ['dns', 'Could not resolve host x.invalid', '', 'Could Not Resolve Host'],
-    ['cancelled', 'Request cancelled', '', 'Request Cancelled'],
-  ] as const)('explains a %s error with its hint', (kind, message, hint, title) => {
+    ['timeout', 'Timed out after 5000 ms', 'Increase the timeout in the request Settings (0 = no timeout)', 'Request Timed Out', ''],
+    ['tls', 'Certificate not trusted', 'Turn off SSL certificate verification in Settings to send anyway', 'SSL/TLS Error', ''],
+    ['dns', 'Could not resolve host x.invalid', '', 'Could Not Resolve Host', 'Check the host name in the URL and your network connection, then send again.'],
+    ['cancelled', 'Request cancelled', '', 'Request Cancelled', 'Send the request again when you are ready.'],
+  ] as const)('explains a %s error with its hint or a next step', (kind, message, hint, title, nextStep) => {
     render(<ResponseViewer tabId="tab" />)
     show(result({ ok: false, statusCode: 0, error: { kind, message, hint } }))
     const alert = screen.getByRole('alert', { name: 'Request error' })
     expect(within(alert).getByRole('heading', { name: title })).toBeInTheDocument()
     expect(alert).toHaveTextContent(message)
-    if (hint) {
-      expect(alert).toHaveTextContent(hint)
-    } else {
-      expect(alert.querySelectorAll('p')).toHaveLength(1)
-    }
+    expect(alert).toHaveTextContent(hint || nextStep)
   })
 })

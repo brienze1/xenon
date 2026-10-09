@@ -2,35 +2,17 @@ import { create } from 'zustand'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
-import type { RequestChangedOnDisk } from '@/platform/events'
-import { emptyDraft, toRequestDto, type RequestDraft } from '@/platform/mappers/request'
 import { useWorkspacesStore } from '@/features/workspaces/store'
+import type { RequestChangedOnDisk } from '@/platform/events'
+import { emptyDraft, type RequestDraft } from '@/platform/mappers/request'
 import type { TabState, UIState } from '@/platform/mappers/ui-state'
 import { saveUIState } from '@/platform/services/ui-state'
-import { moveTab } from './lib/order'
+import { sameDraftContent } from './lib/draft'
+import { withoutNotice } from './lib/notices'
+import { moveTab, neighbourOf } from './lib/order'
+import type { CloseChoice, SaveDialogState, TabMeta, TabNotice } from './model'
 
 export const PERSIST_DELAY_MS = 300
-
-const PRISTINE_DRAFT = JSON.stringify(toRequestDto(emptyDraft()))
-
-function isPristine(draft: RequestDraft): boolean {
-  return JSON.stringify(toRequestDto(draft)) === PRISTINE_DRAFT
-}
-
-export interface TabMeta {
-  id: string
-  requestId: string | null
-  pinned: boolean
-}
-
-export type CloseChoice = 'save' | 'discard' | 'cancel'
-export type TabNotice = 'changed' | 'deleted'
-
-export interface SaveDialogState {
-  tabId: string
-  mode: 'save' | 'saveAs'
-  closeAfter: boolean
-}
 
 interface TabsState {
   localId: string | null
@@ -81,15 +63,13 @@ function isDirty(tabId: string): boolean {
   return builder().tabs[tabId]?.dirty ?? false
 }
 
-function withoutNotice(notices: Record<string, TabNotice>, tabId: string): Record<string, TabNotice> {
-  const next = { ...notices }
-  delete next[tabId]
-  return next
+function isPristine(draft: RequestDraft): boolean {
+  return sameDraftContent(draft, emptyDraft())
 }
 
-function neighbourOf(tabs: TabMeta[], tabId: string): string | null {
-  const index = tabs.findIndex((tab) => tab.id === tabId)
-  return tabs[index + 1]?.id ?? tabs[index - 1]?.id ?? null
+function cancelPersist(): void {
+  clearTimeout(persistTimer)
+  persistTimer = undefined
 }
 
 const initialState = {
@@ -392,7 +372,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
     },
 
     schedulePersist: () => {
-      clearTimeout(persistTimer)
+      cancelPersist()
       persistTimer = setTimeout(() => {
         persistTimer = undefined
         void get().flushPersist()
@@ -400,8 +380,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
     },
 
     flushPersist: async () => {
-      clearTimeout(persistTimer)
-      persistTimer = undefined
+      cancelPersist()
       const localId = get().localId
       if (localId === null) {
         return
@@ -417,6 +396,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       if (persistTimer !== undefined) {
         void get().flushPersist()
       }
+      cancelPersist()
       set(initialState)
     },
   }

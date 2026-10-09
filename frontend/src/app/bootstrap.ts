@@ -1,5 +1,6 @@
 import { useRequestBuilderStore } from '@/features/request-builder/store'
-import { useResponseViewerStore, type ResponseEntry } from '@/features/response-viewer/store'
+import type { ResponseEntry } from '@/features/response-viewer/model'
+import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { useTabsStore } from '@/features/tabs/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'

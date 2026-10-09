@@ -2,7 +2,9 @@ import type { Extension } from '@codemirror/state'
 
 export type CodeLanguage = 'json' | 'xml' | 'html' | 'javascript' | 'text'
 
-export async function loadLanguage(language: CodeLanguage): Promise<Extension> {
+const PLAIN_TEXT: Extension = []
+
+async function importLanguage(language: CodeLanguage): Promise<Extension> {
   switch (language) {
     case 'json':
       return (await import('@codemirror/lang-json')).json()
@@ -13,6 +15,15 @@ export async function loadLanguage(language: CodeLanguage): Promise<Extension> {
     case 'javascript':
       return (await import('@codemirror/lang-javascript')).javascript()
     default:
-      return []
+      return PLAIN_TEXT
+  }
+}
+
+// Highlighting is optional: when a grammar chunk fails to load the editor shows plain text.
+export async function loadLanguage(language: CodeLanguage): Promise<Extension> {
+  try {
+    return await importLanguage(language)
+  } catch {
+    return PLAIN_TEXT
   }
 }

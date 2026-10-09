@@ -2,11 +2,10 @@ import { create } from 'zustand'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
-import { toAppError, type AppError } from '@/platform/errors'
+import { toAppError } from '@/platform/errors'
 import {
   cancelledResult,
   emptyDraft,
-  type AutoHeader,
   type KeyValueRow,
   type PathVariableRow,
   type RequestAuth,
@@ -28,25 +27,11 @@ import {
 } from '@/platform/services/requests'
 import { pickFile } from '@/platform/services/dialogs'
 import { keepRowIds } from '@/shared/lib/rows'
+import { rowsOf, withRows, withSavedRows } from './lib/draft-rows'
+import type { BulkTable, SubTab, TabDraft } from './model'
 
 export const SYNC_DELAY_MS = 150
 export const SAVE_CONFLICT = 'REQ-02409'
-
-export type SubTab = 'params' | 'auth' | 'headers' | 'body' | 'scripts' | 'settings'
-export type BulkTable = 'params' | 'headers' | 'urlencoded'
-
-export interface TabDraft {
-  draft: RequestDraft
-  autoHeaders: AutoHeader[]
-  subTab: SubTab
-  bulk: Partial<Record<BulkTable, string>>
-  pending: PendingSend | null
-  error: AppError | null
-  baseRevision: string | null
-  conflict: boolean
-  saving: boolean
-  dirty: boolean
-}
 
 interface RequestBuilderState {
   tabs: Record<string, TabDraft>
@@ -81,15 +66,24 @@ interface RequestBuilderState {
 
 const timers = new Map<string, ReturnType<typeof setTimeout>>()
 
-function debounce(key: string, action: () => void) {
+function debounce(key: string, action: () => Promise<void>) {
   clearTimeout(timers.get(key))
   timers.set(
     key,
     setTimeout(() => {
       timers.delete(key)
-      action()
+      void action()
     }, SYNC_DELAY_MS),
   )
+}
+
+function clearTimers(prefix: string) {
+  for (const [key, timer] of timers) {
+    if (key.startsWith(prefix)) {
+      clearTimeout(timer)
+      timers.delete(key)
+    }
+  }
 }
 
 function newTab(): TabDraft {
@@ -107,28 +101,6 @@ function newTab(): TabDraft {
   }
 }
 
-function withSavedRows(current: RequestDraft, saved: RequestDraft): RequestDraft {
-  return {
-    ...saved,
-    params: keepRowIds(current.params, saved.params),
-    pathVariables: keepRowIds(current.pathVariables, saved.pathVariables),
-    headers: keepRowIds(current.headers, saved.headers),
-    body: {
-      ...saved.body,
-      formdata: keepRowIds(current.body.formdata, saved.body.formdata),
-      urlencoded: keepRowIds(current.body.urlencoded, saved.body.urlencoded),
-    },
-  }
-}
-
-function rowsOf(draft: RequestDraft, table: BulkTable): KeyValueRow[] {
-  return table === 'urlencoded' ? draft.body.urlencoded : draft[table]
-}
-
-function withRows(draft: RequestDraft, table: BulkTable, rows: KeyValueRow[]): RequestDraft {
-  return table === 'urlencoded' ? { ...draft, body: { ...draft.body, urlencoded: rows } } : { ...draft, [table]: rows }
-}
-
 export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) => {
   function tab(tabId: string): TabDraft {
     return get().tabs[tabId] ?? newTab()
@@ -140,7 +112,7 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
 
   function patchDraft(tabId: string, update: (draft: RequestDraft) => RequestDraft) {
     patchTab(tabId, { draft: update(tab(tabId).draft), dirty: true })
-    debounce(`${tabId}:auto-headers`, () => void get().refreshAutoHeaders(tabId))
+    debounce(`${tabId}:auto-headers`, () => get().refreshAutoHeaders(tabId))
   }
 
   function fail(tabId: string, error: unknown) {
@@ -148,41 +120,41 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
   }
 
   function syncUrl(tabId: string) {
-    debounce(`${tabId}:url`, () => {
+    debounce(`${tabId}:url`, async () => {
       const sent = tab(tabId).draft
-      applyUrl(sent).then(
-        (derived) => {
-          const current = tab(tabId).draft
-          if (current.url !== sent.url) {
-            return
-          }
-          patchTab(tabId, {
-            draft: {
-              ...current,
-              params: keepRowIds(current.params, derived.params),
-              pathVariables: keepRowIds(current.pathVariables, derived.pathVariables),
-            },
-            error: null,
-          })
-        },
-        (error) => fail(tabId, error),
-      )
+      try {
+        const derived = await applyUrl(sent)
+        const current = tab(tabId).draft
+        if (current.url !== sent.url) {
+          return
+        }
+        patchTab(tabId, {
+          draft: {
+            ...current,
+            params: keepRowIds(current.params, derived.params),
+            pathVariables: keepRowIds(current.pathVariables, derived.pathVariables),
+          },
+          error: null,
+        })
+      } catch (error) {
+        fail(tabId, error)
+      }
     })
   }
 
   function syncParams(tabId: string) {
-    debounce(`${tabId}:params`, () => {
+    debounce(`${tabId}:params`, async () => {
       const sent = tab(tabId).draft
-      applyParams(sent).then(
-        (built) => {
-          const current = tab(tabId).draft
-          if (current.params !== sent.params || current.pathVariables !== sent.pathVariables) {
-            return
-          }
-          patchTab(tabId, { draft: { ...current, url: built.url }, error: null })
-        },
-        (error) => fail(tabId, error),
-      )
+      try {
+        const built = await applyParams(sent)
+        const current = tab(tabId).draft
+        if (current.params !== sent.params || current.pathVariables !== sent.pathVariables) {
+          return
+        }
+        patchTab(tabId, { draft: { ...current, url: built.url }, error: null })
+      } catch (error) {
+        fail(tabId, error)
+      }
     })
   }
 
@@ -225,12 +197,7 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
 
     dropTab: (tabId) => {
       tab(tabId).pending?.cancel()
-      for (const [key, timer] of timers) {
-        if (key.startsWith(`${tabId}:`)) {
-          clearTimeout(timer)
-          timers.delete(key)
-        }
-      }
+      clearTimers(`${tabId}:`)
       set((state) => {
         const tabs = { ...state.tabs }
         delete tabs[tabId]
@@ -311,7 +278,11 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
       }
     },
 
-    setName: (tabId, name) => patchDraft(tabId, (draft) => ({ ...draft, name })),
+    setName: (tabId, name) => {
+      if (tabId !== '') {
+        patchDraft(tabId, (draft) => ({ ...draft, name }))
+      }
+    },
 
     setDescription: (tabId, description) => patchDraft(tabId, (draft) => ({ ...draft, description })),
 
@@ -362,15 +333,15 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
 
     setBulkText: (tabId, table, text) => {
       patchTab(tabId, { bulk: { ...tab(tabId).bulk, [table]: text } })
-      debounce(`${tabId}:bulk:${table}`, () => {
-        parseBulk(text).then(
-          (rows) => {
-            if (tab(tabId).bulk[table] === text) {
-              setRows(tabId, table, keepRowIds(rowsOf(tab(tabId).draft, table), rows))
-            }
-          },
-          (error) => fail(tabId, error),
-        )
+      debounce(`${tabId}:bulk:${table}`, async () => {
+        try {
+          const rows = await parseBulk(text)
+          if (tab(tabId).bulk[table] === text) {
+            setRows(tabId, table, keepRowIds(rowsOf(tab(tabId).draft, table), rows))
+          }
+        } catch (error) {
+          fail(tabId, error)
+        }
       })
     },
 
@@ -413,7 +384,13 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
         return
       }
       const responses = useResponseViewerStore.getState()
-      const pending = sendRequest(localId, tabId, tab(tabId).draft)
+      let pending: PendingSend
+      try {
+        pending = sendRequest(localId, tabId, tab(tabId).draft)
+      } catch (error) {
+        responses.setFailure(tabId, toAppError(error))
+        return
+      }
       patchTab(tabId, { pending })
       responses.startSending(tabId)
       try {
@@ -433,10 +410,7 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
     cancel: (tabId) => tab(tabId).pending?.cancel(),
 
     reset: () => {
-      for (const timer of timers.values()) {
-        clearTimeout(timer)
-      }
-      timers.clear()
+      clearTimers('')
       set({ tabs: {} })
     },
   }

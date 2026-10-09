@@ -12,7 +12,7 @@ export function TabNotice({ tabId }: TabNoticeProps) {
   const keepMine = useTabsStore((state) => state.keepMine)
   const loadFromDisk = useTabsStore((state) => state.loadFromDisk)
   const keepAsNew = useTabsStore((state) => state.keepAsNew)
-  const closeTab = useTabsStore((state) => state.closeTab)
+  const requestClose = useTabsStore((state) => state.requestClose)
 
   if (notice === undefined) {
     return null
@@ -36,7 +36,7 @@ export function TabNotice({ tabId }: TabNoticeProps) {
         <Button variant="secondary" size="sm" onClick={() => keepAsNew(tabId)}>
           Keep as Unsaved Tab
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => closeTab(tabId)}>
+        <Button variant="ghost" size="sm" onClick={() => requestClose(tabId)}>
           Close
         </Button>
       </Banner.Actions>

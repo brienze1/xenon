@@ -1,4 +1,5 @@
-import { lazy, Suspense, useMemo, useState, type KeyboardEvent } from 'react'
+import { lazy, Suspense, useState, type KeyboardEvent } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { selectLocation, useSidebarStore } from '@/features/sidebar/store'
 import { Button } from '@/shared/ui/button/Button'
@@ -17,10 +18,9 @@ export function InfoPanel({ tabId }: InfoPanelProps) {
   const setName = useRequestBuilderStore((state) => state.setName)
   const setDescription = useRequestBuilderStore((state) => state.setDescription)
   const adoptRename = useRequestBuilderStore((state) => state.adoptRename)
-  const tree = useSidebarStore((state) => state.tree)
+  const location = useSidebarStore(useShallow((state) => (requestId ? selectLocation(state.tree, requestId).slice(0, -1) : [])))
   const rename = useSidebarStore((state) => state.rename)
   const [editing, setEditing] = useState(false)
-  const location = useMemo(() => (requestId ? selectLocation(tree, requestId).slice(0, -1) : []), [tree, requestId])
 
   async function commitName(value: string) {
     const trimmed = value.trim()

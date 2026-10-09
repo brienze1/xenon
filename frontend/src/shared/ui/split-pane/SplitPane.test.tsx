@@ -4,7 +4,13 @@ import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { clampRatio, SplitPane, type SplitDirection } from './SplitPane'
 
-function Example({ direction, initial, onChange }: { direction: SplitDirection; initial: number; onChange?: (ratio: number) => void }) {
+interface ExampleProps {
+  direction: SplitDirection
+  initial: number
+  onChange?: (ratio: number) => void
+}
+
+function Example({ direction, initial, onChange }: ExampleProps) {
   const [ratio, setRatio] = useState(initial)
   return (
     <SplitPane.Root

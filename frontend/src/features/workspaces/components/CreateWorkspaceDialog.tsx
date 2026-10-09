@@ -116,7 +116,7 @@ export function CreateWorkspaceDialog({ open, onClose }: CreateWorkspaceDialogPr
             Cancel
           </Button>
           <Button type="submit" variant="primary" disabled={submitting}>
-            Create Workspace
+            {submitting ? 'Creating…' : 'Create Workspace'}
           </Button>
         </Dialog.Actions>
       </form>

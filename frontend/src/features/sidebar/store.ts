@@ -20,20 +20,12 @@ import {
   searchTree,
 } from '@/platform/services/tree'
 import { findPath } from './lib/tree-rows'
+import type { SidebarSnapshot, SidebarStatus } from './model'
 
 export const SEARCH_DELAY_MS = 100
 export const NEW_COLLECTION_NAME = 'New Collection'
 export const NEW_FOLDER_NAME = 'New Folder'
 export const NEW_REQUEST_NAME = 'New Request'
-
-export type SidebarStatus = 'idle' | 'loading' | 'ready'
-
-export interface SidebarSnapshot {
-  expanded: Record<string, boolean>
-  selectedId: string | null
-  query: string
-  view: SidebarView
-}
 
 interface SidebarState {
   view: SidebarView
@@ -282,6 +274,8 @@ export const useSidebarStore = create<SidebarState>()((set, get) => {
     reset: () => {
       clearTimeout(searchTimer)
       clearTimeout(historyTimer)
+      searchTimer = undefined
+      historyTimer = undefined
       set(initialState)
     },
   }

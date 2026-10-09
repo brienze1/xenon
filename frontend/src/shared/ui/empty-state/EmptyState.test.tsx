@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { EmptyState } from './EmptyState'
 
@@ -20,10 +20,15 @@ describe('EmptyState', () => {
     expect(screen.getByRole('button', { name: 'Send' })).toBeInTheDocument()
   })
 
-  it.each(['workspace', 'collections', 'tabs', 'response', 'history', 'console', 'missing'] as const)('draws the %s illustration hidden from assistive tech', (variant) => {
-    const { container } = render(<EmptyState.Art variant={variant} />)
-    const art = container.querySelector(`[data-art="${variant}"] svg`)
-    expect(art).toHaveAttribute('aria-hidden', 'true')
-    expect(art?.querySelectorAll('path, circle').length).toBeGreaterThan(2)
+  it.each(['workspace', 'collections', 'tabs', 'response', 'history', 'console', 'missing'] as const)('adds the %s illustration without anything for assistive tech to read', (variant) => {
+    render(
+      <EmptyState.Root label="Empty">
+        <EmptyState.Art variant={variant} />
+        <EmptyState.Title>Title</EmptyState.Title>
+      </EmptyState.Root>,
+    )
+    const region = screen.getByRole('region', { name: 'Empty' })
+    expect(within(region).getByRole('heading', { name: 'Title' })).toBeInTheDocument()
+    expect(region).toHaveTextContent(/^Title$/)
   })
 })

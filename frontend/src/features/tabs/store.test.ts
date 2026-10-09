@@ -20,15 +20,17 @@ vi.mock('@/platform/services/requests', () => ({
 vi.mock('@/platform/services/ui-state', () => ({ getUIState: vi.fn(), saveUIState: vi.fn() }))
 vi.mock('@/platform/services/dialogs', () => ({ pickFolder: vi.fn(), pickFile: vi.fn(), pickSaveFile: vi.fn() }))
 vi.mock('@/platform/services/workspaces', () => ({ listWorkspaces: vi.fn(), createWorkspace: vi.fn(), activateWorkspace: vi.fn() }))
-vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn().mockResolvedValue([]) }))
+vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn(), searchTree: vi.fn() }))
 vi.mock('@/platform/services/history', () => ({ listHistory: vi.fn(), getHistoryEntry: vi.fn(), clearHistory: vi.fn() }))
 
 const requests = await import('@/platform/services/requests')
 const uiState = await import('@/platform/services/ui-state')
 const history = await import('@/platform/services/history')
+const tree = await import('@/platform/services/tree')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
 const { useSidebarStore } = await import('@/features/sidebar/store')
+const { useResponseViewerStore } = await import('@/features/response-viewer/store')
 const { PERSIST_DELAY_MS, useTabsStore } = await import('./store')
 
 function tabs() {
@@ -49,6 +51,10 @@ function dirty(tabId: string): boolean {
 
 describe('tabs store', () => {
   beforeEach(() => {
+    tabs().reset()
+    builder().reset()
+    useResponseViewerStore.getState().reset()
+    useSidebarStore.getState().reset()
     vi.resetAllMocks()
     vi.useFakeTimers()
     vi.mocked(requests.autoHeaders).mockResolvedValue([])
@@ -57,13 +63,17 @@ describe('tabs store', () => {
     vi.mocked(requests.releaseResponse).mockResolvedValue()
     vi.mocked(uiState.saveUIState).mockResolvedValue()
     vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: saved(id, `Request ${id}`), revision: `rev-${id}` }))
+    vi.mocked(tree.getTree).mockResolvedValue([])
+    vi.mocked(tree.searchTree).mockResolvedValue({ matchIds: [], ancestorIds: [] })
+    vi.mocked(history.listHistory).mockResolvedValue([])
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
-    builder().reset()
-    tabs().reset()
     tabs().hydrate('ws', defaultUIState())
   })
 
-  afterEach(() => vi.useRealTimers())
+  afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
+  })
 
   it('opens an empty pinned tab when the workspace has none', () => {
     expect(tabs().tabs).toHaveLength(1)

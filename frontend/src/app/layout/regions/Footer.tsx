@@ -9,7 +9,7 @@ type RegionToggle = 'sidebarVisible' | 'rightPanelVisible' | 'consoleVisible'
 const REGION_TOGGLES: Array<{ key: RegionToggle; label: string; icon: string }> = [
   { key: 'sidebarVisible', label: 'Sidebar', icon: 'M2 3h12v10H2zM6 3v10' },
   { key: 'consoleVisible', label: 'Console', icon: 'M2 3h12v10H2zM4 7l2 2-2 2M8 11h3' },
-  { key: 'rightPanelVisible', label: 'Side panel', icon: 'M2 3h12v10H2zM10 3v10' },
+  { key: 'rightPanelVisible', label: 'Side Panel', icon: 'M2 3h12v10H2zM10 3v10' },
 ]
 
 interface ToggleButtonProps {
@@ -50,7 +50,7 @@ export function Footer({ children }: FooterProps) {
           <ToggleButton key={region.key} label={region.label} icon={region.icon} pressed={layout[region.key]} onToggle={() => toggle(region.key)} />
         ))}
         <ToggleButton
-          label="Side by side"
+          label="Side by Side"
           icon="M2 3h12v10H2zM8 3v10"
           pressed={sideBySide}
           onToggle={() => onLayoutChange({ split: sideBySide ? 'stacked' : 'side-by-side' })}

@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { emptyDraft } from '@/platform/mappers/request'
 import type { TreeNode } from '@/platform/mappers/tree'
 
@@ -30,6 +30,11 @@ function node(id: string, kind: TreeNode['kind'], name: string, children: TreeNo
 
 const sample = [node('c1', 'collection', 'Billing', [node('f1', 'folder', 'Invoices', [node('r1', 'request', 'Create invoice')])])]
 
+function resetStores() {
+  useRequestBuilderStore.getState().reset()
+  useSidebarStore.getState().reset()
+}
+
 function tabId() {
   return 'tab-1'
 }
@@ -42,14 +47,16 @@ function loadDraft(id: string, name: string, description = '') {
 
 describe('InfoPanel', () => {
   beforeEach(() => {
+    resetStores()
     vi.resetAllMocks()
     vi.mocked(requests.autoHeaders).mockResolvedValue([])
+    vi.mocked(tree.getTree).mockResolvedValue(sample)
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
-    useRequestBuilderStore.getState().reset()
     useRequestBuilderStore.getState().ensureTab('tab-1')
-    useSidebarStore.getState().reset()
     useSidebarStore.setState({ tree: sample })
   })
+
+  afterEach(() => resetStores())
 
   it('shows an unsaved request', () => {
     render(<InfoPanel tabId={tabId()} />)
@@ -63,6 +70,15 @@ describe('InfoPanel', () => {
     render(<InfoPanel tabId={tabId()} />)
     expect(screen.getByRole('navigation', { name: 'Location' })).toHaveTextContent('Billing / Invoices')
     expect(await screen.findByText('draft')).toContainHTML('strong')
+  })
+
+  it('follows the location when the tree changes', () => {
+    loadDraft('r1', 'Create invoice')
+    render(<InfoPanel tabId={tabId()} />)
+    act(() => useSidebarStore.setState({ tree: [node('c1', 'collection', 'Billing', [node('f1', 'folder', 'Receipts', [node('r1', 'request', 'Create invoice')])])] }))
+    expect(screen.getByRole('navigation', { name: 'Location' })).toHaveTextContent('Billing / Receipts')
+    act(() => useSidebarStore.setState({ tree: [] }))
+    expect(screen.getByText('Unknown')).toBeInTheDocument()
   })
 
   it('edits the description into the draft', async () => {

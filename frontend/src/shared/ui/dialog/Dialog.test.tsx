@@ -3,7 +3,12 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { Dialog } from './Dialog'
 
-function Example({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+interface ExampleProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+function Example({ open, onOpenChange }: ExampleProps) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Title>Unsaved changes</Dialog.Title>

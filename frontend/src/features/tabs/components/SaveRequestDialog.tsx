@@ -4,7 +4,8 @@ import { useSidebarStore } from '@/features/sidebar/store'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { containerOptions } from '@/features/tabs/lib/containers'
-import { useTabsStore, type SaveDialogState } from '@/features/tabs/store'
+import type { SaveDialogState } from '@/features/tabs/model'
+import { useTabsStore } from '@/features/tabs/store'
 import styles from './SaveRequestDialog.module.css'
 
 export function SaveRequestDialog() {
@@ -40,6 +41,8 @@ function SaveRequestForm({ dialog }: SaveRequestFormProps) {
   const [nameError, setNameError] = useState<string | null>(null)
   const [placeError, setPlaceError] = useState<string | null>(null)
   const nameRef = useRef<HTMLInputElement>(null)
+  const placesRef = useRef<HTMLFieldSetElement>(null)
+  const firstPlaceRef = useRef<HTMLInputElement>(null)
   const nameErrorId = useId()
   const placeErrorId = useId()
 
@@ -52,9 +55,12 @@ function SaveRequestForm({ dialog }: SaveRequestFormProps) {
       nameRef.current?.focus()
       return
     }
-    if (parentId !== null) {
-      void confirmSave(parentId, trimmed)
+    if (parentId === null) {
+      const firstPlace = firstPlaceRef.current ?? placesRef.current
+      firstPlace?.focus()
+      return
     }
+    void confirmSave(parentId, trimmed)
   }
 
   return (
@@ -83,12 +89,18 @@ function SaveRequestForm({ dialog }: SaveRequestFormProps) {
             {nameError}
           </p>
         ) : null}
-        <fieldset className={styles.places} aria-describedby={placeError ? placeErrorId : undefined}>
+        <fieldset
+          ref={placesRef}
+          tabIndex={-1}
+          className={styles.places}
+          aria-describedby={placeError ? placeErrorId : undefined}
+        >
           <legend className={styles.label}>Save to</legend>
           {options.length === 0 ? <p className={styles.empty}>Create a collection in the sidebar first.</p> : null}
-          {options.map((option) => (
+          {options.map((option, index) => (
             <label key={option.id} className={styles.place} style={{ '--depth': option.depth } as CSSProperties}>
               <input
+                ref={index === 0 ? firstPlaceRef : undefined}
                 type="radio"
                 name="parent"
                 checked={parentId === option.id}
@@ -112,7 +124,7 @@ function SaveRequestForm({ dialog }: SaveRequestFormProps) {
           Cancel
         </Button>
         <Button type="submit" variant="primary" disabled={saving}>
-          Save
+          {saving ? 'Saving…' : 'Save'}
         </Button>
       </Dialog.Actions>
     </form>

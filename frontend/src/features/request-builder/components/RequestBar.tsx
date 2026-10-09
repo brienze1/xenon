@@ -8,7 +8,7 @@ import styles from './RequestBar.module.css'
 
 interface RequestBarProps {
   tabId: string
-  onSave?: () => void
+  onSave: () => void
 }
 
 const CUSTOM_METHOD = /^[A-Za-z][A-Za-z0-9_-]{0,31}$/
@@ -19,7 +19,6 @@ export function RequestBar({ tabId, onSave }: RequestBarProps) {
   const sending = useRequestBuilderStore((state) => state.tabs[tabId]?.pending != null)
   const saved = useRequestBuilderStore((state) => (state.tabs[tabId]?.draft.id ?? '') !== '')
   const saving = useRequestBuilderStore((state) => state.tabs[tabId]?.saving === true)
-  const save = useRequestBuilderStore((state) => state.save)
   const setMethod = useRequestBuilderStore((state) => state.setMethod)
   const setUrl = useRequestBuilderStore((state) => state.setUrl)
   const send = useRequestBuilderStore((state) => state.send)
@@ -49,9 +48,9 @@ export function RequestBar({ tabId, onSave }: RequestBarProps) {
         </Dropdown.Trigger>
         <Dropdown.Menu label="HTTP method">
           {STANDARD_METHODS.map((option) => (
-            <Dropdown.Item key={option} checked={option === method} onSelect={() => setMethod(tabId, option)}>
+            <Dropdown.RadioItem key={option} checked={option === method} onSelect={() => setMethod(tabId, option)}>
               <MethodBadge method={option} />
-            </Dropdown.Item>
+            </Dropdown.RadioItem>
           ))}
           <input
             name="custom-method"
@@ -86,13 +85,8 @@ export function RequestBar({ tabId, onSave }: RequestBarProps) {
           Send
         </Button>
       )}
-      <Button
-        variant="secondary"
-        disabled={saving || (!saved && onSave === undefined)}
-        title={saved ? 'Save' : 'Save into a collection'}
-        onClick={() => (onSave ? onSave() : void save(tabId))}
-      >
-        Save
+      <Button variant="secondary" disabled={saving} title={saved ? 'Save' : 'Save Into a Collection'} onClick={onSave}>
+        {saving ? 'Saving…' : 'Save'}
       </Button>
     </div>
   )

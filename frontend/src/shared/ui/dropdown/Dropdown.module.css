@@ -24,6 +24,7 @@
   left: 0;
   z-index: 20;
   min-width: 180px;
+  max-width: min(360px, calc(100vw - var(--space-8)));
   padding: var(--space-2);
   border-radius: var(--radius-md);
   background: var(--color-surface-raised);
@@ -33,12 +34,14 @@
 .item {
   display: flex;
   width: 100%;
+  min-width: 0;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
   color: var(--color-text);
   text-align: left;
+  overflow-wrap: anywhere;
 }
 
 .item:hover,

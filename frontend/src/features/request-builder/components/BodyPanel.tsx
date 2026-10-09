@@ -160,7 +160,9 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                       </Button>
                       <span className={styles.filePath}>{row.src}</span>
                       {missingFile !== null && row.src !== '' && missingFile.endsWith(row.src.replace(DIRECTORY_PREFIX, '')) ? (
-                        <span className={styles.missing}>missing</span>
+                        <span role="status" className={styles.missing}>
+                          File not found — select it again
+                        </span>
                       ) : null}
                     </div>
                   ) : (
@@ -175,7 +177,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                   )}
                 </td>
                 <td>
-                  <IconButton label={`Remove ${row.key || 'row'}`} onClick={() => updateBody(tabId, { formdata: removeRow(formdata, row.id) })}>
+                  <IconButton label={`Remove ${row.key || 'Row'}`} onClick={() => updateBody(tabId, { formdata: removeRow(formdata, row.id) })}>
                     ×
                   </IconButton>
                 </td>
@@ -198,7 +200,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
           <span className={styles.filePath}>{body.binary.src || 'No file selected'}</span>
           {missingFile !== null && body.binary.src !== '' ? (
             <span role="status" className={styles.missing}>
-              File missing — choose it again
+              File not found — select it again
             </span>
           ) : null}
         </div>

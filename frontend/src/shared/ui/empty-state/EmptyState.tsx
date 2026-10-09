@@ -45,7 +45,7 @@ interface ArtProps {
 function Art({ variant }: ArtProps) {
   const Illustration = ART[variant]
   return (
-    <div className={styles.art} data-art={variant}>
+    <div className={styles.art}>
       <Illustration />
     </div>
   )

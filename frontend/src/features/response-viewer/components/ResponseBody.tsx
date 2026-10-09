@@ -19,11 +19,21 @@ const VIEWS: Array<{ view: BodyView; label: string }> = [
   { view: 'preview', label: 'Preview' },
 ]
 
+type CopyState = 'idle' | 'copied' | 'failed'
+
+const COPY_LABELS: Record<CopyState, string> = { idle: 'Copy', copied: 'Copied', failed: 'Copy Failed' }
+
+const COPY_ANNOUNCEMENTS: Record<CopyState, string> = {
+  idle: '',
+  copied: 'Response body copied to the clipboard',
+  failed: 'Could not copy to the clipboard. Select the body text and copy it manually.',
+}
+
 const RADIO_KEYS: Record<string, string> = { ArrowDown: 'ArrowRight', ArrowUp: 'ArrowLeft' }
 
 export function ResponseBody({ tabId, result }: ResponseBodyProps) {
   const [view, setView] = useState<BodyView>(() => initialBodyView(result.sizeBytes))
-  const [copied, setCopied] = useState(false)
+  const [copy, setCopy] = useState<CopyState>('idle')
   const body = useResponseViewerStore((state) => state.entries[tabId]?.body ?? null)
   const bodyStatus = useResponseViewerStore((state) => state.entries[tabId]?.bodyStatus ?? 'idle')
   const loadBody = useResponseViewerStore((state) => state.loadBody)
@@ -52,10 +62,15 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
     event.currentTarget.querySelectorAll<HTMLElement>('[role="radio"]')[index]?.focus()
   }
 
-  async function copy() {
-    if (body !== null) {
+  async function copyBody() {
+    if (body === null) {
+      return
+    }
+    try {
       await navigator.clipboard.writeText(body)
-      setCopied(true)
+      setCopy('copied')
+    } catch {
+      setCopy('failed')
     }
   }
 
@@ -78,11 +93,11 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
           ))}
         </div>
         <div className={styles.actions}>
-          <Button size="sm" variant="ghost" disabled={body === null} onClick={() => void copy()}>
-            {copied ? 'Copied' : 'Copy'}
+          <Button size="sm" variant="ghost" disabled={body === null} onClick={() => void copyBody()}>
+            {COPY_LABELS[copy]}
           </Button>
           <span role="status" aria-live="polite" className="visually-hidden">
-            {copied ? 'Response body copied to the clipboard' : ''}
+            {COPY_ANNOUNCEMENTS[copy]}
           </span>
           <Button size="sm" variant="ghost" onClick={() => void saveBody(tabId)}>
             Save to File

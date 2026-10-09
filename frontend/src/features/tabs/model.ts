@@ -1,0 +1,15 @@
+export interface TabMeta {
+  id: string
+  requestId: string | null
+  pinned: boolean
+}
+
+export type CloseChoice = 'save' | 'discard' | 'cancel'
+
+export type TabNotice = 'changed' | 'deleted'
+
+export interface SaveDialogState {
+  tabId: string
+  mode: 'save' | 'saveAs'
+  closeAfter: boolean
+}

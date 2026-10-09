@@ -53,6 +53,13 @@ const { useTabsStore, PERSIST_DELAY_MS } = await import('@/features/tabs/store')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { bootstrap, openLastWorkspace } = await import('./bootstrap')
 
+function resetWorkspaceStores() {
+  useTabsStore.getState().reset()
+  useRequestBuilderStore.getState().reset()
+  useResponseViewerStore.getState().reset()
+  useSidebarStore.getState().reset()
+}
+
 const acme = { localId: 'A', name: 'Acme', path: '/w/acme', missing: false }
 
 async function started() {
@@ -63,17 +70,24 @@ async function started() {
 
 describe('bootstrap', () => {
   beforeEach(() => {
+    resetWorkspaceStores()
     vi.resetAllMocks()
     vi.mocked(requests.autoHeaders).mockResolvedValue([])
     vi.mocked(requests.releaseResponse).mockResolvedValue()
     vi.mocked(requests.applyUrl).mockImplementation(async (draft) => draft)
+    vi.mocked(requests.lastResult).mockResolvedValue(null)
     vi.mocked(uiState.saveUIState).mockResolvedValue()
     vi.mocked(tree.getTree).mockResolvedValue([])
-    useTabsStore.getState().reset()
+    vi.mocked(tree.searchTree).mockResolvedValue({ matchIds: [], ancestorIds: [] })
+    vi.mocked(history.listHistory).mockResolvedValue([])
     useWorkspacesStore.setState({ workspaces: [], activeLocalId: null, missingLocalId: null, status: 'idle', error: null })
   })
 
-  afterEach(() => vi.useRealTimers())
+  afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
+    resetWorkspaceStores()
+  })
 
   it('loads the workspaces and reopens the last active one', async () => {
     vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: 'A' })
@@ -157,8 +171,6 @@ describe('bootstrap', () => {
     expect(history.listHistory).toHaveBeenCalledTimes(1)
     viewer.setFailure('t1', new (await import('@/platform/errors')).AppError('x', 'y'))
     expect(history.listHistory).toHaveBeenCalledTimes(2)
-    useSidebarStore.getState().reset()
-    useResponseViewerStore.getState().reset()
     cleanup()
   })
 

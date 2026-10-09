@@ -82,6 +82,6 @@ describe('KeyValueTable', () => {
       />,
     )
     expect(screen.getByRole('checkbox', { name: 'Enable row' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Remove row' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Remove Row' })).toBeInTheDocument()
   })
 })

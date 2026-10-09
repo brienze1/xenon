@@ -135,19 +135,20 @@ function Menu({ label, className, children }: MenuProps) {
   )
 }
 
-interface ItemProps {
-  onSelect: () => void
+interface MenuButtonProps {
+  role: 'menuitem' | 'menuitemradio'
   checked?: boolean
+  onSelect: () => void
   className?: string
   children: ReactNode
 }
 
-function Item({ onSelect, checked, className, children }: ItemProps) {
+function MenuButton({ role, checked, onSelect, className, children }: MenuButtonProps) {
   const dropdown = useDropdown()
   return (
     <button
       type="button"
-      role={checked === undefined ? 'menuitem' : 'menuitemradio'}
+      role={role}
       aria-checked={checked}
       className={cn(styles.item, className)}
       onClick={() => {
@@ -160,4 +161,33 @@ function Item({ onSelect, checked, className, children }: ItemProps) {
   )
 }
 
-export const Dropdown = { Root, Trigger, Menu, Item }
+interface ItemProps {
+  onSelect: () => void
+  className?: string
+  children: ReactNode
+}
+
+function Item({ onSelect, className, children }: ItemProps) {
+  return (
+    <MenuButton role="menuitem" onSelect={onSelect} className={className}>
+      {children}
+    </MenuButton>
+  )
+}
+
+interface RadioItemProps {
+  checked: boolean
+  onSelect: () => void
+  className?: string
+  children: ReactNode
+}
+
+function RadioItem({ checked, onSelect, className, children }: RadioItemProps) {
+  return (
+    <MenuButton role="menuitemradio" checked={checked} onSelect={onSelect} className={className}>
+      {children}
+    </MenuButton>
+  )
+}
+
+export const Dropdown = { Root, Trigger, Menu, Item, RadioItem }

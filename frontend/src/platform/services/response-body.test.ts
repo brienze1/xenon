@@ -2,17 +2,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {} }))
 
-const { fetchResponseBlob, fetchResponseText } = await import('./response-body')
+const { fetchResponseText } = await import('./response-body')
 
 describe('response body route', () => {
   afterEach(() => vi.unstubAllGlobals())
 
-  it('fetches the body as text or blob from the in-app route', async () => {
+  it('fetches the body as text from the in-app route', async () => {
     const fetchMock = vi.fn(async () => new Response('hello', { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)
     await expect(fetchResponseText('/xenon/response/tab')).resolves.toBe('hello')
     expect(fetchMock).toHaveBeenCalledWith('/xenon/response/tab')
-    await expect((await fetchResponseBlob('/xenon/response/tab')).text()).resolves.toBe('hello')
   })
 
   it('fails when the body was released', async () => {
@@ -27,6 +26,5 @@ describe('response body route', () => {
       code: 'UNK-00500',
       description: 'Failed to fetch',
     })
-    await expect(fetchResponseBlob('/xenon/response/tab')).rejects.toMatchObject({ name: 'AppError' })
   })
 })

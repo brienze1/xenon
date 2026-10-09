@@ -1,5 +1,5 @@
 import { act, render, screen, within } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defaultUIState } from '@/platform/mappers/ui-state'
 
 vi.mock('./bootstrap', async (importOriginal) => ({
@@ -41,9 +41,18 @@ const services = await import('@/platform/services/workspaces')
 const requests = await import('@/platform/services/requests')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
 const { useTabsStore } = await import('@/features/tabs/store')
+const { useResponseViewerStore } = await import('@/features/response-viewer/store')
+const { useSidebarStore } = await import('@/features/sidebar/store')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { bootstrap, openLastWorkspace } = await import('./bootstrap')
 const { App } = await import('./App')
+
+function resetWorkspaceStores() {
+  useTabsStore.getState().reset()
+  useRequestBuilderStore.getState().reset()
+  useResponseViewerStore.getState().reset()
+  useSidebarStore.getState().reset()
+}
 
 async function renderApp() {
   render(<App />)
@@ -83,9 +92,11 @@ describe('App', () => {
     vi.mocked(services.listWorkspaces).mockReset()
     vi.mocked(services.activateWorkspace).mockReset()
     vi.mocked(requests.sendRequest).mockReset()
-    useTabsStore.getState().reset()
+    resetWorkspaceStores()
     useWorkspacesStore.setState({ workspaces: [], activeLocalId: null, missingLocalId: null, status: 'idle', error: null })
   })
+
+  afterEach(() => resetWorkspaceStores())
 
   it('shows the welcome screen when there is no workspace', async () => {
     vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [], activeLocalId: null })
@@ -139,5 +150,12 @@ describe('App', () => {
     expect(await screen.findByRole('dialog', { name: 'Save Changes?' })).toBeInTheDocument()
     act(() => void useTabsStore.getState().resolveClose('discard'))
     expect(openTabs()).toHaveLength(1)
+  })
+  it('shows an empty side panel once the last tab is closed', async () => {
+    await renderWorkspace()
+    expect(screen.getByRole('textbox', { name: 'Name' })).toBeInTheDocument()
+    act(() => useTabsStore.getState().requestClose())
+    expect(screen.getByRole('region', { name: 'No request selected' })).toHaveTextContent('Open a request to see its details here.')
+    expect(screen.queryByRole('textbox', { name: 'Name' })).not.toBeInTheDocument()
   })
 })

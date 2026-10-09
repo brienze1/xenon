@@ -9,3 +9,8 @@ export function moveTab<T extends { id: string }>(tabs: T[], fromId: string, toI
   next.splice(to, 0, moved!)
   return next
 }
+
+export function neighbourOf<T extends { id: string }>(tabs: T[], tabId: string): string | null {
+  const index = tabs.findIndex((tab) => tab.id === tabId)
+  return tabs[index + 1]?.id ?? tabs[index - 1]?.id ?? null
+}

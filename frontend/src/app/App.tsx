@@ -8,6 +8,7 @@ import { MissingFolderNotice } from '@/features/workspaces/components/MissingFol
 import { WelcomeScreen } from '@/features/workspaces/components/WelcomeScreen'
 import { WorkspaceSwitcher } from '@/features/workspaces/components/WorkspaceSwitcher'
 import { useWorkspacesStore } from '@/features/workspaces/store'
+import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
 import styles from './App.module.css'
 import { bootstrap } from './bootstrap'
 import { type HotkeyHandlers } from './hotkeys'
@@ -86,7 +87,13 @@ export function App() {
             <TabsArea key={active.localId} />
           </MainArea>
           <RightPanel>
-            <InfoPanel key={active.localId} tabId={activeTabId ?? ''} />
+            {activeTabId ? (
+              <InfoPanel key={active.localId} tabId={activeTabId} />
+            ) : (
+              <EmptyState.Root label="No request selected" size="compact">
+                <EmptyState.Description>Open a request to see its details here.</EmptyState.Description>
+              </EmptyState.Root>
+            )}
           </RightPanel>
         </>
       ) : (
@@ -99,9 +106,13 @@ export function App() {
           <ConsoleContent />
         </ConsoleDrawer>
       ) : null}
-      <Footer>{active ? <span className={styles.path} translate="no">
-              {active.path}
-            </span> : null}</Footer>
+      <Footer>
+        {active ? (
+          <span className={styles.path} translate="no">
+            {active.path}
+          </span>
+        ) : null}
+      </Footer>
     </AppShell>
   )
 }

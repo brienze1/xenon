@@ -13,7 +13,12 @@ import { TopBar } from './regions/TopBar'
 
 type LayoutPatch = Partial<LayoutState>
 
-function Shell({ layout, onLayoutChange }: { layout: LayoutState; onLayoutChange: (patch: LayoutPatch) => void }) {
+interface ShellProps {
+  layout: LayoutState
+  onLayoutChange: (patch: LayoutPatch) => void
+}
+
+function Shell({ layout, onLayoutChange }: ShellProps) {
   return (
     <AppShell layout={layout} onLayoutChange={onLayoutChange}>
       <TopBar>switcher</TopBar>
@@ -50,11 +55,9 @@ describe('AppShell', () => {
 
   it('sizes the regions from the layout', () => {
     renderShell({ sidebarWidth: 320, rightPanelWidth: 300, consoleHeight: 240, consoleVisible: true })
-    const shell = screen.getByTestId('app-shell')
-    expect(shell.style.getPropertyValue('--sidebar-width')).toBe('320px')
-    expect(shell.style.getPropertyValue('--right-panel-width')).toBe('300px')
-    expect(shell.style.getPropertyValue('--console-height')).toBe('240px')
     expect(screen.getByRole('separator', { name: 'Resize sidebar' })).toHaveAttribute('aria-valuenow', '320')
+    expect(screen.getByRole('separator', { name: 'Resize side panel' })).toHaveAttribute('aria-valuenow', '300')
+    expect(screen.getByRole('separator', { name: 'Resize console' })).toHaveAttribute('aria-valuenow', '240')
     expect(screen.getByRole('region', { name: 'Console' })).toHaveTextContent('logs')
   })
 
@@ -72,13 +75,13 @@ describe('AppShell', () => {
     await userEvent.click(sidebar)
     expect(screen.queryByRole('navigation', { name: 'Sidebar' })).not.toBeInTheDocument()
     expect(sidebar).toHaveAttribute('aria-pressed', 'false')
-    await userEvent.click(screen.getByRole('button', { name: 'Side panel' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Side Panel' }))
     expect(screen.queryByRole('complementary', { name: 'Side panel' })).not.toBeInTheDocument()
     const console = screen.getByRole('button', { name: 'Console' })
     expect(console).toHaveAttribute('aria-pressed', 'false')
     await userEvent.click(console)
     expect(screen.getByRole('region', { name: 'Console' })).toBeVisible()
-    const sideBySide = screen.getByRole('button', { name: 'Side by side' })
+    const sideBySide = screen.getByRole('button', { name: 'Side by Side' })
     expect(sideBySide).toHaveAttribute('aria-pressed', 'false')
     await userEvent.click(sideBySide)
     expect(sideBySide).toHaveAttribute('aria-pressed', 'true')
@@ -86,7 +89,7 @@ describe('AppShell', () => {
 
   it('reports the side-by-side switch as a layout change', async () => {
     const onLayoutChange = renderShell({ split: 'side-by-side' })
-    await userEvent.click(screen.getByRole('button', { name: 'Side by side' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Side by Side' }))
     expect(onLayoutChange).toHaveBeenCalledWith({ split: 'stacked' })
     await userEvent.click(screen.getByRole('button', { name: 'Console' }))
     expect(onLayoutChange).toHaveBeenLastCalledWith({ consoleVisible: true })

@@ -218,6 +218,20 @@ describe('SidebarPanel', () => {
     })
   })
 
+  it('shows the settings save in progress', async () => {
+    let finish: () => void = () => undefined
+    vi.mocked(tree.getItemSettings).mockResolvedValue(settings)
+    vi.mocked(tree.saveItemSettings).mockImplementation(() => new Promise((resolve) => (finish = () => resolve(settings))))
+    await renderPanel()
+    await userEvent.pointer({ keys: '[MouseRight]', target: item('Billing') })
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Settings…' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Billing Settings' })
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+    expect(within(dialog).getByRole('button', { name: 'Saving…' })).toBeDisabled()
+    await act(async () => finish())
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  })
+
   it('shows and dismisses errors', async () => {
     vi.mocked(tree.duplicateItem).mockRejectedValue(Object.assign(new Error('x'), { cause: { error: { code: 'TRE-02404', description: 'The item does not exist' } } }))
     await renderPanel()

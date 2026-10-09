@@ -3,7 +3,12 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ContextMenu } from './ContextMenu'
 
-function Example({ onRename, onDelete }: { onRename: () => void; onDelete: () => void }) {
+interface ExampleProps {
+  onRename: () => void
+  onDelete: () => void
+}
+
+function Example({ onRename, onDelete }: ExampleProps) {
   return (
     <div>
       <ContextMenu.Root>

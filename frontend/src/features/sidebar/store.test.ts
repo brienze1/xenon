@@ -34,13 +34,27 @@ function state() {
 
 describe('sidebar store', () => {
   beforeEach(() => {
+    useSidebarStore.getState().reset()
     vi.resetAllMocks()
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
-    useSidebarStore.getState().reset()
     vi.mocked(tree.getTree).mockResolvedValue(sample)
+    vi.mocked(tree.searchTree).mockResolvedValue({ matchIds: [], ancestorIds: [] })
   })
 
-  afterEach(() => vi.useRealTimers())
+  afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
+    useSidebarStore.getState().reset()
+  })
+
+  it('drops a pending search on reset', async () => {
+    vi.useFakeTimers()
+    state().setQuery('pin')
+    state().reset()
+    await vi.advanceTimersByTimeAsync(SEARCH_DELAY_MS)
+    expect(tree.searchTree).not.toHaveBeenCalled()
+    expect(state().query).toBe('')
+  })
 
   it('loads the tree of the active workspace', async () => {
     await state().load()

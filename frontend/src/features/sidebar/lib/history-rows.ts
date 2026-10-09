@@ -1,10 +1,13 @@
 import type { HistoryEntry } from '@/platform/mappers/history'
+import { formatDateTime } from '@/shared/lib/date-format'
 
 export type HistoryRow =
   | { kind: 'day'; key: string; label: string }
   | { kind: 'entry'; key: string; entry: HistoryEntry }
 
 const DAY_MS = 24 * 60 * 60 * 1000
+const DAY_FORMAT: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }
+const TIME_FORMAT: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' }
 
 function startOfDay(date: Date): number {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
@@ -18,11 +21,11 @@ export function dayLabel(sentAt: Date, now: Date): string {
   if (days === 1) {
     return 'Yesterday'
   }
-  return sentAt.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+  return formatDateTime(sentAt, DAY_FORMAT)
 }
 
 export function sentTime(sentAt: string): string {
-  return new Date(sentAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+  return formatDateTime(new Date(sentAt), TIME_FORMAT)
 }
 
 export function historyRows(entries: HistoryEntry[], now: Date): HistoryRow[] {

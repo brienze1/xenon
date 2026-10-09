@@ -17,11 +17,11 @@ import {
   renameWorkspace,
 } from '@/platform/services/workspaces'
 import { clampLayout } from './lib/layout'
+import { replaceSummary, withMissing } from './lib/summaries'
+import type { WorkspacesStatus } from './model'
 
 export const FOLDER_MISSING = 'WKS-06404'
 export const TRASH_FAILED = 'WKS-05500'
-
-export type WorkspacesStatus = 'idle' | 'loading' | 'ready'
 
 interface WorkspacesState {
   workspaces: WorkspaceSummary[]
@@ -41,14 +41,6 @@ interface WorkspacesState {
   chooseFolder: (title: string) => Promise<string | null>
   markMissing: (localId: string) => void
   clearError: () => void
-}
-
-function replaceSummary(workspaces: WorkspaceSummary[], summary: WorkspaceSummary): WorkspaceSummary[] {
-  return workspaces.map((workspace) => (workspace.localId === summary.localId ? summary : workspace))
-}
-
-function withMissing(workspaces: WorkspaceSummary[], localId: string): WorkspaceSummary[] {
-  return workspaces.map((workspace) => (workspace.localId === localId ? { ...workspace, missing: true } : workspace))
 }
 
 function resetWorkspaceStores(): void {

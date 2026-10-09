@@ -45,7 +45,7 @@ export function WorkspaceSwitcher() {
   return (
     <div className={styles.container}>
       <Dropdown.Root className={styles.switcher}>
-        <Dropdown.Trigger label={`Workspace: ${current?.name ?? 'none'}`}>
+        <Dropdown.Trigger label={`Workspace: ${current?.name ?? 'None'}`}>
           <span className={styles.name}>{current?.name ?? 'No workspace'}</span>
           <span className={styles.chevron} aria-hidden="true">
             ▾
@@ -53,14 +53,14 @@ export function WorkspaceSwitcher() {
         </Dropdown.Trigger>
         <Dropdown.Menu label="Workspaces">
           {workspaces.map((workspace) => (
-            <Dropdown.Item
+            <Dropdown.RadioItem
               key={workspace.localId}
               checked={workspace.localId === activeLocalId}
               onSelect={() => void activate(workspace.localId)}
             >
               {workspace.name}
               {workspace.missing ? <span className={styles.missing}> (missing)</span> : null}
-            </Dropdown.Item>
+            </Dropdown.RadioItem>
           ))}
           <div role="separator" className={styles.separator} />
           <Dropdown.Item onSelect={() => show('create')}>New Workspace…</Dropdown.Item>

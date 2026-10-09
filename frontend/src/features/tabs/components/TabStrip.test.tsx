@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { emptyDraft } from '@/platform/mappers/request'
 import { defaultUIState } from '@/platform/mappers/ui-state'
 
@@ -24,10 +24,18 @@ const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
 const { useSidebarStore } = await import('@/features/sidebar/store')
 const { useTabsStore } = await import('@/features/tabs/store')
+const { useResponseViewerStore } = await import('@/features/response-viewer/store')
 const { TabStrip } = await import('./TabStrip')
 const { CloseTabPrompt } = await import('./CloseTabPrompt')
 const { SaveRequestDialog } = await import('./SaveRequestDialog')
 const { TabNotice } = await import('./TabNotice')
+
+function resetWorkspaceStores() {
+  useTabsStore.getState().reset()
+  useRequestBuilderStore.getState().reset()
+  useResponseViewerStore.getState().reset()
+  useSidebarStore.getState().reset()
+}
 
 function strip() {
   return screen.getByRole('tablist', { name: 'Open requests' })
@@ -45,13 +53,14 @@ function renderStrip() {
 
 describe('TabStrip', () => {
   beforeEach(() => {
+    resetWorkspaceStores()
     vi.clearAllMocks()
     vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: { ...emptyDraft(), id, name: `Request ${id}`, method: 'POST' }, revision: 'rev' }))
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
-    useRequestBuilderStore.getState().reset()
-    useTabsStore.getState().reset()
     useTabsStore.getState().hydrate('ws', defaultUIState())
   })
+
+  afterEach(() => resetWorkspaceStores())
 
   it('shows tabs with method, italic preview title and dirty dot, and switches on click', async () => {
     await act(() => useTabsStore.getState().openPinned('A'))
@@ -187,6 +196,24 @@ describe('TabStrip', () => {
     expect(useTabsStore.getState().tabs[0]?.requestId).toBe('N')
   })
 
+  it('shows the save in progress and focuses the chosen place when it is missing', async () => {
+    useSidebarStore.setState({
+      tree: [{ id: 'c1', kind: 'collection', name: 'Billing', method: null, url: null, error: null, warning: null, children: [] }],
+    })
+    let finish: () => void = () => undefined
+    vi.mocked(requests.saveRequestAs).mockImplementation(
+      () => new Promise((resolve) => (finish = () => resolve({ draft: { ...emptyDraft(), id: 'N', name: 'Users' }, revision: 'rev-N' }))),
+    )
+    renderStrip()
+    await act(() => useTabsStore.getState().save())
+    const dialog = screen.getByRole('dialog', { name: 'Save Request' })
+    expect(within(dialog).getByRole('radio', { name: 'Billing' })).toBeChecked()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+    expect(within(dialog).getByRole('button', { name: 'Saving…' })).toBeDisabled()
+    await act(async () => finish())
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
   it('suggests a copy name for save as and can be cancelled', async () => {
     await act(() => useTabsStore.getState().openPinned('A'))
     renderStrip()
@@ -197,6 +224,8 @@ describe('TabStrip', () => {
     expect(within(dialog).getByRole('button', { name: 'Save' })).toBeEnabled()
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
     expect(within(dialog).getByText('Choose where to save the request.')).toBeInTheDocument()
+    expect(within(dialog).getByRole('group', { name: 'Save to' })).toHaveFocus()
+    expect(within(dialog).getByRole('group', { name: 'Save to' })).toHaveAccessibleDescription('Choose where to save the request.')
     expect(requests.saveRequestAs).not.toHaveBeenCalled()
     const name = within(dialog).getByRole('textbox', { name: 'Request name' })
     await userEvent.clear(name)
@@ -211,13 +240,14 @@ describe('TabStrip', () => {
 
 describe('TabNotice', () => {
   beforeEach(() => {
+    resetWorkspaceStores()
     vi.clearAllMocks()
     vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: { ...emptyDraft(), id, name: 'Disk' }, revision: 'rev-disk' }))
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
-    useRequestBuilderStore.getState().reset()
-    useTabsStore.getState().reset()
     useTabsStore.getState().hydrate('ws', defaultUIState())
   })
+
+  afterEach(() => resetWorkspaceStores())
 
   it('offers keep mine or load from disk for a changed file', async () => {
     await act(() => useTabsStore.getState().openPinned('A'))
@@ -256,8 +286,16 @@ describe('TabNotice', () => {
     const other = useTabsStore.getState().activeTabId!
     act(() => useRequestBuilderStore.getState().setUrl(other, 'https://x'))
     act(() => useTabsStore.getState().handleDeleted(['B']))
-    render(<TabNotice tabId={other} />)
+    render(
+      <>
+        <TabNotice tabId={other} />
+        <CloseTabPrompt />
+      </>,
+    )
     await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+    const prompt = screen.getByRole('dialog', { name: 'Save Changes?' })
+    expect(useTabsStore.getState().tabs.some((tab) => tab.id === other)).toBe(true)
+    await userEvent.click(within(prompt).getByRole('button', { name: 'Don’t Save' }))
     expect(useTabsStore.getState().tabs.some((tab) => tab.id === other)).toBe(false)
   })
 })

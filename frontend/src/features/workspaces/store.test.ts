@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
 import { emptyDraft } from '@/platform/mappers/request'
 import { defaultLayout, defaultUIState, type UIState } from '@/platform/mappers/ui-state'
@@ -35,6 +35,7 @@ const services = await import('@/platform/services/workspaces')
 const dialogs = await import('@/platform/services/dialogs')
 const uiState = await import('@/platform/services/ui-state')
 const requests = await import('@/platform/services/requests')
+const tree = await import('@/platform/services/tree')
 const { useWorkspacesStore } = await import('./store')
 const { useTabsStore } = await import('@/features/tabs/store')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
@@ -48,19 +49,31 @@ function snapshot(summary: WorkspaceSummary, state: UIState = defaultUIState()):
   return { summary, tree: [], uiState: state }
 }
 
+function resetWorkspaceStores() {
+  useTabsStore.getState().reset()
+  useRequestBuilderStore.getState().reset()
+  useResponseViewerStore.getState().reset()
+  useSidebarStore.getState().reset()
+}
+
 function store() {
   return useWorkspacesStore.getState()
 }
 
 describe('workspaces store', () => {
   beforeEach(() => {
+    resetWorkspaceStores()
     vi.resetAllMocks()
     vi.mocked(requests.autoHeaders).mockResolvedValue([])
     vi.mocked(requests.releaseResponse).mockResolvedValue()
+    vi.mocked(requests.lastResult).mockResolvedValue(null)
     vi.mocked(uiState.saveUIState).mockResolvedValue()
-    useTabsStore.getState().reset()
+    vi.mocked(tree.getTree).mockResolvedValue([])
+    vi.mocked(tree.searchTree).mockResolvedValue({ matchIds: [], ancestorIds: [] })
     useWorkspacesStore.setState({ workspaces: [], activeLocalId: null, missingLocalId: null, status: 'idle', error: null })
   })
+
+  afterEach(() => resetWorkspaceStores())
 
   it('keeps each workspace layout, clamped, and resets it when leaving', async () => {
     vi.mocked(services.activateWorkspace).mockResolvedValueOnce(

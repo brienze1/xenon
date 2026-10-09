@@ -1,21 +1,12 @@
 import { create } from 'zustand'
 import { toAppError, type AppError } from '@/platform/errors'
 import type { SendResult } from '@/platform/mappers/request'
-import { fetchResponseText } from '@/platform/response-body'
 import { pickSaveFile } from '@/platform/services/dialogs'
 import { lastResult, releaseResponse, saveResponseBody } from '@/platform/services/requests'
+import { fetchResponseText } from '@/platform/services/response-body'
 import { suggestedFileName } from './lib/body-view'
-
-export type BodyStatus = 'idle' | 'loading' | 'ready' | 'error'
-
-export interface ResponseEntry {
-  version: number
-  sending: boolean
-  result: SendResult | null
-  failure: AppError | null
-  body: string | null
-  bodyStatus: BodyStatus
-}
+import { EMPTY_ENTRY, withResult } from './lib/entry'
+import type { ResponseEntry } from './model'
 
 interface ResponseViewerState {
   entries: Record<string, ResponseEntry>
@@ -27,20 +18,6 @@ interface ResponseViewerState {
   saveBody: (tabId: string) => Promise<void>
   release: (tabId: string) => Promise<void>
   reset: () => void
-}
-
-const EMPTY_ENTRY: ResponseEntry = { version: 0, sending: false, result: null, failure: null, body: null, bodyStatus: 'idle' }
-
-function withResult(previous: ResponseEntry | undefined, result: SendResult): ResponseEntry {
-  const inline = result.inlineBody
-  return {
-    version: (previous?.version ?? 0) + 1,
-    sending: false,
-    result,
-    failure: null,
-    body: inline,
-    bodyStatus: inline === null ? 'idle' : 'ready',
-  }
 }
 
 export const useResponseViewerStore = create<ResponseViewerState>()((set, get) => {
@@ -110,7 +87,12 @@ export const useResponseViewerStore = create<ResponseViewerState>()((set, get) =
         delete entries[tabId]
         return { entries }
       })
-      await releaseResponse(tabId)
+      try {
+        await releaseResponse(tabId)
+      } catch {
+        // The tab is already gone, so there is nowhere left to report the failure.
+        return
+      }
     },
 
     reset: () => set({ entries: {} }),

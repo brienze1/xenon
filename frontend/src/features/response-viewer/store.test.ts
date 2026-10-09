@@ -4,11 +4,11 @@ import type { SendResult } from '@/platform/mappers/request'
 
 vi.mock('@/platform/services/requests', () => ({ lastResult: vi.fn(), releaseResponse: vi.fn(), saveResponseBody: vi.fn() }))
 vi.mock('@/platform/services/dialogs', () => ({ pickSaveFile: vi.fn() }))
-vi.mock('@/platform/response-body', () => ({ fetchResponseText: vi.fn() }))
+vi.mock('@/platform/services/response-body', () => ({ fetchResponseText: vi.fn() }))
 
 const requests = await import('@/platform/services/requests')
 const dialogs = await import('@/platform/services/dialogs')
-const responseBody = await import('@/platform/response-body')
+const responseBody = await import('@/platform/services/response-body')
 const { useResponseViewerStore } = await import('./store')
 
 const result: SendResult = {
@@ -102,5 +102,12 @@ describe('response viewer store', () => {
     await useResponseViewerStore.getState().release('tab')
     expect(entry()).toBeUndefined()
     expect(requests.releaseResponse).toHaveBeenCalledWith('tab')
+  })
+
+  it('settles a release even when Go fails to drop the response', async () => {
+    vi.mocked(requests.releaseResponse).mockRejectedValueOnce(new AppError('SND-05500', 'x'))
+    useResponseViewerStore.getState().setResult('tab', result)
+    await expect(useResponseViewerStore.getState().release('tab')).resolves.toBeUndefined()
+    expect(entry()).toBeUndefined()
   })
 })

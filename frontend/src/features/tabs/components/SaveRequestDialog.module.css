@@ -38,8 +38,10 @@
 
 .place {
   display: flex;
+  min-width: 0;
   padding-inline-start: calc(var(--depth, 0) * var(--space-4));
   align-items: center;
+  overflow-wrap: anywhere;
   gap: var(--space-3);
   font-size: var(--font-size-md);
 }

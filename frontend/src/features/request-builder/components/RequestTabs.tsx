@@ -1,5 +1,6 @@
 import { Tabs } from '@/shared/ui/tabs/Tabs'
-import { useRequestBuilderStore, type SubTab } from '@/features/request-builder/store'
+import type { SubTab } from '@/features/request-builder/model'
+import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { AuthPanel } from './AuthPanel'
 import { BodyPanel } from './BodyPanel'
 import { HeadersPanel } from './HeadersPanel'

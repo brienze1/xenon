@@ -78,7 +78,7 @@ export function RenameWorkspaceDialog({ workspace, open, onClose }: RenameWorksp
             Cancel
           </Button>
           <Button type="submit" variant="primary" disabled={submitting}>
-            Rename
+            {submitting ? 'Renaming…' : 'Rename'}
           </Button>
         </Dialog.Actions>
       </form>

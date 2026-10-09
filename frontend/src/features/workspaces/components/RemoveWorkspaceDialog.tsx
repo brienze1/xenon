@@ -51,7 +51,7 @@ export function RemoveWorkspaceDialog({ workspace, open, onClose }: RemoveWorksp
             <Banner.Message>{workspaceErrorMessage(error)}</Banner.Message>
             {error.code === TRASH_FAILED ? (
               <Banner.Actions>
-                <Button variant="secondary" size="sm" onClick={() => void confirm(false)}>
+                <Button variant="secondary" size="sm" disabled={removing} onClick={() => void confirm(false)}>
                   Remove from Xenon
                 </Button>
               </Banner.Actions>
@@ -64,7 +64,7 @@ export function RemoveWorkspaceDialog({ workspace, open, onClose }: RemoveWorksp
           Cancel
         </Button>
         <Button variant="danger" disabled={removing} onClick={() => void confirm(moveToTrash)}>
-          Remove
+          {removing ? 'Removing…' : 'Remove'}
         </Button>
       </Dialog.Actions>
     </Dialog.Root>
