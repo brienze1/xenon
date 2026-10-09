@@ -224,9 +224,8 @@ each value's format.
    the documented Postman format (UUID v4, Unix seconds, ISO-8601 UTC, integer 0–1000, email).
 2. **Given** `{{$guid}}` appears twice in one request, **Then** each occurrence gets its own value
    (Postman behaviour).
-3. **Given** a user-defined variable named `$guid`, **Then** the user's variable wins over the
-   dynamic one only if Postman does the same; otherwise the dynamic variable is used (rule
-   recorded in the plan from Postman's documented behaviour).
+3. **Given** a user-defined variable named `$guid` in any scope, **Then** the user's variable wins
+   over the dynamic one (Postman's resolver checks dynamic variables last).
 4. **Given** `{{$notARealOne}}`, **Then** it is treated as an unresolved variable (red, sent
    literally).
 5. **Given** dynamic variables in the URL or a table, **Then** they are highlighted as resolved
@@ -238,11 +237,12 @@ each value's format.
 ### Edge Cases
 
 - **Nested references**: a variable whose value contains `{{other}}` is resolved recursively, up
-  to 10 levels; a cycle (`a → b → a`) stops resolution and the remaining `{{…}}` text is sent
-  literally and highlighted red.
-- **Variable names**: case-sensitive; any characters except `{`, `}` and line breaks; leading and
-  trailing spaces are trimmed; duplicate names in one table — the last enabled row wins and the
-  editor flags the duplicates.
+  to 19 passes (Postman's limit); a cycle (`a → b → a`) stops there and the remaining `{{…}}`
+  text is sent literally and highlighted red.
+- **Variable names**: case-sensitive and matched exactly, as in Postman — `{{ name }}` looks up
+  " name " (with spaces); any characters except `{`, `}` and line breaks; the editor warns about
+  leading/trailing spaces in a key; duplicate names in one table — the last enabled row wins and
+  the editor flags the duplicates.
 - **Keychain unavailable** (Linux without a Secret Service, access denied, locked keychain): Xenon
   asks for a passphrase once per app start to unlock vaults; the first time, it asks him to
   choose one (entered twice). Without the passphrase, secrets are "locked": shown as locked,
@@ -312,8 +312,8 @@ each value's format.
   GraphQL query and variables, binary file path), auth fields, and collection/folder inherited
   auth and headers. Resolution MUST happen in the backend at send time on a copy; the stored
   request and its History entry keep the unresolved text.
-- **FR-013**: Nested references MUST resolve recursively up to 10 levels; cycles and unresolvable
-  names MUST be sent literally as `{{name}}`.
+- **FR-013**: Nested references MUST resolve recursively up to 19 passes (Postman's limit); cycles
+  and unresolvable names MUST be sent literally as `{{name}}`.
 - **FR-014**: Unresolved variables MUST NOT block sending (Postman behaviour), except missing or
   locked secrets (FR-022).
 - **FR-015**: Each workspace MUST remember its active environment (local, per machine), restored
@@ -322,10 +322,10 @@ each value's format.
 **Dynamic variables**
 
 - **FR-016**: All Postman dynamic variables (`{{$guid}}`, `{{$timestamp}}`, `{{$isoTimestamp}}`,
-  `{{$randomInt}}`, `{{$randomUUID}}` and the full `$random*` list in Postman's documentation)
-  MUST resolve at send time to values of Postman's documented format, with a fresh value per
-  occurrence. The supported list is published in the plan's contract. Unknown `{{$…}}` names are
-  unresolved variables.
+  `{{$randomInt}}`, `{{$randomUUID}}` and the full `$random*` list in Postman's documentation —
+  118 names) MUST resolve at send time to values of Postman's documented format, with a fresh
+  value per occurrence, checked after all user scopes (a user variable of the same name wins).
+  The list is published in contracts/dynamic-variables.md. Unknown `{{$…}}` names are unresolved.
 
 **Secrets**
 

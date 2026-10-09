@@ -33,5 +33,4 @@
 
 ## Notes
 
-- Story 6 #3 (user variable named like a dynamic one) is settled in the plan from Postman's
-  documented behaviour, not left open.
+- Story 6 #3 settled from Postman's resolver source: user variables win over dynamic ones.
