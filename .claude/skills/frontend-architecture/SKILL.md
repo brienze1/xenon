@@ -145,7 +145,7 @@ Enforce with `eslint-plugin-boundaries` (or `import/no-restricted-paths`) in
 
 ```ts
 // platform/services/requests.ts
-import { RequestService } from '../../bindings/github.com/brienze1/xenon/internal/integration/entrypoint/controller'
+import { RequestService } from '../../../bindings/github.com/brienze1/xenon/internal/infra/server/binding'
 import { toSendResult, type SendResult, type SendInput } from '../mappers/request'
 import { toAppError } from '../errors'
 
