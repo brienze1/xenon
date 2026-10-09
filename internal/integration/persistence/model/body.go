@@ -11,12 +11,12 @@ import (
 )
 
 type Body struct {
-	Raw        *BodyRaw      `yaml:"raw"`
-	Binary     *BodyBinary   `yaml:"binary"`
-	GraphQl    *BodyGraphQl  `yaml:"graphql"`
-	Mode       string        `yaml:"mode"`
-	FormData   []FormDataRow `yaml:"formdata"`
-	UrlEncoded []KeyValue    `yaml:"urlencoded"`
+	Raw        *BodyRaw      `yaml:"raw" json:"raw,omitempty"`
+	Binary     *BodyBinary   `yaml:"binary" json:"binary,omitempty"`
+	GraphQl    *BodyGraphQl  `yaml:"graphql" json:"graphql,omitempty"`
+	Mode       string        `yaml:"mode" json:"mode"`
+	FormData   []FormDataRow `yaml:"formdata" json:"formdata"`
+	UrlEncoded []KeyValue    `yaml:"urlencoded" json:"urlencoded"`
 }
 
 func NewBody(body entity.Body) Body {

@@ -92,7 +92,7 @@ Feature: Open, rename, remove and locate workspaces
     Then the call should fail with code "WKS-21400"
 
   @rename @success
-  Scenario: Renaming changes only the name in workspace.yaml and the switcher
+  Scenario: Renaming changes only the name in workspace.yaml and the switcher (reserved keys are filled in)
     Given the workspace file "acme/workspace.yaml" contains
       """
       # company workspace
@@ -120,6 +120,8 @@ Feature: Open, rename, remove and locate workspaces
       name: Acme Corp
       description: ""
       order: []
+      variables: []
+      sync: {}
       custom: keep me
       """
     And the app data file "app.json" should contain the field "workspaces.0.display_name_cache" equal to "Acme Corp"

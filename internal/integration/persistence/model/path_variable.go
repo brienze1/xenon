@@ -8,9 +8,9 @@ import (
 )
 
 type PathVariable struct {
-	Key         string `yaml:"key"`
-	Value       string `yaml:"value"`
-	Description string `yaml:"description"`
+	Key         string `yaml:"key" json:"key"`
+	Value       string `yaml:"value" json:"value"`
+	Description string `yaml:"description" json:"description"`
 }
 
 func NewPathVariable(variable entity.PathVariable) PathVariable {

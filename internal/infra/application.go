@@ -11,6 +11,7 @@ import (
 	"github.com/brienze1/xenon/internal/infra/properties"
 	"github.com/brienze1/xenon/internal/infra/server"
 	"github.com/brienze1/xenon/internal/infra/server/binding"
+	"github.com/brienze1/xenon/internal/infra/server/consumer"
 	_ "github.com/brienze1/xenon/internal/infra/server/event"
 	"github.com/brienze1/xenon/internal/infra/server/route"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
@@ -22,15 +23,18 @@ type Bindings struct {
 	Tree         *binding.TreeService
 	Dialog       *binding.DialogService
 	Request      *binding.RequestService
+	UIState      *binding.UIStateService
 	ResponseBody *route.ResponseBodyRoute
 }
 
 func NewBindings() *Bindings {
+	consumer.RegisterFileChangeConsumer()
 	return &Bindings{
 		Workspace:    binding.NewWorkspaceService(),
 		Tree:         binding.NewTreeService(),
 		Dialog:       binding.NewDialogService(),
 		Request:      binding.NewRequestService(),
+		UIState:      binding.NewUIStateService(),
 		ResponseBody: route.NewResponseBodyRoute(),
 	}
 }
@@ -55,6 +59,7 @@ func Start() {
 			wails.NewService(bindings.Tree),
 			wails.NewService(bindings.Dialog),
 			wails.NewService(bindings.Request),
+			wails.NewService(bindings.UIState),
 			wails.NewServiceWithOptions(bindings.ResponseBody, wails.ServiceOptions{Route: dto.ResponseBodyRoute}),
 		},
 		MarshalError: server.MarshalError,

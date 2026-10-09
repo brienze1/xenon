@@ -1,6 +1,6 @@
 package model
 
 type BodyRaw struct {
-	Language string `yaml:"language"`
-	Content  string `yaml:"content"`
+	Language string `yaml:"language" json:"language"`
+	Content  string `yaml:"content" json:"content"`
 }

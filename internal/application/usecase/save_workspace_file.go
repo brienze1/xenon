@@ -8,4 +8,5 @@ import (
 
 type SaveWorkspaceFile interface {
 	Create(ctx context.Context, root string, workspace entity.Workspace) error
+	Save(ctx context.Context, root string, workspace entity.Workspace) error
 }

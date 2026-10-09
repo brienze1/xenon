@@ -18,6 +18,10 @@ func GetActivateWorkspaceService() adapter.ActivateWorkspaceService {
 				integration.GetRegistryPersistence(),
 				integration.GetRegistryPersistence(),
 				integration.GetWorkspacePersistence(),
+				integration.GetTreePersistence(),
+				integration.GetUIStatePersistence(),
+				integration.GetWorkspaceWatcherWebservice(),
+				integration.GetWorkspaceEventPublisher(),
 			)
 		})
 	}

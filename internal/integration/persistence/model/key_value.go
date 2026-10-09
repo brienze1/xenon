@@ -8,10 +8,10 @@ import (
 )
 
 type KeyValue struct {
-	Enabled     *bool  `yaml:"enabled"`
-	Key         string `yaml:"key"`
-	Value       string `yaml:"value"`
-	Description string `yaml:"description"`
+	Enabled     *bool  `yaml:"enabled" json:"enabled,omitempty"`
+	Key         string `yaml:"key" json:"key"`
+	Value       string `yaml:"value" json:"value"`
+	Description string `yaml:"description" json:"description"`
 }
 
 func NewKeyValue(row entity.KeyValue) KeyValue {

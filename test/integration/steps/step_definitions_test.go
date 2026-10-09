@@ -69,9 +69,9 @@ func TestFeatures(t *testing.T) {
 func InitializeScenario(ctx *godog.ScenarioContext) {
 	suiteOnce.Do(func() {
 		suite = &testUtils{
-			api:    mock.NewApiServer(),
-			time:   mock.NewTime(),
-			events: mock.NewEventEmitter(),
+			api:     mock.NewApiServer(),
+			time:    mock.NewTime(),
+			events:  mock.NewEventEmitter(),
 			dialog:  mock.NewDialog(),
 			trash:   mock.NewTrash(),
 			watcher: mock.NewFileWatcher(),

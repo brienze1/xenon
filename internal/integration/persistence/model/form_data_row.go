@@ -9,12 +9,12 @@ import (
 )
 
 type FormDataRow struct {
-	Enabled     *bool  `yaml:"enabled"`
-	Key         string `yaml:"key"`
-	Type        string `yaml:"type"`
-	Value       string `yaml:"value"`
-	Src         string `yaml:"src"`
-	Description string `yaml:"description"`
+	Enabled     *bool  `yaml:"enabled" json:"enabled,omitempty"`
+	Key         string `yaml:"key" json:"key"`
+	Type        string `yaml:"type" json:"type"`
+	Value       string `yaml:"value" json:"value"`
+	Src         string `yaml:"src" json:"src"`
+	Description string `yaml:"description" json:"description"`
 }
 
 func NewFormDataRow(row entity.FormDataRow) FormDataRow {

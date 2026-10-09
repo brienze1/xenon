@@ -7,4 +7,5 @@ type TreePersistence interface {
 	usecase.FindTreeItem
 	usecase.SaveTreeItem
 	usecase.DeleteTreeItem
+	usecase.InspectFileChange
 }

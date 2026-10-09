@@ -32,10 +32,12 @@ const (
 	latestFormatVersion = 1
 )
 
-type workspacePersistence struct{}
+type workspacePersistence struct {
+	index *WorkspaceIndex
+}
 
-func NewWorkspacePersistence() adapter.WorkspacePersistence {
-	return &workspacePersistence{}
+func NewWorkspacePersistence(index *WorkspaceIndex) adapter.WorkspacePersistence {
+	return &workspacePersistence{index: index}
 }
 
 func (w *workspacePersistence) ValidateNew(ctx context.Context, root string, registry entity.AppRegistry) error {
@@ -58,6 +60,43 @@ func (w *workspacePersistence) ValidateNew(ctx context.Context, root string, reg
 	}
 
 	logger.Debug(ctx, "Finished", map[string]any{"root": root})
+	return nil
+}
+
+func (w *workspacePersistence) ValidateExisting(ctx context.Context, root, localId string, registry entity.AppRegistry) error {
+	logger.Debug(ctx, "Started", map[string]any{"root": root, "localId": localId})
+
+	if registry.OverlapsOther(root, localId) {
+		return errs.ClientError("the folder is, contains or is inside another registered workspace", "WKS-02409", http.StatusConflict)
+	}
+	if !isDirectory(root) {
+		return errs.NotFoundError("the folder does not exist", "WKS-03404")
+	}
+
+	logger.Debug(ctx, "Finished", map[string]any{"root": root, "localId": localId})
+	return nil
+}
+
+func (w *workspacePersistence) Save(ctx context.Context, root string, workspace entity.Workspace) error {
+	logger.Debug(ctx, "Started", workspace, map[string]any{"root": root})
+
+	document, _, err := readWorkspace(root)
+	if err != nil {
+		return err
+	}
+	stored := model.NewWorkspace(workspace)
+	yamlnode.Patch(yamlnode.Root(document), stored.Fields())
+	data, err := yamlnode.Encode(document)
+	if err != nil {
+		return errs.InternalServerError(err, "WKS-25500", "workspace.yaml could not be encoded")
+	}
+	path := filepath.Join(root, workspaceFile)
+	if err := fileutils.WriteFileAtomic(path, data, workspaceFileMode); err != nil {
+		return errs.FileError(err, "WKS-26500")
+	}
+	w.index.recordWrite(path, data)
+
+	logger.Debug(ctx, "Finished", workspace, map[string]any{"root": root})
 	return nil
 }
 

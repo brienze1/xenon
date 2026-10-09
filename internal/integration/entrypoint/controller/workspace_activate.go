@@ -43,12 +43,12 @@ func (w *workspaceActivate) Handle(bindingCtx context.Context, request dto.Activ
 		return nil, err
 	}
 
-	workspace, err := w.activateWorkspaceService.Activate(ctx, request.LocalId)
+	snapshot, err := w.activateWorkspaceService.Activate(ctx, request.LocalId)
 	if err != nil {
 		return nil, err
 	}
 
-	result := dto.NewWorkspaceSnapshot(*workspace)
+	result := dto.NewWorkspaceSnapshot(*snapshot)
 
 	logger.Info(ctx, "Finished", result)
 	return &result, nil

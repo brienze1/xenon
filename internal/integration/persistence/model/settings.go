@@ -6,10 +6,10 @@ import (
 )
 
 type Settings struct {
-	TimeoutMs       *int  `yaml:"timeoutMs"`
-	FollowRedirects *bool `yaml:"followRedirects"`
-	VerifySsl       *bool `yaml:"verifySsl"`
-	EncodeUrl       *bool `yaml:"encodeUrl"`
+	TimeoutMs       *int  `yaml:"timeoutMs" json:"timeout_ms,omitempty"`
+	FollowRedirects *bool `yaml:"followRedirects" json:"follow_redirects,omitempty"`
+	VerifySsl       *bool `yaml:"verifySsl" json:"verify_ssl,omitempty"`
+	EncodeUrl       *bool `yaml:"encodeUrl" json:"encode_url,omitempty"`
 }
 
 func NewSettings(settings entity.RequestSettings) Settings {

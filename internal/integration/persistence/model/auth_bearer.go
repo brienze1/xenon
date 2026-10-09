@@ -1,5 +1,5 @@
 package model
 
 type AuthBearer struct {
-	Token string `yaml:"token"`
+	Token string `yaml:"token" json:"token"`
 }

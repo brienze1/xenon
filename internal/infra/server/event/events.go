@@ -6,14 +6,8 @@ import (
 	"github.com/brienze1/xenon/internal/integration/publisher/dto"
 )
 
-const (
-	WorkspaceTreeChanged   = "workspace:tree-changed"
-	RequestChangedOnDisk   = "request:changed-on-disk"
-	WorkspaceFolderMissing = "workspace:folder-missing"
-)
-
 func init() {
-	wails.RegisterEvent[dto.WorkspaceTreeChanged](WorkspaceTreeChanged)
-	wails.RegisterEvent[dto.RequestChangedOnDisk](RequestChangedOnDisk)
-	wails.RegisterEvent[dto.WorkspaceFolderMissing](WorkspaceFolderMissing)
+	wails.RegisterEvent[dto.WorkspaceTreeChanged](dto.WorkspaceTreeChangedEvent)
+	wails.RegisterEvent[dto.RequestChangedOnDisk](dto.RequestChangedOnDiskEvent)
+	wails.RegisterEvent[dto.WorkspaceFolderMissing](dto.WorkspaceFolderMissingEvent)
 }

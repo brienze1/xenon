@@ -16,3 +16,8 @@ func NewWorkspace(id, name string) Workspace {
 func (w Workspace) HasValidName() bool {
 	return isValidItemName(w.Name)
 }
+
+func (w Workspace) Renamed(name string) Workspace {
+	w.Name = strings.TrimSpace(name)
+	return w
+}

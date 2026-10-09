@@ -10,20 +10,20 @@ import (
 )
 
 type Request struct {
-	Auth          Auth           `yaml:"auth"`
-	Body          Body           `yaml:"body"`
-	Settings      Settings       `yaml:"settings"`
-	Kind          string         `yaml:"kind"`
-	Id            string         `yaml:"id"`
-	Name          string         `yaml:"name"`
-	Description   string         `yaml:"description"`
-	Method        string         `yaml:"method"`
-	Url           string         `yaml:"url"`
-	Params        []KeyValue     `yaml:"params"`
-	PathVariables []PathVariable `yaml:"pathVariables"`
-	Headers       []KeyValue     `yaml:"headers"`
-	AutoHeaders   AutoHeaders    `yaml:"autoHeaders"`
-	Xenon         int            `yaml:"xenon"`
+	Auth          Auth           `yaml:"auth" json:"auth"`
+	Body          Body           `yaml:"body" json:"body"`
+	Settings      Settings       `yaml:"settings" json:"settings"`
+	Kind          string         `yaml:"kind" json:"kind"`
+	Id            string         `yaml:"id" json:"id"`
+	Name          string         `yaml:"name" json:"name"`
+	Description   string         `yaml:"description" json:"description"`
+	Method        string         `yaml:"method" json:"method"`
+	Url           string         `yaml:"url" json:"url"`
+	Params        []KeyValue     `yaml:"params" json:"params"`
+	PathVariables []PathVariable `yaml:"pathVariables" json:"path_variables"`
+	Headers       []KeyValue     `yaml:"headers" json:"headers"`
+	AutoHeaders   AutoHeaders    `yaml:"autoHeaders" json:"auto_headers"`
+	Xenon         int            `yaml:"xenon" json:"xenon"`
 }
 
 func NewRequest(request entity.Request) Request {

@@ -6,6 +6,12 @@ import (
 	"time"
 )
 
+const (
+	temporaryFileSuffix = ".xenon-tmp"
+	workspaceFileName   = "workspace.yaml"
+	collectionsFolder   = "collections"
+)
+
 type RegisteredWorkspace struct {
 	AddedAt          time.Time
 	LocalID          string
@@ -28,4 +34,16 @@ func isSameOrInside(child, parent string) bool {
 		return false
 	}
 	return relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator))
+}
+
+func (r RegisteredWorkspace) Watches(path string) bool {
+	if filepath.Clean(path) == r.Path {
+		return true
+	}
+	if strings.HasSuffix(path, temporaryFileSuffix) || !isSameOrInside(path, r.Path) {
+		return false
+	}
+	relative, _ := filepath.Rel(r.Path, path)
+	segments := strings.Split(filepath.ToSlash(relative), "/")
+	return relative == workspaceFileName || segments[0] == collectionsFolder
 }

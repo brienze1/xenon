@@ -7,9 +7,9 @@ import (
 )
 
 type Auth struct {
-	Bearer *AuthBearer `yaml:"bearer"`
-	Basic  *AuthBasic  `yaml:"basic"`
-	Type   string      `yaml:"type"`
+	Bearer *AuthBearer `yaml:"bearer" json:"bearer,omitempty"`
+	Basic  *AuthBasic  `yaml:"basic" json:"basic,omitempty"`
+	Type   string      `yaml:"type" json:"type"`
 }
 
 func NewAuth(auth entity.Auth) Auth {

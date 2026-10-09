@@ -1,5 +1,7 @@
 package entity
 
+import "path/filepath"
+
 const registryVersion = 1
 
 type AppRegistry struct {
@@ -44,4 +46,57 @@ func (a *AppRegistry) Activate(localId, displayName string) (*RegisteredWorkspac
 	workspace.Missing = false
 	a.ActiveLocalID = localId
 	return workspace, true
+}
+
+func (a *AppRegistry) OverlapsOther(path, localId string) bool {
+	for _, workspace := range a.Workspaces {
+		if workspace.LocalID != localId && workspace.Overlaps(path) {
+			return true
+		}
+	}
+	return false
+}
+
+func (a *AppRegistry) Rename(localId, displayName string) (*RegisteredWorkspace, bool) {
+	workspace, found := a.Find(localId)
+	if !found {
+		return nil, false
+	}
+	workspace.DisplayNameCache = displayName
+	return workspace, true
+}
+
+func (a *AppRegistry) Relocate(localId, path, displayName string) (*RegisteredWorkspace, bool) {
+	workspace, found := a.Find(localId)
+	if !found {
+		return nil, false
+	}
+	workspace.Path = filepath.Clean(path)
+	workspace.DisplayNameCache = displayName
+	workspace.Missing = false
+	return workspace, true
+}
+
+func (a *AppRegistry) Remove(localId string) bool {
+	for index, workspace := range a.Workspaces {
+		if workspace.LocalID != localId {
+			continue
+		}
+		a.Workspaces = append(a.Workspaces[:index], a.Workspaces[index+1:]...)
+		if a.ActiveLocalID == localId {
+			a.ActiveLocalID = a.neighbourOf(index)
+		}
+		return true
+	}
+	return false
+}
+
+func (a *AppRegistry) neighbourOf(index int) string {
+	if index < len(a.Workspaces) {
+		return a.Workspaces[index].LocalID
+	}
+	if index > 0 {
+		return a.Workspaces[index-1].LocalID
+	}
+	return ""
 }
