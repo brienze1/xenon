@@ -1,9 +1,10 @@
 import { useEffect, useMemo } from 'react'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
+import { InfoPanel } from '@/features/side-panel/components/InfoPanel'
+import { SidebarPanel } from '@/features/sidebar/components/SidebarPanel'
 import { WelcomeScreen } from '@/features/workspaces/components/WelcomeScreen'
 import { WorkspaceSwitcher } from '@/features/workspaces/components/WorkspaceSwitcher'
 import { useWorkspacesStore } from '@/features/workspaces/store'
-import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
 import styles from './App.module.css'
 import { bootstrap } from './bootstrap'
 import { useAppHotkeys } from './hotkeys'
@@ -24,7 +25,14 @@ export function App() {
 
   const activeTabId = useRequestBuilderStore((state) => state.activeTabId)
   const send = useRequestBuilderStore((state) => state.send)
-  const hotkeys = useMemo(() => (active ? { send: () => void send(activeTabId) } : {}), [active, send, activeTabId])
+  const save = useRequestBuilderStore((state) => state.save)
+  const openSaved = useRequestBuilderStore((state) => state.openSaved)
+  const detachRequests = useRequestBuilderStore((state) => state.detachRequests)
+  const adoptRename = useRequestBuilderStore((state) => state.adoptRename)
+  const hotkeys = useMemo(
+    () => (active ? { send: () => void send(activeTabId), save: () => void save(activeTabId) } : {}),
+    [active, send, save, activeTabId],
+  )
 
   useEffect(() => bootstrap(), [])
   useAppHotkeys(hotkeys)
@@ -35,15 +43,18 @@ export function App() {
       {active ? (
         <>
           <Sidebar>
-            <EmptyState.Root label="No collections">
-              <EmptyState.Description>No collections yet.</EmptyState.Description>
-            </EmptyState.Root>
+            <SidebarPanel
+              key={active.localId}
+              onOpenRequest={(id) => void openSaved(activeTabId, id)}
+              onRequestsDeleted={detachRequests}
+              onRenamed={(id) => void adoptRename(id)}
+            />
           </Sidebar>
           <MainArea>
             <RequestWorkspace key={active.localId} tabId={activeTabId} />
           </MainArea>
           <RightPanel>
-            <h2 className={styles.infoTitle}>Info</h2>
+            <InfoPanel key={active.localId} tabId={activeTabId} />
           </RightPanel>
         </>
       ) : (

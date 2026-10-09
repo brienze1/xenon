@@ -16,6 +16,9 @@ export function RequestBar({ tabId }: RequestBarProps) {
   const method = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.method ?? 'GET')
   const url = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.url ?? '')
   const sending = useRequestBuilderStore((state) => state.tabs[tabId]?.pending != null)
+  const saved = useRequestBuilderStore((state) => (state.tabs[tabId]?.draft.id ?? '') !== '')
+  const saving = useRequestBuilderStore((state) => state.tabs[tabId]?.saving === true)
+  const save = useRequestBuilderStore((state) => state.save)
   const setMethod = useRequestBuilderStore((state) => state.setMethod)
   const setUrl = useRequestBuilderStore((state) => state.setUrl)
   const send = useRequestBuilderStore((state) => state.send)
@@ -78,7 +81,12 @@ export function RequestBar({ tabId }: RequestBarProps) {
           Send
         </Button>
       )}
-      <Button variant="secondary" disabled title="Saving into collections arrives with the collections sidebar">
+      <Button
+        variant="secondary"
+        disabled={!saved || saving}
+        title={saved ? 'Save' : 'Open a request from the sidebar to save it'}
+        onClick={() => void save(tabId)}
+      >
         Save
       </Button>
     </div>

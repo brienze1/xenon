@@ -12,12 +12,15 @@ vi.mock('@/platform/services/requests', () => ({
   formatBulk: vi.fn(),
   autoHeaders: vi.fn(),
   sendRequest: vi.fn(),
+  getRequest: vi.fn(),
+  saveRequest: vi.fn(),
   lastResult: vi.fn(),
   releaseResponse: vi.fn(),
   saveResponseBody: vi.fn(),
 }))
 vi.mock('@/platform/services/dialogs', () => ({ pickFolder: vi.fn(), pickFile: vi.fn(), pickSaveFile: vi.fn() }))
 vi.mock('@/platform/services/workspaces', () => ({ listWorkspaces: vi.fn(), createWorkspace: vi.fn(), activateWorkspace: vi.fn() }))
+vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn() }))
 
 const requests = await import('@/platform/services/requests')
 const dialogs = await import('@/platform/services/dialogs')
@@ -239,3 +242,44 @@ function emptyResult(tabId: string) {
     error: null,
   }
 }
+
+describe('RequestBuilder saving', () => {
+  const saved: RequestDraft = { ...emptyDraft(), id: 'r1', name: 'Ping', url: 'https://x/ping' }
+
+  beforeEach(() => {
+    vi.resetAllMocks()
+    vi.mocked(requests.autoHeaders).mockResolvedValue([])
+    useWorkspacesStore.setState({ activeLocalId: 'ws' })
+    useRequestBuilderStore.getState().reset()
+  })
+
+  it('only saves requests opened from the sidebar', async () => {
+    const tabId = useRequestBuilderStore.getState().activeTabId
+    render(<RequestBuilder tabId={tabId} />)
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
+    vi.mocked(requests.getRequest).mockResolvedValue({ draft: saved, revision: 'rev-1' })
+    vi.mocked(requests.saveRequest).mockResolvedValue({ draft: saved, revision: 'rev-2' })
+    await act(() => useRequestBuilderStore.getState().openSaved(tabId, 'r1'))
+    expect(screen.getByRole('textbox', { name: 'Request URL' })).toHaveValue('https://x/ping')
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(requests.saveRequest).toHaveBeenCalledWith('ws', saved, 'rev-1', false)
+  })
+
+  it('asks whether to keep my version when the file changed on disk', async () => {
+    const tabId = useRequestBuilderStore.getState().activeTabId
+    vi.mocked(requests.getRequest).mockResolvedValue({ draft: saved, revision: 'rev-1' })
+    vi.mocked(requests.saveRequest).mockRejectedValueOnce(new AppError('REQ-02409', 'changed'))
+    render(<RequestBuilder tabId={tabId} />)
+    await act(() => useRequestBuilderStore.getState().openSaved(tabId, 'r1'))
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(screen.getByRole('status')).toHaveTextContent('changed on disk')
+    vi.mocked(requests.saveRequest).mockResolvedValue({ draft: saved, revision: 'rev-2' })
+    await userEvent.click(screen.getByRole('button', { name: 'Keep mine' }))
+    expect(requests.saveRequest).toHaveBeenLastCalledWith('ws', saved, 'rev-1', true)
+    expect(screen.queryByText(/changed on disk/)).not.toBeInTheDocument()
+    vi.mocked(requests.saveRequest).mockRejectedValueOnce(new AppError('REQ-02409', 'changed'))
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Load from disk' }))
+    expect(requests.getRequest).toHaveBeenLastCalledWith('ws', 'r1')
+  })
+})

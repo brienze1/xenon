@@ -17,8 +17,11 @@ vi.mock('@/platform/services/workspaces', () => ({
 vi.mock('@/platform/services/dialogs', () => ({ pickFolder: vi.fn() }))
 
 vi.mock('@/platform/services/requests', () => ({ lastResult: vi.fn(), releaseResponse: vi.fn(), saveResponseBody: vi.fn() }))
+vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn() }))
 
 const services = await import('@/platform/services/workspaces')
+const tree = await import('@/platform/services/tree')
+const { useSidebarStore } = await import('@/features/sidebar/store')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
@@ -59,6 +62,18 @@ describe('bootstrap', () => {
     expect(unsubscribe).toHaveBeenCalledOnce()
   })
 
+  it('loads the sidebar tree of the workspace that becomes active', async () => {
+    vi.mocked(tree.getTree).mockResolvedValue([])
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
+    const cleanup = bootstrap()
+    await vi.waitFor(() => expect(useWorkspacesStore.getState().status).toBe('ready'))
+    useWorkspacesStore.setState({ activeLocalId: 'A' })
+    expect(tree.getTree).toHaveBeenCalledWith('A')
+    useWorkspacesStore.setState({ activeLocalId: null })
+    expect(tree.getTree).toHaveBeenCalledTimes(1)
+    cleanup()
+  })
+
   it('starts fresh request and response state when the workspace changes', async () => {
     vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
     const cleanup = bootstrap()
@@ -67,9 +82,11 @@ describe('bootstrap', () => {
     useWorkspacesStore.setState({ activeLocalId: 'A' })
     expect(useRequestBuilderStore.getState().activeTabId).toBe(firstTab)
     useResponseViewerStore.getState().startSending(firstTab)
+    useSidebarStore.setState({ query: 'acme only' })
     useWorkspacesStore.setState({ activeLocalId: 'B' })
     expect(useRequestBuilderStore.getState().activeTabId).not.toBe(firstTab)
     expect(useResponseViewerStore.getState().entries).toEqual({})
+    expect(useSidebarStore.getState().query).toBe('')
     cleanup()
   })
 })

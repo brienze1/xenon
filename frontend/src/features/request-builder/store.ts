@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
+import { useSidebarStore } from '@/features/sidebar/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import { toAppError, type AppError } from '@/platform/errors'
 import {
@@ -18,7 +19,9 @@ import {
   applyUrl,
   autoHeaders,
   formatBulk,
+  getRequest,
   parseBulk,
+  saveRequest,
   sendRequest,
   type PendingSend,
 } from '@/platform/services/requests'
@@ -26,6 +29,7 @@ import { pickFile } from '@/platform/services/dialogs'
 import { keepRowIds } from './lib/rows'
 
 export const SYNC_DELAY_MS = 150
+export const SAVE_CONFLICT = 'REQ-02409'
 
 export type SubTab = 'params' | 'auth' | 'headers' | 'body' | 'scripts' | 'settings'
 export type BulkTable = 'params' | 'headers' | 'urlencoded'
@@ -37,12 +41,21 @@ export interface TabDraft {
   bulk: Partial<Record<BulkTable, string>>
   pending: PendingSend | null
   error: AppError | null
+  baseRevision: string | null
+  conflict: boolean
+  saving: boolean
 }
 
 interface RequestBuilderState {
   activeTabId: string
   tabs: Record<string, TabDraft>
   openTab: (tabId?: string) => string
+  openSaved: (tabId: string, requestId: string) => Promise<void>
+  save: (tabId: string, force?: boolean) => Promise<void>
+  detachRequests: (requestIds: string[]) => void
+  adoptRename: (requestId: string) => Promise<void>
+  setName: (tabId: string, name: string) => void
+  setDescription: (tabId: string, description: string) => void
   setMethod: (tabId: string, method: string) => void
   setUrl: (tabId: string, url: string) => void
   updateParams: (tabId: string, params: KeyValueRow[]) => void
@@ -80,7 +93,31 @@ function newTabId(): string {
 }
 
 function newTab(): TabDraft {
-  return { draft: emptyDraft(), autoHeaders: [], subTab: 'params', bulk: {}, pending: null, error: null }
+  return {
+    draft: emptyDraft(),
+    autoHeaders: [],
+    subTab: 'params',
+    bulk: {},
+    pending: null,
+    error: null,
+    baseRevision: null,
+    conflict: false,
+    saving: false,
+  }
+}
+
+function withSavedRows(current: RequestDraft, saved: RequestDraft): RequestDraft {
+  return {
+    ...saved,
+    params: keepRowIds(current.params, saved.params),
+    pathVariables: keepRowIds(current.pathVariables, saved.pathVariables),
+    headers: keepRowIds(current.headers, saved.headers),
+    body: {
+      ...saved.body,
+      formdata: keepRowIds(current.body.formdata, saved.body.formdata),
+      urlencoded: keepRowIds(current.body.urlencoded, saved.body.urlencoded),
+    },
+  }
 }
 
 function rowsOf(draft: RequestDraft, table: BulkTable): KeyValueRow[] {
@@ -165,6 +202,78 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
       set((state) => ({ activeTabId: tabId, tabs: { ...state.tabs, [tabId]: state.tabs[tabId] ?? newTab() } }))
       return tabId
     },
+
+    openSaved: async (tabId, requestId) => {
+      const localId = useWorkspacesStore.getState().activeLocalId
+      if (!localId) {
+        return
+      }
+      try {
+        const saved = await getRequest(localId, requestId)
+        patchTab(tabId, { ...newTab(), draft: saved.draft, baseRevision: saved.revision })
+        void get().refreshAutoHeaders(tabId)
+      } catch (error) {
+        fail(tabId, error)
+      }
+    },
+
+    save: async (tabId, force = false) => {
+      const localId = useWorkspacesStore.getState().activeLocalId
+      const current = tab(tabId)
+      if (!localId || current.draft.id === '' || current.baseRevision === null || current.saving) {
+        return
+      }
+      patchTab(tabId, { saving: true })
+      try {
+        const saved = await saveRequest(localId, current.draft, current.baseRevision, force)
+        patchTab(tabId, {
+          draft: withSavedRows(tab(tabId).draft, saved.draft),
+          baseRevision: saved.revision,
+          conflict: false,
+          error: null,
+        })
+        void useSidebarStore.getState().load()
+      } catch (error) {
+        const appError = toAppError(error)
+        patchTab(tabId, appError.code === SAVE_CONFLICT ? { conflict: true } : { error: appError })
+      } finally {
+        patchTab(tabId, { saving: false })
+      }
+    },
+
+    detachRequests: (requestIds) => {
+      const deleted = new Set(requestIds)
+      set((state) => ({
+        tabs: Object.fromEntries(
+          Object.entries(state.tabs).map(([tabId, current]) => [
+            tabId,
+            deleted.has(current.draft.id) ? { ...current, draft: { ...current.draft, id: '' }, baseRevision: null, conflict: false } : current,
+          ]),
+        ),
+      }))
+    },
+
+    adoptRename: async (requestId) => {
+      const localId = useWorkspacesStore.getState().activeLocalId
+      const tabIds = Object.keys(get().tabs).filter((tabId) => tab(tabId).draft.id === requestId)
+      if (!localId || tabIds.length === 0) {
+        return
+      }
+      try {
+        const saved = await getRequest(localId, requestId)
+        for (const tabId of tabIds) {
+          patchTab(tabId, { draft: { ...tab(tabId).draft, name: saved.draft.name }, baseRevision: saved.revision })
+        }
+      } catch (error) {
+        for (const tabId of tabIds) {
+          fail(tabId, error)
+        }
+      }
+    },
+
+    setName: (tabId, name) => patchDraft(tabId, (draft) => ({ ...draft, name })),
+
+    setDescription: (tabId, description) => patchDraft(tabId, (draft) => ({ ...draft, description })),
 
     setMethod: (tabId, method) => patchDraft(tabId, (draft) => ({ ...draft, method: method.trim().toUpperCase() })),
 

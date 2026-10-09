@@ -1,8 +1,10 @@
 .sidebar {
   grid-area: sidebar;
   width: 280px;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   background: var(--color-surface);
   box-shadow: var(--shadow-panel);
 }
