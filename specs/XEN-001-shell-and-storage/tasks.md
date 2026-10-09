@@ -179,16 +179,16 @@ headers, errors, cancel — no saving involved.
 
 ### Tests (write first, prove red)
 
-- [ ] T081 [P] [US3] BDD `test/integration/features/ui_state/ui_state_roundtrip.feature` (@ui_state): `UIStateService.Save/Get` round trip of tabs (order, active, preview id, pinned, drafts incl. unsaved new tab, base revision), defaults when absent, written under `workspaces/<localId>/state.json`, never inside the workspace folder
-- [ ] T082 [P] [US3] Vitest `frontend/src/features/tabs/store.test.ts`: preview replace on single click, pin on edit/double-click, focus existing tab, dirty dot, close prompt outcomes (save/don't save/cancel), save-into-collection flow, delete-closes-tab with "keep as new tab" offer, reorder
-- [ ] T083 [US3] Run T081–T082 → **red**
+- [x] T081 [P] [US3] BDD `test/integration/features/ui_state/ui_state_roundtrip.feature` (@ui_state): `UIStateService.Save/Get` round trip of tabs (order, active, preview id, pinned, drafts incl. unsaved new tab, base revision), defaults when absent, written under `workspaces/<localId>/state.json`, never inside the workspace folder
+- [x] T082 [P] [US3] Vitest `frontend/src/features/tabs/store.test.ts`: preview replace on single click, pin on edit/double-click, focus existing tab, dirty dot, close prompt outcomes (save/don't save/cancel), save-into-collection flow, delete-closes-tab with "keep as new tab" offer, reorder
+- [x] T083 [US3] Run T081–T082 → **red**
 
 ### Implementation
 
-- [ ] T084 [P] [US3] Backend: entities `ui_state.go`, `tab.go`, `layout.go`; persistence `ui_state.go` + model; use cases `find_ui_state.go`, `save_ui_state.go`; service `ui_state.go`; controllers/DTOs `ui_state_*.go`; binding `internal/infra/server/binding/ui_state.go`; run T081 → **green**
-- [ ] T085 [US3] `platform/services/ui-state.ts` + `features/tabs/store.ts` (tab model, drafts, persisted via UIState debounced 300 ms and on `beforeunload`/shutdown event) — make T082 green
-- [ ] T086 [US3] Tab strip `features/tabs/components/TabStrip.tsx` (dnd-kit sortable, italic preview titles, dirty dot, method badge, + button, active underline glow) and `SaveRequestDialog.tsx` (name + collection/folder picker) and `CloseTabPrompt.tsx`
-- [ ] T087 [US3] Wire hotkeys Cmd/Ctrl+S, Cmd/Ctrl+Shift+S, Cmd/Ctrl+T, Cmd/Ctrl+W, Cmd/Ctrl+Enter in `app/hotkeys.ts`; RTL test for tab strip interactions
+- [x] T084 [P] [US3] Backend: entities `ui_state.go`, `tab.go`, `layout.go`; persistence `ui_state.go` + model; use cases `find_ui_state.go`, `save_ui_state.go`; service `ui_state.go`; controllers/DTOs `ui_state_*.go`; binding `internal/infra/server/binding/ui_state.go`; run T081 → **green**
+- [x] T085 [US3] `platform/services/ui-state.ts` + `features/tabs/store.ts` (tab model, drafts, persisted via UIState debounced 300 ms and on `beforeunload`/shutdown event) — make T082 green
+- [x] T086 [US3] Tab strip `features/tabs/components/TabStrip.tsx` (dnd-kit sortable, italic preview titles, dirty dot, method badge, + button, active underline glow) and `SaveRequestDialog.tsx` (name + collection/folder picker) and `CloseTabPrompt.tsx`
+- [x] T087 [US3] Wire hotkeys Cmd/Ctrl+S, Cmd/Ctrl+Shift+S, Cmd/Ctrl+T, Cmd/Ctrl+W, Cmd/Ctrl+Enter in `app/hotkeys.ts`; RTL test for tab strip interactions
 
 **Checkpoint**: tabs behave like Postman and survive restarts.
 
@@ -201,20 +201,20 @@ headers, errors, cancel — no saving involved.
 
 ### Tests (write first, prove red)
 
-- [ ] T088 [P] [US4] BDD `test/integration/features/workspaces/manage_workspaces.feature`: Open existing folder; overlap refusal `WKS-02409` (same, parent, child); missing `workspace.yaml` `WKS-03404`; Rename (workspace.yaml only, folder not moved); Remove keep files; Remove + trash (trash mock receives the folder); trash failure → `WKS-05500` and workspace still registered; active falls back to next / none; Locate a moved folder
-- [ ] T089 [P] [US4] BDD `test/integration/features/workspaces/isolation.feature`: tree, search, ui state, history (after US5) and file events are scoped per `local_id`, holding across 100 alternating switches between two workspaces (SC-006); Activate on a deleted folder → `WKS-06404` and `workspace:folder-missing` event
-- [ ] T090 [US4] Run T088–T089 → **red**
+- [x] T088 [P] [US4] BDD `test/integration/features/workspaces/manage_workspaces.feature`: Open existing folder; overlap refusal `WKS-02409` (same, parent, child); missing `workspace.yaml` `WKS-03404`; Rename (workspace.yaml only, folder not moved); Remove keep files; Remove + trash (trash mock receives the folder); trash failure → `WKS-05500` and workspace still registered; active falls back to next / none; Locate a moved folder
+- [x] T089 [P] [US4] BDD `test/integration/features/workspaces/isolation.feature`: tree, search, ui state, history (after US5) and file events are scoped per `local_id`, holding across 100 alternating switches between two workspaces (SC-006); Activate on a deleted folder → `WKS-06404` and `workspace:folder-missing` event
+- [x] T090 [US4] Run T088–T089 → **red**
 
 ### Implementation
 
-- [ ] T091 [US4] Trash boundary: `internal/infra/adapter/trash.go` (interface + Get/Set), `trash_darwin.go` (cgo `NSFileManager trashItemAtURL`), `trash_other.go` (wastebasket v2); integration adapter `trash_webservice.go` + use case `move_to_trash.go`
-- [ ] T092 [US4] Services `open_workspace.go`, `rename_workspace.go`, `remove_workspace.go`, `locate_workspace.go` (+ overlap validation on registry), controllers/DTOs and binding methods `Open`, `Rename`, `Remove`, `Locate`; run T088–T089 → **green**
-- [ ] T093 [US4] Frontend `features/workspaces/` — `store.ts` (switch = reset every workspace-scoped store then load snapshot; responses come back through `LastResult`, FR-038), `WorkspaceSwitcher.tsx` (top-left, create/open/rename/remove dialogs incl. keep/trash choice), `MissingFolderNotice.tsx` (Locate/Remove); RTL tests including "switch resets stores"
+- [x] T091 [US4] Trash boundary: `internal/infra/adapter/trash.go` (interface + Get/Set), `trash_darwin.go` (cgo `NSFileManager trashItemAtURL`), `trash_other.go` (wastebasket v2); integration adapter `trash_webservice.go` + use case `move_to_trash.go`
+- [x] T092 [US4] Services `open_workspace.go`, `rename_workspace.go`, `remove_workspace.go`, `locate_workspace.go` (+ overlap validation on registry), controllers/DTOs and binding methods `Open`, `Rename`, `Remove`, `Locate`; run T088–T089 → **green**
+- [x] T093 [US4] Frontend `features/workspaces/` — `store.ts` (switch = reset every workspace-scoped store then load snapshot; responses come back through `LastResult`, FR-038), `WorkspaceSwitcher.tsx` (top-left, create/open/rename/remove dialogs incl. keep/trash choice), `MissingFolderNotice.tsx` (Locate/Remove); RTL tests including "switch resets stores"
 
 ### File changes from outside (FR-017, spans US2–US4)
 
-- [ ] T094 [US4] BDD `test/integration/features/file_changes/external_changes.feature` (@file_changes): synthetic watcher events → `workspace:tree-changed`; request file modified → `request:changed-on-disk` with new revision; deleted → `deleted: true`; own writes suppressed; then **green** after: `internal/infra/adapter/file_watcher.go` (fsnotify recursive, debounce 150 ms, ignore Chmod/`*.xenon-tmp`, overflow → full reload), handler controller `file_change.go`, service `handle_file_change.go`, publisher `internal/integration/publisher/workspace_event.go` + use case `publish_workspace_event.go`; activation starts/stops the watcher
-- [ ] T095 [US4] Frontend: `bootstrap.ts` subscriptions → sidebar refetch; tabs store handles `request:changed-on-disk` (clean → reload; dirty → `Banner` with Keep mine (Save with `force`) / Load from disk; deleted → Keep as unsaved tab / Close); RTL test
+- [x] T094 [US4] BDD `test/integration/features/file_changes/external_changes.feature` (@file_changes): synthetic watcher events → `workspace:tree-changed`; request file modified → `request:changed-on-disk` with new revision; deleted → `deleted: true`; own writes suppressed; then **green** after: `internal/infra/adapter/file_watcher.go` (fsnotify recursive, debounce 150 ms, ignore Chmod/`*.xenon-tmp`, overflow → full reload), handler controller `file_change.go`, service `handle_file_change.go`, publisher `internal/integration/publisher/workspace_event.go` + use case `publish_workspace_event.go`; activation starts/stops the watcher
+- [x] T095 [US4] Frontend: `bootstrap.ts` subscriptions → sidebar refetch; tabs store handles `request:changed-on-disk` (clean → reload; dirty → `Banner` with Keep mine (Save with `force`) / Load from disk; deleted → Keep as unsaved tab / Close); RTL test
 
 **Checkpoint**: multiple companies fully separated; outside edits handled.
 
