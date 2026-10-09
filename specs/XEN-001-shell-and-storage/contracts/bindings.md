@@ -50,6 +50,7 @@ snake_case (dto skill). IDs are ULID strings.
 | `ParseBulk(req)` / `FormatBulk(req)` | `{ text }` / `{ rows }` | `{ rows }` / `{ text }` | bulk edit (`key:value`, `//` = disabled) |
 | `AutoHeaders(req)` | `{ local_id, request }` | `[{ key, value, disabled }]` | effective auto headers incl. inherited auth/headers preview |
 | `Send(req)` | `{ local_id, tab_id, request }` | `SendResult` | cancellable via ctx; always appends history; see below |
+| `LastResult(req)` | `{ tab_id }` | `SendResult` | the tab's last result while the app runs (FR-038); `SND-03404` if none |
 | `ReleaseResponse(req)` | `{ tab_id }` | — | frees memory/temp file on tab close |
 | `SaveResponseBody(req)` | `{ tab_id, path }` | — | exact bytes (`SND-03404` no response) |
 

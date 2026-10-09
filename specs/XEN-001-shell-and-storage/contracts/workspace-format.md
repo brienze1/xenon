@@ -33,6 +33,8 @@ Rules:
   marker file are ignored (and listed as a warning in the sidebar's error area).
 - Every other `*.yaml` file inside a collection/folder directory is a request.
 - Files and directories not matching these rules are ignored and never touched.
+- Symbolic links inside a workspace are not followed (they are ignored), so a workspace can
+  never read or write outside its own folder.
 
 ## 2. Common header (every file)
 
@@ -205,7 +207,9 @@ the send (FR-028a).
 
 ## 7. Writing rules
 
-- **Encoding**: UTF-8, LF line endings, 2-space indent, trailing newline. Multi-line strings use
+- **Encoding**: UTF-8, LF line endings, 2-space indent, trailing newline. Files with CRLF line
+  endings or a UTF-8 BOM (e.g., from git `autocrlf` on Windows) are read normally; a file is
+  only re-written (as LF) when Xenon saves it. Multi-line strings use
   literal block style (`|`), so bodies and scripts diff line by line.
 - **Field order** on write is the order shown in this document; unknown fields are kept in their
   original position (or appended at the end of their mapping if new).
@@ -216,6 +220,7 @@ the send (FR-028a).
   every file is self-describing; empty reserved blocks (`variables: []`, `scripts`, `postman: {}`)
   are written too.
 - **Atomic writes**: write to a temp file in the same directory, fsync, rename over the target.
+  An existing file keeps its permission bits; new files get 0644 and new directories 0755.
 - **Ordering**: a parent's `order` lists its children. On load, listed entries that do not exist
   are skipped; existing entries that are not listed are appended in name order (so hand-added or
   git-merged files appear instead of vanishing). The next save of the parent rewrites `order` to
@@ -235,7 +240,8 @@ Derived from `name` on create and rename, never shown to the user:
 6. Requests get `.yaml`; collections and folders are directories.
 
 Renaming an item renames its file/directory (git sees a rename) and updates the parent's
-`order`. `collection.yaml` and `folder.yaml` are reserved and never produced by rule 1–5
+`order`. A rename that only changes letter case (case-insensitive file systems) goes through a
+temporary name. Paths longer than 260 characters on Windows are supported (long-path form). `collection.yaml` and `folder.yaml` are reserved and never produced by rule 1–5
 (a request named "collection" becomes `collection-2.yaml`).
 
 ## 9. `.gitignore`

@@ -241,8 +241,12 @@ out through a publisher. **CLAUDE.md is updated** to say bindings live in
    temp file) → append history → return `SendResult`.
 6. **Variables**: `{{…}}` sent literally in stage 1; resolution is a separate use case slot
    (`resolve_variables`) stage 2 plugs into `resolve_effective_request`.
-7. **Logging**: JSON logger (pkg-logger) to `app-data/logs/xenon.log` (rotated at 10 MB × 3);
-   debug logs ids/paths only, never header values or bodies.
+7. **Logging**: JSON logger (pkg-logger) to `app-data/logs/xenon.log` (rotated at 10 MB × 3).
+   The controller skill logs whole DTOs, so every DTO carrying a request/response implements
+   `LogValue()` (ids, method, URL only) and the logger honours it — header values, auth and
+   bodies never reach the log (constitution II).
+8. **Responses survive switches**: the Go body store keeps each tab's last `SendResult` and body;
+   the UI rehydrates via `RequestService.LastResult` after a workspace switch (FR-038).
 
 ## Makefile targets
 

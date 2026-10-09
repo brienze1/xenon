@@ -295,6 +295,11 @@ restored; compare colours against the PRD palette.
 - **Redirects** when "follow redirects" is off: the 3xx response itself is shown.
 - **Empty states**: no workspace (welcome screen with create/open actions), empty workspace,
   empty collection, no response yet.
+- **Trash unavailable or failing** (e.g., a folder on a volume without a trash): removal is
+  aborted, the workspace stays registered, and the message offers "Remove from Xenon" (keep
+  files) instead.
+- **Symbolic links** inside a workspace folder are ignored, so nothing outside the folder is
+  read or written.
 - **Name collisions on disk** when two siblings have the same name or names that only differ by
   case (relevant on case-insensitive file systems): each still gets its own file.
 
@@ -520,3 +525,9 @@ restored; compare colours against the PRD palette.
   panel are later stages (2, 4, 5) and out of scope here.
 - The 5 MB threshold implements the PRD's "over a few MB".
 - The default request timeout is 0 (no timeout), as in Postman.
+- Until stage 2 adds secret variables, an auth value typed directly into a request (e.g., a
+  Bearer token) is stored in that request's file as typed, exactly as Postman exports it;
+  stage 2 lets such values move into the encrypted vault via `{{variables}}`. Local drafts and
+  history are owner-only files on the machine.
+- Workspace folders on network file systems work, but outside-change detection (FR-017) is only
+  guaranteed on local disks.

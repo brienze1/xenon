@@ -103,7 +103,10 @@ Xenon/
         # stage 2: vault.age · stage 5: cookies.json
 ```
 
-All files are written atomically. Every file carries `"version": 1`.
+All files are written atomically. Every file carries `"version": 1`. Because drafts and
+history can contain values the user typed (e.g., a Bearer token), the app-data directories are
+created owner-only (0700) and files 0600 on macOS/Linux; on Windows they inherit the per-user
+`%AppData%` ACL.
 
 ### AppRegistry (`app.json`)
 | Field | Type | Rules |
@@ -158,7 +161,9 @@ Timings {DNS, Connect, TLS, FirstByte, Download, Total} in ms, or an **Error** w
 `dns | connection_refused | timeout | tls | cancelled | missing_file | invalid_url | other`.
 
 Kept per tab in the Go request service's memory (FR-038), dropped on tab close or app exit.
-Temp files live under `os.TempDir()/xenon-<pid>/` and are removed on tab close and exit.
+Temp files live under `os.TempDir()/xenon-<pid>/` (owner-only permissions) and are removed on
+tab close and exit; at startup, stale `xenon-<pid>` directories of processes that are no longer
+running are deleted.
 
 ## State transitions
 
