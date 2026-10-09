@@ -85,8 +85,7 @@ func (r *router) Route() *wails.App {
 	})
 
 	app.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(*wails.ApplicationEvent) {
-		r.restoreWindowBounds(app, window)
-		r.rememberWindowBounds(window)
+		r.registerWindowRoutes(app, window)
 	})
 
 	return app
@@ -94,12 +93,12 @@ func (r *router) Route() *wails.App {
 
 func (r *router) registerServices() []wails.Service {
 	return []wails.Service{
-		wails.NewService(r.workspace),
-		wails.NewService(r.tree),
-		wails.NewService(r.dialog),
-		wails.NewService(r.request),
-		wails.NewService(r.uiState),
-		wails.NewService(r.history),
+		r.registerWorkspaceRoutes(),
+		r.registerTreeRoutes(),
+		r.registerDialogRoutes(),
+		r.registerRequestRoutes(),
+		r.registerUIStateRoutes(),
+		r.registerHistoryRoutes(),
 		r.registerResponseBodyRoutes(),
 	}
 }

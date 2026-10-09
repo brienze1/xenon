@@ -13,6 +13,11 @@ import (
 
 const windowSaveDelay = 500 * time.Millisecond
 
+func (r *router) registerWindowRoutes(app *wails.App, window *wails.WebviewWindow) {
+	r.restoreWindowBounds(app, window)
+	r.rememberWindowBounds(window)
+}
+
 func (r *router) restoreWindowBounds(app *wails.App, window *wails.WebviewWindow) {
 	defer window.Show()
 	state, err := r.window.Restore(context.Background(), dto.NewRestoreWindow(screensOf(app.Screen.GetAll())))
