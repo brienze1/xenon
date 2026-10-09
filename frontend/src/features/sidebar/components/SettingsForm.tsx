@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useState } from 'react'
+import { useEffect, useEffectEvent, useState, useTransition } from 'react'
 import type { AppError } from '@/platform/errors'
 import type { ItemSettings } from '@/platform/mappers/tree'
 import { Banner } from '@/shared/ui/banner/Banner'
@@ -16,6 +16,8 @@ const HEADER_EXAMPLES: KeyValueExamples = {
   value: 'payments',
   description: 'Sent with every request',
 }
+
+const SETTINGS_TITLE = <Dialog.Title>Settings</Dialog.Title>
 
 const AUTH_HEADING = <h3 className={styles.heading}>Authorization</h3>
 
@@ -40,9 +42,11 @@ interface SettingsFailure {
 
 const SETTINGS_LOADING = (
   <>
-    <Dialog.Title>Settings</Dialog.Title>
+    {SETTINGS_TITLE}
     <Dialog.Body>
-      <p className={styles.note}>Loading…</p>
+      <p role="status" className={styles.note}>
+        Loading…
+      </p>
     </Dialog.Body>
   </>
 )
@@ -59,7 +63,7 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
   const parseBulk = useSidebarStore((state) => state.parseBulk)
   const [settings, setSettings] = useState<ItemSettings | null>(null)
   const [bulkText, setBulkText] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
+  const [saving, startSave] = useTransition()
   const [loadError, setLoadError] = useState<AppError | null>(null)
   const [failure, setFailure] = useState<SettingsFailure | null>(null)
   const [loadAttempt, setLoadAttempt] = useState(0)
@@ -94,7 +98,7 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
   if (loadError) {
     return (
       <>
-        <Dialog.Title>Settings</Dialog.Title>
+        {SETTINGS_TITLE}
         <Dialog.Body>
           <Banner.Root tone="error">
             <Banner.Message>
@@ -147,24 +151,20 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
     setBulkText(null)
   }
 
-  async function save() {
-    if (!settings) {
-      return
-    }
-    setSaving(true)
-    const headers = bulkText === null ? { ok: true as const, value: settings.headers } : await parseBulk(bulkText)
-    if (!headers.ok) {
-      setSaving(false)
-      setFailure({ error: headers.error, nextStep: BULK_NEXT_STEP })
-      return
-    }
-    const saveError = await saveSettings({ ...settings, headers: headers.value })
-    setSaving(false)
-    if (saveError) {
-      setFailure({ error: saveError, nextStep: SAVE_NEXT_STEP })
-      return
-    }
-    onClose()
+  function save(current: ItemSettings) {
+    startSave(async () => {
+      const headers = bulkText === null ? { ok: true as const, value: current.headers } : await parseBulk(bulkText)
+      if (!headers.ok) {
+        setFailure({ error: headers.error, nextStep: BULK_NEXT_STEP })
+        return
+      }
+      const saveError = await saveSettings({ ...current, headers: headers.value })
+      if (saveError) {
+        setFailure({ error: saveError, nextStep: SAVE_NEXT_STEP })
+        return
+      }
+      onClose()
+    })
   }
 
   return (
@@ -210,7 +210,7 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
         <Button variant="secondary" onClick={onClose}>
           Cancel
         </Button>
-        <Button variant="primary" disabled={saving} onClick={() => void save()}>
+        <Button variant="primary" disabled={saving} onClick={() => save(settings)}>
           {saving ? 'Saving…' : 'Save Settings'}
         </Button>
       </Dialog.Actions>

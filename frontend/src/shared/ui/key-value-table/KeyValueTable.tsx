@@ -41,6 +41,8 @@ const COLUMNS: Array<{ field: TextField; title: string; code: boolean }> = [
 
 const REMOVE_GLYPH = <span aria-hidden="true">×</span>
 
+const EMPTY_CELL = <td />
+
 const TABLE_HEAD = (
   <thead>
     <tr>
@@ -125,7 +127,7 @@ export function KeyValueTable({
               </tr>
             ))}
             <tr>
-              <td />
+              {EMPTY_CELL}
               {COLUMNS.map((column) => (
                 <td key={column.field}>
                   <input
@@ -141,7 +143,7 @@ export function KeyValueTable({
                   />
                 </td>
               ))}
-              <td />
+              {EMPTY_CELL}
             </tr>
           </tbody>
         </table>

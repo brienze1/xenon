@@ -16,6 +16,12 @@ const OPEN_TITLE = 'Choose an existing workspace folder'
 
 const MISSING_MARK = <span className={styles.missing}> (missing)</span>
 
+const CHEVRON = (
+  <span className={styles.chevron} aria-hidden="true">
+    ▾
+  </span>
+)
+
 const MENU_SEPARATOR = <div role="separator" className={styles.separator} />
 
 export function WorkspaceSwitcher() {
@@ -51,9 +57,7 @@ export function WorkspaceSwitcher() {
       <Dropdown.Root className={styles.switcher}>
         <Dropdown.Trigger label={`Workspace: ${current?.name ?? 'None'}`}>
           <span className={styles.name}>{current?.name ?? 'No workspace'}</span>
-          <span className={styles.chevron} aria-hidden="true">
-            ▾
-          </span>
+          {CHEVRON}
         </Dropdown.Trigger>
         <Dropdown.Menu label="Workspaces">
           {workspaces.map((workspace) => (

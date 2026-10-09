@@ -2,6 +2,8 @@ import { PanelSection } from '@/shared/ui/panel-section/PanelSection'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import styles from './SettingsPanel.module.css'
 
+const SSL = <span translate="no">SSL</span>
+
 interface SettingsPanelProps {
   tabId: string
 }
@@ -43,7 +45,7 @@ export function SettingsPanel({ tabId }: SettingsPanelProps) {
           checked={settings.verifySsl}
           onChange={(event) => updateSettings(tabId, { verifySsl: event.target.checked })}
         />
-        Enable <span translate="no">SSL</span> certificate verification
+        Enable {SSL} certificate verification
       </label>
       <label className={styles.toggle}>
         <input

@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type FormEvent } from 'react'
+import { useId, useRef, useState, useTransition, type FormEvent } from 'react'
 import type { WorkspaceSummary } from '@/platform/mappers/workspace'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
@@ -7,6 +7,10 @@ import { hasErrors, NO_ERRORS, validateWorkspaceForm } from '@/features/workspac
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import { WorkspaceErrorText } from './WorkspaceErrorText'
 import styles from './RenameWorkspaceDialog.module.css'
+
+const RENAME_TITLE = <Dialog.Title>Rename Workspace</Dialog.Title>
+
+const NAME_LABEL = <span className={styles.label}>Workspace name</span>
 
 const RENAME_HINT = <p className={styles.hint}>Only the name changes. The folder stays where it is.</p>
 
@@ -18,14 +22,14 @@ interface RenameWorkspaceDialogProps {
 
 export function RenameWorkspaceDialog({ workspace, open, onClose }: RenameWorkspaceDialogProps) {
   const [name, setName] = useState(workspace.name)
-  const [submitting, setSubmitting] = useState(false)
+  const [submitting, startSubmit] = useTransition()
   const [errors, setErrors] = useState(NO_ERRORS)
   const nameRef = useRef<HTMLInputElement>(null)
   const nameErrorId = useId()
   const error = useWorkspacesStore((state) => state.error)
   const rename = useWorkspacesStore((state) => state.rename)
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const found = validateWorkspaceForm(name)
     setErrors(found)
@@ -33,21 +37,20 @@ export function RenameWorkspaceDialog({ workspace, open, onClose }: RenameWorksp
       nameRef.current?.focus()
       return
     }
-    setSubmitting(true)
-    const renamed = await rename(workspace.localId, name)
-    setSubmitting(false)
-    if (renamed) {
-      onClose()
-    }
+    startSubmit(async () => {
+      if (await rename(workspace.localId, name)) {
+        onClose()
+      }
+    })
   }
 
   return (
     <Dialog.Root open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
-      <form aria-label="Rename workspace" className={styles.form} noValidate onSubmit={(event) => void onSubmit(event)}>
-        <Dialog.Title>Rename Workspace</Dialog.Title>
+      <form aria-label="Rename workspace" className={styles.form} noValidate onSubmit={onSubmit}>
+        {RENAME_TITLE}
         <Dialog.Body>
           <label className={styles.field}>
-            <span className={styles.label}>Workspace name</span>
+            {NAME_LABEL}
             <input
               ref={nameRef}
               className={styles.input}

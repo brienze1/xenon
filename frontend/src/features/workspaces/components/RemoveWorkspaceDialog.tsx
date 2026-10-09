@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import type { WorkspaceSummary } from '@/platform/mappers/workspace'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
@@ -6,6 +6,14 @@ import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { TRASH_FAILED, useWorkspacesStore } from '@/features/workspaces/store'
 import { WorkspaceErrorText } from './WorkspaceErrorText'
 import styles from './RemoveWorkspaceDialog.module.css'
+
+const XENON = <span translate="no">Xenon</span>
+
+const MODE_LEGEND = <legend className={styles.label}>What happens to the folder</legend>
+
+const KEEP_FILES_TEXT = <>Remove from {XENON} (the files stay on disk)</>
+
+const KEEP_FILES_ACTION = <>Remove from {XENON}</>
 
 interface RemoveWorkspaceDialogProps {
   workspace: WorkspaceSummary
@@ -15,17 +23,16 @@ interface RemoveWorkspaceDialogProps {
 
 export function RemoveWorkspaceDialog({ workspace, open, onClose }: RemoveWorkspaceDialogProps) {
   const [moveToTrash, setMoveToTrash] = useState(false)
-  const [removing, setRemoving] = useState(false)
+  const [removing, startRemove] = useTransition()
   const error = useWorkspacesStore((state) => state.error)
   const remove = useWorkspacesStore((state) => state.remove)
 
-  async function confirm(trash: boolean) {
-    setRemoving(true)
-    const removed = await remove(workspace.localId, trash)
-    setRemoving(false)
-    if (removed) {
-      onClose()
-    }
+  function confirm(trash: boolean) {
+    startRemove(async () => {
+      if (await remove(workspace.localId, trash)) {
+        onClose()
+      }
+    })
   }
 
   return (
@@ -33,10 +40,10 @@ export function RemoveWorkspaceDialog({ workspace, open, onClose }: RemoveWorksp
       <Dialog.Title>Remove “{workspace.name}”?</Dialog.Title>
       <Dialog.Body>
         <fieldset className={styles.choices}>
-          <legend className={styles.label}>What happens to the folder</legend>
+          {MODE_LEGEND}
           <label className={styles.choice}>
             <input type="radio" name="remove-mode" checked={!moveToTrash} onChange={() => setMoveToTrash(false)} />
-            Remove from <span translate="no">Xenon</span> (the files stay on disk)
+            {KEEP_FILES_TEXT}
           </label>
           <label className={styles.choice}>
             <input type="radio" name="remove-mode" checked={moveToTrash} onChange={() => setMoveToTrash(true)} />
@@ -51,8 +58,8 @@ export function RemoveWorkspaceDialog({ workspace, open, onClose }: RemoveWorksp
             <Banner.Message><WorkspaceErrorText error={error} /></Banner.Message>
             {error.code === TRASH_FAILED ? (
               <Banner.Actions>
-                <Button variant="secondary" size="sm" disabled={removing} onClick={() => void confirm(false)}>
-                  Remove from <span translate="no">Xenon</span>
+                <Button variant="secondary" size="sm" disabled={removing} onClick={() => confirm(false)}>
+                  {KEEP_FILES_ACTION}
                 </Button>
               </Banner.Actions>
             ) : null}
@@ -63,7 +70,7 @@ export function RemoveWorkspaceDialog({ workspace, open, onClose }: RemoveWorksp
         <Button variant="ghost" onClick={onClose}>
           Cancel
         </Button>
-        <Button variant="danger" disabled={removing} onClick={() => void confirm(moveToTrash)}>
+        <Button variant="danger" disabled={removing} onClick={() => confirm(moveToTrash)}>
           {removing ? 'Removing…' : 'Remove Workspace'}
         </Button>
       </Dialog.Actions>

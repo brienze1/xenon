@@ -13,6 +13,10 @@ import type { SaveDialogState } from '@/features/tabs/model'
 import { useTabsStore } from '@/features/tabs/store'
 import styles from './SaveRequestDialog.module.css'
 
+const NAME_LABEL = <span className={styles.label}>Request name</span>
+
+const PLACES_LEGEND = <legend className={styles.label}>Save to</legend>
+
 const NO_COLLECTIONS = <p className={styles.empty}>Create a collection in the sidebar first.</p>
 
 export function SaveRequestDialog() {
@@ -83,7 +87,7 @@ function SaveRequestForm({ dialog }: SaveRequestFormProps) {
       <Dialog.Title>{dialog.mode === 'saveAs' ? 'Save Request As' : 'Save Request'}</Dialog.Title>
       <Dialog.Body>
         <label className={styles.field}>
-          <span className={styles.label}>Request name</span>
+          {NAME_LABEL}
           <input
             ref={nameRef}
             className={styles.input}
@@ -110,7 +114,7 @@ function SaveRequestForm({ dialog }: SaveRequestFormProps) {
           className={styles.places}
           aria-describedby={placeError ? placeErrorId : undefined}
         >
-          <legend className={styles.label}>Save to</legend>
+          {PLACES_LEGEND}
           {options.length === 0 ? NO_COLLECTIONS : null}
           {options.map((option, index) => (
             <label key={option.id} className={styles.place} style={{ '--depth': option.depth } as CSSProperties}>

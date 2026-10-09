@@ -10,6 +10,10 @@ import { RequestTabs } from './RequestTabs'
 
 const SAVE_NEXT_STEP = 'Try again, or check that the request file and its folder are writable.'
 
+const CONFLICT_MESSAGE = (
+  <Banner.Message>This request changed on disk since you opened it. Keep your version or load the one from disk.</Banner.Message>
+)
+
 interface RequestBuilderProps {
   tabId: string
   onSave: () => void
@@ -35,7 +39,7 @@ export function RequestBuilder({ tabId, onSave }: RequestBuilderProps) {
       <RequestBar tabId={tabId} onSave={onSave} />
       {conflict ? (
         <Banner.Root tone="warning" className={styles.banner}>
-          <Banner.Message>This request changed on disk since you opened it. Keep your version or load the one from disk.</Banner.Message>
+          {CONFLICT_MESSAGE}
           <Banner.Actions>
             <Button variant="secondary" size="sm" onClick={() => void save(tabId, true)}>
               Keep Your Version

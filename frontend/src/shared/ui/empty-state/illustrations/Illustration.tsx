@@ -5,6 +5,8 @@ import { Spray } from './Spray'
 
 export type IllustrationTone = 'green' | 'cyan' | 'magenta' | 'yellow' | 'red'
 
+const SPRAY = <Spray />
+
 interface CanvasProps {
   children: ReactNode
 }
@@ -13,7 +15,7 @@ function Canvas({ children }: CanvasProps) {
   return (
     <svg className={styles.art} viewBox="0 0 120 96" aria-hidden="true">
       {children}
-      <Spray />
+      {SPRAY}
     </svg>
   )
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import type { AppError } from '@/platform/errors'
 import type { TreeNode, TreeNodeKind } from '@/platform/mappers/tree'
 import { Banner } from '@/shared/ui/banner/Banner'
@@ -14,6 +14,8 @@ const DELETE_LABELS: Record<TreeNodeKind, string> = {
   request: 'Delete Request',
   error: 'Delete File',
 }
+
+const XENON = <span translate="no">Xenon</span>
 
 const DELETE_NEXT_STEP = 'Check that the file is not open in another program, then try again.'
 
@@ -38,21 +40,21 @@ interface DeleteItemConfirmProps {
 }
 
 function DeleteItemConfirm({ item, onCancel, onConfirm }: DeleteItemConfirmProps) {
-  const [deleting, setDeleting] = useState(false)
+  const [deleting, startDelete] = useTransition()
   const [error, setError] = useState<AppError | null>(null)
 
-  async function confirm() {
-    setDeleting(true)
-    const failure = await onConfirm(item)
-    setDeleting(false)
-    setError(failure)
+  function confirm() {
+    startDelete(async () => {
+      const failure = await onConfirm(item)
+      setError(failure)
+    })
   }
 
   return (
     <>
       <Dialog.Title>Delete “{item.name}”?</Dialog.Title>
       <Dialog.Body>
-        <span translate="no">Xenon</span> deletes {isContainer(item) ? 'its folder and everything inside it' : 'its file'} from disk.
+        {XENON} deletes {isContainer(item) ? 'its folder and everything inside it' : 'its file'} from disk.
         {error ? (
           <Banner.Root tone="error" className={styles.error}>
             <Banner.Message>
@@ -65,7 +67,7 @@ function DeleteItemConfirm({ item, onCancel, onConfirm }: DeleteItemConfirmProps
         <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
-        <Button variant="danger" disabled={deleting} onClick={() => void confirm()}>
+        <Button variant="danger" disabled={deleting} onClick={confirm}>
           {deleting ? 'Deleting…' : DELETE_LABELS[item.kind]}
         </Button>
       </Dialog.Actions>

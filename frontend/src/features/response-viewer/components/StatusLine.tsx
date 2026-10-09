@@ -40,6 +40,8 @@ const PHASES: Array<{ key: keyof SendTimings; label: ReactNode }> = [
   { key: 'downloadMs', label: 'Download' },
 ]
 
+const TOTAL_TERM = <dt>Total</dt>
+
 export function StatusLine({ result }: StatusLineProps) {
   const timings = result.timings
 
@@ -58,7 +60,7 @@ export function StatusLine({ result }: StatusLineProps) {
               </div>
             ))}
             <div className={cn(styles.timing, styles.total)}>
-              <dt>Total</dt>
+              {TOTAL_TERM}
               <dd>{formatDuration(timings.totalMs)}</dd>
             </div>
           </dl>

@@ -36,7 +36,13 @@ const COPY_ANNOUNCEMENTS: Record<CopyState, ReactNode> = {
   ),
 }
 
-const LOADING_BODY = <p className={styles.note}>Loading body…</p>
+const LOADING_BODY = (
+  <p role="status" className={styles.note}>
+    Loading body…
+  </p>
+)
+
+const BODY_VIEW_LEGEND = <legend className="visually-hidden">Body view</legend>
 
 export function ResponseBody({ tabId, result }: ResponseBodyProps) {
   const [view, setView] = useState<BodyView>(() => initialBodyView(result.sizeBytes))
@@ -72,7 +78,7 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
     <div className={styles.body}>
       <div className={styles.toolbar}>
         <fieldset className={styles.views}>
-          <legend className="visually-hidden">Body view</legend>
+          {BODY_VIEW_LEGEND}
           {VIEWS.map((option) => (
             <label key={option.view} className={styles.view}>
               <input

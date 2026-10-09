@@ -39,3 +39,7 @@
   min-height: 0;
   overflow: auto;
 }
+
+.panel[hidden] {
+  display: none;
+}

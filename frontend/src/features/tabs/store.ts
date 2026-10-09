@@ -337,6 +337,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         get().handleDeleted([event.requestId])
         return
       }
+      const reloads: Promise<unknown>[] = []
       for (const tab of get().tabs.filter((candidate) => candidate.requestId === event.requestId)) {
         const draft = builder().tabs[tab.id]
         if (draft?.baseRevision === event.revision) {
@@ -345,9 +346,10 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         if (isDirty(tab.id)) {
           set((state) => ({ notices: { ...state.notices, [tab.id]: 'changed' } }))
         } else {
-          await builder().openSaved(tab.id, event.requestId)
+          reloads.push(builder().openSaved(tab.id, event.requestId))
         }
       }
+      await Promise.all(reloads)
     },
 
     keepAsNew: (tabId) => {

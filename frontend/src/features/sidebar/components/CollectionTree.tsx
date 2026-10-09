@@ -34,7 +34,7 @@ const NO_COLLECTIONS_INTRO = (
   </>
 )
 
-const NO_MATCHES = <p className={styles.noMatches}>No requests match your search.</p>
+const NO_MATCHES = <p role="status" className={styles.noMatches}>No requests match your search.</p>
 
 export function CollectionTree(actions: CollectionTreeProps) {
   const tree = useSidebarStore((state) => state.tree)

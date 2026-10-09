@@ -44,6 +44,8 @@
   overflow-wrap: anywhere;
   gap: var(--space-3);
   font-size: var(--font-size-md);
+  content-visibility: auto;
+  contain-intrinsic-size: auto 24px;
 }
 
 .empty {

@@ -32,7 +32,15 @@ describe('Tabs', () => {
     expect(panel).toHaveTextContent('params panel')
     expect(panel).toHaveAttribute('aria-labelledby', tab.id)
     expect(tab).toHaveAttribute('aria-controls', panel.id)
-    expect(screen.queryByText('auth panel')).not.toBeInTheDocument()
+    expect(screen.getByText('auth panel')).not.toBeVisible()
+  })
+
+  it('keeps a hidden panel mounted with its state', async () => {
+    render(<Example />)
+    expect(screen.getAllByRole('tabpanel', { hidden: true })).toHaveLength(3)
+    await userEvent.click(screen.getByRole('tab', { name: 'Authorization' }))
+    expect(screen.getByText('params panel')).not.toBeVisible()
+    expect(screen.getByText('auth panel')).toBeVisible()
   })
 
   it('switches panels on click', async () => {

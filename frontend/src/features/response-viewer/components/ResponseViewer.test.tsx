@@ -148,8 +148,9 @@ describe('ResponseViewer', () => {
     expect(screen.getByTitle('Response preview')).toHaveAttribute('sandbox', '')
     show(result())
     await user.click(screen.getByRole('radio', { name: 'Preview' }))
-    expect(screen.getByText(/No preview available for/)).toHaveTextContent('No preview available for application/json.')
-    expect(screen.getByText('application/json')).toHaveAttribute('translate', 'no')
+    const bodyPanel = screen.getByRole('tabpanel')
+    expect(within(bodyPanel).getByText(/No preview available for/)).toHaveTextContent('No preview available for application/json.')
+    expect(within(bodyPanel).getByText('application/json')).toHaveAttribute('translate', 'no')
   })
 
   it('copies the exact body and saves it to a file', async () => {

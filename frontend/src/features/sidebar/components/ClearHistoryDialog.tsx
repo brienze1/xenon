@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import type { AppError } from '@/platform/errors'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
@@ -36,14 +36,14 @@ interface ClearHistoryConfirmProps {
 }
 
 function ClearHistoryConfirm({ onCancel, onConfirm }: ClearHistoryConfirmProps) {
-  const [clearing, setClearing] = useState(false)
+  const [clearing, startClear] = useTransition()
   const [error, setError] = useState<AppError | null>(null)
 
-  async function confirm() {
-    setClearing(true)
-    const failure = await onConfirm()
-    setClearing(false)
-    setError(failure)
+  function confirm() {
+    startClear(async () => {
+      const failure = await onConfirm()
+      setError(failure)
+    })
   }
 
   return (
@@ -63,7 +63,7 @@ function ClearHistoryConfirm({ onCancel, onConfirm }: ClearHistoryConfirmProps) 
         <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
-        <Button variant="danger" disabled={clearing} onClick={() => void confirm()}>
+        <Button variant="danger" disabled={clearing} onClick={confirm}>
           {clearing ? 'Clearing…' : 'Clear History'}
         </Button>
       </Dialog.Actions>

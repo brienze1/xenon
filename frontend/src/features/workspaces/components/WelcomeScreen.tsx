@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type FormEvent } from 'react'
+import { useId, useRef, useState, useTransition, type FormEvent } from 'react'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
@@ -25,6 +25,10 @@ const WELCOME_INTRO = (
   </>
 )
 
+const NAME_LABEL = <span className={styles.label}>Workspace name</span>
+
+const FOLDER_LEGEND = <legend className={styles.label}>Folder</legend>
+
 const NO_FOLDER = (
   <span className={styles.placeholder} translate="yes">
     No folder chosen
@@ -34,7 +38,7 @@ const NO_FOLDER = (
 export function WelcomeScreen() {
   const [name, setName] = useState('')
   const [path, setPath] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
+  const [submitting, startSubmit] = useTransition()
   const [errors, setErrors] = useState(NO_ERRORS)
   const nameRef = useRef<HTMLInputElement>(null)
   const folderRef = useRef<HTMLButtonElement>(null)
@@ -52,7 +56,7 @@ export function WelcomeScreen() {
     }
   }
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const found = validateWorkspaceForm(name, path)
     setErrors(found)
@@ -61,18 +65,18 @@ export function WelcomeScreen() {
       firstInvalid?.focus()
       return
     }
-    setSubmitting(true)
-    await create(name, path)
-    setSubmitting(false)
+    startSubmit(async () => {
+      await create(name, path)
+    })
   }
 
   return (
     <EmptyState.Root label="Welcome">
       {WELCOME_INTRO}
       <EmptyState.Actions>
-        <form className={styles.form} aria-label="Create workspace" noValidate onSubmit={(event) => void onSubmit(event)}>
+        <form className={styles.form} aria-label="Create workspace" noValidate onSubmit={onSubmit}>
           <label className={styles.field}>
-            <span className={styles.label}>Workspace name</span>
+            {NAME_LABEL}
             <input
               ref={nameRef}
               className={styles.input}
@@ -94,7 +98,7 @@ export function WelcomeScreen() {
             </p>
           ) : null}
           <fieldset className={styles.fieldset}>
-            <legend className={styles.label}>Folder</legend>
+            {FOLDER_LEGEND}
             <div className={styles.folder}>
               <span className={styles.path} translate="no">
                 {path ?? NO_FOLDER}

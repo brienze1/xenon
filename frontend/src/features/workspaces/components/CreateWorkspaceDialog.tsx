@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type FormEvent } from 'react'
+import { useId, useRef, useState, useTransition, type FormEvent } from 'react'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
@@ -14,10 +14,16 @@ interface CreateWorkspaceDialogProps {
 
 const PICKER_TITLE = 'Choose the folder for the new workspace'
 
+const CREATE_TITLE = <Dialog.Title>New Workspace</Dialog.Title>
+
+const NAME_LABEL = <span className={styles.label}>Workspace name</span>
+
+const FOLDER_LEGEND = <legend className={styles.label}>Folder</legend>
+
 export function CreateWorkspaceDialog({ open, onClose }: CreateWorkspaceDialogProps) {
   const [name, setName] = useState('')
   const [path, setPath] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
+  const [submitting, startSubmit] = useTransition()
   const [errors, setErrors] = useState(NO_ERRORS)
   const nameRef = useRef<HTMLInputElement>(null)
   const folderRef = useRef<HTMLButtonElement>(null)
@@ -42,7 +48,7 @@ export function CreateWorkspaceDialog({ open, onClose }: CreateWorkspaceDialogPr
     }
   }
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const found = validateWorkspaceForm(name, path)
     setErrors(found)
@@ -51,21 +57,20 @@ export function CreateWorkspaceDialog({ open, onClose }: CreateWorkspaceDialogPr
       firstInvalid?.focus()
       return
     }
-    setSubmitting(true)
-    const created = await create(name, path)
-    setSubmitting(false)
-    if (created) {
-      close()
-    }
+    startSubmit(async () => {
+      if (await create(name, path)) {
+        close()
+      }
+    })
   }
 
   return (
     <Dialog.Root open={open} onOpenChange={(next) => (next ? undefined : close())}>
-      <form aria-label="New workspace" className={styles.form} noValidate onSubmit={(event) => void onSubmit(event)}>
-        <Dialog.Title>New Workspace</Dialog.Title>
+      <form aria-label="New workspace" className={styles.form} noValidate onSubmit={onSubmit}>
+        {CREATE_TITLE}
         <Dialog.Body>
           <label className={styles.field}>
-            <span className={styles.label}>Workspace name</span>
+            {NAME_LABEL}
             <input
               ref={nameRef}
               className={styles.input}
@@ -87,7 +92,7 @@ export function CreateWorkspaceDialog({ open, onClose }: CreateWorkspaceDialogPr
             </p>
           ) : null}
           <fieldset className={styles.fieldset}>
-            <legend className={styles.label}>Folder</legend>
+            {FOLDER_LEGEND}
             <div className={styles.folder}>
               <span className={styles.path} translate={path ? 'no' : undefined}>
                 {path ?? 'No folder chosen'}

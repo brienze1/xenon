@@ -81,6 +81,8 @@ const GRAPHQL_VARIABLES_HEADING = (
   </PanelSection.Heading>
 )
 
+const BODY_TYPE_LEGEND = <legend className="visually-hidden">Body type</legend>
+
 const DIRECTORY_PREFIX = /^.*[\\/]/
 
 const EMPTY_FORM_ROW: Omit<FormDataRow, 'id'> = {
@@ -111,7 +113,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
     <PanelSection.Root>
       <div className={styles.modes}>
         <fieldset className={styles.modeGroup}>
-          <legend className="visually-hidden">Body type</legend>
+          {BODY_TYPE_LEGEND}
           {BODY_MODES.map((mode) => (
             <label key={mode} className={styles.toggle}>
               <input type="radio" name={`${tabId}-body-mode`} checked={body.mode === mode} onChange={() => updateBody(tabId, { mode })} />

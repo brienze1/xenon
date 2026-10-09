@@ -16,6 +16,12 @@ const MISSING_FOLDER_INTRO = (
   </>
 )
 
+const XENON = <span translate="no">Xenon</span>
+
+const LOCATE_OR_REMOVE = <>. Locate it again, or remove the workspace from {XENON}.</>
+
+const REMOVE_ACTION = <>Remove from {XENON}…</>
+
 interface MissingFolderNoticeProps {
   localId: string
 }
@@ -30,21 +36,21 @@ export function MissingFolderNotice({ localId }: MissingFolderNoticeProps) {
     <EmptyState.Root label="Workspace folder missing">
       {MISSING_FOLDER_INTRO}
       <EmptyState.Description>
-        Someone moved or deleted the folder of “{workspace?.name ?? 'this workspace'}” outside <span translate="no">Xenon</span>
+        Someone moved or deleted the folder of “{workspace?.name ?? 'this workspace'}” outside {XENON}
         {workspace ? (
           <>
             {' ('}
             <span translate="no">{workspace.path}</span>)
           </>
         ) : null}
-        . Locate it again, or remove the workspace from <span translate="no">Xenon</span>.
+        {LOCATE_OR_REMOVE}
       </EmptyState.Description>
       <EmptyState.Actions>
         <Button variant="primary" onClick={() => void locate(localId)}>
           Locate Folder…
         </Button>
         <Button variant="secondary" disabled={!workspace} onClick={() => setRemoving(true)}>
-          Remove from <span translate="no">Xenon</span>…
+          {REMOVE_ACTION}
         </Button>
       </EmptyState.Actions>
       {error && error.code !== 'WKS-06404' ? (

@@ -16,7 +16,15 @@ const NO_DESCRIPTION = <span className={styles.muted}>No description</span>
 
 const RENAME_NEXT_STEP = 'Choose another name, then press Enter.'
 
-const LOADING_DESCRIPTION = <span className={styles.muted}>Loading…</span>
+const LOADING_DESCRIPTION = (
+  <span role="status" className={styles.muted}>
+    Loading…
+  </span>
+)
+
+const LOCATION_LABEL = <span className={styles.label}>Location</span>
+
+const DESCRIPTION_LABEL = <span className={styles.label}>Description</span>
 
 interface InfoPanelProps {
   tabId: string
@@ -95,7 +103,7 @@ export function InfoPanel({ tabId }: InfoPanelProps) {
         ) : null}
       </div>
       <div className={styles.field}>
-        <span className={styles.label}>Location</span>
+        {LOCATION_LABEL}
         {location.length > 0 ? (
           <nav aria-label="Location" className={styles.breadcrumb}>
             {location.join(' / ')}
@@ -111,7 +119,7 @@ export function InfoPanel({ tabId }: InfoPanelProps) {
               Description
             </label>
           ) : (
-            <span className={styles.label}>Description</span>
+            DESCRIPTION_LABEL
           )}
           <Button variant="ghost" size="sm" onClick={() => setEditing((current) => !current)}>
             {editing ? 'Done Editing' : 'Edit Description'}

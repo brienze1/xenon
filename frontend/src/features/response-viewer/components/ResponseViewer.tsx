@@ -30,6 +30,8 @@ const SENDING = (
   </p>
 )
 
+const BODY_TAB = <Tabs.Tab value="body">Body</Tabs.Tab>
+
 interface ResponseViewerProps {
   tabId: string
 }
@@ -69,7 +71,7 @@ export function ResponseViewer({ tabId }: ResponseViewerProps) {
           <StatusLine result={result} />
           <Tabs.Root value={panel} onValueChange={setPanel} className={styles.tabs}>
             <Tabs.List label="Response">
-              <Tabs.Tab value="body">Body</Tabs.Tab>
+              {BODY_TAB}
               <Tabs.Tab value="headers">Headers ({formatNumber(result.headers.length, 0)})</Tabs.Tab>
             </Tabs.List>
             <Tabs.Panel value="body" className={styles.panel}>

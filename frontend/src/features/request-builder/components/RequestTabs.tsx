@@ -14,7 +14,21 @@ interface RequestTabsProps {
   tabId: string
 }
 
-const SCRIPTS_PANEL = <ScriptsPanel />
+const SCRIPTS_PANEL = (
+  <Tabs.Panel value="scripts" className={styles.panel}>
+    <ScriptsPanel />
+  </Tabs.Panel>
+)
+
+const PARAMS_TAB = <Tabs.Tab value="params">Params</Tabs.Tab>
+
+const AUTH_TAB = <Tabs.Tab value="auth">Authorization</Tabs.Tab>
+
+const BODY_TAB = <Tabs.Tab value="body">Body</Tabs.Tab>
+
+const SCRIPTS_TAB = <Tabs.Tab value="scripts">Scripts</Tabs.Tab>
+
+const SETTINGS_TAB = <Tabs.Tab value="settings">Settings</Tabs.Tab>
 
 export function RequestTabs({ tabId }: RequestTabsProps) {
   const subTab = useRequestBuilderStore((state) => state.tabs[tabId]?.subTab ?? 'params')
@@ -24,12 +38,12 @@ export function RequestTabs({ tabId }: RequestTabsProps) {
   return (
     <Tabs.Root value={subTab} onValueChange={(value) => setSubTab(tabId, value as SubTab)} className={styles.tabs}>
       <Tabs.List label="Request">
-        <Tabs.Tab value="params">Params</Tabs.Tab>
-        <Tabs.Tab value="auth">Authorization</Tabs.Tab>
+        {PARAMS_TAB}
+        {AUTH_TAB}
         <Tabs.Tab value="headers">Headers{headerCount > 0 ? ` (${formatNumber(headerCount, 0)})` : ''}</Tabs.Tab>
-        <Tabs.Tab value="body">Body</Tabs.Tab>
-        <Tabs.Tab value="scripts">Scripts</Tabs.Tab>
-        <Tabs.Tab value="settings">Settings</Tabs.Tab>
+        {BODY_TAB}
+        {SCRIPTS_TAB}
+        {SETTINGS_TAB}
       </Tabs.List>
       <Tabs.Panel value="params" className={styles.panel}>
         <ParamsPanel tabId={tabId} />
@@ -43,9 +57,7 @@ export function RequestTabs({ tabId }: RequestTabsProps) {
       <Tabs.Panel value="body" className={styles.panel}>
         <BodyPanel tabId={tabId} />
       </Tabs.Panel>
-      <Tabs.Panel value="scripts" className={styles.panel}>
-        {SCRIPTS_PANEL}
-      </Tabs.Panel>
+      {SCRIPTS_PANEL}
       <Tabs.Panel value="settings" className={styles.panel}>
         <SettingsPanel tabId={tabId} />
       </Tabs.Panel>

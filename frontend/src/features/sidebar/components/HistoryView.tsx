@@ -27,7 +27,7 @@ const EMPTY_HISTORY = (
   </EmptyState.Root>
 )
 
-const NO_MATCHES = <p className={styles.noMatches}>No history entries match your search.</p>
+const NO_MATCHES = <p role="status" className={styles.noMatches}>No history entries match your search.</p>
 
 interface HistoryViewProps {
   onOpenEntry: (id: string) => void

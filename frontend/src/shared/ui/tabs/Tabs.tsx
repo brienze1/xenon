@@ -1,4 +1,4 @@
-import { createContext, use, useId, useMemo, type KeyboardEvent, type ReactNode } from 'react'
+import { Activity, createContext, use, useId, useMemo, type KeyboardEvent, type ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
 import { rovingIndex } from '@/shared/lib/roving-focus'
 import styles from './Tabs.module.css'
@@ -129,18 +129,21 @@ interface PanelProps {
 
 function Panel({ value, className, children }: PanelProps) {
   const { state, meta } = useTabs()
-  if (state.value !== value) {
-    return null
-  }
+  const selected = state.value === value
+  // Activity keeps a hidden panel's state and DOM (display: none, out of the accessibility
+  // tree) so switching back is instant; `hidden` states the same thing in the markup.
   return (
-    <div
-      role="tabpanel"
-      id={panelId(meta.baseId, value)}
-      aria-labelledby={tabId(meta.baseId, value)}
-      className={cn(styles.panel, className)}
-    >
-      {children}
-    </div>
+    <Activity mode={selected ? 'visible' : 'hidden'}>
+      <div
+        role="tabpanel"
+        id={panelId(meta.baseId, value)}
+        aria-labelledby={tabId(meta.baseId, value)}
+        hidden={!selected}
+        className={cn(styles.panel, className)}
+      >
+        {children}
+      </div>
+    </Activity>
   )
 }
 

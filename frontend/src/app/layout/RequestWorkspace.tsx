@@ -4,6 +4,8 @@ import { LAYOUT_LIMITS } from '@/features/workspaces/lib/layout'
 import { SplitPane } from '@/shared/ui/split-pane/SplitPane'
 import { useShellLayout } from '@/app/layout/use-shell-layout'
 
+const DIVIDER = <SplitPane.Divider label="Resize request and response" />
+
 interface RequestWorkspaceProps {
   tabId: string
   onSave: () => void
@@ -25,7 +27,7 @@ export function RequestWorkspace({ tabId, onSave }: RequestWorkspaceProps) {
       <SplitPane.Pane>
         <RequestBuilder tabId={tabId} onSave={onSave} />
       </SplitPane.Pane>
-      <SplitPane.Divider label="Resize request and response" />
+      {DIVIDER}
       <SplitPane.Pane>
         <ResponseViewer tabId={tabId} />
       </SplitPane.Pane>

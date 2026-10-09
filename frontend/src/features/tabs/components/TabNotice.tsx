@@ -3,6 +3,10 @@ import { Button } from '@/shared/ui/button/Button'
 import { useTabsStore } from '@/features/tabs/store'
 import styles from './TabNotice.module.css'
 
+const CHANGED_MESSAGE = <Banner.Message>This request changed on disk while you were editing it.</Banner.Message>
+
+const DELETED_MESSAGE = <Banner.Message>This request no longer exists on disk. Your unsaved changes are still here.</Banner.Message>
+
 interface TabNoticeProps {
   tabId: string
 }
@@ -19,7 +23,7 @@ export function TabNotice({ tabId }: TabNoticeProps) {
   }
   return notice === 'changed' ? (
     <Banner.Root tone="warning" className={styles.notice}>
-      <Banner.Message>This request changed on disk while you were editing it.</Banner.Message>
+      {CHANGED_MESSAGE}
       <Banner.Actions>
         <Button variant="secondary" size="sm" onClick={() => void keepMine(tabId)}>
           Keep Your Version
@@ -31,7 +35,7 @@ export function TabNotice({ tabId }: TabNoticeProps) {
     </Banner.Root>
   ) : (
     <Banner.Root tone="warning" className={styles.notice}>
-      <Banner.Message>This request no longer exists on disk. Your unsaved changes are still here.</Banner.Message>
+      {DELETED_MESSAGE}
       <Banner.Actions>
         <Button variant="secondary" size="sm" onClick={() => keepAsNew(tabId)}>
           Keep as Unsaved Tab
