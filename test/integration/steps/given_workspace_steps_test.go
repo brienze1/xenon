@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -16,6 +17,8 @@ import (
 func (t *testUtils) registerGivenWorkspaceSteps(ctx *godog.ScenarioContext) {
 	ctx.Given(`^the workspace "([^"]*)" exists$`, t.theWorkspaceExists)
 	ctx.Given(`^the workspace file "([^"]*)" contains$`, t.theWorkspaceFileContains)
+	ctx.Given(`^the workspace file "([^"]*)" contains with Windows line endings and a byte order mark$`, t.theWorkspaceFileContainsWithWindowsLineEndingsAndAByteOrderMark)
+	ctx.Given(`^the workspace path "([^"]*)" is a symbolic link to "([^"]*)"$`, t.theWorkspacePathIsASymbolicLinkTo)
 	ctx.Given(`^the workspace folder "([^"]*)" exists$`, t.theWorkspaceFolderExists)
 	ctx.Given(`^the file "([^"]*)" exists with content$`, t.theFileExistsWithContent)
 	ctx.Given(`^the workspace path "([^"]*)" is removed$`, t.theWorkspacePathIsRemoved)
@@ -46,6 +49,25 @@ func (t *testUtils) theWorkspaceExists(name string) error {
 
 func (t *testUtils) theWorkspaceFileContains(path string, content *godog.DocString) error {
 	return writeFile(t.workspacePath(path), t.substitute(content.Content))
+}
+
+func (t *testUtils) theWorkspaceFileContainsWithWindowsLineEndingsAndAByteOrderMark(path string, content *godog.DocString) error {
+	windows := strings.ReplaceAll(t.substitute(content.Content), "\n", "\r\n") + "\r\n"
+	return writeFile(t.workspacePath(path), string(byteOrderMark)+windows)
+}
+
+func (t *testUtils) theWorkspacePathIsASymbolicLinkTo(path, target string) error {
+	link := t.workspacePath(path)
+	if err := os.MkdirAll(filepath.Dir(link), 0o755); err != nil {
+		return err
+	}
+	if err := os.Symlink(t.workspacePath(target), link); err != nil {
+		if runtime.GOOS == "windows" {
+			return godog.ErrSkip
+		}
+		return err
+	}
+	return nil
 }
 
 func (t *testUtils) theWorkspaceFolderExists(path string) error {

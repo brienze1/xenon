@@ -6,7 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/cucumber/godog"
 	"go.yaml.in/yaml/v3"
@@ -17,7 +19,11 @@ func (t *testUtils) registerThenFileSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the workspace file "([^"]*)" should not exist$`, t.theWorkspaceFileShouldNotExist)
 	ctx.Then(`^the workspace folder "([^"]*)" should exist$`, t.theWorkspaceFolderShouldExist)
 	ctx.Then(`^the workspace file "([^"]*)" should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theWorkspaceFileShouldContainTheFieldEqualTo)
+	ctx.Then(`^the workspace file "([^"]*)" should contain the field "([^"]*)" not equal to "([^"]*)"$`, t.theWorkspaceFileShouldContainTheFieldNotEqualTo)
+	ctx.Then(`^the workspace file "([^"]*)" should contain the field "([^"]*)" with the items "([^"]*)"$`, t.theWorkspaceFileShouldContainTheFieldWithTheItems)
 	ctx.Then(`^the workspace file "([^"]*)" should equal$`, t.theWorkspaceFileShouldEqual)
+	ctx.Then(`^the workspace file "([^"]*)" should still have Windows line endings and a byte order mark$`, t.theWorkspaceFileShouldStillHaveWindowsLineEndingsAndAByteOrderMark)
+	ctx.Then(`^the workspace folder "([^"]*)" should contain the entries "([^"]*)"$`, t.theWorkspaceFolderShouldContainTheEntries)
 	ctx.Step(`^I save the workspace file "([^"]*)" field "([^"]*)" as "([^"]*)"$`, t.iSaveTheWorkspaceFileFieldAs)
 	ctx.Then(`^the file "([^"]*)" should equal the resource file "([^"]*)"$`, t.theFileShouldEqualTheResourceFile)
 	ctx.Then(`^the file "([^"]*)" should be the generated body of (\d+) bytes$`, t.theFileShouldBeTheGeneratedBody)
@@ -62,6 +68,51 @@ func (t *testUtils) theWorkspaceFileShouldContainTheFieldEqualTo(path, field, ex
 		return err
 	}
 	return expectEqual(stringify(value), t.substitute(expected), field)
+}
+
+func (t *testUtils) theWorkspaceFileShouldContainTheFieldNotEqualTo(path, field, unexpected string) error {
+	value, err := t.workspaceFileField(path, field)
+	if err != nil {
+		return err
+	}
+	if stringify(value) == t.substitute(unexpected) {
+		return fmt.Errorf("%s: expected anything but %q", field, stringify(value))
+	}
+	return nil
+}
+
+func (t *testUtils) theWorkspaceFileShouldContainTheFieldWithTheItems(path, field, items string) error {
+	value, err := t.workspaceFileField(path, field)
+	if err != nil {
+		return err
+	}
+	return expectItems(value, t.substitute(items), field)
+}
+
+func (t *testUtils) theWorkspaceFileShouldStillHaveWindowsLineEndingsAndAByteOrderMark(path string) error {
+	content, err := os.ReadFile(t.workspacePath(path))
+	if err != nil {
+		return err
+	}
+	if !bytes.HasPrefix(content, byteOrderMark) || !bytes.Contains(content, []byte("\r\n")) {
+		return fmt.Errorf("%s was rewritten: %q", path, content)
+	}
+	return nil
+}
+
+func (t *testUtils) theWorkspaceFolderShouldContainTheEntries(path, entries string) error {
+	listing, err := os.ReadDir(t.workspacePath(path))
+	if err != nil {
+		return err
+	}
+	names := make([]string, 0, len(listing))
+	for _, entry := range listing {
+		names = append(names, entry.Name())
+	}
+	expected := strings.Split(t.substitute(entries), ", ")
+	sort.Strings(names)
+	sort.Strings(expected)
+	return expectEqual(strings.Join(names, ", "), strings.Join(expected, ", "), path+" entries")
 }
 
 func (t *testUtils) theWorkspaceFileShouldEqual(path string, expected *godog.DocString) error {

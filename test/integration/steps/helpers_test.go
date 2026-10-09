@@ -11,6 +11,8 @@ import (
 
 var placeholder = regexp.MustCompile(`\{\{([^}]+)\}\}`)
 
+var byteOrderMark = []byte{0xEF, 0xBB, 0xBF}
+
 func (t *testUtils) substitute(text string) string {
 	return placeholder.ReplaceAllStringFunc(text, func(match string) string {
 		name := placeholder.FindStringSubmatch(match)[1]
