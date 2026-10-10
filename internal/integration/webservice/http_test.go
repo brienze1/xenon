@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httptrace"
 	"os"
 	"path/filepath"
 	"strings"
@@ -79,18 +80,25 @@ func getRequest(url string) entity.EffectiveRequest {
 }
 
 func TestSendReturnsTheResponseWithTimings(t *testing.T) {
+	requestWritten, firstByteReceived := make(chan struct{}), make(chan struct{})
 	server := newRecordingServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		awaitClient(requestWritten)
 		time.Sleep(20 * time.Millisecond)
 		w.Header().Add("Set-Cookie", "b=2")
 		w.Header().Add("Set-Cookie", "a=1")
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusAccepted)
 		w.(http.Flusher).Flush()
+		awaitClient(firstByteReceived)
 		time.Sleep(20 * time.Millisecond)
 		_, _ = w.Write([]byte("hello"))
 	})
 	url := strings.Replace(server.server.URL, "127.0.0.1", "localhost", 1)
-	response := send(getRequest(url + "/a"))
+	ctx := httptrace.WithClientTrace(context.Background(), &httptrace.ClientTrace{
+		WroteRequest:         func(httptrace.WroteRequestInfo) { close(requestWritten) },
+		GotFirstResponseByte: func() { close(firstByteReceived) },
+	})
+	response := NewHttpWebservice(httpClient.HttpClientFactory(logger.LoggerWrapper())).Send(ctx, getRequest(url+"/a"))
 	if !response.IsOk() || response.StatusCode != http.StatusAccepted || response.StatusText != "Accepted" || response.Proto != "HTTP/1.1" {
 		t.Fatalf("response = %+v", response)
 	}
@@ -101,11 +109,18 @@ func TestSendReturnsTheResponseWithTimings(t *testing.T) {
 		t.Fatalf("headers keep the received order of repeated values: %+v", response.Headers)
 	}
 	timings := response.Timings
-	if timings.Dns <= 0 || timings.Connect <= 0 || timings.FirstByte < 15*time.Millisecond || timings.Download < 15*time.Millisecond || timings.Total < timings.FirstByte+timings.Download {
+	if timings.Dns <= 0 || timings.Connect <= 0 || timings.FirstByte < 20*time.Millisecond || timings.Download < 20*time.Millisecond || timings.Total < timings.FirstByte+timings.Download {
 		t.Fatalf("timings = %+v", timings)
 	}
 	if timings.Tls != 0 {
 		t.Fatalf("plain HTTP has no TLS time: %+v", timings)
+	}
+}
+
+func awaitClient(signal <-chan struct{}) {
+	select {
+	case <-signal:
+	case <-time.After(5 * time.Second):
 	}
 }
 

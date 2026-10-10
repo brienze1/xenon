@@ -80,6 +80,11 @@ func (e Environment) WithVariables(rows []VariableRow) Environment {
 	return e
 }
 
+func (e Environment) Renamed(name string) Environment {
+	e.Name = name
+	return e
+}
+
 func (e Environment) WithFileName(fileName string) Environment {
 	e.FileName = fileName
 	return e
@@ -102,4 +107,13 @@ func (e Environment) sortKey() string {
 
 func (e Environment) LogValue() any {
 	return map[string]any{"id": e.ID, "name": e.Name, "color": e.Color, "variables": len(e.Variables), "error": e.Error}
+}
+
+func NamedEnvironment(environments []Environment, name string) (Environment, bool) {
+	for _, environment := range environments {
+		if !environment.IsMalformed() && environment.HasName(name) {
+			return environment, true
+		}
+	}
+	return Environment{}, false
 }

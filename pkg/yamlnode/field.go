@@ -87,10 +87,12 @@ func (f Field) node() *yaml.Node {
 	return f.Value
 }
 
-// Any encodes a decoded YAML or JSON value (maps, lists, scalars) as a node; empty maps and lists use flow style.
+// Any encodes a decoded YAML or JSON value as a node, empty maps and lists in flow style; panics if it cannot be encoded.
 func Any(value any) *yaml.Node {
 	node := &yaml.Node{}
-	_ = node.Encode(value)
+	if err := node.Encode(value); err != nil {
+		panic(err)
+	}
 	if (node.Kind == yaml.MappingNode || node.Kind == yaml.SequenceNode) && len(node.Content) == 0 {
 		node.Style = yaml.FlowStyle
 	}

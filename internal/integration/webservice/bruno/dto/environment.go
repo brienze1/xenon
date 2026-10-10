@@ -18,17 +18,14 @@ var neonColors = map[enums.EnvColor][3]float64{
 	envcolor.Red:     {0xFF, 0x3D, 0x5A},
 }
 
-type EnvironmentVariable struct {
-	Key     string
-	Value   string
-	Enabled bool
-	Secret  bool
-}
-
 type Environment struct {
 	Name      string
 	Color     string
 	Variables []EnvironmentVariable
+}
+
+func NewEnvironment(name, color string) Environment {
+	return Environment{Name: name, Color: color, Variables: []EnvironmentVariable{}}
 }
 
 func (e *Environment) ToEntity(newId func() string) entity.ImportVariables {

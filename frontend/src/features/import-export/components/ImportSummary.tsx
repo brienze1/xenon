@@ -1,10 +1,11 @@
-import { useShallow } from 'zustand/react/shallow'
+import { useId } from 'react'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { countsLabel } from '@/features/import-export/lib/labels'
 import { useImportStore } from '@/features/import-export/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
-import type { ImportWarning, PmUsage } from '@/platform/mappers/import'
+import type { ImportWarning, ImportWorkspaceResult, PmUsage } from '@/platform/mappers/import'
+import { formatNumber } from '@/shared/lib/number-format'
 import styles from './ImportDialog.module.css'
 
 interface OpenButtonProps {
@@ -67,33 +68,47 @@ function UsageEntry({ usage }: UsageEntryProps) {
   )
 }
 
+interface WorkspaceEntryProps {
+  workspace: ImportWorkspaceResult
+}
+
+function WorkspaceEntry({ workspace }: WorkspaceEntryProps) {
+  const name = useWorkspacesStore((state) => state.workspaces.find((candidate) => candidate.localId === workspace.localId)?.name ?? workspace.localId)
+  return (
+    <li>
+      <span className={styles.name} translate="no">
+        {name}
+      </span>
+      : {countsLabel(workspace.created)}
+      {workspace.replaced > 0 ? `, ${formatNumber(workspace.replaced, 0)} replaced` : ''}
+      {workspace.skipped > 0 ? `, ${formatNumber(workspace.skipped, 0)} skipped` : ''}
+    </li>
+  )
+}
+
 export function ImportSummary() {
   const result = useImportStore((state) => state.result)
   const close = useImportStore((state) => state.close)
-  const workspaces = useWorkspacesStore(useShallow((state) => state.workspaces))
+  const failedId = useId()
+  const warningsId = useId()
+  const usagesId = useId()
   if (!result) {
     return null
   }
-  const nameOf = (localId: string) => workspaces.find((workspace) => workspace.localId === localId)?.name ?? localId
 
   return (
     <>
       <Dialog.Body>
         <ul className={styles.list}>
           {result.workspaces.map((workspace) => (
-            <li key={workspace.localId}>
-              <span className={styles.name} translate="no">
-                {nameOf(workspace.localId)}
-              </span>
-              : {countsLabel(workspace.created)}
-              {workspace.replaced > 0 ? `, ${workspace.replaced} replaced` : ''}
-              {workspace.skipped > 0 ? `, ${workspace.skipped} skipped` : ''}
-            </li>
+            <WorkspaceEntry key={workspace.localId} workspace={workspace} />
           ))}
         </ul>
         {result.failed.length > 0 ? (
-          <section className={styles.section} aria-label="Failed">
-            <h3 className={styles.sectionTitle}>Not imported</h3>
+          <section className={styles.section} aria-labelledby={failedId}>
+            <h3 id={failedId} className={styles.sectionTitle}>
+              Not Imported
+            </h3>
             <ul className={styles.list}>
               {result.failed.map((failure) => (
                 <li key={failure.itemKey}>
@@ -104,8 +119,10 @@ export function ImportSummary() {
           </section>
         ) : null}
         {result.warnings.length > 0 ? (
-          <section className={styles.section} aria-label="Needs attention">
-            <h3 className={styles.sectionTitle}>Needs attention ({result.warnings.length})</h3>
+          <section className={styles.section} aria-labelledby={warningsId}>
+            <h3 id={warningsId} className={styles.sectionTitle}>
+              Needs Attention ({formatNumber(result.warnings.length, 0)})
+            </h3>
             <ul className={styles.list}>
               {result.warnings.map((warning, index) => (
                 <WarningEntry key={`${warning.code}-${warning.itemId}-${index}`} warning={warning} />
@@ -114,8 +131,10 @@ export function ImportSummary() {
           </section>
         ) : null}
         {result.pmUsages.length > 0 ? (
-          <section className={styles.section} aria-label="Script APIs outside the subset">
-            <h3 className={styles.sectionTitle}>pm APIs outside Xenon’s script subset</h3>
+          <section className={styles.section} aria-labelledby={usagesId}>
+            <h3 id={usagesId} className={styles.sectionTitle}>
+              <span translate="no">pm</span> APIs Outside <span translate="no">Xenon</span>’s Script Subset
+            </h3>
             <ul className={styles.list}>
               {result.pmUsages.map((usage) => (
                 <UsageEntry key={usage.api} usage={usage} />

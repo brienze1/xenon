@@ -1,6 +1,8 @@
 package dto
 
 import (
+	"path"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -99,7 +101,7 @@ func (r *Request) passthrough() entity.SourceFields {
 	}
 	extra := map[string]any{}
 	for _, pair := range r.Settings {
-		if !contains(settingKeys, pair.Key) {
+		if !slices.Contains(settingKeys, pair.Key) {
 			extra[pair.Key] = scalar(pair.Value)
 		}
 	}
@@ -117,4 +119,12 @@ func scalar(value string) any {
 		return flag
 	}
 	return value
+}
+
+func nameOrFileName(name, file string) string {
+	if strings.TrimSpace(name) != "" {
+		return name
+	}
+	base := path.Base(file)
+	return strings.TrimSuffix(base, path.Ext(base))
 }

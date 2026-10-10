@@ -5,9 +5,10 @@ import { AppError } from '@/platform/errors'
 import { emptyDraft, type RequestDraft } from '@/platform/mappers/request'
 
 vi.mock('@/platform/services/requests', async (importOriginal) => {
-  const { confirmationOf, missingSecretsOf } = await importOriginal<typeof import('@/platform/services/requests')>()
+  const { confirmationOf, isCurlRefusal, missingSecretsOf } = await importOriginal<typeof import('@/platform/services/requests')>()
   return {
     confirmationOf,
+    isCurlRefusal,
     missingSecretsOf,
     applyUrl: vi.fn(),
     applyParams: vi.fn(),
@@ -222,7 +223,7 @@ describe('RequestBuilder', () => {
     expect(screen.getByRole('button', { name: 'Method POST' })).toBeInTheDocument()
     await vi.waitFor(() => expect(url).toHaveTextContent('https://api.test/x'))
     expect(useRequestBuilderStore.getState().tabs[tabId]!.draft.headers).toHaveLength(1)
-    await user.click(screen.getByRole('button', { name: 'Undo' }))
+    await user.click(screen.getByRole('button', { name: 'Undo Paste' }))
     expect(screen.queryByText('Replaced the request with the pasted cURL command.')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Method GET' })).toBeInTheDocument()
     await vi.waitFor(() => expect(url).toHaveTextContent('https://old.test'))
@@ -245,7 +246,7 @@ describe('RequestBuilder', () => {
     render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
     await user.click(screen.getByRole('textbox', { name: 'Request URL' }))
     await user.paste('curl ftp://x')
-    expect(await screen.findByRole('alert')).toHaveTextContent('Only HTTP and HTTPS URLs can be imported, not ftp://x')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Only HTTP and HTTPS URLs can be imported, not ftp://x. Check the cURL command and paste it again.')
   })
 
   it('picks standard and custom methods', async () => {

@@ -1,5 +1,3 @@
-import type { ImportClash, ImportPreview, ImportResult } from '@/platform/mappers/import'
-
 /** Marks a new workspace created for every included item at once rather than for one item. */
 export const ALL_INCLUDED = '*'
 
@@ -23,11 +21,4 @@ export interface ImportProgressState {
   done: number
   total: number
   currentItem: string
-}
-
-export interface ImportSession {
-  preview: ImportPreview | null
-  targets: Record<string, ImportTarget>
-  clashes: ImportClash[]
-  result: ImportResult | null
 }

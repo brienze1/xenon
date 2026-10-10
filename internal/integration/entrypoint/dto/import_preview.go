@@ -2,14 +2,6 @@ package dto
 
 import "github.com/brienze1/xenon/internal/domain/entity"
 
-type ImportPreviewItem struct {
-	Key           string       `json:"key"`
-	Kind          string       `json:"kind"`
-	Name          string       `json:"name"`
-	Counts        ImportCounts `json:"counts"`
-	WarningsCount int          `json:"warnings_count"`
-}
-
 type ImportPreview struct {
 	SourceId string              `json:"source_id"`
 	Kind     string              `json:"kind"`
@@ -29,13 +21,7 @@ func NewImportPreview(source entity.ImportSource) ImportPreview {
 		PmUsages: NewPmUsages(source.PmUsages()),
 	}
 	for _, item := range source.Items {
-		preview.Items = append(preview.Items, ImportPreviewItem{
-			Key:           item.Key,
-			Kind:          item.Kind.String(),
-			Name:          item.Name,
-			Counts:        NewImportCounts(item.Counts()),
-			WarningsCount: len(item.Warnings),
-		})
+		preview.Items = append(preview.Items, NewImportPreviewItem(item))
 	}
 	return preview
 }

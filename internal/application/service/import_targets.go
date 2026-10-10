@@ -5,8 +5,6 @@ import (
 
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
-	"github.com/brienze1/xenon/internal/domain/enums/importitemkind"
-	"github.com/brienze1/xenon/pkg/errs"
 )
 
 type importTargets struct {
@@ -15,19 +13,6 @@ type importTargets struct {
 	findTreeItem          usecase.FindTreeItem
 	listEnvironments      usecase.ListEnvironments
 	loadWorkspace         usecase.LoadWorkspace
-}
-
-type importTarget struct {
-	collection   *entity.Collection
-	globals      *entity.Workspace
-	workspace    entity.RegisteredWorkspace
-	planned      entity.ImportPlanItem
-	parentPath   string
-	item         entity.ImportItem
-	environments []entity.Environment
-	siblings     entity.TreeNode
-	tree         entity.Tree
-	placement    entity.ImportPlacement
 }
 
 func (i importTargets) resolve(ctx context.Context, source entity.ImportSource, plan entity.ImportPlan) ([]importTarget, error) {
@@ -43,14 +28,14 @@ func (i importTargets) resolve(ctx context.Context, source entity.ImportSource, 
 }
 
 func (i importTargets) target(ctx context.Context, source entity.ImportSource, planned entity.ImportPlanItem) (*importTarget, error) {
-	item, found := source.Item(planned.Key)
-	if !found {
-		return nil, errs.NotFoundError("the import source has no item "+planned.Key, "IMP-16404")
+	resolved, err := usecase.ResolveImportItem(source, planned.Key)
+	if err != nil {
+		return nil, err
 	}
-	if item.IsRequest() && !planned.IsIntoParent() {
-		return nil, errs.BadRequestError("A request must be imported into a collection or folder", "IMP-35400")
+	if resolved.IsRequest() && !planned.IsIntoParent() {
+		return nil, usecase.RejectTopLevelRequest()
 	}
-	item = item.Named(planned.Name)
+	item := resolved.Named(planned.Name)
 	workspace, err := i.findWorkspaceRegistry.FindWorkspace(ctx, planned.TargetLocalID)
 	if err != nil {
 		return nil, err
@@ -101,22 +86,4 @@ func (i importTargets) intoParent(ctx context.Context, target importTarget) (*im
 	target.collection = &collection
 	target.parentPath = target.tree.PathOf(parentId)
 	return &target, nil
-}
-
-func (t importTarget) clashes() []entity.Clash {
-	if t.item.IsVariables() {
-		return t.variableClashes()
-	}
-	clashes := usecase.FindImportClashes(t.item.Key, t.placement.Nodes, t.siblings.Children)
-	if t.collection != nil {
-		clashes = append(clashes, usecase.FindVariableClashes(t.item.Key, t.item.Root.Container.Variables, t.collection.Variables, t.collection.ID)...)
-	}
-	return clashes
-}
-
-func (t importTarget) variableClashes() []entity.Clash {
-	if t.item.Kind == importitemkind.Globals {
-		return usecase.FindVariableClashes(t.item.Key, t.item.Variables.Rows(), t.globals.Variables, t.globals.ID)
-	}
-	return usecase.FindEnvironmentClashes(t.item.Key, t.item.Name, t.environments)
 }

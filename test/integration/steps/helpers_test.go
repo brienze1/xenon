@@ -136,54 +136,33 @@ func expectEqual(actual, expected, what string) error {
 	return nil
 }
 
+func expectLength(actual any, length int, what string) error {
+	items, isArray := actual.([]any)
+	if !isArray {
+		return fmt.Errorf("%s is not a list: %v", what, actual)
+	}
+	if len(items) != length {
+		return fmt.Errorf("%s: expected %d items, got %d", what, length, len(items))
+	}
+	return nil
+}
+
 func resourceFileField(name, path string) (any, error) {
-	content, err := os.ReadFile(resourcePath(name))
+	return yamlFileField(resourcePath(name), path, "the resource "+name)
+}
+
+func yamlFileField(file, path, source string) (any, error) {
+	content, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}
 	var data any
 	if err := yaml.Unmarshal(content, &data); err != nil {
-		return nil, fmt.Errorf("resource %s is not YAML or JSON: %w", name, err)
+		return nil, fmt.Errorf("%s is not YAML or JSON: %w", source, err)
 	}
 	value, found := lookup(data, path)
 	if !found {
-		return nil, fmt.Errorf("field %q not found in the resource %s", path, name)
+		return nil, fmt.Errorf("field %q not found in %s", path, source)
 	}
 	return value, nil
-}
-
-func matchFields(actual, expected any, path string) error {
-	switch want := expected.(type) {
-	case map[string]any:
-		for key, value := range want {
-			child, found := lookup(actual, key)
-			if !found {
-				return fmt.Errorf("field %q is missing", joinFieldPath(path, key))
-			}
-			if err := matchFields(child, value, joinFieldPath(path, key)); err != nil {
-				return err
-			}
-		}
-		return nil
-	case []any:
-		got, isList := actual.([]any)
-		if !isList || len(got) != len(want) {
-			return fmt.Errorf("field %q: expected %d items, got %s", path, len(want), stringify(actual))
-		}
-		for index := range want {
-			if err := matchFields(got[index], want[index], joinFieldPath(path, strconv.Itoa(index))); err != nil {
-				return err
-			}
-		}
-		return nil
-	default:
-		return expectEqual(stringify(actual), stringify(want), "field "+strconv.Quote(path))
-	}
-}
-
-func joinFieldPath(parent, key string) string {
-	if parent == "" {
-		return key
-	}
-	return parent + "." + key
 }

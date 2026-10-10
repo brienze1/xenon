@@ -60,3 +60,22 @@ func TestHttpClientFactoryIsASingletonThatCanBeReplaced(t *testing.T) {
 		t.Fatal("SetHttpClientFactory must replace the cached instance")
 	}
 }
+
+type fakeArchive struct{ extracted []string }
+
+func (f *fakeArchive) Extract(archivePath, _ string, _ int64) error {
+	f.extracted = append(f.extracted, archivePath)
+	return nil
+}
+
+func TestArchiveFactoryIsASingletonThatCanBeReplaced(t *testing.T) {
+	first := GetArchive()
+	if first == nil || GetArchive() != first {
+		t.Fatal("GetArchive must return one cached instance")
+	}
+	replacement := &fakeArchive{}
+	SetArchive(replacement)
+	if err := GetArchive().Extract("/source.zip", "/target", 1); err != nil || len(replacement.extracted) != 1 {
+		t.Fatal("SetArchive must replace the cached instance")
+	}
+}

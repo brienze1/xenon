@@ -5,15 +5,6 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums/clashresolution"
 )
 
-type ImportPlanItem struct {
-	Key            string `json:"key" validate:"required,not_blank"`
-	TargetLocalId  string `json:"target_local_id" validate:"required_if=Include true"`
-	TargetParentId string `json:"target_parent_id"`
-	Name           string `json:"name" validate:"max=200"`
-	Resolution     string `json:"resolution" validate:"omitempty,oneof=replace keep_both skip"`
-	Include        bool   `json:"include"`
-}
-
 type ImportPlan struct {
 	SourceId   string           `json:"source_id" validate:"required,not_blank"`
 	ApplyToAll string           `json:"apply_to_all" validate:"omitempty,oneof=replace keep_both skip"`
@@ -22,15 +13,8 @@ type ImportPlan struct {
 
 func (i *ImportPlan) ToEntity() entity.ImportPlan {
 	plan := entity.ImportPlan{SourceID: i.SourceId, ApplyToAll: clashresolution.GetClashResolution(i.ApplyToAll), Items: make([]entity.ImportPlanItem, 0, len(i.Items))}
-	for _, item := range i.Items {
-		plan.Items = append(plan.Items, entity.ImportPlanItem{
-			Key:            item.Key,
-			TargetLocalID:  item.TargetLocalId,
-			TargetParentID: item.TargetParentId,
-			Name:           item.Name,
-			Resolution:     clashresolution.GetClashResolution(item.Resolution),
-			Include:        item.Include,
-		})
+	for index := range i.Items {
+		plan.Items = append(plan.Items, i.Items[index].ToEntity())
 	}
 	return plan
 }

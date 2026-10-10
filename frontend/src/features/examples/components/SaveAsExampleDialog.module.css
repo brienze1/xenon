@@ -22,12 +22,13 @@
 }
 
 .input:focus-visible {
-  border-color: var(--neon-cyan);
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .fieldError {
   margin: var(--space-2) 0 0;
-  color: var(--neon-red);
+  color: var(--status-error);
   font-size: var(--font-size-sm);
 }
 

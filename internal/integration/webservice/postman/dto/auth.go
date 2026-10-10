@@ -3,6 +3,7 @@ package dto
 import (
 	"bytes"
 	"encoding/json"
+	"slices"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/authtype"
@@ -43,7 +44,7 @@ func (a *Auth) ToEntity() entity.Auth {
 		return entity.Auth{Type: authtype.Bearer, Bearer: entity.AuthBearer{Token: text(attributeValue(attributes, "token"))}}
 	case a.Type == authtype.Basic.String():
 		return entity.Auth{Type: authtype.Basic, Basic: entity.AuthBasic{Username: text(attributeValue(attributes, "username")), Password: text(attributeValue(attributes, "password"))}}
-	case contains(reservedAuthTypes, a.Type):
+	case slices.Contains(reservedAuthTypes, a.Type):
 		return entity.Auth{Type: authtype.GetAuthType(a.Type), Attributes: authAttributes(attributes)}
 	default:
 		return entity.NewUnsupportedAuth(entity.AuthUnsupported{Origin: importorigin.Postman, Type: a.Type, Data: attributes})

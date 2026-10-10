@@ -3,6 +3,7 @@ package persistence
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io/fs"
 	"net/http"
@@ -24,14 +25,17 @@ import (
 )
 
 const (
-	pastedTextName     = "pasted text"
-	zipExtension       = ".zip"
-	importTempPattern  = "xenon-import-"
-	skippedImportDir   = "node_modules"
-	importDocumentExts = ".json .bru .yml .yaml"
+	pastedTextName    = "pasted text"
+	zipExtension      = ".zip"
+	jsonExtension     = ".json"
+	importTempPattern = "xenon-import-"
 )
 
-var utf8ByteOrderMark = []byte{0xEF, 0xBB, 0xBF}
+var (
+	utf8ByteOrderMark        = []byte{0xEF, 0xBB, 0xBF}
+	skippedImportDirs        = []string{"node_modules", ".git"}
+	importDocumentExtensions = []string{jsonExtension, ".bru", ".yml", ".yaml"}
+)
 
 type importSourcePersistence struct {
 	archive adapter.Archive
@@ -44,15 +48,16 @@ func NewImportSourcePersistence(archive adapter.Archive) adapter.ImportSourcePer
 }
 
 func (i *importSourcePersistence) Read(ctx context.Context, request entity.ImportRequest) ([]entity.ImportInput, []string, error) {
-	logger.Debug(ctx, "Started", map[string]any{"paths": request.Paths, "hasText": request.Text != ""})
+	logger.Debug(ctx, "Started", request)
 
 	if request.IsText() {
 		input, err := readPastedText(request.Text)
 		if err != nil {
 			return nil, nil, err
 		}
-		logger.Debug(ctx, "Finished", map[string]any{"inputs": 1})
-		return []entity.ImportInput{*input}, []string{}, nil
+		inputs := []entity.ImportInput{*input}
+		logger.Debug(ctx, "Finished", map[string]any{"inputs": inputs, "tempDirs": []string{}})
+		return inputs, []string{}, nil
 	}
 	inputs := make([]entity.ImportInput, 0, len(request.Paths))
 	tempDirs := make([]string, 0)
@@ -68,7 +73,7 @@ func (i *importSourcePersistence) Read(ctx context.Context, request entity.Impor
 		inputs = append(inputs, *input)
 	}
 
-	logger.Debug(ctx, "Finished", map[string]any{"inputs": len(inputs), "tempDirs": len(tempDirs)})
+	logger.Debug(ctx, "Finished", map[string]any{"inputs": inputs, "tempDirs": tempDirs})
 	return inputs, tempDirs, nil
 }
 
@@ -156,9 +161,7 @@ func readPastedText(text string) (*entity.ImportInput, error) {
 	if err := checkImportSize(pastedTextName, int64(len(data))); err != nil {
 		return nil, err
 	}
-	probe := model.NewImportProbe(pastedTextName, data, false)
-	probe.IsPasted = true
-	probe.Text = string(data)
+	probe := probeDocument(pastedTextName, data, false).Pasted(string(data))
 	return &entity.ImportInput{Root: "", Probe: probe, Documents: []entity.ImportDocument{{Path: pastedTextName, Data: data}}}, nil
 }
 
@@ -167,7 +170,7 @@ func readImportFile(path, name string, size int64) (*entity.ImportInput, error) 
 	if err != nil {
 		return nil, err
 	}
-	probe := model.NewImportProbe(name, data, strings.EqualFold(filepath.Ext(name), ".json"))
+	probe := probeDocument(name, data, strings.EqualFold(filepath.Ext(name), jsonExtension))
 	return &entity.ImportInput{Root: path, Probe: probe, Documents: []entity.ImportDocument{{Path: name, Data: data}}}, nil
 }
 
@@ -183,7 +186,10 @@ func readImportFolder(root, name string) (*entity.ImportInput, error) {
 		if !entry.Type().IsRegular() {
 			return nil
 		}
-		relative, _ := filepath.Rel(root, path)
+		relative, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
 		relative = filepath.ToSlash(relative)
 		input.Probe.Entries = append(input.Probe.Entries, relative)
 		if !isImportDocument(relative) {
@@ -210,6 +216,23 @@ func readImportFolder(root, name string) (*entity.ImportInput, error) {
 	return &input, nil
 }
 
+func probeDocument(name string, data []byte, isJsonFile bool) entity.ImportProbe {
+	trimmed := bytes.TrimSpace(data)
+	if !isJsonFile && !looksLikeJson(trimmed) {
+		return entity.ImportProbe{Name: name}
+	}
+	var document model.ImportProbe
+	if err := json.Unmarshal(trimmed, &document); err != nil {
+		var syntax *json.SyntaxError
+		return entity.ImportProbe{Name: name, IsMalformed: errors.As(err, &syntax)}
+	}
+	return document.ToEntity(name)
+}
+
+func looksLikeJson(data []byte) bool {
+	return bytes.HasPrefix(data, []byte("{")) || bytes.HasPrefix(data, []byte("["))
+}
+
 func readImportDocument(path, name string, size int64) ([]byte, error) {
 	if err := checkImportSize(name, size); err != nil {
 		return nil, err
@@ -234,14 +257,14 @@ func checkImportSize(name string, size int64) error {
 }
 
 func isSkippedImportDir(name string) bool {
-	return name == skippedImportDir || name == ".git"
+	return slices.Contains(skippedImportDirs, name)
 }
 
 func isImportDocument(relative string) bool {
 	if slices.ContainsFunc(strings.Split(relative, "/"), func(segment string) bool { return strings.HasPrefix(segment, ".") }) {
 		return false
 	}
-	return slices.Contains(strings.Fields(importDocumentExts), strings.ToLower(filepath.Ext(relative)))
+	return slices.Contains(importDocumentExtensions, strings.ToLower(filepath.Ext(relative)))
 }
 
 func singleFolderInside(dir string) string {

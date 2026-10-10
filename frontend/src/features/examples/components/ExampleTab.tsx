@@ -13,6 +13,7 @@ import { ExampleBody } from './ExampleBody'
 import styles from './ExampleTab.module.css'
 
 const SAVE_NEXT_STEP = 'Try again, or check that the request file and its folder are writable.'
+const LOAD_NEXT_STEP = 'Close this tab and open the example again from the sidebar.'
 
 const CONFLICT_MESSAGE = (
   <Banner.Message>The request file changed on disk since you opened this example. Keep your version or load the one from disk.</Banner.Message>
@@ -29,6 +30,10 @@ const HEADER_EXAMPLES: KeyValueExamples = { key: 'Content-Type', value: 'applica
 const NO_HEADERS: KeyValueRow[] = []
 
 const BODY_TAB = <Tabs.Tab value="body">Body</Tabs.Tab>
+
+const STATUS_CODE_LABEL = <span className={styles.label}>Status code</span>
+
+const STATUS_TEXT_LABEL = <span className={styles.label}>Status text</span>
 
 interface ExampleTabProps {
   tabId: string
@@ -69,7 +74,7 @@ export function ExampleTab({ tabId, requestEditor }: ExampleTabProps) {
       {error ? (
         <Banner.Root tone="error" className={styles.banner}>
           <Banner.Message>
-            <NoTranslateText text={withNextStep(error.description || error.code, SAVE_NEXT_STEP)} terms={[error.code]} />
+            <NoTranslateText text={withNextStep(error.description || error.code, status === 'error' ? LOAD_NEXT_STEP : SAVE_NEXT_STEP)} terms={[error.code]} />
           </Banner.Message>
         </Banner.Root>
       ) : null}
@@ -112,7 +117,7 @@ function ExampleResponseEditor({ tabId }: ExampleResponseEditorProps) {
     <>
       <div className={styles.statusLine}>
         <label className={styles.field}>
-          <span className={styles.label}>Status code</span>
+          {STATUS_CODE_LABEL}
           <input
             type="number"
             name="example-status-code"
@@ -125,7 +130,7 @@ function ExampleResponseEditor({ tabId }: ExampleResponseEditorProps) {
           />
         </label>
         <label className={styles.field}>
-          <span className={styles.label}>Status text</span>
+          {STATUS_TEXT_LABEL}
           <input
             name="example-status-text"
             autoComplete="off"

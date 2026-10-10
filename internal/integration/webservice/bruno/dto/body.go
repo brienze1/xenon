@@ -3,7 +3,6 @@ package dto
 import (
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/bodymode"
-	"github.com/brienze1/xenon/internal/domain/enums/formdatatype"
 	"github.com/brienze1/xenon/internal/domain/enums/rawlanguage"
 )
 
@@ -25,20 +24,6 @@ var rawBodyLanguages = map[string]string{
 	SparqlBody: rawlanguage.Text.String(),
 }
 
-type MultipartRow struct {
-	Key         string
-	Value       string
-	ContentType string
-	Files       []string
-	Enabled     bool
-}
-
-type FilePart struct {
-	Path        string
-	ContentType string
-	Selected    bool
-}
-
 type Body struct {
 	Mode      string
 	Text      string
@@ -47,6 +32,10 @@ type Body struct {
 	Pairs     []Pair
 	Multipart []MultipartRow
 	Files     []FilePart
+}
+
+func NewBody(mode string) Body {
+	return Body{Mode: mode, Pairs: []Pair{}, Multipart: []MultipartRow{}, Files: []FilePart{}}
 }
 
 func (b Body) ToEntity() entity.Body {
@@ -105,15 +94,4 @@ func (b Body) selectedFile() FilePart {
 		return b.Files[0]
 	}
 	return FilePart{}
-}
-
-func (m MultipartRow) toEntity() entity.FormDataRow {
-	row := entity.NewFormDataRow(m.Key, m.Value)
-	row.Enabled = m.Enabled
-	if len(m.Files) > 0 {
-		row = entity.NewFormDataRow(m.Key, "").WithType(formdatatype.File.String())
-		row.Enabled = m.Enabled
-		row.Src = entity.NewRepickFileRef(m.Files[0])
-	}
-	return row
 }

@@ -1,10 +1,16 @@
 import { useEffect, useId, useRef, useState, useTransition, type FormEvent } from 'react'
+import { withNextStep } from '@/shared/lib/next-step'
 import { Button } from '@/shared/ui/button/Button'
+import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { useImportStore } from '@/features/import-export/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import styles from './ImportDialog.module.css'
 
 const PICKER_TITLE = 'Choose the folder for the new workspace'
+
+const CREATE_NEXT_STEP = 'Choose another folder or name, then try again.'
+
+const NAME_LABEL = <span className={styles.label}>Workspace name</span>
 
 export function NewWorkspaceForm() {
   const [name, setName] = useState('')
@@ -41,7 +47,7 @@ export function NewWorkspaceForm() {
   return (
     <form aria-label="New workspace" className={styles.newWorkspace} noValidate onSubmit={onSubmit}>
       <label className={styles.field}>
-        <span className={styles.label}>Workspace name</span>
+        {NAME_LABEL}
         <input
           ref={nameRef}
           className={styles.input}
@@ -49,6 +55,7 @@ export function NewWorkspaceForm() {
           value={name}
           maxLength={200}
           autoComplete="off"
+          aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
           onChange={(event) => setName(event.target.value)}
         />
@@ -63,7 +70,7 @@ export function NewWorkspaceForm() {
       </div>
       {error ? (
         <p id={errorId} role="alert" className={styles.fieldError}>
-          {error.description || error.code}
+          <NoTranslateText text={withNextStep(error.description || error.code, CREATE_NEXT_STEP)} terms={[error.code]} />
         </p>
       ) : null}
       <div className={styles.formActions}>

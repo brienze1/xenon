@@ -47,7 +47,7 @@ var (
 )
 
 func ConvertBrunoAssertions(assertions []entity.BrunoAssertion) entity.ScriptTranslation {
-	translation := entity.ScriptTranslation{Lines: []string{}, Untranslated: []entity.UntranslatedLine{}}
+	translation := entity.NewScriptTranslation()
 	for _, assertion := range assertions {
 		line, converted := assertionLine(assertion)
 		if assertion.Enabled && !converted {

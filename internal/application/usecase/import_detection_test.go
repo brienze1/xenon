@@ -81,7 +81,7 @@ func TestScanPmUsageReportsApisOutsideTheSubset(t *testing.T) {
 	if !reflect.DeepEqual(usages, want) {
 		t.Fatalf("ScanPmUsage() =\n%+v\nwant\n%+v", usages, want)
 	}
-	warnings := PmUsageWarnings(append(usages, entity.PmUsage{API: "pm.require", Occurrences: []entity.PmOccurrence{{ItemID: "r", Path: "Acme/Raw", Phase: scriptphase.PreRequest, Line: 9}}}))
+	warnings := ListPmUsageWarnings(append(usages, entity.PmUsage{API: "pm.require", Occurrences: []entity.PmOccurrence{{ItemID: "r", Path: "Acme/Raw", Phase: scriptphase.PreRequest, Line: 9}}}))
 	if len(warnings) != 5 {
 		t.Fatalf("one warning per api and script, got %+v", warnings)
 	}

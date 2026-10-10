@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
+import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
+import { formatNumber } from '@/shared/lib/number-format'
 import { clashLabel } from '@/features/import-export/lib/labels'
 import { pendingClashes } from '@/features/import-export/lib/plan'
 import { useImportStore } from '@/features/import-export/store'
@@ -19,13 +21,13 @@ export function ClashPrompt() {
   return (
     <>
       <Dialog.Body>
-        <p className={styles.source} translate="no">
-          {clashLabel(clash.kind, clash.existingName)}
+        <p className={styles.source}>
+          <NoTranslateText text={clashLabel(clash.kind, clash.existingName)} terms={[clash.existingName]} />
         </p>
         <p>Replace it, keep both (the imported one gets “(imported)”), or skip it.</p>
         <label className={styles.checkbox}>
           <input type="checkbox" name="apply-to-all" checked={applyToAll} onChange={(event) => setApplyToAll(event.target.checked)} />
-          Apply to all {remaining > 1 ? `${remaining} clashes` : 'clashes'}
+          Apply to all {remaining > 1 ? `${formatNumber(remaining, 0)} clashes` : 'clashes'}
         </label>
       </Dialog.Body>
       <Dialog.Actions>

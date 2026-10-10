@@ -108,7 +108,7 @@ func NewManageImportService(
 }
 
 func (m *manageImport) Detect(ctx context.Context, request entity.ImportRequest) (*entity.ImportSource, error) {
-	logger.Info(ctx, "Started", map[string]any{"paths": request.Paths, "hasText": request.Text != ""})
+	logger.Info(ctx, "Started", map[string]any{"request": request})
 
 	inputs, tempDirs, err := m.readImportSource.Read(ctx, request)
 	if err != nil {
@@ -116,14 +116,16 @@ func (m *manageImport) Detect(ctx context.Context, request entity.ImportRequest)
 	}
 	source, err := m.detected(ctx, inputs, tempDirs)
 	if err != nil {
-		_ = m.discardImportSource.DiscardFiles(ctx, tempDirs)
+		if discardErr := m.discardImportSource.DiscardFiles(ctx, tempDirs); discardErr != nil {
+			logger.Error(ctx, discardErr, "The unread import files could not be discarded", map[string]any{"tempDirs": tempDirs})
+		}
 		return nil, err
 	}
 	if err := m.saveImportSource.Save(ctx, *source); err != nil {
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", map[string]any{"result": *source})
+	logger.Info(ctx, "Finished", map[string]any{"request": request, "result": *source})
 	return source, nil
 }
 

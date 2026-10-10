@@ -28,12 +28,6 @@ type TreeNode struct {
 	Ignored  bool
 }
 
-type TreeExample struct {
-	ID   string
-	Name string
-	Code int
-}
-
 func NewRequestNode(request Request, fileName string) TreeNode {
 	return TreeNode{
 		ID:       request.ID,
@@ -90,6 +84,10 @@ func (t TreeNode) IsRequest() bool {
 
 func (t TreeNode) IsItem() bool {
 	return t.Kind != itemkind.Error
+}
+
+func (t TreeNode) HasName(name string) bool {
+	return strings.EqualFold(strings.TrimSpace(t.Name), strings.TrimSpace(name))
 }
 
 func (t TreeNode) CopyName() string {
@@ -185,6 +183,14 @@ func (t TreeNode) EntriesExcept(fileName string) []string {
 	return t.EntriesWithout([]string{fileName})
 }
 
+func (t TreeNode) EntriesReplacing(replaced []TreeNode) []string {
+	fileNames := make([]string, 0, len(replaced))
+	for _, node := range replaced {
+		fileNames = append(fileNames, node.FileName)
+	}
+	return t.EntriesWithout(fileNames)
+}
+
 func (t TreeNode) EntriesWithout(fileNames []string) []string {
 	entries := make([]string, 0, len(t.Entries))
 	for _, entry := range t.Entries {
@@ -206,4 +212,13 @@ func (t TreeNode) find(id string) (*TreeNode, *TreeNode) {
 		}
 	}
 	return nil, nil
+}
+
+func NamedTreeNode(nodes []TreeNode, name string) (TreeNode, bool) {
+	for _, node := range nodes {
+		if node.IsItem() && node.HasName(name) {
+			return node, true
+		}
+	}
+	return TreeNode{}, false
 }

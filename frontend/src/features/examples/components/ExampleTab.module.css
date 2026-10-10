@@ -75,8 +75,8 @@
 
 .codeInput:focus-visible,
 .textInput:focus-visible {
-  border-color: var(--neon-cyan);
   outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .contentType {

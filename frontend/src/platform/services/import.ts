@@ -12,8 +12,6 @@ import {
 } from '../mappers/import'
 
 const EMPTY_RESPONSE = 'UNK-00204'
-export const UNRESOLVED_CLASHES = 'IMP-04409'
-export const UNKNOWN_SOURCE = 'IMP-05404'
 
 export interface ImportInput {
   paths?: string[]

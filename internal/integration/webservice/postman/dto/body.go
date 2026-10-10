@@ -2,6 +2,7 @@ package dto
 
 import (
 	"encoding/json"
+	"slices"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/bodymode"
@@ -18,15 +19,6 @@ const (
 )
 
 var postmanRawLanguages = []string{"json", "javascript", "xml", "html", "text"}
-
-type BodyFile struct {
-	Src any `json:"src"`
-}
-
-type BodyGraphQl struct {
-	Variables any    `json:"variables"`
-	Query     string `json:"query"`
-}
 
 type Body struct {
 	Raw        map[string]any `json:"-"`
@@ -113,7 +105,7 @@ func (b *Body) Passthrough() map[string]any {
 
 func (b *Body) language() string {
 	if options, isMap := b.Raw["options"].(map[string]any); isMap {
-		if raw, isMap := options[postmanRaw].(map[string]any); isMap && contains(postmanRawLanguages, text(raw[postmanRawLanguage])) {
+		if raw, isMap := options[postmanRaw].(map[string]any); isMap && slices.Contains(postmanRawLanguages, text(raw[postmanRawLanguage])) {
 			return text(raw[postmanRawLanguage])
 		}
 	}

@@ -6,13 +6,14 @@ import { SingleLineEditor } from '@/shared/ui/single-line-editor/SingleLineEdito
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
 import { useVariableEditing } from '@/features/request-builder/hooks/use-variable-editing'
 import { isCurlCommand } from '@/features/request-builder/lib/curl'
+import type { RequestBuilderMode } from '@/features/request-builder/model'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import styles from './RequestBar.module.css'
 
 interface RequestBarProps {
   tabId: string
   onSave: () => void
-  mode?: 'request' | 'example'
+  mode?: RequestBuilderMode
 }
 
 const CUSTOM_METHOD = /^[A-Za-z][A-Za-z0-9_-]{0,31}$/

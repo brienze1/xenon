@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"net/http"
 	"slices"
 	"unicode/utf8"
 
@@ -23,7 +24,7 @@ type ExampleResponse struct {
 }
 
 func NewExampleResponse() ExampleResponse {
-	return ExampleResponse{Code: 200, Status: "OK", Headers: []KeyValue{}, Body: []byte{}, BodyEncoding: bodyencoding.Text}
+	return ExampleResponse{Code: http.StatusOK, Status: http.StatusText(http.StatusOK), Headers: []KeyValue{}, Body: []byte{}, BodyEncoding: bodyencoding.Text}
 }
 
 func NewExampleResponseOf(response Response, body []byte) ExampleResponse {

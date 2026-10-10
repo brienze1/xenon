@@ -28,6 +28,7 @@ const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { useSidebarStore } = await import('@/features/sidebar/store')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
 const { InfoPanel } = await import('./InfoPanel')
+await import('./MarkdownView')
 
 function node(id: string, kind: TreeNode['kind'], name: string, children: TreeNode[] = []): TreeNode {
   return { id, kind, name, method: null, url: null, error: null, warning: null, children }

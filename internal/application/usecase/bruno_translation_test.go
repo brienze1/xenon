@@ -260,21 +260,6 @@ func TestDeriveCurlRequestNameUsesTheMethodAndPath(t *testing.T) {
 	}
 }
 
-func TestIsCurlCommandAcceptsCurlAndCurlExe(t *testing.T) {
-	cases := map[string]bool{
-		"curl https://x":      true,
-		"  CURL.EXE 'x'":      true,
-		"curlx https://x":     false,
-		"curl":                false,
-		"wget https://x/curl": false,
-	}
-	for text, want := range cases {
-		if got := IsCurlCommand(text); got != want {
-			t.Errorf("%q: got %v", text, got)
-		}
-	}
-}
-
 func TestDetectImportFormatRefusesMixedBrunoFormats(t *testing.T) {
 	cases := map[string]struct {
 		entries []string

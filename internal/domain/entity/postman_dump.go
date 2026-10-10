@@ -6,11 +6,6 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums/warningcode"
 )
 
-type PostmanDumpPart struct {
-	Name  string
-	Files int
-}
-
 type PostmanDump struct {
 	Collections  []ImportDocument
 	Environments []ImportDocument

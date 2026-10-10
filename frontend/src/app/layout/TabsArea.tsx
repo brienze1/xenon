@@ -8,6 +8,7 @@ import { useTabsStore } from '@/features/tabs/store'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
 import { PanelPlusArt } from '@/shared/ui/empty-state/illustrations/PanelPlusArt'
 import { Button } from '@/shared/ui/button/Button'
+import { isActiveTabExample } from '@/app/active-tab'
 import { ExampleWorkspace } from './ExampleWorkspace'
 import { RequestWorkspace } from './RequestWorkspace'
 import styles from './TabsArea.module.css'
@@ -42,7 +43,7 @@ export function TabsArea() {
   const activeTabId = useTabsStore((state) => state.activeTabId)
   const save = useTabsStore((state) => state.save)
   const newTab = useTabsStore((state) => state.newTab)
-  const isExample = useTabsStore((state) => state.tabs.some((tab) => tab.id === state.activeTabId && tab.kind === 'example'))
+  const isExample = useTabsStore(isActiveTabExample)
 
   return (
     <div className={styles.area}>

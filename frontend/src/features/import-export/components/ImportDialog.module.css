@@ -45,8 +45,10 @@
 
 .paste:focus-visible,
 .select:focus-visible,
-.nameInput:focus-visible {
-  border-color: var(--neon-cyan);
+.nameInput:focus-visible,
+.input:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .pasteActions {
@@ -126,13 +128,6 @@
   accent-color: var(--neon-cyan);
 }
 
-.choices {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  margin-top: var(--space-4);
-}
-
 .checkbox {
   display: flex;
   align-items: center;
@@ -149,6 +144,7 @@
   color: var(--color-text);
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
+  text-wrap: balance;
 }
 
 .list {
@@ -174,6 +170,8 @@
 
 .path {
   display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
   color: var(--color-text-muted);
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
@@ -209,10 +207,6 @@
   color: var(--color-text);
 }
 
-.input:focus-visible {
-  border-color: var(--neon-cyan);
-}
-
 .folderRow {
   display: flex;
   align-items: center;
@@ -223,7 +217,7 @@
 
 .fieldError {
   margin: 0;
-  color: var(--neon-red);
+  color: var(--status-error);
   font-size: var(--font-size-sm);
 }
 

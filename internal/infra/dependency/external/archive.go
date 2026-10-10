@@ -18,3 +18,8 @@ func GetArchive() adapter.Archive {
 	}
 	return archiveInstance
 }
+
+func SetArchive(archive adapter.Archive) {
+	archiveOnce.Do(func() {})
+	archiveInstance = archive
+}

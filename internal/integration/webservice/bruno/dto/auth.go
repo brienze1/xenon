@@ -1,6 +1,8 @@
 package dto
 
 import (
+	"slices"
+
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/authtype"
 	"github.com/brienze1/xenon/internal/domain/enums/importorigin"
@@ -44,6 +46,10 @@ type Auth struct {
 	Values []Pair
 }
 
+func NewAuth(mode string, values []Pair) Auth {
+	return Auth{Mode: mode, Values: values}
+}
+
 func (a Auth) value(key string) string {
 	for _, pair := range a.Values {
 		if pair.Key == key {
@@ -63,7 +69,7 @@ func (a Auth) ToEntity() entity.Auth {
 		return entity.Auth{Type: authtype.Bearer, Bearer: entity.AuthBearer{Token: a.value(bearerTokenKey)}}
 	case a.Mode == authtype.Basic.String():
 		return entity.Auth{Type: authtype.Basic, Basic: entity.AuthBasic{Username: a.value(basicUsernameKey), Password: a.value(basicPasswordKey)}}
-	case contains(mappedAuthTypes, a.Mode):
+	case slices.Contains(mappedAuthTypes, a.Mode):
 		return entity.Auth{Type: authtype.GetAuthType(a.Mode), Attributes: a.attributes()}
 	default:
 		return entity.NewUnsupportedAuth(entity.AuthUnsupported{Origin: importorigin.Bruno, Type: a.Mode, Data: a.data()})
@@ -91,13 +97,4 @@ func (a Auth) data() map[string]any {
 		data[pair.Key] = pair.Value
 	}
 	return data
-}
-
-func contains(values []string, value string) bool {
-	for _, candidate := range values {
-		if candidate == value {
-			return true
-		}
-	}
-	return false
 }

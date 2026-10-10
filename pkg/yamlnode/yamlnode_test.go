@@ -1,6 +1,7 @@
 package yamlnode
 
 import (
+	"errors"
 	"testing"
 
 	"go.yaml.in/yaml/v3"
@@ -136,6 +137,21 @@ func TestAnyEncodesDecodedValues(t *testing.T) {
 	if got := encode(t, fields, ""); got != want {
 		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
 	}
+}
+
+type unencodable struct{}
+
+func (unencodable) MarshalYAML() (any, error) {
+	return nil, errors.New("unencodable")
+}
+
+func TestAnyPanicsWhenTheValueCannotBeEncoded(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Fatal("Any() did not panic")
+		}
+	}()
+	Any(unencodable{})
 }
 
 func TestAbsentRemovesTheKeyAndNeverInsertsIt(t *testing.T) {

@@ -18,6 +18,16 @@ func (i ImportVariables) SecretOf(row VariableRow) (string, bool) {
 	return value, row.Secret && found
 }
 
+func (i ImportVariables) SecretValues() map[string]string {
+	secrets := map[string]string{}
+	for _, row := range i.Rows() {
+		if value, found := i.SecretOf(row); found {
+			secrets[row.Key] = value
+		}
+	}
+	return secrets
+}
+
 func (i ImportVariables) LogValue() any {
 	return map[string]any{"name": i.Environment.Name, "variables": len(i.Environment.Variables)}
 }

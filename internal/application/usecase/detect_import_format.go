@@ -2,9 +2,6 @@ package usecase
 
 import (
 	"net/http"
-	"path"
-	"slices"
-	"strings"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums"
@@ -13,117 +10,67 @@ import (
 )
 
 const (
-	curlPrefix           = "curl "
-	curlExePrefix        = "curl.exe "
-	brunoFileExtension   = ".bru"
-	postmanV21Marker     = "/collection/v2.1"
-	postmanV20Marker     = "/collection/v2.0"
-	postmanV1Marker      = "/collection/v1"
-	postmanV3Suffix      = ".request.yaml"
-	dumpMarker           = "archive.json"
-	brunoMarker          = "bruno.json"
-	environmentScope     = "environment"
-	globalsScope         = "globals"
-	postmanV21           = "2.1"
-	postmanV20           = "2.0"
 	unsupportedFormatMsg = " is not a Postman, Bruno or cURL export"
-)
-
-var (
-	openCollectionMarkers = []string{"opencollection.yml", "opencollection.yaml"}
-	yamlFileExtensions    = []string{".yml", ".yaml"}
+	invalidJsonMsg       = " is not valid JSON"
+	mixedBrunoFormatsMsg = " mixes Bruno .bru and YAML files"
+	postmanV3Msg         = "Postman v3 YAML is not supported yet; export the collection as v2.1 JSON"
+	postmanV1Msg         = "Postman v1 collections are not supported; export the collection as v2.1"
 )
 
 func DetectImportFormat(probe entity.ImportProbe) (enums.ImportKind, string, error) {
-	if probe.IsPasted && IsCurlCommand(probe.Text) {
+	switch {
+	case probe.IsPastedCurl():
 		return importkind.Curl, "", nil
-	}
-	if probe.IsFolder {
+	case probe.IsFolder:
 		return detectFolder(probe)
-	}
-	if strings.HasSuffix(strings.ToLower(probe.Name), postmanV3Suffix) {
-		return "", "", postmanV3Error()
-	}
-	if probe.IsMalformed {
-		return "", "", errs.BadRequestError(probe.Name+" is not valid JSON", "IMP-01400")
-	}
-	if probe.IsJson {
+	case probe.IsPostmanV3File():
+		return "", "", unsupportedImportError(postmanV3Msg)
+	case probe.IsMalformed:
+		return "", "", invalidImportError(probe.Name + invalidJsonMsg)
+	case probe.IsJson:
 		return detectJson(probe)
+	default:
+		return "", "", unsupportedImportError(probe.Name + unsupportedFormatMsg)
 	}
-	return "", "", unsupportedFormatError(probe.Name)
 }
 
 func detectFolder(probe entity.ImportProbe) (enums.ImportKind, string, error) {
-	topLevel := topLevelEntries(probe.Entries)
-	hasBruno := slices.Contains(topLevel, brunoMarker)
-	hasOpenCollection := slices.ContainsFunc(openCollectionMarkers, func(marker string) bool { return slices.Contains(topLevel, marker) })
-	mixesBruno := hasBruno && (hasOpenCollection || hasEntryWithExtension(probe.Entries, yamlFileExtensions...))
-	mixesYaml := hasOpenCollection && hasEntryWithExtension(probe.Entries, brunoFileExtension)
 	switch {
-	case slices.Contains(topLevel, dumpMarker):
+	case probe.IsPostmanDump():
 		return importkind.PostmanDump, "", nil
-	case mixesBruno || mixesYaml:
-		return "", "", errs.ClientError(probe.Name+" mixes Bruno .bru and YAML files", "IMP-00415", http.StatusUnsupportedMediaType)
-	case hasBruno:
+	case probe.MixesBrunoFormats():
+		return "", "", unsupportedImportError(probe.Name + mixedBrunoFormatsMsg)
+	case probe.IsBrunoBru():
 		return importkind.BrunoBru, "", nil
-	case hasOpenCollection:
+	case probe.IsBrunoYaml():
 		return importkind.BrunoYaml, "", nil
-	case slices.ContainsFunc(probe.Entries, func(entry string) bool { return strings.HasSuffix(strings.ToLower(entry), postmanV3Suffix) }):
-		return "", "", postmanV3Error()
+	case probe.HasPostmanV3Entry():
+		return "", "", unsupportedImportError(postmanV3Msg)
 	default:
-		return "", "", unsupportedFormatError(probe.Name)
+		return "", "", unsupportedImportError(probe.Name + unsupportedFormatMsg)
 	}
 }
 
 func detectJson(probe entity.ImportProbe) (enums.ImportKind, string, error) {
+	if version, found := probe.PostmanV2Version(); found {
+		return importkind.PostmanCollection, version, nil
+	}
 	switch {
-	case strings.Contains(probe.Schema, postmanV21Marker):
-		return importkind.PostmanCollection, postmanV21, nil
-	case strings.Contains(probe.Schema, postmanV20Marker):
-		return importkind.PostmanCollection, postmanV20, nil
-	case probe.HasV1Shape || strings.Contains(probe.Schema, postmanV1Marker):
-		return "", "", errs.BadRequestError("Postman v1 collections are not supported; export the collection as v2.1", "IMP-01400")
-	case probe.Scope == environmentScope:
+	case probe.IsPostmanV1():
+		return "", "", invalidImportError(postmanV1Msg)
+	case probe.IsEnvironment():
 		return importkind.PostmanEnvironment, "", nil
-	case probe.Scope == globalsScope:
+	case probe.IsGlobals():
 		return importkind.PostmanGlobals, "", nil
 	default:
-		return "", "", unsupportedFormatError(probe.Name)
+		return "", "", unsupportedImportError(probe.Name + unsupportedFormatMsg)
 	}
 }
 
-func topLevelEntries(entries []string) []string {
-	topLevel := make([]string, 0, len(entries))
-	for _, entry := range entries {
-		if !strings.Contains(entry, "/") {
-			topLevel = append(topLevel, strings.ToLower(path.Base(entry)))
-		}
-	}
-	return topLevel
+func invalidImportError(description string) error {
+	return errs.BadRequestError(description, "IMP-01400")
 }
 
-func postmanV3Error() error {
-	return errs.ClientError("Postman v3 YAML is not supported yet; export the collection as v2.1 JSON", "IMP-00415", http.StatusUnsupportedMediaType)
-}
-
-func unsupportedFormatError(name string) error {
-	return errs.ClientError(name+unsupportedFormatMsg, "IMP-00415", http.StatusUnsupportedMediaType)
-}
-
-func IsCurlCommand(text string) bool {
-	command := strings.ToLower(strings.TrimSpace(text))
-	return strings.HasPrefix(command, curlPrefix) || strings.HasPrefix(command, curlExePrefix)
-}
-
-func hasEntryWithExtension(entries []string, extensions ...string) bool {
-	for _, entry := range entries {
-		if !isHiddenEntry(entry) && slices.Contains(extensions, strings.ToLower(path.Ext(entry))) {
-			return true
-		}
-	}
-	return false
-}
-
-func isHiddenEntry(entry string) bool {
-	return slices.ContainsFunc(strings.Split(entry, "/"), func(segment string) bool { return strings.HasPrefix(segment, ".") })
+func unsupportedImportError(description string) error {
+	return errs.ClientError(description, "IMP-00415", http.StatusUnsupportedMediaType)
 }

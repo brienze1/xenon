@@ -1,5 +1,6 @@
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
+import { formatNumber } from '@/shared/lib/number-format'
 import { useImportStore } from '@/features/import-export/store'
 import styles from './ImportDialog.module.css'
 
@@ -15,7 +16,7 @@ export function ImportProgress() {
         <p className={styles.status} role="status">
           {progress && progress.currentItem ? (
             <>
-              Importing <span translate="no">{progress.currentItem}</span>… ({progress.done} of {total})
+              Importing <span translate="no">{progress.currentItem}</span>… ({formatNumber(progress.done, 0)} of {formatNumber(total, 0)})
             </>
           ) : (
             'Preparing the import…'

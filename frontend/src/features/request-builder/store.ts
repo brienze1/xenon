@@ -35,6 +35,7 @@ import { pickFile } from '@/platform/services/dialogs'
 import { inspectVariables, suggestVariables } from '@/platform/services/variables'
 import { keepRowIds } from '@/shared/lib/rows'
 import type { Result } from '@/shared/types/result'
+import { withPastedRequest } from './lib/curl'
 import { fieldText, withFieldText } from './lib/draft-fields'
 import { rowsOf, withRows, withSavedRows } from './lib/draft-rows'
 import type { BulkTable, FieldSelection, SubTab, TabDraft } from './model'
@@ -378,17 +379,7 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
       try {
         const parsed = await parseCurl(text)
         const before = tab(tabId)
-        patchDraft(tabId, (draft) => ({
-          ...draft,
-          method: parsed.draft.method,
-          url: parsed.draft.url,
-          params: parsed.draft.params,
-          pathVariables: parsed.draft.pathVariables,
-          headers: parsed.draft.headers,
-          auth: parsed.draft.auth,
-          body: parsed.draft.body,
-          settings: parsed.draft.settings,
-        }))
+        patchDraft(tabId, (draft) => withPastedRequest(draft, parsed.draft))
         patchTab(tabId, { curlPaste: { previous: before.draft, wasDirty: before.dirty, notices: parsed.notices }, error: null })
       } catch (error) {
         fail(tabId, error)

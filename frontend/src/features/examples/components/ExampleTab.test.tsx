@@ -100,7 +100,7 @@ describe('ExampleTab', () => {
     vi.mocked(examples.getExample).mockRejectedValue(new AppError('EXM-01404', 'the example does not exist'))
     await act(() => useExamplesStore.getState().open('tab-1', 'r1', 'e1'))
     render(<ExampleTab tabId="tab-1" requestEditor={<p>request editors</p>} />)
-    expect(screen.getByText(/the example does not exist/)).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent('the example does not exist. Close this tab and open the example again from the sidebar.')
     expect(screen.queryByText('request editors')).toBeNull()
   })
 })

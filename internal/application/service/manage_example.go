@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"io"
 
 	"github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/application/usecase"
@@ -18,11 +17,6 @@ type manageExample struct {
 	saveRequestExamples   usecase.SaveRequestExamples
 	findResponse          usecase.FindResponse
 	saveResponse          usecase.SaveResponse
-}
-
-type loadedExamples struct {
-	root    string
-	request entity.Request
 }
 
 func NewManageExampleService(
@@ -48,7 +42,7 @@ func (m *manageExample) Get(ctx context.Context, localId, requestId, exampleId s
 	if err != nil {
 		return nil, err
 	}
-	example, err := existingExample(loaded.request, exampleId)
+	example, err := usecase.ResolveExample(loaded.request, exampleId)
 	if err != nil {
 		return nil, err
 	}
@@ -111,26 +105,26 @@ func (m *manageExample) Save(ctx context.Context, localId, requestId string, exa
 		return nil, err
 	}
 	if current.BlocksSave(baseRevision, force) {
-		return nil, errs.ConflictError("the request changed on disk since it was opened", "REQ-02409")
+		return nil, usecase.RejectStaleExampleSave()
 	}
 	loaded, err := m.load(ctx, localId, requestId)
 	if err != nil {
 		return nil, err
 	}
-	stored, err := existingExample(loaded.request, example.ID)
+	stored, err := usecase.ResolveExample(loaded.request, example.ID)
 	if err != nil {
 		return nil, err
 	}
 	edited := stored.Edited(example, keepBody)
 	if !edited.Response.HasValidCode() {
-		return nil, errs.BadRequestError("the response status code must be between 100 and 599", "EXM-04400")
+		return nil, usecase.RejectInvalidExampleCode()
 	}
 	details, err := m.saveNamed(ctx, *loaded, edited, loaded.request.WithExample(edited))
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "requestId": requestId, "example": example, "result": *details})
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "requestId": requestId, "example": example, "keepBody": keepBody, "baseRevision": baseRevision, "force": force, "result": *details})
 	return details, nil
 }
 
@@ -141,7 +135,7 @@ func (m *manageExample) Rename(ctx context.Context, localId, requestId, exampleI
 	if err != nil {
 		return nil, err
 	}
-	stored, err := existingExample(loaded.request, exampleId)
+	stored, err := usecase.ResolveExample(loaded.request, exampleId)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +156,7 @@ func (m *manageExample) Duplicate(ctx context.Context, localId, requestId, examp
 	if err != nil {
 		return nil, err
 	}
-	stored, err := existingExample(loaded.request, exampleId)
+	stored, err := usecase.ResolveExample(loaded.request, exampleId)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +177,7 @@ func (m *manageExample) Delete(ctx context.Context, localId, requestId, exampleI
 	if err != nil {
 		return err
 	}
-	if _, err := existingExample(loaded.request, exampleId); err != nil {
+	if _, err := usecase.ResolveExample(loaded.request, exampleId); err != nil {
 		return err
 	}
 	if _, err := m.saveRequestExamples.SaveExamples(ctx, loaded.root, loaded.request.WithoutExample(exampleId)); err != nil {
@@ -208,33 +202,35 @@ func (m *manageExample) load(ctx context.Context, localId, requestId string) (*l
 
 func (m *manageExample) received(ctx context.Context, tabId string) (*entity.Response, []byte, error) {
 	response, err := m.findResponse.Find(ctx, tabId)
-	if errs.IsNotFoundError(err) || err == nil && !response.IsOk() {
-		return nil, nil, errs.NotFoundError("the tab has no response to save", "EXM-02404")
+	if errs.IsNotFoundError(err) {
+		return nil, nil, usecase.RejectMissingTabResponse()
 	}
 	if err != nil {
 		return nil, nil, err
+	}
+	if !response.IsOk() {
+		return nil, nil, usecase.RejectMissingTabResponse()
 	}
 	content, err := m.findResponse.OpenBody(ctx, tabId)
 	if err != nil {
 		return nil, nil, err
 	}
-	defer func() { _ = content.Close() }()
-	body, err := io.ReadAll(content)
+	body, err := usecase.ReadResponseContent(content)
 	if err != nil {
-		return nil, nil, errs.FileError(err, "EXM-12500")
+		return nil, nil, err
 	}
 	return response, body, nil
 }
 
 func (m *manageExample) saveNamed(ctx context.Context, loaded loadedExamples, example entity.SavedExample, updated entity.Request) (*entity.ExampleDetails, error) {
 	if !example.HasValidName() {
-		return nil, errs.BadRequestError("the example name must have 1 to 200 characters", "EXM-03400")
+		return nil, usecase.RejectInvalidExampleName()
 	}
 	saved, err := m.saveRequestExamples.SaveExamples(ctx, loaded.root, updated)
 	if err != nil {
 		return nil, err
 	}
-	stored, err := existingExample(*saved, example.ID)
+	stored, err := usecase.ResolveExample(*saved, example.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -249,12 +245,4 @@ func (m *manageExample) served(ctx context.Context, request entity.Request, exam
 		}
 	}
 	return &details, nil
-}
-
-func existingExample(request entity.Request, exampleId string) (*entity.SavedExample, error) {
-	example, found := request.Example(exampleId)
-	if !found {
-		return nil, errs.NotFoundError("the example does not exist", "EXM-01404")
-	}
-	return &example, nil
 }

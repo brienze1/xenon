@@ -22,12 +22,14 @@ type Url struct {
 	IsString bool           `json:"-"`
 }
 
+func NewTextUrl(raw string) Url {
+	return Url{Text: raw, IsString: true, Query: queryOf(raw)}
+}
+
 func (u *Url) UnmarshalJSON(data []byte) error {
 	var raw string
 	if err := json.Unmarshal(data, &raw); err == nil {
-		u.Text = raw
-		u.IsString = true
-		u.Query = queryOf(raw)
+		*u = NewTextUrl(raw)
 		return nil
 	}
 	type plain Url

@@ -150,6 +150,7 @@ describe('SidebarPanel', () => {
     vi.resetAllMocks()
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
     useSidebarStore.getState().reset()
+    useImportStore.getState().reset()
     vi.mocked(tree.getTree).mockResolvedValue(sample)
   })
 
@@ -310,7 +311,6 @@ describe('SidebarPanel', () => {
     await renderPanel()
     await userEvent.click(screen.getByRole('button', { name: 'Import' }))
     expect(useImportStore.getState().step).toBe('choose')
-    useImportStore.getState().reset()
   })
 
   it('adds a Variables tab to collection settings only', async () => {

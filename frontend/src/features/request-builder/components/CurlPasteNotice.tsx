@@ -33,7 +33,7 @@ export function CurlPasteNotice({ tabId }: CurlPasteNoticeProps) {
       </Banner.Message>
       <Banner.Actions>
         <Button variant="secondary" size="sm" onClick={() => undo(tabId)}>
-          Undo
+          Undo Paste
         </Button>
         <Button variant="ghost" size="sm" onClick={() => dismiss(tabId)}>
           Dismiss

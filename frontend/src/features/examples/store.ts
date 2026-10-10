@@ -188,27 +188,25 @@ export const useExamplesStore = create<ExamplesState>()((set, get) => {
 
     adoptRename: async (exampleId) => {
       const localId = activeLocalId()
-      const tabIds = Object.keys(get().tabs).filter((tabId) => get().tabs[tabId]?.exampleId === exampleId)
-      if (!localId || tabIds.length === 0) {
+      const renaming = Object.entries(get().tabs).filter(([, tab]) => tab.exampleId === exampleId)
+      if (!localId) {
         return
       }
-      for (const tabId of tabIds) {
-        const tab = get().tabs[tabId]
-        if (!tab) {
-          continue
-        }
-        try {
-          const renamed = await getExample(localId, tab.requestId, exampleId)
-          if (get().isDirty(tabId)) {
-            patchTab(tabId, { example: tab.example ? { ...tab.example, name: renamed.name, revision: renamed.revision } : renamed })
-            builder().setName(tabId, renamed.name)
-          } else {
-            loaded(tabId, renamed)
+      await Promise.all(
+        renaming.map(async ([tabId, tab]) => {
+          try {
+            const renamed = await getExample(localId, tab.requestId, exampleId)
+            if (get().isDirty(tabId)) {
+              patchTab(tabId, { example: tab.example ? { ...tab.example, name: renamed.name, revision: renamed.revision } : renamed })
+              builder().setName(tabId, renamed.name)
+            } else {
+              loaded(tabId, renamed)
+            }
+          } catch (error) {
+            patchTab(tabId, { error: toAppError(error) })
           }
-        } catch (error) {
-          patchTab(tabId, { error: toAppError(error) })
-        }
-      }
+        }),
+      )
     },
 
     openSaveDialog: (tabId, requestId) => set({ saveDialog: { tabId, requestId } }),

@@ -27,7 +27,10 @@ func (t *testUtils) registerGivenWorkspaceSteps(ctx *godog.ScenarioContext) {
 
 func (t *testUtils) theWorkspaceExists(name string) error {
 	folder := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
-	payload, _ := json.Marshal(map[string]string{"name": name, "path": filepath.Join(t.workspaceRoot, folder)})
+	payload, err := json.Marshal(map[string]string{"name": name, "path": filepath.Join(t.workspaceRoot, folder)})
+	if err != nil {
+		return err
+	}
 	if err := t.call(context.Background(), "WorkspaceService", "Create", string(payload)); err != nil {
 		return err
 	}

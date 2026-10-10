@@ -13,19 +13,23 @@ type ImportWarning struct {
 	Location string `json:"location"`
 }
 
+func NewImportWarning(warning entity.ImportWarning) ImportWarning {
+	return ImportWarning{
+		Code:     warning.Code.String(),
+		Severity: warning.Severity.String(),
+		Message:  warning.Message,
+		ItemKey:  warning.ItemKey,
+		ItemId:   warning.ItemID,
+		LocalId:  warning.LocalID,
+		Path:     warning.Path,
+		Location: warning.Location,
+	}
+}
+
 func NewImportWarnings(warnings []entity.ImportWarning) []ImportWarning {
 	result := make([]ImportWarning, 0, len(warnings))
 	for _, warning := range warnings {
-		result = append(result, ImportWarning{
-			Code:     warning.Code.String(),
-			Severity: warning.Severity.String(),
-			Message:  warning.Message,
-			ItemKey:  warning.ItemKey,
-			ItemId:   warning.ItemID,
-			LocalId:  warning.LocalID,
-			Path:     warning.Path,
-			Location: warning.Location,
-		})
+		result = append(result, NewImportWarning(warning))
 	}
 	return result
 }

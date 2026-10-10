@@ -14,3 +14,7 @@ func (i ImportRequest) HasInput() bool {
 func (i ImportRequest) IsText() bool {
 	return len(i.Paths) == 0
 }
+
+func (i ImportRequest) LogValue() any {
+	return map[string]any{"paths": i.Paths, "hasText": i.Text != ""}
+}

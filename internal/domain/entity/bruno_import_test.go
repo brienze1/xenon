@@ -145,3 +145,21 @@ func TestParsedCurlLogValueHidesHeaders(t *testing.T) {
 		t.Errorf("log = %+v", logged)
 	}
 }
+
+func TestImportProbeIsPastedCurlAcceptsCurlAndCurlExe(t *testing.T) {
+	cases := map[string]bool{
+		"curl https://x":      true,
+		"  CURL.EXE 'x'":      true,
+		"curlx https://x":     false,
+		"curl":                false,
+		"wget https://x/curl": false,
+	}
+	for text, want := range cases {
+		if got := (ImportProbe{}).Pasted(text).IsPastedCurl(); got != want {
+			t.Errorf("%q: got %v", text, got)
+		}
+	}
+	if (ImportProbe{Text: "curl https://x"}).IsPastedCurl() {
+		t.Error("a file probe is never a pasted cURL command")
+	}
+}

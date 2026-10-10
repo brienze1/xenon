@@ -10,11 +10,10 @@ const DROP_HINT = <p>Drop Postman or Bruno exports, folders or zips anywhere on 
 export function ImportSourceStep() {
   const [text, setText] = useState('')
   const pasteId = useId()
-  const step = useImportStore((state) => state.step)
+  const detecting = useImportStore((state) => state.step === 'detecting')
   const pickSources = useImportStore((state) => state.pickSources)
   const detect = useImportStore((state) => state.detect)
   const close = useImportStore((state) => state.close)
-  const detecting = step === 'detecting'
 
   return (
     <>

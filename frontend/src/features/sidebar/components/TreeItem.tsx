@@ -3,7 +3,7 @@ import { cn } from '@/shared/lib/cn'
 import { ContextMenu } from '@/shared/ui/context-menu/ContextMenu'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
 import type { TreeNode } from '@/platform/mappers/tree'
-import { findExampleRequest, isContainer, isExpandable, type TreeRow } from '@/features/sidebar/lib/tree-rows'
+import { isContainer, isExpandable, type TreeRow } from '@/features/sidebar/lib/tree-rows'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { RenameInput } from './RenameInput'
 import styles from './TreeItem.module.css'
@@ -32,7 +32,7 @@ interface TreeItemProps extends TreeItemActions {
 }
 
 export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenExample, onPinExample, onOpenSettings, onDelete, onRenamed }: TreeItemProps) {
-  const { node, depth, expanded, code } = row
+  const { node, depth, expanded, code, requestId } = row
   const selected = useSidebarStore((state) => state.selectedId === node.id)
   const renaming = useSidebarStore((state) => state.renamingId === node.id)
   const select = useSidebarStore((state) => state.select)
@@ -49,29 +49,22 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenEx
   const expandable = isExpandable(node)
   const isExample = node.kind === 'example'
 
-  function withExampleRequest(action: (requestId: string) => void) {
-    const request = findExampleRequest(useSidebarStore.getState().tree, node.id)
-    if (request) {
-      action(request.id)
-    }
-  }
-
   function activate() {
     select(node.id)
     if (container) {
       toggle(node.id)
     } else if (node.kind === 'request') {
       onOpenRequest(node.id)
-    } else if (isExample) {
-      withExampleRequest((requestId) => onOpenExample(requestId, node.id))
+    } else if (isExample && requestId) {
+      onOpenExample(requestId, node.id)
     }
   }
 
   function pinItem() {
     if (node.kind === 'request') {
       onPinRequest(node.id)
-    } else if (isExample) {
-      withExampleRequest((requestId) => onPinExample(requestId, node.id))
+    } else if (isExample && requestId) {
+      onPinExample(requestId, node.id)
     }
   }
 
@@ -129,7 +122,8 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenEx
           </span>
           {node.kind === 'request' ? <MethodBadge method={node.method ?? 'GET'} className={styles.method} /> : null}
           {isExample ? (
-            <span className={styles.code} aria-label={`Status ${code ?? ''}`}>
+            <span className={styles.code}>
+              <span className="visually-hidden">Status </span>
               {code}
             </span>
           ) : null}

@@ -7,7 +7,6 @@ import (
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums"
-	"github.com/brienze1/xenon/internal/domain/enums/importitemkind"
 	"github.com/brienze1/xenon/pkg/logger"
 )
 
@@ -23,7 +22,7 @@ type importVariablesWriter struct {
 func (w importVariablesWriter) importOne(ctx context.Context, target importTarget, resolution enums.ClashResolution) entity.ImportOutcome {
 	write, err := w.written(ctx, target, resolution)
 	if err != nil {
-		return usecase.FailedImport(target.item, target.workspace.LocalID, err)
+		return usecase.FailImportItem(target.item, target.workspace.LocalID, err)
 	}
 	if write.IsEmpty() {
 		return target.item.Skipped(target.workspace.LocalID)
@@ -35,7 +34,7 @@ func (w importVariablesWriter) importOne(ctx context.Context, target importTarge
 }
 
 func (w importVariablesWriter) written(ctx context.Context, target importTarget, resolution enums.ClashResolution) (*entity.ImportVariablesWrite, error) {
-	if target.item.Kind == importitemkind.Globals {
+	if target.item.IsGlobals() {
 		return w.globals(ctx, target, resolution)
 	}
 	write := usecase.PlanEnvironmentImport(*target.item.Variables, target.environments, resolution)

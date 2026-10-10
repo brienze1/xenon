@@ -1,0 +1,24 @@
+package service
+
+import (
+	"strconv"
+
+	"github.com/brienze1/xenon/internal/application/usecase"
+	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums"
+)
+
+type importRead struct {
+	items    []entity.ImportItem
+	warnings []entity.ImportWarning
+}
+
+func (i *importRead) addTree(kind enums.ImportItemKind, root entity.ImportNode, warnings []entity.ImportWarning) {
+	item := entity.NewImportItem(i.nextKey(), kind, root, warnings)
+	usages := usecase.ScanPmUsage(item.Scripts())
+	i.items = append(i.items, item.WithPmUsages(usages).WithWarnings(usecase.ListPmUsageWarnings(usages)))
+}
+
+func (i *importRead) nextKey() string {
+	return strconv.Itoa(len(i.items))
+}

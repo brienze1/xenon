@@ -1,6 +1,6 @@
 import { formatNumber } from '@/shared/lib/number-format'
 import { Tabs } from '@/shared/ui/tabs/Tabs'
-import type { SubTab } from '@/features/request-builder/model'
+import type { RequestBuilderMode, SubTab } from '@/features/request-builder/model'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { AuthPanel } from './AuthPanel'
 import { BodyPanel } from './BodyPanel'
@@ -12,7 +12,7 @@ import { SettingsPanel } from './SettingsPanel'
 
 interface RequestTabsProps {
   tabId: string
-  mode?: 'request' | 'example'
+  mode?: RequestBuilderMode
 }
 
 const SCRIPTS_PANEL = (

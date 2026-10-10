@@ -1,8 +1,10 @@
 import { useId } from 'react'
+import { isCurlRefusal } from '@/platform/services/requests'
 import { withNextStep } from '@/shared/lib/next-step'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
+import type { RequestBuilderMode } from '@/features/request-builder/model'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { ConfirmSendDialog } from './ConfirmSendDialog'
 import { CurlPasteNotice } from './CurlPasteNotice'
@@ -13,6 +15,8 @@ import { RequestTabs } from './RequestTabs'
 
 const SAVE_NEXT_STEP = 'Try again, or check that the request file and its folder are writable.'
 
+const CURL_NEXT_STEP = 'Check the cURL command and paste it again.'
+
 const CONFLICT_MESSAGE = (
   <Banner.Message>This request changed on disk since you opened it. Keep your version or load the one from disk.</Banner.Message>
 )
@@ -20,8 +24,7 @@ const CONFLICT_MESSAGE = (
 interface RequestBuilderProps {
   tabId: string
   onSave: () => void
-  /** `example` edits an example's request snapshot: no Send, no scripts or settings. */
-  mode?: 'request' | 'example'
+  mode?: RequestBuilderMode
 }
 
 export function RequestBuilder({ tabId, onSave, mode = 'request' }: RequestBuilderProps) {
@@ -59,7 +62,7 @@ export function RequestBuilder({ tabId, onSave, mode = 'request' }: RequestBuild
       {mode === 'request' && error ? (
         <Banner.Root tone="error" className={styles.banner}>
           <Banner.Message>
-            <NoTranslateText text={withNextStep(error.description || error.code, SAVE_NEXT_STEP)} terms={[error.code]} />
+            <NoTranslateText text={withNextStep(error.description || error.code, isCurlRefusal(error) ? CURL_NEXT_STEP : SAVE_NEXT_STEP)} terms={[error.code]} />
           </Banner.Message>
         </Banner.Root>
       ) : null}

@@ -68,9 +68,10 @@ export function withRequestLocations(
   locations: readonly ImportLocation[],
 ): Record<string, ImportTarget> {
   const [first] = locations
+  const kinds = new Map(preview.items.map((item) => [item.key, item.kind]))
   return Object.fromEntries(
     Object.entries(targets).map(([key, target]) => {
-      const kind = preview.items.find((item) => item.key === key)?.kind ?? ''
+      const kind = kinds.get(key) ?? ''
       const placeable = first !== undefined && needsLocation(kind) && target.localId === localId && target.parentId === ''
       return [key, placeable ? { ...target, parentId: first.id } : target]
     }),

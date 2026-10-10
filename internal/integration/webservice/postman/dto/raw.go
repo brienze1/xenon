@@ -2,6 +2,7 @@ package dto
 
 import (
 	"encoding/json"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -15,20 +16,11 @@ func decodeRaw(data []byte) map[string]any {
 func without(raw map[string]any, keys ...string) map[string]any {
 	rest := map[string]any{}
 	for key, value := range raw {
-		if !contains(keys, key) {
+		if !slices.Contains(keys, key) {
 			rest[key] = value
 		}
 	}
 	return rest
-}
-
-func contains(keys []string, key string) bool {
-	for _, candidate := range keys {
-		if candidate == key {
-			return true
-		}
-	}
-	return false
 }
 
 func withEntry(fields map[string]any, key string, value map[string]any) map[string]any {

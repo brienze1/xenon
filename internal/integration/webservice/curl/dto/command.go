@@ -67,6 +67,14 @@ func (c *Command) Notice(notice string) {
 	c.Notices = append(c.Notices, notice)
 }
 
+func (c *Command) IgnoreUrlsOtherThan(address string) {
+	for _, other := range c.Urls {
+		if other != address {
+			c.Notice("Ignored the extra URL " + other)
+		}
+	}
+}
+
 func (c *Command) ToEntity(address string) entity.ParsedCurl {
 	request := entity.NewRequest("", "")
 	request.URL = address

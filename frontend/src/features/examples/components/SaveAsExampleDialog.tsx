@@ -80,7 +80,7 @@ function SaveAsExampleForm({ onCreated }: SaveAsExampleDialogProps) {
             maxLength={200}
             autoComplete="off"
             placeholder="Created…"
-            aria-invalid={nameError !== null}
+            aria-invalid={nameError ? true : undefined}
             aria-describedby={nameError ? nameErrorId : undefined}
             onChange={(event) => {
               setName(event.target.value)

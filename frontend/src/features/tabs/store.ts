@@ -110,7 +110,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
     return get().tabs.find((tab) => isExampleTab(tab) && tab.exampleId === exampleId)
   }
 
-  function tabById(tabId: string): TabMeta | undefined {
+  function tabById(tabId: string | null): TabMeta | undefined {
     return get().tabs.find((tab) => tab.id === tabId)
   }
 
@@ -315,7 +315,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         }
         return
       }
-      const tab = get().tabs.find((candidate) => candidate.id === tabId)
+      const tab = tabById(tabId)
       if (!tab?.requestId) {
         set({ closePrompt: null, closeError: null, saveDialog: { tabId, mode: 'save', closeAfter: true } })
         return
@@ -346,7 +346,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
 
     save: async (tabId) => {
       const target = activeOr(tabId)
-      const tab = get().tabs.find((candidate) => candidate.id === target)
+      const tab = tabById(target)
       if (!tab) {
         return
       }
@@ -460,7 +460,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
     },
 
     loadFromDisk: async (tabId) => {
-      const requestId = get().tabs.find((tab) => tab.id === tabId)?.requestId
+      const requestId = tabById(tabId)?.requestId
       if (requestId && (await builder().openSaved(tabId, requestId))) {
         set((state) => ({ notices: withoutNotice(state.notices, tabId) }))
       }

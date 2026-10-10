@@ -6,6 +6,8 @@ export interface TreeRow {
   expanded: boolean
   /** The response status code of an example row. */
   code?: number
+  /** The request an example row belongs to. */
+  requestId?: string
 }
 
 export function isContainer(node: TreeNode): boolean {
@@ -23,6 +25,7 @@ function exampleRows(request: TreeNode, depth: number): TreeRow[] {
     depth,
     expanded: false,
     code: example.code,
+    requestId: request.id,
   }))
 }
 

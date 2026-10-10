@@ -1,4 +1,5 @@
 import type { ImportCounts } from '@/platform/mappers/import'
+import { formatNumber } from '@/shared/lib/number-format'
 
 const KIND_LABELS: Readonly<Record<string, string>> = {
   postman_collection: 'Postman collection',
@@ -37,7 +38,7 @@ export function sourceLabel(kind: string, version: string): string {
 }
 
 export function countsLabel(counts: ImportCounts): string {
-  const parts = COUNT_LABELS.filter(([key]) => counts[key] > 0).map(([key, one, many]) => `${counts[key]} ${counts[key] === 1 ? one : many}`)
+  const parts = COUNT_LABELS.filter(([key]) => counts[key] > 0).map(([key, one, many]) => `${formatNumber(counts[key], 0)} ${counts[key] === 1 ? one : many}`)
   return parts.length > 0 ? parts.join(' · ') : 'nothing'
 }
 

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
@@ -18,11 +17,6 @@ type importReaders struct {
 	readPostmanDump        usecase.ReadPostmanDump
 	readBrunoCollection    usecase.ReadBrunoCollection
 	readCurlCommand        usecase.ReadCurlCommand
-}
-
-type importRead struct {
-	items    []entity.ImportItem
-	warnings []entity.ImportWarning
 }
 
 func (i importReaders) read(ctx context.Context, input entity.ImportInput, read *importRead) error {
@@ -104,12 +98,6 @@ func (i importReaders) dump(ctx context.Context, input entity.ImportInput, read 
 	return nil
 }
 
-func (i *importRead) addTree(kind enums.ImportItemKind, root entity.ImportNode, warnings []entity.ImportWarning) {
-	item := entity.NewImportItem(i.nextKey(), kind, root, warnings)
-	usages := usecase.ScanPmUsage(item.Scripts())
-	i.items = append(i.items, item.WithPmUsages(usages).WithWarnings(usecase.PmUsageWarnings(usages)))
-}
-
 func translateBrunoScripts(sources []entity.BrunoScripts) (map[string]entity.Scripts, []entity.ImportWarning) {
 	scripts := map[string]entity.Scripts{}
 	warnings := make([]entity.ImportWarning, 0)
@@ -124,8 +112,4 @@ func translateBrunoScripts(sources []entity.BrunoScripts) (map[string]entity.Scr
 		warnings = append(warnings, untranslated...)
 	}
 	return scripts, warnings
-}
-
-func (i *importRead) nextKey() string {
-	return strconv.Itoa(len(i.items))
 }

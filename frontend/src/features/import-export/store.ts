@@ -10,7 +10,7 @@ import { getTree } from '@/platform/services/tree'
 import { assignIncluded, buildPlan, containerLocations, defaultTargets, pendingClashes, withRequestLocations } from './lib/plan'
 import { ALL_INCLUDED, type ImportLocation, type ImportProgressState, type ImportStep, type ImportTarget } from './model'
 
-interface ImportState {
+interface ImportData {
   step: ImportStep
   preview: ImportPreview | null
   targets: Record<string, ImportTarget>
@@ -22,6 +22,9 @@ interface ImportState {
   result: ImportResult | null
   error: AppError | null
   newWorkspaceFor: string | null
+}
+
+interface ImportState extends ImportData {
   open: () => void
   close: () => void
   back: () => void
@@ -43,18 +46,18 @@ interface ImportState {
 
 let pending: PendingImport | null = null
 
-const initialState = {
-  step: 'closed' as ImportStep,
-  preview: null as ImportPreview | null,
-  targets: {} as Record<string, ImportTarget>,
-  locations: {} as Record<string, ImportLocation[]>,
-  clashes: [] as ImportClash[],
-  resolutions: {} as Record<string, ClashResolution>,
-  applyToAll: null as ClashResolution | null,
-  progress: null as ImportProgressState | null,
-  result: null as ImportResult | null,
-  error: null as AppError | null,
-  newWorkspaceFor: null as string | null,
+const initialState: ImportData = {
+  step: 'closed',
+  preview: null,
+  targets: {},
+  locations: {},
+  clashes: [],
+  resolutions: {},
+  applyToAll: null,
+  progress: null,
+  result: null,
+  error: null,
+  newWorkspaceFor: null,
 }
 
 function discard(preview: ImportPreview | null): void {
@@ -74,10 +77,9 @@ export const useImportStore = create<ImportState>()((set, get) => {
     try {
       const result = await pending.result
       set({ step: 'summary', result })
-      for (const localId of new Set(result.items.map((item) => item.localId))) {
-        if (localId === useWorkspacesStore.getState().activeLocalId) {
-          void useSidebarStore.getState().load()
-        }
+      const activeLocalId = useWorkspacesStore.getState().activeLocalId
+      if (result.items.some((item) => item.localId === activeLocalId)) {
+        void useSidebarStore.getState().load()
       }
     } catch (error) {
       set({ step: 'preview', error: toAppError(error) })

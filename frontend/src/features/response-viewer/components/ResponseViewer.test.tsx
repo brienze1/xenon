@@ -208,14 +208,6 @@ describe('ResponseViewer', () => {
     expect(alert).toHaveTextContent(message)
     expect(alert).toHaveTextContent(hint || nextStep)
   })
-})
-
-describe('ResponseHeaders', () => {
-  it('says when the response has no headers', () => {
-    render(<ResponseHeaders headers={[]} />)
-    expect(screen.getByText('No headers')).toBeInTheDocument()
-    expect(screen.queryByRole('table')).not.toBeInTheDocument()
-  })
 
   it('saves the response of a saved request as an example', async () => {
     useTabsStore.setState({ tabs: [{ id: 'tab', requestId: 'r1', pinned: true }] })
@@ -231,5 +223,13 @@ describe('ResponseHeaders', () => {
     render(<ResponseViewer tabId="tab" />)
     show(result())
     expect(screen.getByRole('button', { name: 'Save as Example' })).toBeDisabled()
+  })
+})
+
+describe('ResponseHeaders', () => {
+  it('says when the response has no headers', () => {
+    render(<ResponseHeaders headers={[]} />)
+    expect(screen.getByText('No headers')).toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
   })
 })

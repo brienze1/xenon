@@ -108,7 +108,10 @@ export function SidebarPanel({
           onPinRequest={onPinRequest}
           onOpenExample={onOpenExample}
           onPinExample={onPinExample}
-          onOpenSettings={setSettingsId} onDelete={setDeleting} onRenamed={onRenamed} />
+          onOpenSettings={setSettingsId}
+          onDelete={setDeleting}
+          onRenamed={onRenamed}
+        />
       </Tabs.Panel>
       <Tabs.Panel value="history" className={styles.view}>
         <HistoryView onOpenEntry={(id) => void openEntry(id)} />

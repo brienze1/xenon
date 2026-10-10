@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {} }))
 vi.mock('../../../bindings/github.com/brienze1/xenon/internal/infra/server/binding/exampleservice', () => ({
   Get: vi.fn(),
-  Create: vi.fn(),
   CreateFromResponse: vi.fn(),
   Save: vi.fn(),
   Rename: vi.fn(),
@@ -91,18 +90,15 @@ describe('examples service', () => {
     expect(request?.example.request).toMatchObject({ method: 'POST', url: '{{base_url}}/invoices' })
   })
 
-  it('creates, renames, duplicates and deletes', async () => {
-    vi.mocked(ExampleService.Create).mockResolvedValue(exampleDto as never)
+  it('creates from a response, renames, duplicates and deletes', async () => {
     vi.mocked(ExampleService.CreateFromResponse).mockResolvedValue(exampleDto as never)
     vi.mocked(ExampleService.Rename).mockResolvedValue(exampleDto as never)
     vi.mocked(ExampleService.Duplicate).mockResolvedValue(exampleDto as never)
     vi.mocked(ExampleService.Delete).mockResolvedValue(undefined as never)
-    await examples.createExample('ws', 'r1', 'Draft')
     await examples.createExampleFromResponse('ws', 'r1', 'tab-1', 'Created')
     await examples.renameExample('ws', 'r1', 'e1', 'Renamed')
     await examples.duplicateExample('ws', 'r1', 'e1')
     await examples.deleteExample('ws', 'r1', 'e1')
-    expect(ExampleService.Create).toHaveBeenCalledWith({ local_id: 'ws', request_id: 'r1', name: 'Draft' })
     expect(ExampleService.CreateFromResponse).toHaveBeenCalledWith({ local_id: 'ws', request_id: 'r1', tab_id: 'tab-1', name: 'Created' })
     expect(ExampleService.Rename).toHaveBeenCalledWith({ local_id: 'ws', request_id: 'r1', example_id: 'e1', name: 'Renamed' })
     expect(ExampleService.Duplicate).toHaveBeenCalledWith({ local_id: 'ws', request_id: 'r1', example_id: 'e1' })
@@ -112,7 +108,7 @@ describe('examples service', () => {
   it('maps Go errors and empty responses to AppError', async () => {
     vi.mocked(ExampleService.Get).mockRejectedValue({ cause: { error: { code: 'EXM-01404', description: 'gone' } } })
     await expect(examples.getExample('ws', 'r1', 'e1')).rejects.toMatchObject({ code: 'EXM-01404' })
-    vi.mocked(ExampleService.Create).mockResolvedValue(null as never)
-    await expect(examples.createExample('ws', 'r1', 'x')).rejects.toMatchObject({ code: 'UNK-00204' })
+    vi.mocked(ExampleService.CreateFromResponse).mockResolvedValue(null as never)
+    await expect(examples.createExampleFromResponse('ws', 'r1', 'tab-1', 'x')).rejects.toMatchObject({ code: 'UNK-00204' })
   })
 })

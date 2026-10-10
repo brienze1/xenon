@@ -24,11 +24,6 @@ type importStagingPersistence struct {
 	index adapter.WorkspaceIndexCache
 }
 
-type commitJournal struct {
-	writes map[string][]byte
-	moves  [][2]string
-}
-
 func NewImportStagingPersistence(index adapter.WorkspaceIndexCache) adapter.ImportStagingPersistence {
 	return &importStagingPersistence{index: index}
 }
@@ -119,9 +114,7 @@ func (i *importStagingPersistence) writeOrder(ctx context.Context, index *entity
 		if err != nil {
 			return err
 		}
-		workspace := stored.ToEntity()
-		workspace.Order = staged.Order
-		updated := model.NewWorkspace(workspace)
+		updated := model.NewWorkspace(stored.ToEntity().WithOrder(staged.Order))
 		return i.write(ctx, filepath.Join(staged.Root, workspaceFile), updated.Fields(), journal)
 	}
 	item, _ := index.Item(staged.ParentID)
@@ -153,29 +146,6 @@ func (i *importStagingPersistence) write(ctx context.Context, path string, field
 	journal.writes[path] = original
 	i.index.RecordWrite(ctx, path, data)
 	return nil
-}
-
-func (c *commitJournal) move(source, target string) error {
-	if err := os.MkdirAll(filepath.Dir(target), workspaceDirMode); err != nil {
-		return errs.FileError(err, "IMP-27500")
-	}
-	if exists(target) {
-		return errs.ConflictError("a file with this name already exists", "IMP-28409")
-	}
-	if err := os.Rename(source, target); err != nil {
-		return errs.FileError(err, "IMP-29500")
-	}
-	c.moves = append(c.moves, [2]string{source, target})
-	return nil
-}
-
-func (c *commitJournal) undo() {
-	for path, original := range c.writes {
-		_ = fileutils.WriteFileAtomic(path, original, workspaceFileMode)
-	}
-	for position := len(c.moves) - 1; position >= 0; position-- {
-		_ = os.Rename(c.moves[position][1], c.moves[position][0])
-	}
 }
 
 func importTargetDir(index *entity.TreeIndex, staged entity.StagedImport) (string, error) {

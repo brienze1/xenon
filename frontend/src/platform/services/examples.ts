@@ -23,10 +23,6 @@ export function getExample(localId: string, requestId: string, exampleId: string
   return call(async () => toExample(required(await ExampleService.Get({ local_id: localId, request_id: requestId, example_id: exampleId }))))
 }
 
-export function createExample(localId: string, requestId: string, name: string): Promise<Example> {
-  return call(async () => toExample(required(await ExampleService.Create({ local_id: localId, request_id: requestId, name }))))
-}
-
 export function createExampleFromResponse(localId: string, requestId: string, tabId: string, name: string): Promise<Example> {
   return call(async () =>
     toExample(required(await ExampleService.CreateFromResponse({ local_id: localId, request_id: requestId, tab_id: tabId, name }))),

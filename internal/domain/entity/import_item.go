@@ -48,6 +48,10 @@ func (i ImportItem) IsRequest() bool {
 	return i.Kind == importitemkind.Request
 }
 
+func (i ImportItem) IsGlobals() bool {
+	return i.Kind == importitemkind.Globals
+}
+
 func (i ImportItem) IsVariables() bool {
 	return i.Variables != nil
 }

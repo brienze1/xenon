@@ -109,6 +109,13 @@ export interface ParsedCurl {
   notices: string[]
 }
 
+const CURL_REFUSALS: ReadonlySet<string> = new Set(['IMP-06400', 'IMP-07400'])
+
+/** Whether ParseCurl refused a pasted command: unreadable (`IMP-06400`) or not an HTTP(S) URL (`IMP-07400`). */
+export function isCurlRefusal(error: AppError): boolean {
+  return CURL_REFUSALS.has(error.code)
+}
+
 export function parseCurl(text: string): Promise<ParsedCurl> {
   return call(async () => {
     const parsed = required(await RequestService.ParseCurl({ text }))

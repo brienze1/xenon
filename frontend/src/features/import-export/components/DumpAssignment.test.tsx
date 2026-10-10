@@ -101,7 +101,7 @@ describe('DumpAssignment', () => {
     expect(within(rows[0]!).getByText('Collection')).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Workspace for CRM API' })).toHaveValue('A')
     expect(screen.queryByRole('combobox', { name: 'Location for CRM API' })).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Not imported' }).parentElement).toHaveTextContent("The dump's mock part (1 file)")
+    expect(screen.getByRole('region', { name: 'Not Imported' })).toHaveTextContent("The dump's mock part (1 file)")
   })
 
   it('assigns each item to its own workspace and the included ones in bulk', async () => {
@@ -131,7 +131,8 @@ describe('DumpAssignment', () => {
     await userEvent.click(within(form).getByRole('button', { name: 'Choose Folder…' }))
     expect(within(form).getByText('/w/initech')).toBeInTheDocument()
     await userEvent.click(create)
-    expect(await within(form).findByRole('alert')).toHaveTextContent('the folder is not empty')
+    expect(await within(form).findByRole('alert')).toHaveTextContent('the folder is not empty. Choose another folder or name, then try again.')
+    expect(within(form).getByRole('textbox', { name: 'Workspace name' })).toHaveAttribute('aria-invalid', 'true')
     vi.mocked(workspaces.createWorkspace).mockResolvedValueOnce(initech)
     await userEvent.click(create)
     await vi.waitFor(() => expect(screen.queryByRole('form', { name: 'New workspace' })).not.toBeInTheDocument())

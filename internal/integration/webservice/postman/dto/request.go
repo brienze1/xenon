@@ -24,7 +24,7 @@ func (r *Request) UnmarshalJSON(data []byte) error {
 	var raw string
 	if err := json.Unmarshal(data, &raw); err == nil {
 		r.IsString = true
-		r.Url = Url{Text: raw, IsString: true, Query: queryOf(raw)}
+		r.Url = NewTextUrl(raw)
 		return nil
 	}
 	type plain Request

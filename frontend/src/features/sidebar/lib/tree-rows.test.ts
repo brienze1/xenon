@@ -45,10 +45,10 @@ describe('tree rows', () => {
     expect(isExpandable(node('r0', 'request'))).toBe(false)
     expect(visibleRows(withExamples, { c9: true }, null).map((row) => row.node.id)).toEqual(['c9', 'r9'])
     const rows = visibleRows(withExamples, { c9: true, r9: true }, null)
-    expect(rows.map((row) => [row.node.id, row.node.kind, row.depth, row.code])).toEqual([
-      ['c9', 'collection', 0, undefined],
-      ['r9', 'request', 1, undefined],
-      ['x1', 'example', 2, 201],
+    expect(rows.map((row) => [row.node.id, row.node.kind, row.depth, row.code, row.requestId])).toEqual([
+      ['c9', 'collection', 0, undefined, undefined],
+      ['r9', 'request', 1, undefined, undefined],
+      ['x1', 'example', 2, 201, 'r9'],
     ])
     expect(findExampleRequest(withExamples, 'x1')?.id).toBe('r9')
     expect(findExampleRequest(withExamples, 'nope')).toBeNull()

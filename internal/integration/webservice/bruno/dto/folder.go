@@ -12,6 +12,10 @@ type Folder struct {
 	Scripts Scripts
 }
 
+func NewFolder(name string) Folder {
+	return Folder{Name: name}
+}
+
 func (f *Folder) ToEntity(conversion *Conversion, path string) entity.Collection {
 	folder := entity.NewFolder(conversion.newId(), f.Name)
 	folder.Description = f.Docs

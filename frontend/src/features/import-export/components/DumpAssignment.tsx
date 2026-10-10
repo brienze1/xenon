@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Button } from '@/shared/ui/button/Button'
 import { countsLabel, itemKindLabel } from '@/features/import-export/lib/labels'
 import { skippedParts } from '@/features/import-export/lib/plan'
@@ -88,6 +88,7 @@ interface DumpAssignmentProps {
 export function DumpAssignment({ preview }: DumpAssignmentProps) {
   const newWorkspaceFor = useImportStore((state) => state.newWorkspaceFor)
   const skipped = skippedParts(preview)
+  const skippedId = useId()
 
   return (
     <>
@@ -102,8 +103,10 @@ export function DumpAssignment({ preview }: DumpAssignmentProps) {
         </tbody>
       </table>
       {skipped.length > 0 ? (
-        <section className={styles.section} aria-label="Skipped parts">
-          <h3 className={styles.sectionTitle}>Not imported</h3>
+        <section className={styles.section} aria-labelledby={skippedId}>
+          <h3 id={skippedId} className={styles.sectionTitle}>
+            Not Imported
+          </h3>
           <ul className={styles.list}>
             {skipped.map((warning) => (
               <li key={warning.path} className={styles.muted}>

@@ -7,6 +7,9 @@ export type SubTab = 'params' | 'auth' | 'headers' | 'body' | 'scripts' | 'setti
 
 export type BulkTable = 'params' | 'headers' | 'urlencoded'
 
+/** `example` edits an example's request snapshot: no Send, no cURL paste, no scripts or settings. */
+export type RequestBuilderMode = 'request' | 'example'
+
 export interface TabDraft {
   draft: RequestDraft
   autoHeaders: AutoHeader[]

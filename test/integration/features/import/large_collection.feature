@@ -11,6 +11,7 @@ Feature: Import a large collection quickly with steady progress
   Background:
     Given the workspace "Acme" exists
 
+  @success
   Scenario: A 1,000-request collection is imported in under 10 seconds with progress at most 250 ms apart
     When I call "ImportService.Detect" with
       """

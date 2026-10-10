@@ -1,29 +1,5 @@
 package entity
 
-import "github.com/brienze1/xenon/internal/domain/enums"
-
-type ImportItemResult struct {
-	Status  enums.ImportStatus
-	Key     string
-	LocalID string
-	ID      string
-	Name    string
-}
-
-type ImportFailure struct {
-	ItemKey string
-	Name    string
-	Code    string
-	Message string
-}
-
-type ImportWorkspaceResult struct {
-	LocalID  string
-	Created  ImportCounts
-	Replaced int
-	Skipped  int
-}
-
 type ImportResult struct {
 	Items      []ImportItemResult
 	Workspaces []ImportWorkspaceResult
@@ -72,17 +48,6 @@ func (i ImportResult) workspacesWith(outcome ImportOutcome) []ImportWorkspaceRes
 	}
 	workspaces[index] = workspaces[index].with(outcome)
 	return workspaces
-}
-
-func (i ImportWorkspaceResult) with(outcome ImportOutcome) ImportWorkspaceResult {
-	i.Created = i.Created.Add(outcome.Created)
-	if outcome.Replaced {
-		i.Replaced++
-	}
-	if outcome.Skipped {
-		i.Skipped++
-	}
-	return i
 }
 
 func (i ImportResult) LocalIDs() []string {

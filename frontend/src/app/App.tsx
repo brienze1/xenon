@@ -17,6 +17,7 @@ import { WorkspaceSwitcher } from '@/features/workspaces/components/WorkspaceSwi
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import { collectionScope } from '@/platform/mappers/variable'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
+import { isActiveTabExample } from './active-tab'
 import styles from './App.module.css'
 import { bootstrap } from './bootstrap'
 import { type HotkeyHandlers } from './hotkeys'
@@ -79,10 +80,9 @@ export function App() {
       hasActive
         ? {
             send: () => {
-              const { activeTabId: tabId, tabs: openTabs } = useTabsStore.getState()
-              const isExample = openTabs.some((tab) => tab.id === tabId && tab.kind === 'example')
-              if (tabId && !isExample) {
-                void send(tabId)
+              const openTabs = useTabsStore.getState()
+              if (openTabs.activeTabId && !isActiveTabExample(openTabs)) {
+                void send(openTabs.activeTabId)
               }
             },
             save: () => void useTabsStore.getState().save(),

@@ -4,6 +4,7 @@ import { useImportStore } from '@/features/import-export/store'
 import { countsLabel, sourceLabel } from '@/features/import-export/lib/labels'
 import { hasIncludedItems, missingLocations, needsLocation } from '@/features/import-export/lib/plan'
 import type { ImportPreview, ImportPreviewItem } from '@/platform/mappers/import'
+import { formatNumber } from '@/shared/lib/number-format'
 import { DumpAssignment } from './DumpAssignment'
 import { ImportErrorBanner } from './ImportErrorBanner'
 import { NewWorkspaceForm } from './NewWorkspaceForm'
@@ -72,7 +73,7 @@ function ItemRow({ item }: ItemRowProps) {
         )}
         <span className={styles.path}>
           {countsLabel(item.counts)}
-          {item.warningsCount > 0 ? ` · ${item.warningsCount} to review` : ''}
+          {item.warningsCount > 0 ? ` · ${formatNumber(item.warningsCount, 0)} to review` : ''}
         </span>
       </td>
       <td>

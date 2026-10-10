@@ -2,14 +2,13 @@ package entity
 
 import "strings"
 
-type UntranslatedLine struct {
-	Source string
-	Line   int
-}
-
 type ScriptTranslation struct {
 	Lines        []string
 	Untranslated []UntranslatedLine
+}
+
+func NewScriptTranslation() ScriptTranslation {
+	return ScriptTranslation{Lines: []string{}, Untranslated: []UntranslatedLine{}}
 }
 
 func (s ScriptTranslation) Append(other ScriptTranslation) ScriptTranslation {

@@ -48,3 +48,8 @@ func (w Workspace) WithPostmanGlobals(fields SourceFields) Workspace {
 	w.Postman = postman
 	return w
 }
+
+func (w Workspace) WithOrder(order []string) Workspace {
+	w.Order = append([]string{}, order...)
+	return w
+}

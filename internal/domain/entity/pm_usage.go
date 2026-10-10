@@ -3,18 +3,7 @@ package entity
 import (
 	"slices"
 	"sort"
-
-	"github.com/brienze1/xenon/internal/domain/enums"
 )
-
-type PmOccurrence struct {
-	Phase   enums.ScriptPhase
-	ItemKey string
-	ItemID  string
-	LocalID string
-	Path    string
-	Line    int
-}
 
 type PmUsage struct {
 	API         string

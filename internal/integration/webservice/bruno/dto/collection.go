@@ -13,6 +13,10 @@ type Collection struct {
 	Scripts   Scripts
 }
 
+func NewCollection(name string) Collection {
+	return Collection{Name: name}
+}
+
 func (c *Collection) ToEntity(conversion *Conversion) entity.Collection {
 	collection := entity.NewCollection(conversion.newId(), c.Name)
 	collection.Description = c.Docs

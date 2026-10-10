@@ -29,3 +29,7 @@ func (i ImportInput) Document() ImportDocument {
 	}
 	return i.Documents[0]
 }
+
+func (i ImportInput) LogValue() any {
+	return map[string]any{"root": i.Root, "name": i.Probe.Name, "documents": len(i.Documents)}
+}

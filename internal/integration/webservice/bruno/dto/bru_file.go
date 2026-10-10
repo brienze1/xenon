@@ -1,25 +1,13 @@
 package dto
 
-type BruEntry struct {
-	Key     string
-	Value   string
-	Values  []string
-	Line    int
-	Enabled bool
-}
-
-type BruBlock struct {
-	Name     string
-	Text     string
-	Entries  []BruEntry
-	Line     int
-	TextLine int
-}
-
 type BruFile struct {
 	Path       string
 	Blocks     []BruBlock
 	Attributes []BruEntry
+}
+
+func NewBruFile(path string) BruFile {
+	return BruFile{Path: path, Blocks: []BruBlock{}, Attributes: []BruEntry{}}
 }
 
 func (b BruFile) Block(name string) (BruBlock, bool) {
@@ -48,22 +36,4 @@ func (b BruFile) Attribute(key string) string {
 		}
 	}
 	return ""
-}
-
-func (b BruBlock) Value(key string) string {
-	for _, entry := range b.Entries {
-		if entry.Key == key && entry.Enabled {
-			return entry.Value
-		}
-	}
-	return ""
-}
-
-func (b BruBlock) Lookup(key string) (BruEntry, bool) {
-	for _, entry := range b.Entries {
-		if entry.Key == key {
-			return entry, true
-		}
-	}
-	return BruEntry{}, false
 }

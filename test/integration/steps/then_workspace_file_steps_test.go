@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/cucumber/godog"
-	"go.yaml.in/yaml/v3"
 )
 
 func (t *testUtils) registerThenWorkspaceFileSteps(ctx *godog.ScenarioContext) {
@@ -83,14 +82,7 @@ func (t *testUtils) theWorkspaceFileShouldContainTheFieldArrayLengthEqualTo(path
 	if err != nil {
 		return err
 	}
-	items, isArray := value.([]any)
-	if !isArray {
-		return fmt.Errorf("field %q of %s is not a list: %v", field, path, value)
-	}
-	if len(items) != length {
-		return fmt.Errorf("field %q of %s: expected %d items, got %d", field, path, length, len(items))
-	}
-	return nil
+	return expectLength(value, length, fmt.Sprintf("field %q of %s", field, path))
 }
 
 func (t *testUtils) theWorkspaceFileShouldContainTheFieldNotEqualTo(path, field, unexpected string) error {
@@ -170,17 +162,5 @@ func (t *testUtils) noFileUnderTheWorkspaceFolderShouldContain(text string) erro
 }
 
 func (t *testUtils) workspaceFileField(path, field string) (any, error) {
-	content, err := os.ReadFile(t.workspacePath(path))
-	if err != nil {
-		return nil, err
-	}
-	var data any
-	if err := yaml.Unmarshal(content, &data); err != nil {
-		return nil, err
-	}
-	value, found := lookup(data, field)
-	if !found {
-		return nil, fmt.Errorf("field %q not found in %s", field, path)
-	}
-	return value, nil
+	return yamlFileField(t.workspacePath(path), field, path)
 }

@@ -2,6 +2,7 @@ package dto
 
 import (
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -63,6 +64,7 @@ func NewRequestFromBru(file BruFile) Request {
 	if request.Type == "" {
 		request.Type = unsupportedType(file)
 	}
+	request.Name = nameOrFileName(request.Name, file.Path)
 	return request
 }
 
@@ -99,19 +101,19 @@ func NewCollectionFromBru(file BruFile, name string, config map[string]any) Coll
 }
 
 func NewEnvironmentFromBru(file BruFile, name string) Environment {
-	environment := Environment{Name: name, Color: file.Attribute(colorAttribute), Variables: []EnvironmentVariable{}}
+	environment := NewEnvironment(name, file.Attribute(colorAttribute))
 	for _, entry := range file.Entries(environmentVars) {
-		environment.Variables = append(environment.Variables, EnvironmentVariable{Key: entry.Key, Value: entry.Value, Enabled: entry.Enabled})
+		environment.Variables = append(environment.Variables, NewEnvironmentVariable(entry.Key, entry.Value, entry.Enabled, false))
 	}
 	for _, entry := range file.Entries(environmentSecrets) {
-		environment.Variables = append(environment.Variables, EnvironmentVariable{Key: entry.Key, Enabled: entry.Enabled, Secret: true})
+		environment.Variables = append(environment.Variables, NewEnvironmentVariable(entry.Key, "", entry.Enabled, true))
 	}
 	return environment
 }
 
 func methodBlock(file BruFile) (string, BruBlock) {
 	for _, block := range file.Blocks {
-		if contains(methodBlocks, block.Name) {
+		if slices.Contains(methodBlocks, block.Name) {
 			return block.Name, block
 		}
 		if block.Name == httpBlock {
@@ -131,11 +133,11 @@ func unsupportedType(file BruFile) string {
 }
 
 func bruAuth(file BruFile, mode string) Auth {
-	return Auth{Mode: mode, Values: pairs(file.Entries(authBlockPrefix + mode))}
+	return NewAuth(mode, pairs(file.Entries(authBlockPrefix+mode)))
 }
 
 func bruBody(file BruFile, mode string) Body {
-	body := Body{Mode: mode, Pairs: []Pair{}, Multipart: []MultipartRow{}, Files: []FilePart{}}
+	body := NewBody(mode)
 	switch mode {
 	case FormUrlEncodedBody:
 		body.Pairs = pairs(file.Entries(formBlock))
@@ -145,7 +147,7 @@ func bruBody(file BruFile, mode string) Body {
 		}
 	case FileBody:
 		for _, entry := range file.Entries(fileBlock) {
-			body.Files = append(body.Files, FilePart{Path: annotation(fileAnnotation, entry.Value), ContentType: annotation(contentAnnotation, entry.Value), Selected: entry.Enabled})
+			body.Files = append(body.Files, NewFilePart(annotation(fileAnnotation, entry.Value), annotation(contentAnnotation, entry.Value), entry.Enabled))
 		}
 	case GraphQlBody:
 		body.Query = textOf(file, bodyBlockPrefix+GraphQlBody)
