@@ -1,0 +1,45 @@
+meta {
+  name: Assertions
+  type: http
+  seq: 2
+}
+
+get {
+  url: https://api.test/assertions
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.status: neq 500
+  res.body.count: gt 1
+  res.body.count: gte 1
+  res.body.count: lt 100
+  res.body.count: lte 100
+  res.status: in 200,201
+  res.status: notIn 500,502
+  res.body.name: contains Ch
+  res.body.name: notContains xx
+  res.body.items: length 3
+  res.body.name: matches ^Ch.*r$
+  res.body.name: notMatches ^x
+  res.body.name: startsWith Ch.
+  res.body.name: endsWith (r)
+  res.body.price: between 1, 10
+  res.body.items: isEmpty
+  res.body.tags: isNotEmpty
+  res.body.deleted: isNull
+  res.body.missing: isUndefined
+  res.body.id: isDefined
+  res.body.active: isTruthy
+  res.body.archived: isFalsy
+  res.body.count: isNumber
+  res.body.name: isString
+  res.body.active: isBoolean
+  res.body.items: isArray
+  res.body: isJson
+  res.body.mode: eq "fast"
+  ~res.body.skip: eq 1
+  res.body.size: isHuge
+}

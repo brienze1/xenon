@@ -3,10 +3,13 @@ package steps
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"go.yaml.in/yaml/v3"
 )
 
 var placeholder = regexp.MustCompile(`\{\{([^}]+)\}\}`)
@@ -131,4 +134,56 @@ func expectEqual(actual, expected, what string) error {
 		return fmt.Errorf("%s: expected %q, got %q", what, expected, actual)
 	}
 	return nil
+}
+
+func resourceFileField(name, path string) (any, error) {
+	content, err := os.ReadFile(resourcePath(name))
+	if err != nil {
+		return nil, err
+	}
+	var data any
+	if err := yaml.Unmarshal(content, &data); err != nil {
+		return nil, fmt.Errorf("resource %s is not YAML or JSON: %w", name, err)
+	}
+	value, found := lookup(data, path)
+	if !found {
+		return nil, fmt.Errorf("field %q not found in the resource %s", path, name)
+	}
+	return value, nil
+}
+
+func matchFields(actual, expected any, path string) error {
+	switch want := expected.(type) {
+	case map[string]any:
+		for key, value := range want {
+			child, found := lookup(actual, key)
+			if !found {
+				return fmt.Errorf("field %q is missing", joinFieldPath(path, key))
+			}
+			if err := matchFields(child, value, joinFieldPath(path, key)); err != nil {
+				return err
+			}
+		}
+		return nil
+	case []any:
+		got, isList := actual.([]any)
+		if !isList || len(got) != len(want) {
+			return fmt.Errorf("field %q: expected %d items, got %s", path, len(want), stringify(actual))
+		}
+		for index := range want {
+			if err := matchFields(got[index], want[index], joinFieldPath(path, strconv.Itoa(index))); err != nil {
+				return err
+			}
+		}
+		return nil
+	default:
+		return expectEqual(stringify(actual), stringify(want), "field "+strconv.Quote(path))
+	}
+}
+
+func joinFieldPath(parent, key string) string {
+	if parent == "" {
+		return key
+	}
+	return parent + "." + key
 }

@@ -1,0 +1,53 @@
+meta {
+  name: Translations
+  type: http
+  seq: 1
+}
+
+get {
+  url: https://api.test/translations
+  body: none
+  auth: none
+}
+
+script:pre-request {
+  const env = bru.getEnvVar("env");
+  bru.setEnvVar("env", "dev");
+  const v = bru.getVar("v");
+  bru.setVar("v", 1);
+  const rv = bru.getRequestVar("rv");
+  const cv = bru.getCollectionVar("cv");
+  const g = bru.getGlobalEnvVar("g");
+  bru.setGlobalEnvVar("g", 2);
+  const name = bru.getEnvName();
+  const text = bru.interpolate("{{base_url}}/x");
+  const url1 = req.getUrl();
+  const url2 = req.url;
+  const m1 = req.getMethod();
+  const m2 = req.method;
+  const h = req.getHeader("Accept");
+  req.setHeader("X-A", "1");
+  const hs1 = req.getHeaders();
+  const hs2 = req.headers;
+  const b1 = req.getBody();
+  const b2 = req.body;
+  req.setBody({ a: 1 });
+}
+
+script:post-response {
+  const s1 = res.getStatus();
+  const s2 = res.status;
+  const body1 = res.getBody();
+  const body2 = res.body;
+  const ct = res.getHeader("content-type");
+  const all1 = res.getHeaders();
+  const all2 = res.headers;
+  const t1 = res.getResponseTime();
+  const t2 = res.responseTime;
+}
+
+tests {
+  test("ok", function () {
+    expect(res.status).to.equal(200);
+  });
+}

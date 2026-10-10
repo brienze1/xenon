@@ -1,0 +1,6 @@
+info:
+  name: Socket
+  type: websocket
+  seq: 7
+websocket:
+  url: wss://shop.acme.test/live

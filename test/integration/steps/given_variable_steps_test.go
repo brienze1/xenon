@@ -13,6 +13,7 @@ func (t *testUtils) registerGivenVariableSteps(ctx *godog.ScenarioContext) {
 	ctx.Given(`^the "([^"]*)" variable is set to a closed port url$`, t.theVariableIsSetToAClosedPortUrl)
 	ctx.Given(`^the "([^"]*)" variable is set to "([^"]*)"$`, t.theVariableIsSetTo)
 	ctx.Given(`^the "([^"]*)" variable is set to "([^"]*)" repeated (\d+) times separated by "([^"]*)"$`, t.theVariableIsSetToRepeatedTimesSeparatedBy)
+	ctx.Given(`^the "([^"]*)" variable is set to the field "([^"]*)" of the resource file "([^"]*)"$`, t.theVariableIsSetToTheFieldOfTheResourceFile)
 	ctx.Step(`^I save the workspace file "([^"]*)" field "([^"]*)" as "([^"]*)"$`, t.iSaveTheWorkspaceFileFieldAs)
 }
 
@@ -55,6 +56,15 @@ func (t *testUtils) theVariableIsSetToRepeatedTimesSeparatedBy(name, value strin
 
 func (t *testUtils) iSaveTheWorkspaceFileFieldAs(path, field, name string) error {
 	value, err := t.workspaceFileField(path, field)
+	if err != nil {
+		return err
+	}
+	t.vars[name] = stringify(value)
+	return nil
+}
+
+func (t *testUtils) theVariableIsSetToTheFieldOfTheResourceFile(name, field, resource string) error {
+	value, err := resourceFileField(resource, field)
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,9 @@
 package mock
 
-import "sync"
+import (
+	"sync"
+	"time"
+)
 
 type EventEmitter struct {
 	events []emittedEvent
@@ -8,6 +11,7 @@ type EventEmitter struct {
 }
 
 type emittedEvent struct {
+	at   time.Time
 	data any
 	name string
 }
@@ -19,7 +23,7 @@ func NewEventEmitter() *EventEmitter {
 func (e *EventEmitter) Emit(name string, data any) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	e.events = append(e.events, emittedEvent{name: name, data: data})
+	e.events = append(e.events, emittedEvent{name: name, data: data, at: time.Now()})
 }
 
 func (e *EventEmitter) Reset() {
@@ -50,4 +54,21 @@ func (e *EventEmitter) named(name string) []any {
 		}
 	}
 	return matching
+}
+
+func (e *EventEmitter) Gaps(name string) []time.Duration {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	gaps := make([]time.Duration, 0)
+	var previous time.Time
+	for _, event := range e.events {
+		if event.name != name {
+			continue
+		}
+		if !previous.IsZero() {
+			gaps = append(gaps, event.at.Sub(previous))
+		}
+		previous = event.at
+	}
+	return gaps
 }

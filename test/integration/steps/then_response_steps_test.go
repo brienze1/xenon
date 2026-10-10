@@ -28,6 +28,7 @@ func (t *testUtils) registerThenResponseSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the response field "([^"]*)" should not exist$`, t.theResponseFieldShouldNotExist)
 	ctx.Then(`^the response field "([^"]*)" should contain an item with "([^"]*)" equal to "([^"]*)" and "([^"]*)" equal to "([^"]*)"$`, t.theResponseFieldShouldContainAnItemWith)
 	ctx.Then(`^the response field "([^"]*)" should contain (\d+) items with "([^"]*)" equal to "([^"]*)"$`, t.theResponseFieldShouldContainItemsWith)
+	ctx.Then(`^the response should match the field "([^"]*)" of the resource file "([^"]*)"$`, t.theResponseShouldMatchTheFieldOfTheResourceFile)
 	ctx.Then(`^every item of the saved "([^"]*)" should have the field "([^"]*)" in "([^"]*)"$`, t.everyItemOfTheSavedShouldHaveTheFieldIn)
 }
 
@@ -247,4 +248,19 @@ func expectItems(actual any, items, what string) error {
 		got = append(got, stringify(value))
 	}
 	return expectEqual(strings.Join(got, ", "), items, what)
+}
+
+func (t *testUtils) theResponseShouldMatchTheFieldOfTheResourceFile(field, resource string) error {
+	expected, err := resourceFileField(resource, field)
+	if err != nil {
+		return err
+	}
+	actual, err := decodeJson(t.response)
+	if err != nil {
+		return err
+	}
+	if err := matchFields(actual, expected, ""); err != nil {
+		return fmt.Errorf("%w in %s", err, t.response)
+	}
+	return nil
 }

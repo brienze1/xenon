@@ -1,0 +1,28 @@
+meta {
+  name: Untranslated
+  type: http
+  seq: 4
+}
+
+get {
+  url: https://api.test/untranslated
+  body: none
+  auth: none
+}
+
+script:post-response {
+  bru.setNextRequest("Next");
+  bru.runner.skipRequest();
+  bru.sleep(500);
+  bru.sendRequest({ url: "https://x.test" }, function (err, response) {});
+  bru.cookies.jar().clear();
+  req.setUrl("https://other.test");
+  req.setMethod("POST");
+  req.setTimeout(1000);
+  req.setMaxRedirects(2);
+  res.setBody({});
+  const _ = require("lodash");
+  const p = bru.getProcessEnv("HOME");
+  // bru.setVar("x", 1) in a comment stays as it is
+  const s = "res.status in a string";
+}
