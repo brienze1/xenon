@@ -65,25 +65,38 @@ US5 Bruno · US6 cURL
 
 ## Phase 4: User Story 2 — Postman environments and globals (P1)
 
-- [ ] T017 [P] [US2] BDD `test/integration/features/import/postman_environment_globals.feature`: env rows (plain/disabled), secrets with value → vault (no workspace file contains the value; summary/warnings/logs don't either), secret without value → missing; globals merge; clash on env name (replace / keep both " (imported)" / skip) and on variable keys (keep existing, imported value recorded in summary — masked for secrets)
-- [ ] T018 [US2] Run → **red**; implement `webservice/postman/environment.go` + dto, environment passthrough (excluding secret values), commit through XEN-002 multi-store save → **green**
+- [x] T017 [P] [US2] BDD `test/integration/features/import/postman_environment_globals.feature`: env rows (plain/disabled), secrets with value → vault (no workspace file contains the value; summary/warnings/logs don't either), secret without value → missing; globals merge; clash on env name (replace / keep both " (imported)" / skip) and on variable keys (keep existing, imported value recorded in summary — masked for secrets)
+- [x] T018 [US2] Run → **red**; implement `webservice/postman/environment.go` + dto, environment passthrough (excluding secret values), commit through XEN-002 multi-store save → **green**
 
 ---
 
+> Implementation notes (T017–T025): environments and globals are read by `PostmanWebservice`
+> (`ReadEnvironment`, `ReadDump`) into an in-memory `ImportVariables` (rows without secret values +
+> the secret values, never logged or in passthrough); `ManageImportService` plans them with the pure
+> `PlanEnvironmentImport` / `PlanGlobalsImport` and writes them through `importVariablesWriter`
+> (vault first, then the file; replace = delete the old file, save the new one, restore both on
+> failure, then drop the old environment's local and secret values). Dump parts other than
+> `collection/` and `environment/` become source-level `skipped_part` warnings. Examples are served
+> by `ManageExampleService` (binding `ExampleService`), persisted through the request persistence's
+> `SaveExamples`; the send pipeline keeps the unresolved sent request on the stored response for
+> "Save response as example". UI-state tabs carry `kind` + `example_id`. The UI keeps the existing
+> `features/import-export/` folder (`DumpAssignment`, `WorkspacePicker`, `NewWorkspaceForm`) and adds
+> `features/examples/`.
+
 ## Phase 5: User Story 3 — Data dump (P2)
 
-- [ ] T019 [P] [US3] BDD `test/integration/features/import/postman_dump.feature`: zip and folder forms list all items; plan assigns items to three workspaces (one created inline via `WorkspaceService.Create` within the flow); each workspace gets exactly its items; unknown part skipped + listed; combined summary per workspace
-- [ ] T020 [US3] Run → **red**; implement `webservice/postman/dump.go` (archive.json + subfolders) and multi-workspace planning in `service/import.go` → **green**
-- [ ] T021 [US3] UI `features/import/components/DumpAssignment.tsx` (table: include, name, kind, counts, target workspace picker with "New workspace…" inline create via the workspaces store, bulk "assign selected to…"); RTL tests
+- [x] T019 [P] [US3] BDD `test/integration/features/import/postman_dump.feature`: zip and folder forms list all items; plan assigns items to three workspaces (one created inline via `WorkspaceService.Create` within the flow); each workspace gets exactly its items; unknown part skipped + listed; combined summary per workspace
+- [x] T020 [US3] Run → **red**; implement `webservice/postman/dump.go` (archive.json + subfolders) and multi-workspace planning in `service/import.go` → **green**
+- [x] T021 [US3] UI `features/import/components/DumpAssignment.tsx` (table: include, name, kind, counts, target workspace picker with "New workspace…" inline create via the workspaces store, bulk "assign selected to…"); RTL tests
 
 ---
 
 ## Phase 6: User Story 4 — Saved examples (P2)
 
-- [ ] T022 [P] [US4] BDD `test/integration/features/examples/examples_crud.feature` (@examples): Create/Get/Save/Rename/Duplicate/Delete; stored in the request file `examples:`; tree exposes example nodes with code; revision conflict `REQ-02409`
-- [ ] T023 [P] [US4] BDD `test/integration/features/examples/save_response_as_example.feature` and `examples_large_body.feature`: from a sent tab (unresolved request snapshot, received response incl. headers); 8 MB body stored and served via `body_url`; binary body base64 round trip; `EXM-02404` without a response
-- [ ] T024 [US4] Run → **red**; implement `service/example.go`, persistence via request persistence, controllers/DTOs `example_*.go`, binding `example.go`, response route `example:<id>` → **green**
-- [ ] T025 [US4] UI: sidebar example nodes + context menu (rename, duplicate, delete); `features/examples/components/ExampleTab.tsx` (request editors in example mode, response editor: status code/text, headers table, body CodeMirror with Pretty/Raw/Preview, Raw-first > 5 MB); tabs store supports `kind: example`; "Save response as example" in response viewer + `SaveAsExampleDialog.tsx`; RTL tests
+- [x] T022 [P] [US4] BDD `test/integration/features/examples/examples_crud.feature` (@examples): Create/Get/Save/Rename/Duplicate/Delete; stored in the request file `examples:`; tree exposes example nodes with code; revision conflict `REQ-02409`
+- [x] T023 [P] [US4] BDD `test/integration/features/examples/save_response_as_example.feature` and `examples_large_body.feature`: from a sent tab (unresolved request snapshot, received response incl. headers); 8 MB body stored and served via `body_url`; binary body base64 round trip; `EXM-02404` without a response
+- [x] T024 [US4] Run → **red**; implement `service/example.go`, persistence via request persistence, controllers/DTOs `example_*.go`, binding `example.go`, response route `example:<id>` → **green**
+- [x] T025 [US4] UI: sidebar example nodes + context menu (rename, duplicate, delete); `features/examples/components/ExampleTab.tsx` (request editors in example mode, response editor: status code/text, headers table, body CodeMirror with Pretty/Raw/Preview, Raw-first > 5 MB); tabs store supports `kind: example`; "Save response as example" in response viewer + `SaveAsExampleDialog.tsx`; RTL tests
 
 ---
 
