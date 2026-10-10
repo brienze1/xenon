@@ -3,12 +3,13 @@ package entity
 import "github.com/brienze1/xenon/internal/domain/enums"
 
 type ContextVariable struct {
-	Name    string
-	Value   string
-	Scope   enums.VariableScope
-	Secret  bool
-	Missing bool
-	Locked  bool
+	Name        string
+	Value       string
+	Description string
+	Scope       enums.VariableScope
+	Secret      bool
+	Missing     bool
+	Locked      bool
 }
 
 func (c ContextVariable) IsResolvable() bool {

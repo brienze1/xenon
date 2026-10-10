@@ -5,8 +5,8 @@ import "github.com/brienze1/xenon/internal/domain/entity"
 type SendRequest struct {
 	LocalId                   string  `json:"local_id" validate:"required"`
 	TabId                     string  `json:"tab_id" validate:"required"`
-	Request                   Request `json:"request"`
 	ConfirmedEnvironmentId    string  `json:"confirmed_environment_id"`
+	Request                   Request `json:"request"`
 	AcknowledgeMissingSecrets bool    `json:"acknowledge_missing_secrets"`
 }
 

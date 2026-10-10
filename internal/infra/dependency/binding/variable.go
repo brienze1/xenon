@@ -13,7 +13,7 @@ var variableServiceInstance *binding.VariableService
 func GetVariableService() *binding.VariableService {
 	if variableServiceInstance == nil {
 		variableServiceOnce.Do(func() {
-			variableServiceInstance = binding.NewVariableService(controller.GetVariableTableController())
+			variableServiceInstance = binding.NewVariableService(controller.GetVariableTableController(), controller.GetVariableInspectController())
 		})
 	}
 	return variableServiceInstance

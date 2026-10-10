@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"strconv"
+
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/bodymode"
 	"github.com/brienze1/xenon/internal/domain/enums/rawlanguage"
@@ -56,6 +58,37 @@ func (b Body) MapText(transform func(string) string) Body {
 	b.FormData = rows
 	b.UrlEncoded = mapKeyValues(b.UrlEncoded, transform)
 	return b
+}
+
+func (b Body) TextFields(prefix string) []TextField {
+	switch b.Mode {
+	case bodymode.Raw:
+		return []TextField{NewTextField(fieldName(prefix, "raw"), b.Raw.Content)}
+	case bodymode.GraphQl:
+		return []TextField{NewTextField(fieldName(prefix, "graphql", "query"), b.GraphQl.Query), NewTextField(fieldName(prefix, "graphql", "variables"), b.GraphQl.Variables)}
+	case bodymode.Binary:
+		return []TextField{NewTextField(fieldName(prefix, "binary"), b.Binary.Src)}
+	case bodymode.FormData:
+		return b.formDataFields(fieldName(prefix, "formdata"))
+	case bodymode.UrlEncoded:
+		return keyValueFields(fieldName(prefix, "urlencoded"), b.UrlEncoded)
+	default:
+		return []TextField{}
+	}
+}
+
+func (b Body) formDataFields(prefix string) []TextField {
+	fields := make([]TextField, 0, len(b.FormData))
+	for index, row := range b.FormData {
+		position := strconv.Itoa(index)
+		fields = append(fields, NewTextField(fieldName(prefix, position, "key"), row.Key))
+		if row.IsFile() {
+			fields = append(fields, NewTextField(fieldName(prefix, position, "src"), row.Src.Src))
+			continue
+		}
+		fields = append(fields, NewTextField(fieldName(prefix, position, "value"), row.Value))
+	}
+	return fields
 }
 
 func (b Body) IsMultipart() bool {

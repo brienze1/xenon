@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/brienze1/xenon/internal/domain/enums"
@@ -78,6 +79,21 @@ func (c Collection) MapText(transform func(string) string) Collection {
 	c.Auth = c.Auth.MapText(transform)
 	c.Headers = mapKeyValues(c.Headers, transform)
 	return c
+}
+
+// InheritedFields names the auth and header texts a request inherits from this ancestor, as "inherited:<id>.<field>".
+func (c Collection) InheritedFields(withAuth bool, headers []int) []TextField {
+	prefix := "inherited:" + c.ID
+	fields := make([]TextField, 0)
+	if withAuth {
+		fields = append(fields, c.Auth.TextFields(fieldName(prefix, "auth"))...)
+	}
+	for _, index := range headers {
+		header := c.Headers[index]
+		position := strconv.Itoa(index)
+		fields = append(fields, NewTextField(fieldName(prefix, "headers", position, "key"), header.Key), NewTextField(fieldName(prefix, "headers", position, "value"), header.Value))
+	}
+	return fields
 }
 
 func (c Collection) ArrangedChildren(present []string) []string {

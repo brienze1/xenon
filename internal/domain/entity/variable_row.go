@@ -46,13 +46,13 @@ func (v VariableRow) WithoutSecretValue() VariableRow {
 func (v VariableRow) ContextVariable(scope enums.VariableScope, current, secrets map[string]string) ContextVariable {
 	if v.Secret {
 		value, found := secrets[v.Key]
-		return ContextVariable{Name: v.Key, Value: value, Scope: scope, Secret: true, Missing: !found}
+		return ContextVariable{Name: v.Key, Value: value, Description: v.Description, Scope: scope, Secret: true, Missing: !found}
 	}
 	value := v.InitialValue
 	if override := current[v.Key]; override != "" {
 		value = override
 	}
-	return ContextVariable{Name: v.Key, Value: value, Scope: scope}
+	return ContextVariable{Name: v.Key, Value: value, Description: v.Description, Scope: scope}
 }
 
 func (v VariableRow) LogValue() any {

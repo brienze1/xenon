@@ -2,6 +2,7 @@ package entity
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/brienze1/xenon/internal/domain/enums/httpmethod"
@@ -87,6 +88,18 @@ func (r Request) MapText(transform func(string) string) Request {
 	r.Auth = r.Auth.MapText(transform)
 	r.Body = r.Body.MapText(transform)
 	return r
+}
+
+// TextFields lists the texts variables are resolved in, named after the request DTO: the URL, params, path variables, headers, the active auth type and the active body mode.
+func (r Request) TextFields() []TextField {
+	fields := []TextField{NewTextField("url", r.URL)}
+	fields = append(fields, keyValueFields("params", r.Params)...)
+	for index, variable := range r.PathVariables {
+		fields = append(fields, NewTextField(fieldName("path_variables", strconv.Itoa(index), "value"), variable.Value))
+	}
+	fields = append(fields, keyValueFields("headers", r.Headers)...)
+	fields = append(fields, r.Auth.TextFields("auth")...)
+	return append(fields, r.Body.TextFields("body")...)
 }
 
 func (r Request) LogValue() any {

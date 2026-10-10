@@ -36,6 +36,17 @@ func (a Auth) MapText(transform func(string) string) Auth {
 	return a
 }
 
+func (a Auth) TextFields(prefix string) []TextField {
+	switch a.Type {
+	case authtype.Bearer:
+		return []TextField{NewTextField(fieldName(prefix, "bearer", "token"), a.Bearer.Token)}
+	case authtype.Basic:
+		return []TextField{NewTextField(fieldName(prefix, "basic", "username"), a.Basic.Username), NewTextField(fieldName(prefix, "basic", "password"), a.Basic.Password)}
+	default:
+		return []TextField{}
+	}
+}
+
 func (a Auth) IsSupported() bool {
 	switch a.Type {
 	case authtype.Inherit, authtype.None, authtype.Bearer, authtype.Basic:

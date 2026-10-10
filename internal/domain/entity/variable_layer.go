@@ -1,6 +1,11 @@
 package entity
 
-import "github.com/brienze1/xenon/internal/domain/enums"
+import (
+	"slices"
+	"strings"
+
+	"github.com/brienze1/xenon/internal/domain/enums"
+)
 
 type VariableLayer struct {
 	Variables map[string]ContextVariable
@@ -31,4 +36,15 @@ func (v VariableLayer) secretValues() []string {
 		}
 	}
 	return values
+}
+
+func (v VariableLayer) sortedVariables() []ContextVariable {
+	variables := make([]ContextVariable, 0, len(v.Variables))
+	for _, variable := range v.Variables {
+		variables = append(variables, variable)
+	}
+	slices.SortFunc(variables, func(a, b ContextVariable) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+	return variables
 }

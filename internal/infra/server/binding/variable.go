@@ -8,11 +8,12 @@ import (
 )
 
 type VariableService struct {
-	table adapter.VariableTableController
+	table   adapter.VariableTableController
+	inspect adapter.VariableInspectController
 }
 
-func NewVariableService(table adapter.VariableTableController) *VariableService {
-	return &VariableService{table: table}
+func NewVariableService(table adapter.VariableTableController, inspect adapter.VariableInspectController) *VariableService {
+	return &VariableService{table: table, inspect: inspect}
 }
 
 func (v *VariableService) GetTable(ctx context.Context, request dto.VariableTableReference) (*dto.VariableTable, error) {
@@ -37,4 +38,12 @@ func (v *VariableService) Persist(ctx context.Context, request dto.VariableKeys)
 
 func (v *VariableService) AddVariable(ctx context.Context, request dto.AddVariable) (*dto.VariableRow, error) {
 	return v.table.AddVariable(ctx, request)
+}
+
+func (v *VariableService) Inspect(ctx context.Context, request dto.InspectVariables) (*dto.VariableInspection, error) {
+	return v.inspect.Inspect(ctx, request)
+}
+
+func (v *VariableService) Suggest(ctx context.Context, request dto.SuggestVariables) (dto.VariableSuggestionList, error) {
+	return v.inspect.Suggest(ctx, request)
 }
