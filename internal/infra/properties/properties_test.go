@@ -47,3 +47,27 @@ func TestDataDirFallsBackToTempDirWhenConfigDirIsUnknown(t *testing.T) {
 		t.Fatalf("dataDir = %q, want %q", got, want)
 	}
 }
+
+func TestVaultPropertiesDefaultAndOverride(t *testing.T) {
+	t.Setenv("XENON_FORCE_PASSPHRASE", "")
+	t.Setenv("XENON_SCRYPT_LOG_N", "")
+	defaults := Properties().Vault
+	if defaults.ForcePassphrase || defaults.ScryptLogN != defaultScryptLogN {
+		t.Fatalf("unexpected defaults %+v", defaults)
+	}
+	t.Setenv("XENON_FORCE_PASSPHRASE", "true")
+	t.Setenv("XENON_SCRYPT_LOG_N", "10")
+	overridden := Properties().Vault
+	if !overridden.ForcePassphrase || overridden.ScryptLogN != 10 {
+		t.Fatalf("unexpected overrides %+v", overridden)
+	}
+}
+
+func TestPositiveIntOrDefault(t *testing.T) {
+	cases := map[string]int{"": 18, "abc": 18, "0": 18, "-3": 18, "1": 1, "12": 12}
+	for raw, want := range cases {
+		if got := positiveIntOrDefault(raw, 18); got != want {
+			t.Errorf("positiveIntOrDefault(%q) = %d, want %d", raw, got, want)
+		}
+	}
+}

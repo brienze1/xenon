@@ -5,22 +5,27 @@ go 1.26.0
 toolchain go1.27.2
 
 require (
+	filippo.io/age v1.3.2
 	github.com/Bios-Marcel/wastebasket/v2 v2.0.3
 	github.com/andybalholm/brotli v1.2.6
+	github.com/brianvoe/gofakeit/v7 v7.17.1
 	github.com/cucumber/godog v0.16.0
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/go-playground/validator/v10 v10.30.5
 	github.com/oklog/ulid/v2 v2.1.2
 	github.com/wailsapp/wails/v3 v3.0.0-beta.28
+	github.com/zalando/go-keyring v0.2.8
 	go.yaml.in/yaml/v3 v3.0.5
 	golang.org/x/text v0.42.0
 )
 
 require (
+	filippo.io/hpke v0.4.0 // indirect
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/coder/websocket v1.8.14 // indirect
 	github.com/cucumber/gherkin/go/v42 v42.0.0 // indirect
 	github.com/cucumber/messages/go/v34 v34.2.0 // indirect
+	github.com/danieljoos/wincred v1.2.3 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.15 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
