@@ -15,3 +15,13 @@ by hand instead of being exported by Bruno:
 Both describe the same "Bruno Shop" collection. Replace them with real Bruno 3.1 exports when
 available and keep the scenario expectations in `test/integration/features/import/bruno_*.feature`
 in sync.
+
+Also hand-authored, for the script translation (`bruno_scripts.feature`):
+
+- `scripts-collection/` has one request per area: every bru→pm table row (`Translations.bru`),
+  every assertion operator (`Assertions.bru`), request variables (`Vars.bru`) and every construct
+  that has no pm equivalent (`Untranslated.bru`).
+- `scripts-corpus/` is a realistic set of Bruno scripts (login token capture, request signing,
+  pagination, retries, cleanup) — 84 script lines, 5 of which cannot be translated (SC-006).
+
+Both collections also have a WebSocket request next to the gRPC one (skipped and listed).

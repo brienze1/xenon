@@ -102,26 +102,42 @@ US5 Bruno · US6 cURL
 
 ## Phase 7: User Story 5 — Bruno (P2)
 
-- [ ] T026 [P] [US5] BDD `test/integration/features/import/bruno_bru.feature` and `bruno_yaml.feature`: tree and seq order, every row of bruno-mapping.md §1–§2 and §5, secrets missing, gRPC/WS requests skipped + listed, mixed formats refused
-- [ ] T027 [P] [US5] BDD `test/integration/features/import/bruno_scripts.feature`: each §3 translation row, each §4 assertion operator, vars → `pm.variables.set`, untranslated lines prefixed and listed with file:line; ≥ 90% translation rate on the corpus (SC-006)
-- [ ] T028 [US5] Run → **red**
-- [ ] T029 [US5] `internal/integration/webservice/bruno/bru_parser.go` (line grammar: blocks, dictionaries, `~`, `'''` multiline, annotations) with unit tests per block type; `yaml_reader.go`; `dto/` with ToEntity; adapter `bruno_reader.go`
-- [ ] T030 [US5] Pure use cases `translate_bruno_script.go`, `convert_bruno_assertions.go`, `convert_bruno_vars.go` (tables from bruno-mapping.md §3–§4) with table tests → run US5 features **green**
+- [x] T026 [P] [US5] BDD `test/integration/features/import/bruno_bru.feature` and `bruno_yaml.feature`: tree and seq order, every row of bruno-mapping.md §1–§2 and §5, secrets missing, gRPC/WS requests skipped + listed, mixed formats refused
+- [x] T027 [P] [US5] BDD `test/integration/features/import/bruno_scripts.feature`: each §3 translation row, each §4 assertion operator, vars → `pm.variables.set`, untranslated lines prefixed and listed with file:line; ≥ 90% translation rate on the corpus (SC-006)
+- [x] T028 [US5] Run → **red**
+- [x] T029 [US5] `internal/integration/webservice/bruno/bru_parser.go` (line grammar: blocks, dictionaries, `~`, `'''` multiline, annotations) with unit tests per block type; `yaml_reader.go`; `dto/` with ToEntity; adapter `bruno_reader.go`
+- [x] T030 [US5] Pure use cases `translate_bruno_script.go`, `convert_bruno_assertions.go`, `convert_bruno_vars.go` (tables from bruno-mapping.md §3–§4) with table tests → run US5 features **green**
 
 ---
 
 ## Phase 8: User Story 6 — cURL (P2)
 
-- [ ] T031 [P] [US6] BDD `test/integration/features/import/curl.feature`: every corpus entry in bash/cmd/PowerShell yields the expected request (SC-005); each FR-024 flag; unknown flags in notices; non-HTTP refused `IMP-07400`; not-curl text `IMP-06400`; dialog import creates a named request in the chosen folder
-- [ ] T032 [US6] Run → **red**; implement `webservice/curl/normalize.go`, `tokenizer.go` (mvdan.cc/sh), `flags.go`, dto + `derive_curl_request_name.go`; `RequestService.ParseCurl` controller/binding → **green**
-- [ ] T033 [US6] UI: URL-bar paste detection (`features/request-builder`), apply as one undoable draft change, notices toast; RTL test
+- [x] T031 [P] [US6] BDD `test/integration/features/import/curl.feature`: every corpus entry in bash/cmd/PowerShell yields the expected request (SC-005); each FR-024 flag; unknown flags in notices; non-HTTP refused `IMP-07400`; not-curl text `IMP-06400`; dialog import creates a named request in the chosen folder
+- [x] T032 [US6] Run → **red**; implement `webservice/curl/normalize.go`, `tokenizer.go` (mvdan.cc/sh), `flags.go`, dto + `derive_curl_request_name.go`; `RequestService.ParseCurl` controller/binding → **green**
+- [x] T033 [US6] UI: URL-bar paste detection (`features/request-builder`), apply as one undoable draft change, notices toast; RTL test
 
 ---
 
+> Implementation notes (T026–T035): Bruno is read by `BrunoWebservice` (`webservice/bruno/`:
+> `bru_parser.go` line grammar into `dto.BruFile`, OpenCollection YAML structs, both mapped through
+> neutral DTOs with `ToEntity`); the reader returns raw script parts (`entity.BrunoScripts`) and
+> `ManageImportService` translates them with the pure `TranslateBrunoScript`,
+> `ConvertBrunoPreRequestVars`/`ConvertBrunoPostResponseVars` and `ConvertBrunoAssertions`.
+> Post-response order: script, vars, assertions, tests; disabled vars/assertions stay as `// `
+> comments; untranslated lines are commented out with `// XENON: untranslated` and reported as
+> `untranslated_script` warnings with `file:line`. Skipped gRPC/WS requests warn on their parent
+> folder so every warning opens an existing item. cURL is read by `CurlWebservice`
+> (`webservice/curl/`: cmd/PowerShell arguments re-quoted for bash, `mvdan.cc/sh/v3` tokenizer,
+> FR-024 flag table); `ParseCurl` lives on `RequestService` (URL bar, through
+> `EditRequestService`) and Detect turns a pasted command into one `request` item named by
+> `DeriveCurlRequestName`; plan items take an optional `name`, and a request needs a
+> `target_parent_id` (`IMP-35400`). Staged files are plain writes (the commit rename is the atomic
+> step) and the writer publishes `import:progress` every 200 ms while an item is written.
+
 ## Phase 9: Polish
 
-- [ ] T034 [P] Performance BDD `features/import/large_collection.feature`: generated 1,000-request collection < 10 s, progress events ≤ 250 ms apart (SC-002)
-- [ ] T035 [P] Clash BDD `features/import/clashes.feature`: every clash kind × resolution, apply-to-all, `IMP-04409` when unresolved
+- [x] T034 [P] Performance BDD `features/import/large_collection.feature`: generated 1,000-request collection < 10 s, progress events ≤ 250 ms apart (SC-002)
+- [x] T035 [P] Clash BDD `features/import/clashes.feature`: every clash kind × resolution, apply-to-all, `IMP-04409` when unresolved
 - [ ] T036 Run the importer on Luis's real Postman exports (SC-001 acceptance) and record the pm-usage report in `docs/prd/pm-usage-report.md` (settles the PRD item on pm usage beyond the MVP subset); `/refactor-diff` until clean; `make validate`; CI on 3 OSes; walk [quickstart.md](quickstart.md)
 
 ---
