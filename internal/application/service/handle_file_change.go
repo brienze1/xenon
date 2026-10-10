@@ -107,9 +107,13 @@ func (h *handleFileChange) variablesChanged(ctx context.Context, localId, root s
 	}
 	reason := ""
 	if change.TouchesEnvironments() && local.HasActiveEnvironment() {
-		if _, err := h.scopes.findEnvironment.Find(ctx, root, local.ActiveEnvironmentID); errs.IsNotFoundError(err) {
+		_, err := h.scopes.findEnvironment.Find(ctx, root, local.ActiveEnvironmentID)
+		switch {
+		case errs.IsNotFoundError(err):
 			cleared := local.WithActiveEnvironment("")
 			local, reason = &cleared, activeEnvironmentRemoved
+		case err != nil:
+			return err
 		}
 	}
 	for _, scope := range change.VariableScopes {
@@ -125,9 +129,12 @@ func (h *handleFileChange) variablesChanged(ctx context.Context, localId, root s
 
 func (h *handleFileChange) moveSecretOverrides(ctx context.Context, localId, root string, scope entity.ScopeRef, local entity.LocalVariables) (*entity.LocalVariables, error) {
 	rows, err := h.scopes.rows(ctx, root, scope)
-	if err != nil {
+	switch {
+	case errs.IsNotFoundError(err), errs.IsUnprocessableEntityError(err):
 		logger.Warn(ctx, err, "The changed variables could not be read", map[string]any{"localId": localId, "scope": scope.String()})
 		return &local, nil
+	case err != nil:
+		return nil, err
 	}
 	vault, err := vaultFor(ctx, h.findVault, localId, rows)
 	if err != nil {

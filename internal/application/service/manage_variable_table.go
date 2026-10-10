@@ -81,7 +81,7 @@ func (m *manageVariableTable) GetTable(ctx context.Context, localId string, scop
 }
 
 func (m *manageVariableTable) SaveTable(ctx context.Context, localId string, scope entity.ScopeRef, edits []entity.VariableEdit, confirmReveal bool) (*entity.VariableTable, error) {
-	logger.Info(ctx, "Started", map[string]any{"localId": localId, "scope": scope.String(), "edits": len(edits), "confirmReveal": confirmReveal})
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "scope": scope.String(), "edits": edits, "confirmReveal": confirmReveal})
 
 	loaded, err := m.load(ctx, localId, scope)
 	if err != nil {
@@ -104,7 +104,7 @@ func (m *manageVariableTable) SaveTable(ctx context.Context, localId string, sco
 }
 
 func (m *manageVariableTable) SetCurrent(ctx context.Context, localId string, scope entity.ScopeRef, key, value string) (*entity.VariableTableEntry, error) {
-	logger.Info(ctx, "Started", map[string]any{"localId": localId, "scope": scope.String(), "key": key})
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "scope": scope.String(), "key": key, "value": entity.MaskedValue})
 
 	loaded, err := m.load(ctx, localId, scope)
 	if err != nil {
@@ -119,7 +119,7 @@ func (m *manageVariableTable) SetCurrent(ctx context.Context, localId string, sc
 	}
 	entry, _ := saved.Entry(key)
 
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "scope": scope.String(), "key": key, "result": entry})
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "scope": scope.String(), "key": key, "value": entity.MaskedValue, "result": entry})
 	return &entry, nil
 }
 
@@ -159,7 +159,7 @@ func (m *manageVariableTable) Persist(ctx context.Context, localId string, scope
 }
 
 func (m *manageVariableTable) AddVariable(ctx context.Context, localId string, scope entity.ScopeRef, row entity.VariableRow, value string) (*entity.VariableTableEntry, error) {
-	logger.Info(ctx, "Started", map[string]any{"localId": localId, "scope": scope.String(), "row": row})
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "scope": scope.String(), "row": row, "value": entity.MaskedValue})
 
 	loaded, err := m.load(ctx, localId, scope)
 	if err != nil {
@@ -177,7 +177,7 @@ func (m *manageVariableTable) AddVariable(ctx context.Context, localId string, s
 	}
 	entry, _ := saved.Entry(row.Key)
 
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "scope": scope.String(), "row": row, "result": entry})
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "scope": scope.String(), "row": row, "value": entity.MaskedValue, "result": entry})
 	return &entry, nil
 }
 

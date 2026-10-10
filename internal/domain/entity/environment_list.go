@@ -53,11 +53,24 @@ func (e EnvironmentList) CopyName(name string) string {
 	return candidate
 }
 
-func (e EnvironmentList) FileNames(exceptId string) []string {
+func (e EnvironmentList) KeepsName(environment Environment) bool {
+	for _, existing := range e.Environments {
+		if existing.HasID(environment.ID) && existing.HasName(environment.Name) {
+			return true
+		}
+	}
+	return false
+}
+
+func (e EnvironmentList) IsNameAvailableFor(environment Environment) bool {
+	return !e.IsNameTaken(environment.Name, environment.ID)
+}
+
+func (e EnvironmentList) SiblingFileNames(environment Environment) []string {
 	names := make([]string, 0, len(e.Environments))
-	for _, environment := range e.Environments {
-		if environment.IsMalformed() || environment.ID != exceptId {
-			names = append(names, environment.FileName)
+	for _, existing := range e.Environments {
+		if !existing.HasID(environment.ID) {
+			names = append(names, existing.FileName)
 		}
 	}
 	return names

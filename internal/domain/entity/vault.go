@@ -17,6 +17,12 @@ func NewVault(localId string, mode enums.VaultMode, state enums.VaultState, secr
 	return Vault{LocalID: localId, Mode: mode, State: state, Secrets: copyScopes(secrets)}
 }
 
+func NewVaultFromStorage(storage VaultStorage) Vault {
+	vault := NewVault(storage.LocalID, storage.Mode, storage.State(), storage.Secrets)
+	vault.KeyAvailable = storage.KeyAvailable
+	return vault
+}
+
 func NewUnopenedVault(localId string) Vault {
 	return Vault{LocalID: localId}
 }

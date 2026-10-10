@@ -84,6 +84,6 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "tabId": tabId, "request": request, "appVersion": appVersion, "result": response})
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "tabId": tabId, "request": request, "appVersion": appVersion, "acknowledgement": acknowledgement, "result": response})
 	return &response, nil
 }

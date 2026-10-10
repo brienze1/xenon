@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"reflect"
 )
 
 // Redactable values are logged through LogValue so secrets never reach the log.
@@ -33,7 +34,30 @@ func redactValue(value any) any {
 		}
 		return redacted
 	default:
+		return redactSlice(value)
+	}
+}
+
+func redactSlice(value any) any {
+	reflected := reflect.ValueOf(value)
+	if reflected.Kind() != reflect.Slice || !holdsRedactable(reflected.Type().Elem()) {
 		return value
+	}
+	redacted := make([]any, 0, reflected.Len())
+	for index := range reflected.Len() {
+		redacted = append(redacted, redactValue(reflected.Index(index).Interface()))
+	}
+	return redacted
+}
+
+func holdsRedactable(elementType reflect.Type) bool {
+	switch elementType.Kind() {
+	case reflect.Interface, reflect.Map:
+		return true
+	case reflect.Slice:
+		return elementType.Elem().Kind() != reflect.Uint8
+	default:
+		return elementType.Implements(reflect.TypeFor[Redactable]())
 	}
 }
 

@@ -13,10 +13,11 @@ import (
 type variableInspect struct {
 	errorHandler            adapter.ErrorHandler
 	inspectVariablesService appAdapter.InspectVariablesService
+	suggestVariablesService appAdapter.SuggestVariablesService
 }
 
-func NewVariableInspect(errorHandler adapter.ErrorHandler, inspectVariablesService appAdapter.InspectVariablesService) adapter.VariableInspectController {
-	return &variableInspect{errorHandler: errorHandler, inspectVariablesService: inspectVariablesService}
+func NewVariableInspect(errorHandler adapter.ErrorHandler, inspectVariablesService appAdapter.InspectVariablesService, suggestVariablesService appAdapter.SuggestVariablesService) adapter.VariableInspectController {
+	return &variableInspect{errorHandler: errorHandler, inspectVariablesService: inspectVariablesService, suggestVariablesService: suggestVariablesService}
 }
 
 func (v *variableInspect) Inspect(bindingCtx context.Context, request dto.InspectVariables) (response *dto.VariableInspection, err error) {
@@ -65,7 +66,7 @@ func (v *variableInspect) Suggest(bindingCtx context.Context, request dto.Sugges
 		return nil, err
 	}
 
-	suggestions, err := v.inspectVariablesService.Suggest(ctx, request.LocalId, request.RequestId, request.Prefix)
+	suggestions, err := v.suggestVariablesService.Suggest(ctx, request.LocalId, request.RequestId, request.Prefix)
 	if err != nil {
 		return nil, err
 	}

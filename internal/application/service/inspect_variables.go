@@ -40,7 +40,11 @@ func NewInspectVariablesService(
 func (i *inspectVariables) Inspect(ctx context.Context, localId string, request entity.Request) (*entity.VariableInspection, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "request": request})
 
-	scopes, err := i.load(ctx, localId, request.ID)
+	workspace, err := i.findWorkspaceRegistry.FindWorkspace(ctx, localId)
+	if err != nil {
+		return nil, err
+	}
+	scopes, err := i.variables.load(ctx, localId, workspace.Path, request.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -48,25 +52,4 @@ func (i *inspectVariables) Inspect(ctx context.Context, localId string, request 
 
 	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "request": request, "result": inspection})
 	return &inspection, nil
-}
-
-func (i *inspectVariables) Suggest(ctx context.Context, localId, requestId, prefix string) ([]entity.VariableSuggestion, error) {
-	logger.Info(ctx, "Started", map[string]any{"localId": localId, "requestId": requestId, "prefix": prefix})
-
-	scopes, err := i.load(ctx, localId, requestId)
-	if err != nil {
-		return nil, err
-	}
-	suggestions := usecase.SuggestVariables(scopes.context, i.listDynamicValueNames.Names(ctx), prefix)
-
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "requestId": requestId, "prefix": prefix, "result": len(suggestions)})
-	return suggestions, nil
-}
-
-func (i *inspectVariables) load(ctx context.Context, localId, requestId string) (*requestScopes, error) {
-	workspace, err := i.findWorkspaceRegistry.FindWorkspace(ctx, localId)
-	if err != nil {
-		return nil, err
-	}
-	return i.variables.load(ctx, localId, workspace.Path, requestId)
 }

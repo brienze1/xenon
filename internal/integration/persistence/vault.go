@@ -11,11 +11,10 @@ import (
 
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/vaultmode"
-	"github.com/brienze1/xenon/internal/domain/enums/vaultstate"
 	"github.com/brienze1/xenon/internal/infra/properties"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/persistence/model"
-	"github.com/brienze1/xenon/pkg/encryption"
+	"github.com/brienze1/xenon/pkg/agecrypt"
 	"github.com/brienze1/xenon/pkg/errs"
 	"github.com/brienze1/xenon/pkg/fileutils"
 	"github.com/brienze1/xenon/pkg/logger"
@@ -30,8 +29,8 @@ const (
 type vaultIdentity struct {
 	secret       string
 	found        bool
-	locked       bool
-	broken       bool
+	sealed       bool
+	unreadable   bool
 	keyAvailable bool
 }
 
@@ -57,8 +56,7 @@ func (v *vaultPersistence) Find(ctx context.Context, localId string) (*entity.Va
 	if err != nil {
 		return nil, err
 	}
-	vault := v.open(localId, *settings, *identity)
-	vault.KeyAvailable = identity.keyAvailable
+	vault := entity.NewVaultFromStorage(v.storage(localId, *settings, *identity))
 
 	logger.Debug(ctx, "Finished", vault)
 	return &vault, nil
@@ -82,7 +80,7 @@ func (v *vaultPersistence) Save(ctx context.Context, vault entity.Vault) error {
 		}
 	}
 	content, _ := json.Marshal(model.NewVaultContent(vault))
-	encrypted, err := encryption.EncryptForIdentity(content, secret)
+	encrypted, err := agecrypt.EncryptForIdentity(content, secret)
 	if err != nil {
 		return errs.InternalServerError(err, "VLT-20500", "the vault could not be encrypted")
 	}
@@ -154,15 +152,15 @@ func (v *vaultPersistence) wrappedIdentity(localId string) *vaultIdentity {
 		return &vaultIdentity{secret: secret, found: true, keyAvailable: unlocked}
 	}
 	if !unlocked {
-		return &vaultIdentity{found: true, locked: true}
+		return &vaultIdentity{found: true, sealed: true}
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return &vaultIdentity{found: true, broken: true, keyAvailable: true}
+		return &vaultIdentity{found: true, unreadable: true, keyAvailable: true}
 	}
-	secret, err := encryption.DecryptWithPassphrase(data, passphrase)
+	secret, err := agecrypt.DecryptWithPassphrase(data, passphrase)
 	if err != nil {
-		return &vaultIdentity{found: true, broken: true, keyAvailable: true}
+		return &vaultIdentity{found: true, unreadable: true, keyAvailable: true}
 	}
 	v.mu.Lock()
 	v.identities[path] = string(secret)
@@ -170,30 +168,36 @@ func (v *vaultPersistence) wrappedIdentity(localId string) *vaultIdentity {
 	return &vaultIdentity{secret: string(secret), found: true, keyAvailable: true}
 }
 
-func (v *vaultPersistence) open(localId string, settings entity.VaultSettings, identity vaultIdentity) entity.Vault {
+func (v *vaultPersistence) storage(localId string, settings entity.VaultSettings, identity vaultIdentity) entity.VaultStorage {
 	path := vaultPath(localId)
-	switch {
-	case identity.locked:
-		return entity.NewVault(localId, settings.Mode, vaultstate.Locked, nil)
-	case identity.broken || identity.found != isFile(path):
-		return entity.NewVault(localId, settings.Mode, vaultstate.Broken, nil)
-	case !identity.found:
-		return entity.NewVault(localId, settings.Mode, vaultstate.Empty, nil)
+	storage := entity.VaultStorage{
+		LocalID:       localId,
+		Mode:          settings.Mode,
+		KeyFound:      identity.found,
+		KeySealed:     identity.sealed,
+		KeyUnreadable: identity.unreadable,
+		KeyAvailable:  identity.keyAvailable,
+		ContentFound:  isFile(path),
+	}
+	if !storage.CanOpenContent() {
+		return storage
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return entity.NewVault(localId, settings.Mode, vaultstate.Broken, nil)
+		storage.ContentUnreadable = true
+		return storage
 	}
-	plaintext, err := encryption.DecryptWithIdentity(data, identity.secret)
+	plaintext, err := agecrypt.DecryptWithIdentity(data, identity.secret)
 	var content model.VaultContent
 	if err != nil || json.Unmarshal(plaintext, &content) != nil {
-		return entity.NewVault(localId, settings.Mode, vaultstate.Broken, nil)
+		storage.ContentUnreadable = true
+		return storage
 	}
-	return content.ToEntity(localId, settings)
+	return content.ToEntity(storage)
 }
 
 func (v *vaultPersistence) createIdentity(localId string, settings entity.VaultSettings) (string, error) {
-	secret, err := encryption.GenerateIdentity()
+	secret, err := agecrypt.GenerateIdentity()
 	if err != nil {
 		return "", errs.InternalServerError(err, "VLT-17500", "the vault key could not be generated")
 	}
@@ -207,7 +211,7 @@ func (v *vaultPersistence) createIdentity(localId string, settings entity.VaultS
 	if !unlocked {
 		return "", errs.ConflictError("the vault is locked; unlock it with the passphrase", "VLT-29409")
 	}
-	wrapped, err := encryption.EncryptWithPassphrase([]byte(secret), passphrase, properties.Properties().Vault.ScryptLogN)
+	wrapped, err := agecrypt.EncryptWithPassphrase([]byte(secret), passphrase, properties.Properties().Vault.ScryptLogN)
 	if err != nil {
 		return "", errs.InternalServerError(err, "VLT-18500", "the vault key could not be protected with the passphrase")
 	}

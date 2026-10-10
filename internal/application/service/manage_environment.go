@@ -18,7 +18,6 @@ type manageEnvironment struct {
 	findEnvironment       usecase.FindEnvironment
 	saveEnvironment       usecase.SaveEnvironment
 	deleteEnvironment     usecase.DeleteEnvironment
-	saveLocalVariables    usecase.SaveLocalVariables
 	values                scopeValues
 	publishVariableEvent  usecase.PublishVariableEvent
 }
@@ -41,7 +40,6 @@ func NewManageEnvironmentService(
 		findEnvironment:       findEnvironment,
 		saveEnvironment:       saveEnvironment,
 		deleteEnvironment:     deleteEnvironment,
-		saveLocalVariables:    saveLocalVariables,
 		values: scopeValues{
 			findLocalVariables: findLocalVariables,
 			saveLocalVariables: saveLocalVariables,
@@ -72,42 +70,10 @@ func (m *manageEnvironment) List(ctx context.Context, localId string) (*entity.E
 	return list, nil
 }
 
-func (m *manageEnvironment) SetActive(ctx context.Context, localId, id string) (string, error) {
-	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id})
-
-	workspace, err := m.findWorkspaceRegistry.FindWorkspace(ctx, localId)
-	if err != nil {
-		return "", err
-	}
-	local, err := m.values.local(ctx, localId)
-	if err != nil {
-		return "", err
-	}
-	updated := local.WithActiveEnvironment(id)
-	if updated.HasActiveEnvironment() {
-		if _, err := m.findEnvironment.Find(ctx, workspace.Path, id); err != nil {
-			return "", err
-		}
-	}
-	if err := m.saveLocalVariables.Save(ctx, localId, updated); err != nil {
-		return "", err
-	}
-	if err := m.publishVariableEvent.VariablesChanged(ctx, localId, []entity.ScopeRef{}, ""); err != nil {
-		return "", err
-	}
-
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "id": id, "result": updated.ActiveEnvironmentID})
-	return updated.ActiveEnvironmentID, nil
-}
-
 func (m *manageEnvironment) Get(ctx context.Context, localId, id string) (*entity.EnvironmentDetails, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id})
 
-	workspace, err := m.findWorkspaceRegistry.FindWorkspace(ctx, localId)
-	if err != nil {
-		return nil, err
-	}
-	environment, err := m.findEnvironment.Find(ctx, workspace.Path, id)
+	_, environment, err := m.environment(ctx, localId, id)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +94,7 @@ func (m *manageEnvironment) Create(ctx context.Context, localId, name string) (*
 		return nil, err
 	}
 	created := entity.NewEnvironment(idutils.NewUlid(), name)
-	saved, err := m.saveNamed(ctx, workspace.Path, created, "")
+	saved, err := m.saveNamed(ctx, workspace.Path, created)
 	if err != nil {
 		return nil, err
 	}
@@ -144,16 +110,11 @@ func (m *manageEnvironment) Create(ctx context.Context, localId, name string) (*
 func (m *manageEnvironment) Update(ctx context.Context, localId string, settings entity.Environment) (*entity.EnvironmentDetails, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "settings": settings})
 
-	workspace, err := m.findWorkspaceRegistry.FindWorkspace(ctx, localId)
+	root, current, err := m.environment(ctx, localId, settings.ID)
 	if err != nil {
 		return nil, err
 	}
-	current, err := m.findEnvironment.Find(ctx, workspace.Path, settings.ID)
-	if err != nil {
-		return nil, err
-	}
-	updated := current.WithSettings(settings)
-	saved, err := m.saveRenamed(ctx, workspace.Path, *current, updated)
+	saved, err := m.saveNamed(ctx, root, current.WithSettings(settings))
 	if err != nil {
 		return nil, err
 	}
@@ -169,19 +130,15 @@ func (m *manageEnvironment) Update(ctx context.Context, localId string, settings
 func (m *manageEnvironment) Duplicate(ctx context.Context, localId, id string) (*entity.EnvironmentDetails, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id})
 
-	workspace, err := m.findWorkspaceRegistry.FindWorkspace(ctx, localId)
+	root, source, err := m.environment(ctx, localId, id)
 	if err != nil {
 		return nil, err
 	}
-	source, err := m.findEnvironment.Find(ctx, workspace.Path, id)
+	list, err := m.list(ctx, root, "")
 	if err != nil {
 		return nil, err
 	}
-	list, err := m.list(ctx, workspace.Path, "")
-	if err != nil {
-		return nil, err
-	}
-	saved, err := m.saveNamed(ctx, workspace.Path, source.Duplicated(idutils.NewUlid(), list.CopyName(source.Name)), "")
+	saved, err := m.saveNamed(ctx, root, source.Duplicated(idutils.NewUlid(), list.CopyName(source.Name)))
 	if err != nil {
 		return nil, err
 	}
@@ -200,15 +157,11 @@ func (m *manageEnvironment) Duplicate(ctx context.Context, localId, id string) (
 func (m *manageEnvironment) Delete(ctx context.Context, localId, id string) (string, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id})
 
-	workspace, err := m.findWorkspaceRegistry.FindWorkspace(ctx, localId)
+	root, environment, err := m.environment(ctx, localId, id)
 	if err != nil {
 		return "", err
 	}
-	environment, err := m.findEnvironment.Find(ctx, workspace.Path, id)
-	if err != nil {
-		return "", err
-	}
-	if err := m.deleteEnvironment.Delete(ctx, workspace.Path, id); err != nil {
+	if err := m.deleteEnvironment.Delete(ctx, root, id); err != nil {
 		return "", err
 	}
 	activeId, err := m.values.drop(ctx, localId, *environment)
@@ -223,6 +176,18 @@ func (m *manageEnvironment) Delete(ctx context.Context, localId, id string) (str
 	return activeId, nil
 }
 
+func (m *manageEnvironment) environment(ctx context.Context, localId, id string) (string, *entity.Environment, error) {
+	workspace, err := m.findWorkspaceRegistry.FindWorkspace(ctx, localId)
+	if err != nil {
+		return "", nil, err
+	}
+	environment, err := m.findEnvironment.Find(ctx, workspace.Path, id)
+	if err != nil {
+		return "", nil, err
+	}
+	return workspace.Path, environment, nil
+}
+
 func (m *manageEnvironment) list(ctx context.Context, root, activeId string) (*entity.EnvironmentList, error) {
 	environments, err := m.listEnvironments.List(ctx, root)
 	if err != nil {
@@ -232,26 +197,22 @@ func (m *manageEnvironment) list(ctx context.Context, root, activeId string) (*e
 	return &list, nil
 }
 
-func (m *manageEnvironment) saveNamed(ctx context.Context, root string, environment entity.Environment, exceptId string) (*entity.Environment, error) {
-	if !environment.HasValidName() {
-		return nil, errs.BadRequestError("the environment name must have 1 to 200 characters", "ENV-16400")
-	}
+func (m *manageEnvironment) saveNamed(ctx context.Context, root string, environment entity.Environment) (*entity.Environment, error) {
 	list, err := m.list(ctx, root, "")
 	if err != nil {
 		return nil, err
 	}
-	if list.IsNameTaken(environment.Name, exceptId) {
+	if list.KeepsName(environment) {
+		return m.saveEnvironment.Save(ctx, root, environment)
+	}
+	if !environment.HasValidName() {
+		return nil, errs.BadRequestError("the environment name must have 1 to 200 characters", "ENV-16400")
+	}
+	if !list.IsNameAvailableFor(environment) {
 		return nil, errs.ConflictError("an environment with this name already exists", "ENV-02409")
 	}
-	named := environment.WithFileName(usecase.DeriveFileName(environment.Name, itemkind.Environment, list.FileNames(exceptId)))
+	named := environment.WithFileName(usecase.DeriveFileName(environment.Name, itemkind.Environment, list.SiblingFileNames(environment)))
 	return m.saveEnvironment.Save(ctx, root, named)
-}
-
-func (m *manageEnvironment) saveRenamed(ctx context.Context, root string, current, updated entity.Environment) (*entity.Environment, error) {
-	if current.HasName(updated.Name) {
-		return m.saveEnvironment.Save(ctx, root, updated)
-	}
-	return m.saveNamed(ctx, root, updated, current.ID)
 }
 
 func (m *manageEnvironment) announced(ctx context.Context, localId string, environment entity.Environment) (*entity.EnvironmentDetails, error) {

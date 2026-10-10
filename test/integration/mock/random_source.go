@@ -9,6 +9,7 @@ const randomSeed = 20261009
 
 type RandomSource struct {
 	source *rand.PCG
+	draws  int
 	mu     sync.Mutex
 }
 
@@ -19,11 +20,19 @@ func NewRandomSource() *RandomSource {
 func (r *RandomSource) Uint64() uint64 {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	r.draws++
 	return r.source.Uint64()
+}
+
+func (r *RandomSource) Draws() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.draws
 }
 
 func (r *RandomSource) Reset() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.source.Seed(randomSeed, randomSeed)
+	r.draws = 0
 }

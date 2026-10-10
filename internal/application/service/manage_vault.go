@@ -99,7 +99,7 @@ func (m *manageVault) SetupPassphrase(ctx context.Context, setup entity.Passphra
 }
 
 func (m *manageVault) Unlock(ctx context.Context, passphrase string) (*entity.VaultStatus, error) {
-	logger.Info(ctx, "Started")
+	logger.Info(ctx, "Started", map[string]any{"passphrase": entity.MaskedValue})
 
 	settings, err := m.findVaultSettings.FindSettings(ctx)
 	if err != nil {
@@ -116,7 +116,7 @@ func (m *manageVault) Unlock(ctx context.Context, passphrase string) (*entity.Va
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", map[string]any{"result": *status})
+	logger.Info(ctx, "Finished", map[string]any{"passphrase": entity.MaskedValue, "result": *status})
 	return status, nil
 }
 

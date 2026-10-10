@@ -51,7 +51,7 @@ func (v vaultWriter) restore(ctx context.Context, written entity.Vault, scope en
 }
 
 func (v vaultWriter) chooseMode(ctx context.Context, settings entity.VaultSettings) (*entity.VaultSettings, error) {
-	chosen := settings.WithMode(v.probeKeychain.Probe(ctx))
+	chosen := settings.WithMode(v.probeKeychain.Probe(ctx).VaultMode())
 	if err := v.saveVaultSettings.SaveSettings(ctx, chosen); err != nil {
 		return nil, err
 	}

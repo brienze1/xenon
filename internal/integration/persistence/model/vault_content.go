@@ -1,9 +1,6 @@
 package model
 
-import (
-	"github.com/brienze1/xenon/internal/domain/entity"
-	"github.com/brienze1/xenon/internal/domain/enums/vaultstate"
-)
+import "github.com/brienze1/xenon/internal/domain/entity"
 
 const vaultContentVersion = 1
 
@@ -22,6 +19,7 @@ func NewVaultContent(vault entity.Vault) VaultContent {
 	return VaultContent{Version: vaultContentVersion, Secrets: secrets}
 }
 
-func (v *VaultContent) ToEntity(localId string, settings entity.VaultSettings) entity.Vault {
-	return entity.NewVault(localId, settings.Mode, vaultstate.Unlocked, v.Secrets)
+func (v *VaultContent) ToEntity(storage entity.VaultStorage) entity.VaultStorage {
+	storage.Secrets = v.Secrets
+	return storage
 }

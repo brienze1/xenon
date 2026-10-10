@@ -11,7 +11,7 @@ import (
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/infra/properties"
 	"github.com/brienze1/xenon/internal/integration/persistence/model"
-	"github.com/brienze1/xenon/pkg/encryption"
+	"github.com/brienze1/xenon/pkg/agecrypt"
 	"github.com/brienze1/xenon/pkg/errs"
 	"github.com/brienze1/xenon/pkg/fileutils"
 	"github.com/brienze1/xenon/pkg/logger"
@@ -57,7 +57,7 @@ func (v *vaultPersistence) SaveSettings(ctx context.Context, settings entity.Vau
 func (v *vaultPersistence) Seal(ctx context.Context, passphrase string) (string, error) {
 	logger.Debug(ctx, "Started")
 
-	sealed, err := encryption.EncryptWithPassphrase([]byte(passphraseCheckToken), passphrase, properties.Properties().Vault.ScryptLogN)
+	sealed, err := agecrypt.EncryptWithPassphrase([]byte(passphraseCheckToken), passphrase, properties.Properties().Vault.ScryptLogN)
 	if err != nil {
 		return "", errs.InternalServerError(err, "VLT-28500", "the passphrase check could not be created")
 	}
@@ -73,7 +73,7 @@ func (v *vaultPersistence) Verify(ctx context.Context, check, passphrase string)
 	if err != nil {
 		return false
 	}
-	token, err := encryption.DecryptWithPassphrase(sealed, passphrase)
+	token, err := agecrypt.DecryptWithPassphrase(sealed, passphrase)
 	verified := err == nil && string(token) == passphraseCheckToken
 
 	logger.Debug(ctx, "Finished", map[string]any{"verified": verified})

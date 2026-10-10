@@ -1,25 +1,26 @@
 package external
 
 import (
+	"crypto/rand"
+	mathrand "math/rand/v2"
 	"sync"
-
-	infraAdapter "github.com/brienze1/xenon/internal/infra/adapter"
-	"github.com/brienze1/xenon/internal/integration/adapter"
 )
 
 var randomSourceOnce sync.Once
-var randomSourceInstance adapter.RandomSource
+var randomSourceInstance mathrand.Source
 
-func GetRandomSource() adapter.RandomSource {
+func GetRandomSource() mathrand.Source {
 	if randomSourceInstance == nil {
 		randomSourceOnce.Do(func() {
-			randomSourceInstance = infraAdapter.NewRandomSource()
+			var seed [32]byte
+			_, _ = rand.Read(seed[:])
+			randomSourceInstance = mathrand.NewChaCha8(seed)
 		})
 	}
 	return randomSourceInstance
 }
 
-func SetRandomSource(source adapter.RandomSource) {
+func SetRandomSource(source mathrand.Source) {
 	randomSourceOnce.Do(func() {})
 	randomSourceInstance = source
 }

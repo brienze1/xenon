@@ -14,7 +14,7 @@ var variableInspectControllerInstance adapter.VariableInspectController
 func GetVariableInspectController() adapter.VariableInspectController {
 	if variableInspectControllerInstance == nil {
 		variableInspectControllerOnce.Do(func() {
-			variableInspectControllerInstance = controller.NewVariableInspect(GetErrorHandler(), application.GetInspectVariablesService())
+			variableInspectControllerInstance = controller.NewVariableInspect(GetErrorHandler(), application.GetInspectVariablesService(), application.GetSuggestVariablesService())
 		})
 	}
 	return variableInspectControllerInstance

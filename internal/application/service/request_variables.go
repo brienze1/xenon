@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"strings"
 
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
@@ -26,7 +25,7 @@ type requestScopes struct {
 
 func (r requestVariables) load(ctx context.Context, localId, root, requestId string) (*requestScopes, error) {
 	ancestors := make([]entity.Collection, 0)
-	if strings.TrimSpace(requestId) != "" {
+	if entity.IsSavedRequestID(requestId) {
 		found, err := r.findTreeItem.FindAncestors(ctx, root, requestId)
 		if err != nil {
 			return nil, err

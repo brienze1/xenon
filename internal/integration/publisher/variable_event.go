@@ -18,19 +18,19 @@ func NewVariableEvent(eventEmitter adapter.EventEmitter) adapter.VariableEventPu
 }
 
 func (v *variableEventPublisher) VariablesChanged(ctx context.Context, localId string, scopes []entity.ScopeRef, reason string) error {
-	logger.Debug(ctx, "Started", map[string]any{"localId": localId, "scopes": len(scopes), "reason": reason})
+	logger.Debug(ctx, "Started", map[string]any{"localId": localId, "scopes": scopes, "reason": reason})
 
 	v.eventEmitter.Emit(dto.VariablesChangedEvent, dto.NewVariablesChanged(localId, scopes, reason))
 
-	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "scopes": len(scopes), "reason": reason})
+	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "scopes": scopes, "reason": reason})
 	return nil
 }
 
 func (v *variableEventPublisher) VaultStatusChanged(ctx context.Context, status entity.VaultStatus) error {
-	logger.Debug(ctx, "Started", map[string]any{"mode": status.Mode})
+	logger.Debug(ctx, "Started", status)
 
 	v.eventEmitter.Emit(dto.VaultStatusChangedEvent, dto.NewVaultStatusChanged(status))
 
-	logger.Debug(ctx, "Finished", map[string]any{"mode": status.Mode})
+	logger.Debug(ctx, "Finished", status)
 	return nil
 }

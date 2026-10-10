@@ -3,6 +3,7 @@ package webservice
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"net/url"
 	"strconv"
 	"strings"
@@ -29,6 +30,10 @@ const (
 	avatarUrl         = "https://cloudflare-ipfs.com/ipfs/Qmd3W5DuhgHirLHGVixi6V76LhCkZUz6pnFt5AJBiyvHye/avatar/%d.jpg"
 	imageDataSvg      = `<svg xmlns="http://www.w3.org/2000/svg" version="1.1" baseProfile="full" width="640" height="480"><rect width="100%%" height="100%%" fill="%s"/><text x="0" y="20" font-size="20" text-anchor="start" fill="white">640x480</text></svg>`
 	ibanCheckModulus  = 97
+	ibanCheckBase     = 98
+	ibanLetterOffset  = 10
+
+	ibanPlaceholderCheckDigits = "00"
 )
 
 type dynamicGenerator struct {
@@ -42,7 +47,7 @@ type dynamicValuesWebservice struct {
 	names      []string
 }
 
-func NewDynamicValuesWebservice(source adapter.RandomSource) adapter.DynamicValuesWebservice {
+func NewDynamicValuesWebservice(source rand.Source) adapter.DynamicValuesWebservice {
 	generators := dynamicGenerators()
 	webservice := &dynamicValuesWebservice{
 		faker:      gofakeit.NewFaker(source, true),
@@ -338,17 +343,16 @@ func iban(f *gofakeit.Faker) string {
 	return format.Country + fmt.Sprintf("%02d", ibanCheckDigits(format.Country, bban)) + bban
 }
 
-// ibanCheckDigits follows ISO 13616: move the country and "00" behind the BBAN, letters as 10-35, then 98 - mod 97.
 func ibanCheckDigits(country, bban string) int {
 	remainder := 0
-	for _, character := range bban + country + "00" {
+	for _, character := range bban + country + ibanPlaceholderCheckDigits {
 		digits := string(character)
 		if unicode.IsLetter(character) {
-			digits = strconv.Itoa(int(character-'A') + 10)
+			digits = strconv.Itoa(int(character-'A') + ibanLetterOffset)
 		}
 		for _, digit := range digits {
 			remainder = (remainder*10 + int(digit-'0')) % ibanCheckModulus
 		}
 	}
-	return ibanCheckModulus + 1 - remainder
+	return ibanCheckBase - remainder
 }

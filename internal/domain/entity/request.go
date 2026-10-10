@@ -58,7 +58,11 @@ func (r Request) MethodOrDefault() string {
 }
 
 func (r Request) HasID() bool {
-	return strings.TrimSpace(r.ID) != ""
+	return IsSavedRequestID(r.ID)
+}
+
+func IsSavedRequestID(id string) bool {
+	return strings.TrimSpace(id) != ""
 }
 
 func (r Request) HasValidMethod() bool {

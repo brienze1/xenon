@@ -11,12 +11,12 @@ import (
 )
 
 type environmentSetActive struct {
-	errorHandler             adapter.ErrorHandler
-	manageEnvironmentService appAdapter.ManageEnvironmentService
+	errorHandler                adapter.ErrorHandler
+	setActiveEnvironmentService appAdapter.SetActiveEnvironmentService
 }
 
-func NewEnvironmentSetActive(errorHandler adapter.ErrorHandler, manageEnvironmentService appAdapter.ManageEnvironmentService) adapter.EnvironmentSetActiveController {
-	return &environmentSetActive{errorHandler: errorHandler, manageEnvironmentService: manageEnvironmentService}
+func NewEnvironmentSetActive(errorHandler adapter.ErrorHandler, setActiveEnvironmentService appAdapter.SetActiveEnvironmentService) adapter.EnvironmentSetActiveController {
+	return &environmentSetActive{errorHandler: errorHandler, setActiveEnvironmentService: setActiveEnvironmentService}
 }
 
 func (e *environmentSetActive) Handle(bindingCtx context.Context, request dto.SetActiveEnvironment) (response *dto.ActiveEnvironment, err error) {
@@ -37,7 +37,7 @@ func (e *environmentSetActive) Handle(bindingCtx context.Context, request dto.Se
 		return nil, err
 	}
 
-	activeId, err := e.manageEnvironmentService.SetActive(ctx, request.LocalId, request.Id)
+	activeId, err := e.setActiveEnvironmentService.SetActive(ctx, request.LocalId, request.Id)
 	if err != nil {
 		return nil, err
 	}

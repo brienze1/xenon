@@ -14,7 +14,7 @@ var environmentSetActiveControllerInstance adapter.EnvironmentSetActiveControlle
 func GetEnvironmentSetActiveController() adapter.EnvironmentSetActiveController {
 	if environmentSetActiveControllerInstance == nil {
 		environmentSetActiveControllerOnce.Do(func() {
-			environmentSetActiveControllerInstance = controller.NewEnvironmentSetActive(GetErrorHandler(), application.GetManageEnvironmentService())
+			environmentSetActiveControllerInstance = controller.NewEnvironmentSetActive(GetErrorHandler(), application.GetSetActiveEnvironmentService())
 		})
 	}
 	return environmentSetActiveControllerInstance

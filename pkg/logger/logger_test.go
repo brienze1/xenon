@@ -162,6 +162,20 @@ func TestRedactableValuesAreLoggedThroughLogValue(t *testing.T) {
 	}
 }
 
+func TestSlicesOfRedactableValuesAreLoggedThroughLogValue(t *testing.T) {
+	t.Setenv("LOG_LEVEL", "INFO")
+	buffer := capture(t)
+	requests := []secretRequest{{Id: "req-1", Token: "Bearer super-secret-token"}}
+	Info(context.Background(), "Started", requests, map[string]any{"requests": requests, "bytes": []byte("ok"), "names": []string{"plain"}})
+	output := buffer.String()
+	if strings.Contains(output, "super-secret-token") {
+		t.Fatalf("secret leaked into log: %s", output)
+	}
+	if !strings.Contains(output, "req-1") || !strings.Contains(output, `"names":["plain"]`) || !strings.Contains(output, `"bytes":"b2s="`) {
+		t.Errorf("expected redacted values in log: %s", output)
+	}
+}
+
 func TestUnserializableMetadata(t *testing.T) {
 	t.Setenv("LOG_LEVEL", "INFO")
 	buffer := capture(t)
