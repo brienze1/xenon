@@ -24,6 +24,9 @@ func (t *testUtils) registerGivenWorkspaceSteps(ctx *godog.ScenarioContext) {
 	ctx.Given(`^the workspace path "([^"]*)" is removed$`, t.theWorkspacePathIsRemoved)
 	ctx.Given(`^the workspace path "([^"]*)" is moved to "([^"]*)"$`, t.theWorkspacePathIsMovedTo)
 	ctx.Given(`^the app data file "([^"]*)" contains$`, t.theAppDataFileContains)
+	ctx.Given(`^the app data file "([^"]*)" contains the text "([^"]*)"$`, t.theAppDataFileContainsTheText)
+	ctx.Given(`^the app data path "([^"]*)" is removed$`, t.theAppDataPathIsRemoved)
+	ctx.Given(`^the workspace path "([^"]*)" is read-only$`, t.theWorkspacePathIsReadOnly)
 	ctx.Given(`^the current time is "([^"]*)"$`, t.theCurrentTimeIs)
 	ctx.Given(`^the "([^"]*)" variable is set to the mocked api url$`, t.theVariableIsSetToTheMockedApiUrl)
 	ctx.Given(`^the "([^"]*)" variable is set to the mocked tls api url$`, t.theVariableIsSetToTheMockedTlsApiUrl)
@@ -95,6 +98,22 @@ func (t *testUtils) theWorkspacePathIsMovedTo(path, target string) error {
 
 func (t *testUtils) theAppDataFileContains(path string, content *godog.DocString) error {
 	return writeFile(t.appDataPath(path), t.substitute(content.Content))
+}
+
+func (t *testUtils) theAppDataFileContainsTheText(path, text string) error {
+	return writeFile(t.appDataPath(path), t.substitute(text))
+}
+
+func (t *testUtils) theAppDataPathIsRemoved(path string) error {
+	return os.RemoveAll(t.appDataPath(path))
+}
+
+func (t *testUtils) theWorkspacePathIsReadOnly(path string) error {
+	if runtime.GOOS == "windows" {
+		return godog.ErrSkip
+	}
+	t.readOnly = append(t.readOnly, t.workspacePath(path))
+	return os.Chmod(t.workspacePath(path), 0o555)
 }
 
 func (t *testUtils) theCurrentTimeIs(value string) error {

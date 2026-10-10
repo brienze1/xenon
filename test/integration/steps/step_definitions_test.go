@@ -21,6 +21,8 @@ import (
 	"github.com/brienze1/xenon/test/integration/mock"
 )
 
+const scryptLogN = "10"
+
 var tags string
 
 func init() {
@@ -35,7 +37,12 @@ type testUtils struct {
 	dialog        *mock.Dialog
 	trash         *mock.Trash
 	watcher       *mock.FileWatcher
+	keychain      *mock.Keychain
+	clipboard     *mock.Clipboard
+	logs          *mock.LogOutput
 	vars          map[string]string
+	environment   map[string]string
+	readOnly      []string
 	written       map[string]string
 	tempRoot      string
 	workspaceRoot string
@@ -44,6 +51,7 @@ type testUtils struct {
 	response      []byte
 	callError     []byte
 	elapsed       time.Duration
+	restarts      int
 }
 
 var (
@@ -79,7 +87,10 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 			events:  mock.NewEventEmitter(),
 			dialog:  mock.NewDialog(),
 			trash:   mock.NewTrash(),
-			watcher: mock.NewFileWatcher(),
+			watcher:   mock.NewFileWatcher(),
+			keychain:  mock.NewKeychain(),
+			clipboard: mock.NewClipboard(),
+			logs:      mock.NewLogOutput(),
 		}
 		if os.Getenv("LOG_LEVEL") == "" {
 			_ = os.Setenv("LOG_LEVEL", "off")
@@ -89,6 +100,8 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		external.SetDialog(suite.dialog)
 		external.SetTrash(suite.trash)
 		external.SetFileWatcher(suite.watcher)
+		external.SetKeychain(suite.keychain)
+		external.SetClipboard(suite.clipboard)
 		external.SetHttpClientFactory(httpClient.HttpClientFactory(logger.LoggerWrapper()))
 	})
 	test := suite
@@ -101,7 +114,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		return ctx, nil
 	})
 	ctx.After(func(ctx context.Context, _ *godog.Scenario, err error) (context.Context, error) {
-		_ = os.RemoveAll(test.tempRoot)
+		test.after()
 		return ctx, err
 	})
 
@@ -118,6 +131,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	test.registerThenSecretSteps(ctx)
 	test.registerTrashSteps(ctx)
 	test.registerFileWatcherSteps(ctx)
+	test.registerGivenVaultSteps(ctx)
 }
 
 func (t *testUtils) before() error {
@@ -127,6 +141,12 @@ func (t *testUtils) before() error {
 	t.dialog.Reset()
 	t.trash.Reset()
 	t.watcher.Reset()
+	t.keychain.Reset()
+	t.clipboard.Reset()
+	t.logs.Reset()
+	t.restarts = 0
+	t.environment = map[string]string{}
+	t.readOnly = nil
 	t.response = nil
 	t.callError = nil
 	t.routeResponse = nil
@@ -150,7 +170,21 @@ func (t *testUtils) before() error {
 		"workspace_root": t.workspaceRoot,
 		"app_data":       t.dataDir,
 	}
+	if err := os.Setenv("XENON_SCRYPT_LOG_N", scryptLogN); err != nil {
+		return err
+	}
 	return os.Setenv("XENON_DATA_DIR", t.dataDir)
+}
+
+func (t *testUtils) after() {
+	for _, path := range t.readOnly {
+		_ = os.Chmod(path, 0o755)
+	}
+	for name, previous := range t.environment {
+		_ = os.Setenv(name, previous)
+	}
+	logger.SetOutput(os.Stdout)
+	_ = os.RemoveAll(t.tempRoot)
 }
 
 func (t *testUtils) startApp() {

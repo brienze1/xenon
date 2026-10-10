@@ -31,6 +31,9 @@ func (t *testUtils) registerThenFileSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the app data file "([^"]*)" should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theAppDataFileShouldContainTheFieldEqualTo)
 	ctx.Then(`^the app data file "([^"]*)" should contain the field "([^"]*)" array length equal to (\d+)$`, t.theAppDataFileShouldContainTheFieldArrayLengthEqualTo)
 	ctx.Then(`^the app data file "([^"]*)" should not exist$`, t.theAppDataFileShouldNotExist)
+	ctx.Then(`^the app data file "([^"]*)" should exist$`, t.theAppDataFileShouldExist)
+	ctx.Then(`^the app data file "([^"]*)" should not contain "([^"]*)"$`, t.theAppDataFileShouldNotContain)
+	ctx.Then(`^the workspace file "([^"]*)" should not contain the field "([^"]*)"$`, t.theWorkspaceFileShouldNotContainTheField)
 	ctx.Then(`^the app data file "([^"]*)" should have (\d+) lines$`, t.theAppDataFileShouldHaveLines)
 	ctx.Then(`^the app data file "([^"]*)" line (\d+) should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theAppDataFileLineShouldContainTheFieldEqualTo)
 	ctx.Then(`^the app data path "([^"]*)" should have the permissions "([^"]*)"$`, t.theAppDataPathShouldHaveThePermissions)
@@ -197,6 +200,35 @@ func (t *testUtils) theAppDataFileShouldContainTheFieldArrayLengthEqualTo(path, 
 func (t *testUtils) theAppDataFileShouldNotExist(path string) error {
 	if _, err := os.Stat(t.appDataPath(path)); !os.IsNotExist(err) {
 		return fmt.Errorf("expected app data %s not to exist (stat error: %v)", path, err)
+	}
+	return nil
+}
+
+func (t *testUtils) theAppDataFileShouldExist(path string) error {
+	info, err := os.Stat(t.appDataPath(path))
+	if err != nil {
+		return err
+	}
+	if info.IsDir() {
+		return fmt.Errorf("app data %s is a folder, expected a file", path)
+	}
+	return nil
+}
+
+func (t *testUtils) theAppDataFileShouldNotContain(path, text string) error {
+	content, err := os.ReadFile(t.appDataPath(path))
+	if err != nil {
+		return err
+	}
+	if bytes.Contains(content, []byte(t.substitute(text))) {
+		return fmt.Errorf("app data %s contains %q", path, t.substitute(text))
+	}
+	return nil
+}
+
+func (t *testUtils) theWorkspaceFileShouldNotContainTheField(path, field string) error {
+	if value, err := t.workspaceFileField(path, field); err == nil {
+		return fmt.Errorf("field %q of %s: expected no field, got %v", field, path, value)
 	}
 	return nil
 }
