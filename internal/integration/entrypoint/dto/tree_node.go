@@ -1,16 +1,27 @@
 package dto
 
-import "github.com/brienze1/xenon/internal/domain/entity"
+import (
+	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
+)
+
+type TreeExample struct {
+	Id   string `json:"id"`
+	Kind string `json:"kind"`
+	Name string `json:"name"`
+	Code int    `json:"code"`
+}
 
 type TreeNode struct {
-	Method   *string    `json:"method,omitempty"`
-	Url      *string    `json:"url,omitempty"`
-	Id       string     `json:"id"`
-	Kind     string     `json:"kind"`
-	Name     string     `json:"name"`
-	Error    string     `json:"error,omitempty"`
-	Warning  string     `json:"warning,omitempty"`
-	Children []TreeNode `json:"children,omitempty"`
+	Method   *string       `json:"method,omitempty"`
+	Url      *string       `json:"url,omitempty"`
+	Id       string        `json:"id"`
+	Kind     string        `json:"kind"`
+	Name     string        `json:"name"`
+	Error    string        `json:"error,omitempty"`
+	Warning  string        `json:"warning,omitempty"`
+	Children []TreeNode    `json:"children,omitempty"`
+	Examples []TreeExample `json:"examples,omitempty"`
 }
 
 func NewTreeNode(node entity.TreeNode) TreeNode {
@@ -18,6 +29,9 @@ func NewTreeNode(node entity.TreeNode) TreeNode {
 	if node.IsRequest() {
 		method, url := node.Method, node.URL
 		result.Method, result.Url = &method, &url
+	}
+	for _, example := range node.Examples {
+		result.Examples = append(result.Examples, TreeExample{Id: example.ID, Kind: itemkind.Example.String(), Name: example.Name, Code: example.Code})
 	}
 	for _, child := range node.Children {
 		result.Children = append(result.Children, NewTreeNode(child))

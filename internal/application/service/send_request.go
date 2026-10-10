@@ -75,7 +75,7 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 	})
 	effective := usecase.ResolveEffectiveRequest(resolved, resolvedAncestors, workspace.Path)
 	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, appVersion))
-	response := s.sendHttpRequest.Send(ctx, effective).WithMaskedValues(secrets)
+	response := s.sendHttpRequest.Send(ctx, effective).WithMaskedValues(secrets).WithSentRequest(request)
 	if err := s.saveResponse.Save(ctx, tabId, response); err != nil {
 		return nil, err
 	}

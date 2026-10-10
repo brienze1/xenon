@@ -60,10 +60,35 @@ func (r *requestPersistence) FindRevision(ctx context.Context, root, id string) 
 
 func (r *requestPersistence) Save(ctx context.Context, root string, request entity.Request) (*entity.Request, error) {
 	logger.Debug(ctx, "Started", request, map[string]any{"root": root})
+
+	stored := model.NewRequest(request)
+	saved, err := r.write(ctx, root, request.ID, stored.Fields())
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Debug(ctx, "Finished", saved)
+	return saved, nil
+}
+
+func (r *requestPersistence) SaveExamples(ctx context.Context, root string, request entity.Request) (*entity.Request, error) {
+	logger.Debug(ctx, "Started", request, map[string]any{"root": root, "examples": request.Examples})
+
+	stored := model.NewRequest(request)
+	saved, err := r.write(ctx, root, request.ID, stored.FieldsWithExamples())
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Debug(ctx, "Finished", saved)
+	return saved, nil
+}
+
+func (r *requestPersistence) write(ctx context.Context, root, id string, fields []yamlnode.Field) (*entity.Request, error) {
 	r.index.Lock(ctx)
 	defer r.index.Unlock(ctx)
 
-	path, err := r.path(ctx, root, request.ID)
+	path, err := r.path(ctx, root, id)
 	if err != nil {
 		return nil, err
 	}
@@ -75,8 +100,7 @@ func (r *requestPersistence) Save(ctx context.Context, root string, request enti
 	if err != nil {
 		document = yamlnode.NewDocument()
 	}
-	stored := model.NewRequest(request)
-	yamlnode.Patch(yamlnode.Root(document), stored.Fields())
+	yamlnode.Patch(yamlnode.Root(document), fields)
 	data, err := yamlnode.Encode(document)
 	if err != nil {
 		return nil, errs.InternalServerError(err, "REQ-14500", "the request could not be encoded")
@@ -85,13 +109,7 @@ func (r *requestPersistence) Save(ctx context.Context, root string, request enti
 		return nil, errs.FileError(err, "REQ-13500")
 	}
 	r.index.RecordWrite(ctx, path, data)
-	saved, err := readRequestEntity(request.ID, path)
-	if err != nil {
-		return nil, err
-	}
-
-	logger.Debug(ctx, "Finished", saved)
-	return saved, nil
+	return readRequestEntity(id, path)
 }
 
 func (r *requestPersistence) path(ctx context.Context, root, id string) (string, error) {

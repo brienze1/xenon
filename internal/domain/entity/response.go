@@ -16,6 +16,7 @@ var textualMediaTypes = []string{"json", "xml", "javascript", "x-www-form-urlenc
 
 type Response struct {
 	Error       *SendError
+	Sent        *Request
 	ContentType string
 	StatusText  string
 	Proto       string
@@ -75,6 +76,18 @@ func (r Response) WithMaskedValues(values []string) Response {
 		r.Error = &masked
 	}
 	return r
+}
+
+func (r Response) WithSentRequest(request Request) Response {
+	r.Sent = &request
+	return r
+}
+
+func (r Response) SentRequestOr(fallback Request) Request {
+	if r.Sent != nil {
+		return *r.Sent
+	}
+	return fallback
 }
 
 func (r Response) WithoutBody() Response {

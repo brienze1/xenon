@@ -158,9 +158,15 @@ func TestNewRequestNode(t *testing.T) {
 	request.Method = "post"
 	request.URL = "https://x"
 	node := NewRequestNode(request, "ping.yaml")
-	want := TreeNode{ID: "r1", Kind: itemkind.Request, Name: "Ping", Method: "POST", URL: "https://x", FileName: "ping.yaml"}
+	want := TreeNode{ID: "r1", Kind: itemkind.Request, Name: "Ping", Method: "POST", URL: "https://x", FileName: "ping.yaml", Examples: []TreeExample{}}
 	if !reflect.DeepEqual(node, want) {
 		t.Errorf("NewRequestNode() = %+v", node)
+	}
+	example := NewSavedExample("e1", " Created ")
+	example.Response.Code = 201
+	request.Examples = []SavedExample{example}
+	if node := NewRequestNode(request, "ping.yaml"); !reflect.DeepEqual(node.Examples, []TreeExample{{ID: "e1", Name: "Created", Code: 201}}) {
+		t.Errorf("NewRequestNode() examples = %+v", node.Examples)
 	}
 }
 

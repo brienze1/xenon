@@ -25,6 +25,7 @@ type router struct {
 	variable     *binding.VariableService
 	vault        *binding.VaultService
 	importer     *binding.ImportService
+	example      *binding.ExampleService
 }
 
 func NewRouter(
@@ -40,6 +41,7 @@ func NewRouter(
 	variable *binding.VariableService,
 	vault *binding.VaultService,
 	importer *binding.ImportService,
+	example *binding.ExampleService,
 ) serverAdapter.Router {
 	return &router{
 		workspace:    workspace,
@@ -54,6 +56,7 @@ func NewRouter(
 		variable:     variable,
 		vault:        vault,
 		importer:     importer,
+		example:      example,
 	}
 }
 
@@ -119,5 +122,6 @@ func (r *router) registerServices() []wails.Service {
 		r.registerVariableRoutes(),
 		r.registerVaultRoutes(),
 		r.registerImportRoutes(),
+		r.registerExampleRoutes(),
 	}
 }

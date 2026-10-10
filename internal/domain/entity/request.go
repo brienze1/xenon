@@ -170,3 +170,40 @@ func (r Request) PathVariableKeys() []string {
 func (r Request) ShouldEncodeUrl() bool {
 	return r.Settings.EncodeUrl
 }
+
+func (r Request) Example(id string) (SavedExample, bool) {
+	index := r.exampleIndex(id)
+	if index < 0 {
+		return SavedExample{}, false
+	}
+	return r.Examples[index], true
+}
+
+func (r Request) WithExample(example SavedExample) Request {
+	examples := slices.Clone(r.Examples)
+	if index := r.exampleIndex(example.ID); index >= 0 {
+		examples[index] = example
+	}
+	r.Examples = examples
+	return r
+}
+
+func (r Request) WithExampleAppended(example SavedExample) Request {
+	r.Examples = append(slices.Clone(r.Examples), example)
+	return r
+}
+
+func (r Request) WithExampleAfter(id string, example SavedExample) Request {
+	index := r.exampleIndex(id)
+	r.Examples = slices.Insert(slices.Clone(r.Examples), index+1, example)
+	return r
+}
+
+func (r Request) WithoutExample(id string) Request {
+	r.Examples = slices.DeleteFunc(slices.Clone(r.Examples), func(example SavedExample) bool { return example.ID == id })
+	return r
+}
+
+func (r Request) exampleIndex(id string) int {
+	return slices.IndexFunc(r.Examples, func(example SavedExample) bool { return example.ID == id })
+}

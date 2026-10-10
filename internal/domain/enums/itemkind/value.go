@@ -12,6 +12,7 @@ const (
 	Folder      enums.ItemKind = "folder"
 	Request     enums.ItemKind = "request"
 	Environment enums.ItemKind = "environment"
+	Example     enums.ItemKind = "example"
 	Error       enums.ItemKind = "error"
 	Unknown     enums.ItemKind = "unknown"
 )
@@ -28,6 +29,8 @@ func GetItemKind(s string) enums.ItemKind {
 		return Request
 	case "environment":
 		return Environment
+	case "example":
+		return Example
 	case "error":
 		return Error
 	default:

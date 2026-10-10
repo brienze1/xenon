@@ -7,6 +7,8 @@ import (
 	"github.com/brienze1/xenon/pkg/yamlnode"
 )
 
+const examplesKey = "examples"
+
 type Example struct {
 	Postman  map[string]any  `yaml:"postman"`
 	Id       string          `yaml:"id"`
@@ -67,9 +69,20 @@ func optionalExamples(models []Example) []yamlnode.Field {
 	if len(models) == 0 {
 		return []yamlnode.Field{}
 	}
+	return []yamlnode.Field{yamlnode.Reserved(examplesKey, exampleNodes(models))}
+}
+
+func examplesField(models []Example) []yamlnode.Field {
+	if len(models) == 0 {
+		return []yamlnode.Field{yamlnode.Absent(examplesKey)}
+	}
+	return []yamlnode.Field{{Key: examplesKey, Value: exampleNodes(models)}}
+}
+
+func exampleNodes(models []Example) *yaml.Node {
 	nodes := make([]*yaml.Node, 0, len(models))
 	for index := range models {
 		nodes = append(nodes, models[index].Node())
 	}
-	return []yamlnode.Field{{Key: "examples", Value: yamlnode.List("examples", nodes).Value, KeepExisting: true}}
+	return yamlnode.List(examplesKey, nodes).Value
 }

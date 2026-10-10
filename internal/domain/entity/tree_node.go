@@ -24,7 +24,14 @@ type TreeNode struct {
 	FileName string
 	Children []TreeNode
 	Entries  []string
+	Examples []TreeExample
 	Ignored  bool
+}
+
+type TreeExample struct {
+	ID   string
+	Name string
+	Code int
 }
 
 func NewRequestNode(request Request, fileName string) TreeNode {
@@ -35,7 +42,16 @@ func NewRequestNode(request Request, fileName string) TreeNode {
 		Method:   request.NormalizedMethod(),
 		URL:      request.URL,
 		FileName: fileName,
+		Examples: treeExamples(request.Examples),
 	}
+}
+
+func treeExamples(examples []SavedExample) []TreeExample {
+	nodes := make([]TreeExample, 0, len(examples))
+	for _, example := range examples {
+		nodes = append(nodes, example.TreeExample())
+	}
+	return nodes
 }
 
 func NewContainerNode(container Collection, fileName string, entries []string) TreeNode {

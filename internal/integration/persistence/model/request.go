@@ -86,6 +86,14 @@ func (r *Request) ToStoredEntity(id, revision string) entity.Request {
 }
 
 func (r *Request) Fields() []yamlnode.Field {
+	return r.fields(optionalExamples(r.Examples))
+}
+
+func (r *Request) FieldsWithExamples() []yamlnode.Field {
+	return r.fields(examplesField(r.Examples))
+}
+
+func (r *Request) fields(examples []yamlnode.Field) []yamlnode.Field {
 	fields := append(headerFields(itemkind.Request.String(), r.Id, r.Name, r.Description),
 		yamlnode.String("method", r.Method),
 		yamlnode.String("url", r.Url),
@@ -99,7 +107,7 @@ func (r *Request) Fields() []yamlnode.Field {
 		yamlnode.Reserved("scripts", r.Scripts.Node()),
 		yamlnode.Reserved("inheritScripts", inheritScriptsNode()),
 	)
-	fields = append(fields, optionalExamples(r.Examples)...)
+	fields = append(fields, examples...)
 	fields = append(fields, sourceFieldsReserved(postmanKey, r.Postman))
 	return append(fields, optionalSourceFields(brunoKey, r.Bruno)...)
 }
