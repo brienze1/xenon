@@ -68,6 +68,9 @@ func lookup(data any, path string) (any, bool) {
 			current = value
 		case []any:
 			index, err := strconv.Atoi(segment)
+			if index < 0 {
+				index += len(node)
+			}
 			if err != nil || index < 0 || index >= len(node) {
 				return nil, false
 			}
