@@ -27,6 +27,13 @@ func (f FormDataRow) WithType(raw string) FormDataRow {
 	return f
 }
 
+func (f FormDataRow) MapText(transform func(string) string) FormDataRow {
+	f.Key = transform(f.Key)
+	f.Value = transform(f.Value)
+	f.Src = FileRef{Src: transform(f.Src.Src)}
+	return f
+}
+
 func (f FormDataRow) IsFile() bool {
 	return f.Type == formdatatype.File
 }

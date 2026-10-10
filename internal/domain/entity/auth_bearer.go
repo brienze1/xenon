@@ -10,6 +10,11 @@ func (a AuthBearer) Header() string {
 	return bearerScheme + a.Token
 }
 
+func (a AuthBearer) MapText(transform func(string) string) AuthBearer {
+	a.Token = transform(a.Token)
+	return a
+}
+
 func (a AuthBearer) IsEmpty() bool {
 	return a == AuthBearer{}
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/pkg/errs"
 	"github.com/brienze1/xenon/pkg/idutils"
 	"github.com/brienze1/xenon/pkg/logger"
 	"github.com/brienze1/xenon/pkg/timeutils"
@@ -14,6 +15,9 @@ import (
 type sendRequest struct {
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry
 	findTreeItem          usecase.FindTreeItem
+	loadWorkspace         usecase.LoadWorkspace
+	findEnvironment       usecase.FindEnvironment
+	findLocalVariables    usecase.FindLocalVariables
 	sendHttpRequest       usecase.SendHttpRequest
 	saveResponse          usecase.SaveResponse
 	saveHistoryEntry      usecase.SaveHistoryEntry
@@ -22,6 +26,9 @@ type sendRequest struct {
 func NewSendRequestService(
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry,
 	findTreeItem usecase.FindTreeItem,
+	loadWorkspace usecase.LoadWorkspace,
+	findEnvironment usecase.FindEnvironment,
+	findLocalVariables usecase.FindLocalVariables,
 	sendHttpRequest usecase.SendHttpRequest,
 	saveResponse usecase.SaveResponse,
 	saveHistoryEntry usecase.SaveHistoryEntry,
@@ -29,6 +36,9 @@ func NewSendRequestService(
 	return &sendRequest{
 		findWorkspaceRegistry: findWorkspaceRegistry,
 		findTreeItem:          findTreeItem,
+		loadWorkspace:         loadWorkspace,
+		findEnvironment:       findEnvironment,
+		findLocalVariables:    findLocalVariables,
 		sendHttpRequest:       sendHttpRequest,
 		saveResponse:          saveResponse,
 		saveHistoryEntry:      saveHistoryEntry,
@@ -49,8 +59,13 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 			return nil, err
 		}
 	}
+	variables, err := s.variableContext(ctx, localId, workspace.Path, ancestors)
+	if err != nil {
+		return nil, err
+	}
 	sentAt := timeutils.Now()
-	effective := usecase.ResolveEffectiveRequest(request, ancestors, workspace.Path)
+	resolved, resolvedAncestors := usecase.ResolveRequestVariables(request, ancestors, *variables, nil)
+	effective := usecase.ResolveEffectiveRequest(resolved, resolvedAncestors, workspace.Path)
 	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, appVersion))
 	response := s.sendHttpRequest.Send(ctx, effective)
 	if err := s.saveResponse.Save(ctx, tabId, response); err != nil {
@@ -62,4 +77,33 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 
 	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "tabId": tabId, "request": request, "appVersion": appVersion, "result": response})
 	return &response, nil
+}
+
+func (s *sendRequest) variableContext(ctx context.Context, localId, root string, ancestors []entity.Collection) (*entity.VariableContext, error) {
+	local, err := s.findLocalVariables.Find(ctx, localId)
+	if local, err = localVariablesOrDefaults(ctx, localId, local, err); err != nil {
+		return nil, err
+	}
+	environment, err := s.activeEnvironment(ctx, root, *local)
+	if err != nil {
+		return nil, err
+	}
+	workspace, err := s.loadWorkspace.Load(ctx, root)
+	if err != nil {
+		return nil, err
+	}
+	variables := usecase.BuildVariableContext(environment, ancestors, workspace.Variables, *local)
+	return &variables, nil
+}
+
+func (s *sendRequest) activeEnvironment(ctx context.Context, root string, local entity.LocalVariables) (*entity.Environment, error) {
+	if !local.HasActiveEnvironment() {
+		return nil, nil
+	}
+	environment, err := s.findEnvironment.Find(ctx, root, local.ActiveEnvironmentID)
+	if errs.IsNotFoundError(err) {
+		logger.Info(ctx, "The active environment no longer exists, sending without one", local)
+		return nil, nil
+	}
+	return environment, err
 }

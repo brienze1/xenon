@@ -29,6 +29,12 @@ func (k KeyValue) IsBlank() bool {
 	return k.Key == "" && k.Value == ""
 }
 
+func (k KeyValue) MapText(transform func(string) string) KeyValue {
+	k.Key = transform(k.Key)
+	k.Value = transform(k.Value)
+	return k
+}
+
 func (k KeyValue) LogValue() any {
 	return map[string]any{"key": k.Key, "enabled": k.Enabled}
 }

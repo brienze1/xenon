@@ -33,6 +33,11 @@ func (b BodyRaw) ContentType() string {
 	return rawContentTypes[rawlanguage.Text]
 }
 
+func (b BodyRaw) MapText(transform func(string) string) BodyRaw {
+	b.Content = transform(b.Content)
+	return b
+}
+
 func (b BodyRaw) HasContent() bool {
 	return b.Content != ""
 }

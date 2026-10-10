@@ -75,6 +75,20 @@ func (r Request) WithFileRefsRelativeTo(workspaceRoot string) Request {
 	return r
 }
 
+func (r Request) MapText(transform func(string) string) Request {
+	r.URL = transform(r.URL)
+	r.Params = mapKeyValues(r.Params, transform)
+	pathVariables := make([]PathVariable, 0, len(r.PathVariables))
+	for _, variable := range r.PathVariables {
+		pathVariables = append(pathVariables, variable.MapText(transform))
+	}
+	r.PathVariables = pathVariables
+	r.Headers = mapKeyValues(r.Headers, transform)
+	r.Auth = r.Auth.MapText(transform)
+	r.Body = r.Body.MapText(transform)
+	return r
+}
+
 func (r Request) LogValue() any {
 	return map[string]any{"id": r.ID, "method": r.Method, "url": r.URL}
 }

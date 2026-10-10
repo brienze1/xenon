@@ -14,6 +14,7 @@ func TestGetItemKind(t *testing.T) {
 		{raw: "collection", want: Collection},
 		{raw: "folder", want: Folder},
 		{raw: "request", want: Request},
+		{raw: "environment", want: Environment},
 		{raw: "error", want: Error},
 	}
 	for _, tc := range cases {

@@ -13,6 +13,12 @@ func (a AuthBasic) Header() string {
 	return basicScheme + base64.StdEncoding.EncodeToString([]byte(a.Username+":"+a.Password))
 }
 
+func (a AuthBasic) MapText(transform func(string) string) AuthBasic {
+	a.Username = transform(a.Username)
+	a.Password = transform(a.Password)
+	return a
+}
+
 func (a AuthBasic) IsEmpty() bool {
 	return a == AuthBasic{}
 }

@@ -7,10 +7,11 @@ type Workspace struct {
 	Name        string
 	Description string
 	Order       []string
+	Variables   []VariableRow
 }
 
 func NewWorkspace(id, name string) Workspace {
-	return Workspace{ID: id, Name: strings.TrimSpace(name), Order: []string{}}
+	return Workspace{ID: id, Name: strings.TrimSpace(name), Order: []string{}, Variables: []VariableRow{}}
 }
 
 func (w Workspace) HasValidName() bool {

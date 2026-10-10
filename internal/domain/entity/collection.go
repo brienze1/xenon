@@ -15,6 +15,7 @@ type Collection struct {
 	Description string
 	Order       []string
 	Headers     []KeyValue
+	Variables   []VariableRow
 }
 
 func NewCollection(id, name string) Collection {
@@ -27,12 +28,13 @@ func NewFolder(id, name string) Collection {
 
 func newContainer(id, name string, kind enums.ItemKind) Collection {
 	return Collection{
-		ID:      id,
-		Kind:    kind,
-		Name:    strings.TrimSpace(name),
-		Order:   []string{},
-		Auth:    DefaultAuth(),
-		Headers: []KeyValue{},
+		ID:        id,
+		Kind:      kind,
+		Name:      strings.TrimSpace(name),
+		Order:     []string{},
+		Auth:      DefaultAuth(),
+		Headers:   []KeyValue{},
+		Variables: []VariableRow{},
 	}
 }
 
@@ -53,6 +55,23 @@ func (c Collection) WithSettings(settings Collection) Collection {
 
 func (c Collection) WithOrder(order []string) Collection {
 	c.Order = append([]string{}, order...)
+	return c
+}
+
+func (c Collection) OwnVariables() []VariableRow {
+	if c.IsFolder() {
+		return []VariableRow{}
+	}
+	return c.Variables
+}
+
+func (c Collection) ScopeRef() ScopeRef {
+	return NewCollectionScopeRef(c.ID)
+}
+
+func (c Collection) MapText(transform func(string) string) Collection {
+	c.Auth = c.Auth.MapText(transform)
+	c.Headers = mapKeyValues(c.Headers, transform)
 	return c
 }
 

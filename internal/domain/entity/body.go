@@ -45,6 +45,19 @@ func (b Body) ContentType() string {
 	}
 }
 
+func (b Body) MapText(transform func(string) string) Body {
+	b.Raw = b.Raw.MapText(transform)
+	b.GraphQl = b.GraphQl.MapText(transform)
+	b.Binary = FileRef{Src: transform(b.Binary.Src)}
+	rows := make([]FormDataRow, 0, len(b.FormData))
+	for _, row := range b.FormData {
+		rows = append(rows, row.MapText(transform))
+	}
+	b.FormData = rows
+	b.UrlEncoded = mapKeyValues(b.UrlEncoded, transform)
+	return b
+}
+
 func (b Body) IsMultipart() bool {
 	return b.Mode == bodymode.FormData
 }

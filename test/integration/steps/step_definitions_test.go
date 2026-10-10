@@ -166,5 +166,6 @@ func (t *testUtils) startApp() {
 		binding.GetHistoryService(),
 		binding.GetWindowService(),
 		binding.GetResponseBodyRoute(),
+		binding.GetEnvironmentService(),
 	}
 }

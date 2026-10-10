@@ -30,6 +30,12 @@ func (a Auth) Header() (string, bool) {
 	}
 }
 
+func (a Auth) MapText(transform func(string) string) Auth {
+	a.Bearer = a.Bearer.MapText(transform)
+	a.Basic = a.Basic.MapText(transform)
+	return a
+}
+
 func (a Auth) IsSupported() bool {
 	switch a.Type {
 	case authtype.Inherit, authtype.None, authtype.Bearer, authtype.Basic:

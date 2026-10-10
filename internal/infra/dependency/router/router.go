@@ -23,6 +23,7 @@ func GetRouter() adapter.Router {
 				binding.GetHistoryService(),
 				binding.GetWindowService(),
 				binding.GetResponseBodyRoute(),
+				binding.GetEnvironmentService(),
 			)
 		})
 	}

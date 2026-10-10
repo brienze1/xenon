@@ -7,12 +7,13 @@ import (
 )
 
 const (
-	Workspace  enums.ItemKind = "workspace"
-	Collection enums.ItemKind = "collection"
-	Folder     enums.ItemKind = "folder"
-	Request    enums.ItemKind = "request"
-	Error      enums.ItemKind = "error"
-	Unknown    enums.ItemKind = "unknown"
+	Workspace   enums.ItemKind = "workspace"
+	Collection  enums.ItemKind = "collection"
+	Folder      enums.ItemKind = "folder"
+	Request     enums.ItemKind = "request"
+	Environment enums.ItemKind = "environment"
+	Error       enums.ItemKind = "error"
+	Unknown     enums.ItemKind = "unknown"
 )
 
 func GetItemKind(s string) enums.ItemKind {
@@ -25,6 +26,8 @@ func GetItemKind(s string) enums.ItemKind {
 		return Folder
 	case "request":
 		return Request
+	case "environment":
+		return Environment
 	case "error":
 		return Error
 	default:
