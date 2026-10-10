@@ -248,7 +248,7 @@ headers, errors, cancel — no saving involved.
 - [x] T103 [P] Performance check against SC-002/SC-003: BDD `test/integration/features/tree/large_workspace.feature` (generate 1,000 requests; `GetTree` < 2 s; `Search` < 200 ms) and `sending/large_body.feature` (50 MB via route < 2 s)
 - [x] T104 [P] Crash-safety test `pkg/fileutils/write_atomic_kill_test.go` (subprocess killed mid-write 100×; target is always old or new content — SC-007)
 - [x] T105 [P] Update `README.md` (what Xenon is, `make setup`, `make dev`, platform prerequisites, where data lives)
-- [ ] T106 Run `/refactor-diff` until clean, then `make validate` and `make frontend-check` on all three OSes via CI
+- [x] T106 Run `/refactor-diff` until clean, then `make validate` and `make frontend-check` on all three OSes via CI
 - [ ] T107 Walk through [quickstart.md](quickstart.md) manually on macOS, Windows and Linux; tick SC-001…SC-008a
 
 ---
