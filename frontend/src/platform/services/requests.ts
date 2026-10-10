@@ -76,8 +76,13 @@ export function autoHeaders(localId: string, draft: RequestDraft): Promise<AutoH
   return call(async () => (await RequestService.AutoHeaders({ local_id: localId, request: toRequestDto(draft) }) ?? []).map(toAutoHeader))
 }
 
-export function sendRequest(localId: string, tabId: string, draft: RequestDraft): PendingSend {
-  const pending = RequestService.Send({ local_id: localId, tab_id: tabId, request: toRequestDto(draft) })
+export function sendRequest(localId: string, tabId: string, draft: RequestDraft, acknowledgeMissingSecrets: boolean): PendingSend {
+  const pending = RequestService.Send({
+    local_id: localId,
+    tab_id: tabId,
+    request: toRequestDto(draft),
+    acknowledge_missing_secrets: acknowledgeMissingSecrets,
+  })
   return {
     result: call(async () => toSendResult(required(await pending))),
     cancel: () => pending.cancel(),

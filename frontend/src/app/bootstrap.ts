@@ -1,10 +1,17 @@
+import { useEnvironmentsStore } from '@/features/environments/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import type { ResponseEntry } from '@/features/response-viewer/model'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { useTabsStore } from '@/features/tabs/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
-import { onRequestChangedOnDisk, onWorkspaceFolderMissing, onWorkspaceTreeChanged } from '@/platform/events'
+import {
+  onRequestChangedOnDisk,
+  onVariablesChanged,
+  onVaultStatusChanged,
+  onWorkspaceFolderMissing,
+  onWorkspaceTreeChanged,
+} from '@/platform/events'
 
 type ResponseEntries = Record<string, ResponseEntry>
 
@@ -19,6 +26,8 @@ export function bootstrap(): () => void {
       }
     }),
     onRequestChangedOnDisk((event) => void useTabsStore.getState().handleChangedOnDisk(event)),
+    onVariablesChanged((event) => useEnvironmentsStore.getState().handleVariablesChanged(event)),
+    onVaultStatusChanged((status) => useEnvironmentsStore.getState().applyVaultStatus(status)),
     useRequestBuilderStore.subscribe((state, previous) => {
       if (state.tabs !== previous.tabs) {
         useTabsStore.getState().pinIfEdited()
@@ -44,6 +53,9 @@ export function bootstrap(): () => void {
       if (state.layout !== previous.layout) {
         persistTabs()
       }
+      if (state.activeLocalId !== previous.activeLocalId && state.activeLocalId !== null) {
+        void useEnvironmentsStore.getState().loadVault()
+      }
     }),
     useResponseViewerStore.subscribe((state, previous) => {
       if (state.entries !== previous.entries && finishedSending(state.entries, previous.entries)) {
@@ -52,6 +64,7 @@ export function bootstrap(): () => void {
     }),
     () => window.removeEventListener('beforeunload', flush),
   ]
+  void useEnvironmentsStore.getState().loadVault()
   void openLastWorkspace()
   return () => {
     for (const unsubscribe of unsubscribers) {

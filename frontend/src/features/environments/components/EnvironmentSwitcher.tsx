@@ -3,7 +3,9 @@ import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Dropdown } from '@/shared/ui/dropdown/Dropdown'
 import { useEnvironmentsStore } from '@/features/environments/store'
+import { EnvironmentsManager } from './EnvironmentsManager'
 import styles from './EnvironmentSwitcher.module.css'
+import { GlobalsDialog } from './GlobalsDialog'
 
 export const NO_ENVIRONMENT_LABEL = 'No environment'
 
@@ -14,6 +16,13 @@ const CHEVRON = (
 )
 
 const MENU_SEPARATOR = <hr className={styles.separator} />
+
+const EDITORS = (
+  <>
+    <EnvironmentsManager />
+    <GlobalsDialog />
+  </>
+)
 
 export function EnvironmentSwitcher() {
   const { environments, activeId, switcherOpen, setActive, setSwitcherOpen } = useEnvironmentsStore(
@@ -27,6 +36,7 @@ export function EnvironmentSwitcher() {
   )
   const error = useEnvironmentsStore((state) => state.error)
   const clearError = useEnvironmentsStore((state) => state.clearError)
+  const openEditor = useEnvironmentsStore((state) => state.openEditor)
   const activeName = environments.find((environment) => environment.id === activeId)?.name ?? NO_ENVIRONMENT_LABEL
 
   return (
@@ -61,6 +71,9 @@ export function EnvironmentSwitcher() {
               </Dropdown.Item>
             ),
           )}
+          {MENU_SEPARATOR}
+          <Dropdown.Item onSelect={() => openEditor('globals')}>Globals</Dropdown.Item>
+          <Dropdown.Item onSelect={() => openEditor('manager')}>Manage Environments…</Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown.Root>
       {error ? (
@@ -73,6 +86,7 @@ export function EnvironmentSwitcher() {
           </Banner.Actions>
         </Banner.Root>
       ) : null}
+      {EDITORS}
     </div>
   )
 }

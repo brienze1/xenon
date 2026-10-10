@@ -11,6 +11,7 @@ import {
   type RequestAuth,
   type RequestBody,
   type RequestDraft,
+  missingSecretsOf,
   type RequestSettings,
 } from '@/platform/mappers/request'
 import {
@@ -59,7 +60,8 @@ interface RequestBuilderState {
   setBulkText: (tabId: string, table: BulkTable, text: string) => void
   chooseBodyFile: (tabId: string, rowId?: string) => Promise<void>
   refreshAutoHeaders: (tabId: string) => Promise<void>
-  send: (tabId: string) => Promise<void>
+  send: (tabId: string, acknowledgeMissingSecrets?: boolean) => Promise<void>
+  dismissMissingSecrets: (tabId: string) => void
   cancel: (tabId: string) => void
   reset: () => void
 }
@@ -93,6 +95,7 @@ function newTab(): TabDraft {
     subTab: 'params',
     bulk: {},
     pending: null,
+    missingSecrets: null,
     error: null,
     baseRevision: null,
     conflict: false,
@@ -377,7 +380,7 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
       }
     },
 
-    send: async (tabId) => {
+    send: async (tabId, acknowledgeMissingSecrets = false) => {
       const localId = useWorkspacesStore.getState().activeLocalId
       if (!localId || tab(tabId).pending) {
         return
@@ -385,18 +388,22 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
       const responses = useResponseViewerStore.getState()
       let pending: PendingSend
       try {
-        pending = sendRequest(localId, tabId, tab(tabId).draft)
+        pending = sendRequest(localId, tabId, tab(tabId).draft, acknowledgeMissingSecrets)
       } catch (error) {
         responses.setFailure(tabId, toAppError(error))
         return
       }
-      patchTab(tabId, { pending })
+      patchTab(tabId, { pending, missingSecrets: null })
       responses.startSending(tabId)
       try {
         responses.setResult(tabId, await pending.result)
       } catch (error) {
         const appError = toAppError(error)
-        if (appError.cancelled) {
+        const missingSecrets = missingSecretsOf(appError)
+        if (missingSecrets) {
+          responses.stopSending(tabId)
+          patchTab(tabId, { missingSecrets })
+        } else if (appError.cancelled) {
           responses.setResult(tabId, cancelledResult(tabId))
         } else {
           responses.setFailure(tabId, appError)
@@ -405,6 +412,8 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
         patchTab(tabId, { pending: null })
       }
     },
+
+    dismissMissingSecrets: (tabId) => patchTab(tabId, { missingSecrets: null }),
 
     cancel: (tabId) => tab(tabId).pending?.cancel(),
 

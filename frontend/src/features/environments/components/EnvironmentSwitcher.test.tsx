@@ -4,8 +4,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
 
 vi.mock('@/platform/services/environments', () => ({ listEnvironments: vi.fn(), setActiveEnvironment: vi.fn() }))
+vi.mock('@/platform/services/variables', () => ({ getVariableTable: vi.fn() }))
+vi.mock('@/platform/services/vault', () => ({
+  PASSPHRASE_SETUP_REQUIRED: 'VLT-05409',
+  VAULT_LOCKED: 'VLT-04409',
+  revealSecret: vi.fn(),
+  copySecret: vi.fn(),
+}))
 
 const services = await import('@/platform/services/environments')
+const variables = await import('@/platform/services/variables')
 const { useEnvironmentsStore } = await import('@/features/environments/store')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { EnvironmentSwitcher } = await import('./EnvironmentSwitcher')
@@ -82,5 +90,27 @@ describe('EnvironmentSwitcher', () => {
     expect(screen.getByText('Could not change the environment: the environment does not exist')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss Error' }))
     expect(screen.queryByText(/Could not change the environment/)).not.toBeInTheDocument()
+  })
+
+  it('opens the workspace globals from the menu', async () => {
+    vi.mocked(variables.getVariableTable).mockResolvedValue({ scope: 'globals', rows: [], warnings: [] })
+    render(<EnvironmentSwitcher />)
+    await userEvent.click(screen.getByRole('button', { name: 'Environment: No environment' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Globals' }))
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Globals' })).toBeInTheDocument()
+    expect(await screen.findByRole('table', { name: 'Global variables' })).toBeInTheDocument()
+    expect(variables.getVariableTable).toHaveBeenCalledWith('A', 'globals')
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('opens the environments manager from the menu', async () => {
+    vi.mocked(variables.getVariableTable).mockResolvedValue({ scope: 'env:e1', rows: [], warnings: [] })
+    render(<EnvironmentSwitcher />)
+    await userEvent.click(screen.getByRole('button', { name: 'Environment: No environment' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Manage Environments…' }))
+    expect(screen.getByRole('dialog', { name: 'Environments' })).toBeInTheDocument()
+    expect(await screen.findByRole('table', { name: 'dev variables' })).toBeInTheDocument()
   })
 })

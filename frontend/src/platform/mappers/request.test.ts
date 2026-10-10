@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Request as RequestDto } from '../../../bindings/github.com/brienze1/xenon/internal/integration/entrypoint/dto/models'
-import { cancelledResult, emptyDraft, toRequestDraft, toRequestDto, toSendResult } from './request'
+import { AppError } from '../errors'
+import { cancelledResult, emptyDraft, missingSecretsOf, toRequestDraft, toRequestDto, toSendResult } from './request'
 
 const dto: RequestDto = {
   id: '01J',
@@ -95,5 +96,18 @@ describe('request mapper', () => {
     const failed = toSendResult({ ...ok, tab_id: 't', ok: false, status_code: 0, status_text: '', proto: '', headers: null, size_bytes: 0, content_type: '', is_binary: false, body_url: '', timings, error: { kind: 'nope', message: 'm', hint: 'h' } })
     expect(failed).toMatchObject({ inlineBody: null, headers: [], error: { kind: 'other', message: 'm', hint: 'h' } })
     expect(cancelledResult('t')).toMatchObject({ ok: false, error: { kind: 'cancelled', message: 'Request cancelled' } })
+  })
+
+  it('reads the missing and locked secrets of a refused send', () => {
+    const refused = new AppError('SND-06409', 'secrets missing', [
+      { attribute: 'missing_secrets', messages: ['api_key'] },
+      { attribute: 'locked_secrets', messages: ['token', 'password'] },
+    ])
+    expect(missingSecretsOf(refused)).toEqual({ missing: ['api_key'], locked: ['token', 'password'] })
+    expect(missingSecretsOf(new AppError('SND-06409', 'only locked', [{ attribute: 'locked_secrets', messages: ['t'] }]))).toEqual({
+      missing: [],
+      locked: ['t'],
+    })
+    expect(missingSecretsOf(new AppError('SND-00400', 'invalid'))).toBeNull()
   })
 })

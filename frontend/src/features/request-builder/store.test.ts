@@ -263,7 +263,7 @@ describe('request builder store', () => {
     expect(state().tabs[tabId]!.pending).not.toBeNull()
     expect(useResponseViewerStore.getState().entries[tabId]?.sending).toBe(true)
     await sending
-    expect(requests.sendRequest).toHaveBeenCalledWith('ws', tabId, draft(tabId))
+    expect(requests.sendRequest).toHaveBeenCalledWith('ws', tabId, draft(tabId), false)
     expect(state().tabs[tabId]!.pending).toBeNull()
     expect(useResponseViewerStore.getState().entries[tabId]?.result?.statusCode).toBe(200)
   })
@@ -286,6 +286,26 @@ describe('request builder store', () => {
     vi.mocked(requests.sendRequest).mockReturnValue({ result: Promise.reject(new AppError('SND-00400', 'invalid')), cancel: vi.fn() })
     await state().send(tabId)
     expect(useResponseViewerStore.getState().entries[tabId]?.failure?.code).toBe('SND-00400')
+  })
+
+  it('asks about missing or locked secrets instead of showing a failure, then sends anyway or cancels', async () => {
+    useResponseViewerStore.getState().setResult(tabId, { ...okResult, tabId })
+    const refused = new AppError('SND-06409', 'secrets missing', [
+      { attribute: 'missing_secrets', messages: ['api_key'] },
+      { attribute: 'locked_secrets', messages: ['token'] },
+    ])
+    vi.mocked(requests.sendRequest).mockReturnValueOnce({ result: Promise.reject(refused), cancel: vi.fn() })
+    await state().send(tabId)
+    expect(state().tabs[tabId]!.missingSecrets).toEqual({ missing: ['api_key'], locked: ['token'] })
+    expect(useResponseViewerStore.getState().entries[tabId]).toMatchObject({ sending: false, failure: null, result: { statusCode: 200 } })
+    state().dismissMissingSecrets(tabId)
+    expect(state().tabs[tabId]!.missingSecrets).toBeNull()
+    vi.mocked(requests.sendRequest).mockReturnValueOnce({ result: Promise.reject(refused), cancel: vi.fn() })
+    await state().send(tabId)
+    vi.mocked(requests.sendRequest).mockReturnValueOnce({ result: Promise.resolve({ ...okResult, tabId }), cancel: vi.fn() })
+    await state().send(tabId, true)
+    expect(requests.sendRequest).toHaveBeenLastCalledWith('ws', tabId, draft(tabId), true)
+    expect(state().tabs[tabId]!.missingSecrets).toBeNull()
   })
 
   it('does not send without a workspace', async () => {

@@ -41,4 +41,22 @@ describe('platform events', () => {
     handlers.get(events.WORKSPACE_FOLDER_MISSING)?.({ data: { local_id: 'L2' } })
     expect(callback).toHaveBeenCalledWith({ localId: 'L2' })
   })
+
+  it('maps variables:changed payloads', () => {
+    const callback = vi.fn()
+    events.onVariablesChanged(callback)
+    handlers.get(events.VARIABLES_CHANGED)?.({ data: { local_id: 'L1', scopes: ['env:e1', 'globals'] } })
+    expect(callback).toHaveBeenLastCalledWith({ localId: 'L1', scopes: ['env:e1', 'globals'], reason: null })
+    handlers.get(events.VARIABLES_CHANGED)?.({ data: { local_id: 'L1', scopes: null, reason: 'active_environment_removed' } })
+    expect(callback).toHaveBeenLastCalledWith({ localId: 'L1', scopes: [], reason: events.ACTIVE_ENVIRONMENT_REMOVED })
+  })
+
+  it('maps vault:status-changed payloads', () => {
+    const callback = vi.fn()
+    events.onVaultStatusChanged(callback)
+    handlers.get(events.VAULT_STATUS_CHANGED)?.({
+      data: { mode: 'passphrase', needs_passphrase_setup: false, locked_local_ids: ['L1'], broken_local_ids: null },
+    })
+    expect(callback).toHaveBeenCalledWith({ mode: 'passphrase', needsPassphraseSetup: false, lockedLocalIds: ['L1'], brokenLocalIds: [] })
+  })
 })

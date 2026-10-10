@@ -8,6 +8,7 @@ import type {
   SendResult as SendResultDto,
 } from '../../../bindings/github.com/brienze1/xenon/internal/integration/entrypoint/dto/models'
 import { newRowId } from '@/shared/lib/rows'
+import type { AppError } from '../errors'
 
 export const STANDARD_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const
 export const AUTH_TYPES = ['inherit', 'none', 'bearer', 'basic', 'apikey', 'oauth2', 'awsv4', 'digest'] as const
@@ -293,4 +294,20 @@ export function cancelledResult(tabId: string): SendResult {
     timings: { dnsMs: 0, connectMs: 0, tlsMs: 0, firstByteMs: 0, downloadMs: 0, totalMs: 0 },
     error: { kind: 'cancelled', message: 'Request cancelled', hint: '' },
   }
+}
+
+export const MISSING_SECRETS = 'SND-06409'
+
+export interface MissingSecrets {
+  missing: string[]
+  locked: string[]
+}
+
+/** Reads the secret names a send preflight refused (`SND-06409`), or `null` for any other error. */
+export function missingSecretsOf(error: AppError): MissingSecrets | null {
+  if (error.code !== MISSING_SECRETS) {
+    return null
+  }
+  const names = (attribute: string) => error.details.find((detail) => detail.attribute === attribute)?.messages ?? []
+  return { missing: names('missing_secrets'), locked: names('locked_secrets') }
 }

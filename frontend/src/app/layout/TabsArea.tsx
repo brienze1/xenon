@@ -1,3 +1,4 @@
+import { VaultBrokenNotice } from '@/features/environments/components/VaultBrokenNotice'
 import { CloseTabPrompt } from '@/features/tabs/components/CloseTabPrompt'
 import { SaveRequestDialog } from '@/features/tabs/components/SaveRequestDialog'
 import { TabNotice } from '@/features/tabs/components/TabNotice'
@@ -10,6 +11,8 @@ import { RequestWorkspace } from './RequestWorkspace'
 import styles from './TabsArea.module.css'
 
 const TAB_STRIP = <TabStrip />
+
+const VAULT_BROKEN_NOTICE = <VaultBrokenNotice />
 
 const TAB_DIALOGS = (
   <>
@@ -35,6 +38,7 @@ export function TabsArea() {
 
   return (
     <div className={styles.area}>
+      {VAULT_BROKEN_NOTICE}
       {TAB_STRIP}
       {activeTabId ? (
         <>

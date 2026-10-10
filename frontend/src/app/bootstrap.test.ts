@@ -1,12 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defaultUIState } from '@/platform/mappers/ui-state'
-import type { RequestChangedOnDisk } from '@/platform/events'
+import type { RequestChangedOnDisk, VariablesChanged } from '@/platform/events'
+import type { VaultStatus } from '@/platform/mappers/vault'
 
 const unsubscribe = vi.fn()
 const handlers: {
   folderMissing?: (event: { localId: string }) => void
   treeChanged?: (event: { localId: string }) => void
   changedOnDisk?: (event: RequestChangedOnDisk) => void
+  variablesChanged?: (event: VariablesChanged) => void
+  vaultStatusChanged?: (status: VaultStatus) => void
 } = {}
 
 vi.mock('@/platform/events', () => ({
@@ -22,7 +25,17 @@ vi.mock('@/platform/events', () => ({
     handlers.changedOnDisk = callback
     return unsubscribe
   }),
+  onVariablesChanged: vi.fn((callback) => {
+    handlers.variablesChanged = callback
+    return unsubscribe
+  }),
+  onVaultStatusChanged: vi.fn((callback) => {
+    handlers.vaultStatusChanged = callback
+    return unsubscribe
+  }),
 }))
+vi.mock('@/platform/services/vault', () => ({ PASSPHRASE_SETUP_REQUIRED: 'VLT-05409', VAULT_LOCKED: 'VLT-04409', getVaultStatus: vi.fn() }))
+vi.mock('@/platform/services/variables', () => ({ getVariableTable: vi.fn() }))
 vi.mock('@/platform/services/environments', () => ({
   listEnvironments: vi.fn(async () => ({ environments: [], activeId: null })),
   setActiveEnvironment: vi.fn(async () => null),
@@ -50,6 +63,10 @@ const tree = await import('@/platform/services/tree')
 const uiState = await import('@/platform/services/ui-state')
 const requests = await import('@/platform/services/requests')
 const history = await import('@/platform/services/history')
+const vault = await import('@/platform/services/vault')
+const variables = await import('@/platform/services/variables')
+const environments = await import('@/platform/services/environments')
+const { useEnvironmentsStore } = await import('@/features/environments/store')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
 const { useSidebarStore } = await import('@/features/sidebar/store')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
@@ -65,6 +82,7 @@ function resetWorkspaceStores() {
 }
 
 const acme = { localId: 'A', name: 'Acme', path: '/w/acme', missing: false }
+const lockedVault: VaultStatus = { mode: 'passphrase', needsPassphraseSetup: false, lockedLocalIds: ['A'], brokenLocalIds: [] }
 
 async function started() {
   const cleanup = bootstrap()
@@ -84,6 +102,8 @@ describe('bootstrap', () => {
     vi.mocked(tree.getTree).mockResolvedValue([])
     vi.mocked(tree.searchTree).mockResolvedValue({ matchIds: [], ancestorIds: [] })
     vi.mocked(history.listHistory).mockResolvedValue([])
+    vi.mocked(vault.getVaultStatus).mockResolvedValue(lockedVault)
+    vi.mocked(environments.listEnvironments).mockResolvedValue({ environments: [], activeId: null })
     useWorkspacesStore.setState({ workspaces: [], activeLocalId: null, missingLocalId: null, status: 'idle', error: null })
   })
 
@@ -115,7 +135,7 @@ describe('bootstrap', () => {
     handlers.folderMissing?.({ localId: 'A' })
     expect(useWorkspacesStore.getState().workspaces[0]?.missing).toBe(true)
     cleanup()
-    expect(unsubscribe).toHaveBeenCalledTimes(3)
+    expect(unsubscribe).toHaveBeenCalledTimes(5)
   })
 
   it('reloads the sidebar when the active workspace tree changed outside Xenon', async () => {
@@ -190,6 +210,36 @@ describe('bootstrap', () => {
     useWorkspacesStore.getState().setLayout({ sidebarWidth: 420 })
     await vi.advanceTimersByTimeAsync(PERSIST_DELAY_MS)
     expect(uiState.saveUIState).toHaveBeenCalledWith('A', expect.objectContaining({ layout: expect.objectContaining({ sidebarWidth: 420 }) }))
+    cleanup()
+  })
+
+  it('loads the vault status at start and on workspace activation, and follows vault events', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
+    const cleanup = await started()
+    expect(vault.getVaultStatus).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => expect(useEnvironmentsStore.getState().vault).toEqual(lockedVault))
+    useWorkspacesStore.setState({ activeLocalId: 'A' })
+    expect(vault.getVaultStatus).toHaveBeenCalledTimes(2)
+    await vi.waitFor(() => expect(useEnvironmentsStore.getState().passphrasePrompt).toBe('unlock'))
+    handlers.vaultStatusChanged?.({ ...lockedVault, lockedLocalIds: [], brokenLocalIds: ['A'] })
+    expect(useEnvironmentsStore.getState().vault.brokenLocalIds).toEqual(['A'])
+    cleanup()
+  })
+
+  it('refreshes the environments and the open variable tables when variables change', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
+    vi.mocked(variables.getVariableTable).mockResolvedValue({ scope: 'globals', rows: [], warnings: [] })
+    const cleanup = await started()
+    useWorkspacesStore.setState({ activeLocalId: 'A' })
+    useEnvironmentsStore.setState({ tables: { globals: { rows: [], warnings: [], status: 'ready', error: null } } })
+    handlers.variablesChanged?.({ localId: 'other', scopes: ['globals'], reason: null })
+    expect(variables.getVariableTable).not.toHaveBeenCalled()
+    handlers.variablesChanged?.({ localId: 'A', scopes: ['env:e1'], reason: null })
+    expect(environments.listEnvironments).toHaveBeenCalledWith('A')
+    expect(variables.getVariableTable).not.toHaveBeenCalled()
+    handlers.variablesChanged?.({ localId: 'A', scopes: ['globals'], reason: null })
+    expect(variables.getVariableTable).toHaveBeenCalledWith('A', 'globals')
+    useEnvironmentsStore.getState().reset()
     cleanup()
   })
 })

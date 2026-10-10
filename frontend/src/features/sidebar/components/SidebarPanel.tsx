@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { RequestDraft } from '@/platform/mappers/request'
 import type { TreeNode } from '@/platform/mappers/tree'
 import type { SidebarView } from '@/platform/mappers/ui-state'
@@ -22,6 +22,8 @@ interface SidebarPanelProps {
   onRequestsDeleted: (ids: string[]) => void
   onRenamed: (id: string) => void
   onOpenHistoryEntry: (request: RequestDraft) => void
+  /** Renders a collection's Variables tab in its settings dialog. */
+  collectionVariables?: (collectionId: string) => ReactNode
 }
 
 const SIDEBAR_VIEWS = (
@@ -33,7 +35,14 @@ const SIDEBAR_VIEWS = (
 
 const SIDEBAR_TOOLBAR = <SidebarToolbar />
 
-export function SidebarPanel({ onOpenRequest, onPinRequest, onRequestsDeleted, onRenamed, onOpenHistoryEntry }: SidebarPanelProps) {
+export function SidebarPanel({
+  onOpenRequest,
+  onPinRequest,
+  onRequestsDeleted,
+  onRenamed,
+  onOpenHistoryEntry,
+  collectionVariables,
+}: SidebarPanelProps) {
   const view = useSidebarStore((state) => state.view)
   const setView = useSidebarStore((state) => state.setView)
   const openHistoryEntry = useSidebarStore((state) => state.openHistoryEntry)
@@ -84,7 +93,7 @@ export function SidebarPanel({ onOpenRequest, onPinRequest, onRequestsDeleted, o
       <Tabs.Panel value="history" className={styles.view}>
         <HistoryView onOpenEntry={(id) => void openEntry(id)} />
       </Tabs.Panel>
-      <ItemSettingsDialog itemId={settingsId} onClose={() => setSettingsId(null)} />
+      <ItemSettingsDialog itemId={settingsId} onClose={() => setSettingsId(null)} collectionVariables={collectionVariables} />
       <DeleteItemDialog item={deleting} onCancel={() => setDeleting(null)} onConfirm={confirmDelete} />
     </Tabs.Root>
   )

@@ -1,6 +1,8 @@
 import { useEffect, useMemo } from 'react'
 import { ConsoleDrawer as ConsoleContent } from '@/features/console/components/ConsoleDrawer'
 import { EnvironmentSwitcher } from '@/features/environments/components/EnvironmentSwitcher'
+import { PassphraseDialog } from '@/features/environments/components/PassphraseDialog'
+import { VariableTable } from '@/features/environments/components/VariableTable'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { InfoPanel } from '@/features/side-panel/components/InfoPanel'
@@ -10,6 +12,7 @@ import { MissingFolderNotice } from '@/features/workspaces/components/MissingFol
 import { WelcomeScreen } from '@/features/workspaces/components/WelcomeScreen'
 import { WorkspaceSwitcher } from '@/features/workspaces/components/WorkspaceSwitcher'
 import { useWorkspacesStore } from '@/features/workspaces/store'
+import { collectionScope } from '@/platform/mappers/variable'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
 import styles from './App.module.css'
 import { bootstrap } from './bootstrap'
@@ -31,6 +34,12 @@ const WORKSPACE_SWITCHER = <WorkspaceSwitcher />
 const WELCOME_SCREEN = <WelcomeScreen />
 
 const ENVIRONMENT_SWITCHER = <EnvironmentSwitcher />
+
+const PASSPHRASE_DIALOG = <PassphraseDialog />
+
+function collectionVariables(collectionId: string) {
+  return <VariableTable scope={collectionScope(collectionId)} label="Collection variables" />
+}
 
 const CONSOLE = (
   <ConsoleDrawer>
@@ -102,6 +111,7 @@ export function App() {
               onRequestsDeleted={(ids) => tabs().handleDeleted(ids)}
               onRenamed={(id) => void adoptRename(id)}
               onOpenHistoryEntry={(request) => void tabs().openDraft(request)}
+              collectionVariables={collectionVariables}
             />
           </Sidebar>
           <MainArea>
@@ -121,6 +131,7 @@ export function App() {
         </MainArea>
       )}
       {active ? CONSOLE : null}
+      {PASSPHRASE_DIALOG}
       <Footer>
         {active ? (
           <span className={styles.path} translate="no">

@@ -1,4 +1,5 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import userEvent from '@testing-library/user-event'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
@@ -62,9 +63,9 @@ afterAll(() => {
   }
 })
 
-async function renderPanel() {
+async function renderPanel(collectionVariables?: (collectionId: string) => ReactNode) {
   const actions = { onOpenRequest: vi.fn(), onPinRequest: vi.fn(), onRequestsDeleted: vi.fn(), onRenamed: vi.fn(), onOpenHistoryEntry: vi.fn() }
-  render(<SidebarPanel {...actions} />)
+  render(<SidebarPanel {...actions} collectionVariables={collectionVariables} />)
   await act(() => useSidebarStore.getState().load())
   return actions
 }
@@ -221,6 +222,25 @@ describe('SidebarPanel', () => {
       auth: { ...settings.auth, type: 'bearer', bearer: { token: 'secret' } },
       headers: [{ id: 'h1', key: 'X-Tenant', value: 'acme', description: '', enabled: true }],
     })
+  })
+
+  it('adds a Variables tab to collection settings only', async () => {
+    vi.mocked(tree.getItemSettings).mockResolvedValueOnce(settings)
+    await renderPanel((collectionId) => <p>Variables of {collectionId}</p>)
+    await userEvent.pointer({ keys: '[MouseRight]', target: item('Billing') })
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Settings…' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Billing Settings' })
+    expect(within(dialog).getByRole('tab', { name: 'General' })).toHaveAttribute('aria-selected', 'true')
+    expect(within(dialog).getByRole('tabpanel', { name: 'General' })).toHaveTextContent('Authorization')
+    await userEvent.click(within(dialog).getByRole('tab', { name: 'Variables' }))
+    expect(within(dialog).getByRole('tabpanel', { name: 'Variables' })).toHaveTextContent('Variables of c1')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    vi.mocked(tree.getItemSettings).mockResolvedValueOnce({ ...settings, id: 'f1', kind: 'folder', name: 'Invoices' })
+    await userEvent.pointer({ keys: '[MouseRight]', target: item('Billing') })
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Settings…' }))
+    const folder = await screen.findByRole('dialog', { name: 'Invoices Settings' })
+    expect(within(folder).queryByRole('tab')).not.toBeInTheDocument()
+    expect(within(folder).queryByText(/Variables of/)).not.toBeInTheDocument()
   })
 
   it('shows the settings save in progress', async () => {

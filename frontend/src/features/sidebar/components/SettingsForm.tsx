@@ -1,10 +1,11 @@
-import { useEffect, useEffectEvent, useState, useTransition } from 'react'
+import { useEffect, useEffectEvent, useState, useTransition, type ReactNode } from 'react'
 import type { AppError } from '@/platform/errors'
 import type { ItemSettings } from '@/platform/mappers/tree'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { KeyValueTable, type KeyValueExamples } from '@/shared/ui/key-value-table/KeyValueTable'
+import { Tabs } from '@/shared/ui/tabs/Tabs'
 import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { AuthFields } from './AuthFields'
@@ -51,12 +52,23 @@ const SETTINGS_LOADING = (
   </>
 )
 
+type SettingsTab = 'general' | 'variables'
+
+const SETTINGS_TABS = (
+  <Tabs.List label="Collection settings">
+    <Tabs.Tab value="general">General</Tabs.Tab>
+    <Tabs.Tab value="variables">Variables</Tabs.Tab>
+  </Tabs.List>
+)
+
 interface SettingsFormProps {
   itemId: string
   onClose: () => void
+  /** Renders the collection's variable editor; composed by the app so the sidebar stays unaware of it. */
+  collectionVariables?: (collectionId: string) => ReactNode
 }
 
-export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
+export function SettingsForm({ itemId, onClose, collectionVariables }: SettingsFormProps) {
   const loadSettings = useSidebarStore((state) => state.loadSettings)
   const saveSettings = useSidebarStore((state) => state.saveSettings)
   const formatBulk = useSidebarStore((state) => state.formatBulk)
@@ -67,6 +79,7 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
   const [loadError, setLoadError] = useState<AppError | null>(null)
   const [failure, setFailure] = useState<SettingsFailure | null>(null)
   const [loadAttempt, setLoadAttempt] = useState(0)
+  const [tab, setTab] = useState<SettingsTab>('general')
   const closeUnavailable = useEffectEvent(onClose)
 
   useEffect(() => {
@@ -167,44 +180,60 @@ export function SettingsForm({ itemId, onClose }: SettingsFormProps) {
     })
   }
 
+  const general = (
+    <div className={styles.form}>
+      <label className={styles.field}>
+        Description
+        <textarea
+          name="description"
+          autoComplete="off"
+          className={styles.textarea}
+          value={settings.description}
+          onChange={(event) => update({ description: event.target.value })}
+        />
+      </label>
+      {AUTH_HEADING}
+      <AuthFields kind={settings.kind} auth={settings.auth} onChange={(auth) => update({ auth })} />
+      {HEADERS_INTRO}
+      <KeyValueTable
+        examples={HEADER_EXAMPLES}
+        label={`${settings.name} headers`}
+        rows={settings.headers}
+        mode={bulkText === null ? 'table' : 'bulk'}
+        bulkText={bulkText ?? ''}
+        onModeChange={(mode) => void toggleBulk(mode === 'bulk')}
+        onBulkTextChange={setBulkText}
+        onRowChange={(id, patch) => updateHeaders((headers) => patchRow(headers, id, patch))}
+        onRowAdd={(row) => updateHeaders((headers) => addRow(headers, row))}
+        onRowRemove={(id) => updateHeaders((headers) => removeRow(headers, id))}
+      />
+      {failure ? (
+        <Banner.Root tone="error">
+          <Banner.Message>
+            <SidebarErrorText error={failure.error} nextStep={failure.nextStep} />
+          </Banner.Message>
+        </Banner.Root>
+      ) : null}
+    </div>
+  )
+
   return (
     <>
       <Dialog.Title>{settings.name} Settings</Dialog.Title>
       <Dialog.Body>
-        <div className={styles.form}>
-          <label className={styles.field}>
-            Description
-            <textarea
-              name="description"
-              autoComplete="off"
-              className={styles.textarea}
-              value={settings.description}
-              onChange={(event) => update({ description: event.target.value })}
-            />
-          </label>
-          {AUTH_HEADING}
-          <AuthFields kind={settings.kind} auth={settings.auth} onChange={(auth) => update({ auth })} />
-          {HEADERS_INTRO}
-          <KeyValueTable
-            examples={HEADER_EXAMPLES}
-            label={`${settings.name} headers`}
-            rows={settings.headers}
-            mode={bulkText === null ? 'table' : 'bulk'}
-            bulkText={bulkText ?? ''}
-            onModeChange={(mode) => void toggleBulk(mode === 'bulk')}
-            onBulkTextChange={setBulkText}
-            onRowChange={(id, patch) => updateHeaders((headers) => patchRow(headers, id, patch))}
-            onRowAdd={(row) => updateHeaders((headers) => addRow(headers, row))}
-            onRowRemove={(id) => updateHeaders((headers) => removeRow(headers, id))}
-          />
-          {failure ? (
-            <Banner.Root tone="error">
-              <Banner.Message>
-                <SidebarErrorText error={failure.error} nextStep={failure.nextStep} />
-              </Banner.Message>
-            </Banner.Root>
-          ) : null}
-        </div>
+        {settings.kind === 'collection' && collectionVariables ? (
+          <Tabs.Root value={tab} onValueChange={(next) => setTab(next as SettingsTab)}>
+            {SETTINGS_TABS}
+            <Tabs.Panel value="general" className={styles.panel}>
+              {general}
+            </Tabs.Panel>
+            <Tabs.Panel value="variables" className={styles.panel}>
+              {collectionVariables(settings.id)}
+            </Tabs.Panel>
+          </Tabs.Root>
+        ) : (
+          general
+        )}
       </Dialog.Body>
       <Dialog.Actions>
         <Button variant="secondary" onClick={onClose}>

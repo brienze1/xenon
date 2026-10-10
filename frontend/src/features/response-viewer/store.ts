@@ -11,6 +11,8 @@ import type { ResponseEntry } from './model'
 interface ResponseViewerState {
   entries: Record<string, ResponseEntry>
   startSending: (tabId: string) => void
+  /** Ends a send that Go refused before anything went out, keeping the previous response. */
+  stopSending: (tabId: string) => void
   setResult: (tabId: string, result: SendResult) => void
   setFailure: (tabId: string, failure: AppError) => void
   rehydrate: (tabId: string) => Promise<void>
@@ -29,6 +31,8 @@ export const useResponseViewerStore = create<ResponseViewerState>()((set, get) =
     entries: {},
 
     startSending: (tabId) => patch(tabId, { sending: true, failure: null }),
+
+    stopSending: (tabId) => patch(tabId, { sending: false }),
 
     setResult: (tabId, result) =>
       set((state) => ({ entries: { ...state.entries, [tabId]: withResult(state.entries[tabId], result) } })),

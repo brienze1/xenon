@@ -132,7 +132,7 @@ describe('RequestBuilder', () => {
     vi.mocked(requests.sendRequest).mockReturnValue({ result: new Promise(() => undefined), cancel: vi.fn() })
     render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
     await user.type(screen.getByRole('textbox', { name: 'Request URL' }), 'https://api.test{Enter}')
-    expect(requests.sendRequest).toHaveBeenCalledWith('ws', tabId, expect.objectContaining({ url: 'https://api.test' }))
+    expect(requests.sendRequest).toHaveBeenCalledWith('ws', tabId, expect.objectContaining({ url: 'https://api.test' }), false)
   })
 
   it('picks standard and custom methods', async () => {

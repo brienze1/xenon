@@ -1,0 +1,7 @@
+.confirm {
+  align-items: flex-start;
+}
+
+.confirm p + p {
+  margin-top: var(--space-2);
+}

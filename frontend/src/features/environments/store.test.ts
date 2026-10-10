@@ -1,16 +1,60 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
-import type { EnvironmentList } from '@/platform/mappers/environment'
+import type { Environment, EnvironmentList } from '@/platform/mappers/environment'
+import type { VariableRow } from '@/platform/mappers/variable'
+import type { VaultStatus } from '@/platform/mappers/vault'
 
-vi.mock('@/platform/services/environments', () => ({ listEnvironments: vi.fn(), setActiveEnvironment: vi.fn() }))
+vi.mock('@/platform/services/environments', () => ({
+  listEnvironments: vi.fn(),
+  setActiveEnvironment: vi.fn(),
+  getEnvironment: vi.fn(),
+  createEnvironment: vi.fn(),
+  updateEnvironment: vi.fn(),
+  duplicateEnvironment: vi.fn(),
+  deleteEnvironment: vi.fn(),
+}))
+vi.mock('@/platform/services/variables', () => ({
+  CONFIRM_REVEAL_REQUIRED: 'VAR-01409',
+  getVariableTable: vi.fn(),
+  saveVariableTable: vi.fn(),
+  resetVariables: vi.fn(),
+  persistVariables: vi.fn(),
+}))
+vi.mock('@/platform/services/vault', () => ({
+  PASSPHRASE_SETUP_REQUIRED: 'VLT-05409',
+  VAULT_LOCKED: 'VLT-04409',
+  getVaultStatus: vi.fn(),
+  setupPassphrase: vi.fn(),
+  unlockVault: vi.fn(),
+  revealSecret: vi.fn(),
+  copySecret: vi.fn(),
+  resetVault: vi.fn(),
+}))
 
 const services = await import('@/platform/services/environments')
+const variables = await import('@/platform/services/variables')
+const vault = await import('@/platform/services/vault')
 const { useEnvironmentsStore } = await import('./store')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 
 const dev = { id: 'e1', name: 'dev', color: 'green', confirmBeforeSend: false, error: null } as const
 const prod = { id: 'e2', name: 'prod', color: 'red', confirmBeforeSend: true, error: null } as const
 const list: EnvironmentList = { environments: [dev, prod], activeId: 'e1' }
+const devDetail: Environment = { id: 'e1', name: 'dev', description: 'Development', color: 'green', confirmBeforeSend: false, variables: [] }
+const row: VariableRow = {
+  key: 'base_url',
+  initialValue: 'A',
+  currentValue: 'B',
+  hasCurrentOverride: true,
+  secret: false,
+  secretState: null,
+  enabled: true,
+  description: '',
+  duplicate: false,
+  surroundingSpaces: false,
+}
+const table = { scope: 'env:e1', rows: [row], warnings: [] }
+const unlocked: VaultStatus = { mode: 'passphrase', needsPassphraseSetup: false, lockedLocalIds: [], brokenLocalIds: [] }
 
 function store() {
   return useEnvironmentsStore.getState()
@@ -110,5 +154,134 @@ describe('environments store', () => {
     store().openSwitcher()
     store().reset()
     expect(store()).toMatchObject({ environments: [], activeId: null, status: 'idle', error: null, switcherOpen: false })
+  })
+
+  it('creates, renames, duplicates and deletes environments, reloading the list', async () => {
+    vi.mocked(services.listEnvironments).mockResolvedValue(list)
+    vi.mocked(services.createEnvironment).mockResolvedValue(devDetail)
+    await expect(store().createEnvironment('dev')).resolves.toEqual({ ok: true, value: devDetail })
+    expect(services.createEnvironment).toHaveBeenCalledWith('A', 'dev')
+    expect(store().environments).toEqual([dev, prod])
+    vi.mocked(services.getEnvironment).mockResolvedValue(devDetail)
+    vi.mocked(services.updateEnvironment).mockResolvedValue({ ...devDetail, name: 'local' })
+    await expect(store().renameEnvironment('e1', 'local')).resolves.toBeNull()
+    expect(services.updateEnvironment).toHaveBeenCalledWith('A', {
+      id: 'e1',
+      name: 'local',
+      description: 'Development',
+      color: 'green',
+      confirmBeforeSend: false,
+    })
+    vi.mocked(services.duplicateEnvironment).mockResolvedValue({ ...devDetail, id: 'e3', name: 'dev Copy' })
+    await expect(store().duplicateEnvironment('e1')).resolves.toMatchObject({ ok: true, value: { id: 'e3' } })
+    useEnvironmentsStore.setState({ tables: { 'env:e1': { ...table, status: 'ready', error: null }, globals: { ...table, status: 'ready', error: null } } })
+    vi.mocked(services.deleteEnvironment).mockResolvedValue(null)
+    await expect(store().deleteEnvironment('e1')).resolves.toBeNull()
+    expect(services.deleteEnvironment).toHaveBeenCalledWith('A', 'e1')
+    expect(Object.keys(store().tables)).toEqual(['globals'])
+    expect(services.listEnvironments).toHaveBeenCalledTimes(4)
+  })
+
+  it('returns environment errors without reloading', async () => {
+    vi.mocked(services.createEnvironment).mockRejectedValue(new AppError('ENV-02409', 'taken'))
+    await expect(store().createEnvironment('dev')).resolves.toMatchObject({ ok: false, error: { code: 'ENV-02409' } })
+    vi.mocked(services.getEnvironment).mockRejectedValue(new AppError('ENV-01404', 'gone'))
+    await expect(store().renameEnvironment('e9', 'x')).resolves.toMatchObject({ code: 'ENV-01404' })
+    vi.mocked(services.duplicateEnvironment).mockRejectedValue(new AppError('ENV-01404', 'gone'))
+    await expect(store().duplicateEnvironment('e9')).resolves.toMatchObject({ ok: false })
+    vi.mocked(services.deleteEnvironment).mockRejectedValue(new AppError('ENV-01404', 'gone'))
+    await expect(store().deleteEnvironment('e9')).resolves.toMatchObject({ code: 'ENV-01404' })
+    expect(services.listEnvironments).not.toHaveBeenCalled()
+  })
+
+  it('opens and closes the environment editors', () => {
+    store().openSwitcher()
+    store().openEditor('globals')
+    expect(store()).toMatchObject({ editor: 'globals', switcherOpen: false })
+    store().closeEditor()
+    expect(store().editor).toBeNull()
+  })
+
+  it('loads, saves, resets and persists a variable table', async () => {
+    vi.mocked(variables.getVariableTable).mockResolvedValue(table)
+    const loading = store().loadTable('env:e1')
+    expect(store().tables['env:e1']?.status).toBe('loading')
+    await loading
+    expect(store().tables['env:e1']).toEqual({ rows: [row], warnings: [], status: 'ready', error: null })
+    const edits = [{ key: 'base_url', previousKey: 'base_url', initialValue: 'A', currentValue: null, secret: true, secretValue: null, enabled: true, description: '' }]
+    vi.mocked(variables.saveVariableTable).mockResolvedValue({ ...table, warnings: ['git_history'] })
+    await expect(store().saveTable('env:e1', edits, false)).resolves.toBeNull()
+    expect(variables.saveVariableTable).toHaveBeenCalledWith('A', 'env:e1', edits, false)
+    expect(store().tables['env:e1']?.warnings).toEqual(['git_history'])
+    vi.mocked(variables.resetVariables).mockResolvedValue({ ...table, rows: [{ ...row, currentValue: 'A', hasCurrentOverride: false }] })
+    await expect(store().resetValues('env:e1', [])).resolves.toBeNull()
+    expect(variables.resetVariables).toHaveBeenCalledWith('A', 'env:e1', [])
+    expect(store().tables['env:e1']?.rows[0]?.hasCurrentOverride).toBe(false)
+    vi.mocked(variables.persistVariables).mockRejectedValue(new AppError('VAR-02422', 'secret'))
+    await expect(store().persistValues('env:e1', ['token'])).resolves.toMatchObject({ code: 'VAR-02422' })
+  })
+
+  it('keeps a failed table load and ignores tables without a workspace', async () => {
+    vi.mocked(variables.getVariableTable).mockRejectedValue(new AppError('VAR-06422', 'folders have no variables'))
+    await store().loadTable('collection:f1')
+    expect(store().tables['collection:f1']).toMatchObject({ status: 'ready', error: { code: 'VAR-06422' } })
+    useWorkspacesStore.setState({ activeLocalId: null })
+    await expect(store().saveTable('globals', [], false)).resolves.toBeNull()
+    expect(variables.saveVariableTable).not.toHaveBeenCalled()
+  })
+
+  it('reveals and copies secrets and asks for the passphrase when the vault needs it', async () => {
+    vi.mocked(vault.revealSecret).mockResolvedValueOnce('s3cr3t')
+    await expect(store().revealSecret('globals', 'token')).resolves.toEqual({ ok: true, value: 's3cr3t' })
+    expect(vault.revealSecret).toHaveBeenCalledWith('A', 'globals', 'token')
+    vi.mocked(vault.revealSecret).mockRejectedValueOnce(new AppError('VLT-04409', 'locked'))
+    await expect(store().revealSecret('globals', 'token')).resolves.toMatchObject({ ok: false })
+    expect(store().passphrasePrompt).toBe('unlock')
+    vi.mocked(vault.copySecret).mockResolvedValueOnce()
+    await expect(store().copySecret('globals', 'token')).resolves.toBeNull()
+    expect(vault.copySecret).toHaveBeenCalledWith('A', 'globals', 'token')
+    vi.mocked(variables.saveVariableTable).mockRejectedValueOnce(new AppError('VLT-05409', 'choose a passphrase'))
+    await expect(store().saveTable('globals', [], false)).resolves.toMatchObject({ code: 'VLT-05409' })
+    expect(store().passphrasePrompt).toBe('setup')
+  })
+
+  it('prompts from the vault status unless the prompt was dismissed', () => {
+    store().applyVaultStatus({ ...unlocked, lockedLocalIds: ['G'] })
+    expect(store().passphrasePrompt).toBeNull()
+    store().applyVaultStatus({ ...unlocked, lockedLocalIds: ['A'] })
+    expect(store().passphrasePrompt).toBe('unlock')
+    store().dismissPassphrase()
+    store().applyVaultStatus({ ...unlocked, lockedLocalIds: ['A'] })
+    expect(store().passphrasePrompt).toBeNull()
+    store().applyVaultStatus({ ...unlocked, needsPassphraseSetup: true })
+    expect(store().passphrasePrompt).toBe('setup')
+    store().openPassphrase('unlock')
+    expect(store().passphrasePrompt).toBe('unlock')
+    useEnvironmentsStore.setState({ dismissedPrompts: [], passphrasePrompt: null })
+  })
+
+  it('sets up, unlocks and resets the vault, refreshing the loaded tables', async () => {
+    useEnvironmentsStore.setState({ passphrasePrompt: 'setup', tables: { globals: { ...table, status: 'ready', error: null } } })
+    vi.mocked(variables.getVariableTable).mockResolvedValue({ ...table, scope: 'globals' })
+    vi.mocked(vault.setupPassphrase).mockResolvedValue(unlocked)
+    await expect(store().setupPassphrase('long enough', 'long enough')).resolves.toBeNull()
+    expect(vault.setupPassphrase).toHaveBeenCalledWith('long enough', 'long enough')
+    expect(store()).toMatchObject({ passphrasePrompt: null, vault: unlocked })
+    expect(variables.getVariableTable).toHaveBeenCalledWith('A', 'globals')
+    vi.mocked(vault.unlockVault).mockRejectedValue(new AppError('VLT-02401', 'wrong'))
+    await expect(store().unlockVault('nope')).resolves.toMatchObject({ code: 'VLT-02401' })
+    vi.mocked(vault.resetVault).mockResolvedValue(unlocked)
+    await expect(store().resetVault()).resolves.toBeNull()
+    expect(vault.resetVault).toHaveBeenCalledWith('A')
+  })
+
+  it('loads the vault status and keeps the last one when it cannot be read', async () => {
+    vi.mocked(vault.getVaultStatus).mockResolvedValueOnce({ ...unlocked, brokenLocalIds: ['A'] })
+    await store().loadVault()
+    expect(store().vault.brokenLocalIds).toEqual(['A'])
+    vi.mocked(vault.getVaultStatus).mockRejectedValueOnce(new AppError('VLT-07500', 'x'))
+    await store().loadVault()
+    expect(store().vault.brokenLocalIds).toEqual(['A'])
+    store().applyVaultStatus(unlocked)
   })
 })

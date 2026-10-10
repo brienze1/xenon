@@ -1,5 +1,5 @@
 import type { AppError } from '@/platform/errors'
-import type { AutoHeader, RequestDraft } from '@/platform/mappers/request'
+import type { AutoHeader, MissingSecrets, RequestDraft } from '@/platform/mappers/request'
 import type { PendingSend } from '@/platform/services/requests'
 
 export type SubTab = 'params' | 'auth' | 'headers' | 'body' | 'scripts' | 'settings'
@@ -12,6 +12,8 @@ export interface TabDraft {
   subTab: SubTab
   bulk: Partial<Record<BulkTable, string>>
   pending: PendingSend | null
+  /** Set when Go refused a send because secrets have no value or are locked; asks Send anyway / Cancel. */
+  missingSecrets: MissingSecrets | null
   error: AppError | null
   baseRevision: string | null
   conflict: boolean
