@@ -2,6 +2,7 @@ import { CancelError } from '@wailsio/runtime'
 
 export const CANCELLED_CODE = 'cancelled'
 export const UNKNOWN_CODE = 'UNK-00500'
+export const SAVE_CONFLICT_CODE = 'REQ-02409'
 
 export interface AppErrorDetail {
   attribute: string

@@ -1,4 +1,5 @@
-import { SAVE_CONFLICT, useRequestBuilderStore } from '@/features/request-builder/store'
+import { SAVE_CONFLICT_CODE } from '@/platform/errors'
+import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { withNextStep } from '@/shared/lib/next-step'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
@@ -27,7 +28,7 @@ export function CloseTabPrompt() {
         {closeError ? (
           <Banner.Root tone="error" className={styles.error}>
             <Banner.Message>
-              <NoTranslateText text={withNextStep(closeError.description || closeError.code, closeError.code === SAVE_CONFLICT ? CONFLICT_NEXT_STEP : SAVE_NEXT_STEP)} terms={[closeError.code]} />
+              <NoTranslateText text={withNextStep(closeError.description || closeError.code, closeError.code === SAVE_CONFLICT_CODE ? CONFLICT_NEXT_STEP : SAVE_NEXT_STEP)} terms={[closeError.code]} />
             </Banner.Message>
           </Banner.Root>
         ) : null}

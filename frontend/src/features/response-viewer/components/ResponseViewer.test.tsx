@@ -93,6 +93,12 @@ describe('ResponseViewer', () => {
     expect(screen.getByRole('group', { name: 'Response status' })).toBeInTheDocument()
   })
 
+  it('announces a received response politely', () => {
+    render(<ResponseViewer tabId="tab" />)
+    show(result({ statusCode: 404, statusText: 'Not Found' }))
+    expect(screen.getByText('Response received: 404 Not Found')).toHaveAttribute('aria-live', 'polite')
+  })
+
   it('pretty prints by default and shows the raw body as received', async () => {
     const user = userEvent.setup()
     render(<ResponseViewer tabId="tab" />)

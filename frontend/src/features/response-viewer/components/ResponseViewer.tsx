@@ -69,6 +69,9 @@ export function ResponseViewer({ tabId }: ResponseViewerProps) {
           </Banner.Message>
         </Banner.Root>
       ) : null}
+      <p aria-live="polite" className="visually-hidden">
+        {!sending && result !== null && !result.error ? `Response received: ${result.statusCode} ${result.statusText}` : ''}
+      </p>
       {sending ? (
         SENDING
       ) : result === null ? (

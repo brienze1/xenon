@@ -22,7 +22,7 @@ const CHEVRON = (
   </span>
 )
 
-const MENU_SEPARATOR = <div role="separator" className={styles.separator} />
+const MENU_SEPARATOR = <hr className={styles.separator} />
 
 export function WorkspaceSwitcher() {
   const { workspaces, activeLocalId, missingLocalId, activate, open, chooseFolder } = useWorkspacesStore(

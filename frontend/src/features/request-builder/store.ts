@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
-import { toAppError, type AppError } from '@/platform/errors'
+import { SAVE_CONFLICT_CODE, toAppError, type AppError } from '@/platform/errors'
 import {
   cancelledResult,
   emptyDraft,
@@ -32,7 +32,6 @@ import { rowsOf, withRows, withSavedRows } from './lib/draft-rows'
 import type { BulkTable, SubTab, TabDraft } from './model'
 
 export const SYNC_DELAY_MS = 150
-export const SAVE_CONFLICT = 'REQ-02409'
 
 interface RequestBuilderState {
   tabs: Record<string, TabDraft>
@@ -229,7 +228,7 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
         return { ok: true, value: true }
       } catch (error) {
         const appError = toAppError(error)
-        patchTab(tabId, appError.code === SAVE_CONFLICT ? { conflict: true } : { error: appError })
+        patchTab(tabId, appError.code === SAVE_CONFLICT_CODE ? { conflict: true } : { error: appError })
         return { ok: false, error: appError }
       } finally {
         patchTab(tabId, { saving: false })
