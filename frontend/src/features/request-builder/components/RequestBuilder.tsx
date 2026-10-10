@@ -5,6 +5,7 @@ import { Button } from '@/shared/ui/button/Button'
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { ConfirmSendDialog } from './ConfirmSendDialog'
+import { CurlPasteNotice } from './CurlPasteNotice'
 import { MissingSecretsDialog } from './MissingSecretsDialog'
 import { RequestBar } from './RequestBar'
 import styles from './RequestBuilder.module.css'
@@ -41,6 +42,7 @@ export function RequestBuilder({ tabId, onSave, mode = 'request' }: RequestBuild
         {mode === 'example' ? 'Example Request' : 'Request'}
       </h2>
       <RequestBar tabId={tabId} onSave={onSave} mode={mode} />
+      {mode === 'request' ? <CurlPasteNotice tabId={tabId} /> : null}
       {mode === 'request' && conflict ? (
         <Banner.Root tone="warning" className={styles.banner}>
           {CONFLICT_MESSAGE}

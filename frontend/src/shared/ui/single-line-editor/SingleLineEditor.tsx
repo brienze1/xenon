@@ -25,6 +25,8 @@ interface SingleLineEditorProps {
   decorations?: readonly EditorDecoration[]
   completionSource?: CompletionSource
   onSelectionChange?: (selection: EditorSelection) => void
+  /** Sees pasted text first; returning true means it was handled and nothing is inserted. */
+  onPaste?: (text: string) => boolean
   className?: string
 }
 
@@ -69,15 +71,16 @@ export function SingleLineEditor({
   decorations = NO_DECORATIONS,
   completionSource,
   onSelectionChange,
+  onPaste,
   className,
 }: SingleLineEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
-  const callbacks = useRef({ onChange, onEnter, completionSource, onSelectionChange })
+  const callbacks = useRef({ onChange, onEnter, completionSource, onSelectionChange, onPaste })
 
   useEffect(() => {
-    callbacks.current = { onChange, onEnter, completionSource, onSelectionChange }
-  }, [onChange, onEnter, completionSource, onSelectionChange])
+    callbacks.current = { onChange, onEnter, completionSource, onSelectionChange, onPaste }
+  }, [onChange, onEnter, completionSource, onSelectionChange, onPaste])
 
   useEffect(() => {
     const view = new EditorView({
@@ -99,6 +102,16 @@ export function SingleLineEditor({
             ]),
           ),
           keymap.of([...defaultKeymap, ...historyKeymap]),
+          EditorView.domEventHandlers({
+            paste: (event) => {
+              const text = event.clipboardData?.getData('text/plain') ?? ''
+              if (text === '' || callbacks.current.onPaste?.(text) !== true) {
+                return false
+              }
+              event.preventDefault()
+              return true
+            },
+          }),
           decorationsExtension(),
           completionExtension(() => callbacks.current.completionSource),
           selectionListener(() => callbacks.current.onSelectionChange),

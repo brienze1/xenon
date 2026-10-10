@@ -103,6 +103,19 @@ export function parseBulk(text: string): Promise<KeyValueRow[]> {
   return call(async () => (required(await RequestService.ParseBulk({ text })).rows ?? []).map(toKeyValueRow))
 }
 
+/** A request parsed from a pasted cURL command, plus what was ignored (unknown options, extra URLs). */
+export interface ParsedCurl {
+  draft: RequestDraft
+  notices: string[]
+}
+
+export function parseCurl(text: string): Promise<ParsedCurl> {
+  return call(async () => {
+    const parsed = required(await RequestService.ParseCurl({ text }))
+    return { draft: toRequestDraft(parsed.request), notices: parsed.notices ?? [] }
+  })
+}
+
 export function formatBulk(rows: KeyValueRow[]): Promise<string> {
   return call(async () => required(await RequestService.FormatBulk({ rows: rows.map(toKeyValueDto) })).text)
 }

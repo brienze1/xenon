@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import type { ImportPreview } from '@/platform/mappers/import'
 import type { TreeNode } from '@/platform/mappers/tree'
-import { assignIncluded, buildPlan, containerLocations, defaultTargets, hasIncludedItems, pendingClashes, skippedParts } from './plan'
+import {
+  assignIncluded,
+  buildPlan,
+  containerLocations,
+  defaultTargets,
+  hasIncludedItems,
+  missingLocations,
+  needsLocation,
+  pendingClashes,
+  skippedParts,
+  withRequestLocations,
+} from './plan'
 
 const counts = { collections: 1, folders: 0, requests: 1, examples: 0, variables: 0, scripts: 0, environments: 0 }
 const preview: ImportPreview = {
@@ -64,5 +75,37 @@ describe('import plan helpers', () => {
     const skipped = { code: 'skipped_part', severity: 'warning' as const, message: 'mock skipped', itemKey: '', itemId: '', localId: '', path: 'mock', location: '' }
     const other = { ...skipped, code: 'missing_file', path: 'x' }
     expect(skippedParts({ ...preview, warnings: [other, skipped] })).toEqual([skipped])
+  })
+
+  it('sends a trimmed new name only when one was typed', () => {
+    const targets = { '0': { include: true, localId: 'L', parentId: 'F', name: '  Invite  ' }, '1': { include: true, localId: 'L', parentId: 'F', name: ' ' } }
+    expect(buildPlan('S', targets, {}, null).items).toEqual([
+      { key: '0', include: true, targetLocalId: 'L', targetParentId: 'F', name: 'Invite', resolution: null },
+      { key: '1', include: true, targetLocalId: 'L', targetParentId: 'F', resolution: null },
+    ])
+  })
+
+  it('needs a collection or folder for every included request', () => {
+    const curl: ImportPreview = { ...preview, kind: 'curl', items: [{ key: '0', kind: 'request', name: 'GET /x', counts, warningsCount: 0 }] }
+    expect(needsLocation('request')).toBe(true)
+    expect(needsLocation('collection')).toBe(false)
+    expect(missingLocations(curl, { '0': { include: true, localId: 'L', parentId: '' } })).toBe(true)
+    expect(missingLocations(curl, { '0': { include: false, localId: 'L', parentId: '' } })).toBe(false)
+    expect(missingLocations(curl, { '0': { include: true, localId: 'L', parentId: 'F' } })).toBe(false)
+    expect(missingLocations(preview, defaultTargets(preview, 'L'))).toBe(false)
+  })
+
+  it('puts requests without a location into the first collection of their workspace', () => {
+    const mixed: ImportPreview = { ...preview, items: [...preview.items, { key: '2', kind: 'request', name: 'R', counts, warningsCount: 0 }, { key: '3', kind: 'request', name: 'S', counts, warningsCount: 0 }] }
+    const targets = {
+      '0': { include: true, localId: 'L', parentId: '' },
+      '2': { include: true, localId: 'L', parentId: '' },
+      '3': { include: true, localId: 'M', parentId: '' },
+      '4': { include: true, localId: 'L', parentId: '' },
+    }
+    const locations = [{ id: 'C', label: 'Main' }, { id: 'F', label: 'Main / F' }]
+    expect(withRequestLocations(mixed, targets, 'L', locations)).toEqual({ ...targets, '2': { include: true, localId: 'L', parentId: 'C' } })
+    expect(withRequestLocations(mixed, targets, 'L', [])).toEqual(targets)
+    expect(withRequestLocations(mixed, { '2': { include: true, localId: 'L', parentId: 'F' } }, 'L', locations)).toEqual({ '2': { include: true, localId: 'L', parentId: 'F' } })
   })
 })

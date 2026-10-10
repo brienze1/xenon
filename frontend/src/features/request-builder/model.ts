@@ -24,6 +24,8 @@ export interface TabDraft {
   /** The last text selection in a request field, for "Move to secret variable". */
   selection: FieldSelection | null
   error: AppError | null
+  /** Set after a cURL command replaced the request from the URL bar, so that one change can be undone. */
+  curlPaste: CurlPaste | null
   baseRevision: string | null
   conflict: boolean
   saving: boolean
@@ -36,4 +38,11 @@ export interface FieldSelection {
   from: number
   to: number
   text: string
+}
+
+/** The request as it was before a pasted cURL command replaced it, and what the parser ignored. */
+export interface CurlPaste {
+  previous: RequestDraft
+  wasDirty: boolean
+  notices: string[]
 }

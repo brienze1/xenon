@@ -67,6 +67,8 @@ export interface ImportPlanItem {
   include: boolean
   targetLocalId: string
   targetParentId: string
+  /** A new name for the imported item; absent or empty keeps the detected one. */
+  name?: string
   resolution: ClashResolution | null
 }
 
@@ -180,6 +182,7 @@ export function toImportPlanDto(plan: ImportPlan): ImportPlanDto {
       include: item.include,
       target_local_id: item.targetLocalId,
       target_parent_id: item.targetParentId,
+      name: item.name ?? '',
       resolution: item.resolution ?? '',
     })),
   }

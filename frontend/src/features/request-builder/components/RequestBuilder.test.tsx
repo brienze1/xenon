@@ -12,6 +12,7 @@ vi.mock('@/platform/services/requests', async (importOriginal) => {
     applyUrl: vi.fn(),
     applyParams: vi.fn(),
     parseBulk: vi.fn(),
+    parseCurl: vi.fn(),
     formatBulk: vi.fn(),
     autoHeaders: vi.fn(),
     sendRequest: vi.fn(),
@@ -197,6 +198,54 @@ describe('RequestBuilder', () => {
     render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
     await user.type(screen.getByRole('textbox', { name: 'Request URL' }), 'https://api.test{Enter}')
     expect(requests.sendRequest).toHaveBeenCalledWith('ws', tabId, expect.objectContaining({ url: 'https://api.test' }), { confirmedEnvironmentId: '', missingSecrets: false })
+  })
+
+  it('replaces the request with a pasted cURL command as one change that can be undone', async () => {
+    vi.mocked(requests.parseCurl).mockResolvedValue({
+      draft: {
+        ...emptyDraft(),
+        method: 'POST',
+        url: 'https://api.test/x',
+        headers: [{ id: 'h', key: 'Content-Type', value: 'application/json', description: '', enabled: true }],
+      },
+      notices: ['Ignored unknown option --frobnicate'],
+    })
+    const user = userEvent.setup()
+    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    const url = screen.getByRole('textbox', { name: 'Request URL' })
+    await user.type(url, 'https://old.test')
+    await user.click(url)
+    await user.paste("curl -X POST 'https://api.test/x' -H 'Content-Type: application/json' --frobnicate")
+    expect(requests.parseCurl).toHaveBeenCalledWith("curl -X POST 'https://api.test/x' -H 'Content-Type: application/json' --frobnicate")
+    expect(await screen.findByText('Replaced the request with the pasted cURL command.')).toBeInTheDocument()
+    expect(screen.getByRole('listitem')).toHaveTextContent('Ignored unknown option --frobnicate')
+    expect(screen.getByRole('button', { name: 'Method POST' })).toBeInTheDocument()
+    await vi.waitFor(() => expect(url).toHaveTextContent('https://api.test/x'))
+    expect(useRequestBuilderStore.getState().tabs[tabId]!.draft.headers).toHaveLength(1)
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(screen.queryByText('Replaced the request with the pasted cURL command.')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Method GET' })).toBeInTheDocument()
+    await vi.waitFor(() => expect(url).toHaveTextContent('https://old.test'))
+    expect(useRequestBuilderStore.getState().tabs[tabId]!.draft.headers).toHaveLength(0)
+  })
+
+  it('pastes text that is not a cURL command into the URL as it is', async () => {
+    const user = userEvent.setup()
+    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    const url = screen.getByRole('textbox', { name: 'Request URL' })
+    await user.click(url)
+    await user.paste('https://api.test/curl me')
+    await vi.waitFor(() => expect(url).toHaveTextContent('https://api.test/curl me'))
+    expect(requests.parseCurl).not.toHaveBeenCalled()
+  })
+
+  it('shows why a pasted cURL command could not be read', async () => {
+    vi.mocked(requests.parseCurl).mockRejectedValue(new AppError('IMP-07400', 'Only HTTP and HTTPS URLs can be imported, not ftp://x'))
+    const user = userEvent.setup()
+    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    await user.click(screen.getByRole('textbox', { name: 'Request URL' }))
+    await user.paste('curl ftp://x')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Only HTTP and HTTPS URLs can be imported, not ftp://x')
   })
 
   it('picks standard and custom methods', async () => {

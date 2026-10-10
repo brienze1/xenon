@@ -4,6 +4,12 @@ import type { ImportLocation, ImportTarget } from '@/features/import-export/mode
 
 const PATH_SEPARATOR = ' / '
 const SKIPPED_PART = 'skipped_part'
+const REQUEST_ITEM = 'request'
+
+/** A request can only go into an existing collection or folder, never become a collection itself. */
+export function needsLocation(kind: string): boolean {
+  return kind === REQUEST_ITEM
+}
 
 export function defaultTargets(preview: ImportPreview, localId: string): Record<string, ImportTarget> {
   return Object.fromEntries(preview.items.map((item) => [item.key, { include: true, localId, parentId: '' }]))
@@ -23,6 +29,7 @@ export function buildPlan(
       include: target.include,
       targetLocalId: target.localId,
       targetParentId: target.parentId,
+      ...(target.name?.trim() ? { name: target.name.trim() } : {}),
       resolution: resolutions[key] ?? null,
     })),
   }
@@ -46,6 +53,28 @@ export function containerLocations(nodes: readonly TreeNode[], parentLabel = '')
 
 export function hasIncludedItems(targets: Readonly<Record<string, ImportTarget>>): boolean {
   return Object.values(targets).some((target) => target.include)
+}
+
+/** True while an included request has no collection or folder to go into. */
+export function missingLocations(preview: ImportPreview, targets: Readonly<Record<string, ImportTarget>>): boolean {
+  return preview.items.some((item) => needsLocation(item.kind) && targets[item.key]?.include === true && targets[item.key]?.parentId === '')
+}
+
+/** Puts requests without a location yet into the first collection or folder of their workspace. */
+export function withRequestLocations(
+  preview: ImportPreview,
+  targets: Readonly<Record<string, ImportTarget>>,
+  localId: string,
+  locations: readonly ImportLocation[],
+): Record<string, ImportTarget> {
+  const [first] = locations
+  return Object.fromEntries(
+    Object.entries(targets).map(([key, target]) => {
+      const kind = preview.items.find((item) => item.key === key)?.kind ?? ''
+      const placeable = first !== undefined && needsLocation(kind) && target.localId === localId && target.parentId === ''
+      return [key, placeable ? { ...target, parentId: first.id } : target]
+    }),
+  )
 }
 
 export function assignIncluded(targets: Readonly<Record<string, ImportTarget>>, localId: string): Record<string, ImportTarget> {

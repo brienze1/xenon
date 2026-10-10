@@ -25,6 +25,7 @@ import {
   getRequest,
   missingSecretsOf,
   parseBulk,
+  parseCurl,
   saveRequest,
   saveRequestAs,
   sendRequest,
@@ -66,6 +67,10 @@ interface RequestBuilderState {
   setSubTab: (tabId: string, subTab: SubTab) => void
   setBulkMode: (tabId: string, table: BulkTable, bulk: boolean) => Promise<void>
   setBulkText: (tabId: string, table: BulkTable, text: string) => void
+  /** Replaces the tab's request with a pasted cURL command as one change that can be undone. */
+  pasteCurl: (tabId: string, text: string) => Promise<void>
+  undoCurlPaste: (tabId: string) => void
+  dismissCurlPaste: (tabId: string) => void
   chooseBodyFile: (tabId: string, rowId?: string) => Promise<void>
   refreshAutoHeaders: (tabId: string) => Promise<void>
   send: (tabId: string, acknowledgement?: Partial<SendAcknowledgement>) => Promise<void>
@@ -115,6 +120,7 @@ function newTab(): TabDraft {
     inspection: null,
     selection: null,
     error: null,
+    curlPaste: null,
     baseRevision: null,
     conflict: false,
     saving: false,
@@ -135,7 +141,7 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
   }
 
   function patchDraft(tabId: string, update: (draft: RequestDraft) => RequestDraft) {
-    patchTab(tabId, { draft: update(tab(tabId).draft), dirty: true })
+    patchTab(tabId, { draft: update(tab(tabId).draft), dirty: true, curlPaste: null })
     debounce(`${tabId}:auto-headers`, () => get().refreshAutoHeaders(tabId))
   }
 
@@ -367,6 +373,38 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
         }
       })
     },
+
+    pasteCurl: async (tabId, text) => {
+      try {
+        const parsed = await parseCurl(text)
+        const before = tab(tabId)
+        patchDraft(tabId, (draft) => ({
+          ...draft,
+          method: parsed.draft.method,
+          url: parsed.draft.url,
+          params: parsed.draft.params,
+          pathVariables: parsed.draft.pathVariables,
+          headers: parsed.draft.headers,
+          auth: parsed.draft.auth,
+          body: parsed.draft.body,
+          settings: parsed.draft.settings,
+        }))
+        patchTab(tabId, { curlPaste: { previous: before.draft, wasDirty: before.dirty, notices: parsed.notices }, error: null })
+      } catch (error) {
+        fail(tabId, error)
+      }
+    },
+
+    undoCurlPaste: (tabId) => {
+      const paste = tab(tabId).curlPaste
+      if (!paste) {
+        return
+      }
+      patchTab(tabId, { draft: paste.previous, dirty: paste.wasDirty, curlPaste: null })
+      void get().refreshAutoHeaders(tabId)
+    },
+
+    dismissCurlPaste: (tabId) => patchTab(tabId, { curlPaste: null }),
 
     chooseBodyFile: async (tabId, rowId) => {
       try {

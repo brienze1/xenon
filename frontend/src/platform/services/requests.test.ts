@@ -10,6 +10,7 @@ vi.mock('../../../bindings/github.com/brienze1/xenon/internal/infra/server/bindi
   ApplyUrl: vi.fn(),
   ApplyParams: vi.fn(),
   ParseBulk: vi.fn(),
+  ParseCurl: vi.fn(),
   FormatBulk: vi.fn(),
   AutoHeaders: vi.fn(),
   Send: vi.fn(),
@@ -80,6 +81,16 @@ describe('request service', () => {
     await expect(requests.formatBulk([{ id: 'r', key: 'a', value: '1', description: '', enabled: true }])).resolves.toBe('a:1')
     vi.mocked(RequestService.ParseBulk).mockResolvedValue({ rows: null } as never)
     await expect(requests.parseBulk('')).resolves.toEqual([])
+  })
+
+  it('parses a pasted cURL command into a draft and its notices', async () => {
+    vi.mocked(RequestService.ParseCurl).mockResolvedValue({ request: { ...toRequestDto(emptyDraft()), method: 'POST', url: 'https://x' }, notices: ['n'] } as never)
+    await expect(requests.parseCurl('curl -X POST https://x')).resolves.toMatchObject({ draft: { method: 'POST', url: 'https://x' }, notices: ['n'] })
+    expect(RequestService.ParseCurl).toHaveBeenCalledWith({ text: 'curl -X POST https://x' })
+    vi.mocked(RequestService.ParseCurl).mockResolvedValue({ request: toRequestDto(emptyDraft()), notices: null } as never)
+    await expect(requests.parseCurl('curl x')).resolves.toMatchObject({ notices: [] })
+    vi.mocked(RequestService.ParseCurl).mockRejectedValue(new Error(JSON.stringify({ error: { code: 'IMP-06400', description: 'The text is not a cURL command' } })))
+    await expect(requests.parseCurl('wget x')).rejects.toBeInstanceOf(AppError)
   })
 
   it('lists auto headers', async () => {

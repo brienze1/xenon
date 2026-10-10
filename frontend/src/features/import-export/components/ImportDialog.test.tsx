@@ -166,11 +166,54 @@ describe('ImportDialog', () => {
     expect(cancel).toHaveBeenCalled()
   })
 
+  it('names a pasted cURL request and imports it into a collection or folder', async () => {
+    vi.mocked(service.detectImport).mockResolvedValue({
+      ...preview,
+      kind: 'curl',
+      version: '',
+      items: [{ key: '0', kind: 'request', name: 'POST /users', counts: { ...counts, collections: 0, folders: 0, requests: 1, examples: 0, variables: 0, scripts: 0 }, warningsCount: 0 }],
+    })
+    render(<ImportDialog />)
+    act(() => useImportStore.getState().open())
+    await userEvent.type(screen.getByRole('textbox', { name: 'Or paste Postman JSON or a cURL command' }), 'curl -X POST https://api.test/users')
+    await userEvent.click(screen.getByRole('button', { name: 'Read Pasted Text' }))
+    expect(await screen.findByText('cURL command')).toBeInTheDocument()
+    const location = screen.getByRole('combobox', { name: 'Location for POST /users' })
+    expect(screen.getByRole('option', { name: 'Choose a collection or folder' })).toBeDisabled()
+    expect(screen.queryByRole('option', { name: 'New collection' })).not.toBeInTheDocument()
+    await vi.waitFor(() => expect(location).toHaveValue('C'))
+    const name = screen.getByRole('textbox', { name: 'Name for POST /users' })
+    expect(name).toHaveValue('POST /users')
+    await userEvent.clear(name)
+    expect(screen.getByRole('button', { name: 'Import' })).toBeEnabled()
+    await userEvent.type(name, 'Invite user')
+    await userEvent.selectOptions(location, 'F')
+    vi.mocked(service.findImportClashes).mockResolvedValue([])
+    vi.mocked(service.runImport).mockReturnValue({ result: new Promise(() => undefined), cancel: vi.fn() })
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    expect(service.runImport).toHaveBeenCalledWith({
+      sourceId: 'S',
+      applyToAll: null,
+      items: [{ key: '0', include: true, targetLocalId: 'A', targetParentId: 'F', name: 'Invite user', resolution: null }],
+    })
+  })
+
+  it('keeps Import disabled while a request has no collection or folder to go into', async () => {
+    vi.mocked(tree.getTree).mockResolvedValue([])
+    const request = { key: '0', kind: 'request', name: 'GET /x', counts, warningsCount: 0 }
+    useImportStore.setState({ step: 'preview', preview: { ...preview, kind: 'curl', items: [request] }, targets: { '0': { include: true, localId: 'A', parentId: '' } } })
+    act(() => void useImportStore.getState().loadLocations('A'))
+    render(<ImportDialog />)
+    expect(screen.getByRole('button', { name: 'Import' })).toBeDisabled()
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Import GET /x' }))
+    expect(screen.getByRole('textbox', { name: 'Name for GET /x' })).toBeDisabled()
+  })
+
   it('says when a detected source has nothing to import yet and goes back', async () => {
     useImportStore.setState({ step: 'preview', preview: { ...preview, kind: 'postman_environment', version: '', items: [] }, targets: {} })
     render(<ImportDialog />)
     expect(screen.getByText('Postman environment')).toBeInTheDocument()
-    expect(screen.getByText('Importing this kind of source arrives in a later update.')).toBeInTheDocument()
+    expect(screen.getByText('There is nothing to import in this source.')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Back' }))
     expect(screen.getByRole('button', { name: 'Choose Files…' })).toBeInTheDocument()
   })

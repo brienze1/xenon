@@ -7,7 +7,7 @@ import type { ImportProgress } from '@/platform/events'
 import type { ClashResolution, ImportClash, ImportPreview, ImportResult } from '@/platform/mappers/import'
 import { detectImport, discardImport, findImportClashes, pickImportSources, runImport, type ImportInput, type PendingImport } from '@/platform/services/import'
 import { getTree } from '@/platform/services/tree'
-import { assignIncluded, buildPlan, containerLocations, defaultTargets, pendingClashes } from './lib/plan'
+import { assignIncluded, buildPlan, containerLocations, defaultTargets, pendingClashes, withRequestLocations } from './lib/plan'
 import { ALL_INCLUDED, type ImportLocation, type ImportProgressState, type ImportStep, type ImportTarget } from './model'
 
 interface ImportState {
@@ -147,8 +147,11 @@ export const useImportStore = create<ImportState>()((set, get) => {
 
     loadLocations: async (localId) => {
       try {
-        const tree = await getTree(localId)
-        set((state) => ({ locations: { ...state.locations, [localId]: containerLocations(tree) } }))
+        const locations = containerLocations(await getTree(localId))
+        set((state) => ({
+          locations: { ...state.locations, [localId]: locations },
+          targets: state.preview ? withRequestLocations(state.preview, state.targets, localId, locations) : state.targets,
+        }))
       } catch (error) {
         set({ error: toAppError(error) })
       }

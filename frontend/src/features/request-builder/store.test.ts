@@ -10,6 +10,7 @@ vi.mock('@/platform/services/requests', async (importOriginal) => {
     applyUrl: vi.fn(),
     applyParams: vi.fn(),
     parseBulk: vi.fn(),
+    parseCurl: vi.fn(),
     formatBulk: vi.fn(),
     autoHeaders: vi.fn(),
     sendRequest: vi.fn(),
@@ -561,5 +562,48 @@ describe('request builder store - variables', () => {
     expect(state().tabs[tabId]!.acknowledgement).toEqual({ confirmedEnvironmentId: '01P', missingSecrets: false })
     state().dismissConfirmation(tabId)
     expect(state().tabs[tabId]!.confirmation).toBeNull()
+  })
+
+  it('replaces the draft with a pasted cURL command and restores it on undo', async () => {
+    vi.useFakeTimers()
+    state().ensureTab('tab')
+    state().setName('tab', 'Kept')
+    state().setUrl('tab', 'https://old.test')
+    const parsed = { ...emptyDraft(), name: 'ignored', method: 'PUT', url: 'https://new.test', headers: [row('A', '1')], settings: { ...emptyDraft().settings, verifySsl: false } }
+    vi.mocked(requests.parseCurl).mockResolvedValue({ draft: parsed, notices: ['n'] })
+    await state().pasteCurl('tab', 'curl -X PUT https://new.test')
+    expect(draft('tab')).toMatchObject({ name: 'Kept', method: 'PUT', url: 'https://new.test', headers: [row('A', '1')] })
+    expect(draft('tab').settings.verifySsl).toBe(false)
+    expect(state().tabs.tab!.curlPaste).toMatchObject({ notices: ['n'], wasDirty: true })
+    expect(state().tabs.tab!.dirty).toBe(true)
+    state().undoCurlPaste('tab')
+    expect(draft('tab')).toMatchObject({ name: 'Kept', method: 'GET', url: 'https://old.test', headers: [] })
+    expect(state().tabs.tab!.curlPaste).toBeNull()
+    state().undoCurlPaste('tab')
+    expect(draft('tab').url).toBe('https://old.test')
+  })
+
+  it('forgets the undo after the next edit or a dismiss, and keeps a clean tab clean on undo', async () => {
+    vi.useFakeTimers()
+    state().ensureTab('tab')
+    vi.mocked(requests.parseCurl).mockResolvedValue({ draft: { ...emptyDraft(), url: 'https://new.test' }, notices: [] })
+    await state().pasteCurl('tab', 'curl https://new.test')
+    state().setUrl('tab', 'https://edited.test')
+    expect(state().tabs.tab!.curlPaste).toBeNull()
+    await state().pasteCurl('tab', 'curl https://new.test')
+    state().dismissCurlPaste('tab')
+    expect(state().tabs.tab!.curlPaste).toBeNull()
+    state().loadDraft('clean', emptyDraft(), 'rev', false)
+    await state().pasteCurl('clean', 'curl https://new.test')
+    state().undoCurlPaste('clean')
+    expect(state().tabs.clean!.dirty).toBe(false)
+  })
+
+  it('keeps the draft and shows the error when a pasted cURL command is refused', async () => {
+    state().ensureTab('tab')
+    vi.mocked(requests.parseCurl).mockRejectedValue(new AppError('IMP-06400', 'The cURL command could not be read'))
+    await state().pasteCurl('tab', "curl 'x")
+    expect(state().tabs.tab!.error?.code).toBe('IMP-06400')
+    expect(state().tabs.tab!.curlPaste).toBeNull()
   })
 })

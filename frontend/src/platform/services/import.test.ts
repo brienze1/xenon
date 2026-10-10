@@ -89,10 +89,15 @@ describe('import service', () => {
     expect(ImportService.Clashes).toHaveBeenCalledWith({
       source_id: 'S',
       apply_to_all: 'keep_both',
-      items: [{ key: '0', include: true, target_local_id: 'A', target_parent_id: '', resolution: 'skip' }],
+      items: [{ key: '0', include: true, target_local_id: 'A', target_parent_id: '', name: '', resolution: 'skip' }],
     })
     vi.mocked(ImportService.Clashes).mockResolvedValue({ clashes: null } as never)
-    await expect(findImportClashes(plan)).resolves.toEqual([])
+    await expect(findImportClashes({ ...plan, items: [{ ...plan.items[0]!, name: 'Invite user' }] })).resolves.toEqual([])
+    expect(ImportService.Clashes).toHaveBeenLastCalledWith({
+      source_id: 'S',
+      apply_to_all: '',
+      items: [{ key: '0', include: true, target_local_id: 'A', target_parent_id: '', name: 'Invite user', resolution: '' }],
+    })
   })
 
   it('runs a cancellable import and maps the result', async () => {
@@ -112,7 +117,7 @@ describe('import service', () => {
     expect(ImportService.Import).toHaveBeenCalledWith({
       source_id: 'S',
       apply_to_all: '',
-      items: [{ key: '0', include: true, target_local_id: 'A', target_parent_id: '', resolution: '' }],
+      items: [{ key: '0', include: true, target_local_id: 'A', target_parent_id: '', name: '', resolution: '' }],
     })
     await expect(run.result).resolves.toEqual({
       items: [

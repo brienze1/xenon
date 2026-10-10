@@ -10,6 +10,8 @@ export interface ImportTarget {
   include: boolean
   localId: string
   parentId: string
+  /** A new name for the imported item (a request from a cURL command); empty keeps the detected one. */
+  name?: string
 }
 
 export interface ImportLocation {

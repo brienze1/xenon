@@ -5,6 +5,7 @@ import { Dropdown } from '@/shared/ui/dropdown/Dropdown'
 import { SingleLineEditor } from '@/shared/ui/single-line-editor/SingleLineEditor'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
 import { useVariableEditing } from '@/features/request-builder/hooks/use-variable-editing'
+import { isCurlCommand } from '@/features/request-builder/lib/curl'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import styles from './RequestBar.module.css'
 
@@ -26,11 +27,22 @@ export function RequestBar({ tabId, onSave, mode = 'request' }: RequestBarProps)
   const setUrl = useRequestBuilderStore((state) => state.setUrl)
   const send = useRequestBuilderStore((state) => state.send)
   const cancel = useRequestBuilderStore((state) => state.cancel)
+  const pasteCurl = useRequestBuilderStore((state) => state.pasteCurl)
   const [customMethod, setCustomMethod] = useState('')
   const { decorationsOf, completionSource, selectIn } = useVariableEditing(tabId)
   const onUrlChange = useCallback((value: string) => setUrl(tabId, value), [setUrl, tabId])
   const sendable = mode === 'request'
   const onUrlEnter = useCallback(() => (sendable ? void send(tabId) : undefined), [send, sendable, tabId])
+  const onUrlPaste = useCallback(
+    (text: string) => {
+      if (!sendable || !isCurlCommand(text)) {
+        return false
+      }
+      void pasteCurl(tabId, text)
+      return true
+    },
+    [pasteCurl, sendable, tabId],
+  )
   const onUrlSelection = useCallback((selection: Parameters<typeof selectIn>[1]) => selectIn('url', selection), [selectIn])
 
   function onCustomKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -77,6 +89,7 @@ export function RequestBar({ tabId, onSave, mode = 'request' }: RequestBarProps)
         onChange={onUrlChange}
         onEnter={onUrlEnter}
         onSelectionChange={onUrlSelection}
+        onPaste={onUrlPaste}
       />
       {!sendable ? null : sending ? (
         <Button variant="running" className={styles.send} onClick={() => cancel(tabId)}>

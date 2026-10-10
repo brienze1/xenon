@@ -2,7 +2,7 @@ import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { useImportStore } from '@/features/import-export/store'
 import { countsLabel, sourceLabel } from '@/features/import-export/lib/labels'
-import { hasIncludedItems } from '@/features/import-export/lib/plan'
+import { hasIncludedItems, missingLocations, needsLocation } from '@/features/import-export/lib/plan'
 import type { ImportPreview, ImportPreviewItem } from '@/platform/mappers/import'
 import { DumpAssignment } from './DumpAssignment'
 import { ImportErrorBanner } from './ImportErrorBanner'
@@ -53,9 +53,23 @@ function ItemRow({ item }: ItemRowProps) {
         />
       </td>
       <td>
-        <span className={styles.name} translate="no">
-          {item.name}
-        </span>
+        {needsLocation(item.kind) ? (
+          <input
+            name={`name-${item.key}`}
+            autoComplete="off"
+            aria-label={`Name for ${item.name}`}
+            className={styles.nameInput}
+            value={target.name ?? item.name}
+            placeholder={item.name}
+            spellCheck={false}
+            disabled={!target.include}
+            onChange={(event) => setTarget(item.key, { name: event.target.value })}
+          />
+        ) : (
+          <span className={styles.name} translate="no">
+            {item.name}
+          </span>
+        )}
         <span className={styles.path}>
           {countsLabel(item.counts)}
           {item.warningsCount > 0 ? ` · ${item.warningsCount} to review` : ''}
@@ -82,7 +96,13 @@ function ItemRow({ item }: ItemRowProps) {
             disabled={!target.include}
             onChange={(event) => setTarget(item.key, { parentId: event.target.value })}
           >
-            <option value={NEW_COLLECTION}>New collection</option>
+            {needsLocation(item.kind) ? (
+              <option value={NEW_COLLECTION} disabled>
+                Choose a collection or folder
+              </option>
+            ) : (
+              <option value={NEW_COLLECTION}>New collection</option>
+            )}
             {(locations ?? []).map((location) => (
               <option key={location.id} value={location.id} translate="no">
                 Into {location.label}
@@ -118,7 +138,7 @@ function ItemTable({ preview }: ItemTableProps) {
 
 export function ImportPreviewStep() {
   const preview = useImportStore((state) => state.preview)
-  const canImport = useImportStore((state) => hasIncludedItems(state.targets))
+  const canImport = useImportStore((state) => hasIncludedItems(state.targets) && (state.preview === null || !missingLocations(state.preview, state.targets)))
   const start = useImportStore((state) => state.start)
   const back = useImportStore((state) => state.back)
   if (!preview) {
@@ -131,7 +151,7 @@ export function ImportPreviewStep() {
         <p className={styles.source}>{sourceLabel(preview.kind, preview.version)}</p>
         {preview.kind === DUMP_KIND ? <DumpAssignment preview={preview} /> : null}
         {preview.kind !== DUMP_KIND && preview.items.length > 0 ? <ItemTable preview={preview} /> : null}
-        {preview.items.length === 0 ? <p className={styles.status}>Importing this kind of source arrives in a later update.</p> : null}
+        {preview.items.length === 0 ? <p className={styles.status}>There is nothing to import in this source.</p> : null}
         <ImportErrorBanner />
       </Dialog.Body>
       <Dialog.Actions>
