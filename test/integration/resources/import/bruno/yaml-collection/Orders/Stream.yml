@@ -1,0 +1,7 @@
+info:
+  name: Stream
+  type: grpc
+  seq: 6
+grpc:
+  url: localhost:50051
+  method: /shop.Orders/Watch

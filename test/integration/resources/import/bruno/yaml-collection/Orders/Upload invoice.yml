@@ -1,0 +1,28 @@
+info:
+  name: Upload invoice
+  type: http
+  seq: 1
+http:
+  method: POST
+  url: "{{base_url}}/invoices"
+  auth:
+    type: ntlm
+    username: ana
+    password: "{{ntlm_pw}}"
+    domain: ACME
+  body:
+    type: multipart-form
+    data:
+      - name: note
+        type: text
+        value: hello
+      - name: file
+        type: file
+        value:
+          - /Users/someone/invoice.pdf
+      - name: meta
+        type: file
+        value:
+          - /tmp/meta.json
+        contentType: application/json
+        disabled: true

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -27,6 +28,7 @@ func (t *testUtils) registerThenResponseSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the response field "([^"]*)" should not exist$`, t.theResponseFieldShouldNotExist)
 	ctx.Then(`^the response field "([^"]*)" should contain an item with "([^"]*)" equal to "([^"]*)" and "([^"]*)" equal to "([^"]*)"$`, t.theResponseFieldShouldContainAnItemWith)
 	ctx.Then(`^the response field "([^"]*)" should contain (\d+) items with "([^"]*)" equal to "([^"]*)"$`, t.theResponseFieldShouldContainItemsWith)
+	ctx.Then(`^every item of the saved "([^"]*)" should have the field "([^"]*)" in "([^"]*)"$`, t.everyItemOfTheSavedShouldHaveTheFieldIn)
 }
 
 func (t *testUtils) theCallShouldSucceed() error {
@@ -114,6 +116,25 @@ func (t *testUtils) theResponseFieldShouldContainItemsWith(path string, count in
 	}
 	if matches != count {
 		return fmt.Errorf("field %q: expected %d items with %s = %q, got %d: %s", path, count, key, value, matches, stringify(items))
+	}
+	return nil
+}
+
+func (t *testUtils) everyItemOfTheSavedShouldHaveTheFieldIn(saved, field, allowed string) error {
+	items, err := decodeJson([]byte(t.vars[saved]))
+	if err != nil {
+		return err
+	}
+	list, isArray := items.([]any)
+	if !isArray || len(list) == 0 {
+		return fmt.Errorf("saved %q is not a non-empty list: %v", saved, items)
+	}
+	accepted := strings.Split(t.vars[allowed], ",")
+	for index, item := range list {
+		value, found := lookup(item, field)
+		if !found || !slices.Contains(accepted, stringify(value)) {
+			return fmt.Errorf("item %d of %q has %s = %v, not one of %v", index, saved, field, value, accepted)
+		}
 	}
 	return nil
 }

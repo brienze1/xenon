@@ -1,0 +1,27 @@
+{
+	"info": {
+		"_postman_id": "22222222-bbbb-4000-8000-000000000002",
+		"name": "CRM API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "1234567"
+	},
+	"item": [
+		{
+			"name": "List contacts",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/list-contacts",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"list-contacts"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

@@ -1,0 +1,21 @@
+info:
+  name: Create product
+  type: http
+  seq: 1
+http:
+  method: POST
+  url: "{{base_url}}/products/:category"
+  params:
+    - name: category
+      value: chairs
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+  body:
+    type: json
+    data: |
+      {
+        "name": "Chair",
+        "price": 9.5
+      }

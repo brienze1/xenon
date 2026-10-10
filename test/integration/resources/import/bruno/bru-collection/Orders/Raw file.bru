@@ -1,0 +1,24 @@
+meta {
+  name: Raw file
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{base_url}}/blob
+  body: file
+  auth: awsv4
+}
+
+auth:awsv4 {
+  accessKeyId: AKIA
+  secretAccessKey: {{aws_secret}}
+  sessionToken: 
+  service: s3
+  region: us-east-1
+  profileName: 
+}
+
+body:file {
+  file: @file(/tmp/payload.bin) @contentType(application/octet-stream)
+}

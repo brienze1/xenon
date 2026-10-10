@@ -1,0 +1,22 @@
+meta {
+  name: Form
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/form
+  body: formUrlEncoded
+  auth: apikey
+}
+
+auth:apikey {
+  key: X-Api-Key
+  value: {{api_key}}
+  placement: header
+}
+
+body:form-urlencoded {
+  a: 1
+  ~b: 2
+}

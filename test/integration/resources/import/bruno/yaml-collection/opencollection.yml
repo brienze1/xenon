@@ -1,0 +1,26 @@
+opencollection: "1.0.0"
+info:
+  name: Bruno Shop YAML
+request:
+  headers:
+    - name: X-Client
+      value: xenon
+    - name: X-Debug
+      value: "1"
+      disabled: true
+  auth:
+    type: bearer
+    token: "{{token}}"
+  variables:
+    - name: api_version
+      value: v2
+  scripts:
+    - type: before-request
+      code: |
+        req.setHeader("X-Start", Date.now());
+    - type: tests
+      code: |
+        test("collection ok", function() {
+          expect(res.status).to.equal(200);
+        });
+docs: The Bruno shop collection.

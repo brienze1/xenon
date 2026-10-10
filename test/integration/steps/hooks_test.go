@@ -43,10 +43,15 @@ func (t *testUtils) before() error {
 	if err := os.MkdirAll(t.workspaceRoot, 0o755); err != nil {
 		return err
 	}
+	resources, err := filepath.Abs(resourcePath(""))
+	if err != nil {
+		return err
+	}
 	t.vars = map[string]string{
 		"temp_root":      t.tempRoot,
 		"workspace_root": t.workspaceRoot,
 		"app_data":       t.dataDir,
+		"resources":      resources,
 	}
 	if err := os.Setenv("XENON_SCRYPT_LOG_N", scryptLogN); err != nil {
 		return err

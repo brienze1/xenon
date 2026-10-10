@@ -16,6 +16,9 @@ func (t *testUtils) registerThenWorkspaceFileSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the workspace file "([^"]*)" should not exist$`, t.theWorkspaceFileShouldNotExist)
 	ctx.Then(`^the workspace folder "([^"]*)" should exist$`, t.theWorkspaceFolderShouldExist)
 	ctx.Then(`^the workspace file "([^"]*)" should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theWorkspaceFileShouldContainTheFieldEqualTo)
+	ctx.Then(`^the workspace file "([^"]*)" should contain the field "([^"]*)" equal to$`, t.theWorkspaceFileShouldContainTheFieldEqualToTheText)
+	ctx.Then(`^the workspace file "([^"]*)" should contain the field "([^"]*)" matching "([^"]*)"$`, t.theWorkspaceFileShouldContainTheFieldMatching)
+	ctx.Then(`^the workspace file "([^"]*)" should contain the field "([^"]*)" array length equal to (\d+)$`, t.theWorkspaceFileShouldContainTheFieldArrayLengthEqualTo)
 	ctx.Then(`^the workspace file "([^"]*)" should contain the field "([^"]*)" not equal to "([^"]*)"$`, t.theWorkspaceFileShouldContainTheFieldNotEqualTo)
 	ctx.Then(`^the workspace file "([^"]*)" should contain the field "([^"]*)" with the items "([^"]*)"$`, t.theWorkspaceFileShouldContainTheFieldWithTheItems)
 	ctx.Then(`^the workspace file "([^"]*)" should not contain the field "([^"]*)"$`, t.theWorkspaceFileShouldNotContainTheField)
@@ -61,6 +64,33 @@ func (t *testUtils) theWorkspaceFileShouldContainTheFieldEqualTo(path, field, ex
 		return err
 	}
 	return expectEqual(stringify(value), t.substitute(expected), field)
+}
+
+func (t *testUtils) theWorkspaceFileShouldContainTheFieldEqualToTheText(path, field string, expected *godog.DocString) error {
+	return t.theWorkspaceFileShouldContainTheFieldEqualTo(path, field, expected.Content)
+}
+
+func (t *testUtils) theWorkspaceFileShouldContainTheFieldMatching(path, field, pattern string) error {
+	value, err := t.workspaceFileField(path, field)
+	if err != nil {
+		return err
+	}
+	return expectMatch(stringify(value), pattern, field)
+}
+
+func (t *testUtils) theWorkspaceFileShouldContainTheFieldArrayLengthEqualTo(path, field string, length int) error {
+	value, err := t.workspaceFileField(path, field)
+	if err != nil {
+		return err
+	}
+	items, isArray := value.([]any)
+	if !isArray {
+		return fmt.Errorf("field %q of %s is not a list: %v", field, path, value)
+	}
+	if len(items) != length {
+		return fmt.Errorf("field %q of %s: expected %d items, got %d", field, path, length, len(items))
+	}
+	return nil
 }
 
 func (t *testUtils) theWorkspaceFileShouldContainTheFieldNotEqualTo(path, field, unexpected string) error {

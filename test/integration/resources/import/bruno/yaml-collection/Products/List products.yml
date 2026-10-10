@@ -1,0 +1,59 @@
+info:
+  name: List products
+  type: http
+  seq: 2
+  tags:
+    - smoke
+http:
+  method: GET
+  url: "{{base_url}}/products?page=1&debug=true"
+  params:
+    - name: page
+      value: "1"
+      type: query
+    - name: debug
+      value: "true"
+      type: query
+      disabled: true
+  headers:
+    - name: Accept
+      value: application/json
+    - name: X-Trace
+      value: "1"
+      disabled: true
+  auth:
+    type: inherit
+runtime:
+  variables:
+    - name: category
+      value: chairs
+      scope: pre-request
+    - name: firstId
+      value: res.body.items[0].id
+      scope: post-response
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+    - expression: res.body.items
+      operator: isArray
+  scripts:
+    - type: before-request
+      code: |
+        const start = bru.getEnvVar("start");
+        bru.setVar("start", Date.now());
+    - type: after-response
+      code: |
+        bru.setEnvVar("lastId", res.getBody().items[0].id);
+        bru.setNextRequest("Create product");
+    - type: tests
+      code: |
+        test("has items", function() {
+          expect(res.getStatus()).to.equal(200);
+        });
+settings:
+  encodeUrl: true
+  timeout: 5000
+  followRedirects: false
+  maxRedirects: 3
+docs: Lists all **products**.

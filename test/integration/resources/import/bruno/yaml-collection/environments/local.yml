@@ -1,0 +1,13 @@
+name: local
+color: "#00ff00"
+variables:
+  - name: base_url
+    value: http://localhost:3000
+  - name: debug
+    value: "true"
+    enabled: false
+  - name: token
+    secret: true
+  - name: old_token
+    secret: true
+    enabled: false

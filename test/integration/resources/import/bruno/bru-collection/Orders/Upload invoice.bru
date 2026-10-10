@@ -1,0 +1,23 @@
+meta {
+  name: Upload invoice
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/invoices
+  body: multipartForm
+  auth: ntlm
+}
+
+auth:ntlm {
+  username: ana
+  password: {{ntlm_pw}}
+  domain: ACME
+}
+
+body:multipart-form {
+  note: hello
+  file: @file(/Users/someone/invoice.pdf)
+  ~meta: @file(/tmp/meta.json) @contentType(application/json)
+}

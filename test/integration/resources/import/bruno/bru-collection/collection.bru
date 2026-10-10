@@ -1,0 +1,31 @@
+headers {
+  X-Client: xenon
+  ~X-Debug: 1
+}
+
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+vars:pre-request {
+  api_version: v2
+  ~unused: x
+}
+
+script:pre-request {
+  req.setHeader("X-Start", Date.now());
+}
+
+tests {
+  test("collection ok", function() {
+    expect(res.status).to.equal(200);
+  });
+}
+
+docs {
+  The Bruno shop collection.
+}

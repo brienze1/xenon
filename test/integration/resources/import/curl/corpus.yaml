@@ -1,0 +1,557 @@
+# cURL import corpus (SC-005): each command in bash, Windows cmd and PowerShell syntax must
+# produce the same request. Hand-authored; `expected` follows spec FR-024.
+commands:
+  - name: "simple get"
+    bash: |-
+      curl 'https://api.test/users'
+    cmd: |-
+      curl ^"https://api.test/users^"
+    powershell: |-
+      curl.exe 'https://api.test/users'
+    expected:
+      method: "GET"
+      url: "https://api.test/users"
+  - name: "explicit method"
+    bash: |-
+      curl -X 'DELETE' \
+        'https://api.test/users/1'
+    cmd: |-
+      curl -X ^"DELETE^" ^
+        ^"https://api.test/users/1^"
+    powershell: |-
+      curl.exe -X 'DELETE' `
+        'https://api.test/users/1'
+    expected:
+      method: "DELETE"
+      url: "https://api.test/users/1"
+  - name: "long request flag"
+    bash: |-
+      curl --request 'PATCH' \
+        'https://api.test/users/1'
+    cmd: |-
+      curl --request ^"PATCH^" ^
+        ^"https://api.test/users/1^"
+    powershell: |-
+      curl.exe --request 'PATCH' `
+        'https://api.test/users/1'
+    expected:
+      method: "PATCH"
+      url: "https://api.test/users/1"
+  - name: "headers"
+    bash: |-
+      curl 'https://api.test/x' \
+        -H 'Accept: application/json' \
+        -H 'X-Trace: a b'
+    cmd: |-
+      curl ^"https://api.test/x^" ^
+        -H ^"Accept: application/json^" ^
+        -H ^"X-Trace: a b^"
+    powershell: |-
+      curl.exe 'https://api.test/x' `
+        -H 'Accept: application/json' `
+        -H 'X-Trace: a b'
+    expected:
+      method: "GET"
+      url: "https://api.test/x"
+      headers:
+        - key: "Accept"
+          value: "application/json"
+        - key: "X-Trace"
+          value: "a b"
+  - name: "json data"
+    bash: |-
+      curl -X 'POST' \
+        'https://api.test/x' \
+        -H 'Content-Type: application/json' \
+        -d '{"a":1}'
+    cmd: |-
+      curl -X ^"POST^" ^
+        ^"https://api.test/x^" ^
+        -H ^"Content-Type: application/json^" ^
+        -d ^"{\^"a\^":1}^"
+    powershell: |-
+      curl.exe -X 'POST' `
+        'https://api.test/x' `
+        -H 'Content-Type: application/json' `
+        -d '{"a":1}'
+    expected:
+      method: "POST"
+      url: "https://api.test/x"
+      headers:
+        - key: "Content-Type"
+          value: "application/json"
+      body:
+        mode: "raw"
+        raw: "{\"a\":1}"
+  - name: "data implies post"
+    bash: |-
+      curl 'https://api.test/x' \
+        --data 'a=1&b=2'
+    cmd: |-
+      curl ^"https://api.test/x^" ^
+        --data ^"a=1^&b=2^"
+    powershell: |-
+      curl.exe 'https://api.test/x' `
+        --data 'a=1&b=2'
+    expected:
+      method: "POST"
+      url: "https://api.test/x"
+      body:
+        mode: "urlencoded"
+        urlencoded:
+          - key: "a"
+            value: "1"
+          - key: "b"
+            value: "2"
+  - name: "data raw"
+    bash: |-
+      curl 'https://api.test/x' \
+        --data-raw '@not-a-file'
+    cmd: |-
+      curl ^"https://api.test/x^" ^
+        --data-raw ^"@not-a-file^"
+    powershell: |-
+      curl.exe 'https://api.test/x' `
+        --data-raw '@not-a-file'
+    expected:
+      method: "POST"
+      url: "https://api.test/x"
+      body:
+        mode: "raw"
+        raw: "@not-a-file"
+  - name: "data ascii"
+    bash: |-
+      curl 'https://api.test/x' \
+        --data-ascii 'plain text'
+    cmd: |-
+      curl ^"https://api.test/x^" ^
+        --data-ascii ^"plain text^"
+    powershell: |-
+      curl.exe 'https://api.test/x' `
+        --data-ascii 'plain text'
+    expected:
+      method: "POST"
+      url: "https://api.test/x"
+      body:
+        mode: "raw"
+        raw: "plain text"
+  - name: "data binary file"
+    bash: |-
+      curl 'https://api.test/x' \
+        --data-binary '@/tmp/payload.bin'
+    cmd: |-
+      curl ^"https://api.test/x^" ^
+        --data-binary ^"@/tmp/payload.bin^"
+    powershell: |-
+      curl.exe 'https://api.test/x' `
+        --data-binary '@/tmp/payload.bin'
+    expected:
+      method: "POST"
+      url: "https://api.test/x"
+      body:
+        mode: "binary"
+        binary: "/tmp/payload.bin"
+  - name: "data urlencode"
+    bash: |-
+      curl 'https://api.test/x' \
+        --data-urlencode 'q=hello world' \
+        --data-urlencode 'lang=pt-BR'
+    cmd: |-
+      curl ^"https://api.test/x^" ^
+        --data-urlencode ^"q=hello world^" ^
+        --data-urlencode ^"lang=pt-BR^"
+    powershell: |-
+      curl.exe 'https://api.test/x' `
+        --data-urlencode 'q=hello world' `
+        --data-urlencode 'lang=pt-BR'
+    expected:
+      method: "POST"
+      url: "https://api.test/x"
+      body:
+        mode: "urlencoded"
+        urlencoded:
+          - key: "q"
+            value: "hello world"
+          - key: "lang"
+            value: "pt-BR"
+  - name: "form fields"
+    bash: |-
+      curl 'https://api.test/upload' \
+        -F 'note=hi' \
+        -F 'file=@/tmp/a.txt'
+    cmd: |-
+      curl ^"https://api.test/upload^" ^
+        -F ^"note=hi^" ^
+        -F ^"file=@/tmp/a.txt^"
+    powershell: |-
+      curl.exe 'https://api.test/upload' `
+        -F 'note=hi' `
+        -F 'file=@/tmp/a.txt'
+    expected:
+      method: "POST"
+      url: "https://api.test/upload"
+      body:
+        mode: "formdata"
+        formdata:
+          - key: "note"
+            type: "text"
+            value: "hi"
+          - key: "file"
+            type: "file"
+            src: "/tmp/a.txt"
+  - name: "form long flag"
+    bash: |-
+      curl 'https://api.test/upload' \
+        --form 'a=1'
+    cmd: |-
+      curl ^"https://api.test/upload^" ^
+        --form ^"a=1^"
+    powershell: |-
+      curl.exe 'https://api.test/upload' `
+        --form 'a=1'
+    expected:
+      method: "POST"
+      url: "https://api.test/upload"
+      body:
+        mode: "formdata"
+        formdata:
+          - key: "a"
+            type: "text"
+            value: "1"
+  - name: "get with data"
+    bash: |-
+      curl -G \
+        'https://api.test/search' \
+        -d 'q=xenon' \
+        -d 'page=2'
+    cmd: |-
+      curl -G ^
+        ^"https://api.test/search^" ^
+        -d ^"q=xenon^" ^
+        -d ^"page=2^"
+    powershell: |-
+      curl.exe -G `
+        'https://api.test/search' `
+        -d 'q=xenon' `
+        -d 'page=2'
+    expected:
+      method: "GET"
+      url: "https://api.test/search?q=xenon&page=2"
+  - name: "head"
+    bash: |-
+      curl -I \
+        'https://api.test/x'
+    cmd: |-
+      curl -I ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe -I `
+        'https://api.test/x'
+    expected:
+      method: "HEAD"
+      url: "https://api.test/x"
+  - name: "upload file"
+    bash: |-
+      curl -T '/tmp/payload.bin' \
+        'https://api.test/blob'
+    cmd: |-
+      curl -T ^"/tmp/payload.bin^" ^
+        ^"https://api.test/blob^"
+    powershell: |-
+      curl.exe -T '/tmp/payload.bin' `
+        'https://api.test/blob'
+    expected:
+      method: "PUT"
+      url: "https://api.test/blob"
+      body:
+        mode: "binary"
+        binary: "/tmp/payload.bin"
+  - name: "url flag"
+    bash: |-
+      curl --url 'https://api.test/x' \
+        -X 'PUT'
+    cmd: |-
+      curl --url ^"https://api.test/x^" ^
+        -X ^"PUT^"
+    powershell: |-
+      curl.exe --url 'https://api.test/x' `
+        -X 'PUT'
+    expected:
+      method: "PUT"
+      url: "https://api.test/x"
+  - name: "basic user"
+    bash: |-
+      curl -u 'ana:secret' \
+        'https://api.test/x'
+    cmd: |-
+      curl -u ^"ana:secret^" ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe -u 'ana:secret' `
+        'https://api.test/x'
+    expected:
+      method: "GET"
+      url: "https://api.test/x"
+      auth:
+        type: "basic"
+        username: "ana"
+        password: "secret"
+  - name: "basic flag"
+    bash: |-
+      curl --user 'ana:secret' \
+        --basic \
+        'https://api.test/x'
+    cmd: |-
+      curl --user ^"ana:secret^" ^
+        --basic ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe --user 'ana:secret' `
+        --basic `
+        'https://api.test/x'
+    expected:
+      method: "GET"
+      url: "https://api.test/x"
+      auth:
+        type: "basic"
+        username: "ana"
+        password: "secret"
+  - name: "digest"
+    bash: |-
+      curl --digest \
+        -u 'ana:secret' \
+        'https://api.test/x'
+    cmd: |-
+      curl --digest ^
+        -u ^"ana:secret^" ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe --digest `
+        -u 'ana:secret' `
+        'https://api.test/x'
+    expected:
+      method: "GET"
+      url: "https://api.test/x"
+      auth:
+        type: "digest"
+        username: "ana"
+        password: "secret"
+  - name: "cookie"
+    bash: |-
+      curl -b 'session=abc; theme=dark' \
+        'https://api.test/x'
+    cmd: |-
+      curl -b ^"session=abc; theme=dark^" ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe -b 'session=abc; theme=dark' `
+        'https://api.test/x'
+    expected:
+      method: "GET"
+      url: "https://api.test/x"
+      headers:
+        - key: "Cookie"
+          value: "session=abc; theme=dark"
+  - name: "user agent"
+    bash: |-
+      curl -A 'Xenon/1.0' \
+        'https://api.test/x'
+    cmd: |-
+      curl -A ^"Xenon/1.0^" ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe -A 'Xenon/1.0' `
+        'https://api.test/x'
+    expected:
+      method: "GET"
+      url: "https://api.test/x"
+      headers:
+        - key: "User-Agent"
+          value: "Xenon/1.0"
+  - name: "referer"
+    bash: |-
+      curl -e 'https://ref.test' \
+        'https://api.test/x'
+    cmd: |-
+      curl -e ^"https://ref.test^" ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe -e 'https://ref.test' `
+        'https://api.test/x'
+    expected:
+      method: "GET"
+      url: "https://api.test/x"
+      headers:
+        - key: "Referer"
+          value: "https://ref.test"
+  - name: "json flag"
+    bash: |-
+      curl --json '{"b":2}' \
+        'https://api.test/x'
+    cmd: |-
+      curl --json ^"{\^"b\^":2}^" ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe --json '{"b":2}' `
+        'https://api.test/x'
+    expected:
+      method: "POST"
+      url: "https://api.test/x"
+      headers:
+        - key: "Content-Type"
+          value: "application/json"
+        - key: "Accept"
+          value: "application/json"
+      body:
+        mode: "raw"
+        raw: "{\"b\":2}"
+        language: "json"
+  - name: "insecure"
+    bash: |-
+      curl -k \
+        'https://self-signed.test'
+    cmd: |-
+      curl -k ^
+        ^"https://self-signed.test^"
+    powershell: |-
+      curl.exe -k `
+        'https://self-signed.test'
+    expected:
+      method: "GET"
+      url: "https://self-signed.test"
+      settings:
+        verifySsl: false
+  - name: "location"
+    bash: |-
+      curl -L \
+        'https://api.test/redirect'
+    cmd: |-
+      curl -L ^
+        ^"https://api.test/redirect^"
+    powershell: |-
+      curl.exe -L `
+        'https://api.test/redirect'
+    expected:
+      method: "GET"
+      url: "https://api.test/redirect"
+      settings:
+        followRedirects: true
+  - name: "compressed ignored"
+    bash: |-
+      curl --compressed \
+        'https://api.test/x'
+    cmd: |-
+      curl --compressed ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe --compressed `
+        'https://api.test/x'
+    expected:
+      method: "GET"
+      url: "https://api.test/x"
+  - name: "silent and verbose ignored"
+    bash: |-
+      curl -s \
+        -v \
+        -S \
+        'https://api.test/x'
+    cmd: |-
+      curl -s ^
+        -v ^
+        -S ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe -s `
+        -v `
+        -S `
+        'https://api.test/x'
+    expected:
+      method: "GET"
+      url: "https://api.test/x"
+  - name: "unknown flag listed"
+    bash: |-
+      curl --frobnicate \
+        'https://api.test/x'
+    cmd: |-
+      curl --frobnicate ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe --frobnicate `
+        'https://api.test/x'
+    expected:
+      method: "GET"
+      url: "https://api.test/x"
+      notices:
+        - "--frobnicate"
+  - name: "quotes inside"
+    bash: |-
+      curl 'https://api.test/x' \
+        -H 'X-Quote: it'\''s "quoted"'
+    cmd: |-
+      curl ^"https://api.test/x^" ^
+        -H ^"X-Quote: it's \^"quoted\^"^"
+    powershell: |-
+      curl.exe 'https://api.test/x' `
+        -H 'X-Quote: it''s "quoted"'
+    expected:
+      method: "GET"
+      url: "https://api.test/x"
+      headers:
+        - key: "X-Quote"
+          value: "it's \"quoted\""
+  - name: "query string kept"
+    bash: |-
+      curl 'https://api.test/x?a=1&b=two%20words'
+    cmd: |-
+      curl ^"https://api.test/x?a=1^&b=two^%20words^"
+    powershell: |-
+      curl.exe 'https://api.test/x?a=1&b=two%20words'
+    expected:
+      method: "GET"
+      url: "https://api.test/x?a=1&b=two%20words"
+  - name: "devtools style"
+    bash: |-
+      curl 'https://api.test/graphql' \
+        -H 'accept: */*' \
+        -H 'content-type: application/json' \
+        --data-raw '{"query":"{ me { id } }"}' \
+        --compressed
+    cmd: |-
+      curl ^"https://api.test/graphql^" ^
+        -H ^"accept: */*^" ^
+        -H ^"content-type: application/json^" ^
+        --data-raw ^"{\^"query\^":\^"{ me { id } }\^"}^" ^
+        --compressed
+    powershell: |-
+      curl.exe 'https://api.test/graphql' `
+        -H 'accept: */*' `
+        -H 'content-type: application/json' `
+        --data-raw '{"query":"{ me { id } }"}' `
+        --compressed
+    expected:
+      method: "POST"
+      url: "https://api.test/graphql"
+      headers:
+        - key: "accept"
+          value: "*/*"
+        - key: "content-type"
+          value: "application/json"
+      body:
+        mode: "raw"
+        raw: "{\"query\":\"{ me { id } }\"}"
+  - name: "variables kept"
+    bash: |-
+      curl '{{base_url}}/users/{{id}}' \
+        -H 'Authorization: Bearer {{token}}'
+    cmd: |-
+      curl ^"{{base_url}}/users/{{id}}^" ^
+        -H ^"Authorization: Bearer {{token}}^"
+    powershell: |-
+      curl.exe '{{base_url}}/users/{{id}}' `
+        -H 'Authorization: Bearer {{token}}'
+    expected:
+      method: "GET"
+      url: "{{base_url}}/users/{{id}}"
+      headers:
+        - key: "Authorization"
+          value: "Bearer {{token}}"

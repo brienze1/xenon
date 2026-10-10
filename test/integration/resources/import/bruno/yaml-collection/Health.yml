@@ -1,0 +1,19 @@
+info:
+  name: Health
+  type: http
+  seq: 3
+http:
+  method: PURGE
+  url: "{{base_url}}/health"
+  auth:
+    type: oauth2
+    grantType: client_credentials
+    accessTokenUrl: https://auth.acme.test/token
+    clientId: shop
+    clientSecret: "{{client_secret}}"
+    scope: read
+  body:
+    type: text
+    data: ping
+settings:
+  encodeUrl: false

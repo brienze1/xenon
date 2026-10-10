@@ -1,0 +1,35 @@
+meta {
+  name: Create product
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/products/:category
+  body: json
+  auth: bearer
+}
+
+params:path {
+  category: chairs
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "Chair",
+    "price": 9.5
+  }
+}
+
+vars:post-response {
+  productId: res.body.id
+}
+
+script:post-response {
+  bru.setVar("productId", res.body.id);
+  bru.sleep(100);
+}

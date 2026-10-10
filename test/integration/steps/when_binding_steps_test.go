@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/cucumber/godog"
@@ -17,7 +18,9 @@ func (t *testUtils) registerWhenBindingSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^I call "(\w+)\.(\w+)"$`, t.iCall)
 	ctx.When(`^I call "(\w+)\.(\w+)" (\d+) times cycling through the payloads$`, t.iCallTimesCyclingThroughThePayloads)
 	ctx.When(`^I call "(\w+)\.(\w+)" and cancel it after (\d+)ms with$`, t.iCallAndCancelItAfterWith)
+	ctx.When(`^I call "(\w+)\.(\w+)" already cancelled with$`, t.iCallAlreadyCancelledWith)
 	ctx.Step(`^I save the response field "([^"]*)" as "([^"]*)"$`, t.iSaveTheResponseFieldAs)
+	ctx.Step(`^I save every "([^"]*)" found in the response as "([^"]*)"$`, t.iSaveEveryFoundInTheResponseAs)
 }
 
 func (t *testUtils) iCallWith(service, method string, payload *godog.DocString) error {
@@ -33,6 +36,12 @@ func (t *testUtils) iCallAndCancelItAfterWith(service, method string, millisecon
 	timer := time.AfterFunc(time.Duration(milliseconds)*time.Millisecond, cancel)
 	defer timer.Stop()
 	defer cancel()
+	return t.call(ctx, service, method, payload.Content)
+}
+
+func (t *testUtils) iCallAlreadyCancelledWith(service, method string, payload *godog.DocString) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
 	return t.call(ctx, service, method, payload.Content)
 }
 
@@ -59,6 +68,33 @@ func (t *testUtils) iSaveTheResponseFieldAs(path, name string) error {
 	}
 	t.vars[name] = stringify(value)
 	return nil
+}
+
+func (t *testUtils) iSaveEveryFoundInTheResponseAs(key, name string) error {
+	data, err := decodeJson(t.response)
+	if err != nil {
+		return err
+	}
+	t.vars[name] = strings.Join(collectValues(data, key), ",")
+	return nil
+}
+
+func collectValues(data any, key string) []string {
+	values := make([]string, 0)
+	switch node := data.(type) {
+	case map[string]any:
+		for field, value := range node {
+			if field == key {
+				values = append(values, stringify(value))
+			}
+			values = append(values, collectValues(value, key)...)
+		}
+	case []any:
+		for _, item := range node {
+			values = append(values, collectValues(item, key)...)
+		}
+	}
+	return values
 }
 
 func (t *testUtils) call(ctx context.Context, service, method, payload string) error {
