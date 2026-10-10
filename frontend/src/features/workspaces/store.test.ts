@@ -139,6 +139,18 @@ describe('workspaces store', () => {
     expect(store()).toMatchObject({ workspaces: [acme, globex], activeLocalId: 'G' })
   })
 
+  it('adds a workspace without switching to it', async () => {
+    useWorkspacesStore.setState({ workspaces: [acme], activeLocalId: 'A' })
+    vi.mocked(services.createWorkspace).mockResolvedValue(globex)
+    await expect(store().add('Globex', '/w/globex')).resolves.toEqual(globex)
+    expect(services.activateWorkspace).not.toHaveBeenCalled()
+    expect(store()).toMatchObject({ workspaces: [acme, globex], activeLocalId: 'A' })
+    vi.mocked(services.createWorkspace).mockRejectedValue(new AppError('WKS-01409', 'not empty'))
+    await expect(store().add('Initech', '/w/full')).resolves.toBeNull()
+    expect(store().error?.code).toBe('WKS-01409')
+    expect(store().workspaces).toEqual([acme, globex])
+  })
+
   it('reports a refused creation', async () => {
     vi.mocked(services.createWorkspace).mockRejectedValue(new AppError('WKS-01409', 'not empty'))
     await expect(store().create('Acme', '/w/full')).resolves.toBe(false)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clashLabel, countsLabel, sourceLabel } from './labels'
+import { clashLabel, countsLabel, itemKindLabel, sourceLabel } from './labels'
 
 describe('import labels', () => {
   it('names the source with its version', () => {
@@ -20,5 +20,11 @@ describe('import labels', () => {
 
   it('describes a clash', () => {
     expect(clashLabel('request', 'Health')).toBe('A request named “Health” already exists')
+  })
+
+  it('names the kind of each item', () => {
+    expect(itemKindLabel('environment')).toBe('Environment')
+    expect(itemKindLabel('globals')).toBe('Globals')
+    expect(itemKindLabel('other')).toBe('other')
   })
 })

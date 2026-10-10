@@ -34,6 +34,8 @@ interface WorkspacesState {
   setLayout: (patch: Partial<LayoutState>) => void
   load: () => Promise<void>
   create: (name: string, path: string) => Promise<boolean>
+  /** Creates a workspace without switching to it (used while planning an import). */
+  add: (name: string, path: string) => Promise<WorkspaceSummary | null>
   open: (path: string) => Promise<boolean>
   activate: (localId: string) => Promise<void>
   rename: (localId: string, name: string) => Promise<boolean>
@@ -96,6 +98,14 @@ export const useWorkspacesStore = create<WorkspacesState>()((set, get) => {
       set((state) => ({ workspaces: [...state.workspaces, summary] }))
       await get().activate(summary.localId)
       return true
+    },
+
+    add: async (name, path) => {
+      const summary = await attempt(() => createWorkspace({ name, path }))
+      if (summary !== null) {
+        set((state) => ({ workspaces: [...state.workspaces, summary] }))
+      }
+      return summary
     },
 
     open: async (path) => {

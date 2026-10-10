@@ -20,6 +20,17 @@ const COUNT_LABELS: ReadonlyArray<[keyof ImportCounts, string, string]> = [
   ['environments', 'environment', 'environments'],
 ]
 
+const ITEM_KIND_LABELS: Readonly<Record<string, string>> = {
+  collection: 'Collection',
+  environment: 'Environment',
+  globals: 'Globals',
+  request: 'Request',
+}
+
+export function itemKindLabel(kind: string): string {
+  return ITEM_KIND_LABELS[kind] ?? kind
+}
+
 export function sourceLabel(kind: string, version: string): string {
   const label = KIND_LABELS[kind] ?? kind
   return version ? `${label} v${version}` : label

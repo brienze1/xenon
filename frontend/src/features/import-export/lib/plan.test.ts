@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ImportPreview } from '@/platform/mappers/import'
 import type { TreeNode } from '@/platform/mappers/tree'
-import { buildPlan, containerLocations, defaultTargets, hasIncludedItems, pendingClashes } from './plan'
+import { assignIncluded, buildPlan, containerLocations, defaultTargets, hasIncludedItems, pendingClashes, skippedParts } from './plan'
 
 const counts = { collections: 1, folders: 0, requests: 1, examples: 0, variables: 0, scripts: 0, environments: 0 }
 const preview: ImportPreview = {
@@ -53,5 +53,16 @@ describe('import plan helpers', () => {
       { id: 'C', label: 'Main' },
       { id: 'F', label: 'Main / Target' },
     ])
+  })
+
+  it('assigns every included item to one workspace as a new collection', () => {
+    const targets = { '0': { include: true, localId: 'L', parentId: 'F' }, '1': { include: false, localId: 'M', parentId: 'G' } }
+    expect(assignIncluded(targets, 'N')).toEqual({ '0': { include: true, localId: 'N', parentId: '' }, '1': { include: false, localId: 'M', parentId: 'G' } })
+  })
+
+  it('picks the skipped parts out of the source warnings', () => {
+    const skipped = { code: 'skipped_part', severity: 'warning' as const, message: 'mock skipped', itemKey: '', itemId: '', localId: '', path: 'mock', location: '' }
+    const other = { ...skipped, code: 'missing_file', path: 'x' }
+    expect(skippedParts({ ...preview, warnings: [other, skipped] })).toEqual([skipped])
   })
 })

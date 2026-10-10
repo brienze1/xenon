@@ -7,8 +7,8 @@ import type { ImportProgress } from '@/platform/events'
 import type { ClashResolution, ImportClash, ImportPreview, ImportResult } from '@/platform/mappers/import'
 import { detectImport, discardImport, findImportClashes, pickImportSources, runImport, type ImportInput, type PendingImport } from '@/platform/services/import'
 import { getTree } from '@/platform/services/tree'
-import { buildPlan, containerLocations, defaultTargets, pendingClashes } from './lib/plan'
-import type { ImportLocation, ImportProgressState, ImportStep, ImportTarget } from './model'
+import { assignIncluded, buildPlan, containerLocations, defaultTargets, pendingClashes } from './lib/plan'
+import { ALL_INCLUDED, type ImportLocation, type ImportProgressState, type ImportStep, type ImportTarget } from './model'
 
 interface ImportState {
   step: ImportStep
@@ -21,6 +21,7 @@ interface ImportState {
   progress: ImportProgressState | null
   result: ImportResult | null
   error: AppError | null
+  newWorkspaceFor: string | null
   open: () => void
   close: () => void
   back: () => void
@@ -28,6 +29,10 @@ interface ImportState {
   detect: (input: ImportInput) => Promise<void>
   setTarget: (key: string, patch: Partial<ImportTarget>) => void
   loadLocations: (localId: string) => Promise<void>
+  assignIncluded: (localId: string) => void
+  startNewWorkspace: (forKey: string) => void
+  cancelNewWorkspace: () => void
+  createWorkspace: (name: string, path: string) => Promise<boolean>
   start: () => Promise<void>
   resolve: (resolution: ClashResolution, applyToAll: boolean) => Promise<void>
   cancel: () => void
@@ -49,6 +54,7 @@ const initialState = {
   progress: null as ImportProgressState | null,
   result: null as ImportResult | null,
   error: null as AppError | null,
+  newWorkspaceFor: null as string | null,
 }
 
 function discard(preview: ImportPreview | null): void {
@@ -146,6 +152,33 @@ export const useImportStore = create<ImportState>()((set, get) => {
       } catch (error) {
         set({ error: toAppError(error) })
       }
+    },
+
+    assignIncluded: (localId) => {
+      set((state) => ({ targets: assignIncluded(state.targets, localId) }))
+      void get().loadLocations(localId)
+    },
+
+    startNewWorkspace: (forKey) => {
+      useWorkspacesStore.getState().clearError()
+      set({ newWorkspaceFor: forKey })
+    },
+
+    cancelNewWorkspace: () => set({ newWorkspaceFor: null }),
+
+    createWorkspace: async (name, path) => {
+      const forKey = get().newWorkspaceFor
+      const created = await useWorkspacesStore.getState().add(name, path)
+      if (created === null) {
+        return false
+      }
+      set({ newWorkspaceFor: null })
+      if (forKey === ALL_INCLUDED) {
+        get().assignIncluded(created.localId)
+      } else if (forKey !== null) {
+        get().setTarget(forKey, { localId: created.localId })
+      }
+      return true
     },
 
     start: async () => {

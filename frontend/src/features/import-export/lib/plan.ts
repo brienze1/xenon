@@ -1,8 +1,9 @@
-import type { ClashResolution, ImportClash, ImportPlan, ImportPreview } from '@/platform/mappers/import'
+import type { ClashResolution, ImportClash, ImportPlan, ImportPreview, ImportWarning } from '@/platform/mappers/import'
 import type { TreeNode } from '@/platform/mappers/tree'
 import type { ImportLocation, ImportTarget } from '@/features/import-export/model'
 
 const PATH_SEPARATOR = ' / '
+const SKIPPED_PART = 'skipped_part'
 
 export function defaultTargets(preview: ImportPreview, localId: string): Record<string, ImportTarget> {
   return Object.fromEntries(preview.items.map((item) => [item.key, { include: true, localId, parentId: '' }]))
@@ -45,4 +46,14 @@ export function containerLocations(nodes: readonly TreeNode[], parentLabel = '')
 
 export function hasIncludedItems(targets: Readonly<Record<string, ImportTarget>>): boolean {
   return Object.values(targets).some((target) => target.include)
+}
+
+export function assignIncluded(targets: Readonly<Record<string, ImportTarget>>, localId: string): Record<string, ImportTarget> {
+  return Object.fromEntries(
+    Object.entries(targets).map(([key, target]) => [key, target.include ? { ...target, localId, parentId: '' } : target]),
+  )
+}
+
+export function skippedParts(preview: ImportPreview): ImportWarning[] {
+  return preview.warnings.filter((warning) => warning.code === SKIPPED_PART)
 }

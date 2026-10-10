@@ -1,15 +1,22 @@
-import { useShallow } from 'zustand/react/shallow'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { useImportStore } from '@/features/import-export/store'
 import { countsLabel, sourceLabel } from '@/features/import-export/lib/labels'
 import { hasIncludedItems } from '@/features/import-export/lib/plan'
-import { useWorkspacesStore } from '@/features/workspaces/store'
-import type { ImportPreviewItem } from '@/platform/mappers/import'
+import type { ImportPreview, ImportPreviewItem } from '@/platform/mappers/import'
+import { DumpAssignment } from './DumpAssignment'
 import { ImportErrorBanner } from './ImportErrorBanner'
+import { NewWorkspaceForm } from './NewWorkspaceForm'
+import { WorkspacePicker } from './WorkspacePicker'
 import styles from './ImportDialog.module.css'
 
 const NEW_COLLECTION = ''
+const DUMP_KIND = 'postman_dump'
+
+const VARIABLES_PLACES: Readonly<Record<string, string>> = {
+  environment: 'Environments',
+  globals: 'Workspace globals',
+}
 
 const TABLE_HEAD = (
   <thead>
@@ -30,7 +37,6 @@ function ItemRow({ item }: ItemRowProps) {
   const target = useImportStore((state) => state.targets[item.key])
   const locations = useImportStore((state) => (target ? state.locations[target.localId] : undefined))
   const setTarget = useImportStore((state) => state.setTarget)
-  const workspaces = useWorkspacesStore(useShallow((state) => state.workspaces.filter((workspace) => !workspace.missing)))
   if (!target) {
     return null
   }
@@ -56,39 +62,57 @@ function ItemRow({ item }: ItemRowProps) {
         </span>
       </td>
       <td>
-        <select
-          name={`workspace-${item.key}`}
-          aria-label={`Workspace for ${item.name}`}
-          className={styles.select}
+        <WorkspacePicker
+          forKey={item.key}
+          label={`Workspace for ${item.name}`}
           value={target.localId}
           disabled={!target.include}
-          onChange={(event) => setTarget(item.key, { localId: event.target.value })}
-        >
-          {workspaces.map((workspace) => (
-            <option key={workspace.localId} value={workspace.localId} translate="no">
-              {workspace.name}
-            </option>
-          ))}
-        </select>
+          onChange={(localId) => setTarget(item.key, { localId })}
+        />
       </td>
       <td>
-        <select
-          name={`location-${item.key}`}
-          aria-label={`Location for ${item.name}`}
-          className={styles.select}
-          value={target.parentId}
-          disabled={!target.include}
-          onChange={(event) => setTarget(item.key, { parentId: event.target.value })}
-        >
-          <option value={NEW_COLLECTION}>New collection</option>
-          {(locations ?? []).map((location) => (
-            <option key={location.id} value={location.id} translate="no">
-              Into {location.label}
-            </option>
-          ))}
-        </select>
+        {VARIABLES_PLACES[item.kind] ? (
+          <span className={styles.muted}>{VARIABLES_PLACES[item.kind]}</span>
+        ) : (
+          <select
+            name={`location-${item.key}`}
+            aria-label={`Location for ${item.name}`}
+            className={styles.select}
+            value={target.parentId}
+            disabled={!target.include}
+            onChange={(event) => setTarget(item.key, { parentId: event.target.value })}
+          >
+            <option value={NEW_COLLECTION}>New collection</option>
+            {(locations ?? []).map((location) => (
+              <option key={location.id} value={location.id} translate="no">
+                Into {location.label}
+              </option>
+            ))}
+          </select>
+        )}
       </td>
     </tr>
+  )
+}
+
+interface ItemTableProps {
+  preview: ImportPreview
+}
+
+function ItemTable({ preview }: ItemTableProps) {
+  const newWorkspaceFor = useImportStore((state) => state.newWorkspaceFor)
+  return (
+    <>
+      {newWorkspaceFor !== null ? <NewWorkspaceForm /> : null}
+      <table className={styles.table}>
+        {TABLE_HEAD}
+        <tbody>
+          {preview.items.map((item) => (
+            <ItemRow key={item.key} item={item} />
+          ))}
+        </tbody>
+      </table>
+    </>
   )
 }
 
@@ -105,18 +129,9 @@ export function ImportPreviewStep() {
     <>
       <Dialog.Body>
         <p className={styles.source}>{sourceLabel(preview.kind, preview.version)}</p>
-        {preview.items.length > 0 ? (
-          <table className={styles.table}>
-            {TABLE_HEAD}
-            <tbody>
-              {preview.items.map((item) => (
-                <ItemRow key={item.key} item={item} />
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p className={styles.status}>Importing this kind of source arrives in a later update.</p>
-        )}
+        {preview.kind === DUMP_KIND ? <DumpAssignment preview={preview} /> : null}
+        {preview.kind !== DUMP_KIND && preview.items.length > 0 ? <ItemTable preview={preview} /> : null}
+        {preview.items.length === 0 ? <p className={styles.status}>Importing this kind of source arrives in a later update.</p> : null}
         <ImportErrorBanner />
       </Dialog.Body>
       <Dialog.Actions>
