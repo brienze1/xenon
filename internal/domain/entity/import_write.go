@@ -9,6 +9,7 @@ type ImportWrite struct {
 	KeptVariables  []VariableRow
 	AddedVariables int
 	Merge          bool
+	Wrapped        bool
 }
 
 func (i ImportWrite) IsEmpty() bool {

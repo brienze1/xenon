@@ -217,7 +217,7 @@ func writeNewDocument(path string, fields []yamlnode.Field) error {
 	if err != nil {
 		return errs.InternalServerError(err, "IMP-31500", "the imported item could not be encoded")
 	}
-	if err := fileutils.WriteFileAtomic(path, data, workspaceFileMode); err != nil {
+	if err := os.WriteFile(path, data, workspaceFileMode); err != nil {
 		return errs.FileError(err, "IMP-32500")
 	}
 	return nil

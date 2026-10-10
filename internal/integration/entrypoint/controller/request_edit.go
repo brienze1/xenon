@@ -92,6 +92,34 @@ func (r *requestEdit) ParseBulk(bindingCtx context.Context, request dto.BulkText
 	return &result, nil
 }
 
+func (r *requestEdit) ParseCurl(bindingCtx context.Context, request dto.CurlText) (response *dto.ParsedCurl, err error) {
+	ctx := logger.GetContext(bindingCtx)
+	logger.Info(ctx, "Started", request)
+
+	defer func(ctx context.Context, request any) {
+		if recovered := recover(); recovered != nil {
+			err = handlePanic(ctx, request, recovered)
+		}
+		if err != nil {
+			response, err = nil, r.errorHandler.Handle(ctx, err, request)
+		}
+	}(ctx, request)
+
+	err = validator.CustomValidator().Struct("REQ-18400", &request)
+	if err != nil {
+		return nil, err
+	}
+
+	parsed, err := r.editRequestService.ParseCurl(ctx, request.Text)
+	if err != nil {
+		return nil, err
+	}
+	result := dto.NewParsedCurl(*parsed)
+
+	logger.Info(ctx, "Finished", result)
+	return &result, nil
+}
+
 func (r *requestEdit) FormatBulk(bindingCtx context.Context, request dto.BulkRows) (response *dto.BulkText, err error) {
 	ctx := logger.GetContext(bindingCtx)
 	logger.Info(ctx, "Started", request)

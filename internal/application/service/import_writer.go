@@ -2,11 +2,14 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums"
 )
+
+const importHeartbeatInterval = 200 * time.Millisecond
 
 type importWriter struct {
 	stageImportItem       usecase.StageImportItem
@@ -20,14 +23,39 @@ type importWriter struct {
 func (w importWriter) write(ctx context.Context, sourceId string, plan entity.ImportPlan, targets []importTarget) entity.ImportResult {
 	result := entity.NewImportResult()
 	for index, target := range targets {
-		_ = w.publishImportProgress.Progress(ctx, entity.ImportProgress{SourceID: sourceId, Done: index, Total: len(targets), CurrentItem: target.item.Name})
+		progress := entity.ImportProgress{SourceID: sourceId, Done: index, Total: len(targets), CurrentItem: target.item.Name}
+		_ = w.publishImportProgress.Progress(ctx, progress)
+		stop := w.heartbeat(ctx, progress)
 		result = result.WithOutcome(w.importOne(ctx, sourceId, target, plan.ResolutionFor(target.planned)))
+		stop()
 	}
 	_ = w.publishImportProgress.Progress(ctx, entity.ImportProgress{SourceID: sourceId, Done: len(targets), Total: len(targets)})
 	for _, localId := range result.LocalIDs() {
 		_ = w.publishWorkspaceEvent.TreeChanged(ctx, localId)
 	}
 	return result
+}
+
+func (w importWriter) heartbeat(ctx context.Context, progress entity.ImportProgress) func() {
+	ticker := time.NewTicker(importHeartbeatInterval)
+	stopped := make(chan struct{})
+	finished := make(chan struct{})
+	go func() {
+		defer close(finished)
+		for {
+			select {
+			case <-stopped:
+				return
+			case <-ticker.C:
+				_ = w.publishImportProgress.Progress(ctx, progress)
+			}
+		}
+	}()
+	return func() {
+		ticker.Stop()
+		close(stopped)
+		<-finished
+	}
 }
 
 func (w importWriter) importOne(ctx context.Context, sourceId string, target importTarget, resolution enums.ClashResolution) entity.ImportOutcome {

@@ -177,7 +177,7 @@ Feature: Import a cURL command
       """
     Then the call should succeed
     And the response should contain the field "request.url" equal to "https://api.test/one"
-    And the response should contain the field "notices" with the items "Ignored the extra URL https://api.test/two, Ignored unknown option --frobnicate"
+    And the response should contain the field "notices" with the items "Ignored unknown option --frobnicate, Ignored the extra URL https://api.test/two"
 
   @refused
   Scenario Outline: Text that is not a usable cURL command is refused - <case>

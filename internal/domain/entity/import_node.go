@@ -115,11 +115,30 @@ func (i ImportNode) Scripts(parentPath string) []ScriptRef {
 }
 
 func (i ImportNode) PlacedInto(parent Collection) ImportPlacement {
+	if i.IsRequest() {
+		return ImportPlacement{Parent: &parent, Nodes: []ImportNode{i}}
+	}
 	if parent.HasOwnSettings() {
-		return ImportPlacement{Parent: &parent, Nodes: []ImportNode{i.AsFolder()}}
+		return ImportPlacement{Parent: &parent, Nodes: []ImportNode{i.AsFolder()}, Wrapped: true}
 	}
 	merged := parent.WithImportedSettings(i.Container)
 	return ImportPlacement{Parent: &merged, Nodes: i.Children, Merge: true}
+}
+
+func (i ImportNode) WithScripts(scripts map[string]Scripts) ImportNode {
+	if translated, found := scripts[i.ID()]; found && i.IsRequest() {
+		request := *i.Request
+		request.Scripts = translated
+		i.Request = &request
+	} else if found {
+		i.Container.Scripts = translated
+	}
+	children := make([]ImportNode, 0, len(i.Children))
+	for _, child := range i.Children {
+		children = append(children, child.WithScripts(scripts))
+	}
+	i.Children = children
+	return i
 }
 
 func (i ImportNode) IDs() []string {

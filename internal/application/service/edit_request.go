@@ -12,13 +12,15 @@ import (
 type editRequest struct {
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry
 	findTreeItem          usecase.FindTreeItem
+	readCurlCommand       usecase.ReadCurlCommand
 }
 
 func NewEditRequestService(
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry,
 	findTreeItem usecase.FindTreeItem,
+	readCurlCommand usecase.ReadCurlCommand,
 ) adapter.EditRequestService {
-	return &editRequest{findWorkspaceRegistry: findWorkspaceRegistry, findTreeItem: findTreeItem}
+	return &editRequest{findWorkspaceRegistry: findWorkspaceRegistry, findTreeItem: findTreeItem, readCurlCommand: readCurlCommand}
 }
 
 func (e *editRequest) ApplyUrl(ctx context.Context, request entity.Request) entity.Request {
@@ -46,6 +48,19 @@ func (e *editRequest) ParseBulk(ctx context.Context, text string) []entity.KeyVa
 
 	logger.Info(ctx, "Finished", map[string]any{"textLength": len(text), "result": entity.KeyValues(rows)})
 	return rows
+}
+
+func (e *editRequest) ParseCurl(ctx context.Context, text string) (*entity.ParsedCurl, error) {
+	logger.Info(ctx, "Started", map[string]any{"textLength": len(text)})
+
+	parsed, err := e.readCurlCommand.ReadCommand(ctx, text)
+	if err != nil {
+		return nil, err
+	}
+	parsed.Request = usecase.DeriveParamsFromUrl(parsed.Request)
+
+	logger.Info(ctx, "Finished", map[string]any{"textLength": len(text), "result": *parsed})
+	return parsed, nil
 }
 
 func (e *editRequest) FormatBulk(ctx context.Context, rows []entity.KeyValue) string {

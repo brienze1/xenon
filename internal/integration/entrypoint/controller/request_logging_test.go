@@ -52,6 +52,12 @@ func (echoEditService) ApplyParams(_ context.Context, request entity.Request) en
 func (echoEditService) ParseBulk(_ context.Context, text string) []entity.KeyValue {
 	return []entity.KeyValue{entity.NewKeyValue("Authorization", text)}
 }
+func (echoEditService) ParseCurl(_ context.Context, text string) (*entity.ParsedCurl, error) {
+	request := entity.NewRequest("", "")
+	request.URL = "https://api.example.test/me"
+	request.Headers = []entity.KeyValue{entity.NewKeyValue("Authorization", text)}
+	return &entity.ParsedCurl{Request: request, Notices: []string{}}, nil
+}
 func (echoEditService) FormatBulk(_ context.Context, rows []entity.KeyValue) string {
 	return rows[0].Value
 }
@@ -117,6 +123,9 @@ func TestRequestControllersNeverLogSecrets(t *testing.T) {
 	}
 	if text, err := edit.FormatBulk(ctx, dto.BulkRows{Rows: []dto.KeyValue{{Key: "Authorization", Value: secretToken}}}); err != nil || text.Text != secretToken {
 		t.Fatalf("format bulk = %+v %v", text, err)
+	}
+	if parsed, err := edit.ParseCurl(ctx, dto.CurlText{Text: secretToken}); err != nil || parsed.Request.Headers[0].Value != secretToken {
+		t.Fatalf("parse curl = %+v %v", parsed, err)
 	}
 	if last, err := response.LastResult(ctx, dto.NewTabReference("tab")); err != nil || *last.InlineBody != secretToken {
 		t.Fatalf("last result = %+v %v", last, err)

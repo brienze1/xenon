@@ -9,6 +9,7 @@ type ImportPlanItem struct {
 	Key            string
 	TargetLocalID  string
 	TargetParentID string
+	Name           string
 	Resolution     enums.ClashResolution
 	Include        bool
 }

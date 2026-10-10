@@ -47,6 +47,10 @@ func (i importTargets) target(ctx context.Context, source entity.ImportSource, p
 	if !found {
 		return nil, errs.NotFoundError("the import source has no item "+planned.Key, "IMP-16404")
 	}
+	if item.IsRequest() && !planned.IsIntoParent() {
+		return nil, errs.BadRequestError("A request must be imported into a collection or folder", "IMP-35400")
+	}
+	item = item.Named(planned.Name)
 	workspace, err := i.findWorkspaceRegistry.FindWorkspace(ctx, planned.TargetLocalID)
 	if err != nil {
 		return nil, err

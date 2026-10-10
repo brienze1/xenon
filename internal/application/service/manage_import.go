@@ -32,6 +32,8 @@ func NewManageImportService(
 	readPostmanCollection usecase.ReadPostmanCollection,
 	readPostmanEnvironment usecase.ReadPostmanEnvironment,
 	readPostmanDump usecase.ReadPostmanDump,
+	readBrunoCollection usecase.ReadBrunoCollection,
+	readCurlCommand usecase.ReadCurlCommand,
 	pickPath usecase.PickPath,
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry,
 	loadTree usecase.LoadTree,
@@ -65,6 +67,8 @@ func NewManageImportService(
 			readPostmanCollection:  readPostmanCollection,
 			readPostmanEnvironment: readPostmanEnvironment,
 			readPostmanDump:        readPostmanDump,
+			readBrunoCollection:    readBrunoCollection,
+			readCurlCommand:        readCurlCommand,
 		},
 		targets: importTargets{
 			findWorkspaceRegistry: findWorkspaceRegistry,

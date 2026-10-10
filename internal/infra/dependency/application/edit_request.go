@@ -17,6 +17,7 @@ func GetEditRequestService() adapter.EditRequestService {
 			editRequestInstance = service.NewEditRequestService(
 				integration.GetRegistryPersistence(),
 				integration.GetTreePersistence(),
+				integration.GetCurlWebservice(),
 			)
 		})
 	}

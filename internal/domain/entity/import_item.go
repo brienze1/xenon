@@ -2,6 +2,7 @@ package entity
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/importitemkind"
@@ -26,6 +27,25 @@ func NewImportItem(key string, kind enums.ImportItemKind, root ImportNode, warni
 
 func NewVariablesImportItem(key string, kind enums.ImportItemKind, variables ImportVariables) ImportItem {
 	return ImportItem{Key: key, Kind: kind, Name: variables.Environment.Name, Variables: &variables, Warnings: []ImportWarning{}, PmUsages: []PmUsage{}}
+}
+
+func (i ImportItem) Named(name string) ImportItem {
+	if strings.TrimSpace(name) == "" {
+		return i
+	}
+	if i.IsVariables() {
+		variables := *i.Variables
+		variables.Environment.Name = strings.TrimSpace(name)
+		i.Variables = &variables
+	} else {
+		i.Root = i.Root.Renamed(strings.TrimSpace(name))
+	}
+	i.Name = strings.TrimSpace(name)
+	return i
+}
+
+func (i ImportItem) IsRequest() bool {
+	return i.Kind == importitemkind.Request
 }
 
 func (i ImportItem) IsVariables() bool {
@@ -119,7 +139,7 @@ func (i ImportItem) placementWarnings(write ImportWrite, location ImportLocation
 	if write.Merge {
 		message := "The collection's items were added to " + location.ParentPath + ", which now uses its auth, headers and scripts"
 		warnings = append(warnings, NewImportWarning(warningcode.MergedIntoFolder, message, move.ToID, move.ToPath))
-	} else if write.Parent != nil {
+	} else if write.Wrapped {
 		message := location.ParentPath + " has auth, headers or scripts of its own, so the items were placed in the new folder " + lastPathSegment(move.ToPath)
 		warnings = append(warnings, NewImportWarning(warningcode.WrappedInFolder, message, move.ToID, move.ToPath))
 	}

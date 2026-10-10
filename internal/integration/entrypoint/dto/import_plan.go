@@ -9,6 +9,7 @@ type ImportPlanItem struct {
 	Key            string `json:"key" validate:"required,not_blank"`
 	TargetLocalId  string `json:"target_local_id" validate:"required_if=Include true"`
 	TargetParentId string `json:"target_parent_id"`
+	Name           string `json:"name" validate:"max=200"`
 	Resolution     string `json:"resolution" validate:"omitempty,oneof=replace keep_both skip"`
 	Include        bool   `json:"include"`
 }
@@ -26,6 +27,7 @@ func (i *ImportPlan) ToEntity() entity.ImportPlan {
 			Key:            item.Key,
 			TargetLocalID:  item.TargetLocalId,
 			TargetParentID: item.TargetParentId,
+			Name:           item.Name,
 			Resolution:     clashresolution.GetClashResolution(item.Resolution),
 			Include:        item.Include,
 		})

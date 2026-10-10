@@ -14,7 +14,7 @@ func PlanImportWrite(placement entity.ImportPlacement, siblings entity.TreeNode,
 	}
 	named := NameImportFiles(placement.Nodes, siblings.EntriesWithout(replacedFiles))
 	replacements, appended := importedFileNames(named, replaced)
-	write := entity.ImportWrite{Nodes: named, Replaced: replaced, Order: siblings.OrderImporting(replacements, appended), Merge: placement.Merge}
+	write := entity.ImportWrite{Nodes: named, Replaced: replaced, Order: siblings.OrderImporting(replacements, appended), Merge: placement.Merge, Wrapped: placement.Wrapped}
 	if placement.Parent != nil {
 		parent := placement.Parent.WithOrder(write.Order)
 		write.Parent = &parent

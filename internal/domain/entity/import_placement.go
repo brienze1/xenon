@@ -1,9 +1,10 @@
 package entity
 
 type ImportPlacement struct {
-	Parent *Collection
-	Nodes  []ImportNode
-	Merge  bool
+	Parent  *Collection
+	Nodes   []ImportNode
+	Merge   bool
+	Wrapped bool
 }
 
 func NewTopLevelPlacement(root ImportNode) ImportPlacement {

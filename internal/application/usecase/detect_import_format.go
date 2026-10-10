@@ -14,6 +14,8 @@ import (
 
 const (
 	curlPrefix           = "curl "
+	curlExePrefix        = "curl.exe "
+	brunoFileExtension   = ".bru"
 	postmanV21Marker     = "/collection/v2.1"
 	postmanV20Marker     = "/collection/v2.0"
 	postmanV1Marker      = "/collection/v1"
@@ -27,10 +29,13 @@ const (
 	unsupportedFormatMsg = " is not a Postman, Bruno or cURL export"
 )
 
-var openCollectionMarkers = []string{"opencollection.yml", "opencollection.yaml"}
+var (
+	openCollectionMarkers = []string{"opencollection.yml", "opencollection.yaml"}
+	yamlFileExtensions    = []string{".yml", ".yaml"}
+)
 
 func DetectImportFormat(probe entity.ImportProbe) (enums.ImportKind, string, error) {
-	if probe.IsPasted && strings.HasPrefix(strings.ToLower(strings.TrimSpace(probe.Text)), curlPrefix) {
+	if probe.IsPasted && IsCurlCommand(probe.Text) {
 		return importkind.Curl, "", nil
 	}
 	if probe.IsFolder {
@@ -52,10 +57,12 @@ func detectFolder(probe entity.ImportProbe) (enums.ImportKind, string, error) {
 	topLevel := topLevelEntries(probe.Entries)
 	hasBruno := slices.Contains(topLevel, brunoMarker)
 	hasOpenCollection := slices.ContainsFunc(openCollectionMarkers, func(marker string) bool { return slices.Contains(topLevel, marker) })
+	mixesBruno := hasBruno && (hasOpenCollection || hasEntryWithExtension(probe.Entries, yamlFileExtensions...))
+	mixesYaml := hasOpenCollection && hasEntryWithExtension(probe.Entries, brunoFileExtension)
 	switch {
 	case slices.Contains(topLevel, dumpMarker):
 		return importkind.PostmanDump, "", nil
-	case hasBruno && hasOpenCollection:
+	case mixesBruno || mixesYaml:
 		return "", "", errs.ClientError(probe.Name+" mixes Bruno .bru and YAML files", "IMP-00415", http.StatusUnsupportedMediaType)
 	case hasBruno:
 		return importkind.BrunoBru, "", nil
@@ -101,4 +108,22 @@ func postmanV3Error() error {
 
 func unsupportedFormatError(name string) error {
 	return errs.ClientError(name+unsupportedFormatMsg, "IMP-00415", http.StatusUnsupportedMediaType)
+}
+
+func IsCurlCommand(text string) bool {
+	command := strings.ToLower(strings.TrimSpace(text))
+	return strings.HasPrefix(command, curlPrefix) || strings.HasPrefix(command, curlExePrefix)
+}
+
+func hasEntryWithExtension(entries []string, extensions ...string) bool {
+	for _, entry := range entries {
+		if !isHiddenEntry(entry) && slices.Contains(extensions, strings.ToLower(path.Ext(entry))) {
+			return true
+		}
+	}
+	return false
+}
+
+func isHiddenEntry(entry string) bool {
+	return slices.ContainsFunc(strings.Split(entry, "/"), func(segment string) bool { return strings.HasPrefix(segment, ".") })
 }

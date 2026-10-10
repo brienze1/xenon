@@ -49,6 +49,10 @@ func (r *RequestService) ParseBulk(ctx context.Context, request dto.BulkText) (*
 	return r.edit.ParseBulk(ctx, request)
 }
 
+func (r *RequestService) ParseCurl(ctx context.Context, request dto.CurlText) (*dto.ParsedCurl, error) {
+	return r.edit.ParseCurl(ctx, request)
+}
+
 func (r *RequestService) FormatBulk(ctx context.Context, request dto.BulkRows) (*dto.BulkText, error) {
 	return r.edit.FormatBulk(ctx, request)
 }

@@ -9,12 +9,15 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/importitemkind"
 	"github.com/brienze1/xenon/internal/domain/enums/importkind"
+	"github.com/brienze1/xenon/pkg/idutils"
 )
 
 type importReaders struct {
 	readPostmanCollection  usecase.ReadPostmanCollection
 	readPostmanEnvironment usecase.ReadPostmanEnvironment
 	readPostmanDump        usecase.ReadPostmanDump
+	readBrunoCollection    usecase.ReadBrunoCollection
+	readCurlCommand        usecase.ReadCurlCommand
 }
 
 type importRead struct {
@@ -32,8 +35,10 @@ func (i importReaders) read(ctx context.Context, input entity.ImportInput, read 
 		return i.variables(ctx, input.Document(), importitemkind.Globals, read)
 	case importkind.PostmanDump:
 		return i.dump(ctx, input, read)
+	case importkind.BrunoBru, importkind.BrunoYaml:
+		return i.bruno(ctx, input, read)
 	default:
-		return nil
+		return i.curl(ctx, input, read)
 	}
 }
 
@@ -42,9 +47,32 @@ func (i importReaders) collection(ctx context.Context, document entity.ImportDoc
 	if err != nil {
 		return err
 	}
-	item := entity.NewImportItem(read.nextKey(), importitemkind.Collection, *root, warnings)
-	usages := usecase.ScanPmUsage(item.Scripts())
-	read.items = append(read.items, item.WithPmUsages(usages).WithWarnings(usecase.PmUsageWarnings(usages)))
+	read.addTree(importitemkind.Collection, *root, warnings)
+	return nil
+}
+
+func (i importReaders) bruno(ctx context.Context, input entity.ImportInput, read *importRead) error {
+	collection, err := i.readBrunoCollection.ReadCollection(ctx, input)
+	if err != nil {
+		return err
+	}
+	scripts, warnings := translateBrunoScripts(collection.Scripts)
+	read.addTree(importitemkind.Collection, collection.Root.WithScripts(scripts), append(collection.Warnings, warnings...))
+	for _, environment := range collection.Environments {
+		read.items = append(read.items, entity.NewVariablesImportItem(read.nextKey(), importitemkind.Environment, environment))
+	}
+	return nil
+}
+
+func (i importReaders) curl(ctx context.Context, input entity.ImportInput, read *importRead) error {
+	parsed, err := i.readCurlCommand.ReadCommand(ctx, input.Probe.Text)
+	if err != nil {
+		return err
+	}
+	request := usecase.DeriveParamsFromUrl(parsed.Request)
+	request.ID = idutils.NewUlid()
+	request.Name = usecase.DeriveCurlRequestName(request)
+	read.addTree(importitemkind.Request, entity.NewRequestImportNode(request), []entity.ImportWarning{})
 	return nil
 }
 
@@ -74,6 +102,28 @@ func (i importReaders) dump(ctx context.Context, input entity.ImportInput, read 
 	}
 	read.warnings = append(read.warnings, dump.SkippedWarnings()...)
 	return nil
+}
+
+func (i *importRead) addTree(kind enums.ImportItemKind, root entity.ImportNode, warnings []entity.ImportWarning) {
+	item := entity.NewImportItem(i.nextKey(), kind, root, warnings)
+	usages := usecase.ScanPmUsage(item.Scripts())
+	i.items = append(i.items, item.WithPmUsages(usages).WithWarnings(usecase.PmUsageWarnings(usages)))
+}
+
+func translateBrunoScripts(sources []entity.BrunoScripts) (map[string]entity.Scripts, []entity.ImportWarning) {
+	scripts := map[string]entity.Scripts{}
+	warnings := make([]entity.ImportWarning, 0)
+	for _, source := range sources {
+		preRequest := usecase.ConvertBrunoPreRequestVars(source.PreRequestVars).Append(usecase.TranslateBrunoScript(source.PreRequest))
+		postResponse := usecase.TranslateBrunoScript(source.PostResponse).
+			Append(usecase.ConvertBrunoPostResponseVars(source.PostResponseVars)).
+			Append(usecase.ConvertBrunoAssertions(source.Assertions)).
+			Append(usecase.TranslateBrunoScript(source.Tests))
+		translated, untranslated := source.Translated(preRequest, postResponse)
+		scripts[source.ItemID] = translated
+		warnings = append(warnings, untranslated...)
+	}
+	return scripts, warnings
 }
 
 func (i *importRead) nextKey() string {
