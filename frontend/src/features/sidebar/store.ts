@@ -52,6 +52,8 @@ interface SidebarState {
   setQuery: (query: string) => void
   toggle: (id: string) => void
   select: (id: string) => void
+  /** Expands the item's ancestors, selects it and returns it; null when the tree has no such item. */
+  reveal: (id: string) => TreeNode | null
   createCollection: () => Promise<void>
   createFolder: (parentId: string) => Promise<void>
   createRequest: (parentId: string) => Promise<void>
@@ -220,6 +222,16 @@ export const useSidebarStore = create<SidebarState>()((set, get) => {
     toggle: (id) => set((state) => ({ expanded: { ...state.expanded, [id]: !state.expanded[id] } })),
 
     select: (id) => set({ selectedId: id }),
+
+    reveal: (id) => {
+      const path = findPath(get().tree, id)
+      const node = path.at(-1) ?? null
+      if (node) {
+        const ancestors = Object.fromEntries(path.slice(0, -1).map((ancestor) => [ancestor.id, true]))
+        set((state) => ({ expanded: { ...state.expanded, ...ancestors }, selectedId: id }))
+      }
+      return node
+    },
 
     createCollection: () => create(null, (localId) => createCollection(localId, NEW_COLLECTION_NAME)),
 

@@ -233,7 +233,30 @@ describe('RequestBuilder', () => {
     await user.type(screen.getByLabelText('Password'), 'pass')
     await user.selectOptions(type, 'none')
     expect(screen.getByText('This request does not use any authorization.')).toBeInTheDocument()
-    expect(useRequestBuilderStore.getState().tabs[tabId]!.draft.auth).toEqual({ type: 'none', bearer: { token: 'abc' }, basic: { username: 'user', password: 'pass' } })
+    expect(useRequestBuilderStore.getState().tabs[tabId]!.draft.auth).toEqual({ type: 'none', bearer: { token: 'abc' }, basic: { username: 'user', password: 'pass' }, unsupported: null })
+  })
+
+  it('shows an imported unsupported auth type read-only and asks to pick imported files again', async () => {
+    const user = userEvent.setup()
+    act(() => {
+      useRequestBuilderStore.getState().updateAuth(tabId, { type: 'unsupported', unsupported: { source: 'postman', type: 'hawk' } })
+      useRequestBuilderStore.getState().updateBody(tabId, {
+        mode: 'formdata',
+        formdata: [{ id: 'f', key: 'key', value: '', description: '', enabled: true, type: 'file', src: '/home/ana/.ssh/id_rsa', srcState: 'repick' }],
+      })
+    })
+    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    await user.click(screen.getByRole('tab', { name: 'Authorization' }))
+    expect(screen.getByRole('combobox', { name: 'Auth type' })).toHaveValue('unsupported')
+    expect(screen.getByRole('option', { name: 'Unsupported (kept)' })).toBeDisabled()
+    expect(screen.getByText(/Unsupported auth type \(kept\):/)).toHaveTextContent('Unsupported auth type (kept): hawk. It is kept unchanged for export')
+    await user.click(screen.getByRole('tab', { name: 'Body' }))
+    expect(screen.getByText('Imported from another machine — select the file again before sending')).toBeInTheDocument()
+    vi.mocked(dialogs.pickFile).mockResolvedValue('/home/me/file.txt')
+    await user.click(screen.getByRole('button', { name: 'Select File' }))
+    await vi.waitFor(() => expect(screen.queryByText('Imported from another machine — select the file again before sending')).not.toBeInTheDocument())
+    act(() => useRequestBuilderStore.getState().updateBody(tabId, { mode: 'binary', binary: { src: '/tmp/payload.bin', srcState: 'repick' } }))
+    expect(screen.getByText('Imported from another machine — select the file again before sending')).toBeInTheDocument()
   })
 
   it('edits every body mode and marks a missing file', async () => {

@@ -15,6 +15,7 @@ describe('hotkey table', () => {
       ['newTab', 'Mod+T'],
       ['closeTab', 'Mod+W'],
       ['environmentSwitcher', 'Mod+Shift+E'],
+      ['import', 'Mod+O'],
     ])
     expect(new Set(HOTKEYS.map((hotkey) => hotkey.combo)).size).toBe(HOTKEYS.length)
     expect(HOTKEY_BY_ACTION.get('saveAs')?.combo).toBe('Mod+Shift+S')
@@ -22,7 +23,7 @@ describe('hotkey table', () => {
   })
 
   it('routes each shortcut to its action handler', () => {
-    const handlers = { send: vi.fn(), save: vi.fn(), saveAs: vi.fn(), newTab: vi.fn(), closeTab: vi.fn(), environmentSwitcher: vi.fn() }
+    const handlers = { send: vi.fn(), save: vi.fn(), saveAs: vi.fn(), newTab: vi.fn(), closeTab: vi.fn(), environmentSwitcher: vi.fn(), import: vi.fn() }
     renderHook(() => useAppHotkeys(handlers))
     fireEvent.keyDown(window, { key: 'Enter', ...modifier })
     fireEvent.keyDown(window, { key: 's', ...modifier })
@@ -30,6 +31,7 @@ describe('hotkey table', () => {
     fireEvent.keyDown(window, { key: 't', ...modifier })
     fireEvent.keyDown(window, { key: 'w', ...modifier })
     fireEvent.keyDown(window, { key: 'E', shiftKey: true, ...modifier })
+    fireEvent.keyDown(window, { key: 'o', ...modifier })
     for (const handler of Object.values(handlers)) {
       expect(handler).toHaveBeenCalledOnce()
     }

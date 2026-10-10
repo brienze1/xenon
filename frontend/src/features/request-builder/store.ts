@@ -377,8 +377,8 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
         get().updateBody(
           tabId,
           rowId === undefined
-            ? { binary: { src: path } }
-            : { formdata: tab(tabId).draft.body.formdata.map((row) => (row.id === rowId ? { ...row, src: path } : row)) },
+            ? { binary: { src: path, srcState: 'ok' } }
+            : { formdata: tab(tabId).draft.body.formdata.map((row) => (row.id === rowId ? { ...row, src: path, srcState: 'ok' } : row)) },
         )
       } catch (error) {
         fail(tabId, error)

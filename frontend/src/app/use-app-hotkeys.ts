@@ -14,4 +14,5 @@ export function useAppHotkeys(handlers: HotkeyHandlers): void {
   useAppHotkey('newTab', handlers)
   useAppHotkey('closeTab', handlers)
   useAppHotkey('environmentSwitcher', handlers)
+  useAppHotkey('import', handlers)
 }

@@ -45,6 +45,12 @@ const MISSING_FILE = (
   </span>
 )
 
+const REPICK_FILE = (
+  <span role="status" className={styles.missing}>
+    Imported from another machine — select the file again before sending
+  </span>
+)
+
 const URLENCODED_EXAMPLES: KeyValueExamples = {
   key: 'grant_type',
   value: 'client_credentials',
@@ -105,6 +111,7 @@ const EMPTY_FORM_ROW: Omit<FormDataRow, 'id'> = {
   enabled: true,
   type: 'text',
   src: '',
+  srcState: 'ok',
 }
 
 export function BodyPanel({ tabId }: BodyPanelProps) {
@@ -252,6 +259,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                       <span className={styles.filePath} translate="no">
                         {row.src}
                       </span>
+                      {row.srcState === 'repick' ? REPICK_FILE : null}
                       {missingFile !== null && row.src !== '' && missingFile.endsWith(row.src.replace(DIRECTORY_PREFIX, '')) ? MISSING_FILE : null}
                     </div>
                   ) : (
@@ -305,6 +313,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
           <span className={styles.filePath} translate={body.binary.src ? 'no' : undefined}>
             {body.binary.src || 'No file selected'}
           </span>
+          {body.binary.srcState === 'repick' ? REPICK_FILE : null}
           {missingFile !== null && body.binary.src !== '' ? MISSING_FILE : null}
         </div>
       ) : null}

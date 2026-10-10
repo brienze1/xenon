@@ -1,0 +1,177 @@
+import { act, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { AppError } from '@/platform/errors'
+import type { ImportPreview, ImportResult } from '@/platform/mappers/import'
+
+vi.mock('@/platform/services/import', () => ({
+  detectImport: vi.fn(),
+  discardImport: vi.fn(),
+  findImportClashes: vi.fn(),
+  pickImportSources: vi.fn(),
+  runImport: vi.fn(),
+}))
+vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn() }))
+
+const service = await import('@/platform/services/import')
+const tree = await import('@/platform/services/tree')
+const { useImportStore } = await import('@/features/import-export/store')
+const { useWorkspacesStore } = await import('@/features/workspaces/store')
+const { ImportDialog } = await import('./ImportDialog')
+
+const counts = { collections: 1, folders: 3, requests: 14, examples: 3, variables: 3, scripts: 7, environments: 0 }
+const preview: ImportPreview = {
+  sourceId: 'S',
+  kind: 'postman_collection',
+  version: '2.1',
+  items: [{ key: '0', kind: 'collection', name: 'Acme API', counts, warningsCount: 17 }],
+  warnings: [],
+  pmUsages: [],
+}
+const result: ImportResult = {
+  items: [{ key: '0', status: 'imported', localId: 'A', id: 'C', name: 'Acme API' }],
+  workspaces: [{ localId: 'A', created: counts, replaced: 1, skipped: 2 }],
+  warnings: [
+    {
+      code: 'unsupported_auth',
+      severity: 'warning',
+      message: 'Auth type hawk is not supported yet',
+      itemKey: '0',
+      itemId: 'R1',
+      localId: 'A',
+      path: 'Acme API/Users/Propfind',
+      location: '',
+    },
+    { code: 'variable_kept', severity: 'info', message: 'base_url keeps its value', itemKey: '0', itemId: '', localId: 'A', path: 'Main', location: '' },
+  ],
+  pmUsages: [{ api: 'pm.cookies.jar', occurrences: [{ itemId: 'R2', localId: 'A', path: 'Acme API/Raw JSON', phase: 'preRequest', line: 2 }] }],
+  failed: [{ itemKey: '1', name: 'CRM API', code: 'IMP-29500', message: 'permission denied' }],
+}
+
+describe('ImportDialog', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+    useImportStore.getState().reset()
+    useWorkspacesStore.setState({
+      activeLocalId: 'A',
+      workspaces: [
+        { localId: 'A', name: 'Acme', path: '/w/acme', missing: false },
+        { localId: 'B', name: 'Globex', path: '/w/globex', missing: false },
+        { localId: 'M', name: 'Missing', path: '/w/gone', missing: true },
+      ],
+    })
+    vi.mocked(service.discardImport).mockResolvedValue()
+    vi.mocked(tree.getTree).mockResolvedValue([
+      {
+        id: 'C',
+        kind: 'collection',
+        name: 'Main',
+        method: null,
+        url: null,
+        error: null,
+        warning: null,
+        children: [{ id: 'F', kind: 'folder', name: 'Target', method: null, url: null, error: null, warning: null, children: [] }],
+      },
+    ])
+  })
+
+  afterEach(() => {
+    useImportStore.getState().reset()
+    useWorkspacesStore.setState({ activeLocalId: null, workspaces: [] })
+  })
+
+  it('is hidden until opened and offers the picker, a drop zone and a paste box', async () => {
+    render(<ImportDialog />)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    act(() => useImportStore.getState().open())
+    expect(screen.getByRole('dialog', { name: 'Import' })).toBeInTheDocument()
+    expect(screen.getByText(/Drop Postman or Bruno exports/).closest('[data-file-drop-target]')).not.toBeNull()
+    vi.mocked(service.pickImportSources).mockResolvedValue([])
+    await userEvent.click(screen.getByRole('button', { name: 'Choose Files…' }))
+    expect(service.pickImportSources).toHaveBeenCalledOnce()
+    expect(screen.getByRole('button', { name: 'Read Pasted Text' })).toBeDisabled()
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('reads pasted text, shows a refused source and the preview of an accepted one', async () => {
+    render(<ImportDialog />)
+    act(() => useImportStore.getState().open())
+    vi.mocked(service.detectImport).mockRejectedValueOnce(new AppError('IMP-00415', 'pasted text is not a Postman, Bruno or cURL export'))
+    await userEvent.type(screen.getByRole('textbox', { name: 'Or paste Postman JSON or a cURL command' }), 'hello')
+    await userEvent.click(screen.getByRole('button', { name: 'Read Pasted Text' }))
+    expect(await screen.findByText('pasted text is not a Postman, Bruno or cURL export')).toBeInTheDocument()
+    vi.mocked(service.detectImport).mockResolvedValueOnce(preview)
+    await userEvent.click(screen.getByRole('button', { name: 'Read Pasted Text' }))
+    expect(await screen.findByText('Postman collection v2.1')).toBeInTheDocument()
+    expect(service.detectImport).toHaveBeenLastCalledWith({ text: 'hello' })
+    expect(screen.getByText('Acme API')).toBeInTheDocument()
+    expect(screen.getByText('1 collection · 3 folders · 14 requests · 3 examples · 3 variables · 7 scripts · 17 to review')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Workspace for Acme API' })).toHaveValue('A')
+    expect(screen.queryByRole('option', { name: 'Missing' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('option', { name: 'Into Main / Target' })).toBeInTheDocument()
+  })
+
+  it('imports into the chosen location, asks about clashes and shows the summary with links', async () => {
+    const openItem = vi.spyOn(useImportStore.getState(), 'openItem').mockResolvedValue()
+    useImportStore.setState({ step: 'preview', preview, targets: { '0': { include: true, localId: 'A', parentId: '' } } })
+    act(() => void useImportStore.getState().loadLocations('A'))
+    render(<ImportDialog />)
+    await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Location for Acme API' }), 'F')
+    vi.mocked(service.findImportClashes).mockResolvedValue([
+      { itemKey: '0', kind: 'request', existingId: 'X', existingName: 'Health', name: 'Health' },
+      { itemKey: '0', kind: 'variable', existingId: 'C', existingName: 'base_url', name: 'base_url' },
+    ])
+    vi.mocked(service.runImport).mockReturnValue({ result: Promise.resolve(result), cancel: vi.fn() })
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    expect(await screen.findByText('A request named “Health” already exists')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Apply to all 2 clashes' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Keep Both' }))
+    expect(service.runImport).toHaveBeenCalledWith({
+      sourceId: 'S',
+      applyToAll: 'keep_both',
+      items: [{ key: '0', include: true, targetLocalId: 'A', targetParentId: 'F', resolution: null }],
+    })
+    expect(await screen.findByText(': 1 collection · 3 folders · 14 requests · 3 examples · 3 variables · 7 scripts, 1 replaced, 2 skipped')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Not imported' }).parentElement).toHaveTextContent('CRM API: permission denied')
+    expect(screen.getByRole('heading', { name: 'Needs attention (2)' }).parentElement).toHaveTextContent('Auth type hawk is not supported yet')
+    expect(screen.getByRole('heading', { name: 'pm APIs outside Xenon’s script subset' }).parentElement).toHaveTextContent('pm.cookies.jar')
+    expect(screen.getAllByRole('button', { name: /^Open / })).toHaveLength(2)
+    await userEvent.click(screen.getByRole('button', { name: 'Open Acme API/Users/Propfind' }))
+    expect(openItem).toHaveBeenCalledWith('A', 'R1')
+    await userEvent.click(screen.getByRole('button', { name: 'Open Acme API/Raw JSON' }))
+    expect(openItem).toHaveBeenLastCalledWith('A', 'R2')
+    openItem.mockRestore()
+    await userEvent.click(screen.getByRole('button', { name: 'Done' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('excludes items, skips a clash per item and shows progress with cancel', async () => {
+    useImportStore.setState({ step: 'preview', preview, targets: { '0': { include: true, localId: 'A', parentId: '' } } })
+    render(<ImportDialog />)
+    const include = screen.getByRole('checkbox', { name: 'Import Acme API' })
+    await userEvent.click(include)
+    expect(screen.getByRole('button', { name: 'Import' })).toBeDisabled()
+    await userEvent.click(include)
+    vi.mocked(service.findImportClashes).mockResolvedValue([{ itemKey: '0', kind: 'collection', existingId: 'X', existingName: 'Acme API', name: 'Acme API' }])
+    const cancel = vi.fn()
+    vi.mocked(service.runImport).mockReturnValue({ result: new Promise(() => undefined), cancel })
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Skip' }))
+    expect(vi.mocked(service.runImport).mock.calls[0]![0].items[0]!.resolution).toBe('skip')
+    expect(await screen.findByText('Preparing the import…')).toBeInTheDocument()
+    act(() => useImportStore.getState().applyProgress({ sourceId: 'S', done: 0, total: 1, currentItem: 'Acme API' }))
+    expect(screen.getByRole('status')).toHaveTextContent('Importing Acme API… (0 of 1)')
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(cancel).toHaveBeenCalled()
+  })
+
+  it('says when a detected source has nothing to import yet and goes back', async () => {
+    useImportStore.setState({ step: 'preview', preview: { ...preview, kind: 'postman_environment', version: '', items: [] }, targets: {} })
+    render(<ImportDialog />)
+    expect(screen.getByText('Postman environment')).toBeInTheDocument()
+    expect(screen.getByText('Importing this kind of source arrives in a later update.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+    expect(screen.getByRole('button', { name: 'Choose Files…' })).toBeInTheDocument()
+  })
+})

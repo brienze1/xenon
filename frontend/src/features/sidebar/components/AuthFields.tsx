@@ -17,7 +17,27 @@ const AUTH_TYPE_OPTIONS = (
     <option value="basic" translate="no">
       Basic auth
     </option>
+    <optgroup label="Later stage">
+      <option value="apikey" translate="no" disabled>
+        API key
+      </option>
+      <option value="oauth2" translate="no" disabled>
+        OAuth 2.0
+      </option>
+      <option value="awsv4" translate="no" disabled>
+        AWS signature
+      </option>
+      <option value="digest" translate="no" disabled>
+        Digest auth
+      </option>
+    </optgroup>
   </>
+)
+
+const UNSUPPORTED_OPTION = (
+  <option value="unsupported" disabled>
+    Unsupported (kept)
+  </option>
 )
 
 export function AuthFields({ kind, auth, onChange }: AuthFieldsProps) {
@@ -32,8 +52,15 @@ export function AuthFields({ kind, auth, onChange }: AuthFieldsProps) {
           onChange={(event) => onChange({ ...auth, type: event.target.value as AuthType })}
         >
           {AUTH_TYPE_OPTIONS}
+          {auth.type === 'unsupported' ? UNSUPPORTED_OPTION : null}
         </select>
       </label>
+      {auth.type === 'unsupported' ? (
+        <p className={styles.note}>
+          Unsupported auth type (kept): <span translate="no">{auth.unsupported?.type ?? 'unknown'}</span>. It is kept unchanged for export, and requests
+          are sent without auth until <span translate="no">Xenon</span> supports it.
+        </p>
+      ) : null}
       {auth.type === 'inherit' ? (
         <p className={styles.note}>
           {kind === 'collection' ? 'A collection has no parent, so its requests use no auth.' : 'Uses the auth of the folder or collection above.'}

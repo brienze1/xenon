@@ -94,10 +94,13 @@ func (r *router) Route() *wails.App {
 		},
 		BackgroundColour: wails.NewRGB(10, 10, 12),
 		URL:              "/",
+		EnableFileDrop:   true,
 	})
+	r.registerMenuRoutes(app)
 
 	app.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(*wails.ApplicationEvent) {
 		r.registerWindowRoutes(app, window)
+		r.registerDropRoutes(app, window)
 	})
 
 	return app

@@ -1,4 +1,5 @@
 import { useEnvironmentsStore } from '@/features/environments/store'
+import { useImportStore } from '@/features/import-export/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import type { ResponseEntry } from '@/features/response-viewer/model'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
@@ -6,6 +7,9 @@ import { useSidebarStore } from '@/features/sidebar/store'
 import { useTabsStore } from '@/features/tabs/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import {
+  onImportFilesDropped,
+  onImportProgress,
+  onImportRequested,
   onRequestChangedOnDisk,
   onVariablesChanged,
   onVaultStatusChanged,
@@ -30,6 +34,13 @@ export function bootstrap(): () => void {
       useEnvironmentsStore.getState().handleVariablesChanged(event)
       if (event.localId === useWorkspacesStore.getState().activeLocalId) {
         useRequestBuilderStore.getState().refreshInspections()
+      }
+    }),
+    onImportProgress((progress) => useImportStore.getState().applyProgress(progress)),
+    onImportRequested(() => openImport()),
+    onImportFilesDropped((paths) => {
+      if (openImport()) {
+        void useImportStore.getState().detect({ paths })
       }
     }),
     onVaultStatusChanged((status) => {
@@ -84,6 +95,15 @@ export function bootstrap(): () => void {
       unsubscribe()
     }
   }
+}
+
+/** Opens the Import dialog when a workspace is active (imports need a target); returns whether it did. */
+function openImport(): boolean {
+  if (useWorkspacesStore.getState().activeLocalId === null) {
+    return false
+  }
+  useImportStore.getState().open()
+  return true
 }
 
 function finishedSending(entries: ResponseEntries, previous: ResponseEntries): boolean {

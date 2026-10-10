@@ -34,7 +34,7 @@ export function AppShell({ layout, onLayoutChange, children }: AppShellProps) {
   } as CSSProperties
   return (
     <ShellLayoutProvider state={state} actions={actions} meta={SHELL_META}>
-      <div className={styles.shell} style={sizes}>
+      <div className={styles.shell} style={sizes} data-file-drop-target>
         {SKIP_LINK}
         {SHELL_HEADING}
         {children}

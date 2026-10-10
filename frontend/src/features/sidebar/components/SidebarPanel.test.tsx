@@ -29,6 +29,7 @@ const requests = await import('@/platform/services/requests')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { SEARCH_DELAY_MS, useSidebarStore } = await import('@/features/sidebar/store')
 const { SidebarPanel } = await import('./SidebarPanel')
+const { useImportStore } = await import('@/features/import-export/store')
 
 function node(id: string, kind: TreeNode['kind'], name: string, children: TreeNode[] = [], extra: Partial<TreeNode> = {}): TreeNode {
   return { id, kind, name, method: kind === 'request' ? 'POST' : null, url: null, error: null, warning: null, children, ...extra }
@@ -47,7 +48,7 @@ const settings: ItemSettings = {
   kind: 'collection',
   name: 'Billing',
   description: '',
-  auth: { type: 'inherit', bearer: { token: '' }, basic: { username: '', password: '' } },
+  auth: { type: 'inherit', bearer: { token: '' }, basic: { username: '', password: '' }, unsupported: null },
   headers: [],
 }
 
@@ -222,6 +223,24 @@ describe('SidebarPanel', () => {
       auth: { ...settings.auth, type: 'bearer', bearer: { token: 'secret' } },
       headers: [{ id: 'h1', key: 'X-Tenant', value: 'acme', description: '', enabled: true }],
     })
+  })
+
+  it('shows an imported unsupported auth type read-only in the settings dialog', async () => {
+    vi.mocked(tree.getItemSettings).mockResolvedValue({ ...settings, auth: { ...settings.auth, type: 'unsupported', unsupported: { source: 'postman', type: 'ntlm' } } })
+    await renderPanel()
+    await userEvent.pointer({ keys: '[MouseRight]', target: item('Billing') })
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Settings…' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Billing Settings' })
+    expect(within(dialog).getByRole('combobox', { name: 'Auth type' })).toHaveValue('unsupported')
+    expect(within(dialog).getByRole('option', { name: 'API key' })).toBeDisabled()
+    expect(dialog).toHaveTextContent('Unsupported auth type (kept): ntlm. It is kept unchanged for export')
+  })
+
+  it('opens the Import dialog from the toolbar', async () => {
+    await renderPanel()
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    expect(useImportStore.getState().step).toBe('choose')
+    useImportStore.getState().reset()
   })
 
   it('adds a Variables tab to collection settings only', async () => {

@@ -14,7 +14,7 @@ function draft(): RequestDraft {
     params: [row('page', '2')],
     headers: [row('Authorization', 'Bearer abc')],
     pathVariables: [{ id: 'p', key: 'id', value: '42', description: '' }],
-    body: { ...base.body, urlencoded: [row('grant', 'code')], formdata: [{ ...row('file', 'x'), type: 'text', src: '' }] },
+    body: { ...base.body, urlencoded: [row('grant', 'code')], formdata: [{ ...row('file', 'x'), type: 'text', src: '', srcState: 'ok' }] },
   }
 }
 

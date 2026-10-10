@@ -14,7 +14,7 @@ describe('withSavedRows', () => {
       params: [row('p1', 'a')],
       pathVariables: [{ id: 'v1', key: 'id', value: '', description: '' }],
       headers: [row('h1', 'Accept')],
-      body: { ...base.body, formdata: [{ ...row('f1', 'file'), type: 'file' as const, src: '' }], urlencoded: [row('u1', 'q')] },
+      body: { ...base.body, formdata: [{ ...row('f1', 'file'), type: 'file' as const, src: '', srcState: 'ok' as const }], urlencoded: [row('u1', 'q')] },
     }
     const saved = {
       ...base,
@@ -22,7 +22,7 @@ describe('withSavedRows', () => {
       params: [row('new-1', 'a'), row('new-2', 'b')],
       pathVariables: [{ id: 'new-3', key: 'id', value: '7', description: '' }],
       headers: [row('new-4', 'Accept')],
-      body: { ...base.body, formdata: [{ ...row('new-5', 'file'), type: 'file' as const, src: '/x' }], urlencoded: [row('new-6', 'q')] },
+      body: { ...base.body, formdata: [{ ...row('new-5', 'file'), type: 'file' as const, src: '/x', srcState: 'ok' as const }], urlencoded: [row('new-6', 'q')] },
     }
     const merged = withSavedRows(current, saved)
     expect(merged.id).toBe('r1')

@@ -10,7 +10,7 @@ import type {
 import { newRowId } from '@/shared/lib/rows'
 
 export const STANDARD_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const
-export const AUTH_TYPES = ['inherit', 'none', 'bearer', 'basic', 'apikey', 'oauth2', 'awsv4', 'digest'] as const
+export const AUTH_TYPES = ['inherit', 'none', 'bearer', 'basic', 'apikey', 'oauth2', 'awsv4', 'digest', 'unsupported'] as const
 export const BODY_MODES = ['none', 'formdata', 'urlencoded', 'raw', 'binary', 'graphql'] as const
 export const RAW_LANGUAGES = ['json', 'xml', 'text', 'html', 'javascript'] as const
 export const SEND_ERROR_KINDS = ['dns', 'connection_refused', 'timeout', 'tls', 'cancelled', 'missing_file', 'invalid_url', 'other'] as const
@@ -21,6 +21,8 @@ const RAW_LANGUAGE_SET: ReadonlySet<string> = new Set(RAW_LANGUAGES)
 export const SEND_ERROR_KIND_SET: ReadonlySet<string> = new Set(SEND_ERROR_KINDS)
 
 export type AuthType = (typeof AUTH_TYPES)[number]
+/** `repick` marks a file reference from another machine: it is never read or sent until the file is chosen again. */
+export type FileState = 'ok' | 'repick'
 export type BodyMode = (typeof BODY_MODES)[number]
 export type RawLanguage = (typeof RAW_LANGUAGES)[number]
 export type SendErrorKind = (typeof SEND_ERROR_KINDS)[number]
@@ -43,12 +45,20 @@ export interface PathVariableRow {
 export interface FormDataRow extends KeyValueRow {
   type: 'text' | 'file'
   src: string
+  srcState: FileState
+}
+
+/** An imported auth type Xenon cannot send; kept unchanged for export and shown read-only. */
+export interface UnsupportedAuth {
+  source: string
+  type: string
 }
 
 export interface RequestAuth {
   type: AuthType
   bearer: { token: string }
   basic: { username: string; password: string }
+  unsupported: UnsupportedAuth | null
 }
 
 export interface RequestBody {
@@ -56,7 +66,7 @@ export interface RequestBody {
   raw: { language: RawLanguage; content: string }
   formdata: FormDataRow[]
   urlencoded: KeyValueRow[]
-  binary: { src: string }
+  binary: { src: string; srcState: FileState }
   graphql: { query: string; variables: string }
 }
 
@@ -130,13 +140,13 @@ export function emptyDraft(): RequestDraft {
     pathVariables: [],
     headers: [],
     disabledAutoHeaders: [],
-    auth: { type: 'inherit', bearer: { token: '' }, basic: { username: '', password: '' } },
+    auth: { type: 'inherit', bearer: { token: '' }, basic: { username: '', password: '' }, unsupported: null },
     body: {
       mode: 'none',
       raw: { language: 'json', content: '' },
       formdata: [],
       urlencoded: [],
-      binary: { src: '' },
+      binary: { src: '', srcState: 'ok' },
       graphql: { query: '', variables: '' },
     },
     settings: { timeoutMs: 0, followRedirects: true, verifySsl: true, encodeUrl: true },
@@ -159,8 +169,12 @@ function toPathVariableRow(dto: PathVariableDto): PathVariableRow {
   return { id: newRowId(), key: dto.key, value: dto.value, description: dto.description }
 }
 
+function toFileState(state: string | undefined): FileState {
+  return state === 'repick' ? 'repick' : 'ok'
+}
+
 function toFormDataRow(dto: FormDataRowDto): FormDataRow {
-  return { ...toKeyValueRow(dto), type: dto.type === 'file' ? 'file' : 'text', src: dto.src }
+  return { ...toKeyValueRow(dto), type: dto.type === 'file' ? 'file' : 'text', src: dto.src, srcState: toFileState(dto.src_state) }
 }
 
 export interface SavedRequest {
@@ -173,6 +187,7 @@ export function toAuth(dto: AuthDto): RequestAuth {
     type: oneOf<AuthType>(AUTH_TYPE_SET, dto.type, 'inherit'),
     bearer: { token: dto.bearer.token },
     basic: { username: dto.basic.username, password: dto.basic.password },
+    unsupported: dto.unsupported ? { source: dto.unsupported.source, type: dto.unsupported.type } : null,
   }
 }
 
@@ -206,7 +221,7 @@ export function toRequestDraft(dto: RequestDto): RequestDraft {
       raw: { language: oneOf<RawLanguage>(RAW_LANGUAGE_SET, dto.body.raw.language, 'json'), content: dto.body.raw.content },
       formdata: (dto.body.formdata ?? []).map(toFormDataRow),
       urlencoded: (dto.body.urlencoded ?? []).map(toKeyValueRow),
-      binary: { src: dto.body.binary.src },
+      binary: { src: dto.body.binary.src, srcState: toFileState(dto.body.binary.src_state) },
       graphql: { query: dto.body.graphql.query, variables: dto.body.graphql.variables },
     },
     settings: {
@@ -234,9 +249,9 @@ export function toRequestDto(draft: RequestDraft): RequestDto {
     body: {
       mode: draft.body.mode,
       raw: { language: draft.body.raw.language, content: draft.body.raw.content },
-      formdata: draft.body.formdata.map((row) => ({ ...toKeyValueDto(row), type: row.type, src: row.src })),
+      formdata: draft.body.formdata.map((row) => ({ ...toKeyValueDto(row), type: row.type, src: row.src, src_state: row.srcState })),
       urlencoded: draft.body.urlencoded.map(toKeyValueDto),
-      binary: { src: draft.body.binary.src },
+      binary: { src: draft.body.binary.src, src_state: draft.body.binary.srcState },
       graphql: { query: draft.body.graphql.query, variables: draft.body.graphql.variables },
     },
     settings: {

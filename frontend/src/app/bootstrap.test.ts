@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defaultUIState } from '@/platform/mappers/ui-state'
-import type { RequestChangedOnDisk, VariablesChanged } from '@/platform/events'
+import type { ImportProgress, RequestChangedOnDisk, VariablesChanged } from '@/platform/events'
 import type { VaultStatus } from '@/platform/mappers/vault'
 
 const unsubscribe = vi.fn()
@@ -10,6 +10,9 @@ const handlers: {
   changedOnDisk?: (event: RequestChangedOnDisk) => void
   variablesChanged?: (event: VariablesChanged) => void
   vaultStatusChanged?: (status: VaultStatus) => void
+  importProgress?: (progress: ImportProgress) => void
+  importRequested?: () => void
+  filesDropped?: (paths: string[]) => void
 } = {}
 
 vi.mock('@/platform/events', () => ({
@@ -33,6 +36,25 @@ vi.mock('@/platform/events', () => ({
     handlers.vaultStatusChanged = callback
     return unsubscribe
   }),
+  onImportProgress: vi.fn((callback) => {
+    handlers.importProgress = callback
+    return unsubscribe
+  }),
+  onImportRequested: vi.fn((callback) => {
+    handlers.importRequested = callback
+    return unsubscribe
+  }),
+  onImportFilesDropped: vi.fn((callback) => {
+    handlers.filesDropped = callback
+    return unsubscribe
+  }),
+}))
+vi.mock('@/platform/services/import', () => ({
+  detectImport: vi.fn(),
+  discardImport: vi.fn(),
+  findImportClashes: vi.fn(),
+  pickImportSources: vi.fn(),
+  runImport: vi.fn(),
 }))
 vi.mock('@/platform/services/vault', () => ({ PASSPHRASE_SETUP_REQUIRED: 'VLT-05409', VAULT_LOCKED: 'VLT-04409', getVaultStatus: vi.fn() }))
 vi.mock('@/platform/services/variables', () => ({ getVariableTable: vi.fn() }))
@@ -72,6 +94,8 @@ const { useSidebarStore } = await import('@/features/sidebar/store')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
 const { useTabsStore, PERSIST_DELAY_MS } = await import('@/features/tabs/store')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
+const { useImportStore } = await import('@/features/import-export/store')
+const importService = await import('@/platform/services/import')
 const { bootstrap, openLastWorkspace } = await import('./bootstrap')
 
 function resetWorkspaceStores() {
@@ -135,7 +159,28 @@ describe('bootstrap', () => {
     handlers.folderMissing?.({ localId: 'A' })
     expect(useWorkspacesStore.getState().workspaces[0]?.missing).toBe(true)
     cleanup()
-    expect(unsubscribe).toHaveBeenCalledTimes(5)
+    expect(unsubscribe).toHaveBeenCalledTimes(8)
+  })
+
+  it('opens the import dialog from the menu and from dropped files only when a workspace is active', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
+    vi.mocked(importService.detectImport).mockResolvedValue({ sourceId: 'S', kind: 'postman_collection', version: '2.1', items: [], warnings: [], pmUsages: [] })
+    const cleanup = await started()
+    handlers.importRequested?.()
+    handlers.filesDropped?.(['/x.json'])
+    expect(useImportStore.getState().step).toBe('closed')
+    expect(importService.detectImport).not.toHaveBeenCalled()
+    useWorkspacesStore.setState({ activeLocalId: 'A' })
+    handlers.importRequested?.()
+    expect(useImportStore.getState().step).toBe('choose')
+    handlers.filesDropped?.(['/x.json'])
+    await vi.waitFor(() => expect(useImportStore.getState().step).toBe('preview'))
+    expect(importService.detectImport).toHaveBeenCalledWith({ paths: ['/x.json'] })
+    useImportStore.setState({ step: 'importing' })
+    handlers.importProgress?.({ sourceId: 'S', done: 1, total: 2, currentItem: 'Acme API' })
+    expect(useImportStore.getState().progress).toEqual({ done: 1, total: 2, currentItem: 'Acme API' })
+    useImportStore.getState().reset()
+    cleanup()
   })
 
   it('reloads the sidebar when the active workspace tree changed outside Xenon', async () => {

@@ -7,6 +7,9 @@ export const WORKSPACE_FOLDER_MISSING = 'workspace:folder-missing'
 export const VARIABLES_CHANGED = 'variables:changed'
 export const VAULT_STATUS_CHANGED = 'vault:status-changed'
 export const ACTIVE_ENVIRONMENT_REMOVED = 'active_environment_removed'
+export const IMPORT_PROGRESS = 'import:progress'
+export const IMPORT_FILES_DROPPED = 'import:files-dropped'
+export const IMPORT_REQUESTED = 'import:requested'
 
 export interface WorkspaceTreeChanged {
   localId: string
@@ -27,6 +30,13 @@ export interface VariablesChanged {
   localId: string
   scopes: string[]
   reason: string | null
+}
+
+export interface ImportProgress {
+  sourceId: string
+  currentItem: string
+  done: number
+  total: number
 }
 
 type Unsubscribe = () => void
@@ -63,5 +73,25 @@ export function onVariablesChanged(callback: (event: VariablesChanged) => void):
 export function onVaultStatusChanged(callback: (status: VaultStatus) => void): Unsubscribe {
   return Events.On(VAULT_STATUS_CHANGED, (event) => {
     callback(toVaultStatus(event.data))
+  })
+}
+
+export function onImportProgress(callback: (progress: ImportProgress) => void): Unsubscribe {
+  return Events.On(IMPORT_PROGRESS, (event) => {
+    callback({ sourceId: event.data.source_id, currentItem: event.data.current_item, done: event.data.done, total: event.data.total })
+  })
+}
+
+/** Files or folders dropped on the window; Go delivers their absolute paths. */
+export function onImportFilesDropped(callback: (paths: string[]) => void): Unsubscribe {
+  return Events.On(IMPORT_FILES_DROPPED, (event) => {
+    callback(event.data.paths ?? [])
+  })
+}
+
+/** The native File → Import… menu item. */
+export function onImportRequested(callback: () => void): Unsubscribe {
+  return Events.On(IMPORT_REQUESTED, () => {
+    callback()
   })
 }

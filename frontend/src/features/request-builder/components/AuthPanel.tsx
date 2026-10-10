@@ -34,6 +34,12 @@ const AUTH_TYPE_OPTIONS = (
   </>
 )
 
+const UNSUPPORTED_OPTION = (
+  <option value="unsupported" disabled>
+    Unsupported (kept)
+  </option>
+)
+
 const INHERIT_NOTE = <PanelSection.Note>The request uses the auth of its folder or collection. An unsaved request has none.</PanelSection.Note>
 
 const NO_AUTH_NOTE = <PanelSection.Note>This request does not use any authorization.</PanelSection.Note>
@@ -56,8 +62,15 @@ export function AuthPanel({ tabId }: AuthPanelProps) {
           onChange={(event) => updateAuth(tabId, { type: event.target.value as AuthType })}
         >
           {AUTH_TYPE_OPTIONS}
+          {auth.type === 'unsupported' ? UNSUPPORTED_OPTION : null}
         </select>
       </label>
+      {auth.type === 'unsupported' ? (
+        <PanelSection.Note>
+          Unsupported auth type (kept): <span translate="no">{auth.unsupported?.type ?? 'unknown'}</span>. It is kept unchanged for export, and the
+          request is sent without auth until <span translate="no">Xenon</span> supports it.
+        </PanelSection.Note>
+      ) : null}
       {auth.type === 'inherit' ? INHERIT_NOTE : null}
       {auth.type === 'none' ? NO_AUTH_NOTE : null}
       {auth.type === 'bearer' ? (

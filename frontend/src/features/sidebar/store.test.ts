@@ -51,6 +51,15 @@ describe('sidebar store', () => {
     useSidebarStore.getState().reset()
   })
 
+  it('reveals an item by expanding its ancestors and selecting it', () => {
+    useSidebarStore.setState({ tree: [node('c1', 'collection', [node('f1', 'folder', [node('r1', 'request')])])], expanded: { other: true } })
+    expect(useSidebarStore.getState().reveal('r1')?.kind).toBe('request')
+    expect(useSidebarStore.getState().expanded).toEqual({ other: true, c1: true, f1: true })
+    expect(useSidebarStore.getState().selectedId).toBe('r1')
+    expect(useSidebarStore.getState().reveal('nope')).toBeNull()
+    expect(useSidebarStore.getState().selectedId).toBe('r1')
+  })
+
   it('drops a pending search on reset', async () => {
     vi.useFakeTimers()
     state().setQuery('pin')
@@ -182,7 +191,7 @@ describe('sidebar store', () => {
       kind: 'collection',
       name: 'Billing',
       description: '',
-      auth: { type: 'none', bearer: { token: '' }, basic: { username: '', password: '' } },
+      auth: { type: 'none', bearer: { token: '' }, basic: { username: '', password: '' }, unsupported: null },
       headers: [],
     }
     vi.mocked(tree.getItemSettings).mockResolvedValue(settings)

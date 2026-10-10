@@ -17,9 +17,9 @@ const dto: RequestDto = {
   body: {
     mode: 'formdata',
     raw: { language: 'xml', content: '<a/>' },
-    formdata: [{ key: 'f', type: 'file', value: '', src: '/a.bin', description: '', enabled: true }],
+    formdata: [{ key: 'f', type: 'file', value: '', src: '/a.bin', src_state: 'repick', description: '', enabled: true }],
     urlencoded: [{ key: 'u', value: '1', description: '', enabled: true }],
-    binary: { src: '/b.bin' },
+    binary: { src: '/b.bin', src_state: 'ok' },
     graphql: { query: 'q', variables: '{}' },
   },
   settings: { timeout_ms: 10, follow_redirects: false, verify_ssl: true, encode_url: null },
@@ -38,7 +38,7 @@ describe('request mapper', () => {
       headers: [{ key: 'Accept', enabled: true }],
       disabledAutoHeaders: ['User-Agent'],
       auth: { type: 'bearer', bearer: { token: 't' } },
-      body: { mode: 'formdata', raw: { language: 'xml' }, formdata: [{ key: 'f', type: 'file', src: '/a.bin' }] },
+      body: { mode: 'formdata', raw: { language: 'xml' }, formdata: [{ key: 'f', type: 'file', src: '/a.bin', srcState: 'repick' }] },
       settings: { timeoutMs: 10, followRedirects: false, verifySsl: true, encodeUrl: true },
     })
     const ids = [...draft.params, ...draft.headers].map((row) => row.id)
@@ -48,6 +48,14 @@ describe('request mapper', () => {
   it('round trips a draft to a DTO', () => {
     const back = toRequestDto(toRequestDraft(dto))
     expect(back).toEqual({ ...dto, revision: '', headers: [{ key: 'Accept', value: '*/*', description: '', enabled: true }], settings: { ...dto.settings, encode_url: true } })
+  })
+
+  it('keeps unsupported auth details read-only and the file re-pick state', () => {
+    const draft = toRequestDraft({ ...dto, auth: { ...dto.auth, type: 'unsupported', unsupported: { source: 'postman', type: 'hawk' } } })
+    expect(draft.auth).toMatchObject({ type: 'unsupported', unsupported: { source: 'postman', type: 'hawk' } })
+    expect(draft.body.binary).toEqual({ src: '/b.bin', srcState: 'ok' })
+    expect(toRequestDto(draft).auth).toEqual({ type: 'unsupported', bearer: { token: 't' }, basic: { username: 'u', password: 'p' } })
+    expect(toRequestDraft(dto).auth.unsupported).toBeNull()
   })
 
   it('falls back to defaults for unknown or empty values', () => {

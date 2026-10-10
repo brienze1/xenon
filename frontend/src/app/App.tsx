@@ -1,6 +1,8 @@
 import { useEffect, useMemo } from 'react'
 import { ConsoleDrawer as ConsoleContent } from '@/features/console/components/ConsoleDrawer'
 import { EnvironmentSwitcher } from '@/features/environments/components/EnvironmentSwitcher'
+import { ImportDialog } from '@/features/import-export/components/ImportDialog'
+import { useImportStore } from '@/features/import-export/store'
 import { PassphraseDialog } from '@/features/environments/components/PassphraseDialog'
 import { VariableTable } from '@/features/environments/components/VariableTable'
 import { useEnvironmentsStore } from '@/features/environments/store'
@@ -36,6 +38,8 @@ const WELCOME_SCREEN = <WelcomeScreen />
 const ENVIRONMENT_SWITCHER = <EnvironmentSwitcher />
 
 const PASSPHRASE_DIALOG = <PassphraseDialog />
+
+const IMPORT_DIALOG = <ImportDialog />
 
 function collectionVariables(collectionId: string) {
   return <VariableTable scope={collectionScope(collectionId)} label="Collection variables" />
@@ -84,6 +88,7 @@ export function App() {
             newTab: () => void useTabsStore.getState().newTab(),
             closeTab: () => useTabsStore.getState().requestClose(),
             environmentSwitcher: () => useEnvironmentsStore.getState().openSwitcher(),
+            import: () => useImportStore.getState().open(),
           }
         : {},
     [hasActive, send],
@@ -137,6 +142,7 @@ export function App() {
       )}
       {active ? CONSOLE : null}
       {PASSPHRASE_DIALOG}
+      {active ? IMPORT_DIALOG : null}
       <Footer>
         {active ? (
           <span className={styles.path} translate="no">
