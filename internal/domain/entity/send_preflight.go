@@ -13,7 +13,15 @@ func (s SendPreflight) NeedsConfirmation() bool {
 }
 
 func (s SendPreflight) HasUnavailableSecrets() bool {
-	return len(s.MissingSecrets)+len(s.LockedSecrets) > 0
+	return s.HasMissingSecrets() || s.HasLockedSecrets()
+}
+
+func (s SendPreflight) HasMissingSecrets() bool {
+	return len(s.MissingSecrets) > 0
+}
+
+func (s SendPreflight) HasLockedSecrets() bool {
+	return len(s.LockedSecrets) > 0
 }
 
 func (s SendPreflight) IsClear() bool {

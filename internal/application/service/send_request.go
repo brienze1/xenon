@@ -68,7 +68,7 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 	}
 	preflight := usecase.CheckSendPreflight(request, ancestors, *variables)
 	if preflight.HasUnavailableSecrets() && !acknowledgeMissingSecrets {
-		return nil, errs.ConflictError("the request uses secrets that have no value on this machine or are locked", "SND-06409", unavailableSecretDetails(preflight)...)
+		return nil, errs.ConflictError("the request uses secrets that have no value on this machine or are locked", "SND-06409", usecase.UnavailableSecretDetails(preflight)...)
 	}
 	secrets := variables.SecretValues()
 	ctx = logger.WithRedactions(ctx, secrets...)
@@ -101,7 +101,7 @@ func (s *sendRequest) variableContext(ctx context.Context, localId, root string,
 	if err != nil {
 		return nil, err
 	}
-	vault, err := vaultFor(ctx, s.findVault, localId, environmentRows(environment), collectionRows(ancestors), workspace.Variables)
+	vault, err := s.vault(ctx, localId, usecase.UsesSecretRows(environment, ancestors, workspace.Variables))
 	if err != nil {
 		return nil, err
 	}
@@ -109,29 +109,11 @@ func (s *sendRequest) variableContext(ctx context.Context, localId, root string,
 	return &variables, nil
 }
 
-func environmentRows(environment *entity.Environment) []entity.VariableRow {
-	if environment == nil {
-		return nil
+func (s *sendRequest) vault(ctx context.Context, localId string, needed bool) (*entity.Vault, error) {
+	if !needed {
+		return &entity.Vault{LocalID: localId}, nil
 	}
-	return environment.Variables
-}
-
-func collectionRows(ancestors []entity.Collection) []entity.VariableRow {
-	if len(ancestors) == 0 {
-		return nil
-	}
-	return ancestors[0].OwnVariables()
-}
-
-func unavailableSecretDetails(preflight entity.SendPreflight) []errs.ErrorDetails {
-	details := make([]errs.ErrorDetails, 0, 2)
-	if len(preflight.MissingSecrets) > 0 {
-		details = append(details, errs.ErrorDetails{Attribute: "missing_secrets", Messages: preflight.MissingSecrets})
-	}
-	if len(preflight.LockedSecrets) > 0 {
-		details = append(details, errs.ErrorDetails{Attribute: "locked_secrets", Messages: preflight.LockedSecrets})
-	}
-	return details
+	return s.findVault.Find(ctx, localId)
 }
 
 func (s *sendRequest) activeEnvironment(ctx context.Context, root string, local entity.LocalVariables) (*entity.Environment, error) {

@@ -106,7 +106,7 @@ func (h *handleFileChange) variablesChanged(ctx context.Context, localId, root s
 		return err
 	}
 	reason := ""
-	if change.EnvironmentsChanged && local.HasActiveEnvironment() {
+	if change.TouchesEnvironments() && local.HasActiveEnvironment() {
 		if _, err := h.scopes.findEnvironment.Find(ctx, root, local.ActiveEnvironmentID); errs.IsNotFoundError(err) {
 			cleared := local.WithActiveEnvironment("")
 			local, reason = &cleared, activeEnvironmentRemoved

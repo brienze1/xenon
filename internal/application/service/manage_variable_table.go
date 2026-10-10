@@ -22,9 +22,9 @@ type manageVariableTable struct {
 
 type loadedTable struct {
 	local entity.LocalVariables
-	vault entity.Vault
-	table entity.VariableTable
 	root  string
+	table entity.VariableTable
+	vault entity.Vault
 }
 
 func NewManageVariableTableService(
@@ -201,7 +201,6 @@ func (m *manageVariableTable) load(ctx context.Context, localId string, scope en
 	return &loadedTable{root: workspace.Path, local: *local, vault: *vault, table: entity.NewVariableTable(scope, rows, *local, *vault)}, nil
 }
 
-// store writes the vault, then the local current values, then the file, restoring the earlier stores when a later write fails.
 func (m *manageVariableTable) store(ctx context.Context, localId string, loaded loadedTable, edited entity.VariableTable, rowsChanged bool) (*entity.VariableTable, error) {
 	vault, err := m.storeSecrets(ctx, loaded, edited)
 	if err != nil {

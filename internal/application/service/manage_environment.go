@@ -18,10 +18,8 @@ type manageEnvironment struct {
 	findEnvironment       usecase.FindEnvironment
 	saveEnvironment       usecase.SaveEnvironment
 	deleteEnvironment     usecase.DeleteEnvironment
-	findLocalVariables    usecase.FindLocalVariables
 	saveLocalVariables    usecase.SaveLocalVariables
-	findVault             usecase.FindVault
-	saveVault             usecase.SaveVault
+	values                scopeValues
 	publishVariableEvent  usecase.PublishVariableEvent
 }
 
@@ -43,11 +41,14 @@ func NewManageEnvironmentService(
 		findEnvironment:       findEnvironment,
 		saveEnvironment:       saveEnvironment,
 		deleteEnvironment:     deleteEnvironment,
-		findLocalVariables:    findLocalVariables,
 		saveLocalVariables:    saveLocalVariables,
-		findVault:             findVault,
-		saveVault:             saveVault,
-		publishVariableEvent:  publishVariableEvent,
+		values: scopeValues{
+			findLocalVariables: findLocalVariables,
+			saveLocalVariables: saveLocalVariables,
+			findVault:          findVault,
+			saveVault:          saveVault,
+		},
+		publishVariableEvent: publishVariableEvent,
 	}
 }
 
@@ -58,7 +59,7 @@ func (m *manageEnvironment) List(ctx context.Context, localId string) (*entity.E
 	if err != nil {
 		return nil, err
 	}
-	local, err := m.localVariables(ctx, localId)
+	local, err := m.values.local(ctx, localId)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +79,7 @@ func (m *manageEnvironment) SetActive(ctx context.Context, localId, id string) (
 	if err != nil {
 		return "", err
 	}
-	local, err := m.localVariables(ctx, localId)
+	local, err := m.values.local(ctx, localId)
 	if err != nil {
 		return "", err
 	}
@@ -110,7 +111,7 @@ func (m *manageEnvironment) Get(ctx context.Context, localId, id string) (*entit
 	if err != nil {
 		return nil, err
 	}
-	details, err := m.details(ctx, localId, *environment)
+	details, err := m.values.details(ctx, localId, *environment)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +185,7 @@ func (m *manageEnvironment) Duplicate(ctx context.Context, localId, id string) (
 	if err != nil {
 		return nil, err
 	}
-	if err := m.copyValues(ctx, localId, source.ScopeRef(), saved.ScopeRef(), source.Variables); err != nil {
+	if err := m.values.copy(ctx, localId, source.ScopeRef(), saved.ScopeRef(), source.Variables); err != nil {
 		return nil, err
 	}
 	details, err := m.announced(ctx, localId, *saved)
@@ -210,26 +211,16 @@ func (m *manageEnvironment) Delete(ctx context.Context, localId, id string) (str
 	if err := m.deleteEnvironment.Delete(ctx, workspace.Path, id); err != nil {
 		return "", err
 	}
-	local, err := m.localVariables(ctx, localId)
+	activeId, err := m.values.drop(ctx, localId, *environment)
 	if err != nil {
-		return "", err
-	}
-	updated := local.WithCurrentValues(environment.ScopeRef(), nil)
-	if local.IsActive(id) {
-		updated = updated.WithActiveEnvironment("")
-	}
-	if err := m.saveLocalVariables.Save(ctx, localId, updated); err != nil {
-		return "", err
-	}
-	if err := m.dropSecrets(ctx, localId, *environment); err != nil {
 		return "", err
 	}
 	if err := m.publishVariableEvent.VariablesChanged(ctx, localId, []entity.ScopeRef{environment.ScopeRef()}, ""); err != nil {
 		return "", err
 	}
 
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "id": id, "result": updated.ActiveEnvironmentID})
-	return updated.ActiveEnvironmentID, nil
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "id": id, "result": activeId})
+	return activeId, nil
 }
 
 func (m *manageEnvironment) list(ctx context.Context, root, activeId string) (*entity.EnvironmentList, error) {
@@ -263,50 +254,9 @@ func (m *manageEnvironment) saveRenamed(ctx context.Context, root string, curren
 	return m.saveNamed(ctx, root, updated, current.ID)
 }
 
-func (m *manageEnvironment) copyValues(ctx context.Context, localId string, source, target entity.ScopeRef, rows []entity.VariableRow) error {
-	local, err := m.localVariables(ctx, localId)
-	if err != nil {
-		return err
-	}
-	if err := m.saveLocalVariables.Save(ctx, localId, local.WithCurrentValues(target, local.CurrentValues(source))); err != nil {
-		return err
-	}
-	vault, err := vaultFor(ctx, m.findVault, localId, rows)
-	if err != nil || !vault.HasScope(source) {
-		return err
-	}
-	return m.saveVault.Save(ctx, vault.WithSecrets(target, vault.SecretsFor(source)))
-}
-
-func (m *manageEnvironment) dropSecrets(ctx context.Context, localId string, environment entity.Environment) error {
-	vault, err := vaultFor(ctx, m.findVault, localId, environment.Variables)
-	if err != nil || !vault.HasScope(environment.ScopeRef()) {
-		return err
-	}
-	return m.saveVault.Save(ctx, vault.WithoutScope(environment.ScopeRef()))
-}
-
 func (m *manageEnvironment) announced(ctx context.Context, localId string, environment entity.Environment) (*entity.EnvironmentDetails, error) {
 	if err := m.publishVariableEvent.VariablesChanged(ctx, localId, []entity.ScopeRef{environment.ScopeRef()}, ""); err != nil {
 		return nil, err
 	}
-	return m.details(ctx, localId, environment)
-}
-
-func (m *manageEnvironment) details(ctx context.Context, localId string, environment entity.Environment) (*entity.EnvironmentDetails, error) {
-	local, err := m.localVariables(ctx, localId)
-	if err != nil {
-		return nil, err
-	}
-	vault, err := vaultFor(ctx, m.findVault, localId, environment.Variables)
-	if err != nil {
-		return nil, err
-	}
-	details := entity.NewEnvironmentDetails(environment, *local, *vault)
-	return &details, nil
-}
-
-func (m *manageEnvironment) localVariables(ctx context.Context, localId string) (*entity.LocalVariables, error) {
-	local, err := m.findLocalVariables.Find(ctx, localId)
-	return localVariablesOrDefaults(ctx, localId, local, err)
+	return m.values.details(ctx, localId, environment)
 }

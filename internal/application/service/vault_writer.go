@@ -17,7 +17,6 @@ type vaultWriter struct {
 	publishVariableEvent usecase.PublishVariableEvent
 }
 
-// write stores the scope's secrets, choosing the vault mode (keychain probe) when no vault was ever created.
 func (v vaultWriter) write(ctx context.Context, vault entity.Vault, scope entity.ScopeRef, secrets map[string]string) (entity.Vault, error) {
 	settings, err := v.findVaultSettings.FindSettings(ctx)
 	if err != nil {
