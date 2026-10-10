@@ -34,6 +34,12 @@ interface HistoryViewProps {
 }
 
 function outcome(entry: HistoryEntry): { label: string; tone: string } {
+  if (entry.outcome === 'skipped_by_script') {
+    return { label: 'skipped', tone: 'info' }
+  }
+  if (entry.outcome === 'stopped_by_script_error') {
+    return { label: 'script error', tone: 'error' }
+  }
   if (entry.statusCode === null) {
     return { label: entry.errorKind ?? 'error', tone: 'error' }
   }

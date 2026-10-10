@@ -13,12 +13,14 @@ export const STANDARD_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD'
 export const AUTH_TYPES = ['inherit', 'none', 'bearer', 'basic', 'apikey', 'oauth2', 'awsv4', 'digest', 'unsupported'] as const
 export const BODY_MODES = ['none', 'formdata', 'urlencoded', 'raw', 'binary', 'graphql'] as const
 export const RAW_LANGUAGES = ['json', 'xml', 'text', 'html', 'javascript'] as const
+export const SEND_OUTCOMES = ['sent', 'skipped_by_script', 'stopped_by_script_error', 'cancelled', 'error'] as const
 export const SEND_ERROR_KINDS = ['dns', 'connection_refused', 'timeout', 'tls', 'cancelled', 'missing_file', 'invalid_url', 'other'] as const
 
 const AUTH_TYPE_SET: ReadonlySet<string> = new Set(AUTH_TYPES)
 const BODY_MODE_SET: ReadonlySet<string> = new Set(BODY_MODES)
 const RAW_LANGUAGE_SET: ReadonlySet<string> = new Set(RAW_LANGUAGES)
 export const SEND_ERROR_KIND_SET: ReadonlySet<string> = new Set(SEND_ERROR_KINDS)
+export const SEND_OUTCOME_SET: ReadonlySet<string> = new Set(SEND_OUTCOMES)
 
 export type AuthType = (typeof AUTH_TYPES)[number]
 /** `repick` marks a file reference from another machine: it is never read or sent until the file is chosen again. */
@@ -26,6 +28,8 @@ export type FileState = 'ok' | 'repick'
 export type BodyMode = (typeof BODY_MODES)[number]
 export type RawLanguage = (typeof RAW_LANGUAGES)[number]
 export type SendErrorKind = (typeof SEND_ERROR_KINDS)[number]
+/** How a send ended: sent, stopped or skipped by a pre-request script, cancelled, or failed. */
+export type SendOutcome = (typeof SEND_OUTCOMES)[number]
 
 export interface KeyValueRow {
   id: string

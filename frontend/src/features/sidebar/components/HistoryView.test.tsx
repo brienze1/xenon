@@ -24,7 +24,7 @@ const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 30)
 const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
 
 function entry(id: string, method: string, url: string, sentAt: Date, extra: Partial<HistoryEntry> = {}): HistoryEntry {
-  return { id, sentAt: sentAt.toISOString(), method, url, statusCode: 200, errorKind: null, totalMs: 42, sizeBytes: 10, sourceRequestId: null, ...extra }
+  return { id, sentAt: sentAt.toISOString(), method, url, outcome: 'sent', statusCode: 200, errorKind: null, totalMs: 42, sizeBytes: 10, sourceRequestId: null, ...extra }
 }
 
 const entries = [
@@ -82,6 +82,17 @@ describe('HistoryView', () => {
     await userEvent.click(screen.getByRole('tab', { name: 'Collections' }))
     expect(useSidebarStore.getState().view).toBe('collections')
     expect(screen.getByRole('button', { name: 'New Collection' })).toBeInTheDocument()
+  })
+
+  it('labels sends a pre-request script skipped or stopped', async () => {
+    vi.mocked(history.listHistory).mockResolvedValue([
+      entry('h5', 'GET', 'https://api.test/skip', today, { outcome: 'skipped_by_script', statusCode: null }),
+      entry('h4', 'GET', 'https://api.test/stop', today, { outcome: 'stopped_by_script_error', statusCode: null }),
+    ])
+    await renderHistory()
+    const items = within(screen.getByRole('list', { name: 'History' })).getAllByRole('button')
+    expect(items[0]).toHaveAccessibleName(/^GET https:\/\/api\.test\/skip, skipped, /)
+    expect(items[1]).toHaveAccessibleName(/^GET https:\/\/api\.test\/stop, script error, /)
   })
 
   it('searches the history by URL or method', async () => {

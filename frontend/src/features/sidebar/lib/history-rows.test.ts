@@ -3,7 +3,7 @@ import type { HistoryEntry } from '@/platform/mappers/history'
 import { dayLabel, historyRows, sentTime } from './history-rows'
 
 function entry(id: string, sentAt: Date): HistoryEntry {
-  return { id, sentAt: sentAt.toISOString(), method: 'GET', url: `https://x/${id}`, statusCode: 200, errorKind: null, totalMs: 5, sizeBytes: 2, sourceRequestId: null }
+  return { id, sentAt: sentAt.toISOString(), method: 'GET', url: `https://x/${id}`, outcome: 'sent', statusCode: 200, errorKind: null, totalMs: 5, sizeBytes: 2, sourceRequestId: null }
 }
 
 const now = new Date(2026, 9, 9, 15, 30)
