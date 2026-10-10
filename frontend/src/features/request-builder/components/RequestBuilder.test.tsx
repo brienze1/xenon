@@ -160,6 +160,21 @@ describe('RequestBuilder', () => {
     expect(useRequestBuilderStore.getState().tabs[tabId]!.draft.pathVariables[0]?.value).toBe('42')
   })
 
+  it('edits an example request without Send, scripts or settings', async () => {
+    const user = userEvent.setup()
+    const onSave = vi.fn()
+    useRequestBuilderStore.getState().setSubTab(tabId, 'settings')
+    render(<RequestBuilder tabId={tabId} onSave={onSave} mode="example" />)
+    expect(screen.queryByRole('button', { name: 'Send' })).toBeNull()
+    expect(screen.queryByRole('tab', { name: 'Scripts' })).toBeNull()
+    expect(screen.queryByRole('tab', { name: 'Settings' })).toBeNull()
+    expect(screen.getByRole('tab', { name: 'Params' })).toHaveAttribute('aria-selected', 'true')
+    await user.type(screen.getByRole('textbox', { name: 'Request URL' }), 'https://x{Enter}')
+    expect(requests.sendRequest).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    expect(onSave).toHaveBeenCalled()
+  })
+
   it('turns Send into Cancel while the request is in flight', async () => {
     const user = userEvent.setup()
     const cancel = vi.fn()

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { TreeNode } from '@/platform/mappers/tree'
-import { findPath, isContainer, visibleRows } from './tree-rows'
+import { findExampleRequest, findPath, isContainer, isExpandable, visibleRows } from './tree-rows'
 
 function node(id: string, kind: TreeNode['kind'], children: TreeNode[] = []): TreeNode {
   return { id, kind, name: id, method: kind === 'request' ? 'GET' : null, url: null, error: null, warning: null, children }
@@ -36,5 +36,21 @@ describe('tree rows', () => {
     expect(findPath(tree, 'missing')).toEqual([])
     expect(isContainer(node('x', 'folder'))).toBe(true)
     expect(isContainer(node('x', 'request'))).toBe(false)
+  })
+
+  it('nests the examples of an expanded request', () => {
+    const request = { ...node('r9', 'request'), examples: [{ id: 'x1', name: 'Created', code: 201 }] }
+    const withExamples = [node('c9', 'collection', [request])]
+    expect(isExpandable(request)).toBe(true)
+    expect(isExpandable(node('r0', 'request'))).toBe(false)
+    expect(visibleRows(withExamples, { c9: true }, null).map((row) => row.node.id)).toEqual(['c9', 'r9'])
+    const rows = visibleRows(withExamples, { c9: true, r9: true }, null)
+    expect(rows.map((row) => [row.node.id, row.node.kind, row.depth, row.code])).toEqual([
+      ['c9', 'collection', 0, undefined],
+      ['r9', 'request', 1, undefined],
+      ['x1', 'example', 2, 201],
+    ])
+    expect(findExampleRequest(withExamples, 'x1')?.id).toBe('r9')
+    expect(findExampleRequest(withExamples, 'nope')).toBeNull()
   })
 })

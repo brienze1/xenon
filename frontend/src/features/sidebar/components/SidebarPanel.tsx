@@ -19,6 +19,9 @@ const SIDEBAR_NEXT_STEP = 'Try again, or check that the workspace folder exists 
 interface SidebarPanelProps {
   onOpenRequest: (id: string) => void
   onPinRequest: (id: string) => void
+  onOpenExample: (requestId: string, exampleId: string) => void
+  onPinExample: (requestId: string, exampleId: string) => void
+  onExampleDeleted: (exampleId: string) => void
   onRequestsDeleted: (ids: string[]) => void
   onRenamed: (id: string) => void
   onOpenHistoryEntry: (request: RequestDraft) => void
@@ -38,6 +41,9 @@ const SIDEBAR_TOOLBAR = <SidebarToolbar />
 export function SidebarPanel({
   onOpenRequest,
   onPinRequest,
+  onOpenExample,
+  onPinExample,
+  onExampleDeleted,
   onRequestsDeleted,
   onRenamed,
   onOpenHistoryEntry,
@@ -49,10 +55,19 @@ export function SidebarPanel({
   const error = useSidebarStore((state) => state.error)
   const clearError = useSidebarStore((state) => state.clearError)
   const remove = useSidebarStore((state) => state.remove)
+  const removeExample = useSidebarStore((state) => state.removeExample)
   const [settingsId, setSettingsId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<TreeNode | null>(null)
 
   async function confirmDelete(item: TreeNode) {
+    if (item.kind === 'example') {
+      const failure = await removeExample(item.id)
+      if (failure === null) {
+        setDeleting(null)
+        onExampleDeleted(item.id)
+      }
+      return failure
+    }
     const deleted = await remove(item.id)
     if (!deleted.ok) {
       return deleted.error
@@ -88,7 +103,12 @@ export function SidebarPanel({
         </Banner.Root>
       ) : null}
       <Tabs.Panel value="collections" className={styles.view}>
-        <CollectionTree onOpenRequest={onOpenRequest} onPinRequest={onPinRequest} onOpenSettings={setSettingsId} onDelete={setDeleting} onRenamed={onRenamed} />
+        <CollectionTree
+          onOpenRequest={onOpenRequest}
+          onPinRequest={onPinRequest}
+          onOpenExample={onOpenExample}
+          onPinExample={onPinExample}
+          onOpenSettings={setSettingsId} onDelete={setDeleting} onRenamed={onRenamed} />
       </Tabs.Panel>
       <Tabs.Panel value="history" className={styles.view}>
         <HistoryView onOpenEntry={(id) => void openEntry(id)} />

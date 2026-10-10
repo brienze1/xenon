@@ -14,6 +14,8 @@ const responseBody = await import('@/platform/services/response-body')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
 const { ResponseViewer } = await import('./ResponseViewer')
 const { ResponseHeaders } = await import('./ResponseHeaders')
+const { useTabsStore } = await import('@/features/tabs/store')
+const { useExamplesStore } = await import('@/features/examples/store')
 
 function result(overrides: Partial<SendResult> = {}): SendResult {
   return {
@@ -213,5 +215,21 @@ describe('ResponseHeaders', () => {
     render(<ResponseHeaders headers={[]} />)
     expect(screen.getByText('No headers')).toBeInTheDocument()
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
+  })
+
+  it('saves the response of a saved request as an example', async () => {
+    useTabsStore.setState({ tabs: [{ id: 'tab', requestId: 'r1', pinned: true }] })
+    useExamplesStore.getState().reset()
+    render(<ResponseViewer tabId="tab" />)
+    show(result())
+    await userEvent.click(screen.getByRole('button', { name: 'Save as Example' }))
+    expect(useExamplesStore.getState().saveDialog).toEqual({ tabId: 'tab', requestId: 'r1' })
+  })
+
+  it('asks to save the request before keeping examples of it', () => {
+    useTabsStore.setState({ tabs: [{ id: 'tab', requestId: null, pinned: true }] })
+    render(<ResponseViewer tabId="tab" />)
+    show(result())
+    expect(screen.getByRole('button', { name: 'Save as Example' })).toBeDisabled()
   })
 })

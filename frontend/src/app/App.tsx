@@ -8,6 +8,7 @@ import { VariableTable } from '@/features/environments/components/VariableTable'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { SidePanel } from '@/features/side-panel/components/SidePanel'
+import { useExamplesStore } from '@/features/examples/store'
 import { SidebarPanel } from '@/features/sidebar/components/SidebarPanel'
 import { useTabsStore } from '@/features/tabs/store'
 import { MissingFolderNotice } from '@/features/workspaces/components/MissingFolderNotice'
@@ -78,8 +79,9 @@ export function App() {
       hasActive
         ? {
             send: () => {
-              const tabId = useTabsStore.getState().activeTabId
-              if (tabId) {
+              const { activeTabId: tabId, tabs: openTabs } = useTabsStore.getState()
+              const isExample = openTabs.some((tab) => tab.id === tabId && tab.kind === 'example')
+              if (tabId && !isExample) {
                 void send(tabId)
               }
             },
@@ -113,8 +115,14 @@ export function App() {
               key={active.localId}
               onOpenRequest={(id) => void tabs().openPreview(id)}
               onPinRequest={(id) => void tabs().openPinned(id)}
+              onOpenExample={(requestId, exampleId) => void tabs().openExamplePreview(requestId, exampleId)}
+              onPinExample={(requestId, exampleId) => void tabs().openExamplePinned(requestId, exampleId)}
+              onExampleDeleted={(exampleId) => tabs().handleExampleDeleted(exampleId)}
               onRequestsDeleted={(ids) => tabs().handleDeleted(ids)}
-              onRenamed={(id) => void adoptRename(id)}
+              onRenamed={(id) => {
+                void adoptRename(id)
+                void useExamplesStore.getState().adoptRename(id)
+              }}
               onOpenHistoryEntry={(request) => void tabs().openDraft(request)}
               collectionVariables={collectionVariables}
             />

@@ -19,9 +19,11 @@ const CONFLICT_MESSAGE = (
 interface RequestBuilderProps {
   tabId: string
   onSave: () => void
+  /** `example` edits an example's request snapshot: no Send, no scripts or settings. */
+  mode?: 'request' | 'example'
 }
 
-export function RequestBuilder({ tabId, onSave }: RequestBuilderProps) {
+export function RequestBuilder({ tabId, onSave, mode = 'request' }: RequestBuilderProps) {
   const error = useRequestBuilderStore((state) => state.tabs[tabId]?.error ?? null)
   const conflict = useRequestBuilderStore((state) => state.tabs[tabId]?.conflict === true)
   const save = useRequestBuilderStore((state) => state.save)
@@ -36,10 +38,10 @@ export function RequestBuilder({ tabId, onSave }: RequestBuilderProps) {
   return (
     <section aria-labelledby={headingId} className={styles.builder}>
       <h2 id={headingId} className="visually-hidden">
-        Request
+        {mode === 'example' ? 'Example Request' : 'Request'}
       </h2>
-      <RequestBar tabId={tabId} onSave={onSave} />
-      {conflict ? (
+      <RequestBar tabId={tabId} onSave={onSave} mode={mode} />
+      {mode === 'request' && conflict ? (
         <Banner.Root tone="warning" className={styles.banner}>
           {CONFLICT_MESSAGE}
           <Banner.Actions>
@@ -52,14 +54,14 @@ export function RequestBuilder({ tabId, onSave }: RequestBuilderProps) {
           </Banner.Actions>
         </Banner.Root>
       ) : null}
-      {error ? (
+      {mode === 'request' && error ? (
         <Banner.Root tone="error" className={styles.banner}>
           <Banner.Message>
             <NoTranslateText text={withNextStep(error.description || error.code, SAVE_NEXT_STEP)} terms={[error.code]} />
           </Banner.Message>
         </Banner.Root>
       ) : null}
-      <RequestTabs tabId={tabId} />
+      <RequestTabs tabId={tabId} mode={mode} />
       <ConfirmSendDialog tabId={tabId} />
       <MissingSecretsDialog tabId={tabId} />
     </section>

@@ -23,6 +23,7 @@ describe('ui state service', () => {
       tabs: [
         { tabId: 't1', requestId: null, pinned: true, baseRevision: null, draft: { ...emptyDraft(), url: 'https://u' } },
         { tabId: 't2', requestId: 'r2', pinned: false, baseRevision: 'rev', draft: null },
+        { tabId: 't3', kind: 'example' as const, requestId: 'r2', exampleId: 'e1', pinned: true, baseRevision: null, draft: null },
       ],
       activeTabId: 't1',
       previewTabId: 't2',
@@ -39,7 +40,10 @@ describe('ui state service', () => {
     vi.mocked(UIStateService.Get).mockResolvedValue(dto as never)
     const restored = await getUIState('L1')
     expect(restored.tabs[0]!.draft?.url).toBe('https://u')
-    expect(restored.tabs[1]).toEqual({ tabId: 't2', requestId: 'r2', pinned: false, baseRevision: 'rev', draft: null })
+    expect(dto.tabs?.[1]).toMatchObject({ kind: 'request', example_id: '' })
+    expect(dto.tabs?.[2]).toMatchObject({ kind: 'example', request_id: 'r2', example_id: 'e1' })
+    expect(restored.tabs[1]).toEqual({ tabId: 't2', kind: 'request', requestId: 'r2', exampleId: null, pinned: false, baseRevision: 'rev', draft: null })
+    expect(restored.tabs[2]).toMatchObject({ tabId: 't3', kind: 'example', requestId: 'r2', exampleId: 'e1' })
     expect(restored).toMatchObject({ activeTabId: 't1', previewTabId: 't2', sidebar: state.sidebar, layout: state.layout })
   })
 

@@ -46,7 +46,7 @@ afterAll(() => {
 })
 
 async function renderHistory() {
-  const actions = { onOpenRequest: vi.fn(), onPinRequest: vi.fn(), onRequestsDeleted: vi.fn(), onRenamed: vi.fn(), onOpenHistoryEntry: vi.fn() }
+  const actions = { onOpenRequest: vi.fn(), onPinRequest: vi.fn(), onOpenExample: vi.fn(), onPinExample: vi.fn(), onExampleDeleted: vi.fn(), onRequestsDeleted: vi.fn(), onRenamed: vi.fn(), onOpenHistoryEntry: vi.fn() }
   render(<SidebarPanel {...actions} />)
   await userEvent.click(screen.getByRole('tab', { name: 'History' }))
   await screen.findByRole('list', { name: 'History' })
@@ -144,7 +144,7 @@ describe('HistoryView', () => {
   it('shows the failure when the history cannot be loaded', async () => {
     const { AppError } = await import('@/platform/errors')
     vi.mocked(history.listHistory).mockRejectedValue(new AppError('HIS-04500', 'cannot read history'))
-    render(<SidebarPanel onOpenRequest={vi.fn()} onPinRequest={vi.fn()} onRequestsDeleted={vi.fn()} onRenamed={vi.fn()} onOpenHistoryEntry={vi.fn()} />)
+    render(<SidebarPanel onOpenRequest={vi.fn()} onPinRequest={vi.fn()} onOpenExample={vi.fn()} onPinExample={vi.fn()} onExampleDeleted={vi.fn()} onRequestsDeleted={vi.fn()} onRenamed={vi.fn()} onOpenHistoryEntry={vi.fn()} />)
     await userEvent.click(screen.getByRole('tab', { name: 'History' }))
     expect(await screen.findByText('cannot read history. Try again, or check that the workspace folder exists and is writable.')).toBeInTheDocument()
     expect(useSidebarStore.getState().historyStatus).toBe('ready')

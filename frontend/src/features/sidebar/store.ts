@@ -20,7 +20,8 @@ import {
   saveItemSettings,
   searchTree,
 } from '@/platform/services/tree'
-import { findPath } from './lib/tree-rows'
+import { deleteExample, duplicateExample, renameExample } from '@/platform/services/examples'
+import { findExampleRequest, findPath } from './lib/tree-rows'
 import type { SidebarSnapshot, SidebarStatus } from './model'
 
 export const SEARCH_DELAY_MS = 100
@@ -62,6 +63,9 @@ interface SidebarState {
   rename: (id: string, name: string) => Promise<Result<boolean, AppError>>
   duplicate: (id: string) => Promise<void>
   remove: (id: string) => Promise<Result<string[], AppError>>
+  renameExample: (exampleId: string, name: string) => Promise<Result<boolean, AppError>>
+  duplicateExample: (exampleId: string) => Promise<void>
+  removeExample: (exampleId: string) => Promise<AppError | null>
   loadSettings: (id: string) => Promise<Result<ItemSettings | null, AppError>>
   saveSettings: (settings: ItemSettings) => Promise<AppError | null>
   formatBulk: (rows: KeyValueRow[]) => Promise<Result<string, AppError>>
@@ -282,6 +286,55 @@ export const useSidebarStore = create<SidebarState>()((set, get) => {
         set({ selectedId: null })
       }
       return { ok: true, value: deleted.value ?? [] }
+    },
+
+    renameExample: async (exampleId, name) => {
+      const request = findExampleRequest(get().tree, exampleId)
+      const current = request?.examples?.find((example) => example.id === exampleId)
+      if (!request || name.trim() === '' || current?.name === name) {
+        endRename(exampleId)
+        return { ok: true, value: false }
+      }
+      const renamed = await settle(async (localId) => {
+        await renameExample(localId, request.id, exampleId, name)
+        await refresh(localId)
+        return true
+      })
+      if (!renamed.ok) {
+        return renamed
+      }
+      endRename(exampleId)
+      return { ok: true, value: renamed.value === true }
+    },
+
+    duplicateExample: async (exampleId) => {
+      const request = findExampleRequest(get().tree, exampleId)
+      if (!request) {
+        return
+      }
+      await run(async (localId) => {
+        const copy = await duplicateExample(localId, request.id, exampleId)
+        await refresh(localId)
+        set({ selectedId: copy.id })
+      })
+    },
+
+    removeExample: async (exampleId) => {
+      const request = findExampleRequest(get().tree, exampleId)
+      if (!request) {
+        return null
+      }
+      const removed = await settle(async (localId) => {
+        await deleteExample(localId, request.id, exampleId)
+        await refresh(localId)
+      })
+      if (!removed.ok) {
+        return removed.error
+      }
+      if (get().selectedId === exampleId) {
+        set({ selectedId: null })
+      }
+      return null
     },
 
     loadSettings: (id) => settle((localId) => getItemSettings(localId, id)),

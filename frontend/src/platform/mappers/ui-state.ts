@@ -8,9 +8,15 @@ import { toRequestDraft, toRequestDto, type RequestDraft } from './request'
 export type SidebarView = 'collections' | 'history'
 export type SplitOrientation = 'stacked' | 'side-by-side'
 
+export type TabKind = 'request' | 'example'
+
 export interface TabState {
   tabId: string
+  /** Absent means `request`. */
+  kind?: TabKind
   requestId: string | null
+  /** Set for example tabs only. */
+  exampleId?: string | null
   pinned: boolean
   baseRevision: string | null
   draft: RequestDraft | null
@@ -74,7 +80,9 @@ function orNull(value: string): string | null {
 function toTabState(dto: TabDto): TabState {
   return {
     tabId: dto.tab_id,
+    kind: dto.kind === 'example' && dto.example_id ? 'example' : 'request',
     requestId: orNull(dto.request_id),
+    exampleId: orNull(dto.example_id ?? ''),
     pinned: dto.pinned,
     baseRevision: orNull(dto.base_revision),
     draft: dto.draft ? toRequestDraft(dto.draft) : null,
@@ -121,7 +129,9 @@ export function toUIStateDto(localId: string, state: UIState): UIStateDto {
     preview_tab_id: state.previewTabId ?? '',
     tabs: state.tabs.map((tab) => ({
       tab_id: tab.tabId,
+      kind: tab.kind ?? 'request',
       request_id: tab.requestId ?? '',
+      example_id: tab.exampleId ?? '',
       pinned: tab.pinned,
       base_revision: tab.baseRevision ?? '',
       ...(tab.draft ? { draft: toRequestDto(tab.draft) } : {}),

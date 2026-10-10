@@ -4,7 +4,7 @@ import { rovingIndex } from '@/shared/lib/roving-focus'
 import { Button } from '@/shared/ui/button/Button'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
 import { StackArt } from '@/shared/ui/empty-state/illustrations/StackArt'
-import { isContainer, visibleRows, type TreeRow } from '@/features/sidebar/lib/tree-rows'
+import { isExpandable, visibleRows, type TreeRow } from '@/features/sidebar/lib/tree-rows'
 import { useSidebarStore } from '@/features/sidebar/store'
 import styles from './CollectionTree.module.css'
 import { TreeItem, type TreeItemActions } from './TreeItem'
@@ -90,7 +90,7 @@ export function CollectionTree(actions: CollectionTreeProps) {
       focusRow(next)
       return
     }
-    if (event.key === 'ArrowRight' && isContainer(row.node)) {
+    if (event.key === 'ArrowRight' && isExpandable(row.node)) {
       event.preventDefault()
       if (row.expanded) {
         focusRow(rows[index + 1]?.depth === row.depth + 1 ? index + 1 : index)
@@ -100,7 +100,7 @@ export function CollectionTree(actions: CollectionTreeProps) {
     }
     if (event.key === 'ArrowLeft') {
       event.preventDefault()
-      if (isContainer(row.node) && row.expanded) {
+      if (isExpandable(row.node) && row.expanded) {
         toggle(row.node.id)
       } else {
         focusRow(parentIndex(rows, index))

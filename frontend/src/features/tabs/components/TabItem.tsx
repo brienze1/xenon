@@ -1,6 +1,7 @@
 import { useDndContext } from '@dnd-kit/core'
 import { useSortable } from '@dnd-kit/sortable'
 import type { KeyboardEvent, MouseEvent } from 'react'
+import { useExamplesStore } from '@/features/examples/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { cn } from '@/shared/lib/cn'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
@@ -26,7 +27,9 @@ export function TabItem({ tabId }: TabItemProps) {
   const requestClose = useTabsStore((state) => state.requestClose)
   const name = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.name || UNTITLED)
   const method = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.method ?? 'GET')
-  const dirty = useRequestBuilderStore((state) => state.tabs[tabId]?.dirty === true)
+  const draftDirty = useRequestBuilderStore((state) => state.tabs[tabId]?.dirty === true)
+  const responseDirty = useExamplesStore((state) => state.tabs[tabId]?.dirty === true)
+  const dirty = draftDirty || responseDirty
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({ id: tabId, attributes: { role: 'tab' } })
   // Only a pointer drag makes the moving tab inert: during a keyboard drag the tab must keep
   // focus so the arrow keys keep moving it and assistive tech keeps announcing it.

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { useExamplesStore } from '@/features/examples/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
@@ -30,6 +31,9 @@ interface TabsState {
   activate: (tabId: string) => void
   openPreview: (requestId: string) => Promise<void>
   openPinned: (requestId: string) => Promise<void>
+  openExamplePreview: (requestId: string, exampleId: string) => Promise<void>
+  openExamplePinned: (requestId: string, exampleId: string) => Promise<void>
+  handleExampleDeleted: (exampleId: string) => void
   pin: (tabId: string) => void
   pinIfEdited: () => void
   reorder: (fromId: string, toId: string) => void
@@ -61,8 +65,16 @@ function builder() {
   return useRequestBuilderStore.getState()
 }
 
+function examples() {
+  return useExamplesStore.getState()
+}
+
+function isExampleTab(tab: TabMeta | undefined): boolean {
+  return tab?.kind === 'example'
+}
+
 function isDirty(tabId: string): boolean {
-  return builder().tabs[tabId]?.dirty ?? false
+  return (builder().tabs[tabId]?.dirty ?? false) || examples().isDirty(tabId)
 }
 
 function isPristine(draft: RequestDraft): boolean {
@@ -91,7 +103,15 @@ export const useTabsStore = create<TabsState>()((set, get) => {
   }
 
   function tabOf(requestId: string): TabMeta | undefined {
-    return get().tabs.find((tab) => tab.requestId === requestId)
+    return get().tabs.find((tab) => tab.requestId === requestId && !isExampleTab(tab))
+  }
+
+  function exampleTabOf(exampleId: string): TabMeta | undefined {
+    return get().tabs.find((tab) => isExampleTab(tab) && tab.exampleId === exampleId)
+  }
+
+  function tabById(tabId: string): TabMeta | undefined {
+    return get().tabs.find((tab) => tab.id === tabId)
   }
 
   function addTab(meta: TabMeta) {
@@ -114,6 +134,9 @@ export const useTabsStore = create<TabsState>()((set, get) => {
   }
 
   function tabSnapshot(tab: TabMeta): TabState {
+    if (isExampleTab(tab)) {
+      return { tabId: tab.id, kind: 'example', requestId: tab.requestId, exampleId: tab.exampleId ?? null, pinned: tab.pinned, baseRevision: null, draft: null }
+    }
     const draft = builder().tabs[tab.id]
     const keepDraft = tab.requestId === null || (draft?.dirty ?? false)
     return {
@@ -132,7 +155,11 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       set({
         ...initialState,
         localId,
-        tabs: state.tabs.map((tab) => ({ id: tab.tabId, requestId: tab.requestId, pinned: tab.pinned })),
+        tabs: state.tabs.map((tab) =>
+          tab.kind === 'example'
+            ? { id: tab.tabId, requestId: tab.requestId, pinned: tab.pinned, kind: 'example' as const, exampleId: tab.exampleId ?? null }
+            : { id: tab.tabId, requestId: tab.requestId, pinned: tab.pinned },
+        ),
         activeTabId: state.activeTabId,
         previewTabId: state.previewTabId,
       })
@@ -143,7 +170,9 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         view: state.sidebar.view,
       })
       for (const tab of state.tabs) {
-        if (tab.draft) {
+        if (tab.kind === 'example' && tab.requestId && tab.exampleId) {
+          void examples().open(tab.tabId, tab.requestId, tab.exampleId)
+        } else if (tab.draft) {
           builder().loadDraft(tab.tabId, tab.draft, tab.baseRevision, tab.requestId !== null || !isPristine(tab.draft))
         } else if (tab.requestId) {
           builder().ensureTab(tab.tabId)
@@ -185,7 +214,8 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       }
       const preview = get().previewTabId
       if (preview !== null && !isDirty(preview)) {
-        patchTab(preview, { requestId })
+        patchTab(preview, { requestId, kind: undefined, exampleId: undefined })
+        examples().drop(preview)
         set({ activeTabId: preview, notices: withoutNotice(get().notices, preview) })
         void useResponseViewerStore.getState().release(preview)
         await builder().openSaved(preview, requestId)
@@ -207,6 +237,45 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       const id = newTabId()
       addTab({ id, requestId, pinned: true })
       await builder().openSaved(id, requestId)
+    },
+
+    openExamplePreview: async (requestId, exampleId) => {
+      const existing = exampleTabOf(exampleId)
+      if (existing) {
+        set({ activeTabId: existing.id })
+        return
+      }
+      const preview = get().previewTabId
+      if (preview !== null && !isDirty(preview)) {
+        patchTab(preview, { requestId, kind: 'example', exampleId })
+        set({ activeTabId: preview, notices: withoutNotice(get().notices, preview) })
+        void useResponseViewerStore.getState().release(preview)
+        await examples().open(preview, requestId, exampleId)
+        return
+      }
+      const id = newTabId()
+      addTab({ id, requestId, pinned: false, kind: 'example', exampleId })
+      set({ previewTabId: id })
+      await examples().open(id, requestId, exampleId)
+    },
+
+    openExamplePinned: async (requestId, exampleId) => {
+      const existing = exampleTabOf(exampleId)
+      if (existing) {
+        get().pin(existing.id)
+        set({ activeTabId: existing.id })
+        return
+      }
+      const id = newTabId()
+      addTab({ id, requestId, pinned: true, kind: 'example', exampleId })
+      await examples().open(id, requestId, exampleId)
+    },
+
+    handleExampleDeleted: (exampleId) => {
+      const tab = exampleTabOf(exampleId)
+      if (tab) {
+        get().closeTab(tab.id)
+      }
     },
 
     pin: (tabId) => {
@@ -252,7 +321,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         return
       }
       set({ closeError: null })
-      const saved = await builder().save(tabId)
+      const saved = isExampleTab(tab) ? await examples().save(tabId) : await builder().save(tabId)
       if (!saved.ok) {
         set((state) => (state.closePrompt === tabId ? { closeError: saved.error } : state))
         return
@@ -271,6 +340,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         notices: withoutNotice(state.notices, tabId),
       }))
       builder().dropTab(tabId)
+      examples().drop(tabId)
       void useResponseViewerStore.getState().release(tabId)
     },
 
@@ -278,6 +348,10 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       const target = activeOr(tabId)
       const tab = get().tabs.find((candidate) => candidate.id === target)
       if (!tab) {
+        return
+      }
+      if (isExampleTab(tab)) {
+        await examples().save(tab.id)
         return
       }
       if (tab.requestId === null) {
@@ -289,7 +363,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
 
     saveAs: (tabId) => {
       const target = activeOr(tabId)
-      if (target !== null) {
+      if (target !== null && !isExampleTab(tabById(target))) {
         set({ saveDialog: { tabId: target, mode: 'saveAs', closeAfter: false } })
       }
     },
@@ -325,7 +399,9 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         if (tab.requestId === null || !deleted.has(tab.requestId)) {
           continue
         }
-        if (drafts[tab.id]?.dirty ?? false) {
+        if (isExampleTab(tab)) {
+          get().closeTab(tab.id)
+        } else if (drafts[tab.id]?.dirty ?? false) {
           set((state) => ({ notices: { ...state.notices, [tab.id]: 'deleted' } }))
         } else {
           get().closeTab(tab.id)
@@ -345,7 +421,17 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       const drafts = builder().tabs
       for (const tab of get().tabs) {
         const draft = drafts[tab.id]
-        if (tab.requestId !== event.requestId || draft?.baseRevision === event.revision) {
+        if (tab.requestId !== event.requestId) {
+          continue
+        }
+        if (isExampleTab(tab)) {
+          const loaded = examples().tabs[tab.id]
+          if (loaded?.example?.revision !== event.revision && !isDirty(tab.id) && tab.exampleId) {
+            reloads.push(examples().open(tab.id, event.requestId, tab.exampleId))
+          }
+          continue
+        }
+        if (draft?.baseRevision === event.revision) {
           continue
         }
         if (draft?.dirty ?? false) {
@@ -417,6 +503,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         void get().flushPersist()
       }
       cancelPersist()
+      examples().reset()
       set(initialState)
     },
   }

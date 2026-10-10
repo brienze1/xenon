@@ -5,8 +5,15 @@ import type {
 } from '../../../bindings/github.com/brienze1/xenon/internal/integration/entrypoint/dto/models'
 import { toAuth, toAuthDto, toKeyValueDto, toKeyValueRow, type KeyValueRow, type RequestAuth } from './request'
 
-export type TreeNodeKind = 'collection' | 'folder' | 'request' | 'error'
+/** `example` nodes only exist in the sidebar's rows; the tree lists examples on their request. */
+export type TreeNodeKind = 'collection' | 'folder' | 'request' | 'example' | 'error'
 export type ContainerKind = 'collection' | 'folder'
+
+export interface TreeExample {
+  id: string
+  name: string
+  code: number
+}
 
 export interface TreeNode {
   id: string
@@ -17,6 +24,8 @@ export interface TreeNode {
   error: string | null
   warning: string | null
   children: TreeNode[]
+  /** Saved examples of a request, in sidebar order (empty for other kinds). */
+  examples?: TreeExample[]
 }
 
 export interface TreeSearchResult {
@@ -45,6 +54,7 @@ export function toTreeNode(dto: TreeNodeDto): TreeNode {
     error: dto.error ? dto.error : null,
     warning: dto.warning ? dto.warning : null,
     children: (dto.children ?? []).map(toTreeNode),
+    examples: (dto.examples ?? []).map(({ id, name, code }) => ({ id, name, code })),
   }
 }
 

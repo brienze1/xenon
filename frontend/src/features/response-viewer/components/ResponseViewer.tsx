@@ -11,6 +11,7 @@ import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { ResponseBody } from './ResponseBody'
 import { ResponseError } from './ResponseError'
 import { ResponseHeaders } from './ResponseHeaders'
+import { SaveAsExampleButton } from './SaveAsExampleButton'
 import { StatusLine } from './StatusLine'
 import styles from './ResponseViewer.module.css'
 
@@ -80,7 +81,10 @@ export function ResponseViewer({ tabId }: ResponseViewerProps) {
         <ResponseError failure={result.error} />
       ) : (
         <>
-          <StatusLine result={result} />
+          <div className={styles.statusBar}>
+            <StatusLine result={result} />
+            <SaveAsExampleButton tabId={tabId} />
+          </div>
           <Tabs.Root value={panel} onValueChange={setPanel} className={styles.tabs}>
             <Tabs.List label="Response">
               {BODY_TAB}

@@ -18,6 +18,7 @@ vi.mock('@/platform/services/tree', () => ({
   saveItemSettings: vi.fn(),
 }))
 vi.mock('@/platform/services/requests', () => ({ parseBulk: vi.fn(), formatBulk: vi.fn() }))
+vi.mock('@/platform/services/examples', () => ({ renameExample: vi.fn(), duplicateExample: vi.fn(), deleteExample: vi.fn() }))
 vi.mock('@/platform/services/environments', () => ({
   listEnvironments: vi.fn(async () => ({ environments: [], activeId: null })),
   setActiveEnvironment: vi.fn(async () => null),
@@ -26,6 +27,7 @@ vi.mock('@/platform/services/workspaces', () => ({ listWorkspaces: vi.fn(), crea
 
 const tree = await import('@/platform/services/tree')
 const requests = await import('@/platform/services/requests')
+const examples = await import('@/platform/services/examples')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { SEARCH_DELAY_MS, useSidebarStore } = await import('@/features/sidebar/store')
 const { SidebarPanel } = await import('./SidebarPanel')
@@ -65,7 +67,16 @@ afterAll(() => {
 })
 
 async function renderPanel(collectionVariables?: (collectionId: string) => ReactNode) {
-  const actions = { onOpenRequest: vi.fn(), onPinRequest: vi.fn(), onRequestsDeleted: vi.fn(), onRenamed: vi.fn(), onOpenHistoryEntry: vi.fn() }
+  const actions = {
+    onOpenRequest: vi.fn(),
+    onPinRequest: vi.fn(),
+    onOpenExample: vi.fn(),
+    onPinExample: vi.fn(),
+    onExampleDeleted: vi.fn(),
+    onRequestsDeleted: vi.fn(),
+    onRenamed: vi.fn(),
+    onOpenHistoryEntry: vi.fn(),
+  }
   render(<SidebarPanel {...actions} collectionVariables={collectionVariables} />)
   await act(() => useSidebarStore.getState().load())
   return actions
@@ -74,6 +85,65 @@ async function renderPanel(collectionVariables?: (collectionId: string) => React
 function item(name: string) {
   return screen.getByRole('treeitem', { name: new RegExp(name) })
 }
+
+const withExamples = [
+  node('c1', 'collection', 'Billing', [
+    node('r1', 'request', 'Create invoice', [], {
+      examples: [
+        { id: 'x1', name: 'Created', code: 201 },
+        { id: 'x2', name: 'Not found', code: 404 },
+      ],
+    }),
+  ]),
+]
+
+describe('SidebarPanel examples', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+    useWorkspacesStore.setState({ activeLocalId: 'ws' })
+    useSidebarStore.getState().reset()
+    useSidebarStore.setState({ expanded: { c1: true } })
+    vi.mocked(tree.getTree).mockResolvedValue(withExamples)
+  })
+
+  it('nests examples under their request with their status code and opens them', async () => {
+    const actions = await renderPanel()
+    expect(item('Create invoice')).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('treeitem', { name: /Created/ })).toBeNull()
+    item('Create invoice').focus()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(item('Create invoice')).toHaveAttribute('aria-expanded', 'true')
+    expect(item('Created')).toHaveTextContent('201')
+    expect(item('Not found')).toHaveTextContent('404')
+    await userEvent.click(item('Created'))
+    expect(actions.onOpenExample).toHaveBeenCalledWith('r1', 'x1')
+    await userEvent.dblClick(item('Not found'))
+    expect(actions.onPinExample).toHaveBeenCalledWith('r1', 'x2')
+    expect(actions.onOpenRequest).not.toHaveBeenCalled()
+  })
+
+  it('renames, duplicates and deletes an example from its context menu', async () => {
+    useSidebarStore.setState({ expanded: { c1: true, r1: true } })
+    vi.mocked(examples.renameExample).mockResolvedValue({} as never)
+    vi.mocked(examples.duplicateExample).mockResolvedValue({ id: 'x3' } as never)
+    vi.mocked(examples.deleteExample).mockResolvedValue(undefined)
+    const actions = await renderPanel()
+    await userEvent.pointer({ keys: '[MouseRight]', target: item('Created') })
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Rename' }))
+    const input = screen.getByRole('textbox', { name: 'Name' })
+    await userEvent.clear(input)
+    await userEvent.type(input, 'Invoice created{Enter}')
+    await waitFor(() => expect(examples.renameExample).toHaveBeenCalledWith('ws', 'r1', 'x1', 'Invoice created'))
+    await userEvent.pointer({ keys: '[MouseRight]', target: item('Created') })
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Duplicate' }))
+    await waitFor(() => expect(examples.duplicateExample).toHaveBeenCalledWith('ws', 'r1', 'x1'))
+    await userEvent.pointer({ keys: '[MouseRight]', target: item('Not found') })
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }))
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete Example' }))
+    await waitFor(() => expect(actions.onExampleDeleted).toHaveBeenCalledWith('x2'))
+    expect(examples.deleteExample).toHaveBeenCalledWith('ws', 'r1', 'x2')
+  })
+})
 
 describe('SidebarPanel', () => {
   beforeEach(() => {

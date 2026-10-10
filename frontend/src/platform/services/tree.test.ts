@@ -47,11 +47,18 @@ describe('tree service', () => {
         error: null,
         warning: null,
         children: [
-          { id: 'r1', kind: 'request', name: 'Ping', method: 'GET', url: 'https://x/ping', error: null, warning: null, children: [] },
-          { id: 'error:x', kind: 'error', name: 'x.yaml', method: null, url: null, error: 'cannot be read', warning: null, children: [] },
+          { id: 'r1', kind: 'request', name: 'Ping', method: 'GET', url: 'https://x/ping', error: null, warning: null, children: [], examples: [] },
+          { id: 'error:x', kind: 'error', name: 'x.yaml', method: null, url: null, error: 'cannot be read', warning: null, children: [], examples: [] },
         ],
+        examples: [],
       },
     ])
+  })
+
+  it('maps the examples of a request', async () => {
+    vi.mocked(TreeService.GetTree).mockResolvedValue([{ ...requestNode, examples: [{ id: 'e1', kind: 'example', name: 'Created', code: 201 }] }] as never)
+    const nodes = await tree.getTree('ws')
+    expect(nodes[0]?.examples).toEqual([{ id: 'e1', name: 'Created', code: 201 }])
   })
 
   it('treats an empty tree and unknown kinds safely', async () => {

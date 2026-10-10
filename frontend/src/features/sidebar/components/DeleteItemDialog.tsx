@@ -12,12 +12,20 @@ const DELETE_LABELS: Record<TreeNodeKind, string> = {
   collection: 'Delete Collection',
   folder: 'Delete Folder',
   request: 'Delete Request',
+  example: 'Delete Example',
   error: 'Delete File',
 }
 
 const XENON = <span translate="no">Xenon</span>
 
 const DELETE_NEXT_STEP = 'Check that the file is not open in another program, then try again.'
+
+function deleteScope(item: TreeNode): string {
+  if (item.kind === 'example') {
+    return 'removes it from its request’s file.'
+  }
+  return isContainer(item) ? 'deletes its folder and everything inside it from disk.' : 'deletes its file from disk.'
+}
 
 interface DeleteItemDialogProps {
   item: TreeNode | null
@@ -54,7 +62,7 @@ function DeleteItemConfirm({ item, onCancel, onConfirm }: DeleteItemConfirmProps
     <>
       <Dialog.Title>Delete “{item.name}”?</Dialog.Title>
       <Dialog.Body>
-        {XENON} deletes {isContainer(item) ? 'its folder and everything inside it' : 'its file'} from disk.
+        {XENON} {deleteScope(item)}
         {error ? (
           <Banner.Root tone="error" className={styles.error}>
             <Banner.Message>

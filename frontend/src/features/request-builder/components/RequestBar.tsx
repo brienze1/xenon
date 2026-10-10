@@ -11,11 +11,12 @@ import styles from './RequestBar.module.css'
 interface RequestBarProps {
   tabId: string
   onSave: () => void
+  mode?: 'request' | 'example'
 }
 
 const CUSTOM_METHOD = /^[A-Za-z][A-Za-z0-9_-]{0,31}$/
 
-export function RequestBar({ tabId, onSave }: RequestBarProps) {
+export function RequestBar({ tabId, onSave, mode = 'request' }: RequestBarProps) {
   const method = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.method ?? 'GET')
   const url = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.url ?? '')
   const sending = useRequestBuilderStore((state) => state.tabs[tabId]?.pending != null)
@@ -28,7 +29,8 @@ export function RequestBar({ tabId, onSave }: RequestBarProps) {
   const [customMethod, setCustomMethod] = useState('')
   const { decorationsOf, completionSource, selectIn } = useVariableEditing(tabId)
   const onUrlChange = useCallback((value: string) => setUrl(tabId, value), [setUrl, tabId])
-  const onUrlEnter = useCallback(() => void send(tabId), [send, tabId])
+  const sendable = mode === 'request'
+  const onUrlEnter = useCallback(() => (sendable ? void send(tabId) : undefined), [send, sendable, tabId])
   const onUrlSelection = useCallback((selection: Parameters<typeof selectIn>[1]) => selectIn('url', selection), [selectIn])
 
   function onCustomKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -76,7 +78,7 @@ export function RequestBar({ tabId, onSave }: RequestBarProps) {
         onEnter={onUrlEnter}
         onSelectionChange={onUrlSelection}
       />
-      {sending ? (
+      {!sendable ? null : sending ? (
         <Button variant="running" className={styles.send} onClick={() => cancel(tabId)}>
           Cancel Request
         </Button>
@@ -85,7 +87,7 @@ export function RequestBar({ tabId, onSave }: RequestBarProps) {
           Send
         </Button>
       )}
-      <Button variant="secondary" disabled={saving} title={saved ? 'Save' : 'Save into a collection'} onClick={onSave}>
+      <Button variant="secondary" disabled={saving} title={saved || !sendable ? 'Save' : 'Save into a collection'} onClick={onSave}>
         {saving ? 'Saving…' : 'Save'}
       </Button>
     </div>
