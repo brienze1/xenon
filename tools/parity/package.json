@@ -1,0 +1,15 @@
+{
+  "name": "xenon-parity-oracle",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Runs Xenon's script parity corpus through postman-sandbox 6.7.4 and records the reference outcomes.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "oracle": "node oracle.mjs"
+  },
+  "dependencies": {
+    "postman-collection": "5.3.1",
+    "postman-sandbox": "6.7.4"
+  }
+}
