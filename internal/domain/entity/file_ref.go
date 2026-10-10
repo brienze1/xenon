@@ -39,14 +39,14 @@ func (f FileRef) WithSrc(src string) FileRef {
 }
 
 func (f FileRef) Resolve(workspaceRoot string) string {
-	if f.IsEmpty() || filepath.IsAbs(f.Src) {
+	if f.IsEmpty() || isAbsolutePath(f.Src) {
 		return f.Src
 	}
 	return filepath.Join(workspaceRoot, filepath.FromSlash(f.Src))
 }
 
 func (f FileRef) RelativeTo(workspaceRoot string) FileRef {
-	if !filepath.IsAbs(f.Src) {
+	if !isAbsolutePath(f.Src) {
 		return f
 	}
 	return NewFileRef(workspaceRoot, f.Src).withState(f.State)
@@ -55,4 +55,10 @@ func (f FileRef) RelativeTo(workspaceRoot string) FileRef {
 func (f FileRef) withState(state enums.FileState) FileRef {
 	f.State = state
 	return f
+}
+
+// isAbsolutePath also treats a rooted path without a drive letter ("/x" or "\x" on Windows)
+// as absolute: it never names a file inside the workspace.
+func isAbsolutePath(path string) bool {
+	return filepath.IsAbs(path) || strings.HasPrefix(filepath.ToSlash(path), "/")
 }

@@ -87,7 +87,7 @@ func (f *fsFileWatcher) listen(watcher *fsnotify.Watcher) {
 }
 
 func (f *fsFileWatcher) handle(watcher *fsnotify.Watcher, event fsnotify.Event) {
-	if event.Op == fsnotify.Chmod || strings.HasSuffix(event.Name, temporarySuffix) || isStagingPath(event.Name) {
+	if event.Op == fsnotify.Chmod || isDirectoryWrite(event) || strings.HasSuffix(event.Name, temporarySuffix) || isStagingPath(event.Name) {
 		return
 	}
 	if event.Has(fsnotify.Create) && isWatchableDirectory(event.Name) {
@@ -154,6 +154,14 @@ func isStagingPath(path string) bool {
 		}
 	}
 	return false
+}
+
+func isDirectoryWrite(event fsnotify.Event) bool {
+	if event.Op != fsnotify.Write {
+		return false
+	}
+	info, err := os.Lstat(event.Name)
+	return err == nil && info.IsDir()
 }
 
 func isWatchableDirectory(path string) bool {

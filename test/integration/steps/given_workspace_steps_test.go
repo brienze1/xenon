@@ -72,7 +72,8 @@ func (t *testUtils) theWorkspaceFolderExists(path string) error {
 }
 
 func (t *testUtils) theFileExistsWithContent(path string, content *godog.DocString) error {
-	return writeFile(filepath.Join(t.tempRoot, filepath.FromSlash(t.substitute(path))), t.substitute(content.Content))
+	target := filepath.Join(t.tempRoot, filepath.FromSlash(t.substitute(path)))
+	return writeFile(target, t.substituteFor(target, content.Content))
 }
 
 func (t *testUtils) theWorkspacePathIsRemoved(path string) error {

@@ -42,6 +42,8 @@ func readBody(t *testing.T, store *responseBodyPersistence, tabId string) []byte
 func useTempRoot(t *testing.T) string {
 	root := t.TempDir()
 	t.Setenv("TMPDIR", root)
+	t.Setenv("TMP", root)
+	t.Setenv("TEMP", root)
 	return root
 }
 

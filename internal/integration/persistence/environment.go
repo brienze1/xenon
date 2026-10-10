@@ -124,7 +124,7 @@ func findEnvironment(root, id string) (*entity.Environment, error) {
 func readEnvironments(root string) ([]entity.Environment, error) {
 	dir := filepath.Join(root, environmentsDir)
 	listing, err := os.ReadDir(dir)
-	if errors.Is(err, fs.ErrNotExist) {
+	if errors.Is(err, fs.ErrNotExist) && !exists(dir) {
 		return []entity.Environment{}, nil
 	}
 	if err != nil {

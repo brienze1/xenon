@@ -1,6 +1,8 @@
 package adapter
 
 import (
+	"os"
+
 	"github.com/brienze1/xenon/internal/integration/adapter"
 )
 
@@ -11,5 +13,8 @@ func NewTrash() adapter.Trash {
 }
 
 func (o *osTrash) MoveToTrash(path string) error {
+	if _, err := os.Lstat(path); err != nil {
+		return err
+	}
 	return moveToTrash(path)
 }

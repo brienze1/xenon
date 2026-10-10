@@ -146,7 +146,7 @@ Feature: Variables are resolved in every part of the request that is sent
           enabled: true
           description: ""
         - key: upload_dir
-          value: "{{temp_root}}/uploads"
+          value: '{{temp_root}}/uploads'
           enabled: true
           description: ""
         - key: limit

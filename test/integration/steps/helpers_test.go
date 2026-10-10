@@ -35,6 +35,13 @@ func (t *testUtils) substituteJson(text string) string {
 	})
 }
 
+func (t *testUtils) substituteFor(path, text string) string {
+	if strings.EqualFold(filepath.Ext(path), ".json") {
+		return t.substituteJson(text)
+	}
+	return t.substitute(text)
+}
+
 func (t *testUtils) workspacePath(relative string) string {
 	return filepath.Join(t.workspaceRoot, filepath.FromSlash(t.substitute(relative)))
 }
