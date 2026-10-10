@@ -50,11 +50,11 @@ export function MissingSecretsDialog({ tabId }: MissingSecretsDialogProps) {
     <Dialog.Root open={missingSecrets !== null} onOpenChange={(open) => (open ? undefined : close())}>
       {missingSecrets ? (
         <>
-          <Dialog.Title>Send without some secrets?</Dialog.Title>
+          <Dialog.Title>Send Without Some Secrets?</Dialog.Title>
           <Dialog.Body>
             <p>This request uses secrets that have no value right now. If you send anyway, their placeholders are sent as written.</p>
-            {missingSecrets.missing.length > 0 ? <SecretList title="No value on this machine" names={missingSecrets.missing} /> : null}
-            {missingSecrets.locked.length > 0 ? <SecretList title="In a locked vault" names={missingSecrets.locked} /> : null}
+            {missingSecrets.missing.length > 0 ? <SecretList title="No Value on This Machine" names={missingSecrets.missing} /> : null}
+            {missingSecrets.locked.length > 0 ? <SecretList title="In a Locked Vault" names={missingSecrets.locked} /> : null}
           </Dialog.Body>
           <Dialog.Actions>
             <Button variant="secondary" onClick={close}>
