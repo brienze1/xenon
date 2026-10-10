@@ -98,7 +98,5 @@ jobs:
       - name: Run the postman-sandbox oracle (fails on drift)
         run: make parity-oracle
 
-      # Red until the pm shims land (XEN-004 T022); the step then becomes blocking.
-      - name: Parity diff against the oracle
-        continue-on-error: true
+      - name: Parity diff against the oracle (>= 98% of the corpus, SC-001)
         run: make parity-diff

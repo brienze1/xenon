@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -29,8 +30,11 @@ import (
 const (
 	corpusDir        = "../resources/scripts/corpus"
 	expectedDir      = corpusDir + "/expected"
+	knownDifferences = "KNOWN_DIFFERENCES.md"
 	requiredMatchPct = 98.0
 )
+
+var knownCase = regexp.MustCompile("^\\| `([a-z0-9-]+)` \\|")
 
 type keyValue struct {
 	Value    any    `json:"value"`
@@ -183,16 +187,27 @@ func (f *fixtureRequests) Run(_ context.Context, requestId string, scopes entity
 	return entity.NestedRequest{RequestID: requestId, Response: &response, Scopes: scopes}
 }
 
+// TestSandboxMatchesPostmanOracle fails on any difference not listed with its cause in KNOWN_DIFFERENCES.md, on a listed
+// case that matches again, and below 98% of the corpus.
 func TestSandboxMatchesPostmanOracle(t *testing.T) {
 	cases := readCases(t)
+	known := readKnownDifferences(t)
 	runner := sandbox.NewScriptRunnerWebservice()
 	matched := 0
 	for _, testCase := range cases {
 		t.Run(testCase.ID, func(t *testing.T) {
 			expected := readJSON(t, filepath.Join(expectedDir, testCase.ID+".json"))
 			actual := normalize(t, runCase(runner, testCase))
-			if differences := diff(expected, actual); len(differences) > 0 {
-				t.Errorf("differs from postman-sandbox in %s", strings.Join(differences, ", "))
+			differences := diff(expected, actual)
+			report := t.Errorf
+			if known[testCase.ID] {
+				report = t.Logf
+			}
+			if len(differences) == 0 && known[testCase.ID] {
+				t.Errorf("matches postman-sandbox now: remove it from %s", knownDifferences)
+			}
+			if len(differences) > 0 {
+				report("differs from postman-sandbox in %s", strings.Join(differences, ", "))
 				if os.Getenv("PARITY_VERBOSE") != "" {
 					for _, key := range differences {
 						want, _ := json.Marshal(expected[key])
@@ -210,6 +225,21 @@ func TestSandboxMatchesPostmanOracle(t *testing.T) {
 	if percentage < requiredMatchPct {
 		t.Errorf("parity %.1f%% is below the required %.1f%% (SC-001)", percentage, requiredMatchPct)
 	}
+}
+
+func readKnownDifferences(t *testing.T) map[string]bool {
+	t.Helper()
+	raw, err := os.ReadFile(knownDifferences)
+	if err != nil {
+		t.Fatal(err)
+	}
+	known := map[string]bool{}
+	for _, line := range strings.Split(string(raw), "\n") {
+		if match := knownCase.FindStringSubmatch(strings.TrimSpace(line)); match != nil {
+			known[match[1]] = true
+		}
+	}
+	return known
 }
 
 func readCases(t *testing.T) []corpusCase {

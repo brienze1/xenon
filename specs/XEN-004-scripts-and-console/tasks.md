@@ -95,13 +95,60 @@ US1 execution · US2 tests · US3 pm API & libraries · US4 console · US5 edito
 
 ## Phase 4: User Story 3 — pm API, libraries, legacy (P1)
 
-- [ ] T016 [P] [US3] BDD `test/integration/features/scripts/variables_from_scripts.feature`: every pm scope method; writes become current values; secret rows stay in the vault; new rows created with empty initial value; no active env → warning; non-string values stringified on persist; `variables:changed` emitted
-- [ ] T017 [P] [US3] BDD `test/integration/features/scripts/send_request.feature` and `run_request_skip.feature`: callback and `await` forms, `{{vars}}` resolved, nested entries in console, not in History; `runRequest` runs target scripts and merges variables; `skipRequest`
-- [ ] T018 [P] [US3] BDD `test/integration/features/scripts/libraries.feature`, `legacy_api.feature`, `unsupported_apis.feature`, `vault_and_cookies.feature`: each require-able module and global loads and gives the corpus result; legacy globals map to pm; unsupported APIs throw named errors; `pm.vault` + `{{vault:x}}` on globals secrets; `pm.cookies` from response; `pm.cookies.jar()` per stage 5 contract
-- [ ] T019 [US3] Run T016–T018 → **red**
-- [ ] T020 [US3] Go pm services in `sandbox/`: `pm_variables.go` (calling XEN-002 use cases), `pm_send_request.go`, `pm_execution.go`, `pm_vault.go` (+ resolver support for `{{vault:name}}` in `internal/application/usecase/resolve_text.go`), `pm_cookies.go`, `pm_info.go`, globals (`globals_crypto.go`, `globals_encoding.go`, `globals_url.go`), `console_sink.go`
-- [ ] T021 [US3] JS shims `sandbox/shims/`: `property_list.js`, `url.js`, `pm_request.js`, `pm_response.js`, `legacy.js`, `intl_install.js`; `postman-collection` module re-exporting shim classes
-- [ ] T022 [US3] Run `make sandbox-assets`; wire every module in sandbox-api.md §4 into `require_registry.go`; run US3 features and `make parity` → **green** (≥ 98% corpus match; remaining differences listed in `test/integration/parity/KNOWN_DIFFERENCES.md` with cause)
+- [x] T016 [P] [US3] BDD `test/integration/features/scripts/variables_from_scripts.feature`: every pm scope method; writes become current values; secret rows stay in the vault; new rows created with empty initial value; no active env → warning; non-string values stringified on persist; `variables:changed` emitted
+- [x] T017 [P] [US3] BDD `test/integration/features/scripts/send_request.feature` and `run_request_skip.feature`: callback and `await` forms, `{{vars}}` resolved, nested entries in console, not in History; `runRequest` runs target scripts and merges variables; `skipRequest`
+- [x] T018 [P] [US3] BDD `test/integration/features/scripts/libraries.feature`, `legacy_api.feature`, `unsupported_apis.feature`, `vault_and_cookies.feature`: each require-able module and global loads and gives the corpus result; legacy globals map to pm; unsupported APIs throw named errors; `pm.vault` + `{{vault:x}}` on globals secrets; `pm.cookies` from response; `pm.cookies.jar()` per stage 5 contract
+- [x] T019 [US3] Run T016–T018 → **red**
+- [x] T020 [US3] Go pm services in `sandbox/`: `pm_variables.go` (calling XEN-002 use cases), `pm_send_request.go`, `pm_execution.go`, `pm_vault.go` (+ resolver support for `{{vault:name}}` in `internal/application/usecase/resolve_text.go`), `pm_cookies.go`, `pm_info.go`, globals (`globals_crypto.go`, `globals_encoding.go`, `globals_url.go`), `console_sink.go`
+- [x] T021 [US3] JS shims `sandbox/shims/`: `property_list.js`, `url.js`, `pm_request.js`, `pm_response.js`, `legacy.js`, `intl_install.js`; `postman-collection` module re-exporting shim classes
+- [x] T022 [US3] Run `make sandbox-assets`; wire every module in sandbox-api.md §4 into `require_registry.go`; run US3 features and `make parity` → **green** (≥ 98% corpus match; remaining differences listed in `test/integration/parity/KNOWN_DIFFERENCES.md` with cause)
+
+**Phase 4 notes (implemented)**:
+- BDD: `variables_from_scripts`, `send_request`, `run_request_skip`, `libraries`, `legacy_api`,
+  `unsupported_apis`, `vault_and_cookies` (74 scenarios; red run 30 passed / 44 failed, recorded in
+  the test commit). Library/legacy expectations were taken from postman-sandbox 6.7.4 itself.
+  One new generic step: app data file field equal to a doc string.
+- Shims (`sandbox/shims/`) port postman-collection 5.3.1's object model (`sdk_util`,
+  `property_list`, `variable_scope`, `url`, `pm_request`, `pm_response`), chai-postman 2.0.1
+  (`chai_postman`), the pm object and test runner (`pm`), the legacy interface (`legacy`, incl.
+  liquid-json `JSON` and deprecation warnings), console serialisation as postman-sandbox teleports it
+  (`console`), WHATWG globals (`globals`), `intl_install` and `sugar_install` (Sugar 1.4 ships with
+  postman-sandbox; loaded on first use). `require('postman-collection')` re-exports the shim classes.
+- Go (`sandbox/`): `host.go` (the shims' Go bridge), `console_sink.go`, `globals_crypto.go`,
+  `globals_encoding.go`, `globals_url.go` (IDNA via the punycode asset, local time zone),
+  `pm.go` (context in, effects out), `pm_execution.go` (skipRequest, runRequest),
+  `pm_send_request.go`, `pm_legacy.go`, `v8_messages.go`. Vault, cookies and info travel in the
+  context DTO (`webservice/dto/script_sandbox.go`) instead of separate `pm_vault/pm_cookies/pm_info`
+  files; `pm_test.go` is a Go test-file name, so the test runner lives in `shims/pm.js`.
+- Deviation (architecture): variable scopes live in the shims during a run (typed, as Postman's
+  VariableScope) and the run hands the final scopes back; the application layer
+  (`service/script_variables.go`) applies XEN-002's rules after each script — current values,
+  secret rows in the vault, new names as rows with an empty initial value, `unset`/`clear` drop
+  current values (rows stay), `variables:changed` once per script that changed something. The
+  send resolves `{{…}}` from the scopes as scripts left them (`VariableContext.WithScriptScopes`).
+- Pulled forward from US2 because ~130 corpus cases need them: the `pm.test` runner (sync, `done`,
+  skip, index, legacy `tests[]`) and chai-postman. T023/T025 (Test Results BDD + UI) remain.
+- Postman behaviour preferred where the corpus asserts it (documented in sandbox-api.md):
+  `pm.require/mock/state/message` are undefined (V8 TypeError), `pm.datasets()` throws
+  "pm.datasets is not supported in Xenon"; deprecation notices are console `warn`; `skipRequest`
+  ends the script on the spot and throws a TypeError in post-response scripts (the
+  `errors_and_limits` skip scenarios were updated); `pm.vault.get` of a missing name gives `null`;
+  syntax/TypeError messages use V8's wording; `fs`/`os` modules are empty objects.
+- `{{vault:name}}` resolves in `entity.VariableContext.Lookup` (the globals' secret rows, or the
+  send's vault as scripts left it), so every resolution path gets it, not just `resolve_text.go`.
+- runRequest runs the saved request (its collection/folder/request scripts) on the caller's
+  scopes and persists to the caller's scopes; options `variables` are local overrides for that
+  run; the child's local scope is not merged back; depth limit 10.
+- Console: logs stream to the console as they happen (`ScriptLogSink`), so runRequest output keeps
+  its order; `console.clear()` is recorded as a `clear` log and skipped by the console for now (US4
+  T027 wires the clearing). Xenon-only notices (no environment, visualizer, Intl locale fallback)
+  are console entries but not part of the script's Postman-visible console.
+- Assets added (`make sandbox-assets`): liquid-json, http-reasons, mime, mime-format, sugar and a
+  generated sugar method list (internal, not require-able).
+- Parity: 246/249 (98.8%); the 3 differences and their causes are in
+  `test/integration/parity/KNOWN_DIFFERENCES.md`, which the test reads (an unlisted difference or a
+  listed case that matches again fails it). `parity-diff` runs with `TZ=UTC` and is a blocking CI
+  step; the global allowlist test's "not yet built" list is empty.
 
 ---
 

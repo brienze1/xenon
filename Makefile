@@ -271,6 +271,6 @@ parity-oracle:
 	@echo "Oracle outcomes match the committed corpus expectations."
 
 parity-diff:
-	go test -tags parity -count=1 ./test/integration/parity/...
+	TZ=UTC go test -tags parity -count=1 -v -run TestSandboxMatchesPostmanOracle ./test/integration/parity/... | grep -E -- "--- FAIL|differs|parity:|^(ok|FAIL)"; exit $${PIPESTATUS[0]}
 
 parity: parity-oracle parity-diff
