@@ -232,7 +232,7 @@ describe('VariableTable', () => {
     const value = screen.getByLabelText('Value of api_key')
     expect(value).toHaveAttribute('type', 'password')
     expect(value).toHaveValue('')
-    expect(value).toHaveAttribute('placeholder', '•••••')
+    expect(value).toHaveAttribute('placeholder', '•••••…')
     expect(screen.getAllByText('Not shared')).toHaveLength(2)
     vi.mocked(vault.revealSecret).mockResolvedValue('s3cr3t')
     await user.click(screen.getByRole('button', { name: 'Reveal api_key' }))

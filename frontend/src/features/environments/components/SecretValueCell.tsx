@@ -8,7 +8,7 @@ import { useEnvironmentsStore } from '@/features/environments/store'
 import type { DraftRow } from '@/features/environments/lib/variable-draft'
 import styles from './SecretValueCell.module.css'
 
-export const MASK = '•••••'
+export const MASK = '•••••…'
 
 const PLACEHOLDERS: Record<SecretState | 'new', string> = {
   set: MASK,
