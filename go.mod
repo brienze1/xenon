@@ -53,4 +53,5 @@ require (
 ignore (
 	./build
 	./frontend
+	./tools
 )

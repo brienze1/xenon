@@ -24,3 +24,6 @@ frontend/bindings/
 
 # Refactor artifacts — never commit
 REFACTORING_REPORT.md
+
+# Node tooling outside the frontend
+tools/*/node_modules/

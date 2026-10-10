@@ -13,7 +13,7 @@ GREMLINS_VERSION := v0.6.0
 
 TAG ?= @all
 
-GO_FILES = $(shell find . -name '*.go' -not -path './frontend/*' -not -path './build/*' -not -path './.git/*')
+GO_FILES = $(shell find . -name '*.go' -not -path './frontend/*' -not -path './build/*' -not -path './tools/*' -not -path './.git/*')
 INTERNAL_PACKAGES = $(shell go list ./internal/... 2>/dev/null)
 NO_INTERNAL_NOTE := "No packages under internal/ yet - skipping (the gate enforces once backend code exists)."
 ifeq ($(OS),Windows_NT)
