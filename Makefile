@@ -13,6 +13,9 @@ GREMLINS_VERSION := v0.6.0
 
 TAG ?= @all
 
+SANDBOX_ASSETS_DIR := internal/integration/webservice/sandbox/assets
+PARITY_EXPECTED_DIR := test/integration/resources/scripts/corpus/expected
+
 GO_FILES = $(shell find . -name '*.go' -not -path './frontend/*' -not -path './build/*' -not -path './tools/*' -not -path './.git/*')
 INTERNAL_PACKAGES = $(shell go list ./internal/... 2>/dev/null)
 NO_INTERNAL_NOTE := "No packages under internal/ yet - skipping (the gate enforces once backend code exists)."
@@ -23,7 +26,8 @@ endif
 
 .PHONY: setup dev bindings build package ensure-dist sort-imports fix-struct-alignment vet \
 	check-dead-code dependency-check tests bdd validate-coverage mutation-test \
-	validate-mutation-coverage validate-test-efficacy frontend-check validate
+	validate-mutation-coverage validate-test-efficacy frontend-check validate \
+	sandbox-assets parity-oracle parity-diff parity
 
 setup:
 	@echo "Installing pinned tools..."
@@ -245,3 +249,28 @@ validate-test-efficacy:
 
 frontend-check:
 	cd frontend && npm run lint && npm run typecheck && npm test
+
+sandbox-assets:
+	@echo "Rebuilding the sandbox assets (postman-sandbox 6.7.4 libraries)..."
+	cd tools/sandbox-assets && npm ci --no-audit --no-fund && node build.mjs && node build.mjs --check
+	@if [ -n "$$(git status --porcelain -- $(SANDBOX_ASSETS_DIR))" ]; then \
+		git status --short -- $(SANDBOX_ASSETS_DIR); \
+		echo "Sandbox assets drifted from the committed build - review and commit $(SANDBOX_ASSETS_DIR)."; \
+		exit 1; \
+	fi
+	@echo "Sandbox assets match MANIFEST.json and the committed build."
+
+parity-oracle:
+	@echo "Running the parity corpus through postman-sandbox 6.7.4..."
+	cd tools/parity && npm ci --no-audit --no-fund && node oracle.mjs
+	@if [ -n "$$(git status --porcelain -- $(PARITY_EXPECTED_DIR))" ]; then \
+		git status --short -- $(PARITY_EXPECTED_DIR); \
+		echo "Oracle outcomes changed - review and commit $(PARITY_EXPECTED_DIR)."; \
+		exit 1; \
+	fi
+	@echo "Oracle outcomes match the committed corpus expectations."
+
+parity-diff:
+	go test -tags parity -count=1 ./test/integration/parity/...
+
+parity: parity-oracle parity-diff

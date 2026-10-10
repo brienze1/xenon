@@ -61,3 +61,44 @@ jobs:
 
       - name: Build
         run: make build
+
+  sandbox:
+    name: sandbox assets & parity (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: |
+            tools/sandbox-assets/package-lock.json
+            tools/parity/package-lock.json
+
+      - name: Ensure make is available
+        if: runner.os == 'Windows'
+        run: command -v make || choco install make -y
+
+      - name: Rebuild sandbox assets (fails on drift)
+        run: make sandbox-assets
+
+      - name: Run the postman-sandbox oracle (fails on drift)
+        run: make parity-oracle
+
+      # Red until the pm shims land (XEN-004 T022); the step then becomes blocking.
+      - name: Parity diff against the oracle
+        continue-on-error: true
+        run: make parity-diff
