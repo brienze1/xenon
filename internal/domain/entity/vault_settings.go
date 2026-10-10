@@ -11,7 +11,7 @@ type VaultSettings struct {
 }
 
 func NewVaultSettings(mode enums.VaultMode, passphraseCheck string) VaultSettings {
-	if mode == vaultmode.Unknown || mode == "" {
+	if vaultmode.GetVaultMode(mode.String()) == vaultmode.Unknown {
 		mode = vaultmode.None
 	}
 	return VaultSettings{Mode: mode, PassphraseCheck: passphraseCheck}

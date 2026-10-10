@@ -10,6 +10,7 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums/authtype"
 	"github.com/brienze1/xenon/internal/domain/enums/bodymode"
 	"github.com/brienze1/xenon/internal/domain/enums/formdatatype"
+	"github.com/brienze1/xenon/internal/domain/enums/referencestatus"
 	"github.com/brienze1/xenon/internal/domain/enums/variablescope"
 )
 
@@ -68,7 +69,7 @@ func TestInspectReportsStatusScopeAndMaskedValues(t *testing.T) {
 		`url 77-85 user resolved globals "luis"`,
 	)
 	locked := InspectRequestVariables(request, nil, inspectionContext(true), nil)
-	if locked.References[2].Status != "locked_secret" || !locked.References[2].Secret || locked.References[6].Status != "unresolved" {
+	if locked.References[2].Status != referencestatus.LockedSecret || !locked.References[2].Secret || locked.References[6].Status != referencestatus.Unresolved {
 		t.Errorf("locked = %v", describe(locked))
 	}
 }
