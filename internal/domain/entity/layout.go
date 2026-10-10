@@ -46,7 +46,9 @@ func (l Layout) Normalized() Layout {
 	l.RightPanelWidth = min(max(l.RightPanelWidth, minRightPanelWidth), maxRightPanelWidth)
 	l.ConsoleHeight = max(l.ConsoleHeight, minConsoleHeight)
 	l.SplitRatio = min(max(l.SplitRatio, minSplitRatio), maxSplitRatio)
-	l.RightPanelView = rightpanelview.Info
+	if l.RightPanelView != rightpanelview.Variables {
+		l.RightPanelView = rightpanelview.Info
+	}
 	if l.Split != splitorientation.SideBySide {
 		l.Split = splitorientation.Stacked
 	}

@@ -1,6 +1,10 @@
 package entity
 
-import "slices"
+import (
+	"slices"
+
+	"github.com/brienze1/xenon/internal/domain/enums"
+)
 
 type VariableUsage struct {
 	UsedIn   []string
@@ -14,13 +18,24 @@ func (v VariableUsage) withField(field string) VariableUsage {
 	return v
 }
 
+// InspectedScope is a variable table the request can use, strongest first.
+type InspectedScope struct {
+	Scope enums.VariableScope
+	Ref   ScopeRef
+}
+
 type VariableInspection struct {
 	References []ResolvedReference
 	Variables  []VariableUsage
+	Scopes     []InspectedScope
 }
 
-func NewVariableInspection() VariableInspection {
-	return VariableInspection{References: []ResolvedReference{}, Variables: []VariableUsage{}}
+func NewVariableInspection(context VariableContext) VariableInspection {
+	scopes := make([]InspectedScope, 0, len(context.Layers))
+	for _, layer := range context.Layers {
+		scopes = append(scopes, InspectedScope{Scope: layer.Scope, Ref: layer.Ref})
+	}
+	return VariableInspection{References: []ResolvedReference{}, Variables: []VariableUsage{}, Scopes: scopes}
 }
 
 func (v VariableInspection) WithReference(reference ResolvedReference) VariableInspection {

@@ -10,6 +10,7 @@ import (
 type VariableLayer struct {
 	Variables map[string]ContextVariable
 	Scope     enums.VariableScope
+	Ref       ScopeRef
 }
 
 // NewVariableLayer skips disabled rows; among duplicate keys the last enabled row wins.
@@ -21,6 +22,12 @@ func NewVariableLayer(scope enums.VariableScope, rows []VariableRow, current, se
 		}
 	}
 	return VariableLayer{Scope: scope, Variables: variables}
+}
+
+// WithRef names the table the layer comes from (env:<id>, collection:<id>, globals).
+func (v VariableLayer) WithRef(ref ScopeRef) VariableLayer {
+	v.Ref = ref
+	return v
 }
 
 func (v VariableLayer) Lookup(name string) (ContextVariable, bool) {

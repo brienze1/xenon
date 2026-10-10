@@ -21,5 +21,5 @@ func BuildVariableContext(environment *entity.Environment, ancestors []entity.Co
 }
 
 func variableLayer(kind enums.VariableScope, scope entity.ScopeRef, rows []entity.VariableRow, local entity.LocalVariables, vault entity.Vault) entity.VariableLayer {
-	return entity.NewVariableLayer(kind, rows, local.CurrentValues(scope), vault.SecretsFor(scope), vault.IsLocked())
+	return entity.NewVariableLayer(kind, rows, local.CurrentValues(scope), vault.SecretsFor(scope), vault.IsLocked()).WithRef(scope)
 }

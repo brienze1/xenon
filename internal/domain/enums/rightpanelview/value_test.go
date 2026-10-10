@@ -8,6 +8,11 @@ func TestGetRightPanelView(t *testing.T) {
 			t.Errorf("GetRightPanelView(%q) = %q, want info", raw, got)
 		}
 	}
+	for _, raw := range []string{"variables", "VARIABLES", " variables "} {
+		if got := GetRightPanelView(raw); got != Variables {
+			t.Errorf("GetRightPanelView(%q) = %q, want variables", raw, got)
+		}
+	}
 	if got := GetRightPanelView("not-a-value"); got != Unknown {
 		t.Errorf("GetRightPanelView(unknown) = %q, want unknown", got)
 	}

@@ -11,7 +11,7 @@ import (
 
 // InspectRequestVariables reports every reference of the request and of what it inherits, without generating dynamic values; offsets count UTF-16 units, secrets are masked.
 func InspectRequestVariables(request entity.Request, ancestors []entity.Collection, context entity.VariableContext, dynamicNames []string) entity.VariableInspection {
-	inspection := entity.NewVariableInspection()
+	inspection := entity.NewVariableInspection(context)
 	for _, field := range append(request.TextFields(), inheritedFields(request, ancestors)...) {
 		for _, reference := range TokenizeReferences(field.Name, field.Text) {
 			resolved := inspectReference(withUtf16Offsets(field.Text, reference), context, dynamicNames)

@@ -328,6 +328,30 @@ Feature: Inspecting, suggesting and adding variables from a request
     And the response should contain the field "references.0.display_value" equal to "http://globals.acme.test"
     And the response should contain the field "references.1.scope" equal to "collection"
 
+  @inspect @scopes
+  Scenario: Inspect names the variable tables the request can use
+    When I call "VariableService.Inspect" with
+      """
+      { "local_id": "{{Acme.local_id}}", "request": { "id": "{{list}}", "method": "GET", "url": "/x" } }
+      """
+    Then the response should contain the field "scopes" array length equal to 3
+    And the response should contain the field "scopes.0.scope" equal to "environment"
+    And the response should contain the field "scopes.0.ref" equal to "env:{{dev}}"
+    And the response should contain the field "scopes.1.scope" equal to "collection"
+    And the response should contain the field "scopes.1.ref" equal to "collection:{{billing}}"
+    And the response should contain the field "scopes.2.scope" equal to "globals"
+    And the response should contain the field "scopes.2.ref" equal to "globals"
+    When I call "EnvironmentService.SetActive" with
+      """
+      { "local_id": "{{Acme.local_id}}", "id": "" }
+      """
+    And I call "VariableService.Inspect" with
+      """
+      { "local_id": "{{Acme.local_id}}", "request": { "method": "GET", "url": "/x" } }
+      """
+    Then the response should contain the field "scopes" array length equal to 1
+    And the response should contain the field "scopes.0.ref" equal to "globals"
+
   @inspect @validation
   Scenario: Inspect needs a workspace
     When I call "VariableService.Inspect" with

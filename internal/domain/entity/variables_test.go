@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/authtype"
 	"github.com/brienze1/xenon/internal/domain/enums/bodymode"
 	"github.com/brienze1/xenon/internal/domain/enums/envcolor"
@@ -409,5 +410,26 @@ func TestSendPreflightAcknowledgements(t *testing.T) {
 	logged := SendAcknowledgement{ConfirmedEnvironmentID: "p", MissingSecrets: true}.LogValue().(map[string]any)
 	if logged["confirmedEnvironmentId"] != "p" || logged["missingSecrets"] != true {
 		t.Errorf("LogValue = %v", logged)
+	}
+}
+
+func TestLayoutKeepsTheKnownRightPanelViews(t *testing.T) {
+	for raw, want := range map[string]string{"variables": "variables", "info": "info", "unknown": "info", "": "info"} {
+		layout := NewLayout()
+		layout.RightPanelView = enums.RightPanelView(raw)
+		if got := layout.Normalized().RightPanelView.String(); got != want {
+			t.Errorf("Normalized(%q) = %q, want %q", raw, got, want)
+		}
+	}
+}
+
+func TestInspectionListsTheContextTables(t *testing.T) {
+	context := NewVariableContext(
+		NewVariableLayer(variablescope.Environment, nil, nil, nil, false).WithRef(NewEnvironmentScopeRef("01E")),
+		NewVariableLayer(variablescope.Globals, nil, nil, nil, false).WithRef(NewGlobalsScopeRef()),
+	)
+	scopes := NewVariableInspection(context).Scopes
+	if len(scopes) != 2 || scopes[0].Scope != variablescope.Environment || scopes[0].Ref.String() != "env:01E" || scopes[1].Ref.String() != "globals" {
+		t.Errorf("scopes = %+v", scopes)
 	}
 }

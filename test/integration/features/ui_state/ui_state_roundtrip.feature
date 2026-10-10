@@ -256,3 +256,21 @@ Feature: Remember tabs, drafts, sidebar and layout per workspace
       | unknown split    | Save   | { "local_id": "{{Acme.local_id}}", "layout": { "split": "diagonal" } }               | UIS-01400 |
       | unknown get      | Get    | { "local_id": "01JA2Z5V3B6C7D8E9F0G1H2J3K" }                                         | WKS-07404 |
       | unknown save     | Save   | { "local_id": "01JA2Z5V3B6C7D8E9F0G1H2J3K" }                                         | WKS-07404 |
+
+  @xen_002 @right_panel
+  Scenario Outline: The right panel remembers its <view> view
+    When I call "UIStateService.Save" with
+      """
+      { "local_id": "{{Acme.local_id}}", "tabs": [], "layout": { "right_panel_view": "<view>" } }
+      """
+    Then the call should succeed
+    When I call "UIStateService.Get" with
+      """
+      { "local_id": "{{Acme.local_id}}" }
+      """
+    Then the response should contain the field "layout.right_panel_view" equal to "<view>"
+
+    Examples:
+      | view      |
+      | info      |
+      | variables |
