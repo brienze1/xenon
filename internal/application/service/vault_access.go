@@ -8,10 +8,9 @@ import (
 )
 
 func vaultFor(ctx context.Context, findVault usecase.FindVault, localId string, rows ...[]entity.VariableRow) (*entity.Vault, error) {
-	for _, scopeRows := range rows {
-		if entity.HasSecretRows(scopeRows) {
-			return findVault.Find(ctx, localId)
-		}
+	if entity.AnyHasSecretRows(rows...) {
+		return findVault.Find(ctx, localId)
 	}
-	return &entity.Vault{LocalID: localId}, nil
+	vault := entity.NewUnopenedVault(localId)
+	return &vault, nil
 }

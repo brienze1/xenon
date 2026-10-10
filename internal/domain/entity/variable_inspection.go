@@ -1,29 +1,5 @@
 package entity
 
-import (
-	"slices"
-
-	"github.com/brienze1/xenon/internal/domain/enums"
-)
-
-type VariableUsage struct {
-	UsedIn   []string
-	Resolved ResolvedReference
-}
-
-func (v VariableUsage) withField(field string) VariableUsage {
-	if !slices.Contains(v.UsedIn, field) {
-		v.UsedIn = append(append([]string{}, v.UsedIn...), field)
-	}
-	return v
-}
-
-// InspectedScope is a variable table the request can use, strongest first.
-type InspectedScope struct {
-	Scope enums.VariableScope
-	Ref   ScopeRef
-}
-
 type VariableInspection struct {
 	References []ResolvedReference
 	Variables  []VariableUsage
@@ -52,6 +28,28 @@ func (v VariableInspection) WithUsage(resolved ResolvedReference, field string) 
 		}
 	}
 	v.Variables = append(v.Variables, VariableUsage{Resolved: resolved, UsedIn: []string{field}})
+	return v
+}
+
+func (v VariableInspection) WithNestedUsages(resolved ResolvedReference, field string, context VariableContext, dynamicNames []string) VariableInspection {
+	visited := map[string]bool{}
+	pending := []ResolvedReference{resolved}
+	for len(pending) > 0 {
+		current := pending[0]
+		pending = pending[1:]
+		if visited[current.Reference.Name] {
+			continue
+		}
+		visited[current.Reference.Name] = true
+		v = v.WithUsage(current, field)
+		variable, found := context.Lookup(current.Reference.Name)
+		if !found {
+			continue
+		}
+		for _, nested := range TokenizeReferences(field, variable.Value) {
+			pending = append(pending, context.Inspect(nested, dynamicNames))
+		}
+	}
 	return v
 }
 

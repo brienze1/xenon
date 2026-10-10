@@ -2,7 +2,6 @@ package usecase
 
 import "context"
 
-type CheckVaultPassphrase interface {
+type SealVaultPassphrase interface {
 	Seal(ctx context.Context, passphrase string) (string, error)
-	Verify(ctx context.Context, check, passphrase string) bool
 }

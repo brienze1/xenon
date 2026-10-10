@@ -71,7 +71,10 @@ Feature: Vaults unlock with a passphrase when the keychain is unavailable
 
   @setup @errors
   Scenario: A passphrase can only be chosen once
-    Given the vault passphrase is "correct horse"
+    Given I call "VaultService.SetupPassphrase" with
+      """
+      { "passphrase": "correct horse", "confirmation": "correct horse" }
+      """
     When I call "VaultService.SetupPassphrase" with
       """
       { "passphrase": "another one", "confirmation": "another one" }
@@ -80,7 +83,10 @@ Feature: Vaults unlock with a passphrase when the keychain is unavailable
 
   @unlock
   Scenario: After a restart every vault is locked until the passphrase is typed once
-    Given the vault passphrase is "correct horse"
+    Given I call "VaultService.SetupPassphrase" with
+      """
+      { "passphrase": "correct horse", "confirmation": "correct horse" }
+      """
     And I call "VariableService.SaveTable" with
       """
       { "local_id": "{{Acme.local_id}}", "scope": "globals", "rows": [ { "key": "api_key", "secret": true, "secret_value": "acme-key", "enabled": true } ] }
@@ -142,7 +148,10 @@ Feature: Vaults unlock with a passphrase when the keychain is unavailable
 
   @unlock
   Scenario: A workspace without a vault is never reported as locked
-    Given the vault passphrase is "correct horse"
+    Given I call "VaultService.SetupPassphrase" with
+      """
+      { "passphrase": "correct horse", "confirmation": "correct horse" }
+      """
     And I call "VariableService.SaveTable" with
       """
       { "local_id": "{{Acme.local_id}}", "scope": "globals", "rows": [ { "key": "api_key", "secret": true, "secret_value": "acme-key", "enabled": true } ] }
@@ -153,7 +162,10 @@ Feature: Vaults unlock with a passphrase when the keychain is unavailable
 
   @broken
   Scenario: A lost key file makes the vault broken and Reset starts an empty one
-    Given the vault passphrase is "correct horse"
+    Given I call "VaultService.SetupPassphrase" with
+      """
+      { "passphrase": "correct horse", "confirmation": "correct horse" }
+      """
     And I call "VariableService.AddVariable" with
       """
       { "local_id": "{{Acme.local_id}}", "scope": "globals", "key": "token", "value": "acme-token", "secret": true }

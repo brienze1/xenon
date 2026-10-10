@@ -31,6 +31,11 @@ func NewVariableTable(scope ScopeRef, rows []VariableRow, local LocalVariables, 
 	}
 }
 
+func (v VariableTable) WithWarningsOf(other VariableTable) VariableTable {
+	v.Warnings = other.Warnings
+	return v
+}
+
 func (v VariableTable) Entries() []VariableTableEntry {
 	entries := make([]VariableTableEntry, 0, len(v.Rows))
 	for _, row := range v.Rows {

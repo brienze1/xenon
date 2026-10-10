@@ -22,28 +22,6 @@ func globalsContext(pairs ...string) entity.VariableContext {
 	return BuildVariableContext(nil, nil, rows(pairs...), entity.NewLocalVariables(), entity.Vault{})
 }
 
-func TestTokenizeReferences(t *testing.T) {
-	text := "{{base_url}}/users/{{ id }}?x={{}}&{{{name}}}{name}{{a{b}}"
-	got := TokenizeReferences("url", text)
-	want := []entity.Reference{
-		{Name: "base_url", Field: "url", Start: 0, End: 12},
-		{Name: " id ", Field: "url", Start: 19, End: 27},
-		{Name: "", Field: "url", Start: 30, End: 34},
-		{Name: "name", Field: "url", Start: 36, End: 44},
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("TokenizeReferences() =\n%+v\nwant\n%+v", got, want)
-	}
-	for _, reference := range got {
-		if text[reference.Start:reference.End] != reference.Placeholder() {
-			t.Errorf("%+v does not point at its placeholder", reference)
-		}
-	}
-	if none := TokenizeReferences("body", "no references {here}"); none == nil || len(none) != 0 {
-		t.Errorf("TokenizeReferences() without references = %v", none)
-	}
-}
-
 func TestBuildVariableContextPrecedence(t *testing.T) {
 	environment := entity.NewEnvironment("e1", "dev")
 	environment.Variables = append(rows("tenant", "env", "only_env", "e"), entity.VariableRow{Key: "region", InitialValue: "env-disabled"})
@@ -130,7 +108,7 @@ func TestResolveTextRules(t *testing.T) {
 		}
 	}
 	nineteen := ""
-	for index := 0; index < maxResolutionPasses; index++ {
+	for index := 0; index < 19; index++ {
 		nineteen += "<"
 	}
 	if got, want := ResolveText("{{self}}", context, nil), nineteen+"{{self}}"+reverse(nineteen); got != want {
@@ -236,11 +214,11 @@ func TestResolveRequestVariablesResolvesCopies(t *testing.T) {
 func TestCheckSendPreflightAsksTheConfirmingEnvironment(t *testing.T) {
 	prod := entity.NewEnvironment("01P", "prod")
 	request := entity.NewRequest("", "r")
-	preflight := CheckSendPreflight(request, nil, globalsContext(), &prod)
+	preflight := CheckSendPreflight(request, globalsContext(), &prod)
 	if !preflight.NeedsConfirmation() || preflight.ConfirmEnvironment.ID != "01P" {
 		t.Fatalf("preflight = %+v", preflight)
 	}
-	details := ConfirmationDetails(preflight)
+	details := DescribeSendConfirmation(preflight)
 	want := []string{"environment_id=01P", "name=prod", "color=red"}
 	if len(details) != len(want) {
 		t.Fatalf("details = %+v", details)
@@ -250,7 +228,7 @@ func TestCheckSendPreflightAsksTheConfirmingEnvironment(t *testing.T) {
 			t.Errorf("detail %d = %+v, want %s", index, detail, want[index])
 		}
 	}
-	if CheckSendPreflight(request, nil, globalsContext(), nil).NeedsConfirmation() {
+	if CheckSendPreflight(request, globalsContext(), nil).NeedsConfirmation() {
 		t.Error("no environment needs no confirmation")
 	}
 }

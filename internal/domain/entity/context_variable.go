@@ -20,6 +20,14 @@ func (c ContextVariable) IsUnavailableSecret() bool {
 	return c.Secret && !c.IsResolvable()
 }
 
+func (c ContextVariable) IsMissingSecret() bool {
+	return c.Secret && c.Missing
+}
+
+func (c ContextVariable) IsLockedSecret() bool {
+	return c.Secret && c.Locked
+}
+
 func (c ContextVariable) IsAvailableSecret() bool {
 	return c.Secret && c.IsResolvable() && c.Value != ""
 }

@@ -17,7 +17,8 @@ type manageVault struct {
 	deleteVault           usecase.DeleteVault
 	findVaultSettings     usecase.FindVaultSettings
 	saveVaultSettings     usecase.SaveVaultSettings
-	checkVaultPassphrase  usecase.CheckVaultPassphrase
+	sealVaultPassphrase   usecase.SealVaultPassphrase
+	verifyVaultPassphrase usecase.VerifyVaultPassphrase
 	unlockVaults          usecase.UnlockVaults
 	copyToClipboard       usecase.CopyToClipboard
 	publishVariableEvent  usecase.PublishVariableEvent
@@ -32,7 +33,8 @@ func NewManageVaultService(
 	deleteVault usecase.DeleteVault,
 	findVaultSettings usecase.FindVaultSettings,
 	saveVaultSettings usecase.SaveVaultSettings,
-	checkVaultPassphrase usecase.CheckVaultPassphrase,
+	sealVaultPassphrase usecase.SealVaultPassphrase,
+	verifyVaultPassphrase usecase.VerifyVaultPassphrase,
 	unlockVaults usecase.UnlockVaults,
 	copyToClipboard usecase.CopyToClipboard,
 	publishVariableEvent usecase.PublishVariableEvent,
@@ -44,7 +46,8 @@ func NewManageVaultService(
 		deleteVault:           deleteVault,
 		findVaultSettings:     findVaultSettings,
 		saveVaultSettings:     saveVaultSettings,
-		checkVaultPassphrase:  checkVaultPassphrase,
+		sealVaultPassphrase:   sealVaultPassphrase,
+		verifyVaultPassphrase: verifyVaultPassphrase,
 		unlockVaults:          unlockVaults,
 		copyToClipboard:       copyToClipboard,
 		publishVariableEvent:  publishVariableEvent,
@@ -79,7 +82,7 @@ func (m *manageVault) SetupPassphrase(ctx context.Context, setup entity.Passphra
 	if settings.HasPassphrase() {
 		return nil, errs.ConflictError("a vault passphrase was already chosen", "VLT-09409")
 	}
-	check, err := m.checkVaultPassphrase.Seal(ctx, setup.Passphrase)
+	check, err := m.sealVaultPassphrase.Seal(ctx, setup.Passphrase)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +108,7 @@ func (m *manageVault) Unlock(ctx context.Context, passphrase string) (*entity.Va
 	if !settings.HasPassphrase() {
 		return nil, errs.ConflictError("no vault passphrase was chosen yet", "VLT-08409")
 	}
-	if !m.checkVaultPassphrase.Verify(ctx, settings.PassphraseCheck, passphrase) {
+	if !m.verifyVaultPassphrase.Verify(ctx, settings.PassphraseCheck, passphrase) {
 		return nil, errs.UnauthorizedError("the passphrase is wrong", "VLT-02401")
 	}
 	status, err := m.unlocked(ctx, passphrase)

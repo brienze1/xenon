@@ -433,3 +433,25 @@ func TestInspectionListsTheContextTables(t *testing.T) {
 		t.Errorf("scopes = %+v", scopes)
 	}
 }
+
+func TestTokenizeReferences(t *testing.T) {
+	text := "{{base_url}}/users/{{ id }}?x={{}}&{{{name}}}{name}{{a{b}}"
+	got := TokenizeReferences("url", text)
+	want := []Reference{
+		{Name: "base_url", Field: "url", Start: 0, End: 12},
+		{Name: " id ", Field: "url", Start: 19, End: 27},
+		{Name: "", Field: "url", Start: 30, End: 34},
+		{Name: "name", Field: "url", Start: 36, End: 44},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("TokenizeReferences() =\n%+v\nwant\n%+v", got, want)
+	}
+	for _, reference := range got {
+		if text[reference.Start:reference.End] != reference.Placeholder() {
+			t.Errorf("%+v does not point at its placeholder", reference)
+		}
+	}
+	if none := TokenizeReferences("body", "no references {here}"); none == nil || len(none) != 0 {
+		t.Errorf("TokenizeReferences() without references = %v", none)
+	}
+}

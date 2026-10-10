@@ -60,12 +60,13 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 	if err != nil {
 		return nil, err
 	}
-	preflight := usecase.CheckSendPreflight(request, scopes.ancestors, scopes.context, scopes.environment)
+	inheriting := request.Inheriting(usecase.ResolveEffectiveRequest(request, scopes.ancestors, workspace.Path))
+	preflight := usecase.CheckSendPreflight(inheriting, scopes.context, scopes.environment)
 	if preflight.AwaitsConfirmation(acknowledgement) {
-		return nil, errs.ConflictError("the active environment asks for a confirmation before every send", "SND-05409", usecase.ConfirmationDetails(preflight)...)
+		return nil, errs.ConflictError("the active environment asks for a confirmation before every send", "SND-05409", usecase.DescribeSendConfirmation(preflight)...)
 	}
 	if preflight.AwaitsSecretsAcknowledgement(acknowledgement) {
-		return nil, errs.ConflictError("the request uses secrets that have no value on this machine or are locked", "SND-06409", usecase.UnavailableSecretDetails(preflight)...)
+		return nil, errs.ConflictError("the request uses secrets that have no value on this machine or are locked", "SND-06409", usecase.DescribeUnavailableSecrets(preflight)...)
 	}
 	secrets := scopes.context.SecretValues()
 	ctx = logger.WithRedactions(ctx, secrets...)

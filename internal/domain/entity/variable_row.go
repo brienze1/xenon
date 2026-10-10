@@ -67,3 +67,23 @@ func HasSecretRows(rows []VariableRow) bool {
 	}
 	return false
 }
+
+func AnyHasSecretRows(rows ...[]VariableRow) bool {
+	for _, scopeRows := range rows {
+		if HasSecretRows(scopeRows) {
+			return true
+		}
+	}
+	return false
+}
+
+func UsesSecretRows(environment *Environment, ancestors []Collection, globals []VariableRow) bool {
+	rows := [][]VariableRow{globals}
+	if environment != nil {
+		rows = append(rows, environment.Variables)
+	}
+	if collection, found := RootCollection(ancestors); found {
+		rows = append(rows, collection.OwnVariables())
+	}
+	return AnyHasSecretRows(rows...)
+}

@@ -45,7 +45,7 @@ func (r requestVariables) load(ctx context.Context, localId, root, requestId str
 	if err != nil {
 		return nil, err
 	}
-	vault, err := r.vault(ctx, localId, usecase.UsesSecretRows(environment, ancestors, workspace.Variables))
+	vault, err := r.vault(ctx, localId, entity.UsesSecretRows(environment, ancestors, workspace.Variables))
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,8 @@ func (r requestVariables) load(ctx context.Context, localId, root, requestId str
 
 func (r requestVariables) vault(ctx context.Context, localId string, needed bool) (*entity.Vault, error) {
 	if !needed {
-		return &entity.Vault{LocalID: localId}, nil
+		vault := entity.NewUnopenedVault(localId)
+		return &vault, nil
 	}
 	return r.findVault.Find(ctx, localId)
 }

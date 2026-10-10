@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 
@@ -96,10 +97,33 @@ func (c Collection) InheritedFields(withAuth bool, headers []int) []TextField {
 	return fields
 }
 
+func (c Collection) InheritableHeaderIndexes(overriding []KeyValue) []int {
+	indexes := make([]int, 0)
+	for index, header := range c.Headers {
+		if header.IsActive() && !isOverridden(header, overriding) {
+			indexes = append(indexes, index)
+		}
+	}
+	return indexes
+}
+
 func (c Collection) ArrangedChildren(present []string) []string {
 	return arrangedNames(c.Order, present)
 }
 
 func (c Collection) LogValue() any {
 	return map[string]any{"id": c.ID, "kind": c.Kind, "name": c.Name, "description": c.Description, "headers": KeyValues(c.Headers).LogValue()}
+}
+
+func RootCollection(ancestors []Collection) (Collection, bool) {
+	if len(ancestors) == 0 {
+		return Collection{}, false
+	}
+	return ancestors[0], true
+}
+
+func isOverridden(header KeyValue, overriding []KeyValue) bool {
+	return slices.ContainsFunc(overriding, func(other KeyValue) bool {
+		return other.IsActive() && other.HasKey(header.Key)
+	})
 }

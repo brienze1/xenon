@@ -11,6 +11,10 @@ func NewTextField(name, text string) TextField {
 	return TextField{Name: name, Text: text}
 }
 
+func (t TextField) References() []Reference {
+	return TokenizeReferences(t.Name, t.Text)
+}
+
 func fieldName(parts ...string) string {
 	name := parts[0]
 	for _, part := range parts[1:] {

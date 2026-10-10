@@ -24,7 +24,6 @@ func NewVariableLayer(scope enums.VariableScope, rows []VariableRow, current, se
 	return VariableLayer{Scope: scope, Variables: variables}
 }
 
-// WithRef names the table the layer comes from (env:<id>, collection:<id>, globals).
 func (v VariableLayer) WithRef(ref ScopeRef) VariableLayer {
 	v.Ref = ref
 	return v

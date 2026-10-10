@@ -16,8 +16,11 @@ type VariableRow struct {
 }
 
 func NewVariableRow(entry entity.VariableTableEntry) VariableRow {
-	row := VariableRow{
+	return VariableRow{
 		Key:                entry.Row.Key,
+		InitialValue:       entry.VisibleInitialValue(),
+		CurrentValue:       entry.VisibleCurrentValue(),
+		SecretState:        entry.VisibleSecretState().String(),
 		Description:        entry.Row.Description,
 		HasCurrentOverride: entry.HasCurrentOverride,
 		Secret:             entry.Row.Secret,
@@ -25,13 +28,6 @@ func NewVariableRow(entry entity.VariableTableEntry) VariableRow {
 		Duplicate:          entry.Duplicate,
 		SurroundingSpaces:  entry.HasSurroundingSpaces(),
 	}
-	if entry.Row.Secret {
-		row.SecretState = entry.SecretState.String()
-		return row
-	}
-	row.InitialValue = entry.Row.InitialValue
-	row.CurrentValue = entry.CurrentValue
-	return row
 }
 
 func NewVariableRows(entries []entity.VariableTableEntry) []VariableRow {

@@ -225,8 +225,7 @@ func (m *manageVariableTable) store(ctx context.Context, localId string, loaded 
 	if err := m.publishVariableEvent.VariablesChanged(ctx, localId, []entity.ScopeRef{edited.Scope}, ""); err != nil {
 		return nil, err
 	}
-	stored := entity.NewVariableTable(edited.Scope, edited.Rows, loaded.local.WithCurrentValues(edited.Scope, edited.StoredCurrent()), vault)
-	stored.Warnings = edited.Warnings
+	stored := entity.NewVariableTable(edited.Scope, edited.Rows, loaded.local.WithCurrentValues(edited.Scope, edited.StoredCurrent()), vault).WithWarningsOf(edited)
 	return &stored, nil
 }
 

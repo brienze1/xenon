@@ -142,7 +142,10 @@ Feature: Sending with missing or locked secrets asks first
   @locked
   Scenario: Secrets of a locked vault block the send the same way
     Given the keychain is unavailable
-    And the vault passphrase is "correct horse"
+    And I call "VaultService.SetupPassphrase" with
+      """
+      { "passphrase": "correct horse", "confirmation": "correct horse" }
+      """
     And I call "VariableService.SetCurrent" with
       """
       { "local_id": "{{Acme.local_id}}", "scope": "env:{{dev}}", "key": "api_key", "value": "real-key" }

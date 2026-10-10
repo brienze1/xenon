@@ -2,6 +2,7 @@ package entity
 
 import (
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -90,7 +91,6 @@ func (r Request) MapText(transform func(string) string) Request {
 	return r
 }
 
-// TextFields lists the texts variables are resolved in, named after the request DTO: the URL, params, path variables, headers, the active auth type and the active body mode.
 func (r Request) TextFields() []TextField {
 	fields := []TextField{NewTextField("url", r.URL)}
 	fields = append(fields, keyValueFields("params", r.Params)...)
@@ -100,6 +100,42 @@ func (r Request) TextFields() []TextField {
 	fields = append(fields, keyValueFields("headers", r.Headers)...)
 	fields = append(fields, r.Auth.TextFields("auth")...)
 	return append(fields, r.Body.TextFields("body")...)
+}
+
+func (r Request) InheritedFields(ancestors []Collection) []TextField {
+	authOwner := r.inheritedAuthOwner(ancestors)
+	fields := make([]TextField, 0)
+	for index, ancestor := range ancestors {
+		fields = append(fields, ancestor.InheritedFields(index == authOwner, ancestor.InheritableHeaderIndexes(r.overridingHeaders(ancestors[index+1:])))...)
+	}
+	return fields
+}
+
+func (r Request) Inheriting(effective EffectiveRequest) Request {
+	r.Auth = effective.Auth
+	r.Headers = effective.Headers
+	return r
+}
+
+func (r Request) inheritedAuthOwner(ancestors []Collection) int {
+	owner := -1
+	if !r.Auth.IsInherited() {
+		return owner
+	}
+	for index, ancestor := range ancestors {
+		if !ancestor.Auth.IsInherited() {
+			owner = index
+		}
+	}
+	return owner
+}
+
+func (r Request) overridingHeaders(descendants []Collection) []KeyValue {
+	overriding := slices.Clone(r.Headers)
+	for _, descendant := range descendants {
+		overriding = append(overriding, descendant.Headers...)
+	}
+	return overriding
 }
 
 func (r Request) LogValue() any {

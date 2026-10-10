@@ -191,7 +191,10 @@ Feature: Switching a row between plain and secret
   @outside_edit @locked
   Scenario: A row turned secret by an outside edit while the vault is locked loses its plain current value
     Given the keychain is unavailable
-    And the vault passphrase is "correct horse"
+    And I call "VaultService.SetupPassphrase" with
+      """
+      { "passphrase": "correct horse", "confirmation": "correct horse" }
+      """
     And I call "VariableService.AddVariable" with
       """
       { "local_id": "{{Acme.local_id}}", "scope": "env:{{dev}}", "key": "other", "value": "other-value", "secret": true }

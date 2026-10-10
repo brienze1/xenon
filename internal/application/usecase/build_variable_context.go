@@ -12,8 +12,7 @@ func BuildVariableContext(environment *entity.Environment, ancestors []entity.Co
 	if environment != nil {
 		layers = append(layers, variableLayer(variablescope.Environment, environment.ScopeRef(), environment.Variables, local, vault))
 	}
-	if len(ancestors) > 0 {
-		collection := ancestors[0]
+	if collection, found := entity.RootCollection(ancestors); found {
 		layers = append(layers, variableLayer(variablescope.Collection, collection.ScopeRef(), collection.OwnVariables(), local, vault))
 	}
 	layers = append(layers, variableLayer(variablescope.Globals, entity.NewGlobalsScopeRef(), globals, local, vault))

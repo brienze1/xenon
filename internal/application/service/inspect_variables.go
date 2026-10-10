@@ -11,7 +11,7 @@ import (
 
 type inspectVariables struct {
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry
-	generateDynamicValue  usecase.GenerateDynamicValue
+	listDynamicValueNames usecase.ListDynamicValueNames
 	variables             requestVariables
 }
 
@@ -22,11 +22,11 @@ func NewInspectVariablesService(
 	findEnvironment usecase.FindEnvironment,
 	findLocalVariables usecase.FindLocalVariables,
 	findVault usecase.FindVault,
-	generateDynamicValue usecase.GenerateDynamicValue,
+	listDynamicValueNames usecase.ListDynamicValueNames,
 ) adapter.InspectVariablesService {
 	return &inspectVariables{
 		findWorkspaceRegistry: findWorkspaceRegistry,
-		generateDynamicValue:  generateDynamicValue,
+		listDynamicValueNames: listDynamicValueNames,
 		variables: requestVariables{
 			findTreeItem:       findTreeItem,
 			loadWorkspace:      loadWorkspace,
@@ -44,7 +44,7 @@ func (i *inspectVariables) Inspect(ctx context.Context, localId string, request 
 	if err != nil {
 		return nil, err
 	}
-	inspection := usecase.InspectRequestVariables(request, scopes.ancestors, scopes.context, i.generateDynamicValue.Names(ctx))
+	inspection := usecase.InspectRequestVariables(request, scopes.ancestors, scopes.context, i.listDynamicValueNames.Names(ctx))
 
 	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "request": request, "result": inspection})
 	return &inspection, nil
@@ -57,7 +57,7 @@ func (i *inspectVariables) Suggest(ctx context.Context, localId, requestId, pref
 	if err != nil {
 		return nil, err
 	}
-	suggestions := usecase.SuggestVariables(scopes.context, i.generateDynamicValue.Names(ctx), prefix)
+	suggestions := usecase.SuggestVariables(scopes.context, i.listDynamicValueNames.Names(ctx), prefix)
 
 	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "requestId": requestId, "prefix": prefix, "result": len(suggestions)})
 	return suggestions, nil

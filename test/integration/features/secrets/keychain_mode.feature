@@ -144,7 +144,7 @@ Feature: Vaults unlock through the OS keychain
 
   @probe
   Scenario: XENON_FORCE_PASSPHRASE skips the keychain even when it works
-    Given the environment variable "XENON_FORCE_PASSPHRASE" is set to "true"
+    Given the "XENON_FORCE_PASSPHRASE" env var is set to "true"
     When I call "VariableService.SaveTable" with
       """
       { "local_id": "{{Acme.local_id}}", "scope": "globals", "rows": [ { "key": "api_key", "secret": true, "secret_value": "acme-key", "enabled": true } ] }

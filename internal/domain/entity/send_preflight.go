@@ -45,11 +45,21 @@ func (s SendPreflight) IsClear() bool {
 }
 
 func (s SendPreflight) WithUnavailable(variable ContextVariable) SendPreflight {
-	if variable.Locked {
+	if variable.IsLockedSecret() {
 		s.LockedSecrets = withName(s.LockedSecrets, variable.Name)
 	} else {
 		s.MissingSecrets = withName(s.MissingSecrets, variable.Name)
 	}
+	return s
+}
+
+func (s SendPreflight) WithUnavailableSecretsOf(request Request, context VariableContext) SendPreflight {
+	request.MapText(func(text string) string {
+		for _, variable := range context.UnavailableSecretsIn(text) {
+			s = s.WithUnavailable(variable)
+		}
+		return text
+	})
 	return s
 }
 

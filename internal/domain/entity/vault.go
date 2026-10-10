@@ -17,6 +17,10 @@ func NewVault(localId string, mode enums.VaultMode, state enums.VaultState, secr
 	return Vault{LocalID: localId, Mode: mode, State: state, Secrets: copyScopes(secrets)}
 }
 
+func NewUnopenedVault(localId string) Vault {
+	return Vault{LocalID: localId}
+}
+
 func (v Vault) IsEmpty() bool {
 	return v.State == vaultstate.Empty
 }
@@ -31,6 +35,10 @@ func (v Vault) IsBroken() bool {
 
 func (v Vault) IsReadable() bool {
 	return v.State == vaultstate.Unlocked
+}
+
+func (v Vault) CanReveal() bool {
+	return v.IsReadable() || v.IsEmpty()
 }
 
 func (v Vault) IsWritable() bool {

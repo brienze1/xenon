@@ -8,6 +8,7 @@ type VaultPersistence interface {
 	usecase.DeleteVault
 	usecase.FindVaultSettings
 	usecase.SaveVaultSettings
-	usecase.CheckVaultPassphrase
+	usecase.SealVaultPassphrase
+	usecase.VerifyVaultPassphrase
 	usecase.UnlockVaults
 }

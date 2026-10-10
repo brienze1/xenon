@@ -13,7 +13,7 @@ func CheckVaultWritable(vault entity.Vault, settings entity.VaultSettings) error
 }
 
 func CheckVaultReadable(vault entity.Vault, settings entity.VaultSettings) error {
-	if vault.IsReadable() || vault.IsEmpty() {
+	if vault.CanReveal() {
 		return nil
 	}
 	return vaultAccessError(vault, settings)
