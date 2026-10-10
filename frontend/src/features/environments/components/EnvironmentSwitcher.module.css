@@ -60,12 +60,6 @@
   max-width: 420px;
 }
 
-.trigger {
-  transition:
-    box-shadow var(--duration-normal),
-    color var(--duration-normal);
-}
-
 .trigger.green {
   color: var(--neon-green);
   box-shadow: var(--glow-green);

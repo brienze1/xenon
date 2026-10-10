@@ -17,6 +17,8 @@ import styles from './EnvironmentsManager.module.css'
 
 const ENVIRONMENT_NEXT_STEP = 'Check that the workspace folder exists and is writable, then try again.'
 
+const BROKEN_NEXT_STEP = 'Fix or remove the file in the workspace folder.'
+
 const NAME_REQUIRED = 'Type a name for the environment.'
 
 function errorText(error: AppError, name: string): string {
@@ -177,9 +179,11 @@ interface EnvironmentItemProps {
 function EnvironmentItem({ environment, selected, onSelect }: EnvironmentItemProps) {
   if (environment.error !== null) {
     return (
-      <span className={cn(styles.item, styles.broken)} title={environment.error}>
+      <span className={cn(styles.item, styles.broken)} title={withNextStep(environment.error, BROKEN_NEXT_STEP)}>
         <span translate="no">{environment.name}</span>
-        <span className={styles.brokenMark}>{environment.error}</span>
+        <span className={styles.brokenMark}>
+          <NoTranslateText text={withNextStep(environment.error, BROKEN_NEXT_STEP)} terms={[environment.error]} />
+        </span>
       </span>
     )
   }

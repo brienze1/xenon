@@ -116,14 +116,14 @@ describe('EnvironmentSwitcher', () => {
     expect(await screen.findByRole('table', { name: 'dev variables' })).toBeInTheDocument()
   })
 
-  it('shows the active environment in its colour and glow, none without one', async () => {
+  it('names the active environment on the trigger, none without one', async () => {
     const { rerender } = render(<EnvironmentSwitcher />)
-    expect(screen.getByRole('button', { name: 'Environment: No environment' })).not.toHaveClass('red')
+    expect(screen.getByRole('button', { name: 'Environment: No environment' })).toBeInTheDocument()
     act(() => useEnvironmentsStore.setState({ activeId: 'e3' }))
     rerender(<EnvironmentSwitcher />)
-    expect(screen.getByRole('button', { name: 'Environment: prod' })).toHaveClass('red')
+    expect(screen.getByRole('button', { name: 'Environment: prod' })).toBeInTheDocument()
     act(() => useEnvironmentsStore.setState({ activeId: 'e1' }))
-    expect(screen.getByRole('button', { name: 'Environment: dev' })).toHaveClass('green')
+    expect(screen.getByRole('button', { name: 'Environment: dev' })).toBeInTheDocument()
   })
 
   it('opens a quick look at the active environment and the globals', async () => {

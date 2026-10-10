@@ -21,6 +21,8 @@ const CHEVRON = (
 
 const SWITCH_NEXT_STEP = 'Check that the workspace folder is writable, then pick the environment again.'
 
+const BROKEN_NEXT_STEP = 'Fix or remove the file in the workspace folder.'
+
 const MENU_SEPARATOR = <hr className={styles.separator} />
 
 const EDITORS = (
@@ -78,9 +80,11 @@ export function EnvironmentSwitcher() {
               </Dropdown.RadioItem>
             ) : (
               <Dropdown.Item key={environment.id} disabled onSelect={() => undefined}>
-                <span className={styles.broken} title={environment.error}>
+                <span className={styles.broken} title={withNextStep(environment.error, BROKEN_NEXT_STEP)}>
                   <span translate="no">{environment.name}</span>
-                  <span className={styles.brokenMark}>{environment.error}</span>
+                  <span className={styles.brokenMark}>
+                    <NoTranslateText text={withNextStep(environment.error, BROKEN_NEXT_STEP)} terms={[environment.error]} />
+                  </span>
                 </span>
               </Dropdown.Item>
             ),

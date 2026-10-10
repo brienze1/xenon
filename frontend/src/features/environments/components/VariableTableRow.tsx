@@ -101,7 +101,6 @@ export function VariableTableRow({ scope, row, index, problems, savedActionsDisa
             autoComplete="off"
             aria-label={`Current value of ${name}`}
             aria-description={inherited ? 'Inherited from the initial value' : undefined}
-            data-inherited={inherited ? 'true' : undefined}
             className={cn(styles.cell, inherited && styles.inherited)}
             spellCheck={false}
             title={current}

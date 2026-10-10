@@ -12,8 +12,8 @@ export const MASK = '•••••'
 
 const PLACEHOLDERS: Record<SecretState | 'new', string> = {
   set: MASK,
-  missing: 'No value on this machine',
-  locked: 'Vault locked',
+  missing: 's3cr3t-t0ken…',
+  locked: 's3cr3t-t0ken…',
   new: 'Secret value…',
 }
 
