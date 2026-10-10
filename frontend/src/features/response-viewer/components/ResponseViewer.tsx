@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { withNextStep } from '@/shared/lib/next-step'
 import { formatNumber } from '@/shared/lib/number-format'
 import { Banner } from '@/shared/ui/banner/Banner'
@@ -37,7 +38,17 @@ interface ResponseViewerProps {
 }
 
 export function ResponseViewer({ tabId }: ResponseViewerProps) {
-  const entry = useResponseViewerStore((state) => state.entries[tabId])
+  const { failure, sending, version, result } = useResponseViewerStore(
+    useShallow((state) => {
+      const entry = state.entries[tabId]
+      return {
+        failure: entry?.failure ?? null,
+        sending: entry?.sending ?? false,
+        version: entry?.version,
+        result: entry?.result ?? null,
+      }
+    }),
+  )
   const rehydrate = useResponseViewerStore((state) => state.rehydrate)
   const [panel, setPanel] = useState('body')
   const headingId = useId()
@@ -46,21 +57,19 @@ export function ResponseViewer({ tabId }: ResponseViewerProps) {
     void rehydrate(tabId)
   }, [tabId, rehydrate])
 
-  const result = entry?.result ?? null
-
   return (
     <section aria-labelledby={headingId} className={styles.viewer}>
       <h2 id={headingId} className="visually-hidden">
         Response
       </h2>
-      {entry?.failure ? (
+      {failure ? (
         <Banner.Root tone="error">
           <Banner.Message>
-            <NoTranslateText text={withNextStep(entry.failure.description || entry.failure.code, SEND_NEXT_STEP)} terms={[entry.failure.code]} />
+            <NoTranslateText text={withNextStep(failure.description || failure.code, SEND_NEXT_STEP)} terms={[failure.code]} />
           </Banner.Message>
         </Banner.Root>
       ) : null}
-      {entry?.sending ? (
+      {sending ? (
         SENDING
       ) : result === null ? (
         EMPTY_RESPONSE
@@ -75,7 +84,7 @@ export function ResponseViewer({ tabId }: ResponseViewerProps) {
               <Tabs.Tab value="headers">Headers ({formatNumber(result.headers.length, 0)})</Tabs.Tab>
             </Tabs.List>
             <Tabs.Panel value="body" className={styles.panel}>
-              <ResponseBody key={entry?.version} tabId={tabId} result={result} />
+              <ResponseBody key={version} tabId={tabId} result={result} />
             </Tabs.Panel>
             <Tabs.Panel value="headers" className={styles.panel}>
               <ResponseHeaders headers={result.headers} />
