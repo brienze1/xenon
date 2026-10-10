@@ -98,14 +98,8 @@ func (s *SendExecution) AddTests(tests []TestResult) {
 	}
 }
 
-func (s *SendExecution) PassedTestCount() int {
-	passed := 0
-	for _, test := range s.Tests {
-		if test.IsPassed() {
-			passed++
-		}
-	}
-	return passed
+func (s *SendExecution) TestSummary() TestSummary {
+	return NewTestSummary(s.Tests)
 }
 
 func (s *SendExecution) ScriptErrors() []ScriptError {

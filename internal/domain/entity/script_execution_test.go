@@ -231,12 +231,12 @@ func TestSendExecutionResponseTestsAndNested(t *testing.T) {
 		t.Errorf("cancelled outcome = %q", execution.Outcome)
 	}
 	execution.AddTests([]TestResult{{Name: "a", Status: teststatus.Passed, Index: 9}, {Name: "b", Status: teststatus.Failed}})
-	execution.AddTests([]TestResult{{Name: "c", Status: teststatus.Passed}})
-	if len(execution.Tests) != 3 || execution.Tests[0].Index != 0 || execution.Tests[2].Index != 2 || execution.Tests[2].Name != "c" {
+	execution.AddTests([]TestResult{{Name: "c", Status: teststatus.Passed}, {Name: "d", Status: teststatus.Skipped}})
+	if len(execution.Tests) != 4 || execution.Tests[0].Index != 0 || execution.Tests[2].Index != 2 || execution.Tests[2].Name != "c" {
 		t.Errorf("tests = %+v", execution.Tests)
 	}
-	if got := execution.PassedTestCount(); got != 2 {
-		t.Errorf("passed = %d", got)
+	if got := execution.TestSummary(); got != (TestSummary{Total: 4, Passed: 2, Failed: 1, Skipped: 1}) {
+		t.Errorf("summary = %+v", got)
 	}
 	execution.AddNested(NestedRequest{RequestID: "01R"})
 	if len(execution.Nested) != 1 || execution.Nested[0].RequestID != "01R" {

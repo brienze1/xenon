@@ -160,11 +160,11 @@ func TestNewSendResultOfAStoppedSend(t *testing.T) {
 	execution.AddRun(entity.NewScriptRun(script, time.Time{}).Failed(entity.NewScriptError(scripterrorkind.Runtime, "Error: boom", script).At(2, 7)))
 	execution.AddTests([]entity.TestResult{{Name: "pre", Status: teststatus.Passed, Script: script}})
 	result := NewSendResult("tab", execution)
-	want := []ScriptError{{Kind: "script_runtime", Message: "Error: boom", Line: intPointer(2), Column: intPointer(7), Script: ScriptRef{OwnerKind: "folder", OwnerId: "01F", OwnerName: "Auth", Phase: "preRequest"}}}
+	want := []ScriptError{{Kind: "script_runtime", Message: "Error: boom", Line: intPointer(2), Column: intPointer(7), Script: ScriptRef{OwnerKind: "folder", OwnerId: "01F", OwnerName: "Auth", Phase: "preRequest", Label: "Auth · Pre-request"}}}
 	if result.Outcome != "stopped_by_script_error" || result.SendId != "01SEND" || result.Ok || result.BodyUrl != "" || result.Headers == nil || !reflect.DeepEqual(result.ScriptErrors, want) {
 		t.Fatalf("result = %+v", result)
 	}
-	if !reflect.DeepEqual(result.Tests, []TestResult{{Name: "pre", Status: "passed", Script: want[0].Script}}) {
+	if !reflect.DeepEqual(result.Tests, []TestResult{{Name: "pre", Status: "passed", Script: want[0].Script}}) || result.TestSummary != (TestSummary{Total: 1, Passed: 1}) {
 		t.Fatalf("tests = %+v", result.Tests)
 	}
 	unlocated := NewScriptError(entity.NewScriptError(scripterrorkind.Timeout, "t", script))

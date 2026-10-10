@@ -11,6 +11,7 @@ type SendResult struct {
 	SendId       string            `json:"send_id"`
 	Outcome      string            `json:"outcome"`
 	Tests        []TestResult      `json:"tests"`
+	TestSummary  TestSummary       `json:"test_summary"`
 	ScriptErrors []ScriptError     `json:"script_errors"`
 	StatusText   string            `json:"status_text"`
 	Proto        string            `json:"proto"`
@@ -31,6 +32,7 @@ func NewSendResult(tabId string, execution entity.SendExecution) SendResult {
 		Outcome:      execution.Outcome.String(),
 		Headers:      []ResponseHeader{},
 		Tests:        make([]TestResult, 0, len(execution.Tests)),
+		TestSummary:  NewTestSummary(execution.TestSummary()),
 		ScriptErrors: []ScriptError{},
 	}
 	for _, test := range execution.Tests {
@@ -58,6 +60,7 @@ func (s SendResult) withResponse(response entity.Response) SendResult {
 		SendId:       s.SendId,
 		Outcome:      s.Outcome,
 		Tests:        s.Tests,
+		TestSummary:  s.TestSummary,
 		ScriptErrors: s.ScriptErrors,
 		Ok:           response.IsOk(),
 		StatusCode:   response.StatusCode,
