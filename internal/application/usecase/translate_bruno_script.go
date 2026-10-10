@@ -255,7 +255,7 @@ func (b *brunoTranslator) wrap(rule brunoRule) bool {
 	parts := strings.Split(rule.replacement, "%s")
 	b.out.WriteString(parts[0])
 	for index, argument := range arguments {
-		b.out.WriteString(translateBrunoCode(strings.TrimSpace(argument)))
+		b.out.WriteString(translateBrunoCode(strings.Trim(argument, " \t")))
 		b.out.WriteString(parts[index+1])
 	}
 	b.position = end

@@ -29,9 +29,6 @@ func (d DataPart) IsFile() bool {
 }
 
 func (d DataPart) IsFormLike() bool {
-	if d.UrlEncoded {
-		return true
-	}
 	for _, pair := range strings.Split(d.Value, "&") {
 		key, _, found := strings.Cut(pair, "=")
 		if !found || !formKey.MatchString(key) {

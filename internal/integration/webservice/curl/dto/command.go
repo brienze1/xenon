@@ -165,12 +165,14 @@ func (c *Command) isFormEncoded() bool {
 	if contentType := c.contentType(); contentType != "" {
 		return strings.HasPrefix(strings.ToLower(contentType), formUrlEncodedType)
 	}
+	formLike := true
 	for _, part := range c.Data {
-		if !part.IsFormLike() {
-			return false
+		if part.UrlEncoded {
+			return true
 		}
+		formLike = formLike && part.IsFormLike()
 	}
-	return true
+	return formLike
 }
 
 func (c *Command) urlEncodedRows() []entity.KeyValue {
