@@ -274,3 +274,34 @@ Feature: Remember tabs, drafts, sidebar and layout per workspace
       | view      |
       | info      |
       | variables |
+
+  @examples @xen_003
+  Scenario: An example tab keeps its kind and example id
+    When I call "UIStateService.Save" with
+      """
+      {
+        "local_id": "{{Acme.local_id}}",
+        "tabs": [
+          { "tab_id": "tab-request", "request_id": "01JB0000000000000000000004", "pinned": true, "base_revision": "abc123" },
+          { "tab_id": "tab-example", "kind": "example", "request_id": "01JB0000000000000000000004", "example_id": "01JB0000000000000000000044", "pinned": false, "base_revision": "abc123" }
+        ],
+        "active_tab_id": "tab-example",
+        "preview_tab_id": "tab-example",
+        "sidebar": { "expanded": [], "selected_id": "", "view": "collections", "search": "" },
+        "layout": {
+          "sidebar_width": 280, "sidebar_visible": true, "right_panel_width": 320, "right_panel_visible": true,
+          "right_panel_view": "info", "console_height": 200, "console_visible": false, "split": "stacked", "split_ratio": 0.5
+        }
+      }
+      """
+    Then the call should succeed
+    When I call "UIStateService.Get" with
+      """
+      { "local_id": "{{Acme.local_id}}" }
+      """
+    Then the response should contain the field "tabs.0.kind" equal to "request"
+    And the response should contain the field "tabs.0.example_id" equal to ""
+    And the response should contain the field "tabs.1.kind" equal to "example"
+    And the response should contain the field "tabs.1.request_id" equal to "01JB0000000000000000000004"
+    And the response should contain the field "tabs.1.example_id" equal to "01JB0000000000000000000044"
+    And the response should contain the field "preview_tab_id" equal to "tab-example"
