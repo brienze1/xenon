@@ -40,6 +40,7 @@ type testUtils struct {
 	keychain      *mock.Keychain
 	clipboard     *mock.Clipboard
 	logs          *mock.LogOutput
+	random        *mock.RandomSource
 	vars          map[string]string
 	environment   map[string]string
 	readOnly      []string
@@ -91,6 +92,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 			keychain:  mock.NewKeychain(),
 			clipboard: mock.NewClipboard(),
 			logs:      mock.NewLogOutput(),
+			random:    mock.NewRandomSource(),
 		}
 		if os.Getenv("LOG_LEVEL") == "" {
 			_ = os.Setenv("LOG_LEVEL", "off")
@@ -102,6 +104,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		external.SetFileWatcher(suite.watcher)
 		external.SetKeychain(suite.keychain)
 		external.SetClipboard(suite.clipboard)
+		external.SetRandomSource(suite.random)
 		external.SetHttpClientFactory(httpClient.HttpClientFactory(logger.LoggerWrapper()))
 	})
 	test := suite
@@ -144,6 +147,7 @@ func (t *testUtils) before() error {
 	t.keychain.Reset()
 	t.clipboard.Reset()
 	t.logs.Reset()
+	t.random.Reset()
 	t.restarts = 0
 	t.environment = map[string]string{}
 	t.readOnly = nil

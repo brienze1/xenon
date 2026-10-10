@@ -1,0 +1,592 @@
+{
+  "$guid": [
+    "10f5ee56-86a5-45c4-acec-7d07adc3ce9d",
+    "88802f31-0546-40c8-9ac1-3ab6dcc0edcb",
+    "5079e9ca-9887-493b-bc5a-488d7f6d8c0a"
+  ],
+  "$isoTimestamp": [
+    "2026-10-09T12:34:56.789Z",
+    "2026-10-09T12:34:56.789Z",
+    "2026-10-09T12:34:56.789Z"
+  ],
+  "$randomAbbreviation": [
+    "SDD",
+    "TCP",
+    "CSS"
+  ],
+  "$randomAbstractImage": [
+    "http://lorempixel.com/640/480/abstract",
+    "http://lorempixel.com/640/480/abstract",
+    "http://lorempixel.com/640/480/abstract"
+  ],
+  "$randomAdjective": [
+    "annoying",
+    "frantic",
+    "lazy"
+  ],
+  "$randomAlphaNumeric": [
+    "q",
+    "r",
+    "1"
+  ],
+  "$randomAnimalsImage": [
+    "http://lorempixel.com/640/480/animals",
+    "http://lorempixel.com/640/480/animals",
+    "http://lorempixel.com/640/480/animals"
+  ],
+  "$randomAvatarImage": [
+    "https://cloudflare-ipfs.com/ipfs/Qmd3W5DuhgHirLHGVixi6V76LhCkZUz6pnFt5AJBiyvHye/avatar/63.jpg",
+    "https://cloudflare-ipfs.com/ipfs/Qmd3W5DuhgHirLHGVixi6V76LhCkZUz6pnFt5AJBiyvHye/avatar/214.jpg",
+    "https://cloudflare-ipfs.com/ipfs/Qmd3W5DuhgHirLHGVixi6V76LhCkZUz6pnFt5AJBiyvHye/avatar/574.jpg"
+  ],
+  "$randomBankAccount": [
+    "42543531",
+    "89177387",
+    "63177274"
+  ],
+  "$randomBankAccountBic": [
+    "BQXXPRKP",
+    "MEFMECUK",
+    "PYXMZALY"
+  ],
+  "$randomBankAccountIban": [
+    "PT56566435191479615515384",
+    "PT94704383015408073581919",
+    "BE19761037439551"
+  ],
+  "$randomBankAccountName": [
+    "Auto Loan Account",
+    "Auto Loan Account",
+    "Personal Loan Account"
+  ],
+  "$randomBitcoin": [
+    "3FjKevp3849GN6zjJjhvAP4JL3Wnb4jAo",
+    "1fRaTrFitreC3U8z743qFNrmYpWFVvH5UC",
+    "1jGf4hy1GjN9G5aykxrrjbNAfatnUF"
+  ],
+  "$randomBoolean": [
+    "true",
+    "false",
+    "false"
+  ],
+  "$randomBs": [
+    "reintermediate distributed infrastructures",
+    "incentivize dot-com vortals",
+    "synthesize next-generation e-commerce"
+  ],
+  "$randomBsAdjective": [
+    "front-end",
+    "impactful",
+    "seamless"
+  ],
+  "$randomBsBuzz": [
+    "disintermediate",
+    "incentivize",
+    "benchmark"
+  ],
+  "$randomBsNoun": [
+    "vortals",
+    "supply-chains",
+    "applications"
+  ],
+  "$randomBusinessImage": [
+    "http://lorempixel.com/640/480/business",
+    "http://lorempixel.com/640/480/business",
+    "http://lorempixel.com/640/480/business"
+  ],
+  "$randomCatchPhrase": [
+    "Versatile analyzing paradigm",
+    "Distributed mobile strategy",
+    "Optimized motivating attitude"
+  ],
+  "$randomCatchPhraseAdjective": [
+    "Realigned",
+    "Configurable",
+    "Focused"
+  ],
+  "$randomCatchPhraseDescriptor": [
+    "uniform",
+    "transitional",
+    "static"
+  ],
+  "$randomCatchPhraseNoun": [
+    "challenge",
+    "emulation",
+    "conglomeration"
+  ],
+  "$randomCatsImage": [
+    "http://lorempixel.com/640/480/cats",
+    "http://lorempixel.com/640/480/cats",
+    "http://lorempixel.com/640/480/cats"
+  ],
+  "$randomCity": [
+    "Madison",
+    "St. Petersburg",
+    "Winston-Salem"
+  ],
+  "$randomCityImage": [
+    "http://lorempixel.com/640/480/city",
+    "http://lorempixel.com/640/480/city",
+    "http://lorempixel.com/640/480/city"
+  ],
+  "$randomColor": [
+    "aqua",
+    "teal",
+    "green"
+  ],
+  "$randomCommonFileExt": [
+    "wav",
+    "png",
+    "mpeg"
+  ],
+  "$randomCommonFileName": [
+    "part_world_way.wav",
+    "year.gif",
+    "time_woman.jpeg"
+  ],
+  "$randomCommonFileType": [
+    "video",
+    "audio",
+    "audio"
+  ],
+  "$randomCompanyName": [
+    "Becker and Sons",
+    "Stephens and Sons",
+    "Dean LLC"
+  ],
+  "$randomCompanySuffix": [
+    "Inc",
+    "LLC",
+    "Group"
+  ],
+  "$randomCountry": [
+    "Cuba",
+    "Finland",
+    "Guernsey"
+  ],
+  "$randomCountryCode": [
+    "LV",
+    "MR",
+    "ZM"
+  ],
+  "$randomCreditCardMask": [
+    "0707",
+    "1013",
+    "2533"
+  ],
+  "$randomCurrencyCode": [
+    "ZAR",
+    "AUD",
+    "CDF"
+  ],
+  "$randomCurrencyName": [
+    "Russia Ruble",
+    "Costa Rica Colon",
+    "Yemen Rial"
+  ],
+  "$randomCurrencySymbol": [
+    "₱",
+    "₹",
+    "₴"
+  ],
+  "$randomDatabaseCollation": [
+    "ascii_bin",
+    "cp1250_bin",
+    "cp1250_general_ci"
+  ],
+  "$randomDatabaseColumn": [
+    "token",
+    "createdAt",
+    "token"
+  ],
+  "$randomDatabaseEngine": [
+    "BLACKHOLE",
+    "InnoDB",
+    "ARCHIVE"
+  ],
+  "$randomDatabaseType": [
+    "bit",
+    "mediumint",
+    "smallint"
+  ],
+  "$randomDateFuture": [
+    "Sat Jul 31 2027 09:06:50 GMT+0000 (Coordinated Universal Time)",
+    "Sun Mar 07 2027 21:25:31 GMT+0000 (Coordinated Universal Time)",
+    "Sat Apr 10 2027 02:54:02 GMT+0000 (Coordinated Universal Time)"
+  ],
+  "$randomDatePast": [
+    "Fri Nov 14 2025 11:31:16 GMT+0000 (Coordinated Universal Time)",
+    "Sat Apr 18 2026 06:40:05 GMT+0000 (Coordinated Universal Time)",
+    "Fri May 29 2026 18:17:48 GMT+0000 (Coordinated Universal Time)"
+  ],
+  "$randomDateRecent": [
+    "Thu Oct 08 2026 23:49:50 GMT+0000 (Coordinated Universal Time)",
+    "Fri Oct 09 2026 06:21:26 GMT+0000 (Coordinated Universal Time)",
+    "Thu Oct 08 2026 17:35:38 GMT+0000 (Coordinated Universal Time)"
+  ],
+  "$randomDepartment": [
+    "Automotive",
+    "Computers",
+    "Outdoors"
+  ],
+  "$randomDirectoryPath": [
+    "/sys/way",
+    "/home/company",
+    "/proc/point"
+  ],
+  "$randomDomainName": [
+    "executiveleverage.name",
+    "dynamicturn-key.biz",
+    "futureinteractive.org"
+  ],
+  "$randomDomainSuffix": [
+    "io",
+    "io",
+    "name"
+  ],
+  "$randomDomainWord": [
+    "clear-day",
+    "tough-part",
+    "bad-work"
+  ],
+  "$randomEmail": [
+    "lionel.dickinson@cox.name",
+    "kileywiggins13@flatley.info",
+    "braedenbates@wiggins.com"
+  ],
+  "$randomExampleEmail": [
+    "handsome.time65@example.org",
+    "varied.eye69@example.net",
+    "frail_time69@example.com"
+  ],
+  "$randomFashionImage": [
+    "http://lorempixel.com/640/480/fashion",
+    "http://lorempixel.com/640/480/fashion",
+    "http://lorempixel.com/640/480/fashion"
+  ],
+  "$randomFileExt": [
+    "aspx",
+    "dmg",
+    "iso"
+  ],
+  "$randomFileName": [
+    "work.pages",
+    "year.aspx",
+    "case_life_place.cpp"
+  ],
+  "$randomFilePath": [
+    "/run/part/woman_group_company.zipx",
+    "/usr/week/way.css",
+    "/var/company/child_woman_part.cfg"
+  ],
+  "$randomFileType": [
+    "text",
+    "image",
+    "application"
+  ],
+  "$randomFirstName": [
+    "Kristofer",
+    "Krista",
+    "Corine"
+  ],
+  "$randomFoodImage": [
+    "http://lorempixel.com/640/480/food",
+    "http://lorempixel.com/640/480/food",
+    "http://lorempixel.com/640/480/food"
+  ],
+  "$randomFullName": [
+    "Franz Weaver",
+    "Jadyn Yates",
+    "Julian Grimes"
+  ],
+  "$randomHexColor": [
+    "#2efa68",
+    "#bcf382",
+    "#892d3e"
+  ],
+  "$randomIP": [
+    "139.68.102.148",
+    "216.106.182.211",
+    "246.109.98.117"
+  ],
+  "$randomIPV6": [
+    "7663:4f77:254c:f137:d6d4:f08c:c05c:8095",
+    "38c5:baf5:2f33:9350:1df9:8c49:765d:0660",
+    "6cfb:acdc:e7c0:d794:bc3d:5e4e:b65f:7698"
+  ],
+  "$randomImageDataUri": [
+    "data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns=%22http:%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20version=%221.1%22%20baseProfile=%22full%22%20width=%22640%22%20height=%22480%22%3E%3Crect%20width=%22100%25%22%20height=%22100%25%22%20fill=%22aqua%22%2F%3E%3Ctext%20x=%220%22%20y=%2220%22%20font-size=%2220%22%20text-anchor=%22start%22%20fill=%22white%22%3E640x480%3C%2Ftext%3E%3C%2Fsvg%3E",
+    "data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns=%22http:%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20version=%221.1%22%20baseProfile=%22full%22%20width=%22640%22%20height=%22480%22%3E%3Crect%20width=%22100%25%22%20height=%22100%25%22%20fill=%22olive%22%2F%3E%3Ctext%20x=%220%22%20y=%2220%22%20font-size=%2220%22%20text-anchor=%22start%22%20fill=%22white%22%3E640x480%3C%2Ftext%3E%3C%2Fsvg%3E",
+    "data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns=%22http:%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20version=%221.1%22%20baseProfile=%22full%22%20width=%22640%22%20height=%22480%22%3E%3Crect%20width=%22100%25%22%20height=%22100%25%22%20fill=%22purple%22%2F%3E%3Ctext%20x=%220%22%20y=%2220%22%20font-size=%2220%22%20text-anchor=%22start%22%20fill=%22white%22%3E640x480%3C%2Ftext%3E%3C%2Fsvg%3E"
+  ],
+  "$randomImageUrl": [
+    "http://lorempixel.com/640/480",
+    "http://lorempixel.com/640/480",
+    "http://lorempixel.com/640/480"
+  ],
+  "$randomIngverb": [
+    "parsing",
+    "transmitting",
+    "connecting"
+  ],
+  "$randomInt": [
+    "500",
+    "449",
+    "132"
+  ],
+  "$randomJobArea": [
+    "Factors",
+    "Factors",
+    "Interactions"
+  ],
+  "$randomJobDescriptor": [
+    "Future",
+    "International",
+    "International"
+  ],
+  "$randomJobTitle": [
+    "District Operations Architect",
+    "Global Identity Executive",
+    "Dynamic Communications Consultant"
+  ],
+  "$randomJobType": [
+    "Liaison",
+    "Consultant",
+    "Executive"
+  ],
+  "$randomLastName": [
+    "Lind",
+    "Mcdonald",
+    "Ray"
+  ],
+  "$randomLatitude": [
+    "-78.7804",
+    "85.9494",
+    "-76.7588"
+  ],
+  "$randomLocale": [
+    "lv",
+    "ne",
+    "ja"
+  ],
+  "$randomLongitude": [
+    "75.6239",
+    "146.8679",
+    "152.3193"
+  ],
+  "$randomLoremLines": [
+    "Necessitatibus nobis porro rem in totam nisi.\nVero laborum porro accusamus molestiae deserunt similique commodi.",
+    "Sint minima quae sit at impedit dolore vero quae.\nVel ut alias dolor.",
+    "Et vero qui sed omnis expedita quisquam ipsa."
+  ],
+  "$randomLoremParagraph": [
+    "Minus iste reprehenderit fugit qui. Vero et sed illum dolores ex corporis consequuntur excepturi dolorem. Sed quia id error tempora nemo fuga. Laboriosam rerum excepturi iure consequatur distinctio saepe dignissimos sapiente. Quam quia nihil.",
+    "A omnis et. Est aut quas nihil dolorum unde. Assumenda architecto nihil sint nihil. Expedita rem rerum.",
+    "Voluptate et magni voluptas non sunt vel consectetur. Rem laboriosam dolor odit consequuntur est. Sed nihil at voluptas quo qui earum dignissimos. Dolores consequatur quasi qui vitae perferendis consequatur veritatis. Nulla corrupti quia aperiam repellendus."
+  ],
+  "$randomLoremParagraphs": [
+    "Consequatur voluptas est similique at modi sed. Doloremque et qui. Molestiae qui eos pariatur quis voluptatem. Sit fugit voluptatem sapiente in veniam impedit omnis. Velit sit adipisci excepturi voluptatibus occaecati at sint.\nVelit ut provident debitis est. Tempore officiis assumenda sed in molestiae occaecati. Maiores neque aliquam aut perferendis est officia temporibus qui sit. Eveniet fugit quia tenetur. Veritatis cupiditate doloribus quis voluptatem explicabo aut qui aut molestiae.\nQui magnam ut tempora non. Aliquid voluptatibus omnis consequatur et quidem. Deserunt deserunt officiis facere id laboriosam. Autem deleniti atque quam. Maiores pariatur non.",
+    "Sit et quo dolorum magni laborum ipsa quidem consequatur neque. Repellat ratione impedit. Eos porro quas est iusto itaque dolorem. Reiciendis mollitia nesciunt aut eum modi libero.\nAut ea quia itaque voluptatem. Tempora non numquam ut adipisci in et suscipit. Dolores explicabo voluptatibus voluptatibus iure omnis vitae atque. Assumenda magnam sunt eius.\nVoluptas itaque molestias fugit ut eaque est. Ut nobis provident eveniet deserunt dolor. Nesciunt soluta officiis et. Aut aut dolores vel. Excepturi consequatur delectus beatae consequatur officiis totam ipsam cupiditate nostrum. Fuga quam consequatur alias qui vero sapiente incidunt voluptates.",
+    "Ipsum illo libero ut. Quod quo quasi ducimus est corrupti. Quod rerum consequuntur. Assumenda blanditiis est dignissimos quia nisi. Iste cumque natus ut expedita excepturi accusantium incidunt maxime. Debitis vero provident aspernatur quia.\nAut repellat ut nobis. Veritatis odio voluptatibus sed est sunt ipsam eligendi et sed. Mollitia distinctio alias alias facilis vel nisi voluptatem id explicabo. Nobis quaerat consequatur.\nSed possimus quibusdam aliquid necessitatibus dolorem quidem. Rerum in omnis ea quis autem. Minima omnis veritatis et enim dignissimos reiciendis."
+  ],
+  "$randomLoremSentence": [
+    "Magni nesciunt delectus animi voluptatum excepturi atque.",
+    "Voluptates et fuga nesciunt saepe doloremque libero.",
+    "Et perspiciatis rerum numquam aut ea."
+  ],
+  "$randomLoremSentences": [
+    "Quo ipsa aut eos necessitatibus voluptates sint natus id blanditiis. Neque explicabo enim. Totam voluptatum nihil.",
+    "Sint doloribus explicabo et perspiciatis. Asperiores aut repudiandae doloribus saepe officia quidem soluta cumque. Amet quam porro quasi.",
+    "Qui voluptas nulla minus nisi repellendus non. Alias voluptatibus non deleniti doloremque pariatur quia."
+  ],
+  "$randomLoremSlug": [
+    "mollitia-quia-ea",
+    "iste-non-quia",
+    "et-voluptates-ipsum"
+  ],
+  "$randomLoremText": [
+    "Qui sed ea quod vel. Voluptas at porro nesciunt dolor voluptatum. Sint rerum sint doloribus omnis voluptatum et.",
+    "Facilis laborum illum sunt aliquam incidunt. Et qui consequatur non est sint repellendus. Iure est eaque magnam. Vitae qui numquam aut architecto magnam ipsa excepturi nisi. Assumenda laudantium enim.",
+    "Accusamus est temporibus veniam at nisi consequatur excepturi. Et est praesentium. Est et voluptatem facilis aut illum ullam quae. Occaecati possimus qui voluptatem et omnis nostrum voluptatem quisquam dolorum. Sunt quo officia accusantium. Est voluptates nihil eos blanditiis autem et."
+  ],
+  "$randomLoremWord": [
+    "harum",
+    "sint",
+    "sapiente"
+  ],
+  "$randomLoremWords": [
+    "qui ipsa consequatur",
+    "quia vitae repudiandae",
+    "similique qui voluptas"
+  ],
+  "$randomMACAddress": [
+    "5c:31:39:19:67:eb",
+    "2f:9a:46:82:eb:b2",
+    "25:ed:b3:2b:f8:ff"
+  ],
+  "$randomMimeType": [
+    "video/ogg",
+    "font/woff",
+    "audio/ogg"
+  ],
+  "$randomMonth": [
+    "January",
+    "July",
+    "May"
+  ],
+  "$randomNamePrefix": [
+    "Miss",
+    "Ms.",
+    "Dr."
+  ],
+  "$randomNameSuffix": [
+    "I",
+    "PhD",
+    "Jr."
+  ],
+  "$randomNatureImage": [
+    "http://lorempixel.com/640/480/nature",
+    "http://lorempixel.com/640/480/nature",
+    "http://lorempixel.com/640/480/nature"
+  ],
+  "$randomNightlifeImage": [
+    "http://lorempixel.com/640/480/nightlife",
+    "http://lorempixel.com/640/480/nightlife",
+    "http://lorempixel.com/640/480/nightlife"
+  ],
+  "$randomNoun": [
+    "eye",
+    "person",
+    "part"
+  ],
+  "$randomPassword": [
+    "5XKKR0g5788i9fO",
+    "dAqNXUwpfNKo1Fc",
+    "c1QKpqLhGoy6svh"
+  ],
+  "$randomPeopleImage": [
+    "http://lorempixel.com/640/480/people",
+    "http://lorempixel.com/640/480/people",
+    "http://lorempixel.com/640/480/people"
+  ],
+  "$randomPhoneNumber": [
+    "183-661-4447",
+    "940-121-3963",
+    "783-730-5085"
+  ],
+  "$randomPhoneNumberExt": [
+    "07-330-048-6404",
+    "20-021-333-7067",
+    "73-823-958-4607"
+  ],
+  "$randomPhrase": [
+    "I'll format the digital RAM circuit, that should compile the FTP sensor!",
+    "If we validate the card, we can get to the HDD circuit through the neural USB sensor!",
+    "Use the auxiliary SQL protocol, then you can bundle the wireless matrix!"
+  ],
+  "$randomPrice": [
+    "516.45",
+    "344.98",
+    "579.86"
+  ],
+  "$randomProduct": [
+    "Sausages",
+    "Hat",
+    "Sausages"
+  ],
+  "$randomProductAdjective": [
+    "Licensed",
+    "Licensed",
+    "Ergonomic"
+  ],
+  "$randomProductMaterial": [
+    "Bronze",
+    "Fresh",
+    "Wooden"
+  ],
+  "$randomProductName": [
+    "Handcrafted Concrete Hat",
+    "Rustic Steel Gloves",
+    "Intelligent Wooden Shirt"
+  ],
+  "$randomProtocol": [
+    "http",
+    "https",
+    "http"
+  ],
+  "$randomSemver": [
+    "1.3.4",
+    "1.6.4",
+    "7.4.6"
+  ],
+  "$randomSportsImage": [
+    "http://lorempixel.com/640/480/sports",
+    "http://lorempixel.com/640/480/sports",
+    "http://lorempixel.com/640/480/sports"
+  ],
+  "$randomStreetAddress": [
+    "29435 Ford Boulevard",
+    "41167 Palmer Terrace",
+    "17786 Miles Drive"
+  ],
+  "$randomStreetName": [
+    "Harrison Road",
+    "Braun Parkway",
+    "Hart Bypass"
+  ],
+  "$randomTransactionType": [
+    "invoice",
+    "payment",
+    "invoice"
+  ],
+  "$randomTransportImage": [
+    "http://lorempixel.com/640/480/transport",
+    "http://lorempixel.com/640/480/transport",
+    "http://lorempixel.com/640/480/transport"
+  ],
+  "$randomUUID": [
+    "7902179c-459d-4136-a820-a73698f5b94d",
+    "9e7316a5-a66b-46dc-b26c-111ad4bb4cb3",
+    "174e815d-0746-4bf8-9107-e377ebd2546f"
+  ],
+  "$randomUrl": [
+    "http://productconvergence.org",
+    "https://juniorbandwidth.info",
+    "http://globalsexy.net"
+  ],
+  "$randomUserAgent": [
+    "Mozilla/5.0 (X11; Linux i686) AppleWebKit/5321 (KHTML, like Gecko) Chrome/38.0.835.0 Mobile Safari/5321",
+    "Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/1946-01-02 Firefox/36.0",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 9_0_2 like Mac OS X; en-US) AppleWebKit/532.49.1 (KHTML, like Gecko) Version/5.0.5 Mobile/8B114 Safari/6532.49.1"
+  ],
+  "$randomUserName": [
+    "witty.man57",
+    "lingering_fact81",
+    "bright_year77"
+  ],
+  "$randomVerb": [
+    "sit",
+    "cry",
+    "cry"
+  ],
+  "$randomWeekday": [
+    "Sunday",
+    "Tuesday",
+    "Monday"
+  ],
+  "$randomWord": [
+    "fact",
+    "life",
+    "thing"
+  ],
+  "$randomWords": [
+    "work problem case",
+    "hand group number",
+    "case person"
+  ],
+  "$timestamp": [
+    "1791549296",
+    "1791549296",
+    "1791549296"
+  ]
+}

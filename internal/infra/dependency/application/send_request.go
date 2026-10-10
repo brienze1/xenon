@@ -21,6 +21,7 @@ func GetSendRequestService() adapter.SendRequestService {
 				integration.GetEnvironmentPersistence(),
 				integration.GetLocalVariablesPersistence(),
 				integration.GetVaultPersistence(),
+				integration.GetDynamicValuesWebservice(),
 				integration.GetHttpWebservice(),
 				integration.GetResponseBodyPersistence(),
 				integration.GetHistoryPersistence(),

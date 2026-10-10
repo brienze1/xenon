@@ -36,7 +36,7 @@ Feature: Postman dynamic variables resolve to fresh values when sending
       | $randomWords                 | ^[a-z]+( [a-z]+){1,4}$ |
       | $randomFilePath              | ^(/[a-z]+)+/[a-z]+(_[a-z]+)*\.[a-z0-9]+$ |
       | $randomDirectoryPath         | ^(/[a-z]+)+$ |
-      | $randomCity                  | ^\p{Lu}[\p{L} .'-]*$ |
+      | $randomCity                  | ^\p{Lu}[\p{L} ./'-]*$ |
       | $randomStreetName            | ^\p{Lu}[\p{L}' -]* [A-Z][a-z]+$ |
       | $randomStreetAddress         | ^\d{3,5} \p{Lu}[\p{L}' -]* [A-Z][a-z]+$ |
       | $randomCountry               | ^\p{Lu}[\p{L} ,.'()&-]+$ |
@@ -74,7 +74,7 @@ Feature: Postman dynamic variables resolve to fresh values when sending
       | $randomPrice                 | ^\d{1,4}\.\d{2}$ |
       | $randomTransactionType       | ^(deposit\|withdrawal\|payment\|invoice)$ |
       | $randomCurrencyCode          | ^[A-Z]{3}$ |
-      | $randomCurrencyName          | ^\p{Lu}[\p{L} ().'-]+$ |
+      | $randomCurrencyName          | ^\p{Lu}[\p{L} ()./'-]+$ |
       | $randomCurrencySymbol        | ^\S{1,4}$ |
       | $randomBitcoin               | ^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$ |
       | $randomBankAccountIban       | ^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$ |
@@ -138,7 +138,7 @@ Feature: Postman dynamic variables resolve to fresh values when sending
       | $randomAlphaNumeric          | ^[a-z0-9]$ |
       | $randomFileName              | ^[a-z]+(_[a-z]+)*\.[a-z0-9]+$ |
       | $randomCommonFileName        | ^[a-z]+(_[a-z]+)*\.(pdf\|mpeg\|wav\|png\|jpeg\|gif\|mp4\|html)$ |
-      | $randomMimeType              | ^[a-z]+/[a-z0-9.+-]+$ |
+      | $randomMimeType              | ^[a-z-]+/[a-z0-9._+-]+$ |
       | $randomCommonFileType        | ^(video\|audio\|image\|text\|application)$ |
       | $randomCommonFileExt         | ^(pdf\|mpeg\|wav\|png\|jpeg\|gif\|mp4\|html)$ |
       | $randomFileType              | ^(application\|audio\|font\|image\|message\|model\|multipart\|text\|video)$ |

@@ -24,6 +24,22 @@ func (s SendPreflight) HasLockedSecrets() bool {
 	return len(s.LockedSecrets) > 0
 }
 
+// WithConfirmation asks for a confirmation when the active environment requires one; nil is "No environment".
+func (s SendPreflight) WithConfirmation(environment *Environment) SendPreflight {
+	if environment != nil && environment.ConfirmBeforeSend {
+		s.ConfirmEnvironment = environment
+	}
+	return s
+}
+
+func (s SendPreflight) AwaitsConfirmation(acknowledgement SendAcknowledgement) bool {
+	return s.NeedsConfirmation() && !acknowledgement.Confirms(*s.ConfirmEnvironment)
+}
+
+func (s SendPreflight) AwaitsSecretsAcknowledgement(acknowledgement SendAcknowledgement) bool {
+	return s.HasUnavailableSecrets() && !acknowledgement.MissingSecrets
+}
+
 func (s SendPreflight) IsClear() bool {
 	return !s.NeedsConfirmation() && !s.HasUnavailableSecrets()
 }

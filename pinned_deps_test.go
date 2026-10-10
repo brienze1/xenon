@@ -5,7 +5,6 @@ import (
 	_ "filippo.io/age"
 	_ "github.com/Bios-Marcel/wastebasket/v2"
 	_ "github.com/andybalholm/brotli"
-	_ "github.com/brianvoe/gofakeit/v7"
 	_ "github.com/cucumber/godog"
 	_ "github.com/fsnotify/fsnotify"
 	_ "github.com/go-playground/validator/v10"

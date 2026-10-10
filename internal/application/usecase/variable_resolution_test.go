@@ -232,3 +232,25 @@ func TestResolveRequestVariablesResolvesCopies(t *testing.T) {
 		t.Errorf("dynamic resolution = %q, %v, %d calls", resolvedDynamic.URL, none, calls)
 	}
 }
+
+func TestCheckSendPreflightAsksTheConfirmingEnvironment(t *testing.T) {
+	prod := entity.NewEnvironment("01P", "prod")
+	request := entity.NewRequest("", "r")
+	preflight := CheckSendPreflight(request, nil, globalsContext(), &prod)
+	if !preflight.NeedsConfirmation() || preflight.ConfirmEnvironment.ID != "01P" {
+		t.Fatalf("preflight = %+v", preflight)
+	}
+	details := ConfirmationDetails(preflight)
+	want := []string{"environment_id=01P", "name=prod", "color=red"}
+	if len(details) != len(want) {
+		t.Fatalf("details = %+v", details)
+	}
+	for index, detail := range details {
+		if got := detail.Attribute + "=" + detail.Messages[0]; got != want[index] || len(detail.Messages) != 1 {
+			t.Errorf("detail %d = %+v, want %s", index, detail, want[index])
+		}
+	}
+	if CheckSendPreflight(request, nil, globalsContext(), nil).NeedsConfirmation() {
+		t.Error("no environment needs no confirmation")
+	}
+}

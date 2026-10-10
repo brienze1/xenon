@@ -377,3 +377,37 @@ func TestMapTextWalksEveryResolvableField(t *testing.T) {
 		t.Errorf("mapping keeps empty lists non-nil: %+v", empty)
 	}
 }
+
+func TestSendPreflightAcknowledgements(t *testing.T) {
+	prod := NewEnvironment("p", "prod")
+	dev := NewEnvironment("d", "dev")
+	if (SendPreflight{}).WithConfirmation(nil).NeedsConfirmation() || (SendPreflight{}).WithConfirmation(&dev).NeedsConfirmation() {
+		t.Error("only environments with confirm-before-send ask for a confirmation")
+	}
+	preflight := SendPreflight{MissingSecrets: []string{"api_key"}}.WithConfirmation(&prod)
+	if preflight.ConfirmEnvironment.ID != "p" || len(preflight.MissingSecrets) != 1 {
+		t.Fatalf("preflight = %+v", preflight)
+	}
+	cases := []struct {
+		acknowledgement           SendAcknowledgement
+		confirmation, unavailable bool
+	}{
+		{SendAcknowledgement{}, true, true},
+		{SendAcknowledgement{ConfirmedEnvironmentID: "d"}, true, true},
+		{SendAcknowledgement{ConfirmedEnvironmentID: "P"}, true, true},
+		{SendAcknowledgement{ConfirmedEnvironmentID: "p"}, false, true},
+		{SendAcknowledgement{ConfirmedEnvironmentID: "p", MissingSecrets: true}, false, false},
+	}
+	for _, tc := range cases {
+		if preflight.AwaitsConfirmation(tc.acknowledgement) != tc.confirmation || preflight.AwaitsSecretsAcknowledgement(tc.acknowledgement) != tc.unavailable {
+			t.Errorf("%+v: confirmation %v secrets %v", tc.acknowledgement, preflight.AwaitsConfirmation(tc.acknowledgement), preflight.AwaitsSecretsAcknowledgement(tc.acknowledgement))
+		}
+	}
+	if (SendPreflight{}).AwaitsConfirmation(SendAcknowledgement{}) || (SendPreflight{}).AwaitsSecretsAcknowledgement(SendAcknowledgement{}) {
+		t.Error("a clear preflight awaits nothing")
+	}
+	logged := SendAcknowledgement{ConfirmedEnvironmentID: "p", MissingSecrets: true}.LogValue().(map[string]any)
+	if logged["confirmedEnvironmentId"] != "p" || logged["missingSecrets"] != true {
+		t.Errorf("LogValue = %v", logged)
+	}
+}

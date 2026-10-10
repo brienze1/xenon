@@ -8,11 +8,14 @@ import (
 const (
 	missingSecretsAttribute = "missing_secrets"
 	lockedSecretsAttribute  = "locked_secrets"
+	environmentIdAttribute  = "environment_id"
+	environmentAttribute    = "name"
+	colorAttribute          = "color"
 )
 
-// CheckSendPreflight lists the secrets the request uses (inherited auth and headers included, nested values followed) that have no value or sit in a locked vault.
-func CheckSendPreflight(request entity.Request, ancestors []entity.Collection, context entity.VariableContext) entity.SendPreflight {
-	preflight := entity.SendPreflight{}
+// CheckSendPreflight asks for the active environment's confirmation and lists the secrets the request uses (inherited auth and headers included, nested values followed) that have no value or sit in a locked vault.
+func CheckSendPreflight(request entity.Request, ancestors []entity.Collection, context entity.VariableContext, environment *entity.Environment) entity.SendPreflight {
+	preflight := entity.SendPreflight{}.WithConfirmation(environment)
 	inherited := request
 	inherited.Auth = effectiveAuth(request, ancestors)
 	inherited.Headers = effectiveHeaders(request, ancestors)
@@ -59,4 +62,13 @@ func UnavailableSecretDetails(preflight entity.SendPreflight) []errs.ErrorDetail
 		details = append(details, errs.ErrorDetails{Attribute: lockedSecretsAttribute, Messages: preflight.LockedSecrets})
 	}
 	return details
+}
+
+func ConfirmationDetails(preflight entity.SendPreflight) []errs.ErrorDetails {
+	environment := preflight.ConfirmEnvironment
+	return []errs.ErrorDetails{
+		{Attribute: environmentIdAttribute, Messages: []string{environment.ID}},
+		{Attribute: environmentAttribute, Messages: []string{environment.Name}},
+		{Attribute: colorAttribute, Messages: []string{environment.Color.String()}},
+	}
 }
