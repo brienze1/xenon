@@ -13,6 +13,13 @@ func TestPickFolderWithoutRunningApplicationFails(t *testing.T) {
 	}
 }
 
+func TestPickSourcesWithoutRunningApplicationFails(t *testing.T) {
+	paths, err := NewDialog().PickSources("Import")
+	if err == nil || paths != nil {
+		t.Fatalf("PickSources() = %v, %v; want an error", paths, err)
+	}
+}
+
 func TestPickFileAndSaveFileWithoutRunningApplicationFail(t *testing.T) {
 	for name, pick := range map[string]func() (string, error){
 		"file": func() (string, error) { return NewDialog().PickFile("Choose a file") },

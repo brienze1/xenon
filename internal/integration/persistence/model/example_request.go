@@ -6,13 +6,13 @@ import (
 )
 
 type ExampleRequest struct {
-	Auth          Auth           `yaml:"auth"`
-	Body          Body           `yaml:"body"`
 	Method        string         `yaml:"method"`
 	Url           string         `yaml:"url"`
+	Body          Body           `yaml:"body"`
 	Params        []KeyValue     `yaml:"params"`
 	PathVariables []PathVariable `yaml:"pathVariables"`
 	Headers       []KeyValue     `yaml:"headers"`
+	Auth          Auth           `yaml:"auth"`
 }
 
 func NewExampleRequest(request entity.ExampleRequest) ExampleRequest {

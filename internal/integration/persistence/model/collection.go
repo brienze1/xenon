@@ -10,15 +10,15 @@ import (
 type Collection struct {
 	Postman     map[string]any `yaml:"postman"`
 	Bruno       map[string]any `yaml:"bruno"`
-	Auth        Auth           `yaml:"auth"`
-	Scripts     Scripts        `yaml:"scripts"`
 	Kind        string         `yaml:"kind"`
 	Id          string         `yaml:"id"`
 	Name        string         `yaml:"name"`
 	Description string         `yaml:"description"`
+	Scripts     Scripts        `yaml:"scripts"`
 	Order       []string       `yaml:"order"`
 	Headers     []KeyValue     `yaml:"headers"`
 	Variables   []VariableRow  `yaml:"variables"`
+	Auth        Auth           `yaml:"auth"`
 	Xenon       int            `yaml:"xenon"`
 }
 
@@ -77,4 +77,27 @@ func (c *Collection) Fields() []yamlnode.Field {
 	}
 	fields = append(fields, sourceFieldsReserved(postmanKey, c.Postman))
 	return append(fields, optionalSourceFields(brunoKey, c.Bruno)...)
+}
+
+// ImportedFields writes scripts and auth details even when the file already has them.
+func (c *Collection) ImportedFields() []yamlnode.Field {
+	fields := c.Fields()
+	for index, field := range fields {
+		if field.Key == scriptsKey || field.Key == authKey {
+			fields[index] = overwritten(field)
+		}
+	}
+	return fields
+}
+
+func overwritten(field yamlnode.Field) yamlnode.Field {
+	field.KeepExisting = false
+	nested := make([]yamlnode.Field, 0, len(field.Fields))
+	for _, child := range field.Fields {
+		nested = append(nested, overwritten(child))
+	}
+	if field.Fields != nil {
+		field.Fields = nested
+	}
+	return field
 }

@@ -6,7 +6,11 @@ import (
 	"github.com/brienze1/xenon/pkg/yamlnode"
 )
 
-const formatVersion = 1
+const (
+	formatVersion = 1
+	scriptsKey    = "scripts"
+	authKey       = "auth"
+)
 
 func inheritScriptsNode() *yaml.Node {
 	return yamlnode.Bool("inheritScripts", true).Value

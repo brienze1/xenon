@@ -11,12 +11,12 @@ import (
 type Auth struct {
 	Bearer      *AuthBearer      `yaml:"bearer" json:"bearer,omitempty"`
 	Basic       *AuthBasic       `yaml:"basic" json:"basic,omitempty"`
+	Unsupported *AuthUnsupported `yaml:"unsupported" json:"-"`
+	Type        string           `yaml:"type" json:"type"`
 	ApiKey      yaml.Node        `yaml:"apikey" json:"-"`
 	OAuth2      yaml.Node        `yaml:"oauth2" json:"-"`
 	AwsV4       yaml.Node        `yaml:"awsv4" json:"-"`
 	Digest      yaml.Node        `yaml:"digest" json:"-"`
-	Unsupported *AuthUnsupported `yaml:"unsupported" json:"-"`
-	Type        string           `yaml:"type" json:"type"`
 }
 
 func NewAuth(auth entity.Auth) Auth {

@@ -1,6 +1,9 @@
 package mock
 
-import "sync"
+import (
+	"strings"
+	"sync"
+)
 
 type Dialog struct {
 	answers        []string
@@ -25,6 +28,14 @@ func (d *Dialog) PickFolder(title string) (string, error) {
 
 func (d *Dialog) PickFile(title string) (string, error) {
 	return d.answer(title)
+}
+
+func (d *Dialog) PickSources(title string) ([]string, error) {
+	answer, err := d.answer(title)
+	if answer == "" {
+		return []string{}, err
+	}
+	return strings.Split(answer, "|"), err
 }
 
 func (d *Dialog) PickSaveFile(title, suggestedName string) (string, error) {

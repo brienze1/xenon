@@ -176,6 +176,6 @@ Feature: Import a Postman collection into an existing collection or folder
       { "source_id": "{{source}}", "items": [ { "key": "0", "include": true, "target_local_id": "{{Acme.local_id}}", "target_parent_id": "{{target}}" } ], "apply_to_all": "keep_both" }
       """
     Then the call should succeed
-    And the workspace file "acme/collections/main/target/folder.yaml" should contain the field "order" with the items "health.yaml, things, health-2.yaml"
-    And the workspace file "acme/collections/main/target/health-2.yaml" should contain the field "name" equal to "Health (imported)"
+    And the workspace file "acme/collections/main/target/folder.yaml" should contain the field "order" with the items "health.yaml, things, health-(imported).yaml"
+    And the workspace file "acme/collections/main/target/health-(imported).yaml" should contain the field "name" equal to "Health (imported)"
     And the workspace file "acme/collections/main/target/health.yaml" should contain the field "method" equal to "HEAD"

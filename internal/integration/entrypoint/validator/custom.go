@@ -26,6 +26,7 @@ func CustomValidator() Validate {
 	_ = validate.RegisterValidation("absolute_path", absolutePath)
 	_ = validate.RegisterValidation("has_id", hasId)
 	_ = validate.RegisterValidation("variable_scope", variableScope)
+	_ = validate.RegisterValidation("import_input", importInput)
 	validate.RegisterTagNameFunc(jsonName)
 	return &customValidator{validator: validate}
 }
@@ -64,6 +65,10 @@ func hasId(field validator.FieldLevel) bool {
 
 func variableScope(field validator.FieldLevel) bool {
 	return entity.ParseScopeRef(field.Field().String()).IsValid()
+}
+
+func importInput(field validator.FieldLevel) bool {
+	return strings.TrimSpace(field.Field().String()) != "" || field.Parent().FieldByName("Paths").Len() > 0
 }
 
 func jsonName(field reflect.StructField) string {

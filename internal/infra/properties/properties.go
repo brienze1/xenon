@@ -8,13 +8,16 @@ import (
 )
 
 const (
-	defaultVersion    = "0.1.0"
-	defaultScryptLogN = 18
+	defaultVersion            = "0.1.0"
+	defaultScryptLogN         = 18
+	defaultImportArchiveLimit = 1 << 30
+	defaultImportFileLimit    = 200 << 20
 )
 
 type properties struct {
 	Application *application
 	Vault       *vault
+	Import      *imports
 }
 
 type application struct {
@@ -23,6 +26,11 @@ type application struct {
 	Env      string
 	Version  string
 	TempDir  string
+}
+
+type imports struct {
+	ArchiveLimitBytes int64
+	FileLimitBytes    int64
 }
 
 type vault struct {
@@ -42,6 +50,10 @@ func Properties() *properties {
 		Vault: &vault{
 			ForcePassphrase: os.Getenv("XENON_FORCE_PASSPHRASE") == "true",
 			ScryptLogN:      positiveIntOrDefault(os.Getenv("XENON_SCRYPT_LOG_N"), defaultScryptLogN),
+		},
+		Import: &imports{
+			ArchiveLimitBytes: int64(positiveIntOrDefault(os.Getenv("XENON_IMPORT_ARCHIVE_LIMIT"), defaultImportArchiveLimit)),
+			FileLimitBytes:    int64(positiveIntOrDefault(os.Getenv("XENON_IMPORT_FILE_LIMIT"), defaultImportFileLimit)),
 		},
 	}
 }

@@ -72,6 +72,13 @@ func (c Collection) HasOwnSettings() bool {
 	return !c.Auth.IsInherited() || len(c.Headers) > 0 || !c.Scripts.IsEmpty()
 }
 
+func (c Collection) WithImportedSettings(imported Collection) Collection {
+	c.Auth = imported.Auth
+	c.Headers = append([]KeyValue{}, imported.Headers...)
+	c.Scripts = imported.Scripts
+	return c
+}
+
 func (c Collection) OwnVariables() []VariableRow {
 	if c.IsFolder() {
 		return []VariableRow{}

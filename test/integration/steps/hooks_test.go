@@ -85,5 +85,6 @@ func (t *testUtils) startApp() {
 		binding.GetEnvironmentService(),
 		binding.GetVariableService(),
 		binding.GetVaultService(),
+		binding.GetImportService(),
 	}
 }

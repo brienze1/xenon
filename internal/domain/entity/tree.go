@@ -41,6 +41,17 @@ func (t Tree) SiblingEntries(id string) []string {
 	return parent.EntriesExcept(item.FileName)
 }
 
+func (t Tree) PathOf(id string) string {
+	path := ""
+	for _, ancestor := range t.Ancestors(id) {
+		path = JoinImportPath(path, ancestor.Name)
+	}
+	if item, found := t.Item(id); found {
+		path = JoinImportPath(path, item.Name)
+	}
+	return path
+}
+
 func (t Tree) Ancestors(id string) []TreeNode {
 	path, _ := ancestorsOf(t.Root.Children, id)
 	return path

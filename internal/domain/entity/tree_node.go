@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/brienze1/xenon/internal/domain/enums"
@@ -153,10 +154,25 @@ func (t TreeNode) OrderRemoving(fileName string) []string {
 	return order
 }
 
+func (t TreeNode) OrderImporting(replacements map[string]string, appended []string) []string {
+	order := make([]string, 0, len(t.Children)+len(appended))
+	for _, name := range t.ChildOrder() {
+		if replacement, found := replacements[name]; found {
+			name = replacement
+		}
+		order = append(order, name)
+	}
+	return append(order, appended...)
+}
+
 func (t TreeNode) EntriesExcept(fileName string) []string {
+	return t.EntriesWithout([]string{fileName})
+}
+
+func (t TreeNode) EntriesWithout(fileNames []string) []string {
 	entries := make([]string, 0, len(t.Entries))
 	for _, entry := range t.Entries {
-		if entry != fileName {
+		if !slices.Contains(fileNames, entry) {
 			entries = append(entries, entry)
 		}
 	}

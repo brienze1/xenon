@@ -40,6 +40,18 @@ func (d *dialogWebservice) PickFile(ctx context.Context, title string) (string, 
 	return path, nil
 }
 
+func (d *dialogWebservice) PickSources(ctx context.Context, title string) ([]string, error) {
+	logger.Debug(ctx, "Started", map[string]any{"title": title})
+
+	paths, err := d.dialog.PickSources(title)
+	if err != nil {
+		return nil, errs.InternalServerError(err, "DLG-03500", "the import picker could not be opened")
+	}
+
+	logger.Debug(ctx, "Finished", map[string]any{"title": title, "paths": paths})
+	return paths, nil
+}
+
 func (d *dialogWebservice) PickSaveFile(ctx context.Context, title, suggestedName string) (string, error) {
 	logger.Debug(ctx, "Started", map[string]any{"title": title, "suggestedName": suggestedName})
 

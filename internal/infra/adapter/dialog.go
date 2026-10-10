@@ -39,6 +39,18 @@ func (w *wailsDialog) PickFile(title string) (string, error) {
 		PromptForSingleSelection()
 }
 
+func (w *wailsDialog) PickSources(title string) ([]string, error) {
+	app, err := runningApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.Dialog.OpenFile().
+		CanChooseFiles(true).
+		CanChooseDirectories(true).
+		SetTitle(title).
+		PromptForMultipleSelection()
+}
+
 func (w *wailsDialog) PickSaveFile(title, suggestedName string) (string, error) {
 	app, err := runningApp()
 	if err != nil {

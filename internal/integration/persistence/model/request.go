@@ -7,23 +7,23 @@ import (
 )
 
 type Request struct {
+	Settings      Settings       `yaml:"settings" json:"settings"`
 	Postman       map[string]any `yaml:"postman" json:"-"`
 	Bruno         map[string]any `yaml:"bruno" json:"-"`
-	Auth          Auth           `yaml:"auth" json:"auth"`
-	Scripts       Scripts        `yaml:"scripts" json:"-"`
-	Body          Body           `yaml:"body" json:"body"`
-	Settings      Settings       `yaml:"settings" json:"settings"`
 	Kind          string         `yaml:"kind" json:"kind"`
 	Id            string         `yaml:"id" json:"id"`
 	Name          string         `yaml:"name" json:"name"`
 	Description   string         `yaml:"description" json:"description"`
 	Method        string         `yaml:"method" json:"method"`
 	Url           string         `yaml:"url" json:"url"`
+	Body          Body           `yaml:"body" json:"body"`
+	Scripts       Scripts        `yaml:"scripts" json:"-"`
 	Params        []KeyValue     `yaml:"params" json:"params"`
 	PathVariables []PathVariable `yaml:"pathVariables" json:"path_variables"`
 	Headers       []KeyValue     `yaml:"headers" json:"headers"`
 	AutoHeaders   AutoHeaders    `yaml:"autoHeaders" json:"auto_headers"`
 	Examples      []Example      `yaml:"examples" json:"-"`
+	Auth          Auth           `yaml:"auth" json:"auth"`
 	Xenon         int            `yaml:"xenon" json:"xenon"`
 }
 
