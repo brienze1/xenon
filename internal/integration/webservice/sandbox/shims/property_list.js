@@ -152,7 +152,8 @@
 
     has(key, value) {
       const normalized = this.normalize(key);
-      return this.members.some((member) => this.normalize(member.key) === normalized && (arguments.length < 2 || member.value === value));
+      const anyValue = arguments.length < 2;
+      return this.members.some((member) => this.normalize(member.key) === normalized && (anyValue || member.value === value));
     }
 
     idx(index) {
