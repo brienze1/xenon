@@ -1,4 +1,4 @@
-import { useState, useTransition, type FormEvent } from 'react'
+import { useId, useRef, useState, useTransition, type FormEvent } from 'react'
 import type { AppError } from '@/platform/errors'
 import { ENVIRONMENT_COLORS, type EnvironmentColor, type EnvironmentSummary } from '@/platform/mappers/environment'
 import { environmentScope } from '@/platform/mappers/variable'
@@ -9,11 +9,15 @@ import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
+import { useDiscardGuard } from '@/features/environments/hooks/use-discard-guard'
 import { useEnvironmentsStore } from '@/features/environments/store'
+import { DiscardChangesConfirm } from './DiscardChangesConfirm'
 import { VariableTable } from './VariableTable'
 import styles from './EnvironmentsManager.module.css'
 
 const ENVIRONMENT_NEXT_STEP = 'Check that the workspace folder exists and is writable, then try again.'
+
+const NAME_REQUIRED = 'Type a name for the environment.'
 
 function errorText(error: AppError, name: string): string {
   if (error.code === DUPLICATE_ENVIRONMENT_NAME) {
@@ -53,11 +57,7 @@ const NO_ENVIRONMENTS = <p className={styles.note}>No environments yet. Create o
 export function EnvironmentsManager() {
   const open = useEnvironmentsStore((state) => state.editor === 'manager')
   const closeEditor = useEnvironmentsStore((state) => state.closeEditor)
-  return (
-    <Dialog.Root open={open} onOpenChange={(next) => (next ? undefined : closeEditor())} className={styles.dialog}>
-      {open ? <ManagerContent onClose={closeEditor} /> : null}
-    </Dialog.Root>
-  )
+  return open ? <ManagerContent onClose={closeEditor} /> : null
 }
 
 interface ManagerContentProps {
@@ -70,13 +70,29 @@ function ManagerContent({ onClose }: ManagerContentProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [newName, setNewName] = useState('')
   const [createError, setCreateError] = useState<AppError | null>(null)
+  const [nameRequired, setNameRequired] = useState(false)
   const [creating, startCreate] = useTransition()
+  const newNameRef = useRef<HTMLInputElement>(null)
+  const newNameErrorId = useId()
   const usable = environments.filter((environment) => environment.error === null)
   const selected = usable.find((environment) => environment.id === selectedId) ?? usable[0] ?? null
+  const { confirming, guard, discard, keepEditing } = useDiscardGuard(selected ? [environmentScope(selected.id)] : [])
+  const close = () => guard(onClose)
+
+  function select(id: string) {
+    if (id !== selected?.id) {
+      guard(() => setSelectedId(id))
+    }
+  }
 
   function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const name = newName
+    if (name.trim() === '') {
+      setNameRequired(true)
+      newNameRef.current?.focus()
+      return
+    }
     startCreate(async () => {
       const created = await createEnvironment(name)
       if (!created.ok) {
@@ -85,12 +101,12 @@ function ManagerContent({ onClose }: ManagerContentProps) {
       }
       setCreateError(null)
       setNewName('')
-      setSelectedId(created.value.id)
+      select(created.value.id)
     })
   }
 
   return (
-    <>
+    <Dialog.Root open onOpenChange={(next) => (next ? undefined : close())} className={styles.dialog}>
       <Dialog.Title>Environments</Dialog.Title>
       <Dialog.Body>
         <div className={styles.layout}>
@@ -101,39 +117,54 @@ function ManagerContent({ onClose }: ManagerContentProps) {
                   <EnvironmentItem
                     environment={environment}
                     selected={environment.id === selected?.id}
-                    onSelect={() => setSelectedId(environment.id)}
+                    onSelect={() => select(environment.id)}
                   />
                 </li>
               ))}
             </ul>
             {environments.length === 0 ? NO_ENVIRONMENTS : null}
-            <form className={styles.create} onSubmit={create}>
+            <form className={styles.create} noValidate onSubmit={create}>
               <input
+                ref={newNameRef}
                 name="environment-name"
                 autoComplete="off"
                 aria-label="New environment name"
+                aria-invalid={nameRequired ? true : undefined}
+                aria-describedby={nameRequired ? newNameErrorId : undefined}
                 placeholder="New environment…"
                 className={styles.input}
                 value={newName}
-                onChange={(event) => setNewName(event.target.value)}
+                onChange={(event) => {
+                  setNewName(event.target.value)
+                  setNameRequired(false)
+                }}
               />
-              <Button type="submit" variant="secondary" size="sm" disabled={creating || newName.trim() === ''}>
+              <Button type="submit" variant="secondary" size="sm" disabled={creating}>
                 Create
               </Button>
             </form>
+            {nameRequired ? (
+              <p id={newNameErrorId} role="alert" className={styles.fieldError}>
+                {NAME_REQUIRED}
+              </p>
+            ) : null}
             {createError ? <ErrorBanner error={createError} name={newName} /> : null}
           </div>
           <div className={styles.detail}>
-            {selected ? <EnvironmentDetail key={selected.id} environment={selected} onDuplicated={setSelectedId} /> : null}
+            {selected ? <EnvironmentDetail key={selected.id} environment={selected} onDuplicated={select} /> : null}
           </div>
         </div>
       </Dialog.Body>
       <Dialog.Actions>
-        <Button variant="secondary" onClick={onClose}>
-          Close
-        </Button>
+        {confirming ? (
+          <DiscardChangesConfirm onKeepEditing={keepEditing} onDiscard={discard} />
+        ) : (
+          <Button variant="secondary" onClick={close}>
+            Close
+          </Button>
+        )}
       </Dialog.Actions>
-    </>
+    </Dialog.Root>
   )
 }
 
@@ -174,11 +205,22 @@ function EnvironmentDetail({ environment, onDuplicated }: EnvironmentDetailProps
   const deleteEnvironment = useEnvironmentsStore((state) => state.deleteEnvironment)
   const [name, setName] = useState(environment.name)
   const [error, setError] = useState<AppError | null>(null)
+  const [nameRequired, setNameRequired] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [busy, startAction] = useTransition()
+  const nameRef = useRef<HTMLInputElement>(null)
+  const nameErrorId = useId()
 
   function rename(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (name.trim() === '') {
+      setNameRequired(true)
+      nameRef.current?.focus()
+      return
+    }
+    if (name === environment.name) {
+      return
+    }
     startAction(async () => setError(await renameEnvironment(environment.id, name)))
   }
 
@@ -208,17 +250,23 @@ function EnvironmentDetail({ environment, onDuplicated }: EnvironmentDetailProps
   return (
     <div className={styles.detailBody}>
       <div className={styles.detailBar}>
-        <form className={styles.rename} onSubmit={rename}>
+        <form className={styles.rename} noValidate onSubmit={rename}>
           <input
+            ref={nameRef}
             name="name"
             autoComplete="off"
             aria-label="Environment name"
+            aria-invalid={nameRequired ? true : undefined}
+            aria-describedby={nameRequired ? nameErrorId : undefined}
             className={styles.input}
             translate="no"
             value={name}
-            onChange={(event) => setName(event.target.value)}
+            onChange={(event) => {
+              setName(event.target.value)
+              setNameRequired(false)
+            }}
           />
-          <Button type="submit" variant="secondary" size="sm" disabled={busy || name.trim() === '' || name === environment.name}>
+          <Button type="submit" variant="secondary" size="sm" disabled={busy}>
             Rename
           </Button>
         </form>
@@ -229,6 +277,11 @@ function EnvironmentDetail({ environment, onDuplicated }: EnvironmentDetailProps
           Delete
         </Button>
       </div>
+      {nameRequired ? (
+        <p id={nameErrorId} role="alert" className={styles.fieldError}>
+          {NAME_REQUIRED}
+        </p>
+      ) : null}
       <div className={styles.look}>
         <fieldset className={styles.colors}>
           {COLOR_LEGEND}

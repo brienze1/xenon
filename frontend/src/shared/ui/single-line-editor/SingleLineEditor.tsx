@@ -12,7 +12,7 @@ import {
   type CompletionSource,
   type EditorDecoration,
   type EditorSelection,
-} from './editor-extensions'
+} from '@/shared/ui/code-editor/editor-extensions'
 import styles from './SingleLineEditor.module.css'
 
 interface SingleLineEditorProps {

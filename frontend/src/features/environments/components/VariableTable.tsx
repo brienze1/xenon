@@ -9,6 +9,7 @@ import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { withNextStep } from '@/shared/lib/next-step'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import {
+  keyCounts,
   keyProblems,
   newDraftRow,
   toDraftRows,
@@ -52,6 +53,26 @@ const GIT_HISTORY_MESSAGE = (
 )
 
 const STALE_MESSAGE = <Banner.Message>This table changed outside this editor. Save to keep your edits, or discard them to see the new values.</Banner.Message>
+
+type BulkAction = 'reset' | 'persist'
+
+const BULK_MESSAGE: Record<BulkAction, string> = {
+  reset: 'Reset every current value to its initial value? The local overrides are removed.',
+  persist: 'Persist every current value as its initial value? The values are written to the workspace files.',
+}
+
+const BULK_CONFIRM: Record<BulkAction, string> = {
+  reset: 'Reset All Values',
+  persist: 'Persist All Values',
+}
+
+const EMPTY_TABLE = (
+  <tr>
+    <td colSpan={7} className={styles.empty}>
+      No variables yet. Add one to use it as <code translate="no">{'{{name}}'}</code>.
+    </td>
+  </tr>
+)
 
 const LOADING = (
   <p role="status" className={styles.note}>
@@ -121,8 +142,10 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
   const saveTable = useEnvironmentsStore((state) => state.saveTable)
   const resetValues = useEnvironmentsStore((state) => state.resetValues)
   const persistValues = useEnvironmentsStore((state) => state.persistValues)
+  const setTableDirty = useEnvironmentsStore((state) => state.setTableDirty)
   const [draft, setDraft] = useState(() => draftOf(table.rows))
   const [confirming, setConfirming] = useState<TypeSwitches | null>(null)
+  const [confirmingBulk, setConfirmingBulk] = useState<BulkAction | null>(null)
   const [failure, setFailure] = useState<AppError | null>(null)
   const [dismissedWarnings, setDismissedWarnings] = useState<string[] | null>(null)
   const [busy, startAction] = useTransition()
@@ -131,9 +154,18 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
     setDraft(draftOf(table.rows))
   }
 
+  useEffect(() => {
+    if (!draft.dirty) {
+      return
+    }
+    setTableDirty(scope, true)
+    return () => setTableDirty(scope, false)
+  }, [draft.dirty, scope, setTableDirty])
+
   const stale = draft.dirty && table.rows !== draft.base
   const hasOverrides = table.rows.some((row) => !row.secret && row.hasCurrentOverride)
   const showGitHistory = table.warnings.includes(GIT_HISTORY_WARNING) && dismissedWarnings !== table.warnings
+  const counts = keyCounts(draft.rows)
 
   function edit(change: (rows: DraftRow[]) => DraftRow[]) {
     setDraft((current) => ({ ...current, rows: change(current.rows), dirty: true }))
@@ -152,6 +184,11 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
     })
   }
 
+  function runBulk(action: BulkAction) {
+    setConfirmingBulk(null)
+    run(() => (action === 'reset' ? resetValues(scope, []) : persistValues(scope, [])))
+  }
+
   function discard() {
     setConfirming(null)
     setFailure(null)
@@ -159,6 +196,9 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
   }
 
   function requestSave() {
+    if (!draft.dirty) {
+      return
+    }
     const switches = typeSwitches(draft.rows)
     if (switches.toSecret.length > 0 || switches.toPlain.length > 0) {
       setConfirming(switches)
@@ -190,13 +230,26 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
           Add Variable
         </Button>
         <span className={styles.spacer} />
-        <Button variant="ghost" size="sm" disabled={busy || draft.dirty || !hasOverrides} onClick={() => run(() => resetValues(scope, []))}>
+        <Button variant="ghost" size="sm" disabled={busy || draft.dirty || !hasOverrides} onClick={() => setConfirmingBulk('reset')}>
           Reset All
         </Button>
-        <Button variant="ghost" size="sm" disabled={busy || draft.dirty || !hasOverrides} onClick={() => run(() => persistValues(scope, []))}>
+        <Button variant="ghost" size="sm" disabled={busy || draft.dirty || !hasOverrides} onClick={() => setConfirmingBulk('persist')}>
           Persist All
         </Button>
       </div>
+      {confirmingBulk ? (
+        <Banner.Root tone="warning">
+          <Banner.Message>{BULK_MESSAGE[confirmingBulk]}</Banner.Message>
+          <Banner.Actions>
+            <Button variant="secondary" size="sm" onClick={() => setConfirmingBulk(null)}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="sm" disabled={busy || draft.dirty} onClick={() => runBulk(confirmingBulk)}>
+              {BULK_CONFIRM[confirmingBulk]}
+            </Button>
+          </Banner.Actions>
+        </Banner.Root>
+      ) : null}
       {showGitHistory ? (
         <Banner.Root tone="warning">
           {GIT_HISTORY_MESSAGE}
@@ -213,11 +266,7 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
           {TABLE_HEAD}
           <tbody>
             {draft.rows.length === 0 ? (
-              <tr>
-                <td colSpan={7} className={styles.empty}>
-                  No variables yet. Add one to use it as {'{{name}}'}.
-                </td>
-              </tr>
+              EMPTY_TABLE
             ) : (
               draft.rows.map((row, index) => (
                 <VariableTableRow
@@ -225,7 +274,7 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
                   scope={scope}
                   row={row}
                   index={index}
-                  problems={keyProblems(draft.rows, row)}
+                  problems={keyProblems(row, counts)}
                   savedActionsDisabled={busy || draft.dirty}
                   actions={actions}
                 />
@@ -253,7 +302,7 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
         <Button variant="secondary" size="sm" disabled={!draft.dirty || busy} onClick={discard}>
           Discard Changes
         </Button>
-        <Button variant="primary" size="sm" disabled={!draft.dirty || busy || confirming !== null} onClick={requestSave}>
+        <Button variant="primary" size="sm" disabled={busy || confirming !== null} onClick={requestSave}>
           {busy ? 'Saving…' : 'Save Variables'}
         </Button>
       </div>

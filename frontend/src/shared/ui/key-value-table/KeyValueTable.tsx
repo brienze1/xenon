@@ -1,7 +1,7 @@
 import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui/button/Button'
 import type { CompletionSource, EditorDecoration, EditorSelection } from '@/shared/ui/code-editor/editor-extensions'
-import { SingleLineEditor } from '@/shared/ui/code-editor/SingleLineEditor'
+import { SingleLineEditor } from '@/shared/ui/single-line-editor/SingleLineEditor'
 import { IconButton } from '@/shared/ui/icon-button/IconButton'
 import styles from './KeyValueTable.module.css'
 

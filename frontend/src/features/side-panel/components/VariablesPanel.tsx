@@ -15,7 +15,10 @@ const VARIABLES_HEADING = <h2 className={styles.title}>Variables</h2>
 
 const NO_VARIABLES = (
   <EmptyState.Root label="No variables" size="compact">
-    <EmptyState.Description>This request uses no {'{{variables}}'}. Type {'{{'} in a field to pick one.</EmptyState.Description>
+    <EmptyState.Description>
+      This request uses no <code translate="no">{'{{variables}}'}</code>. Type <code translate="no">{'{{'}</code> in a field to pick
+      one.
+    </EmptyState.Description>
   </EmptyState.Root>
 )
 

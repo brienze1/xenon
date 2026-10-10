@@ -6,7 +6,6 @@ import { SAVE_CONFLICT_CODE, toAppError, type AppError } from '@/platform/errors
 import type { VariableSuggestion } from '@/platform/mappers/inspection'
 import {
   cancelledResult,
-  confirmationOf,
   emptyDraft,
   noAcknowledgement,
   type KeyValueRow,
@@ -14,7 +13,6 @@ import {
   type RequestAuth,
   type RequestBody,
   type RequestDraft,
-  missingSecretsOf,
   type RequestSettings,
   type SendAcknowledgement,
 } from '@/platform/mappers/request'
@@ -22,8 +20,10 @@ import {
   applyParams,
   applyUrl,
   autoHeaders,
+  confirmationOf,
   formatBulk,
   getRequest,
+  missingSecretsOf,
   parseBulk,
   saveRequest,
   saveRequestAs,

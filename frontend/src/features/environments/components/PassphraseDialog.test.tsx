@@ -64,6 +64,17 @@ describe('PassphraseDialog', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
+  it('asks for a passphrase before unlocking with an empty one', async () => {
+    render(<PassphraseDialog />)
+    act(() => useEnvironmentsStore.getState().openPassphrase('unlock'))
+    await userEvent.click(screen.getByRole('button', { name: 'Unlock' }))
+    const passphrase = screen.getByLabelText('Passphrase')
+    expect(screen.getByRole('alert')).toHaveTextContent('Type the passphrase.')
+    expect(passphrase).toHaveFocus()
+    expect(passphrase).toHaveAccessibleDescription('Type the passphrase.')
+    expect(vault.unlockVault).not.toHaveBeenCalled()
+  })
+
   it('shows the backend validation of a new passphrase', async () => {
     render(<PassphraseDialog />)
     act(() => useEnvironmentsStore.getState().openPassphrase('setup'))

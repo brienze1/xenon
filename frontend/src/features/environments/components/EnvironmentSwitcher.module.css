@@ -25,7 +25,7 @@
 .menu {
   right: 0;
   left: auto;
-  max-height: min(420px, calc(100vh - 80px));
+  max-height: min(420px, calc(100vh - var(--space-8) - var(--space-7)));
   overflow-y: auto;
 }
 
@@ -93,8 +93,16 @@
 
 .option {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: var(--space-3);
+}
+
+.optionName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .swatch {

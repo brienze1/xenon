@@ -2,24 +2,19 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import type { CompletionSource, EditorDecoration, EditorSelection } from '@/shared/ui/code-editor/editor-extensions'
-import type { CodeField } from '@/shared/ui/key-value-table/KeyValueTable'
 import { decorationsByField } from '@/features/request-builder/lib/variable-decorations'
 import { toCompletions, variableCompletionQuery } from '@/features/request-builder/lib/variable-completion'
 
-interface VariableEditing {
+export interface VariableEditing {
   /** Decorations of a request field (`url`, `params.0.value`, `body.raw`, …). */
   decorationsOf: (field: string) => readonly EditorDecoration[] | undefined
   completionSource: CompletionSource
   selectIn: (field: string, selection: EditorSelection) => void
 }
 
-interface RowLike {
-  id: string
-}
-
 const NO_DECORATIONS: readonly EditorDecoration[] = []
 
-export function useActiveEnvironmentName(): string | null {
+function useActiveEnvironmentName(): string | null {
   return useEnvironmentsStore((state) => state.environments.find((environment) => environment.id === state.activeId)?.name ?? null)
 }
 
@@ -56,19 +51,4 @@ export function useVariableEditing(tabId: string): VariableEditing {
   )
 
   return { decorationsOf, completionSource, selectIn }
-}
-
-/** Maps a key/value table's row ids to the Inspect field names of that table (`<prefix>.<index>.<key|value>`). */
-export function useTableFields(prefix: string, rows: readonly RowLike[], editing: VariableEditing) {
-  const { decorationsOf, selectIn } = editing
-  const indexOf = useMemo(() => new Map(rows.map((row, index) => [row.id, index])), [rows])
-  const cellDecorations = useCallback(
-    (id: string, field: CodeField) => decorationsOf(`${prefix}.${indexOf.get(id) ?? -1}.${field}`),
-    [decorationsOf, indexOf, prefix],
-  )
-  const onCellSelection = useCallback(
-    (id: string, field: CodeField, selection: EditorSelection) => selectIn(`${prefix}.${indexOf.get(id) ?? -1}.${field}`, selection),
-    [indexOf, prefix, selectIn],
-  )
-  return { cellDecorations, onCellSelection }
 }

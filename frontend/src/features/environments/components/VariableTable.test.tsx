@@ -132,11 +132,18 @@ describe('VariableTable', () => {
     await useEnvironmentsStore.getState().loadTable(SCOPE)
     vi.mocked(variables.resetVariables).mockResolvedValue(tableOf([plain()]))
     await user.click(await screen.findByRole('button', { name: 'Reset All' }))
+    expect(screen.getByRole('status')).toHaveTextContent('Reset every current value to its initial value?')
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(variables.resetVariables).toHaveBeenCalledTimes(1)
+    await user.click(screen.getByRole('button', { name: 'Reset All' }))
+    await user.click(screen.getByRole('button', { name: 'Reset All Values' }))
     expect(variables.resetVariables).toHaveBeenLastCalledWith('A', SCOPE, [])
     vi.mocked(variables.getVariableTable).mockResolvedValue(tableOf([plain({ currentValue: 'B', hasCurrentOverride: true })]))
     await useEnvironmentsStore.getState().loadTable(SCOPE)
     vi.mocked(variables.persistVariables).mockRejectedValue(new AppError('VAR-02422', 'secret rows have no initial value'))
     await user.click(await screen.findByRole('button', { name: 'Persist All' }))
+    expect(variables.persistVariables).toHaveBeenCalledTimes(1)
+    await user.click(screen.getByRole('button', { name: 'Persist All Values' }))
     expect(variables.persistVariables).toHaveBeenLastCalledWith('A', SCOPE, [])
     expect(await screen.findByRole('alert')).toHaveTextContent('secret rows have no initial value')
   })
@@ -149,6 +156,15 @@ describe('VariableTable', () => {
     await user.click(screen.getByRole('button', { name: 'Discard Changes' }))
     expect(screen.getByRole('button', { name: 'Reset base_url' })).toBeEnabled()
     expect(screen.getByRole('textbox', { name: 'Description of base_url' })).toHaveValue('API root')
+  })
+
+  it('flags its scope as having unsaved edits until they are saved or discarded', async () => {
+    await renderTable([plain()])
+    expect(useEnvironmentsStore.getState().dirtyScopes).toEqual([])
+    await user.type(screen.getByRole('textbox', { name: 'Description of base_url' }), '!')
+    expect(useEnvironmentsStore.getState().dirtyScopes).toEqual([SCOPE])
+    await user.click(screen.getByRole('button', { name: 'Discard Changes' }))
+    expect(useEnvironmentsStore.getState().dirtyScopes).toEqual([])
   })
 
   it('adds, renames and removes rows, then saves the whole table', async () => {
@@ -173,8 +189,10 @@ describe('VariableTable', () => {
       ],
       false,
     )
-    expect(await screen.findByRole('button', { name: 'Save Variables' })).toBeDisabled()
+    expect(await screen.findByRole('button', { name: 'Save Variables' })).toBeEnabled()
     expect(screen.getAllByRole('row')).toHaveLength(2)
+    await user.click(screen.getByRole('button', { name: 'Save Variables' }))
+    expect(variables.saveVariableTable).toHaveBeenCalledTimes(1)
   })
 
   it('shows a save error inline and keeps the edits', async () => {

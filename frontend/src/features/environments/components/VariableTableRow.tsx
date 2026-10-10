@@ -64,7 +64,7 @@ export function VariableTableRow({ scope, row, index, problems, savedActionsDisa
             className={styles.cell}
             spellCheck={false}
             translate="no"
-            placeholder="name"
+            placeholder="base_url…"
             title={row.key}
             value={row.key}
             onChange={(event) => change({ key: event.target.value })}

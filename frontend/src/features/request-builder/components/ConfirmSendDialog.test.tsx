@@ -2,7 +2,15 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/platform/services/requests', () => ({ sendRequest: vi.fn(), autoHeaders: vi.fn() }))
+vi.mock('@/platform/services/requests', async (importOriginal) => {
+  const { confirmationOf, missingSecretsOf } = await importOriginal<typeof import('@/platform/services/requests')>()
+  return {
+    confirmationOf,
+    missingSecretsOf,
+    sendRequest: vi.fn(),
+    autoHeaders: vi.fn(),
+  }
+})
 vi.mock('@/platform/services/variables', () => ({ inspectVariables: vi.fn(async () => ({ references: [], variables: [], scopes: {} })) }))
 
 const requests = await import('@/platform/services/requests')
@@ -44,11 +52,10 @@ describe('ConfirmSendDialog', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('names the environment in its colour and cancels without sending', async () => {
+  it('names the environment and cancels without sending', async () => {
     askToConfirm('red')
     render(<ConfirmSendDialog tabId={TAB} />)
     const dialog = screen.getByRole('dialog', { name: 'Send to prod?' })
-    expect(dialog).toHaveClass('red')
     expect(within(dialog).getByText('prod', { selector: 'strong' })).toBeInTheDocument()
     await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -60,7 +67,6 @@ describe('ConfirmSendDialog', () => {
     askToConfirm('none', true)
     vi.mocked(requests.sendRequest).mockReturnValue({ result: new Promise(() => undefined), cancel: vi.fn() })
     render(<ConfirmSendDialog tabId={TAB} />)
-    expect(screen.getByRole('dialog')).not.toHaveClass('none')
     await userEvent.click(screen.getByRole('button', { name: 'Send to prod' }))
     expect(requests.sendRequest).toHaveBeenCalledWith('ws', TAB, expect.any(Object), { confirmedEnvironmentId: '01P', missingSecrets: true })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()

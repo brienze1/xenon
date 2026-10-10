@@ -13,7 +13,6 @@ const NEON_COLORS: ReadonlySet<string> = new Set(['green', 'cyan', 'magenta', 'y
 /** Asks before sending to an environment with "Confirm before send" (Go refused the send with SND-05409). */
 export function ConfirmSendDialog({ tabId }: ConfirmSendDialogProps) {
   const confirmation = useRequestBuilderStore((state) => state.tabs[tabId]?.confirmation ?? null)
-  const missingSecrets = useRequestBuilderStore((state) => state.tabs[tabId]?.acknowledgement.missingSecrets === true)
   const send = useRequestBuilderStore((state) => state.send)
   const dismiss = useRequestBuilderStore((state) => state.dismissConfirmation)
   const close = () => dismiss(tabId)
@@ -22,6 +21,7 @@ export function ConfirmSendDialog({ tabId }: ConfirmSendDialogProps) {
     if (confirmation === null) {
       return
     }
+    const missingSecrets = useRequestBuilderStore.getState().tabs[tabId]?.acknowledgement.missingSecrets === true
     dismiss(tabId)
     void send(tabId, { confirmedEnvironmentId: confirmation.environmentId, missingSecrets })
   }

@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import type { AppError } from '@/platform/errors'
 import type { SecretState } from '@/platform/mappers/variable'
+import { withNextStep } from '@/shared/lib/next-step'
 import { IconButton } from '@/shared/ui/icon-button/IconButton'
+import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import type { DraftRow } from '@/features/environments/lib/variable-draft'
 import styles from './SecretValueCell.module.css'
@@ -12,7 +14,7 @@ const PLACEHOLDERS: Record<SecretState | 'new', string> = {
   set: MASK,
   missing: 'No value on this machine',
   locked: 'Vault locked',
-  new: 'Secret value',
+  new: 'Secret value…',
 }
 
 const BADGE_TEXT: Partial<Record<SecretState, string>> = {
@@ -24,6 +26,8 @@ const BADGE_HINT: Partial<Record<SecretState, string>> = {
   missing: 'This secret has no value on this machine. Type one to store it in the vault.',
   locked: 'The vault is locked. Unlock it to use or reveal this secret.',
 }
+
+const SECRET_NEXT_STEP = 'Unlock the vault if it is locked, then try again.'
 
 const EYE_GLYPH = <span aria-hidden="true">◉</span>
 const COPY_GLYPH = <span aria-hidden="true">⧉</span>
@@ -100,7 +104,7 @@ export function SecretValueCell({ scope, row, name, onChange }: SecretValueCellP
       </IconButton>
       {failure ? (
         <span role="alert" className={styles.error}>
-          {failure.description || failure.code}
+          <NoTranslateText text={withNextStep(failure.description || failure.code, SECRET_NEXT_STEP)} terms={[failure.code]} />
         </span>
       ) : null}
     </div>

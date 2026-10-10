@@ -1,11 +1,8 @@
 import { Tabs } from '@/shared/ui/tabs/Tabs'
+import { SIDE_PANEL_VIEWS, type SidePanelView } from '@/features/side-panel/model'
 import { InfoPanel } from './InfoPanel'
 import styles from './SidePanel.module.css'
 import { VariablesPanel } from './VariablesPanel'
-
-export const SIDE_PANEL_VIEWS = ['variables', 'info'] as const
-
-export type SidePanelView = (typeof SIDE_PANEL_VIEWS)[number]
 
 interface SidePanelProps {
   tabId: string

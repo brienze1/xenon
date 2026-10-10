@@ -200,26 +200,41 @@ button.item:focus-visible {
 
 .colorSwatch[data-color='green'] {
   background: var(--neon-green);
-  box-shadow: var(--glow-green);
 }
 
 .colorSwatch[data-color='cyan'] {
   background: var(--neon-cyan);
-  box-shadow: var(--glow-cyan);
 }
 
 .colorSwatch[data-color='magenta'] {
   background: var(--neon-magenta);
-  box-shadow: var(--glow-magenta);
 }
 
 .colorSwatch[data-color='yellow'] {
   background: var(--neon-yellow);
-  box-shadow: var(--glow-yellow);
 }
 
 .colorSwatch[data-color='red'] {
   background: var(--neon-red);
+}
+
+.colorOption:has(:checked) .colorSwatch[data-color='green'] {
+  box-shadow: var(--glow-green);
+}
+
+.colorOption:has(:checked) .colorSwatch[data-color='cyan'] {
+  box-shadow: var(--glow-cyan);
+}
+
+.colorOption:has(:checked) .colorSwatch[data-color='magenta'] {
+  box-shadow: var(--glow-magenta);
+}
+
+.colorOption:has(:checked) .colorSwatch[data-color='yellow'] {
+  box-shadow: var(--glow-yellow);
+}
+
+.colorOption:has(:checked) .colorSwatch[data-color='red'] {
   box-shadow: var(--glow-red);
 }
 
@@ -228,5 +243,11 @@ button.item:focus-visible {
   align-items: center;
   gap: var(--space-2);
   color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.fieldError {
+  margin: 0;
+  color: var(--status-error);
   font-size: var(--font-size-sm);
 }

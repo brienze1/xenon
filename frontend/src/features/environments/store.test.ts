@@ -202,6 +202,17 @@ describe('environments store', () => {
     expect(store().editor).toBeNull()
   })
 
+  it('tracks which tables have unsaved edits and forgets them on reset', () => {
+    store().setTableDirty('globals', true)
+    store().setTableDirty('env:e1', true)
+    store().setTableDirty('globals', true)
+    expect(store().dirtyScopes).toEqual(['globals', 'env:e1'])
+    store().setTableDirty('globals', false)
+    expect(store().dirtyScopes).toEqual(['env:e1'])
+    store().reset()
+    expect(store().dirtyScopes).toEqual([])
+  })
+
   it('loads, saves, resets and persists a variable table', async () => {
     vi.mocked(variables.getVariableTable).mockResolvedValue(table)
     const loading = store().loadTable('env:e1')

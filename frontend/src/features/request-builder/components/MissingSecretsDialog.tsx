@@ -30,13 +30,13 @@ function SecretList({ title, names }: SecretListProps) {
 
 export function MissingSecretsDialog({ tabId }: MissingSecretsDialogProps) {
   const missingSecrets = useRequestBuilderStore((state) => state.tabs[tabId]?.missingSecrets ?? null)
-  const confirmedEnvironmentId = useRequestBuilderStore((state) => state.tabs[tabId]?.acknowledgement.confirmedEnvironmentId ?? '')
   const send = useRequestBuilderStore((state) => state.send)
   const dismiss = useRequestBuilderStore((state) => state.dismissMissingSecrets)
   const openPassphrase = useEnvironmentsStore((state) => state.openPassphrase)
   const close = () => dismiss(tabId)
 
   function sendAnyway() {
+    const confirmedEnvironmentId = useRequestBuilderStore.getState().tabs[tabId]?.acknowledgement.confirmedEnvironmentId ?? ''
     dismiss(tabId)
     void send(tabId, { confirmedEnvironmentId, missingSecrets: true })
   }

@@ -1,9 +1,10 @@
 import type { KeyValueRow, PathVariableRow } from '@/platform/mappers/request'
 import { KeyValueTable, type KeyValueExamples } from '@/shared/ui/key-value-table/KeyValueTable'
 import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
-import { SingleLineEditor } from '@/shared/ui/code-editor/SingleLineEditor'
+import { SingleLineEditor } from '@/shared/ui/single-line-editor/SingleLineEditor'
 import { PanelSection } from '@/shared/ui/panel-section/PanelSection'
-import { useTableFields, useVariableEditing } from '@/features/request-builder/hooks/use-variable-editing'
+import { useTableFields } from '@/features/request-builder/hooks/use-table-fields'
+import { useVariableEditing } from '@/features/request-builder/hooks/use-variable-editing'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import styles from './ParamsPanel.module.css'
 

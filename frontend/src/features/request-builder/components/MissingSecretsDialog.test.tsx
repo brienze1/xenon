@@ -2,7 +2,15 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/platform/services/requests', () => ({ sendRequest: vi.fn(), autoHeaders: vi.fn() }))
+vi.mock('@/platform/services/requests', async (importOriginal) => {
+  const { confirmationOf, missingSecretsOf } = await importOriginal<typeof import('@/platform/services/requests')>()
+  return {
+    confirmationOf,
+    missingSecretsOf,
+    sendRequest: vi.fn(),
+    autoHeaders: vi.fn(),
+  }
+})
 vi.mock('@/platform/services/environments', () => ({ listEnvironments: vi.fn(), setActiveEnvironment: vi.fn() }))
 
 const requests = await import('@/platform/services/requests')

@@ -11,6 +11,8 @@ vi.mock('@/platform/services/variables', () => ({
   setCurrentValue: vi.fn(),
   addVariable: vi.fn(),
   getVariableTable: vi.fn(),
+  DUPLICATE_VARIABLE: 'VAR-04409',
+  INVALID_NEW_VARIABLE_KEY: 'VAR-13400',
 }))
 vi.mock('@/platform/services/vault', () => ({
   PASSPHRASE_SETUP_REQUIRED: 'VLT-05409',
@@ -101,7 +103,7 @@ describe('VariablesPanel', () => {
     const input = within(base).getByRole('textbox', { name: 'Value of base_url' })
     await userEvent.clear(input)
     await userEvent.type(input, 'https://local')
-    await userEvent.click(within(base).getByRole('button', { name: 'Save' }))
+    await userEvent.click(within(base).getByRole('button', { name: 'Save base_url' }))
     expect(variables.setCurrentValue).toHaveBeenCalledWith('ws', 'env:e1', 'base_url', 'https://local')
     expect(variables.inspectVariables).toHaveBeenCalled()
   })
@@ -112,8 +114,8 @@ describe('VariablesPanel', () => {
     render(<VariablesPanel tabId={TAB} />)
     const base = item('base_url')
     await userEvent.type(within(base).getByRole('textbox', { name: 'Value of base_url' }), 'x')
-    await userEvent.click(within(base).getByRole('button', { name: 'Save' }))
-    expect(within(base).getByRole('alert')).toHaveTextContent('gone')
+    await userEvent.click(within(base).getByRole('button', { name: 'Save base_url' }))
+    expect(within(base).getByRole('alert')).toHaveTextContent('gone. Check the value and try again.')
   })
 
   it('masks secrets with reveal and copy', async () => {
@@ -143,7 +145,7 @@ describe('VariablesPanel', () => {
     expect(within(scope).getAllByRole('option').map((option) => option.textContent)).toEqual(['Add to environment', 'Add to collection', 'Add to globals'])
     await userEvent.selectOptions(scope, 'collection')
     await userEvent.type(within(unresolved).getByRole('textbox', { name: 'Value of user_id' }), '42')
-    await userEvent.click(within(unresolved).getByRole('button', { name: 'Add' }))
+    await userEvent.click(within(unresolved).getByRole('button', { name: 'Add user_id' }))
     expect(variables.addVariable).toHaveBeenCalledWith('ws', 'collection:c1', 'user_id', '42', false)
   })
 
@@ -152,8 +154,10 @@ describe('VariablesPanel', () => {
     vi.mocked(variables.setCurrentValue).mockResolvedValue({} as never)
     render(<VariablesPanel tabId={TAB} />)
     const missing = item('token')
-    await userEvent.type(within(missing).getByLabelText('Value of token'), 'tok')
-    await userEvent.click(within(missing).getByRole('button', { name: 'Save' }))
+    const tokenValue = within(missing).getByLabelText('Value of token')
+    expect(tokenValue).toHaveAccessibleDescription('No value on this machine.')
+    await userEvent.type(tokenValue, 'tok')
+    await userEvent.click(within(missing).getByRole('button', { name: 'Save token' }))
     expect(variables.setCurrentValue).toHaveBeenCalledWith('ws', 'globals', 'token', 'tok')
     await userEvent.click(within(item('password')).getByRole('button', { name: 'Unlock Vault' }))
     expect(useEnvironmentsStore.getState().passphrasePrompt).toBe('unlock')
@@ -168,8 +172,15 @@ describe('VariablesPanel', () => {
     const form = screen.getByRole('form', { name: 'Move to secret variable' })
     expect(form).toHaveTextContent('headers.0.value')
     const move = within(form).getByRole('button', { name: 'Move to Secret Variable' })
-    expect(move).toBeDisabled()
-    await userEvent.type(within(form).getByRole('textbox', { name: 'Secret variable name' }), 'api_token')
+    const name = within(form).getByRole('textbox', { name: 'Secret variable name' })
+    expect(move).toBeEnabled()
+    await userEvent.click(move)
+    expect(variables.addVariable).not.toHaveBeenCalled()
+    expect(within(form).getByRole('alert')).toHaveTextContent('Enter a name without {, } or line breaks.')
+    expect(name).toHaveAccessibleDescription('Enter a name without {, } or line breaks.')
+    expect(name).toHaveFocus()
+    await userEvent.type(name, 'api_token')
+    expect(within(form).queryByRole('alert')).not.toBeInTheDocument()
     await userEvent.selectOptions(within(form).getByRole('combobox', { name: 'Secret variable scope' }), 'globals')
     await userEvent.click(move)
     expect(variables.addVariable).toHaveBeenCalledWith('ws', 'globals', 'api_token', 'abc123', true)
@@ -187,7 +198,7 @@ describe('VariablesPanel', () => {
     expect(form).toHaveTextContent('abcdefghijklmnopqrstuvwx…')
     await userEvent.type(within(form).getByRole('textbox', { name: 'Secret variable name' }), 'token')
     await userEvent.click(within(form).getByRole('button', { name: 'Move to Secret Variable' }))
-    expect(within(form).getByRole('alert')).toHaveTextContent('exists')
+    expect(within(form).getByRole('alert')).toHaveTextContent('exists. Pick another name, then try again.')
     expect(useRequestBuilderStore.getState().tabs[TAB]!.draft.url).toBe('https://x/abcdefghijklmnopqrstuvwxyz0123')
   })
 })

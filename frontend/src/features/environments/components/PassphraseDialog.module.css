@@ -31,3 +31,9 @@
 .error {
   margin-top: var(--space-4);
 }
+
+.fieldError {
+  margin: 0;
+  color: var(--status-error);
+  font-size: var(--font-size-sm);
+}

@@ -1,23 +1,27 @@
 import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { EditorView } from '@codemirror/view'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
 import { emptyDraft, type RequestDraft } from '@/platform/mappers/request'
 
-vi.mock('@/platform/services/requests', () => ({
-  applyUrl: vi.fn(),
-  applyParams: vi.fn(),
-  parseBulk: vi.fn(),
-  formatBulk: vi.fn(),
-  autoHeaders: vi.fn(),
-  sendRequest: vi.fn(),
-  getRequest: vi.fn(),
-  saveRequest: vi.fn(),
-  lastResult: vi.fn(),
-  releaseResponse: vi.fn(),
-  saveResponseBody: vi.fn(),
-}))
+vi.mock('@/platform/services/requests', async (importOriginal) => {
+  const { confirmationOf, missingSecretsOf } = await importOriginal<typeof import('@/platform/services/requests')>()
+  return {
+    confirmationOf,
+    missingSecretsOf,
+    applyUrl: vi.fn(),
+    applyParams: vi.fn(),
+    parseBulk: vi.fn(),
+    formatBulk: vi.fn(),
+    autoHeaders: vi.fn(),
+    sendRequest: vi.fn(),
+    getRequest: vi.fn(),
+    saveRequest: vi.fn(),
+    lastResult: vi.fn(),
+    releaseResponse: vi.fn(),
+    saveResponseBody: vi.fn(),
+  }
+})
 vi.mock('@/platform/services/dialogs', () => ({ pickFolder: vi.fn(), pickFile: vi.fn(), pickSaveFile: vi.fn() }))
 vi.mock('@/platform/services/environments', () => ({
   listEnvironments: vi.fn(async () => ({ environments: [], activeId: null })),
@@ -119,12 +123,12 @@ describe('RequestBuilder', () => {
       scopes: {},
     })
     const user = userEvent.setup()
-    const { container } = render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
     await user.type(screen.getByRole('textbox', { name: 'Request URL' }), '{{{{base_url}}/{{{{id}}?p={{{{page}}')
     await vi.waitFor(() => expect(variables.inspectVariables).toHaveBeenCalled())
-    await vi.waitFor(() => expect(container.querySelector('[data-tone="danger"]')).toHaveTextContent('{{id}}'))
-    expect(container.querySelector('[data-tone="success"]')).toHaveAttribute('title', 'https://api — Globals')
-    await vi.waitFor(() => expect(container.querySelector('[data-tone="info"]')).toHaveAttribute('title', 'Generated at send — Dynamic variable'))
+    expect(await screen.findByTitle('Unresolved variable — sent as written')).toHaveTextContent('{{id}}')
+    expect(screen.getByTitle('https://api — Globals')).toHaveTextContent('{{base_url}}')
+    expect(await screen.findByTitle('Generated at send — Dynamic variable')).toHaveTextContent('{{page}}')
   })
 
   it('suggests variable names after {{ in the URL', async () => {
@@ -141,9 +145,9 @@ describe('RequestBuilder', () => {
     render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
     const url = screen.getByRole('textbox', { name: 'Request URL' })
     await user.type(url, 'https://x')
-    act(() => EditorView.findFromDOM(url)?.dispatch({ selection: { anchor: 0, head: 5 } }))
+    await user.keyboard('{Control>}a{/Control}')
     await vi.waitFor(() =>
-      expect(useRequestBuilderStore.getState().tabs[tabId]!.selection).toMatchObject({ field: 'url', from: 0, to: 5, text: 'https' }),
+      expect(useRequestBuilderStore.getState().tabs[tabId]!.selection).toMatchObject({ field: 'url', from: 0, to: 9, text: 'https://x' }),
     )
   })
 

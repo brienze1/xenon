@@ -1,4 +1,4 @@
-import { useState, useTransition, type FormEvent } from 'react'
+import { useId, useRef, useState, useTransition, type FormEvent } from 'react'
 import type { AppError } from '@/platform/errors'
 import { MIN_PASSPHRASE_LENGTH, PASSPHRASE_MISMATCH, PASSPHRASE_TOO_SHORT, WRONG_PASSPHRASE } from '@/platform/services/vault'
 import { withNextStep } from '@/shared/lib/next-step'
@@ -14,6 +14,8 @@ const MESSAGES: Record<string, string> = {
   [PASSPHRASE_TOO_SHORT]: `Use at least ${MIN_PASSPHRASE_LENGTH} characters.`,
   [WRONG_PASSPHRASE]: 'That passphrase is not right. Try again.',
 }
+
+const PASSPHRASE_REQUIRED = 'Type the passphrase.'
 
 function messageOf(error: AppError): string {
   return MESSAGES[error.code] ?? withNextStep(error.description || error.code, 'Try again.')
@@ -50,11 +52,20 @@ function PassphraseForm({ prompt, onCancel }: PassphraseFormProps) {
   const [passphrase, setPassphrase] = useState('')
   const [confirmation, setConfirmation] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [passphraseRequired, setPassphraseRequired] = useState(false)
   const [submitting, startSubmit] = useTransition()
+  const passphraseRef = useRef<HTMLInputElement>(null)
+  const passphraseErrorId = useId()
   const setup = prompt === 'setup'
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (passphrase === '') {
+      setError(null)
+      setPassphraseRequired(true)
+      passphraseRef.current?.focus()
+      return
+    }
     if (setup && passphrase.length < MIN_PASSPHRASE_LENGTH) {
       setError(MESSAGES[PASSPHRASE_TOO_SHORT] ?? null)
       return
@@ -70,7 +81,7 @@ function PassphraseForm({ prompt, onCancel }: PassphraseFormProps) {
   }
 
   return (
-    <form onSubmit={submit}>
+    <form noValidate onSubmit={submit}>
       <Dialog.Title>{setup ? 'Choose a Vault Passphrase' : 'Unlock the Vault'}</Dialog.Title>
       <Dialog.Body>
         {setup ? SETUP_INTRO : UNLOCK_INTRO}
@@ -78,15 +89,25 @@ function PassphraseForm({ prompt, onCancel }: PassphraseFormProps) {
           <label className={styles.field}>
             Passphrase
             <input
+              ref={passphraseRef}
               name="passphrase"
               type="password"
               autoComplete={setup ? 'new-password' : 'current-password'}
               className={styles.input}
-              aria-invalid={error ? true : undefined}
+              aria-invalid={error || passphraseRequired ? true : undefined}
+              aria-describedby={passphraseRequired ? passphraseErrorId : undefined}
               value={passphrase}
-              onChange={(event) => setPassphrase(event.target.value)}
+              onChange={(event) => {
+                setPassphrase(event.target.value)
+                setPassphraseRequired(false)
+              }}
             />
           </label>
+          {passphraseRequired ? (
+            <p id={passphraseErrorId} role="alert" className={styles.fieldError}>
+              {PASSPHRASE_REQUIRED}
+            </p>
+          ) : null}
           {setup ? (
             <label className={styles.field}>
               Confirm Passphrase
@@ -112,7 +133,7 @@ function PassphraseForm({ prompt, onCancel }: PassphraseFormProps) {
         <Button variant="secondary" onClick={onCancel}>
           {setup ? 'Not Now' : 'Stay Locked'}
         </Button>
-        <Button type="submit" variant="primary" disabled={submitting || passphrase === ''}>
+        <Button type="submit" variant="primary" disabled={submitting}>
           {setup ? 'Save Passphrase' : 'Unlock'}
         </Button>
       </Dialog.Actions>

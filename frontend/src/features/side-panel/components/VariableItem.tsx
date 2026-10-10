@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useId, useState, useTransition, type FormEvent } from 'react'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import type { AppError } from '@/platform/errors'
 import type { EditableScope, VariableUsage } from '@/platform/mappers/inspection'
@@ -6,6 +6,7 @@ import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui/button/Button'
 import { IconButton } from '@/shared/ui/icon-button/IconButton'
 import { addableScopes, isEditableScope, SCOPE_NAMES, STATUS_LABELS } from '@/features/side-panel/lib/variable-items'
+import { VariableErrorText } from './VariableErrorText'
 import styles from './VariableItem.module.css'
 
 interface VariableItemProps {
@@ -18,6 +19,10 @@ interface VariableItemProps {
 const EYE_GLYPH = <span aria-hidden="true">◉</span>
 const COPY_GLYPH = <span aria-hidden="true">⧉</span>
 
+const VALUE_NEXT_STEP = 'Check the value and try again.'
+
+const NO_VALUE_HINT = 'No value on this machine.'
+
 /** One variable of the request: value and source, edited in place (current value) or added when unresolved. */
 export function VariableItem({ variable, scopes, scopeLabel, onChanged }: VariableItemProps) {
   const setCurrentValue = useEnvironmentsStore((state) => state.setCurrentValue)
@@ -29,6 +34,8 @@ export function VariableItem({ variable, scopes, scopeLabel, onChanged }: Variab
   const [revealed, setRevealed] = useState<string | null>(null)
   const [target, setTarget] = useState<EditableScope | ''>('')
   const [failure, setFailure] = useState<AppError | null>(null)
+  const [saving, startSave] = useTransition()
+  const hintId = useId()
   const scopeRef = isEditableScope(variable.scope) ? scopes[variable.scope] : undefined
   const choices = addableScopes({ scopes })
   const addTo = target === '' ? choices[0] : target
@@ -42,16 +49,19 @@ export function VariableItem({ variable, scopes, scopeLabel, onChanged }: Variab
     }
   }
 
-  async function save(event: FormEvent) {
+  function save(event: FormEvent) {
     event.preventDefault()
     if (draft === null) {
       return
     }
-    if (variable.status === 'unresolved' && addTo !== undefined) {
-      await finish(await addVariable(scopes[addTo] as string, variable.name, draft, false))
-    } else if (scopeRef !== undefined) {
-      await finish(await setCurrentValue(scopeRef, variable.name, draft))
-    }
+    const value = draft
+    startSave(async () => {
+      if (variable.status === 'unresolved' && addTo !== undefined) {
+        await finish(await addVariable(scopes[addTo] as string, variable.name, value, false))
+      } else if (scopeRef !== undefined) {
+        await finish(await setCurrentValue(scopeRef, variable.name, value))
+      }
+    })
   }
 
   async function toggleReveal() {
@@ -78,6 +88,8 @@ export function VariableItem({ variable, scopes, scopeLabel, onChanged }: Variab
   const addable = variable.status === 'unresolved' && variable.scope === 'none' && choices.length > 0
   const shown = revealed ?? variable.displayValue
   const valueLabel = `Value of ${variable.name}`
+  const missingValue = variable.status === 'missing_secret'
+  const submitLabel = addable ? 'Add' : 'Save'
 
   return (
     <li className={styles.item}>
@@ -95,7 +107,7 @@ export function VariableItem({ variable, scopes, scopeLabel, onChanged }: Variab
         </Button>
       ) : null}
       {editable || addable ? (
-        <form className={styles.form} onSubmit={(event) => void save(event)}>
+        <form className={styles.form} onSubmit={save}>
           {addable ? (
             <select
               name="add-scope"
@@ -117,9 +129,10 @@ export function VariableItem({ variable, scopes, scopeLabel, onChanged }: Variab
             spellCheck={false}
             translate="no"
             aria-label={valueLabel}
+            aria-describedby={missingValue ? hintId : undefined}
             className={styles.value}
             type={variable.secret && revealed === null && draft === null ? 'password' : 'text'}
-            placeholder={variable.status === 'missing_secret' ? 'No value on this machine' : 'Value…'}
+            placeholder={variable.secret ? 's3cr3t-t0ken…' : 'https://api.example.com…'}
             value={draft ?? (variable.status === 'resolved' ? shown : '')}
             onChange={(event) => setDraft(event.target.value)}
           />
@@ -134,11 +147,16 @@ export function VariableItem({ variable, scopes, scopeLabel, onChanged }: Variab
             </>
           ) : null}
           {draft !== null ? (
-            <Button type="submit" size="sm" variant="primary">
-              {addable ? 'Add' : 'Save'}
+            <Button type="submit" size="sm" variant="primary" disabled={saving} aria-label={`${submitLabel} ${variable.name}`}>
+              {saving ? (addable ? 'Adding…' : 'Saving…') : submitLabel}
             </Button>
           ) : null}
         </form>
+      ) : null}
+      {editable && missingValue ? (
+        <span id={hintId} className={styles.muted}>
+          {NO_VALUE_HINT}
+        </span>
       ) : null}
       {variable.usedIn.length > 0 ? (
         <span className={styles.usedIn} translate="no">
@@ -147,7 +165,7 @@ export function VariableItem({ variable, scopes, scopeLabel, onChanged }: Variab
       ) : null}
       {failure ? (
         <span role="alert" className={styles.error}>
-          {failure.description || failure.code}
+          <VariableErrorText error={failure} nextStep={VALUE_NEXT_STEP} />
         </span>
       ) : null}
     </li>

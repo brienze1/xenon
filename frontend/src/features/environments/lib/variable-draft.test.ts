@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { VariableRow } from '@/platform/mappers/variable'
-import { displayedCurrent, inheritsCurrent, keyProblems, newDraftRow, toDraftRows, toVariableEdits, typeSwitches } from './variable-draft'
+import { displayedCurrent, inheritsCurrent, keyCounts, keyProblems, newDraftRow, toDraftRows, toVariableEdits, typeSwitches } from './variable-draft'
 
 function saved(patch: Partial<VariableRow> = {}): VariableRow {
   return {
@@ -39,13 +39,20 @@ describe('variable draft', () => {
       { ...newDraftRow(), key: '{{c}}' },
       { ...newDraftRow(), key: '  ' },
     ]
-    expect(rows.map((row) => keyProblems(rows, row))).toEqual([['duplicate'], ['duplicate'], ['spaces'], ['invalid'], ['empty']])
+    const counts = keyCounts(rows)
+    expect(rows.map((row) => keyProblems(row, counts))).toEqual([['duplicate'], ['duplicate'], ['spaces'], ['invalid'], ['empty']])
   })
 
   it('keeps the duplicate flag Go reported until the name is edited', () => {
     const [row] = toDraftRows([saved({ duplicate: true })])
-    expect(keyProblems([row!], row!)).toEqual(['duplicate'])
-    expect(keyProblems([row!], { ...row!, key: 'renamed' })).toEqual([])
+    expect(keyProblems(row!, keyCounts([row!]))).toEqual(['duplicate'])
+    const renamed = { ...row!, key: 'renamed' }
+    expect(keyProblems(renamed, keyCounts([renamed]))).toEqual([])
+  })
+
+  it('counts how many rows use each name', () => {
+    const counts = keyCounts([{ ...newDraftRow(), key: 'a' }, { ...newDraftRow(), key: 'b' }, { ...newDraftRow(), key: 'a' }])
+    expect(Object.fromEntries(counts)).toEqual({ a: 2, b: 1 })
   })
 
   it('lists rows switching type, a switch to plain needing confirmation', () => {

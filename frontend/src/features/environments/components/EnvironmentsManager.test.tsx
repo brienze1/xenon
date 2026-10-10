@@ -76,8 +76,12 @@ describe('EnvironmentsManager', () => {
     open()
     vi.mocked(services.createEnvironment).mockResolvedValue(detail('e3', 'qa'))
     vi.mocked(services.listEnvironments).mockResolvedValue({ environments: [dev, hml, { ...dev, id: 'e3', name: 'qa' }], activeId: 'e1' })
-    const create = screen.getByRole('button', { name: 'Create' })
-    expect(create).toBeDisabled()
+    await userEvent.click(screen.getByRole('button', { name: 'Create' }))
+    const input = screen.getByRole('textbox', { name: 'New environment name' })
+    expect(screen.getByRole('alert')).toHaveTextContent('Type a name for the environment.')
+    expect(input).toHaveFocus()
+    expect(input).toHaveAccessibleDescription('Type a name for the environment.')
+    expect(services.createEnvironment).not.toHaveBeenCalled()
     await userEvent.type(screen.getByRole('textbox', { name: 'New environment name' }), 'qa{Enter}')
     expect(services.createEnvironment).toHaveBeenCalledWith('A', 'qa')
     expect(await screen.findByRole('table', { name: 'qa variables' })).toBeInTheDocument()
@@ -108,6 +112,47 @@ describe('EnvironmentsManager', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Duplicate' }))
     expect(services.duplicateEnvironment).toHaveBeenCalledWith('A', 'e1')
     expect(await screen.findByRole('table', { name: 'local Copy variables' })).toBeInTheDocument()
+  })
+
+  it('asks for a name before renaming and skips an unchanged one', async () => {
+    open()
+    const name = screen.getByRole('textbox', { name: 'Environment name' })
+    await userEvent.click(screen.getByRole('button', { name: 'Rename' }))
+    expect(services.getEnvironment).not.toHaveBeenCalled()
+    await userEvent.clear(name)
+    await userEvent.click(screen.getByRole('button', { name: 'Rename' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('Type a name for the environment.')
+    expect(name).toHaveFocus()
+    expect(name).toHaveAccessibleDescription('Type a name for the environment.')
+    expect(services.updateEnvironment).not.toHaveBeenCalled()
+  })
+
+  it('asks before dropping unsaved variable edits on switching environment or closing', async () => {
+    vi.mocked(variables.getVariableTable).mockImplementation(async (_localId, scope) => ({
+      scope,
+      rows: [{ key: 'url', initialValue: 'A', currentValue: 'A', hasCurrentOverride: false, secret: false, secretState: null, enabled: true, description: '', duplicate: false, surroundingSpaces: false }],
+      warnings: [],
+    }))
+    const dialog = open()
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Description of url' }), '!')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'hml' }))
+    expect(screen.getByText('Discard unsaved variable changes?')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Keep Editing' }))
+    expect(screen.getByRole('table', { name: 'dev variables' })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Description of url' })).toHaveValue('!')
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.getByRole('dialog', { name: 'Environments' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Keep Editing' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'hml' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Discard' }))
+    expect(await screen.findByRole('table', { name: 'hml variables' })).toBeInTheDocument()
+    expect(useEnvironmentsStore.getState().dirtyScopes).toEqual([])
+    await userEvent.type(screen.getByRole('textbox', { name: 'Description of url' }), '!')
+    await userEvent.keyboard('{Escape}')
+    expect(screen.getByText('Discard unsaved variable changes?')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Discard' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(useEnvironmentsStore.getState().editor).toBeNull()
   })
 
   it('deletes only after confirmation', async () => {

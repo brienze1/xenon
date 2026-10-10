@@ -61,10 +61,6 @@
   padding: 0 var(--space-3);
 }
 
-.codeCell:focus-within {
-  box-shadow: inset 0 0 0 1px var(--neon-cyan);
-}
-
 .disabled .codeCell {
   opacity: 0.6;
 }

@@ -31,7 +31,7 @@ describe('CodeEditor', () => {
 describe('CodeEditor decorations and completion', () => {
   it('decorates ranges and offers completions in a multi-line body', async () => {
     const source = vi.fn(async (_text: string, position: number) => ({ from: position, options: [{ label: 'user', detail: 'Globals', apply: 'user}}' }] }))
-    const { container } = render(
+    render(
       <CodeEditor
         value={'{"who": "{{user}}"}'}
         language="text"
@@ -41,7 +41,6 @@ describe('CodeEditor decorations and completion', () => {
         completionSource={source}
       />,
     )
-    await waitFor(() => expect(container.querySelector('[data-tone="success"]')).toHaveTextContent('{{user}}'))
-    expect(container.querySelector('[data-tone="success"]')).toHaveAttribute('title', 'luis — Globals')
+    expect(await screen.findByTitle('luis — Globals')).toHaveTextContent('{{user}}')
   })
 })

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { emptyDraft } from '../mappers/request'
+import { AppError } from '../errors'
 
 vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {} }))
 vi.mock('../../../bindings/github.com/brienze1/xenon/internal/infra/server/binding/requestservice', () => ({
@@ -129,5 +130,29 @@ describe('request service', () => {
     expect(RequestService.ReleaseResponse).toHaveBeenCalledWith({ tab_id: 'tab' })
     await expect(requests.saveResponseBody('tab', 'x')).rejects.toMatchObject({ code: 'SND-04400' })
     expect(RequestService.SaveResponseBody).toHaveBeenCalledWith({ tab_id: 'tab', path: 'x' })
+  })
+
+  it('reads the missing and locked secrets of a refused send', () => {
+    const refused = new AppError('SND-06409', 'secrets missing', [
+      { attribute: 'missing_secrets', messages: ['api_key'] },
+      { attribute: 'locked_secrets', messages: ['token', 'password'] },
+    ])
+    expect(requests.missingSecretsOf(refused)).toEqual({ missing: ['api_key'], locked: ['token', 'password'] })
+    expect(requests.missingSecretsOf(new AppError('SND-06409', 'only locked', [{ attribute: 'locked_secrets', messages: ['t'] }]))).toEqual({
+      missing: [],
+      locked: ['t'],
+    })
+    expect(requests.missingSecretsOf(new AppError('SND-00400', 'invalid'))).toBeNull()
+  })
+
+  it('reads the environment a send must be confirmed for', () => {
+    const refused = new AppError('SND-05409', 'confirm', [
+      { attribute: 'environment_id', messages: ['01P'] },
+      { attribute: 'name', messages: ['prod'] },
+      { attribute: 'color', messages: ['red'] },
+    ])
+    expect(requests.confirmationOf(refused)).toEqual({ environmentId: '01P', name: 'prod', color: 'red' })
+    expect(requests.confirmationOf(new AppError('SND-05409', 'no details'))).toEqual({ environmentId: '', name: '', color: '' })
+    expect(requests.confirmationOf(new AppError('SND-06409', 'secrets'))).toBeNull()
   })
 })

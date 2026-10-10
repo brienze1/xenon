@@ -8,7 +8,6 @@ import type {
   SendResult as SendResultDto,
 } from '../../../bindings/github.com/brienze1/xenon/internal/integration/entrypoint/dto/models'
 import { newRowId } from '@/shared/lib/rows'
-import type { AppError } from '../errors'
 
 export const STANDARD_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const
 export const AUTH_TYPES = ['inherit', 'none', 'bearer', 'basic', 'apikey', 'oauth2', 'awsv4', 'digest'] as const
@@ -296,31 +295,6 @@ export function cancelledResult(tabId: string): SendResult {
   }
 }
 
-export const MISSING_SECRETS = 'SND-06409'
-
-export interface MissingSecrets {
-  missing: string[]
-  locked: string[]
-}
-
-/** Reads the secret names a send preflight refused (`SND-06409`), or `null` for any other error. */
-export function missingSecretsOf(error: AppError): MissingSecrets | null {
-  if (error.code !== MISSING_SECRETS) {
-    return null
-  }
-  const names = (attribute: string) => error.details.find((detail) => detail.attribute === attribute)?.messages ?? []
-  return { missing: names('missing_secrets'), locked: names('locked_secrets') }
-}
-
-export const CONFIRMATION_REQUIRED = 'SND-05409'
-
-/** The environment a send must be confirmed for (`SND-05409`). */
-export interface SendConfirmation {
-  environmentId: string
-  name: string
-  color: string
-}
-
 /** What the user already agreed to for this send. */
 export interface SendAcknowledgement {
   confirmedEnvironmentId: string
@@ -329,13 +303,4 @@ export interface SendAcknowledgement {
 
 export function noAcknowledgement(): SendAcknowledgement {
   return { confirmedEnvironmentId: '', missingSecrets: false }
-}
-
-/** Reads the environment a send preflight asks to confirm (`SND-05409`), or `null` for any other error. */
-export function confirmationOf(error: AppError): SendConfirmation | null {
-  if (error.code !== CONFIRMATION_REQUIRED) {
-    return null
-  }
-  const first = (attribute: string) => error.details.find((detail) => detail.attribute === attribute)?.messages[0] ?? ''
-  return { environmentId: first('environment_id'), name: first('name'), color: first('color') }
 }

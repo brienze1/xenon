@@ -1,8 +1,10 @@
 import { useShallow } from 'zustand/react/shallow'
 import { cn } from '@/shared/lib/cn'
+import { withNextStep } from '@/shared/lib/next-step'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Dropdown } from '@/shared/ui/dropdown/Dropdown'
+import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import { EnvironmentsManager } from './EnvironmentsManager'
 import styles from './EnvironmentSwitcher.module.css'
@@ -16,6 +18,8 @@ const CHEVRON = (
     ▾
   </span>
 )
+
+const SWITCH_NEXT_STEP = 'Check that the workspace folder is writable, then pick the environment again.'
 
 const MENU_SEPARATOR = <hr className={styles.separator} />
 
@@ -67,7 +71,9 @@ export function EnvironmentSwitcher() {
               >
                 <span className={styles.option}>
                   <span className={styles.swatch} data-color={environment.color} aria-hidden="true" />
-                  <span translate="no">{environment.name}</span>
+                  <span className={styles.optionName} translate="no" title={environment.name}>
+                    {environment.name}
+                  </span>
                 </span>
               </Dropdown.RadioItem>
             ) : (
@@ -87,7 +93,12 @@ export function EnvironmentSwitcher() {
       <QuickLook />
       {error ? (
         <Banner.Root tone="error" className={styles.error}>
-          <Banner.Message>Could not change the environment: {error.description || error.code}</Banner.Message>
+          <Banner.Message>
+            <NoTranslateText
+              text={withNextStep(`Could not change the environment: ${error.description || error.code}`, SWITCH_NEXT_STEP)}
+              terms={[error.code]}
+            />
+          </Banner.Message>
           <Banner.Actions>
             <Button variant="ghost" size="sm" onClick={clearError}>
               Dismiss Error

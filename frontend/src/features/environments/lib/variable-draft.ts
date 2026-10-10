@@ -71,7 +71,16 @@ export function displayedCurrent(row: DraftRow): string {
   return row.currentValue ?? row.saved?.currentValue ?? ''
 }
 
-export function keyProblems(rows: DraftRow[], row: DraftRow): KeyProblem[] {
+/** How many rows use each name; build it once per render and pass it to `keyProblems`. */
+export function keyCounts(rows: DraftRow[]): Map<string, number> {
+  const counts = new Map<string, number>()
+  for (const row of rows) {
+    counts.set(row.key, (counts.get(row.key) ?? 0) + 1)
+  }
+  return counts
+}
+
+export function keyProblems(row: DraftRow, counts: Map<string, number>): KeyProblem[] {
   const problems: KeyProblem[] = []
   if (row.key.trim() === '') {
     return ['empty']
@@ -80,7 +89,7 @@ export function keyProblems(rows: DraftRow[], row: DraftRow): KeyProblem[] {
     problems.push('invalid')
   }
   const edited = row.key !== row.saved?.key
-  if ((!edited && row.saved?.duplicate) || rows.some((other) => other.id !== row.id && other.key === row.key)) {
+  if ((!edited && row.saved?.duplicate) || (counts.get(row.key) ?? 0) > 1) {
     problems.push('duplicate')
   }
   if (row.key !== row.key.trim()) {
@@ -90,9 +99,19 @@ export function keyProblems(rows: DraftRow[], row: DraftRow): KeyProblem[] {
 }
 
 export function typeSwitches(rows: DraftRow[]): TypeSwitches {
-  const switched = rows.filter((row) => row.saved !== null && row.saved.secret !== row.secret)
-  const toPlain = switched.filter((row) => !row.secret).map((row) => row.key)
-  return { toSecret: switched.filter((row) => row.secret).map((row) => row.key), toPlain, reveal: toPlain.length > 0 }
+  const toSecret: string[] = []
+  const toPlain: string[] = []
+  for (const row of rows) {
+    if (row.saved === null || row.saved.secret === row.secret) {
+      continue
+    }
+    if (row.secret) {
+      toSecret.push(row.key)
+    } else {
+      toPlain.push(row.key)
+    }
+  }
+  return { toSecret, toPlain, reveal: toPlain.length > 0 }
 }
 
 export function toVariableEdits(rows: DraftRow[]): VariableEdit[] {

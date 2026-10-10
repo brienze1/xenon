@@ -87,7 +87,9 @@ describe('EnvironmentSwitcher', () => {
     render(<EnvironmentSwitcher />)
     await userEvent.click(screen.getByRole('button', { name: 'Environment: No environment' }))
     await userEvent.click(screen.getByRole('menuitemradio', { name: 'dev' }))
-    expect(screen.getByText('Could not change the environment: the environment does not exist')).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Could not change the environment: the environment does not exist. Check that the workspace folder is writable, then pick the environment again.',
+    )
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss Error' }))
     expect(screen.queryByText(/Could not change the environment/)).not.toBeInTheDocument()
   })

@@ -3,7 +3,12 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/platform/services/environments', () => ({ listEnvironments: vi.fn(), setActiveEnvironment: vi.fn() }))
-vi.mock('@/platform/services/variables', () => ({ inspectVariables: vi.fn(), suggestVariables: vi.fn() }))
+vi.mock('@/platform/services/variables', () => ({
+  inspectVariables: vi.fn(),
+  suggestVariables: vi.fn(),
+  DUPLICATE_VARIABLE: 'VAR-04409',
+  INVALID_NEW_VARIABLE_KEY: 'VAR-13400',
+}))
 
 const { SidePanel } = await import('./SidePanel')
 

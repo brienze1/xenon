@@ -1,7 +1,7 @@
 import type { AppError } from '@/platform/errors'
 import type { VariableInspection } from '@/platform/mappers/inspection'
-import type { AutoHeader, MissingSecrets, RequestDraft, SendAcknowledgement, SendConfirmation } from '@/platform/mappers/request'
-import type { PendingSend } from '@/platform/services/requests'
+import type { AutoHeader, RequestDraft, SendAcknowledgement } from '@/platform/mappers/request'
+import type { MissingSecrets, PendingSend, SendConfirmation } from '@/platform/services/requests'
 
 export type SubTab = 'params' | 'auth' | 'headers' | 'body' | 'scripts' | 'settings'
 

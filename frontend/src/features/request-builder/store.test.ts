@@ -2,20 +2,25 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
 import { emptyDraft, type RequestDraft, type SendResult } from '@/platform/mappers/request'
 
-vi.mock('@/platform/services/requests', () => ({
-  applyUrl: vi.fn(),
-  applyParams: vi.fn(),
-  parseBulk: vi.fn(),
-  formatBulk: vi.fn(),
-  autoHeaders: vi.fn(),
-  sendRequest: vi.fn(),
-  getRequest: vi.fn(),
-  saveRequest: vi.fn(),
-  saveRequestAs: vi.fn(),
-  lastResult: vi.fn(),
-  releaseResponse: vi.fn(),
-  saveResponseBody: vi.fn(),
-}))
+vi.mock('@/platform/services/requests', async (importOriginal) => {
+  const { confirmationOf, missingSecretsOf } = await importOriginal<typeof import('@/platform/services/requests')>()
+  return {
+    confirmationOf,
+    missingSecretsOf,
+    applyUrl: vi.fn(),
+    applyParams: vi.fn(),
+    parseBulk: vi.fn(),
+    formatBulk: vi.fn(),
+    autoHeaders: vi.fn(),
+    sendRequest: vi.fn(),
+    getRequest: vi.fn(),
+    saveRequest: vi.fn(),
+    saveRequestAs: vi.fn(),
+    lastResult: vi.fn(),
+    releaseResponse: vi.fn(),
+    saveResponseBody: vi.fn(),
+  }
+})
 vi.mock('@/platform/services/dialogs', () => ({ pickFolder: vi.fn(), pickFile: vi.fn(), pickSaveFile: vi.fn() }))
 vi.mock('@/platform/services/environments', () => ({
   listEnvironments: vi.fn(async () => ({ environments: [], activeId: null })),

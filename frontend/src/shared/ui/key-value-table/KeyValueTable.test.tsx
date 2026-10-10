@@ -72,7 +72,7 @@ describe('KeyValueTable', () => {
 
   it('decorates code cells and reports their selection', async () => {
     const onCellSelection = vi.fn()
-    const { container } = render(
+    render(
       <KeyValueTable
         label="Headers"
         rows={[{ id: 'h1', key: 'X-Tenant', value: '{{tenant}}', description: '', enabled: true }]}
@@ -88,7 +88,7 @@ describe('KeyValueTable', () => {
         onCellSelection={onCellSelection}
       />,
     )
-    await vi.waitFor(() => expect(container.querySelector('[data-tone="danger"]')).toHaveTextContent('{{tenant}}'))
+    expect(await screen.findByTitle('Unresolved')).toHaveTextContent('{{tenant}}')
     await userEvent.click(screen.getByRole('textbox', { name: 'Value' }))
     expect(onCellSelection).toHaveBeenCalledWith('h1', 'value', expect.objectContaining({ text: '' }))
   })

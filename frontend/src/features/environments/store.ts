@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import { AppError, toAppError } from '@/platform/errors'
 import type { VariablesChanged } from '@/platform/events'
-import type { Environment, EnvironmentColor, EnvironmentSummary } from '@/platform/mappers/environment'
+import type { Environment, EnvironmentSummary } from '@/platform/mappers/environment'
 import { environmentScope, type VariableEdit, type VariableTable } from '@/platform/mappers/variable'
 import { emptyVaultStatus, type VaultStatus } from '@/platform/mappers/vault'
 import {
@@ -33,7 +33,7 @@ import {
   VAULT_LOCKED,
 } from '@/platform/services/vault'
 import type { Result } from '@/shared/types/result'
-import type { EnvironmentEditor, EnvironmentsStatus, PassphrasePrompt, TableState } from './model'
+import type { EnvironmentEditor, EnvironmentLook, EnvironmentsStatus, PassphrasePrompt, TableState } from './model'
 
 interface EnvironmentsState {
   environments: EnvironmentSummary[]
@@ -43,6 +43,8 @@ interface EnvironmentsState {
   switcherOpen: boolean
   editor: EnvironmentEditor | null
   tables: Record<string, TableState>
+  /** Scopes whose open table has unsaved edits, so closing an editor can warn before losing them. */
+  dirtyScopes: string[]
   vault: VaultStatus
   passphrasePrompt: PassphrasePrompt | null
   dismissedPrompts: PassphrasePrompt[]
@@ -59,6 +61,7 @@ interface EnvironmentsState {
   duplicateEnvironment: (id: string) => Promise<Result<Environment, AppError>>
   deleteEnvironment: (id: string) => Promise<AppError | null>
   loadTable: (scope: string) => Promise<void>
+  setTableDirty: (scope: string, dirty: boolean) => void
   saveTable: (scope: string, edits: VariableEdit[], confirmReveal: boolean) => Promise<AppError | null>
   resetValues: (scope: string, keys: string[]) => Promise<AppError | null>
   persistValues: (scope: string, keys: string[]) => Promise<AppError | null>
@@ -79,12 +82,6 @@ interface EnvironmentsState {
 
 const NO_WORKSPACE = 'WKS-00000'
 
-/** How an environment warns before sending: its neon colour and "Confirm before send". */
-export interface EnvironmentLook {
-  color: EnvironmentColor
-  confirmBeforeSend: boolean
-}
-
 /** Workspace-scoped state: cleared on every workspace switch. The vault status is app-wide. */
 const INITIAL_STATE = {
   environments: [],
@@ -94,6 +91,7 @@ const INITIAL_STATE = {
   switcherOpen: false,
   editor: null,
   tables: {},
+  dirtyScopes: [],
   passphrasePrompt: null,
 } satisfies Partial<EnvironmentsState>
 
@@ -299,6 +297,14 @@ export const useEnvironmentsStore = create<EnvironmentsState>()((set, get) => {
         patchTable(scope, { status: 'ready', error: loaded.error })
       }
     },
+
+    setTableDirty: (scope, dirty) =>
+      set((state) => {
+        if (state.dirtyScopes.includes(scope) === dirty) {
+          return state
+        }
+        return { dirtyScopes: dirty ? [...state.dirtyScopes, scope] : state.dirtyScopes.filter((other) => other !== scope) }
+      }),
 
     saveTable: (scope, edits, confirmReveal) => tableAction(scope, (localId) => saveVariableTable(localId, scope, edits, confirmReveal)),
 
