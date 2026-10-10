@@ -115,6 +115,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	test.registerThenFileSteps(ctx)
 	test.registerThenEventSteps(ctx)
 	test.registerThenApiSteps(ctx)
+	test.registerThenSecretSteps(ctx)
 	test.registerTrashSteps(ctx)
 	test.registerFileWatcherSteps(ctx)
 }

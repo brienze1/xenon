@@ -277,5 +277,5 @@ func (t *testUtils) appDataField(path, field string) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return fieldOf(content, field)
+	return fieldOf(content, t.substitute(field))
 }
