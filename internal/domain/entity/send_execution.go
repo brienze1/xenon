@@ -9,39 +9,47 @@ import (
 )
 
 type SendExecution struct {
-	LocalVariables map[string]any
-	SentRequest    *EffectiveRequest
-	Response       *Response
-	Outcome        enums.SendOutcome
-	ID             string
-	PreRuns        []ScriptRun
-	PostRuns       []ScriptRun
-	Tests          []TestResult
-	Nested         []NestedRequest
-	Request        Request
+	Vault       map[string]string
+	SentRequest *EffectiveRequest
+	Response    *Response
+	Outcome     enums.SendOutcome
+	ID          string
+	PreRuns     []ScriptRun
+	PostRuns    []ScriptRun
+	Tests       []TestResult
+	Nested      []NestedRequest
+	Request     Request
+	Scopes      ScriptScopes
 }
 
 func NewSendExecution(id string) SendExecution {
 	return SendExecution{
-		ID:             id,
-		LocalVariables: map[string]any{},
-		PreRuns:        []ScriptRun{},
-		PostRuns:       []ScriptRun{},
-		Tests:          []TestResult{},
-		Nested:         []NestedRequest{},
+		ID:       id,
+		Vault:    map[string]string{},
+		PreRuns:  []ScriptRun{},
+		PostRuns: []ScriptRun{},
+		Tests:    []TestResult{},
+		Nested:   []NestedRequest{},
 	}
 }
 
-func (s *SendExecution) Start(request Request) {
+func (s *SendExecution) Start(request Request, scopes ScriptScopes, vault map[string]string) {
 	s.Request = request
+	s.Scopes = scopes
+	s.Vault = maps.Clone(vault)
 }
 
-func (s *SendExecution) ScriptContext(variables VariableContext) ScriptContext {
-	return ScriptContext{Request: s.Request, Response: s.Response, LocalVariables: maps.Clone(s.LocalVariables), Variables: variables}
+// ScriptContext is what the next script sees: the request so far, the response, and the scopes and vault as earlier scripts left them.
+func (s *SendExecution) ScriptContext(base ScriptContext) ScriptContext {
+	base.Request = s.Request
+	base.Response = s.Response
+	base.Scopes = s.Scopes
+	base.Vault = maps.Clone(s.Vault)
+	return base
 }
 
 func (s *SendExecution) Variables(context VariableContext) VariableContext {
-	return context.WithLocal(s.LocalVariables)
+	return context.WithScriptScopes(s.Scopes)
 }
 
 func (s *SendExecution) AddRun(run ScriptRun) {
@@ -51,8 +59,10 @@ func (s *SendExecution) AddRun(run ScriptRun) {
 	} else {
 		s.PostRuns = append(s.PostRuns, run)
 	}
-	s.LocalVariables = maps.Clone(run.LocalVariables)
+	s.Scopes = run.Scopes
+	s.Vault = maps.Clone(run.Vault)
 	s.Nested = append(s.Nested, run.Nested...)
+	s.AddTests(run.Tests)
 	if run.HasFailed() && run.StopsSend() {
 		s.Outcome = sendoutcome.StoppedByScriptError
 	}

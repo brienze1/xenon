@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import vm from 'node:vm';
 import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
@@ -39,6 +40,12 @@ const assets = [
     { module: 'crypto-js', package: 'crypto-js', bundle: 'crypto-js' },
     { module: 'csv-parse/lib/sync', package: 'csv-parse', bundle: 'csv-parse/lib/sync' },
     { module: 'xml2js', package: 'xml2js', bundle: 'xml2js' },
+    { module: 'liquid-json', package: 'liquid-json', bundle: 'liquid-json' },
+    { module: 'http-reasons', package: 'http-reasons', bundle: 'http-reasons' },
+    { module: 'mime-format', package: 'mime-format', bundle: 'mime-format' },
+    { module: 'mime', package: 'mime', bundle: 'mime' },
+    { module: 'sugar', package: 'postman-sandbox', vendor: 'postman-sandbox/lib/vendor/sugar.js' },
+    { module: 'sugar-methods', package: 'postman-sandbox', generate: sugarMethods },
     ...builtins.map((name) => ({ module: name, package: builtinPackages[name], bundle: builtinPackages[name], builtin: true, ownDependencies: name === 'assert' ? ['util'] : [] })),
     { module: 'intl', package: '@formatjs/intl-numberformat', bundle: join(here, 'intl-entry.js'), intl: true }
 ];
@@ -50,6 +57,30 @@ const intlPackages = [
     '@formatjs/intl-numberformat',
     '@formatjs/intl-datetimeformat'
 ];
+
+const sugarTargets = ['Object', 'Array', 'String', 'Number', 'Date', 'RegExp', 'Function', 'Boolean'];
+
+function sugarMethods () {
+    const source = readFileSync(require.resolve('postman-sandbox/lib/vendor/sugar.js'), 'utf8');
+    const context = vm.createContext({});
+    const names = () => {
+        const result = {};
+        for (const target of sugarTargets) {
+            result[target] = vm.runInContext('Object.getOwnPropertyNames(' + target + ')', context);
+            result[target + '.prototype'] = vm.runInContext('Object.getOwnPropertyNames(' + target + '.prototype)', context);
+        }
+        return result;
+    };
+    const before = names();
+    vm.runInContext(source, context);
+    const after = names();
+    const added = {};
+    for (const target of Object.keys(after)) {
+        const list = after[target].filter((name) => !before[target].includes(name));
+        if (list.length) { added[target] = list; }
+    }
+    return 'module.exports = ' + JSON.stringify(added, null, 2) + ';\n';
+}
 
 function fileName (module) {
     return module.replace(/\//g, '-') + '.js';
@@ -96,9 +127,16 @@ async function bundle (asset) {
 async function build () {
     const files = [];
     for (const asset of assets) {
-        const content = asset.vendor ?
-            normalize(readFileSync(require.resolve(asset.vendor), 'utf8')) :
-            await bundle(asset);
+        let content;
+        if (asset.generate) {
+            content = asset.generate();
+        }
+        else if (asset.vendor) {
+            content = normalize(readFileSync(require.resolve(asset.vendor), 'utf8'));
+        }
+        else {
+            content = await bundle(asset);
+        }
         const version = asset.intl ?
             intlPackages.map((name) => name + '@' + packageVersion(name)).join(' ') :
             packageVersion(asset.package);

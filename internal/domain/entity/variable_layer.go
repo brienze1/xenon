@@ -54,3 +54,31 @@ func (v VariableLayer) sortedVariables() []ContextVariable {
 	})
 	return variables
 }
+
+// withScriptScope keeps the layer's unavailable secrets and takes every other value from the scope; a scope never loaded leaves the layer as it is.
+func (v VariableLayer) withScriptScope(scope ScriptScope) VariableLayer {
+	if scope.Values == nil {
+		return v
+	}
+	variables := make(map[string]ContextVariable, len(scope.Values))
+	for name, variable := range v.Variables {
+		if variable.IsUnavailableSecret() {
+			variables[name] = variable
+		}
+	}
+	for _, scriptVariable := range scope.Values {
+		if scriptVariable.Disabled {
+			continue
+		}
+		existing, found := v.Variables[scriptVariable.Key]
+		variables[scriptVariable.Key] = ContextVariable{
+			Name:        scriptVariable.Key,
+			Value:       scriptVariable.Text(),
+			Description: existing.Description,
+			Scope:       v.Scope,
+			Secret:      scriptVariable.Secret || (found && existing.Secret),
+		}
+	}
+	v.Variables = variables
+	return v
+}

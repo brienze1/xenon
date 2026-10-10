@@ -14,6 +14,7 @@ import (
 	"github.com/dop251/goja"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums/scriptphase"
 )
 
 var sandboxAllowlist = []string{
@@ -25,14 +26,10 @@ var sandboxAllowlist = []string{
 	"tests", "globals", "environment", "data", "request", "responseCookies", "responseHeaders",
 	"responseTime", "responseCode", "responseBody", "iteration", "postman", "CryptoJS", "tv4", "xml2Json",
 	"cheerio", "_", "Backbone",
+	"SharedArrayBuffer", "Atomics",
 }
 
-var pendingGlobals = []string{
-	"atob", "btoa", "URL", "URLSearchParams", "TextEncoder", "TextDecoder", "structuredClone",
-	"queueMicrotask", "crypto", "AbortController", "AbortSignal", "Event", "EventTarget", "DOMException",
-	"Blob", "Intl", "tests", "globals", "environment", "data", "request", "responseCookies",
-	"responseHeaders", "responseTime", "responseCode", "responseBody", "iteration", "postman", "xml2Json",
-}
+var pendingGlobals = []string{}
 
 func ecmaScriptGlobals(t *testing.T) []string {
 	t.Helper()
@@ -72,7 +69,10 @@ const names = Object.getOwnPropertyNames(globalThis);
 const extra = names.filter((name) => !builtins.includes(name) && !allowed.includes(name));
 const missing = allowed.filter((name) => !names.includes(name));
 if (extra.length || missing.length) { throw new Error('extra=' + extra.join(',') + ' missing=' + missing.join(',')) }`
-	result := testRunner(time.Minute, memoryGrowthLimit).Run(context.Background(), script(text), entity.ScriptContext{}, nil, entity.DefaultAppSettings())
+	postResponse := script(text)
+	postResponse.Phase = scriptphase.PostResponse
+	response := entity.NewResponse(200, "OK", "HTTP/1.1", []entity.KeyValue{entity.NewKeyValue("Content-Type", "application/json")}, []byte("{}"), 2, entity.Timings{})
+	result := testRunner(time.Minute, memoryGrowthLimit).Run(context.Background(), postResponse, entity.ScriptContext{Response: &response}, nil, entity.DefaultAppSettings())
 	if result.HasFailed() {
 		t.Fatalf("global object differs from the allowlist: %s", result.Error.Message)
 	}

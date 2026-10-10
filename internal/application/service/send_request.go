@@ -6,7 +6,6 @@ import (
 	"github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
-	"github.com/brienze1/xenon/internal/domain/enums/scriptphase"
 	"github.com/brienze1/xenon/pkg/idutils"
 	"github.com/brienze1/xenon/pkg/logger"
 	"github.com/brienze1/xenon/pkg/timeutils"
@@ -23,16 +22,26 @@ type sendRequest struct {
 	saveHistoryEntry      usecase.SaveHistoryEntry
 	generateDynamicValue  usecase.GenerateDynamicValue
 	variables             requestVariables
+	scriptVariables       scriptVariables
 }
 
 func NewSendRequestService(
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry,
 	findTreeItem usecase.FindTreeItem,
+	saveTreeItem usecase.SaveTreeItem,
 	findRequest usecase.FindRequest,
 	loadWorkspace usecase.LoadWorkspace,
+	saveWorkspaceFile usecase.SaveWorkspaceFile,
 	findEnvironment usecase.FindEnvironment,
+	saveEnvironment usecase.SaveEnvironment,
 	findLocalVariables usecase.FindLocalVariables,
+	saveLocalVariables usecase.SaveLocalVariables,
 	findVault usecase.FindVault,
+	saveVault usecase.SaveVault,
+	findVaultSettings usecase.FindVaultSettings,
+	saveVaultSettings usecase.SaveVaultSettings,
+	probeKeychain usecase.ProbeKeychain,
+	publishVariableEvent usecase.PublishVariableEvent,
 	findAppSettings usecase.FindAppSettings,
 	runScript usecase.RunScript,
 	appendConsoleEntries usecase.AppendConsoleEntries,
@@ -41,6 +50,7 @@ func NewSendRequestService(
 	saveResponse usecase.SaveResponse,
 	saveHistoryEntry usecase.SaveHistoryEntry,
 ) adapter.SendRequestService {
+	scopes := variableScopes{findEnvironment: findEnvironment, findTreeItem: findTreeItem, loadWorkspace: loadWorkspace}
 	return &sendRequest{
 		findWorkspaceRegistry: findWorkspaceRegistry,
 		findRequest:           findRequest,
@@ -57,6 +67,21 @@ func NewSendRequestService(
 			findEnvironment:    findEnvironment,
 			findLocalVariables: findLocalVariables,
 			findVault:          findVault,
+		},
+		scriptVariables: scriptVariables{
+			scopes:             scopes,
+			rowStore:           variableRowStore{scopes: scopes, saveEnvironment: saveEnvironment, saveTreeItem: saveTreeItem, saveWorkspaceFile: saveWorkspaceFile},
+			findLocalVariables: findLocalVariables,
+			saveLocalVariables: saveLocalVariables,
+			vaults: vaultWriter{
+				findVault:            findVault,
+				saveVault:            saveVault,
+				findVaultSettings:    findVaultSettings,
+				saveVaultSettings:    saveVaultSettings,
+				probeKeychain:        probeKeychain,
+				publishVariableEvent: publishVariableEvent,
+			},
+			publishVariableEvent: publishVariableEvent,
 		},
 	}
 }
@@ -92,30 +117,10 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 	ctx = logger.WithRedactions(ctx, secrets...)
 	sentAt := timeutils.Now()
 	execution := entity.NewSendExecution(idutils.NewUlid())
-	execution.Start(request)
-	pipeline := scriptPipeline{
-		runScript:            s.runScript,
-		appendConsoleEntries: s.appendConsoleEntries,
-		requests: scriptRequests{
-			sendHttpRequest:      s.sendHttpRequest,
-			generateDynamicValue: s.generateDynamicValue,
-			variables:            scopes.context,
-			root:                 workspace.Path,
-			appVersion:           appVersion,
-			secrets:              secrets,
-		},
-		variables: scopes.context,
-		settings:  *settings,
-		secrets:   secrets,
-	}
-	pipeline.run(ctx, &execution, usecase.CollectScriptChain(owners, scriptphase.PreRequest))
-	if execution.ShouldSend() {
-		if err := s.send(ctx, tabId, request, &execution, scopes, workspace.Path, appVersion, secrets); err != nil {
-			return nil, err
-		}
-	}
-	if execution.RunsPostScripts() {
-		pipeline.run(ctx, &execution, usecase.CollectScriptChain(owners, scriptphase.PostResponse))
+	execution.Start(request, scopes.scripts, scopes.vault)
+	run := sendRun{service: s, scopes: scopes, localId: localId, root: workspace.Path, appVersion: appVersion, secrets: secrets, settings: *settings}
+	if err := run.execute(ctx, tabId, request, scopes.ancestors, owners, &execution); err != nil {
+		return nil, err
 	}
 	if err := s.saveHistoryEntry.Save(ctx, localId, entity.NewHistoryEntry(idutils.NewUlid(), sentAt, request, execution)); err != nil {
 		return nil, err
@@ -134,18 +139,4 @@ func (s *sendRequest) scriptOwners(ctx context.Context, root string, request ent
 		return nil, err
 	}
 	return request.WithScriptsOf(*stored).ScriptOwners(ancestors), nil
-}
-
-func (s *sendRequest) send(ctx context.Context, tabId string, request entity.Request, execution *entity.SendExecution, scopes *requestScopes, root, appVersion string, secrets []string) error {
-	resolved, resolvedAncestors := usecase.ResolveRequestVariables(execution.Request, scopes.ancestors, execution.Variables(scopes.context), func(name string) (string, bool) {
-		return s.generateDynamicValue.Generate(ctx, name)
-	})
-	effective := usecase.ResolveEffectiveRequest(resolved, resolvedAncestors, root)
-	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, appVersion))
-	response := s.sendHttpRequest.Send(ctx, effective).WithMaskedValues(secrets).WithSentRequest(request)
-	if err := s.saveResponse.Save(ctx, tabId, response); err != nil {
-		return err
-	}
-	execution.RecordResponse(effective, response)
-	return nil
 }

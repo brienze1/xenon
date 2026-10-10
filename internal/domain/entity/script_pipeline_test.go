@@ -2,6 +2,7 @@ package entity
 
 import (
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums/scriptphase"
 	"github.com/brienze1/xenon/internal/domain/enums/senderrorkind"
 	"github.com/brienze1/xenon/internal/domain/enums/sendoutcome"
+	"github.com/brienze1/xenon/internal/domain/enums/teststatus"
 	"github.com/brienze1/xenon/internal/domain/enums/variablescope"
 )
 
@@ -136,26 +138,31 @@ func TestSendExecutionCarriesScriptEffects(t *testing.T) {
 	start := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	written := NewRequest("01R", "Create")
 	execution := NewSendExecution("01S")
-	execution.Start(written)
-	context := execution.ScriptContext(VariableContext{})
-	context.LocalVariables["leak"] = true
-	if context.Request.ID != "01R" || context.Response != nil || len(execution.LocalVariables) != 0 {
-		t.Fatalf("context = %+v, local = %v", context, execution.LocalVariables)
+	scopes := ScriptScopes{Environment: NewScriptScope("dev", []ScriptVariable{NewScriptVariable("token", "t")}), Local: NewScriptScope("", nil)}
+	execution.Start(written, scopes, map[string]string{"key": "k"})
+	context := execution.ScriptContext(ScriptContext{Info: NewScriptInfo("01R", "Create", "Create", []string{"Create"})})
+	context.Vault["leak"] = "x"
+	if context.Request.ID != "01R" || context.Response != nil || len(execution.Vault) != 1 || context.Scopes.Environment.Name != "dev" || context.Info.RequestName != "Create" {
+		t.Fatalf("context = %+v, vault = %v", context, execution.Vault)
 	}
 	changed := written
 	changed.Method = "POST"
-	logs := []ScriptLog{{Level: consolelevel.Log, Arguments: []string{"a", "b"}}}
+	logs := []ScriptLog{NewScriptLog(consolelevel.Log, []string{"a", "b"}, []any{"a", "b"})}
 	nested := []NestedRequest{NewRejectedNestedRequest("locked")}
-	pre := NewScriptRun(preRef(), start).WithEffects(changed, map[string]any{"x": "1"}, logs, nested)
+	tests := []TestResult{{Name: "t", Status: teststatus.Passed}}
+	pre := NewScriptRun(preRef(), start).WithEffects(ScriptEffects{Request: changed, Scopes: scopes.WithLocal(NewScriptScope("", []ScriptVariable{NewScriptVariable("x", "1")})), Vault: map[string]string{"key": "k2"}, Logs: logs, Nested: nested, Tests: tests})
 	logs[0].Arguments[0] = "z"
 	execution.AddRun(pre)
-	if execution.Request.Method != "POST" || execution.LocalVariables["x"] != "1" || len(execution.Nested) != 1 || pre.Logs[0].Text() != "z b" {
+	if execution.Request.Method != "POST" || execution.Scopes.Local.ValueMap()["x"] != "1" || len(execution.Nested) != 1 || pre.Logs[0].Text() != "z b" || execution.Vault["key"] != "k2" {
 		t.Fatalf("after pre = %+v", execution)
 	}
-	post := NewScriptRun(postRef(), start).WithEffects(written, map[string]any{"y": "2"}, nil, nil)
+	if len(execution.Tests) != 1 || execution.Tests[0].Script != preRef() || pre.TestCount != 1 {
+		t.Errorf("tests = %+v", execution.Tests)
+	}
+	post := NewScriptRun(postRef(), start).WithEffects(ScriptEffects{Request: written, Scopes: scopes.WithLocal(NewScriptScope("", []ScriptVariable{NewScriptVariable("y", "2")}))})
 	execution.AddRun(post)
-	if execution.Request.Method != "POST" || execution.LocalVariables["y"] != "2" || execution.LocalVariables["x"] != nil {
-		t.Errorf("post-response runs keep the sent request and replace local variables: %+v", execution)
+	if execution.Request.Method != "POST" || execution.Scopes.Local.ValueMap()["y"] != "2" || execution.Scopes.Local.ValueMap()["x"] != nil {
+		t.Errorf("post-response runs keep the sent request and replace the scopes: %+v", execution)
 	}
 	if got := execution.Variables(VariableContext{}).Resolve("{{y}}", nil); got != "2" {
 		t.Errorf("variables = %q", got)
@@ -164,7 +171,7 @@ func TestSendExecutionCarriesScriptEffects(t *testing.T) {
 		t.Errorf("no response yet")
 	}
 	execution.RecordResponse(EffectiveRequest{}, Response{StatusCode: 200})
-	if !execution.RunsPostScripts() || execution.ScriptContext(VariableContext{}).Response.StatusCode != 200 {
+	if !execution.RunsPostScripts() || execution.ScriptContext(ScriptContext{}).Response.StatusCode != 200 {
 		t.Errorf("a sent response runs post-response scripts")
 	}
 	execution.RecordResponse(EffectiveRequest{}, NewFailedResponse(NewSendError(senderrorkind.Dns, "x"), Timings{}))
@@ -210,14 +217,14 @@ func TestNestedRequestsAndPreflightMessages(t *testing.T) {
 	if sent.HasFailed() || sent.FailureMessage() != "" || sent.Response.StatusCode != 200 {
 		t.Errorf("sent = %+v", sent)
 	}
-	if got := sent.LogValue(); !reflect.DeepEqual(got, map[string]any{"method": "POST", "url": "http://x", "error": "", "status_code": 200}) {
+	if got := sent.LogValue(); !reflect.DeepEqual(got, map[string]any{"method": "POST", "url": "http://x", "error": "", "requestId": "", "skipped": false, "status_code": 200}) {
 		t.Errorf("LogValue = %v", got)
 	}
 	rejected := NewRejectedNestedRequest("locked")
 	if !rejected.HasFailed() || rejected.FailureMessage() != "locked" || rejected.Response != nil {
 		t.Errorf("rejected = %+v", rejected)
 	}
-	if got := rejected.LogValue(); !reflect.DeepEqual(got, map[string]any{"method": "", "url": "", "error": "locked"}) {
+	if got := rejected.LogValue(); !reflect.DeepEqual(got, map[string]any{"method": "", "url": "", "error": "locked", "requestId": "", "skipped": false}) {
 		t.Errorf("LogValue = %v", got)
 	}
 	unreachable := NewSentNestedRequest(EffectiveRequest{}, NewFailedResponse(NewSendError(senderrorkind.Dns, "nowhere.test"), Timings{}))
@@ -248,9 +255,127 @@ func TestScriptRunEffectsAreCopies(t *testing.T) {
 		t.Fatalf("a new run has empty logs and nested requests")
 	}
 	nested := []NestedRequest{{Error: "a"}}
-	withEffects := run.WithEffects(Request{}, nil, nil, nested)
+	withEffects := run.WithEffects(ScriptEffects{Nested: nested})
 	nested[0].Error = "b"
 	if withEffects.Nested[0].Error != "a" || withEffects.Logs == nil {
 		t.Errorf("effects = %+v", withEffects)
+	}
+}
+
+func TestScriptScopeChangesAndLookups(t *testing.T) {
+	before := NewScriptScope("dev", []ScriptVariable{NewScriptVariable("a", "1"), NewScriptVariable("b", "2"), {Key: "off", Value: "x", Disabled: true}})
+	after := before.WithValue("a", 1.0).WithValue("c", map[string]any{"x": true})
+	after.Values = append(after.Values[:1], after.Values[2:]...)
+	set, unset := after.ChangesFrom(before)
+	if !reflect.DeepEqual(set, []KeyValue{NewKeyValue("c", `{"x":true}`)}) || !reflect.DeepEqual(unset, []string{"b"}) {
+		t.Errorf("changes = %+v %v", set, unset)
+	}
+	if variable, found := after.Lookup("c"); !found || variable.Text() != `{"x":true}` {
+		t.Errorf("lookup = %+v %v", variable, found)
+	}
+	if _, found := before.Lookup("off"); found {
+		t.Errorf("disabled values are not found")
+	}
+	if NewInactiveScriptScope().Inactive != true || (ScriptScopes{Globals: before}).Scope(variablescope.Globals).Name != "dev" {
+		t.Errorf("scopes")
+	}
+	for value, want := range map[any]string{"s": "s", 2.0: "2", nil: "null"} {
+		if got := LocalVariableText(value); got != want {
+			t.Errorf("LocalVariableText(%v) = %q", value, got)
+		}
+	}
+	tagged := map[string]any{"$type": "undefined"}
+	if LocalVariableText(tagged) != "" || LocalVariableText(map[string]any{"$type": "number", "value": "NaN"}) != "NaN" || LocalVariableText(map[string]any{"$type": "map", "value": []any{}}) != "[]" {
+		t.Errorf("tagged values read as their value")
+	}
+}
+
+func TestVariableContextWithScriptScopesAndVault(t *testing.T) {
+	rows := []VariableRow{NewVariableRow("base", "https://a"), NewVariableRow("gone", "x"), {Key: "missing", Secret: true, Enabled: true}}
+	context := NewVariableContext(NewVariableLayer(variablescope.Environment, rows, nil, nil, false), NewVariableLayer(variablescope.Globals, []VariableRow{{Key: "key", Secret: true, Enabled: true}}, nil, map[string]string{"key": "s3"}, false))
+	scopes := ScriptScopes{
+		Environment: NewScriptScope("dev", []ScriptVariable{NewScriptVariable("base", "https://b"), NewScriptVariable("new", 1.0)}),
+		Globals:     NewScriptScope("", []ScriptVariable{{Key: "key", Value: "s3", Secret: true}}),
+		Local:       NewScriptScope("", []ScriptVariable{NewScriptVariable("id", "7")}),
+	}
+	updated := context.WithScriptScopes(scopes)
+	if got := updated.Resolve("{{base}}/{{new}}/{{id}}/{{gone}}/{{vault:key}}", nil); got != "https://b/1/7/{{gone}}/s3" {
+		t.Errorf("resolve = %q", got)
+	}
+	if missing := updated.UnavailableSecretsIn("{{missing}}"); len(missing) != 1 {
+		t.Errorf("unavailable secrets survive script scopes: %+v", missing)
+	}
+	vaulted := updated.WithVault(map[string]string{"key": "s4"})
+	if got := vaulted.Resolve("{{vault:key}}/{{vault:nope}}", nil); got != "s4/{{vault:nope}}" || !slices.Contains(vaulted.SecretValues(), "s4") {
+		t.Errorf("vault resolve = %q", got)
+	}
+	if got := context.WithScriptScopes(ScriptScopes{}).Resolve("{{base}}", nil); got != "https://a" {
+		t.Errorf("scopes never loaded leave the context as it is: %q", got)
+	}
+}
+
+func TestVariableTableWithScriptChanges(t *testing.T) {
+	rows := []VariableRow{NewVariableRow("plain", "init"), {Key: "secret", Secret: true, Enabled: true}}
+	table := VariableTable{Scope: NewGlobalsScopeRef(), Rows: rows, Current: map[string]string{"plain": "cur"}, Secrets: map[string]string{"secret": "old"}}
+	changed := table.WithScriptChanges([]KeyValue{NewKeyValue("plain", "p2"), NewKeyValue("secret", "s2"), NewKeyValue("added", "a")}, []string{"nope"}, false)
+	if changed.Current["plain"] != "p2" || changed.Secrets["secret"] != "s2" || len(changed.Rows) != 3 || changed.Rows[2].InitialValue != "" || changed.Current["added"] != "a" {
+		t.Errorf("set = %+v", changed)
+	}
+	unset := table.WithScriptChanges(nil, []string{"plain", "secret"}, false)
+	if _, found := unset.Current["plain"]; found || unset.Secrets["secret"] != "old" {
+		t.Errorf("unset drops plain current values only = %+v", unset)
+	}
+	vault := table.WithScriptChanges([]KeyValue{NewKeyValue("plain", "x"), NewKeyValue("fresh", "f")}, []string{"secret"}, true)
+	if vault.Current["plain"] != "cur" || !vault.Rows[2].Secret || vault.Secrets["fresh"] != "f" {
+		t.Errorf("vault changes only touch secret rows = %+v", vault)
+	}
+	if _, found := vault.Secrets["secret"]; found {
+		t.Errorf("vault unset drops the secret value")
+	}
+}
+
+func TestScriptCookiesFromResponseHeaders(t *testing.T) {
+	headers := []KeyValue{NewKeyValue("Set-Cookie", "session=s1; Path=/; HttpOnly; Secure; Max-Age=60"), NewKeyValue("set-cookie", "theme=dark; Domain=.example.com; Expires=Wed, 21 Oct 2026 07:28:00 GMT"), NewKeyValue("Set-Cookie", "=bad"), NewKeyValue("X-Other", "a=b")}
+	cookies := NewScriptCookies(headers, "api.example.com")
+	if len(cookies) != 2 {
+		t.Fatalf("cookies = %+v", cookies)
+	}
+	if cookies[0] != (ScriptCookie{Name: "session", Value: "s1", Domain: "api.example.com", Path: "/", MaxAge: 60, Secure: true, HttpOnly: true, HostOnly: true}) {
+		t.Errorf("session = %+v", cookies[0])
+	}
+	if cookies[1].Domain != "example.com" || cookies[1].HostOnly || cookies[1].Expires != "Wed, 21 Oct 2026 07:28:00 UTC" {
+		t.Errorf("theme = %+v", cookies[1])
+	}
+	if (EffectiveRequest{URL: "https://api.example.com:8443/x"}).Host() != "api.example.com" || (EffectiveRequest{URL: "%%"}).Host() != "" {
+		t.Errorf("host")
+	}
+}
+
+func TestRunNestedRequests(t *testing.T) {
+	execution := NewSendExecution("x")
+	execution.Start(NewRequest("01R", "R"), ScriptScopes{}, nil)
+	sent := EffectiveRequest{URL: "https://a"}
+	execution.RecordResponse(sent, Response{StatusCode: 200})
+	nested := NewRunNestedRequest("01R", execution)
+	if !nested.IsRunRequest() || nested.Skipped || nested.Response.StatusCode != 200 || nested.Request.URL != "https://a" || nested.HasFailed() {
+		t.Errorf("run = %+v", nested)
+	}
+	skipped := NewSendExecution("y")
+	skipped.AddRun(NewScriptRun(preRef(), time.Time{}).SkippedRequest())
+	if run := NewRunNestedRequest("01R", skipped); !run.Skipped || run.Response != nil {
+		t.Errorf("skipped run = %+v", run)
+	}
+	missing := NewMissingRunNestedRequest("01X", "nope")
+	if !missing.HasFailed() || missing.FailureMessage() != "nope" || missing.LogValue().(map[string]any)["requestId"] != "01X" {
+		t.Errorf("missing = %+v", missing)
+	}
+	if info := NewScriptInfo("01R", "R", "C", []string{"C", "R"}); !info.HasIteration() || (ScriptInfo{}).HasIteration() {
+		t.Errorf("info = %+v", info)
+	}
+	if NewUnsavedVariablesError(preRef(), "locked").Message != "The variable changes of this script could not be saved: locked" {
+		t.Errorf("unsaved")
+	}
+	if !NewScriptLog(consolelevel.Clear, nil, nil).IsClear() {
+		t.Errorf("clear")
 	}
 }

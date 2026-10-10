@@ -8,8 +8,10 @@ Feature: Script errors, limits and skipRequest
   out, the result has outcome stopped_by_script_error with the error, the script that failed
   (owner kind, name, phase) and the line and column, and History records the attempt. A
   post-response script error keeps the response and the remaining post-response scripts still
-  run. pm.execution.skipRequest() in a pre-request script skips the send without an error. The
-  time limit is the script timeout setting (default 10 s) and includes waiting for timers.
+  run. pm.execution.skipRequest() in a pre-request script skips the send without an error and,
+  as in postman-sandbox, ends that script on the spot; in a post-response script it throws
+  Postman's TypeError. Error messages use V8's wording, as Postman shows them. The time limit is
+  the script timeout setting (default 10 s) and includes waiting for timers.
 
   Background:
     Given the workspace "Acme" exists
@@ -120,7 +122,7 @@ Feature: Script errors, limits and skipRequest
     Then the call should succeed
     And the response should contain the field "outcome" equal to "stopped_by_script_error"
     And the response should contain the field "script_errors.0.kind" equal to "script_syntax"
-    And the response should contain the field "script_errors.0.message" equal to "SyntaxError: Unexpected token ;"
+    And the response should contain the field "script_errors.0.message" equal to "SyntaxError: Unexpected token ';'"
     And the response should contain the field "script_errors.0.line" equal to "1"
     And the response should contain the field "script_errors.0.column" equal to "11"
     And the response should contain the field "script_errors.0.script.owner_kind" equal to "collection"
@@ -295,7 +297,7 @@ Feature: Script errors, limits and skipRequest
     And the "GET" request to "/invoices" should have been received 0 times
 
   @skip_request
-  Scenario: skipRequest skips the send without an error; later pre-request scripts do not run
+  Scenario: skipRequest skips the send without an error; the rest of the script and later pre-request scripts do not run
     Given the workspace file "acme/collections/billing/collection.yaml" contains
       """
       xenon: 1
@@ -331,8 +333,7 @@ Feature: Script errors, limits and skipRequest
       """
       { "limit": 100 }
       """
-    Then the response should contain the field "" array length equal to 1
-    And the response should contain the field "0.summary" equal to "after skip"
+    Then the response should contain the field "" array length equal to 0
     When I call "HistoryService.List" with
       """
       { "local_id": "{{Acme.local_id}}" }
@@ -340,7 +341,7 @@ Feature: Script errors, limits and skipRequest
     Then the response should contain the field "0.outcome" equal to "skipped_by_script"
 
   @post_skip
-  Scenario: skipRequest in a post-response script does nothing
+  Scenario: skipRequest in a post-response script fails that script and leaves the send as it is
     Given the workspace file "acme/collections/billing/create.yaml" contains
       """
       xenon: 1

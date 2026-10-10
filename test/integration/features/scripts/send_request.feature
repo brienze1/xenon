@@ -89,7 +89,10 @@ Feature: pm.sendRequest sends extra requests from a script
     And the response should contain the field "script_errors" array length equal to 0
     And the "POST" request to "/token" should have been received 1 times
     And the 1 "POST" request to "/token" should have the header "X-Client" equal to "acme-client"
-    And the 1 "POST" request to "/token" should have the form field "grant_type" equal to "client_credentials"
+    And the 1 "POST" request to "/token" should have the body equal to
+      """
+      grant_type=client_credentials
+      """
     When I call "ConsoleService.List" with
       """
       { "limit": 100 }

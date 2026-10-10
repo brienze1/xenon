@@ -26,6 +26,7 @@ var (
 	syntaxPosition = regexp.MustCompile(`Line (\d+):(\d+) (.*)$`)
 	stackPosition  = regexp.MustCompile(regexp.QuoteMeta(scriptFile) + `:(\d+):(\d+)`)
 	moreErrors     = regexp.MustCompile(` \(and \d+ more errors\)$`)
+	bareToken      = regexp.MustCompile(`^Unexpected token ([^'\s][^\s]*)$`)
 )
 
 func wrap(text string) string {
@@ -42,32 +43,37 @@ func syntaxError(err error, script entity.ScriptRef) entity.ScriptError {
 	if match == nil {
 		return entity.NewScriptError(scripterrorkind.Syntax, "SyntaxError: "+message, script)
 	}
-	text := moreErrors.ReplaceAllString(match[3], "")
+	text := bareToken.ReplaceAllString(moreErrors.ReplaceAllString(match[3], ""), "Unexpected token '$1'")
 	return entity.NewScriptError(scripterrorkind.Syntax, "SyntaxError: "+text, script).At(userLine(match[1]), number(match[2]))
 }
 
-func runtimeError(err error, script entity.ScriptRef) entity.ScriptError {
+func (e *execution) runtimeError(err error) entity.ScriptError {
 	var overflow *goja.StackOverflowError
 	if errors.As(err, &overflow) {
-		return located(entity.NewScriptError(scripterrorkind.StackOverflow, stackOverflow, script), overflow.String())
+		return located(entity.NewScriptError(scripterrorkind.StackOverflow, stackOverflow, e.script), overflow.String())
 	}
 	var exception *goja.Exception
 	if errors.As(err, &exception) {
-		return thrownError(exception.Value(), script)
+		return e.thrownError(exception.Value())
 	}
-	return entity.NewScriptError(scripterrorkind.Runtime, err.Error(), script)
+	return entity.NewScriptError(scripterrorkind.Runtime, err.Error(), e.script)
 }
 
-func thrownError(value goja.Value, script entity.ScriptRef) entity.ScriptError {
-	scriptError := entity.NewScriptError(scripterrorkind.Runtime, describe(value), script)
-	if object, ok := value.(*goja.Object); ok {
+func (e *execution) thrownError(value goja.Value) entity.ScriptError {
+	kind := scripterrorkind.Runtime
+	object, isObject := value.(*goja.Object)
+	if isObject && e.unsupported[object] {
+		kind = scripterrorkind.UnsupportedApi
+	}
+	scriptError := entity.NewScriptError(kind, v8Message(describe(value), e.script.Text), e.script)
+	if isObject {
 		return located(scriptError, valueText(object.Get("stack")))
 	}
 	return scriptError
 }
 
-func rejectionError(value goja.Value, script entity.ScriptRef) entity.ScriptError {
-	scriptError := thrownError(value, script)
+func (e *execution) rejectionError(value goja.Value) entity.ScriptError {
+	scriptError := e.thrownError(value)
 	scriptError.Kind = scripterrorkind.UnhandledRejection
 	return scriptError.WithMessage(unhandled + scriptError.Message)
 }

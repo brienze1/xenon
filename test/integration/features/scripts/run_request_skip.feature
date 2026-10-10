@@ -18,7 +18,7 @@ Feature: pm.execution and pm.info control and describe the running send
     And the "billing" variable is set to "01JK7000000000000000000001"
     And the "invoices" variable is set to "01JK7000000000000000000002"
     And the "create" variable is set to "01JK7000000000000000000004"
-    And the "token" variable is set to "01JK7000000000000000000005"
+    And the "fetch" variable is set to "01JK7000000000000000000005"
     And the "dev" variable is set to "01JK7000000000000000000009"
     And the workspace file "acme/workspace.yaml" contains
       """
@@ -52,7 +52,7 @@ Feature: pm.execution and pm.info control and describe the running send
       """
       xenon: 1
       kind: request
-      id: {{token}}
+      id: {{fetch}}
       name: Fetch token
       method: POST
       url: "{{base_url}}/token?client={{client}}"
@@ -108,7 +108,7 @@ Feature: pm.execution and pm.info control and describe the running send
           description: ""
       scripts:
         preRequest: |
-          const res = await pm.execution.runRequest("{{token}}")
+          const res = await pm.execution.runRequest("{{fetch}}")
           console.log("after run", res.code, res.json().token, pm.environment.get("token"))
       """
     When I call "RequestService.Send" with
@@ -148,7 +148,7 @@ Feature: pm.execution and pm.info control and describe the running send
       url: "{{base_url}}/invoices"
       scripts:
         preRequest: |
-          await pm.execution.runRequest("{{token}}", { variables: { client: "globex" } })
+          await pm.execution.runRequest("{{fetch}}", { variables: { client: "globex" } })
           console.log(pm.environment.get("client"), pm.variables.get("client"))
       """
     When I call "RequestService.Send" with
@@ -169,7 +169,7 @@ Feature: pm.execution and pm.info control and describe the running send
       """
       xenon: 1
       kind: request
-      id: {{token}}
+      id: {{fetch}}
       name: Fetch token
       method: POST
       url: "{{base_url}}/token"
@@ -187,7 +187,7 @@ Feature: pm.execution and pm.info control and describe the running send
       scripts:
         preRequest: |
           try { await pm.execution.runRequest("01JK7999999999999999999999") } catch (err) { console.log(err.message) }
-          console.log(await pm.execution.runRequest("{{token}}"))
+          console.log(await pm.execution.runRequest("{{fetch}}"))
       """
     When I call "RequestService.Send" with
       """

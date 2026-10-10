@@ -8,9 +8,13 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums/variablescope"
 )
 
-const maxResolutionPasses = 19
+const (
+	maxResolutionPasses  = 19
+	vaultReferencePrefix = "vault:"
+)
 
 type VariableContext struct {
+	Vault  map[string]string
 	Layers []VariableLayer
 }
 
@@ -24,12 +28,51 @@ func (v VariableContext) WithLocal(values map[string]any) VariableContext {
 	for name, value := range values {
 		variables[name] = ContextVariable{Name: name, Value: LocalVariableText(value), Scope: variablescope.Local}
 	}
-	return NewVariableContext(append([]VariableLayer{{Scope: variablescope.Local, Variables: variables}}, v.Layers...)...)
+	updated := NewVariableContext(append([]VariableLayer{{Scope: variablescope.Local, Variables: variables}}, v.Layers...)...)
+	updated.Vault = v.Vault
+	return updated
+}
+
+// WithScriptScopes puts the scopes as the send's scripts left them over the stored values; unavailable secrets keep their state.
+func (v VariableContext) WithScriptScopes(scopes ScriptScopes) VariableContext {
+	layers := make([]VariableLayer, 0, len(v.Layers))
+	for _, layer := range v.Layers {
+		if layer.Scope == variablescope.Local {
+			continue
+		}
+		layers = append(layers, layer.withScriptScope(scopes.Scope(layer.Scope)))
+	}
+	updated := NewVariableContext(layers...).WithLocal(scopes.Local.ValueMap())
+	updated.Vault = v.Vault
+	return updated
+}
+
+// WithVault makes {{vault:name}} resolve from these values (the workspace secrets as the send's scripts left them).
+func (v VariableContext) WithVault(vault map[string]string) VariableContext {
+	v.Vault = vault
+	return v
 }
 
 func (v VariableContext) Lookup(name string) (ContextVariable, bool) {
+	if secret, isVault := strings.CutPrefix(name, vaultReferencePrefix); isVault {
+		return v.lookupVault(name, secret)
+	}
 	for _, layer := range v.Layers {
 		if variable, found := layer.Lookup(name); found {
+			return variable, true
+		}
+	}
+	return ContextVariable{}, false
+}
+
+func (v VariableContext) lookupVault(reference, name string) (ContextVariable, bool) {
+	if v.Vault != nil {
+		value, found := v.Vault[name]
+		return ContextVariable{Name: reference, Value: value, Scope: variablescope.Globals, Secret: true}, found
+	}
+	for _, layer := range v.Layers {
+		if variable, found := layer.Lookup(name); found && layer.Scope == variablescope.Globals && variable.Secret {
+			variable.Name = reference
 			return variable, true
 		}
 	}
@@ -40,6 +83,11 @@ func (v VariableContext) SecretValues() []string {
 	values := make([]string, 0)
 	for _, layer := range v.Layers {
 		values = append(values, layer.secretValues()...)
+	}
+	for _, value := range v.Vault {
+		if value != "" && !slices.Contains(values, value) {
+			values = append(values, value)
+		}
 	}
 	return values
 }

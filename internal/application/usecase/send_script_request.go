@@ -6,7 +6,8 @@ import (
 	"github.com/brienze1/xenon/internal/domain/entity"
 )
 
-// SendScriptRequest sends a request a script asked for (pm.sendRequest), resolved with the send's local variables.
+// SendScriptRequest sends what scripts ask for: pm.sendRequest (resolved with the scopes as the script left them) and pm.execution.runRequest (a saved request with its own scripts).
 type SendScriptRequest interface {
-	Send(ctx context.Context, request entity.Request, localVariables map[string]any) entity.NestedRequest
+	Send(ctx context.Context, request entity.Request, scopes entity.ScriptScopes) entity.NestedRequest
+	Run(ctx context.Context, requestId string, scopes entity.ScriptScopes) entity.NestedRequest
 }

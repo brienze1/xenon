@@ -12,6 +12,7 @@ const (
 	Warn    enums.ConsoleLevel = "warn"
 	Error   enums.ConsoleLevel = "error"
 	Debug   enums.ConsoleLevel = "debug"
+	Clear   enums.ConsoleLevel = "clear"
 	Unknown enums.ConsoleLevel = "unknown"
 )
 
@@ -27,6 +28,8 @@ func GetConsoleLevel(s string) enums.ConsoleLevel {
 		return Error
 	case "debug":
 		return Debug
+	case "clear":
+		return Clear
 	default:
 		return Unknown
 	}

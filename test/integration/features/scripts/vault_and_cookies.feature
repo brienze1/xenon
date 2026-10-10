@@ -100,7 +100,7 @@ Feature: pm.vault uses the workspace secrets and pm.cookies the response cookies
       """
       { "limit": 100 }
       """
-    Then the response should contain the field "0.summary" equal to "true true undefined undefined"
+    Then the response should contain the field "0.summary" equal to "true true null null"
 
   @cookies
   Scenario: pm.cookies lists the response cookies

@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/scripterrorkind"
 )
 
 type ScriptError struct {
@@ -38,4 +39,8 @@ func (e ScriptError) Location() string {
 func (e ScriptError) WithMessage(message string) ScriptError {
 	e.Message = message
 	return e
+}
+
+func NewUnsavedVariablesError(script ScriptRef, reason string) ScriptError {
+	return NewScriptError(scripterrorkind.Runtime, "The variable changes of this script could not be saved: "+reason, script)
 }

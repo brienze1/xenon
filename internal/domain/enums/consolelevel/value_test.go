@@ -15,6 +15,7 @@ func TestGetConsoleLevel(t *testing.T) {
 		{raw: "warn", want: Warn},
 		{raw: "error", want: Error},
 		{raw: "debug", want: Debug},
+		{raw: "clear", want: Clear},
 	}
 	for _, tc := range cases {
 		for _, raw := range []string{tc.raw, strings.ToUpper(tc.raw), " " + tc.raw + " "} {

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums/authtype"
 	"github.com/brienze1/xenon/internal/domain/enums/bodymode"
 	"github.com/brienze1/xenon/internal/domain/enums/formdatatype"
 	"github.com/brienze1/xenon/internal/domain/enums/rawlanguage"
@@ -25,7 +26,7 @@ func TestNewScriptRequestShowsThePostmanShape(t *testing.T) {
 	want := ScriptRequest{
 		Method: "GET", URL: "{{api}}/items?a=1",
 		Header: []ScriptKeyValue{{Key: "X-On", Value: "1"}, {Key: "X-Off", Value: "0", Disabled: true}},
-		Body:   ScriptBody{Mode: "raw", Raw: "<a/>"},
+		Body:   &ScriptBody{Mode: "raw", Raw: "<a/>"},
 	}
 	if got := NewScriptRequest(request); !reflect.DeepEqual(got, want) {
 		t.Fatalf("NewScriptRequest = %+v", got)
@@ -42,8 +43,11 @@ func TestNewScriptRequestShowsThePostmanShape(t *testing.T) {
 	if got := newScriptBody(encoded); !reflect.DeepEqual(got, ScriptBody{Mode: "urlencoded", UrlEncoded: []ScriptKeyValue{{Key: "k", Value: "v"}}}) {
 		t.Errorf("urlencoded = %+v", got)
 	}
-	if got := newScriptBody(entity.Body{Mode: bodymode.GraphQl}); !reflect.DeepEqual(got, ScriptBody{}) {
+	if got := newScriptBody(entity.Body{Mode: bodymode.GraphQl, GraphQl: entity.BodyGraphQl{Query: "{ a }", Variables: `{"v":1}`}}); !reflect.DeepEqual(got, ScriptBody{Mode: "graphql", GraphQl: &ScriptGraphQl{Query: "{ a }", Variables: `{"v":1}`}}) {
 		t.Errorf("graphql = %+v", got)
+	}
+	if got := NewScriptRequest(entity.NewRequest("", "")); got.Body != nil || got.Auth != nil {
+		t.Errorf("no body and an inherited auth are left out: %+v", got)
 	}
 }
 
@@ -77,19 +81,19 @@ func TestScriptRequestBodyChanges(t *testing.T) {
 	}
 	empty := writtenRequest()
 	view = NewScriptRequest(empty)
-	view.Body = ScriptBody{Mode: "raw", Raw: "text"}
+	view.Body = &ScriptBody{Mode: "raw", Raw: "text"}
 	if got := view.ToEntity(empty).Body; got.Raw != (entity.BodyRaw{Language: rawlanguage.Text, Content: "text"}) || got.Mode != bodymode.Raw {
 		t.Errorf("a new raw body is text: %+v", got)
 	}
-	view.Body = ScriptBody{Mode: "urlencoded", UrlEncoded: []ScriptKeyValue{{Key: "k", Value: "v"}, {Key: "n", Value: nil, Disabled: true}}}
+	view.Body = &ScriptBody{Mode: "urlencoded", UrlEncoded: []ScriptKeyValue{{Key: "k", Value: "v"}, {Key: "n", Value: nil, Disabled: true}}}
 	if got := view.ToEntity(empty).Body; got.Mode != bodymode.UrlEncoded || !reflect.DeepEqual(got.UrlEncoded, []entity.KeyValue{entity.NewKeyValue("k", "v"), {Key: "n"}}) {
 		t.Errorf("urlencoded = %+v", got)
 	}
-	view.Body = ScriptBody{Mode: "formdata", FormData: []ScriptKeyValue{{Key: "f", Value: "v", Disabled: true}}}
+	view.Body = &ScriptBody{Mode: "formdata", FormData: []ScriptKeyValue{{Key: "f", Value: "v", Disabled: true}}}
 	if got := view.ToEntity(empty).Body; got.Mode != bodymode.FormData || len(got.FormData) != 1 || got.FormData[0].Type != formdatatype.Text || got.FormData[0].Enabled || got.FormData[0].Value != "v" {
 		t.Errorf("formdata = %+v", got)
 	}
-	view.Body = ScriptBody{Mode: "file"}
+	view.Body = &ScriptBody{Mode: "file"}
 	if got := view.ToEntity(empty).Body; got.Mode != bodymode.None {
 		t.Errorf("an unknown mode has no body: %+v", got)
 	}
@@ -126,5 +130,52 @@ func TestNewScriptResponse(t *testing.T) {
 	want := ScriptResponse{Code: 201, Status: "Created", Header: []ScriptKeyValue{{Key: "Content-Type", Value: "application/json"}}, Body: `{"a":1}`, ResponseTime: 12, ResponseSize: 7}
 	if got := NewScriptResponse(response); !reflect.DeepEqual(got, want) {
 		t.Errorf("NewScriptResponse = %+v", got)
+	}
+}
+
+func TestScriptRequestAuthAndGraphQl(t *testing.T) {
+	written := writtenRequest()
+	written.Auth = entity.Auth{Type: authtype.Bearer, Bearer: entity.AuthBearer{Token: "t1"}}
+	view := NewScriptRequest(written)
+	if view.Auth == nil || view.Auth.Type != "bearer" || view.Auth.Bearer[0].Value != "t1" {
+		t.Fatalf("auth = %+v", view.Auth)
+	}
+	if got := view.ToEntity(written).Auth; got.Bearer.Token != "t1" {
+		t.Errorf("unchanged auth = %+v", got)
+	}
+	view.Auth = &ScriptAuth{Type: "basic", Basic: []ScriptKeyValue{{Key: "username", Value: "u"}, {Key: "password", Value: "p"}}}
+	if got := view.ToEntity(written).Auth; got.Type != authtype.Basic || got.Basic != (entity.AuthBasic{Username: "u", Password: "p"}) {
+		t.Errorf("basic = %+v", got)
+	}
+	view.Auth = &ScriptAuth{Type: "none"}
+	if got := view.ToEntity(written).Auth; got.Type != authtype.None {
+		t.Errorf("none = %+v", got)
+	}
+	view.Auth = &ScriptAuth{Type: "oauth2"}
+	if got := view.ToEntity(written).Auth; got.Type != authtype.Bearer {
+		t.Errorf("an auth type Xenon cannot send keeps the written auth: %+v", got)
+	}
+	if (&ScriptAuth{Type: "none"}).Equals(nil) {
+		t.Errorf("nil auth differs")
+	}
+	none := writtenRequest()
+	none.Auth = entity.Auth{Type: authtype.None}
+	if got := NewScriptRequest(none).Auth; got == nil || got.Type != "none" {
+		t.Errorf("none = %+v", got)
+	}
+	basic := writtenRequest()
+	basic.Auth = entity.Auth{Type: authtype.Basic, Basic: entity.AuthBasic{Username: "a"}}
+	if got := NewScriptRequest(basic).Auth; got == nil || len(got.Basic) != 2 {
+		t.Errorf("basic = %+v", got)
+	}
+	graph := writtenRequest()
+	graph.Body = entity.Body{Mode: bodymode.GraphQl, GraphQl: entity.BodyGraphQl{Query: "{ a }"}}
+	view = NewScriptRequest(graph)
+	view.Body.GraphQl = &ScriptGraphQl{Query: "{ b }", Variables: map[string]any{"x": 1.0}}
+	if got := view.ToEntity(graph).Body; got.Mode != bodymode.GraphQl || got.GraphQl != (entity.BodyGraphQl{Query: "{ b }", Variables: `{"x":1}`}) {
+		t.Errorf("graphql = %+v", got)
+	}
+	if !(*ScriptGraphQl)(nil).Equals(nil) || (&ScriptGraphQl{}).Equals(nil) {
+		t.Errorf("graphql equality with nil")
 	}
 }

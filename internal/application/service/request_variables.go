@@ -5,6 +5,8 @@ import (
 
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/variablescope"
 	"github.com/brienze1/xenon/pkg/errs"
 	"github.com/brienze1/xenon/pkg/logger"
 )
@@ -19,8 +21,30 @@ type requestVariables struct {
 
 type requestScopes struct {
 	environment *entity.Environment
+	vault       map[string]string
 	ancestors   []entity.Collection
 	context     entity.VariableContext
+	scripts     entity.ScriptScopes
+}
+
+// refs are the scopes script writes go to: the active environment, the request's collection and the globals.
+func (r requestScopes) refs() map[enums.VariableScope]entity.ScopeRef {
+	refs := map[enums.VariableScope]entity.ScopeRef{variablescope.Globals: entity.NewGlobalsScopeRef()}
+	if r.environment != nil {
+		refs[variablescope.Environment] = r.environment.ScopeRef()
+	}
+	if collection, found := entity.RootCollection(r.ancestors); found {
+		refs[variablescope.Collection] = collection.ScopeRef()
+	}
+	return refs
+}
+
+func (r requestScopes) location(request entity.Request) []string {
+	location := make([]string, 0, len(r.ancestors)+1)
+	for _, ancestor := range r.ancestors {
+		location = append(location, ancestor.Name)
+	}
+	return append(location, request.Name)
 }
 
 func (r requestVariables) load(ctx context.Context, localId, root, requestId string) (*requestScopes, error) {
@@ -52,6 +76,8 @@ func (r requestVariables) load(ctx context.Context, localId, root, requestId str
 		environment: environment,
 		ancestors:   ancestors,
 		context:     usecase.BuildVariableContext(environment, ancestors, workspace.Variables, *local, *vault),
+		scripts:     usecase.BuildScriptScopes(environment, ancestors, workspace.Variables, *local, *vault),
+		vault:       usecase.BuildScriptVault(workspace.Variables, *vault),
 	}, nil
 }
 

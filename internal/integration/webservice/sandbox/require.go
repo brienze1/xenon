@@ -6,20 +6,18 @@ import (
 
 const lodash3Module = "lodash3"
 
-var lazyGlobals = map[string]func(e *execution) goja.Value{
-	"Buffer":   func(e *execution) goja.Value { return e.require("buffer").Get("Buffer") },
-	"CryptoJS": func(e *execution) goja.Value { return e.require("crypto-js") },
-	"tv4":      func(e *execution) goja.Value { return e.require("tv4") },
-	"cheerio":  func(e *execution) goja.Value { return e.require("cheerio") },
-	"Backbone": func(e *execution) goja.Value { return e.require("backbone") },
-	"_":        legacyLodash,
+var internalModules = map[string]bool{lodash3Module: true, "intl": true, "liquid-json": true, "http-reasons": true, "mime-format": true, "mime": true, "sugar": true, "sugar-methods": true}
+
+// virtualModules are require()-able names postman-sandbox serves without a library of their own.
+var virtualModules = map[string]func(e *execution) goja.Value{
+	"atob":               func(e *execution) goja.Value { return e.vm.Get("atob") },
+	"btoa":               func(e *execution) goja.Value { return e.vm.Get("btoa") },
+	"postman-collection": func(e *execution) goja.Value { return e.postmanCollection() },
+	"fs":                 func(e *execution) goja.Value { return e.vm.NewObject() },
+	"os":                 func(e *execution) goja.Value { return e.vm.NewObject() },
 }
 
-var internalModules = map[string]bool{lodash3Module: true, "intl": true}
-
 func (e *execution) installRequire() {
-	errorConstructor, _ := goja.AssertConstructor(e.vm.Get("Error"))
-	e.errorConstructor = errorConstructor
 	e.moduleRequire = e.vm.ToValue(func(call goja.FunctionCall) goja.Value {
 		return e.require(e.moduleName(call))
 	})
@@ -30,14 +28,12 @@ func (e *execution) installRequire() {
 		}
 		return e.require(name)
 	})
-	for name, load := range lazyGlobals {
-		e.defineLazy(name, load)
-	}
+	e.defineLazy("Buffer", func(e *execution) goja.Value { return e.require("buffer").Get("Buffer") })
 }
 
 func (e *execution) moduleName(call goja.FunctionCall) string {
 	name := call.Argument(0).String()
-	if !e.modules.has(name) {
+	if _, virtual := virtualModules[name]; !virtual && !e.modules.has(name) {
 		panic(e.newError("Cannot find module '" + name + "'"))
 	}
 	return name
@@ -45,6 +41,11 @@ func (e *execution) moduleName(call goja.FunctionCall) string {
 
 func (e *execution) require(name string) *goja.Object {
 	if exports, found := e.loaded[name]; found {
+		return exports
+	}
+	if virtual, found := virtualModules[name]; found {
+		exports := virtual(e).ToObject(e.vm)
+		e.loaded[name] = exports
 		return exports
 	}
 	program, err := e.modules.program(name)
@@ -81,16 +82,6 @@ func (e *execution) defineLazy(name string, load func(e *execution) goja.Value) 
 		return goja.Undefined()
 	})
 	_ = global.DefineAccessorProperty(name, getter, setter, goja.FLAG_TRUE, goja.FLAG_FALSE)
-}
-
-func legacyLodash(e *execution) goja.Value {
-	lodash := e.require(lodash3Module)
-	noConflict, _ := goja.AssertFunction(lodash.Get("noConflict"))
-	value, err := noConflict(lodash)
-	if err != nil {
-		panic(err)
-	}
-	return value
 }
 
 func (e *execution) newError(message string) *goja.Object {

@@ -1,6 +1,9 @@
 package entity
 
-import "strings"
+import (
+	"net/url"
+	"strings"
+)
 
 type EffectiveRequest struct {
 	Auth                Auth
@@ -61,4 +64,12 @@ func (e EffectiveRequest) TimeoutText() string {
 
 func (e EffectiveRequest) LogValue() any {
 	return map[string]any{"method": e.Method, "url": e.URL}
+}
+
+func (e EffectiveRequest) Host() string {
+	parsed, err := url.Parse(e.URL)
+	if err != nil {
+		return ""
+	}
+	return parsed.Hostname()
 }

@@ -52,6 +52,17 @@ func mustFail(t *testing.T, text string, kind enums.ScriptErrorKind, message str
 	return got
 }
 
+func registryWith(extra map[string]string) *moduleRegistry {
+	files := map[string]string{}
+	for _, entry := range readManifest().Files {
+		files[entry.Module] = entry.File
+	}
+	for module, file := range extra {
+		files[module] = file
+	}
+	return &moduleRegistry{files: files}
+}
+
 func TestNewScriptRunnerWebserviceRunsScripts(t *testing.T) {
 	result := NewScriptRunnerWebservice().Run(context.Background(), script("const a = 1 + 1; if (a !== 2) { throw new Error('math') }"), entity.ScriptContext{}, nil, entity.DefaultAppSettings())
 	if result.Status != scriptrunstatus.Ok || result.Error != nil || result.Script.Text == "" || result.Duration < 0 {
@@ -81,12 +92,12 @@ func TestEachRunHasItsOwnScope(t *testing.T) {
 }
 
 func TestSyntaxErrorsReportUserLineAndColumn(t *testing.T) {
-	mustFail(t, "const a = 1;\nconst b = ;", scripterrorkind.Syntax, "SyntaxError: Unexpected token ;", 2, 11)
-	mustFail(t, "let = = 2", scripterrorkind.Syntax, "SyntaxError: Unexpected token =", 1, 7)
+	mustFail(t, "const a = 1;\nconst b = ;", scripterrorkind.Syntax, "SyntaxError: Unexpected token ';'", 2, 11)
+	mustFail(t, "let = = 2", scripterrorkind.Syntax, "SyntaxError: Unexpected token '='", 1, 7)
 }
 
 func TestRuntimeErrorsReportUserLineAndColumn(t *testing.T) {
-	mustFail(t, "const a = 1;\n  null.x;", scripterrorkind.Runtime, "TypeError: Cannot read property 'x' of undefined", 2, 8)
+	mustFail(t, "const a = 1;\n  null.x;", scripterrorkind.Runtime, "TypeError: Cannot read properties of undefined (reading 'x')", 2, 8)
 	mustFail(t, "throw new Error('boom')", scripterrorkind.Runtime, "Error: boom", 1, 7)
 	mustFail(t, "await null;\nthrow new RangeError('late')", scripterrorkind.Runtime, "RangeError: late", 2, 7)
 	mustFail(t, "throw 'plain'", scripterrorkind.Runtime, "plain", 0, 0)
@@ -163,7 +174,11 @@ func TestUnhandledRejections(t *testing.T) {
 }
 
 func TestRequire(t *testing.T) {
-	mustFail(t, "require('fs')", scripterrorkind.Runtime, "Error: Cannot find module 'fs'", 1, 8)
+	mustFail(t, "require('child_process')", scripterrorkind.Runtime, "Error: Cannot find module 'child_process'", 1, 8)
+	mustFail(t, "require('liquid-json')", scripterrorkind.Runtime, "Error: Cannot find module 'liquid-json'", 1, 8)
+	mustSucceed(t, "if (Object.keys(require('fs')).length !== 0 || typeof require('os') !== 'object') { throw new Error('fs and os are empty, as in postman-sandbox') }")
+	mustSucceed(t, "if (require('atob')('aGk=') !== 'hi' || require('btoa')('hi') !== 'aGk=') { throw new Error('atob/btoa modules') }")
+	mustSucceed(t, "const sdk = require('postman-collection'); if (new sdk.Url('https://a.io/x').getHost() !== 'a.io' || typeof sdk.VariableScope !== 'function') { throw new Error('postman-collection') }")
 	mustFail(t, "require('lodash3')", scripterrorkind.Runtime, "Error: Cannot find module 'lodash3'", 1, 8)
 	mustFail(t, "require('intl')", scripterrorkind.Runtime, "Error: Cannot find module 'intl'", 1, 8)
 	mustSucceed(t, "if (require('lodash') !== require('lodash')) { throw new Error('not cached') }")
@@ -210,7 +225,7 @@ func TestEveryRequirableModuleLoads(t *testing.T) {
 
 func TestIntlAssetLoads(t *testing.T) {
 	runner := testRunner(time.Minute, memoryGrowthLimit)
-	runner.modules = &moduleRegistry{files: map[string]string{"intl-test": "intl.js"}}
+	runner.modules = registryWith(map[string]string{"intl-test": "intl.js"})
 	result := runner.Run(context.Background(), script(`
 const m = require('intl-test');
 const n = new m.Intl.NumberFormat('en-US', {style: 'currency', currency: 'USD'}).format(1234.5);
@@ -235,7 +250,7 @@ if (CryptoJS !== 'mine') { throw new Error('overwrite') }`)
 }
 
 func TestModuleErrorsSurfaceAsScriptErrors(t *testing.T) {
-	registry := &moduleRegistry{files: map[string]string{"broken": "missing.js"}}
+	registry := registryWith(map[string]string{"broken": "missing.js"})
 	runner := &scriptRunnerWebservice{modules: registry, limits: newLimits}
 	result := runner.Run(context.Background(), script("require('broken')"), entity.ScriptContext{}, nil, entity.DefaultAppSettings())
 	if result.Error == nil || !strings.HasPrefix(result.Error.Message, "Error: Cannot load module 'broken': ") {

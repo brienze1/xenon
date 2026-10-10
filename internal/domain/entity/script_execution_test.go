@@ -184,7 +184,7 @@ func TestAppSettings(t *testing.T) {
 func TestSendExecutionOutcomes(t *testing.T) {
 	start := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	execution := NewSendExecution("01S")
-	if execution.ID != "01S" || len(execution.LocalVariables) != 0 || execution.LocalVariables == nil || !execution.ShouldSend() {
+	if execution.ID != "01S" || len(execution.Vault) != 0 || execution.Vault == nil || !execution.ShouldSend() {
 		t.Fatalf("new execution = %+v", execution)
 	}
 	execution.AddRun(NewScriptRun(preRef(), start))

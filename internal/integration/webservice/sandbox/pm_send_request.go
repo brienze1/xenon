@@ -2,7 +2,6 @@ package sandbox
 
 import (
 	"encoding/json"
-	"maps"
 
 	"github.com/dop251/goja"
 
@@ -20,12 +19,12 @@ func (e *execution) sendRequest(call goja.FunctionCall) goja.Value {
 	if err := json.Unmarshal([]byte(call.Argument(0).String()), &definition); err != nil {
 		panic(e.vm.NewTypeError("pm.sendRequest: the request is not valid"))
 	}
-	done, _ := goja.AssertFunction(call.Argument(1))
+	scopes := e.currentScopes(call.Argument(1))
+	done, _ := goja.AssertFunction(call.Argument(2))
 	request := definition.ToEntity(entity.NewRequest("", ""))
-	localVariables := maps.Clone(e.local)
 	e.holdLoop()
 	go func() {
-		nested := e.requests.Send(e.ctx, request, localVariables)
+		nested := e.requests.Send(e.ctx, request, scopes)
 		e.loop.RunOnLoop(func(*goja.Runtime) {
 			e.completeRequest(nested, done)
 		})
