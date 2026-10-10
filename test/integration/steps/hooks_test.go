@@ -7,7 +7,6 @@ import (
 
 	"github.com/brienze1/xenon/internal/infra/dependency/binding"
 	"github.com/brienze1/xenon/internal/infra/dependency/consumer"
-	"github.com/brienze1/xenon/pkg/logger"
 )
 
 const scryptLogN = "10"
@@ -62,7 +61,6 @@ func (t *testUtils) after() {
 	for name, previous := range t.environment {
 		_ = os.Setenv(name, previous)
 	}
-	logger.SetOutput(os.Stdout)
 	_ = os.RemoveAll(t.tempRoot)
 }
 

@@ -71,6 +71,7 @@ func (v *vaultPersistence) Verify(ctx context.Context, check, passphrase string)
 
 	sealed, err := base64.StdEncoding.DecodeString(check)
 	if err != nil {
+		logger.Debug(ctx, "Finished", map[string]any{"verified": false})
 		return false
 	}
 	token, err := agecrypt.DecryptWithPassphrase(sealed, passphrase)

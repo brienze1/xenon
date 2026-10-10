@@ -23,7 +23,6 @@ func (t *testUtils) registerThenWorkspaceFileSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the workspace file "([^"]*)" should be unchanged$`, t.theWorkspaceFileShouldBeUnchanged)
 	ctx.Then(`^the workspace file "([^"]*)" should still have Windows line endings and a byte order mark$`, t.theWorkspaceFileShouldStillHaveWindowsLineEndingsAndAByteOrderMark)
 	ctx.Then(`^the workspace folder "([^"]*)" should contain the entries "([^"]*)"$`, t.theWorkspaceFolderShouldContainTheEntries)
-	ctx.Step(`^I save the workspace file "([^"]*)" field "([^"]*)" as "([^"]*)"$`, t.iSaveTheWorkspaceFileFieldAs)
 	ctx.Then(`^no file under the workspace folder should contain "([^"]*)"$`, t.noFileUnderTheWorkspaceFolderShouldContain)
 }
 
@@ -134,15 +133,6 @@ func (t *testUtils) theWorkspaceFolderShouldContainTheEntries(path, entries stri
 	sort.Strings(names)
 	sort.Strings(expected)
 	return expectEqual(strings.Join(names, ", "), strings.Join(expected, ", "), path+" entries")
-}
-
-func (t *testUtils) iSaveTheWorkspaceFileFieldAs(path, field, name string) error {
-	value, err := t.workspaceFileField(path, field)
-	if err != nil {
-		return err
-	}
-	t.vars[name] = stringify(value)
-	return nil
 }
 
 func (t *testUtils) noFileUnderTheWorkspaceFolderShouldContain(text string) error {

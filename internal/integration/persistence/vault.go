@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
-	"github.com/brienze1/xenon/internal/domain/enums/vaultmode"
 	"github.com/brienze1/xenon/internal/infra/properties"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/persistence/model"
@@ -107,7 +106,7 @@ func (v *vaultPersistence) Delete(ctx context.Context, localId string) error {
 			return errs.FileError(err, "VLT-23500")
 		}
 	}
-	if settings.Mode == vaultmode.Keychain {
+	if settings.UsesKeychain() {
 		if err := v.keychain.Delete(vaultKeychainService, localId); err != nil {
 			return errs.ServiceUnavailableError(err, "VLT-24503", "the vault key could not be removed from the OS keychain")
 		}
@@ -128,14 +127,14 @@ func (v *vaultPersistence) Unlock(ctx context.Context, passphrase string) {
 }
 
 func (v *vaultPersistence) identity(localId string, settings entity.VaultSettings) (*vaultIdentity, error) {
-	switch settings.Mode {
-	case vaultmode.Keychain:
+	switch {
+	case settings.UsesKeychain():
 		secret, found, err := v.keychain.Get(vaultKeychainService, localId)
 		if err != nil {
 			return nil, errs.InternalServerError(err, "VLT-15500", "the vault key could not be read from the OS keychain")
 		}
 		return &vaultIdentity{secret: secret, found: found, keyAvailable: true}, nil
-	case vaultmode.Passphrase:
+	case settings.UsesPassphrase():
 		return v.wrappedIdentity(localId), nil
 	default:
 		return &vaultIdentity{}, nil
@@ -201,7 +200,7 @@ func (v *vaultPersistence) createIdentity(localId string, settings entity.VaultS
 	if err != nil {
 		return "", errs.InternalServerError(err, "VLT-17500", "the vault key could not be generated")
 	}
-	if settings.Mode == vaultmode.Keychain {
+	if settings.UsesKeychain() {
 		if err := v.keychain.Set(vaultKeychainService, localId, secret); err != nil {
 			return "", errs.InternalServerError(err, "VLT-16500", "the vault key could not be stored in the OS keychain")
 		}

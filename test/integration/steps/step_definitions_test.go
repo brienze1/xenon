@@ -101,6 +101,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		external.SetClipboard(suite.clipboard)
 		external.SetRandomSource(suite.random)
 		external.SetHttpClientFactory(httpClient.HttpClientFactory(logger.LoggerWrapper()))
+		logger.SetOutput(suite.logs)
 	})
 	test := suite
 
@@ -117,6 +118,9 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	})
 
 	test.registerGivenWorkspaceSteps(ctx)
+	test.registerGivenAppDataSteps(ctx)
+	test.registerGivenTimeSteps(ctx)
+	test.registerGivenVariableSteps(ctx)
 	test.registerGivenApiSteps(ctx)
 	test.registerGivenDialogSteps(ctx)
 	test.registerWhenBindingSteps(ctx)

@@ -25,6 +25,10 @@ func (v VaultSettings) UsesPassphrase() bool {
 	return v.Mode == vaultmode.Passphrase
 }
 
+func (v VaultSettings) UsesKeychain() bool {
+	return v.Mode == vaultmode.Keychain
+}
+
 func (v VaultSettings) HasPassphrase() bool {
 	return v.PassphraseCheck != ""
 }

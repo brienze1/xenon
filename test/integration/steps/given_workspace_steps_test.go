@@ -4,12 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/cucumber/godog"
 )
@@ -23,16 +21,7 @@ func (t *testUtils) registerGivenWorkspaceSteps(ctx *godog.ScenarioContext) {
 	ctx.Given(`^the file "([^"]*)" exists with content$`, t.theFileExistsWithContent)
 	ctx.Given(`^the workspace path "([^"]*)" is removed$`, t.theWorkspacePathIsRemoved)
 	ctx.Given(`^the workspace path "([^"]*)" is moved to "([^"]*)"$`, t.theWorkspacePathIsMovedTo)
-	ctx.Given(`^the app data file "([^"]*)" contains$`, t.theAppDataFileContains)
-	ctx.Given(`^the app data file "([^"]*)" contains the text "([^"]*)"$`, t.theAppDataFileContainsTheText)
-	ctx.Given(`^the app data path "([^"]*)" is removed$`, t.theAppDataPathIsRemoved)
 	ctx.Given(`^the workspace path "([^"]*)" is read-only$`, t.theWorkspacePathIsReadOnly)
-	ctx.Given(`^the current time is "([^"]*)"$`, t.theCurrentTimeIs)
-	ctx.Given(`^the "([^"]*)" variable is set to the mocked api url$`, t.theVariableIsSetToTheMockedApiUrl)
-	ctx.Given(`^the "([^"]*)" variable is set to the mocked tls api url$`, t.theVariableIsSetToTheMockedTlsApiUrl)
-	ctx.Given(`^the "([^"]*)" variable is set to a closed port url$`, t.theVariableIsSetToAClosedPortUrl)
-	ctx.Given(`^the "([^"]*)" variable is set to "([^"]*)"$`, t.theVariableIsSetTo)
-	ctx.Given(`^the "([^"]*)" variable is set to "([^"]*)" repeated (\d+) times separated by "([^"]*)"$`, t.theVariableIsSetToRepeatedTimesSeparatedBy)
 	ctx.Given(`^the workspace folder "([^"]*)" holds (\d+) generated requests across (\d+) collections$`, t.theWorkspaceFolderHoldsGeneratedRequests)
 }
 
@@ -97,70 +86,12 @@ func (t *testUtils) theWorkspacePathIsMovedTo(path, target string) error {
 	return os.Rename(t.workspacePath(path), t.workspacePath(target))
 }
 
-func (t *testUtils) theAppDataFileContains(path string, content *godog.DocString) error {
-	return writeFile(t.appDataPath(path), t.substitute(content.Content))
-}
-
-func (t *testUtils) theAppDataFileContainsTheText(path, text string) error {
-	return writeFile(t.appDataPath(path), t.substitute(text))
-}
-
-func (t *testUtils) theAppDataPathIsRemoved(path string) error {
-	return os.RemoveAll(t.appDataPath(path))
-}
-
 func (t *testUtils) theWorkspacePathIsReadOnly(path string) error {
 	if runtime.GOOS == "windows" {
 		return godog.ErrSkip
 	}
 	t.readOnly = append(t.readOnly, t.workspacePath(path))
 	return os.Chmod(t.workspacePath(path), 0o555)
-}
-
-func (t *testUtils) theCurrentTimeIs(value string) error {
-	parsed, err := time.Parse(time.RFC3339, value)
-	if err != nil {
-		return err
-	}
-	t.time.SetCurrentTime(parsed)
-	return nil
-}
-
-func (t *testUtils) theVariableIsSetToTheMockedApiUrl(name string) error {
-	t.vars[name] = t.api.URL()
-	return nil
-}
-
-func (t *testUtils) theVariableIsSetToTheMockedTlsApiUrl(name string) error {
-	t.vars[name] = t.api.TLSURL()
-	return nil
-}
-
-func (t *testUtils) theVariableIsSetToAClosedPortUrl(name string) error {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		return err
-	}
-	address := listener.Addr().String()
-	if err := listener.Close(); err != nil {
-		return err
-	}
-	t.vars[name] = "http://" + address
-	return nil
-}
-
-func (t *testUtils) theVariableIsSetTo(name, value string) error {
-	t.vars[name] = t.substitute(value)
-	return nil
-}
-
-func (t *testUtils) theVariableIsSetToRepeatedTimesSeparatedBy(name, value string, times int, separator string) error {
-	parts := make([]string, times)
-	for index := range parts {
-		parts[index] = t.substitute(value)
-	}
-	t.vars[name] = strings.Join(parts, separator)
-	return nil
 }
 
 func writeFile(path, content string) error {
