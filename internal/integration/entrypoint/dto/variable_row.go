@@ -18,9 +18,9 @@ type VariableRow struct {
 func NewVariableRow(entry entity.VariableTableEntry) VariableRow {
 	return VariableRow{
 		Key:                entry.Row.Key,
-		InitialValue:       entry.VisibleInitialValue(),
-		CurrentValue:       entry.VisibleCurrentValue(),
-		SecretState:        entry.VisibleSecretState().String(),
+		InitialValue:       entry.Row.InitialValue,
+		CurrentValue:       entry.CurrentValue,
+		SecretState:        entry.SecretState.String(),
 		Description:        entry.Row.Description,
 		HasCurrentOverride: entry.HasCurrentOverride,
 		Secret:             entry.Row.Secret,
