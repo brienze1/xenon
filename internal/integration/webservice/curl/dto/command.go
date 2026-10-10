@@ -17,7 +17,6 @@ import (
 const (
 	filePrefix         = "@"
 	jsonContentType    = "application/json"
-	contentTypeHeader  = "Content-Type"
 	acceptHeader       = "Accept"
 	cookieHeader       = "Cookie"
 	formUrlEncodedType = "application/x-www-form-urlencoded"
@@ -114,7 +113,7 @@ func (c *Command) headers() []entity.KeyValue {
 	if len(c.Json) == 0 {
 		return headers
 	}
-	for _, name := range []string{contentTypeHeader, acceptHeader} {
+	for _, name := range []string{entity.HeaderContentType, acceptHeader} {
 		if !hasHeader(headers, name) {
 			headers = append(headers, entity.NewKeyValue(name, jsonContentType))
 		}
@@ -209,7 +208,7 @@ func (c *Command) joinedData() string {
 
 func (c *Command) contentType() string {
 	for _, header := range c.Headers {
-		if header.HasKey(contentTypeHeader) {
+		if header.HasKey(entity.HeaderContentType) {
 			return header.Value
 		}
 	}

@@ -10,7 +10,8 @@ Feature: Import a cURL command
   listed in the notices. Pasted into the URL bar, RequestService.ParseCurl returns the request
   for the tab; in the import dialog the command becomes a new saved request, named after its
   method and path, in the chosen collection or folder. Text that is not a cURL command is refused
-  (IMP-06400), as is a URL that is not HTTP(S) (IMP-07400).
+  (IMP-06400), as are a command without a URL (IMP-40400), an unreadable command (IMP-41400)
+  and a URL that is not HTTP(S) (IMP-07400).
 
   Background:
     Given the workspace "Acme" exists
@@ -192,8 +193,8 @@ Feature: Import a cURL command
       | case             | text                           | code      | message                                         |
       | plain URL        | https://api.test/users         | IMP-06400 | The text is not a cURL command                  |
       | other command    | wget https://api.test/users    | IMP-06400 | The text is not a cURL command                  |
-      | no URL           | curl -X POST                   | IMP-06400 | The cURL command has no URL                     |
-      | broken quoting   | curl 'https://api.test/x       | IMP-06400 | The cURL command could not be read              |
+      | no URL           | curl -X POST                   | IMP-40400 | The cURL command has no URL                     |
+      | broken quoting   | curl 'https://api.test/x       | IMP-41400 | The cURL command could not be read              |
       | ftp URL          | curl ftp://files.test/a.txt    | IMP-07400 | Only HTTP and HTTPS URLs can be imported, not ftp://files.test/a.txt |
       | file URL         | curl file:///etc/passwd        | IMP-07400 | Only HTTP and HTTPS URLs can be imported, not file:///etc/passwd |
 

@@ -64,8 +64,7 @@ func (i importReaders) curl(ctx context.Context, input entity.ImportInput, read 
 		return err
 	}
 	request := usecase.DeriveParamsFromUrl(parsed.Request)
-	request.ID = idutils.NewUlid()
-	request.Name = usecase.DeriveCurlRequestName(request)
+	request = request.Identified(idutils.NewUlid(), usecase.DeriveCurlRequestName(request))
 	read.addTree(importitemkind.Request, entity.NewRequestImportNode(request), []entity.ImportWarning{})
 	return nil
 }

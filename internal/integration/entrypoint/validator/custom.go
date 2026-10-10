@@ -68,7 +68,8 @@ func variableScope(field validator.FieldLevel) bool {
 }
 
 func importInput(field validator.FieldLevel) bool {
-	return strings.TrimSpace(field.Field().String()) != "" || field.Parent().FieldByName("Paths").Len() > 0
+	paths, _ := field.Parent().FieldByName("Paths").Interface().([]string)
+	return entity.ImportRequest{Text: field.Field().String(), Paths: paths}.HasInput()
 }
 
 func jsonName(field reflect.StructField) string {

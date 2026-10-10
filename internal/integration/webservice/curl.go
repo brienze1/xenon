@@ -40,7 +40,7 @@ func (c *curlWebservice) ReadCommand(ctx context.Context, text string) (*entity.
 
 func httpUrl(urls []string) (string, error) {
 	if len(urls) == 0 {
-		return "", errs.BadRequestError("The cURL command has no URL", "IMP-06400")
+		return "", errs.BadRequestError("The cURL command has no URL", "IMP-40400")
 	}
 	for _, address := range urls {
 		if isHttp(address) {

@@ -5,7 +5,7 @@ Conventions as in XEN-001/XEN-002. New prefixes: `IMP` import · `EXM` examples.
 ## 1. `ImportService`
 | Method | Input | Output | Notes / errors |
 |---|---|---|---|
-| `Detect(req)` | `{ paths?: string[], text?: string }` | `ImportPreview { source_id, kind, version, items: [{ key, kind, name, counts, warnings_count }], warnings[] }` | unsupported format `IMP-00415` (message names the format, e.g. "Postman v3 YAML is not supported yet"); malformed `IMP-01400`; zip too large `IMP-02413`; zip-slip `IMP-03400` |
+| `Detect(req)` | `{ paths?: string[], text?: string }` | `ImportPreview { source_id, kind, version, items: [{ key, kind, name, counts, warnings_count }], warnings[] }` | unsupported format `IMP-00415` (message names the format, e.g. "Postman v3 YAML is not supported yet"); malformed `IMP-01400`; zip too large `IMP-02413`; single file too large `IMP-39413`; zip-slip `IMP-03400` |
 | `PickSources()` | — | `{ paths[] }` | native file/folder picker (multi-select, zip/json/folders) |
 | `Clashes(req)` | `ImportPlan` | `{ clashes: Clash[] }` | lets the UI ask before importing |
 | `Import(req)` | `ImportPlan` | `ImportResult` | unresolved clashes `IMP-04409` (details list them); unknown source `IMP-05404`; a `request` item without `target_parent_id` `IMP-35400`; cancellable via ctx until writing starts |
@@ -28,5 +28,5 @@ Events: `import:progress { source_id, done, total, current_item }` (every item, 
 - Tabs (UI state) gain `kind: request | example` and `example_id`.
 - `RequestService` responses: `Request.auth.type` may be `unsupported` (read-only data shown).
 - `RequestService.ParseCurl({ text })` → `{ request: Request, notices: string[] }` (URL-bar paste;
-  `IMP-06400` not a cURL command / no URL / unreadable, `IMP-07400` non-HTTP URL, `REQ-18400`
+  `IMP-06400` not a cURL command, `IMP-40400` no URL, `IMP-41400` unreadable, `IMP-07400` non-HTTP URL, `REQ-18400`
   blank text).

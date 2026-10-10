@@ -132,7 +132,7 @@ Feature: Detect the format of an import source
       """
       { "paths": ["{{resources}}/import/postman/globals.json"] }
       """
-    Then the call should fail with code "IMP-02413"
+    Then the call should fail with code "IMP-39413"
     And the error should contain the field "error.description" equal to "globals.json is larger than 100 bytes"
 
   @refused

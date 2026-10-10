@@ -36,7 +36,7 @@ func (e *environmentPersistence) List(ctx context.Context, root string) ([]entit
 		return nil, err
 	}
 
-	logger.Debug(ctx, "Finished", map[string]any{"root": root, "environments": len(environments)})
+	logger.Debug(ctx, "Finished", map[string]any{"root": root, "environments": environments})
 	return environments, nil
 }
 

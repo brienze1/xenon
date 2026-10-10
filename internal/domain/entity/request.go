@@ -179,6 +179,12 @@ func (r Request) Example(id string) (SavedExample, bool) {
 	return r.Examples[index], true
 }
 
+func (r Request) Identified(id, name string) Request {
+	r.ID = id
+	r.Name = name
+	return r
+}
+
 func (r Request) WithExample(example SavedExample) Request {
 	examples := slices.Clone(r.Examples)
 	if index := r.exampleIndex(example.ID); index >= 0 {

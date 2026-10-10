@@ -93,6 +93,13 @@ describe('request service', () => {
     await expect(requests.parseCurl('wget x')).rejects.toBeInstanceOf(AppError)
   })
 
+  it('tells cURL refusals apart from other errors', () => {
+    for (const code of [requests.NOT_CURL, requests.CURL_NOT_HTTP, requests.CURL_NO_URL, requests.CURL_UNREADABLE]) {
+      expect(requests.isCurlRefusal(new AppError(code, 'refused'))).toBe(true)
+    }
+    expect(requests.isCurlRefusal(new AppError('REQ-02409', 'changed'))).toBe(false)
+  })
+
   it('lists auto headers', async () => {
     vi.mocked(RequestService.AutoHeaders).mockResolvedValue([{ key: 'Accept', value: '*/*', disabled: false }] as never)
     await expect(requests.autoHeaders('ws', emptyDraft())).resolves.toEqual([{ key: 'Accept', value: '*/*', disabled: false }])

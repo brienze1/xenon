@@ -57,8 +57,11 @@ function UsageEntry({ usage }: UsageEntryProps) {
       <ul className={styles.list}>
         {usage.occurrences.map((occurrence) => (
           <li key={`${occurrence.itemId}-${occurrence.phase}-${occurrence.line}`} className={styles.entry}>
-            <span className={styles.path} translate="no">
-              {occurrence.path} · {occurrence.phase} line {occurrence.line}
+            <span className={styles.path}>
+              <span translate="no">
+                {occurrence.path} · {occurrence.phase}
+              </span>{' '}
+              line {formatNumber(occurrence.line, 0)}
             </span>
             <OpenButton localId={occurrence.localId} itemId={occurrence.itemId} label={occurrence.path} />
           </li>

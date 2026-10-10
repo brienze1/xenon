@@ -601,9 +601,9 @@ describe('request builder store - variables', () => {
 
   it('keeps the draft and shows the error when a pasted cURL command is refused', async () => {
     state().ensureTab('tab')
-    vi.mocked(requests.parseCurl).mockRejectedValue(new AppError('IMP-06400', 'The cURL command could not be read'))
+    vi.mocked(requests.parseCurl).mockRejectedValue(new AppError('IMP-41400', 'The cURL command could not be read'))
     await state().pasteCurl('tab', "curl 'x")
-    expect(state().tabs.tab!.error?.code).toBe('IMP-06400')
+    expect(state().tabs.tab!.error?.code).toBe('IMP-41400')
     expect(state().tabs.tab!.curlPaste).toBeNull()
   })
 })

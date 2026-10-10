@@ -2,7 +2,6 @@ package dto
 
 import (
 	"encoding/json"
-	"strings"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
 )
@@ -62,7 +61,7 @@ func (r *Response) Passthrough() map[string]any {
 
 func (r *Response) contentType(headers []entity.KeyValue) string {
 	for _, header := range headers {
-		if strings.EqualFold(header.Key, "Content-Type") {
+		if header.HasKey(entity.HeaderContentType) {
 			return header.Value
 		}
 	}

@@ -57,10 +57,10 @@ func (e *editRequest) ParseCurl(ctx context.Context, text string) (*entity.Parse
 	if err != nil {
 		return nil, err
 	}
-	parsed.Request = usecase.DeriveParamsFromUrl(parsed.Request)
+	result := parsed.WithRequest(usecase.DeriveParamsFromUrl(parsed.Request))
 
-	logger.Info(ctx, "Finished", map[string]any{"textLength": len(text), "result": *parsed})
-	return parsed, nil
+	logger.Info(ctx, "Finished", map[string]any{"textLength": len(text), "result": result})
+	return &result, nil
 }
 
 func (e *editRequest) FormatBulk(ctx context.Context, rows []entity.KeyValue) string {

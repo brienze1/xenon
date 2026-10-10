@@ -19,7 +19,7 @@ var (
 func tokenizeCurl(text string) ([]string, error) {
 	file, err := syntax.NewParser(syntax.Variant(syntax.LangBash)).Parse(strings.NewReader(text), "")
 	if err != nil {
-		return nil, errs.BadRequestError("The cURL command could not be read", "IMP-06400")
+		return nil, errs.BadRequestError("The cURL command could not be read", "IMP-41400")
 	}
 	for _, statement := range file.Stmts {
 		call, isCall := statement.Cmd.(*syntax.CallExpr)

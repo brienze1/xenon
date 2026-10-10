@@ -53,3 +53,7 @@ func (w Workspace) WithOrder(order []string) Workspace {
 	w.Order = append([]string{}, order...)
 	return w
 }
+
+func (w Workspace) LogValue() any {
+	return map[string]any{"id": w.ID, "name": w.Name, "order": w.Order, "variables": len(w.Variables)}
+}

@@ -251,7 +251,7 @@ func readImportDocument(path, name string, size int64) ([]byte, error) {
 func checkImportSize(name string, size int64) error {
 	limit := properties.Properties().Import.FileLimitBytes
 	if size > limit {
-		return errs.ClientError(filepath.Base(name)+" is larger than "+strconv.FormatInt(limit, 10)+" bytes", "IMP-02413", http.StatusRequestEntityTooLarge)
+		return errs.ClientError(filepath.Base(name)+" is larger than "+strconv.FormatInt(limit, 10)+" bytes", "IMP-39413", http.StatusRequestEntityTooLarge)
 	}
 	return nil
 }

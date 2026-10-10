@@ -66,15 +66,15 @@ func TestTokenizeDecodesShellQuoting(t *testing.T) {
 			t.Errorf("%q: got %q %v, want %q", text, arguments, err, want)
 		}
 	}
-	refused := map[string]string{
-		"curl 'a":             "The cURL command could not be read",
-		"wget a":              "The text is not a cURL command",
-		"":                    "The text is not a cURL command",
-		"if true; then a; fi": "The text is not a cURL command",
+	refused := map[string][2]string{
+		"curl 'a":             {"IMP-41400", "The cURL command could not be read"},
+		"wget a":              {"IMP-06400", "The text is not a cURL command"},
+		"":                    {"IMP-06400", "The text is not a cURL command"},
+		"if true; then a; fi": {"IMP-06400", "The text is not a cURL command"},
 	}
-	for text, message := range refused {
+	for text, want := range refused {
 		_, err := tokenizeCurl(text)
-		if custom, isCustom := err.(errs.BaseError); !isCustom || custom.Code() != "IMP-06400" || custom.Description() != message {
+		if custom, isCustom := err.(errs.BaseError); !isCustom || custom.Code() != want[0] || custom.Description() != want[1] {
 			t.Errorf("%q: got %v", text, err)
 		}
 	}
@@ -193,10 +193,10 @@ func TestReadCommandPicksTheHttpUrl(t *testing.T) {
 		t.Errorf("notices = %q", parsed.Notices)
 	}
 	refused := map[string]string{
-		"curl -X POST":        "IMP-06400",
-		"curl -H":             "IMP-06400",
+		"curl -X POST":        "IMP-40400",
+		"curl -H":             "IMP-40400",
 		"curl ws://a ftp://b": "IMP-07400",
-		"curl 'a":             "IMP-06400",
+		"curl 'a":             "IMP-41400",
 	}
 	for text, code := range refused {
 		_, err := NewCurlWebservice().ReadCommand(context.Background(), text)

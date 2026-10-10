@@ -109,9 +109,14 @@ export interface ParsedCurl {
   notices: string[]
 }
 
-const CURL_REFUSALS: ReadonlySet<string> = new Set(['IMP-06400', 'IMP-07400'])
+export const NOT_CURL = 'IMP-06400'
+export const CURL_NOT_HTTP = 'IMP-07400'
+export const CURL_NO_URL = 'IMP-40400'
+export const CURL_UNREADABLE = 'IMP-41400'
 
-/** Whether ParseCurl refused a pasted command: unreadable (`IMP-06400`) or not an HTTP(S) URL (`IMP-07400`). */
+const CURL_REFUSALS: ReadonlySet<string> = new Set([NOT_CURL, CURL_NOT_HTTP, CURL_NO_URL, CURL_UNREADABLE])
+
+/** Whether ParseCurl refused a pasted command: not cURL, no URL, unreadable or not an HTTP(S) URL. */
 export function isCurlRefusal(error: AppError): boolean {
   return CURL_REFUSALS.has(error.code)
 }
