@@ -9,16 +9,17 @@ import (
 const ImportSourceLifetime = 30 * time.Minute
 
 type ImportSource struct {
-	ExpiresAt time.Time
-	ID        string
-	Kind      enums.ImportKind
-	Version   string
-	TempDirs  []string
-	Items     []ImportItem
+	ExpiresAt      time.Time
+	ID             string
+	Kind           enums.ImportKind
+	Version        string
+	TempDirs       []string
+	Items          []ImportItem
+	SourceWarnings []ImportWarning
 }
 
 func NewImportSource(id string, inputs []ImportInput, tempDirs []string, now time.Time) ImportSource {
-	source := ImportSource{ID: id, TempDirs: tempDirs, Items: []ImportItem{}, ExpiresAt: now.Add(ImportSourceLifetime)}
+	source := ImportSource{ID: id, TempDirs: tempDirs, Items: []ImportItem{}, SourceWarnings: []ImportWarning{}, ExpiresAt: now.Add(ImportSourceLifetime)}
 	if len(inputs) > 0 {
 		source.Kind = inputs[0].Kind
 		source.Version = inputs[0].Version
@@ -28,6 +29,11 @@ func NewImportSource(id string, inputs []ImportInput, tempDirs []string, now tim
 
 func (i ImportSource) WithItems(items []ImportItem) ImportSource {
 	i.Items = items
+	return i
+}
+
+func (i ImportSource) WithSourceWarnings(warnings []ImportWarning) ImportSource {
+	i.SourceWarnings = append([]ImportWarning{}, warnings...)
 	return i
 }
 
@@ -45,7 +51,7 @@ func (i ImportSource) Warnings() []ImportWarning {
 	for _, item := range i.Items {
 		warnings = append(warnings, item.Warnings...)
 	}
-	return warnings
+	return append(warnings, i.SourceWarnings...)
 }
 
 func (i ImportSource) PmUsages() []PmUsage {

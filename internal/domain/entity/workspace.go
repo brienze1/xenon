@@ -2,6 +2,8 @@ package entity
 
 import "strings"
 
+const postmanGlobalsKey = "globals"
+
 type Workspace struct {
 	Postman     SourceFields
 	ID          string
@@ -30,5 +32,19 @@ func (w Workspace) Renamed(name string) Workspace {
 
 func (w Workspace) WithVariables(rows []VariableRow) Workspace {
 	w.Variables = append([]VariableRow{}, rows...)
+	return w
+}
+
+func (w Workspace) WithPostmanGlobals(fields SourceFields) Workspace {
+	if len(fields) == 0 {
+		return w
+	}
+	postman := SourceFields{postmanGlobalsKey: map[string]any(fields)}
+	for key, value := range w.Postman {
+		if key != postmanGlobalsKey {
+			postman[key] = value
+		}
+	}
+	w.Postman = postman
 	return w
 }

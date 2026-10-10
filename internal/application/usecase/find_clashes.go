@@ -25,14 +25,31 @@ func FindImportClashes(itemKey string, nodes []entity.ImportNode, existing []ent
 	return clashes
 }
 
-func FindVariableClashes(itemKey string, imported []entity.VariableRow, collection entity.Collection) []entity.Clash {
+func FindVariableClashes(itemKey string, imported, existing []entity.VariableRow, ownerId string) []entity.Clash {
 	clashes := make([]entity.Clash, 0)
 	for _, row := range imported {
-		if _, found := variableIndex(collection.Variables, row.Key); found {
-			clashes = append(clashes, entity.Clash{ItemKey: itemKey, Kind: clashkind.Variable, ExistingID: collection.ID, ExistingName: row.Key, Name: row.Key})
+		if _, found := variableIndex(existing, row.Key); found {
+			clashes = append(clashes, entity.Clash{ItemKey: itemKey, Kind: clashkind.Variable, ExistingID: ownerId, ExistingName: row.Key, Name: row.Key})
 		}
 	}
 	return clashes
+}
+
+func FindEnvironmentClashes(itemKey, name string, existing []entity.Environment) []entity.Clash {
+	match, found := sameNamedEnvironment(name, existing)
+	if !found {
+		return []entity.Clash{}
+	}
+	return []entity.Clash{{ItemKey: itemKey, Kind: clashkind.Environment, ExistingID: match.ID, ExistingName: match.Name, Name: name}}
+}
+
+func sameNamedEnvironment(name string, existing []entity.Environment) (entity.Environment, bool) {
+	for _, environment := range existing {
+		if !environment.IsMalformed() && environment.HasName(name) {
+			return environment, true
+		}
+	}
+	return entity.Environment{}, false
 }
 
 func sameNamed(name string, existing []entity.TreeNode) (entity.TreeNode, bool) {

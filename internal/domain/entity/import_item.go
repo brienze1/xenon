@@ -4,22 +4,32 @@ import (
 	"slices"
 
 	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/importitemkind"
 	"github.com/brienze1/xenon/internal/domain/enums/importstatus"
 	"github.com/brienze1/xenon/internal/domain/enums/warningcode"
 )
 
 type ImportItem struct {
-	Root     ImportNode
-	Key      string
-	Kind     enums.ImportItemKind
-	Name     string
-	Warnings []ImportWarning
-	PmUsages []PmUsage
+	Variables *ImportVariables
+	Root      ImportNode
+	Key       string
+	Kind      enums.ImportItemKind
+	Name      string
+	Warnings  []ImportWarning
+	PmUsages  []PmUsage
 }
 
 func NewImportItem(key string, kind enums.ImportItemKind, root ImportNode, warnings []ImportWarning) ImportItem {
 	item := ImportItem{Key: key, Kind: kind, Name: root.Name(), Root: root, Warnings: []ImportWarning{}, PmUsages: []PmUsage{}}
 	return item.WithWarnings(warnings)
+}
+
+func NewVariablesImportItem(key string, kind enums.ImportItemKind, variables ImportVariables) ImportItem {
+	return ImportItem{Key: key, Kind: kind, Name: variables.Environment.Name, Variables: &variables, Warnings: []ImportWarning{}, PmUsages: []PmUsage{}}
+}
+
+func (i ImportItem) IsVariables() bool {
+	return i.Variables != nil
 }
 
 func (i ImportItem) WithWarnings(warnings []ImportWarning) ImportItem {
@@ -41,10 +51,20 @@ func (i ImportItem) WithPmUsages(usages []PmUsage) ImportItem {
 }
 
 func (i ImportItem) Counts() ImportCounts {
-	return i.Root.Counts()
+	if !i.IsVariables() {
+		return i.Root.Counts()
+	}
+	counts := ImportCounts{Variables: len(i.Variables.Rows())}
+	if i.Kind == importitemkind.Environment {
+		counts.Environments = 1
+	}
+	return counts
 }
 
 func (i ImportItem) Scripts() []ScriptRef {
+	if i.IsVariables() {
+		return []ScriptRef{}
+	}
 	return i.Root.Scripts("")
 }
 
@@ -104,13 +124,38 @@ func (i ImportItem) placementWarnings(write ImportWrite, location ImportLocation
 		warnings = append(warnings, NewImportWarning(warningcode.WrappedInFolder, message, move.ToID, move.ToPath))
 	}
 	for _, row := range write.KeptVariables {
-		message := row.Key + " keeps its value; the imported value was " + row.InitialValue
-		warnings = append(warnings, NewImportWarning(warningcode.VariableKept, message, write.collectionID(), location.CollectionPath))
+		warnings = append(warnings, NewImportWarning(warningcode.VariableKept, keptVariableMessage(row), write.collectionID(), location.CollectionPath))
 	}
 	for index := range warnings {
 		warnings[index] = warnings[index].ForItem(i.Key)
 	}
 	return warnings
+}
+
+func (i ImportItem) CompletedVariables(write ImportVariablesWrite, localId string) ImportOutcome {
+	id, name, path := write.target(i.Name)
+	outcome := ImportOutcome{
+		Item:     ImportItemResult{Status: importstatus.Imported, Key: i.Key, LocalID: localId, ID: id, Name: name},
+		Warnings: []ImportWarning{},
+		PmUsages: []PmUsage{},
+		Created:  write.Counts(),
+		Replaced: write.Replaced != nil,
+	}
+	if outcome.Replaced {
+		outcome.Item.Status = importstatus.Replaced
+	}
+	for _, row := range write.KeptVariables {
+		outcome.Warnings = append(outcome.Warnings, NewImportWarning(warningcode.VariableKept, keptVariableMessage(row), id, path).ForItem(i.Key))
+	}
+	return outcome
+}
+
+func keptVariableMessage(row VariableRow) string {
+	imported := row.InitialValue
+	if row.Secret {
+		imported = MaskedValue
+	}
+	return row.Key + " keeps its value; the imported value was " + imported
 }
 
 func (i ImportItem) LogValue() any {

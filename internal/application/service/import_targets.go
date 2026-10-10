@@ -5,6 +5,7 @@ import (
 
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums/importitemkind"
 	"github.com/brienze1/xenon/pkg/errs"
 )
 
@@ -12,17 +13,21 @@ type importTargets struct {
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry
 	loadTree              usecase.LoadTree
 	findTreeItem          usecase.FindTreeItem
+	listEnvironments      usecase.ListEnvironments
+	loadWorkspace         usecase.LoadWorkspace
 }
 
 type importTarget struct {
-	collection *entity.Collection
-	workspace  entity.RegisteredWorkspace
-	planned    entity.ImportPlanItem
-	parentPath string
-	item       entity.ImportItem
-	siblings   entity.TreeNode
-	tree       entity.Tree
-	placement  entity.ImportPlacement
+	collection   *entity.Collection
+	globals      *entity.Workspace
+	workspace    entity.RegisteredWorkspace
+	planned      entity.ImportPlanItem
+	parentPath   string
+	item         entity.ImportItem
+	environments []entity.Environment
+	siblings     entity.TreeNode
+	tree         entity.Tree
+	placement    entity.ImportPlacement
 }
 
 func (i importTargets) resolve(ctx context.Context, source entity.ImportSource, plan entity.ImportPlan) ([]importTarget, error) {
@@ -46,6 +51,9 @@ func (i importTargets) target(ctx context.Context, source entity.ImportSource, p
 	if err != nil {
 		return nil, err
 	}
+	if item.IsVariables() {
+		return i.variablesTarget(ctx, *workspace, item, planned)
+	}
 	tree, err := i.loadTree.Load(ctx, workspace.Path)
 	if err != nil {
 		return nil, err
@@ -55,6 +63,18 @@ func (i importTargets) target(ctx context.Context, source entity.ImportSource, p
 		return &target, nil
 	}
 	return i.intoParent(ctx, target)
+}
+
+func (i importTargets) variablesTarget(ctx context.Context, workspace entity.RegisteredWorkspace, item entity.ImportItem, planned entity.ImportPlanItem) (*importTarget, error) {
+	environments, err := i.listEnvironments.List(ctx, workspace.Path)
+	if err != nil {
+		return nil, err
+	}
+	globals, err := i.loadWorkspace.Load(ctx, workspace.Path)
+	if err != nil {
+		return nil, err
+	}
+	return &importTarget{workspace: workspace, item: item, planned: planned, environments: environments, globals: globals}, nil
 }
 
 func (i importTargets) intoParent(ctx context.Context, target importTarget) (*importTarget, error) {
@@ -80,9 +100,19 @@ func (i importTargets) intoParent(ctx context.Context, target importTarget) (*im
 }
 
 func (t importTarget) clashes() []entity.Clash {
+	if t.item.IsVariables() {
+		return t.variableClashes()
+	}
 	clashes := usecase.FindImportClashes(t.item.Key, t.placement.Nodes, t.siblings.Children)
 	if t.collection != nil {
-		clashes = append(clashes, usecase.FindVariableClashes(t.item.Key, t.item.Root.Container.Variables, *t.collection)...)
+		clashes = append(clashes, usecase.FindVariableClashes(t.item.Key, t.item.Root.Container.Variables, t.collection.Variables, t.collection.ID)...)
 	}
 	return clashes
+}
+
+func (t importTarget) variableClashes() []entity.Clash {
+	if t.item.Kind == importitemkind.Globals {
+		return usecase.FindVariableClashes(t.item.Key, t.item.Variables.Rows(), t.globals.Variables, t.globals.ID)
+	}
+	return usecase.FindEnvironmentClashes(t.item.Key, t.item.Name, t.environments)
 }

@@ -2,12 +2,10 @@ package service
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
-	"github.com/brienze1/xenon/internal/domain/enums/importitemkind"
 	"github.com/brienze1/xenon/pkg/idutils"
 	"github.com/brienze1/xenon/pkg/logger"
 	"github.com/brienze1/xenon/pkg/timeutils"
@@ -16,14 +14,14 @@ import (
 const importPickerTitle = "Choose files, folders or zips to import"
 
 type manageImport struct {
-	readImportSource      usecase.ReadImportSource
-	saveImportSource      usecase.SaveImportSource
-	findImportSource      usecase.FindImportSource
-	discardImportSource   usecase.DiscardImportSource
-	readPostmanCollection usecase.ReadPostmanCollection
-	pickPath              usecase.PickPath
-	targets               importTargets
-	writer                importWriter
+	readImportSource    usecase.ReadImportSource
+	saveImportSource    usecase.SaveImportSource
+	findImportSource    usecase.FindImportSource
+	discardImportSource usecase.DiscardImportSource
+	pickPath            usecase.PickPath
+	readers             importReaders
+	targets             importTargets
+	writer              importWriter
 }
 
 func NewManageImportService(
@@ -32,30 +30,75 @@ func NewManageImportService(
 	findImportSource usecase.FindImportSource,
 	discardImportSource usecase.DiscardImportSource,
 	readPostmanCollection usecase.ReadPostmanCollection,
+	readPostmanEnvironment usecase.ReadPostmanEnvironment,
+	readPostmanDump usecase.ReadPostmanDump,
 	pickPath usecase.PickPath,
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry,
 	loadTree usecase.LoadTree,
 	findTreeItem usecase.FindTreeItem,
+	listEnvironments usecase.ListEnvironments,
+	loadWorkspace usecase.LoadWorkspace,
 	stageImportItem usecase.StageImportItem,
 	commitImportItem usecase.CommitImportItem,
 	rollbackImportItem usecase.RollbackImportItem,
+	saveEnvironment usecase.SaveEnvironment,
+	deleteEnvironment usecase.DeleteEnvironment,
+	saveWorkspaceFile usecase.SaveWorkspaceFile,
+	findLocalVariables usecase.FindLocalVariables,
+	saveLocalVariables usecase.SaveLocalVariables,
+	findVault usecase.FindVault,
+	saveVault usecase.SaveVault,
+	findVaultSettings usecase.FindVaultSettings,
+	saveVaultSettings usecase.SaveVaultSettings,
+	probeKeychain usecase.ProbeKeychain,
 	publishImportProgress usecase.PublishImportProgress,
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
+	publishVariableEvent usecase.PublishVariableEvent,
 ) adapter.ManageImportService {
 	return &manageImport{
-		readImportSource:      readImportSource,
-		saveImportSource:      saveImportSource,
-		findImportSource:      findImportSource,
-		discardImportSource:   discardImportSource,
-		readPostmanCollection: readPostmanCollection,
-		pickPath:              pickPath,
-		targets:               importTargets{findWorkspaceRegistry: findWorkspaceRegistry, loadTree: loadTree, findTreeItem: findTreeItem},
+		readImportSource:    readImportSource,
+		saveImportSource:    saveImportSource,
+		findImportSource:    findImportSource,
+		discardImportSource: discardImportSource,
+		pickPath:            pickPath,
+		readers: importReaders{
+			readPostmanCollection:  readPostmanCollection,
+			readPostmanEnvironment: readPostmanEnvironment,
+			readPostmanDump:        readPostmanDump,
+		},
+		targets: importTargets{
+			findWorkspaceRegistry: findWorkspaceRegistry,
+			loadTree:              loadTree,
+			findTreeItem:          findTreeItem,
+			listEnvironments:      listEnvironments,
+			loadWorkspace:         loadWorkspace,
+		},
 		writer: importWriter{
 			stageImportItem:       stageImportItem,
 			commitImportItem:      commitImportItem,
 			rollbackImportItem:    rollbackImportItem,
 			publishImportProgress: publishImportProgress,
 			publishWorkspaceEvent: publishWorkspaceEvent,
+			variables: importVariablesWriter{
+				saveEnvironment:   saveEnvironment,
+				deleteEnvironment: deleteEnvironment,
+				saveWorkspaceFile: saveWorkspaceFile,
+				values: scopeValues{
+					findLocalVariables: findLocalVariables,
+					saveLocalVariables: saveLocalVariables,
+					findVault:          findVault,
+					saveVault:          saveVault,
+				},
+				vaults: vaultWriter{
+					findVault:            findVault,
+					saveVault:            saveVault,
+					findVaultSettings:    findVaultSettings,
+					saveVaultSettings:    saveVaultSettings,
+					probeKeychain:        probeKeychain,
+					publishVariableEvent: publishVariableEvent,
+				},
+				publishVariableEvent: publishVariableEvent,
+			},
 		},
 	}
 }
@@ -129,7 +172,7 @@ func (m *manageImport) Import(ctx context.Context, plan entity.ImportPlan) (*ent
 	if ctx.Err() != nil {
 		return nil, usecase.RejectCancelledImport()
 	}
-	result := m.writer.write(ctx, source.ID, plan, targets)
+	result := m.writer.write(ctx, source.ID, plan, targets).WithSourceWarnings(source.SourceWarnings)
 
 	logger.Info(ctx, "Finished", map[string]any{"plan": plan, "result": result})
 	return &result, nil
@@ -155,29 +198,14 @@ func (m *manageImport) detected(ctx context.Context, inputs []entity.ImportInput
 		}
 		detected = append(detected, input.Detected(kind, version))
 	}
-	items := make([]entity.ImportItem, 0, len(detected))
+	read := importRead{items: make([]entity.ImportItem, 0, len(detected)), warnings: []entity.ImportWarning{}}
 	for _, input := range detected {
-		read, err := m.items(ctx, input, len(items))
-		if err != nil {
+		if err := m.readers.read(ctx, input, &read); err != nil {
 			return nil, err
 		}
-		items = append(items, read...)
 	}
-	source := entity.NewImportSource(idutils.NewUlid(), detected, tempDirs, timeutils.Now()).WithItems(items)
+	source := entity.NewImportSource(idutils.NewUlid(), detected, tempDirs, timeutils.Now()).WithItems(read.items).WithSourceWarnings(read.warnings)
 	return &source, nil
-}
-
-func (m *manageImport) items(ctx context.Context, input entity.ImportInput, offset int) ([]entity.ImportItem, error) {
-	if !input.IsPostmanCollection() {
-		return []entity.ImportItem{}, nil
-	}
-	root, warnings, err := m.readPostmanCollection.ReadCollection(ctx, input.Document())
-	if err != nil {
-		return nil, err
-	}
-	item := entity.NewImportItem(strconv.Itoa(offset), importitemkind.Collection, *root, warnings)
-	usages := usecase.ScanPmUsage(item.Scripts())
-	return []entity.ImportItem{item.WithPmUsages(usages).WithWarnings(usecase.PmUsageWarnings(usages))}, nil
 }
 
 func unresolvedClashes(plan entity.ImportPlan, targets []importTarget) []entity.Clash {

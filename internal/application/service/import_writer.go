@@ -14,6 +14,7 @@ type importWriter struct {
 	rollbackImportItem    usecase.RollbackImportItem
 	publishImportProgress usecase.PublishImportProgress
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent
+	variables             importVariablesWriter
 }
 
 func (w importWriter) write(ctx context.Context, sourceId string, plan entity.ImportPlan, targets []importTarget) entity.ImportResult {
@@ -30,6 +31,9 @@ func (w importWriter) write(ctx context.Context, sourceId string, plan entity.Im
 }
 
 func (w importWriter) importOne(ctx context.Context, sourceId string, target importTarget, resolution enums.ClashResolution) entity.ImportOutcome {
+	if target.item.IsVariables() {
+		return w.variables.importOne(ctx, target, resolution)
+	}
 	nodes, replaced := usecase.ResolveImportClashes(target.placement.Nodes, target.siblings.Children, resolution)
 	write := usecase.PlanImportWrite(target.placement.WithNodes(nodes), target.siblings, replaced, target.collection, target.item.Root.Container.Variables, resolution)
 	if write.IsEmpty() {

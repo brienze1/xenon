@@ -54,6 +54,11 @@ func (i ImportResult) WithOutcome(outcome ImportOutcome) ImportResult {
 	return i
 }
 
+func (i ImportResult) WithSourceWarnings(warnings []ImportWarning) ImportResult {
+	i.Warnings = append(append([]ImportWarning{}, i.Warnings...), warnings...)
+	return i
+}
+
 func (i ImportResult) workspacesWith(outcome ImportOutcome) []ImportWorkspaceResult {
 	workspaces := append([]ImportWorkspaceResult{}, i.Workspaces...)
 	index := len(workspaces)
