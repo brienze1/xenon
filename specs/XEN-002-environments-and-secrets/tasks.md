@@ -23,25 +23,27 @@ US5 colour/confirm/quick look · US6 dynamic variables
 
 ## Phase 1: Setup
 
-- [ ] T001 Add Go deps to `go.mod`: `filippo.io/age v1.3.2`, `github.com/zalando/go-keyring v0.2.8`, `github.com/brianvoe/gofakeit/v7 v7.17.1`; add `@codemirror/autocomplete` (same major as other CM6 packages) to `frontend/package.json`
-- [ ] T002 [P] Add properties `XENON_FORCE_PASSPHRASE` and `XENON_SCRYPT_LOG_N` (default 18) to `internal/infra/properties/properties.go`
-- [ ] T003 [P] Vendor Postman's dynamic variable names (118, from `postmanlabs/postman-collection` `lib/superstring/dynamic-variables.js`, commit pinned in the file header) into `test/integration/resources/postman-dynamic-variables.txt`
+- [x] T001 Add Go deps to `go.mod`: `filippo.io/age v1.3.2`, `github.com/zalando/go-keyring v0.2.8`, `github.com/brianvoe/gofakeit/v7 v7.17.1`; add `@codemirror/autocomplete` (same major as other CM6 packages) to `frontend/package.json`
+- [x] T002 [P] Add properties `XENON_FORCE_PASSPHRASE` and `XENON_SCRYPT_LOG_N` (default 18) to `internal/infra/properties/properties.go`
+- [x] T003 [P] Vendor Postman's dynamic variable names (118, from `postmanlabs/postman-collection` `lib/superstring/dynamic-variables.js`, commit pinned in the file header) into `test/integration/resources/postman-dynamic-variables.txt`
 
 ---
 
 ## Phase 2: Foundational (blocks all stories)
 
 ### Harness additions
-- [ ] T004 [P] Mocks in `test/integration/mock/`: `keychain.go` (modes available / unavailable / error; records entries; Reset), `dynamic_generator.go` (seeded generator wrapper, deterministic per scenario), `clipboard.go` (records last text) — injected once via setters in `step_definitions_test.go`
-- [ ] T005 [P] Generic steps in `test/integration/steps/given_vault_steps_test.go` and `then_secret_steps_test.go`: `the keychain is available|unavailable`, `the vault passphrase is "<p>"`, `no file under the workspace folder should contain "<text>"`, `no file under the app data folder should contain "<text>"` (excluding `*.age`), `the clipboard should contain "<text>"`
-- [ ] T006 [P] Generic step `the <N> "<METHOD>" request to "<path>" should have the header "<k>" matching "<regex>"` and `… body field "<path>" matching "<regex>"` in `then_api_steps_test.go`
+- [x] T004 [P] Mocks in `test/integration/mock/`: `keychain.go` (modes available / unavailable / error; records entries; Reset), `dynamic_generator.go` (seeded generator wrapper, deterministic per scenario), `clipboard.go` (records last text) — injected once via setters in `step_definitions_test.go`
+  - *Done in US1 as far as the boundaries exist:* the keychain and clipboard mocks move to T032/T034 (US3) and the seeded dynamic generator to T045 (US6), where the infra adapters/setters they fake are created — a mock without its boundary is dead code for `make check-dead-code`.
+- [x] T005 [P] Generic steps in `test/integration/steps/given_vault_steps_test.go` and `then_secret_steps_test.go`: `the keychain is available|unavailable`, `the vault passphrase is "<p>"`, `no file under the workspace folder should contain "<text>"`, `no file under the app data folder should contain "<text>"` (excluding `*.age`), `the clipboard should contain "<text>"`
+  - *Done in US1:* the two file-scan steps (`then_secret_steps_test.go`). Keychain, passphrase and clipboard steps land with their mocks in US3.
+- [x] T006 [P] Generic step `the <N> "<METHOD>" request to "<path>" should have the header "<k>" matching "<regex>"` and `… body field "<path>" matching "<regex>"` in `then_api_steps_test.go`
 
 ### Domain + storage core
-- [ ] T007 [P] Enums in `internal/domain/enums/`: `env_color`, `variable_scope`, `reference_status`, `vault_mode` (+ value packages)
-- [ ] T008 [P] Entities in `internal/domain/entity/`: `environment.go` (prod-name defaults), `variable_row.go` (key validation, exact match), `scope_ref.go`, `variable_context.go`, `reference.go`, `resolved_reference.go`, `send_preflight.go`, `vault_status.go`
-- [ ] T009 Models + persistence for environments `internal/integration/persistence/environment.go` + `model/environment.go` + `model/variable_row.go` (format additions §1–§2, secret rows without `value`, stray `value` on secret rows dropped on save with warning), use cases `find_environment`, `list_environments`, `save_environment`, `delete_environment`, adapter `environment_persistence.go`; extend `workspace.go`/`tree.go` persistence to read/write `variables` (globals, collection only)
-- [ ] T010 Local variables store `internal/integration/persistence/local_variables.go` + model (data-model `variables.json`, owner-only perms) with use cases `find_local_variables`, `save_local_variables`, adapter `local_variables_persistence.go`
-- [ ] T011 Pure use cases `tokenize_references.go` (Postman pattern `{{([^{}]*?)}}`), `build_variable_context.go` (precedence, disabled fall-through, current-over-initial), `resolve_text.go` (≤ 19 passes, dynamic last via injected func, cycles literal) with table tests covering every rule in data-model "Resolution rules"
+- [x] T007 [P] Enums in `internal/domain/enums/`: `env_color`, `variable_scope`, `reference_status`, `vault_mode` (+ value packages)
+- [x] T008 [P] Entities in `internal/domain/entity/`: `environment.go` (prod-name defaults), `variable_row.go` (key validation, exact match), `scope_ref.go`, `variable_context.go`, `reference.go`, `resolved_reference.go`, `send_preflight.go`, `vault_status.go`
+- [x] T009 Models + persistence for environments `internal/integration/persistence/environment.go` + `model/environment.go` + `model/variable_row.go` (format additions §1–§2, secret rows without `value`, stray `value` on secret rows dropped on save with warning), use cases `find_environment`, `list_environments`, `save_environment`, `delete_environment`, adapter `environment_persistence.go`; extend `workspace.go`/`tree.go` persistence to read/write `variables` (globals, collection only)
+- [x] T010 Local variables store `internal/integration/persistence/local_variables.go` + model (data-model `variables.json`, owner-only perms) with use cases `find_local_variables`, `save_local_variables`, adapter `local_variables_persistence.go`
+- [x] T011 Pure use cases `tokenize_references.go` (Postman pattern `{{([^{}]*?)}}`), `build_variable_context.go` (precedence, disabled fall-through, current-over-initial), `resolve_text.go` (≤ 19 passes, dynamic last via injected func, cycles literal) with table tests covering every rule in data-model "Resolution rules"
 
 **Checkpoint**: environments/variables can be stored and a text can be resolved in unit tests.
 
@@ -51,14 +53,14 @@ US5 colour/confirm/quick look · US6 dynamic variables
 
 **Independent test**: two environments with different `base_url`; same request goes to two targets.
 
-- [ ] T012 [P] [US1] BDD `test/integration/features/variables/resolution_precedence.feature` (@variables): env > collection > globals; disabled falls through; "No environment" uses collection/globals; unresolved sent literally
-- [ ] T013 [P] [US1] BDD `test/integration/features/variables/resolution_fields.feature`: variables resolved in URL, query params (keys+values), path variables, headers (keys+values), raw body, form-data (key/value/text), urlencoded, GraphQL query+variables, binary file path, Bearer/Basic fields, inherited collection/folder auth and headers; History entry keeps unresolved text
-- [ ] T014 [P] [US1] BDD `test/integration/features/variables/nesting_and_cycles.feature` and `exact_names.feature`: `{{a}}→{{b}}→v`; 19-pass limit; `a→b→a` literal; `{{ name }}` ≠ `{{name}}`; case-sensitive
-- [ ] T015 [P] [US1] BDD `test/integration/features/environments/active_environment.feature`: `SetActive` per workspace persisted in `variables.json`, restored after restart, isolated between workspaces
-- [ ] T016 [US1] Run T012–T015 → **red**
-- [ ] T017 [US1] Use cases `resolve_request_variables.go` (walks every FR-012 field on a copy) and service changes in `internal/application/service/send_request.go`: resolve effective request → build context → resolve → auto headers → send → history (unresolved)
-- [ ] T018 [US1] Environment service subset `manage_environment.go` (List, SetActive) + controllers `environment_list.go`, `environment_set_active.go`, DTOs, binding `internal/infra/server/binding/environment.go`; register; run US1 features → **green**
-- [ ] T019 [P] [US1] Frontend `platform/services/environments.ts`; `features/environments/store.ts` (list, active per workspace, reset on workspace switch); `components/EnvironmentSwitcher.tsx` (top-right, "No environment", Cmd/Ctrl+Shift+E opens with focus — add to `app/hotkeys.ts`); RTL tests
+- [x] T012 [P] [US1] BDD `test/integration/features/variables/resolution_precedence.feature` (@variables): env > collection > globals; disabled falls through; "No environment" uses collection/globals; unresolved sent literally
+- [x] T013 [P] [US1] BDD `test/integration/features/variables/resolution_fields.feature`: variables resolved in URL, query params (keys+values), path variables, headers (keys+values), raw body, form-data (key/value/text), urlencoded, GraphQL query+variables, binary file path, Bearer/Basic fields, inherited collection/folder auth and headers; History entry keeps unresolved text
+- [x] T014 [P] [US1] BDD `test/integration/features/variables/nesting_and_cycles.feature` and `exact_names.feature`: `{{a}}→{{b}}→v`; 19-pass limit; `a→b→a` literal; `{{ name }}` ≠ `{{name}}`; case-sensitive
+- [x] T015 [P] [US1] BDD `test/integration/features/environments/active_environment.feature`: `SetActive` per workspace persisted in `variables.json`, restored after restart, isolated between workspaces
+- [x] T016 [US1] Run T012–T015 → **red**
+- [x] T017 [US1] Use cases `resolve_request_variables.go` (walks every FR-012 field on a copy) and service changes in `internal/application/service/send_request.go`: resolve effective request → build context → resolve → auto headers → send → history (unresolved)
+- [x] T018 [US1] Environment service subset `manage_environment.go` (List, SetActive) + controllers `environment_list.go`, `environment_set_active.go`, DTOs, binding `internal/infra/server/binding/environment.go`; register; run US1 features → **green**
+- [x] T019 [P] [US1] Frontend `platform/services/environments.ts`; `features/environments/store.ts` (list, active per workspace, reset on workspace switch); `components/EnvironmentSwitcher.tsx` (top-right, "No environment", Cmd/Ctrl+Shift+E opens with focus — add to `app/hotkeys.ts`); RTL tests
 
 ---
 

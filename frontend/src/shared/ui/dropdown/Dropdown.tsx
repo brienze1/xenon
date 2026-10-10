@@ -1,7 +1,10 @@
 import { createContext, use, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react'
 import { cn } from '@/shared/lib/cn'
-import { moveFocus } from '@/shared/lib/roving-focus'
+import { focusByTypeahead, moveFocus } from '@/shared/lib/roving-focus'
 import styles from './Dropdown.module.css'
+
+const ITEM_SELECTOR = '[role^="menuitem"]:not(:disabled)'
+const TYPEAHEAD_RESET_MS = 700
 
 interface DropdownState {
   open: boolean
@@ -43,17 +46,34 @@ function Provider({ state, actions, meta, children }: ProviderProps) {
 }
 
 interface RootProps {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   className?: string
   children: ReactNode
 }
 
-function Root({ className, children }: RootProps) {
-  const [open, setOpen] = useState(false)
+function Root({ open: controlledOpen, onOpenChange, className, children }: RootProps) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
+  const open = controlledOpen ?? uncontrolledOpen
+  const onOpenChangeRef = useRef(onOpenChange)
+  const openRef = useRef(open)
   const menuId = useId()
   const rootRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const state = useMemo(() => ({ open }), [open])
-  const actions = useMemo(() => ({ toggle: () => setOpen((current) => !current), close: () => setOpen(false) }), [])
+
+  useEffect(() => {
+    onOpenChangeRef.current = onOpenChange
+    openRef.current = open
+  }, [onOpenChange, open])
+
+  const actions = useMemo(() => {
+    function setOpen(next: boolean) {
+      setUncontrolledOpen(next)
+      onOpenChangeRef.current?.(next)
+    }
+    return { toggle: () => setOpen(!openRef.current), close: () => setOpen(false) }
+  }, [])
   const meta = useMemo(() => ({ menuId, triggerRef }), [menuId])
 
   useEffect(() => {
@@ -64,7 +84,7 @@ function Root({ className, children }: RootProps) {
     const trigger = triggerRef.current
     function onPointerDown(event: PointerEvent) {
       if (!root?.contains(event.target as Node)) {
-        setOpen(false)
+        actions.close()
       }
     }
     document.addEventListener('pointerdown', onPointerDown)
@@ -75,7 +95,7 @@ function Root({ className, children }: RootProps) {
         trigger?.focus()
       }
     }
-  }, [open])
+  }, [open, actions])
 
   return (
     <Provider state={state} actions={actions} meta={meta}>
@@ -123,10 +143,11 @@ interface MenuProps {
 function Menu({ label, className, children }: MenuProps) {
   const { state, actions, meta } = useDropdown()
   const menuRef = useRef<HTMLDivElement>(null)
+  const typeahead = useRef({ query: '', at: 0 })
 
   useEffect(() => {
     if (state.open && menuRef.current) {
-      moveFocus(menuRef.current, 'ArrowDown', '[role^="menuitem"]')
+      moveFocus(menuRef.current, 'ArrowDown', ITEM_SELECTOR)
     }
   }, [state.open])
 
@@ -140,8 +161,16 @@ function Menu({ label, className, children }: MenuProps) {
       actions.close()
       return
     }
-    if (moveFocus(event.currentTarget, event.key, '[role^="menuitem"]')) {
+    if (moveFocus(event.currentTarget, event.key, ITEM_SELECTOR)) {
       event.preventDefault()
+      return
+    }
+    if (event.key.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      const recent = event.timeStamp - typeahead.current.at < TYPEAHEAD_RESET_MS
+      typeahead.current = { query: (recent ? typeahead.current.query : '') + event.key, at: event.timeStamp }
+      if (focusByTypeahead(event.currentTarget, typeahead.current.query, ITEM_SELECTOR)) {
+        event.preventDefault()
+      }
     }
   }
 
@@ -162,18 +191,20 @@ function Menu({ label, className, children }: MenuProps) {
 interface MenuButtonProps {
   role: 'menuitem' | 'menuitemradio'
   checked?: boolean
+  disabled?: boolean
   onSelect: () => void
   className?: string
   children: ReactNode
 }
 
-function MenuButton({ role, checked, onSelect, className, children }: MenuButtonProps) {
+function MenuButton({ role, checked, disabled, onSelect, className, children }: MenuButtonProps) {
   const { actions } = useDropdown()
   return (
     <button
       type="button"
       role={role}
       aria-checked={checked}
+      disabled={disabled}
       className={cn(styles.item, className)}
       onClick={() => {
         actions.close()
@@ -187,13 +218,14 @@ function MenuButton({ role, checked, onSelect, className, children }: MenuButton
 
 interface ItemProps {
   onSelect: () => void
+  disabled?: boolean
   className?: string
   children: ReactNode
 }
 
-function Item({ onSelect, className, children }: ItemProps) {
+function Item({ onSelect, disabled, className, children }: ItemProps) {
   return (
-    <MenuButton role="menuitem" onSelect={onSelect} className={className}>
+    <MenuButton role="menuitem" onSelect={onSelect} disabled={disabled} className={className}>
       {children}
     </MenuButton>
   )

@@ -16,6 +16,10 @@ vi.mock('@/platform/services/requests', () => ({
   lastResult: vi.fn(async () => null),
 }))
 vi.mock('@/platform/services/ui-state', () => ({ getUIState: vi.fn(), saveUIState: vi.fn(async () => undefined) }))
+vi.mock('@/platform/services/environments', () => ({
+  listEnvironments: vi.fn(async () => ({ environments: [], activeId: null })),
+  setActiveEnvironment: vi.fn(async () => null),
+}))
 vi.mock('@/platform/services/workspaces', () => ({ listWorkspaces: vi.fn(), createWorkspace: vi.fn(), activateWorkspace: vi.fn() }))
 vi.mock('@/platform/services/dialogs', () => ({ pickFolder: vi.fn(), pickFile: vi.fn(), pickSaveFile: vi.fn() }))
 vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn(async () => []), searchTree: vi.fn() }))

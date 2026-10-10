@@ -16,6 +16,10 @@ vi.mock('@/platform/services/requests', () => ({
   saveRequest: vi.fn(),
 }))
 vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn(), renameItem: vi.fn() }))
+vi.mock('@/platform/services/environments', () => ({
+  listEnvironments: vi.fn(async () => ({ environments: [], activeId: null })),
+  setActiveEnvironment: vi.fn(async () => null),
+}))
 vi.mock('@/platform/services/workspaces', () => ({ listWorkspaces: vi.fn(), createWorkspace: vi.fn(), activateWorkspace: vi.fn() }))
 
 const requests = await import('@/platform/services/requests')

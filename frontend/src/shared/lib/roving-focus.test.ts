@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { moveFocus, rovingIndex } from './roving-focus'
+import { focusByTypeahead, moveFocus, rovingIndex, typeaheadIndex } from './roving-focus'
 
 function menu(count: number): HTMLElement {
   const container = document.createElement('div')
@@ -68,5 +68,51 @@ describe('rovingIndex', () => {
     expect(rovingIndex(3, 1, 'End', { wrap: false })).toBe(2)
     expect(rovingIndex(0, 0, 'ArrowDown')).toBeNull()
     expect(rovingIndex(3, 0, 'Enter')).toBeNull()
+  })
+})
+
+describe('typeaheadIndex', () => {
+  const labels = ['No environment', 'dev', 'hml', 'prod', 'preview', ' Staging ']
+
+  it('finds the next label starting with a single typed character, wrapping around', () => {
+    expect(typeaheadIndex(labels, 0, 'p')).toBe(3)
+    expect(typeaheadIndex(labels, 3, 'p')).toBe(4)
+    expect(typeaheadIndex(labels, 4, 'P')).toBe(3)
+    expect(typeaheadIndex(labels, -1, 'n')).toBe(0)
+    expect(typeaheadIndex(labels, 0, 's')).toBe(5)
+  })
+
+  it('cycles when the same character is typed repeatedly', () => {
+    expect(typeaheadIndex(labels, 3, 'pp')).toBe(4)
+    expect(typeaheadIndex(labels, 4, 'ppp')).toBe(3)
+  })
+
+  it('matches longer prefixes from the current item onwards', () => {
+    expect(typeaheadIndex(labels, 3, 'pr')).toBe(3)
+    expect(typeaheadIndex(labels, 3, 'pre')).toBe(4)
+    expect(typeaheadIndex(labels, -1, 'no env')).toBe(0)
+    expect(typeaheadIndex(labels, 5, 'de')).toBe(1)
+  })
+
+  it('returns null when nothing matches or nothing was typed', () => {
+    expect(typeaheadIndex(labels, 0, 'x')).toBeNull()
+    expect(typeaheadIndex(labels, 0, ' ')).toBeNull()
+    expect(typeaheadIndex([], 0, 'a')).toBeNull()
+  })
+})
+
+describe('focusByTypeahead', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('focuses the matching item and reports misses', () => {
+    const container = menu(3)
+    const items = Array.from(container.querySelectorAll('button'))
+    items[0]?.focus()
+    expect(focusByTypeahead(container, 'item 2', '[role="menuitem"]')).toBe(true)
+    expect(items[2]).toHaveFocus()
+    expect(focusByTypeahead(container, 'z', '[role="menuitem"]')).toBe(false)
+    expect(items[2]).toHaveFocus()
   })
 })

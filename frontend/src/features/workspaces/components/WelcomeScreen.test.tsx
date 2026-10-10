@@ -4,6 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
 import { defaultUIState } from '@/platform/mappers/ui-state'
 
+vi.mock('@/platform/services/environments', () => ({
+  listEnvironments: vi.fn(async () => ({ environments: [], activeId: null })),
+  setActiveEnvironment: vi.fn(async () => null),
+}))
 vi.mock('@/platform/services/workspaces', () => ({
   listWorkspaces: vi.fn(),
   createWorkspace: vi.fn(),

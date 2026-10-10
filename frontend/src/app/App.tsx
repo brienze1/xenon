@@ -1,5 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { ConsoleDrawer as ConsoleContent } from '@/features/console/components/ConsoleDrawer'
+import { EnvironmentSwitcher } from '@/features/environments/components/EnvironmentSwitcher'
+import { useEnvironmentsStore } from '@/features/environments/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { InfoPanel } from '@/features/side-panel/components/InfoPanel'
 import { SidebarPanel } from '@/features/sidebar/components/SidebarPanel'
@@ -27,6 +29,8 @@ let didInit = false
 const WORKSPACE_SWITCHER = <WorkspaceSwitcher />
 
 const WELCOME_SCREEN = <WelcomeScreen />
+
+const ENVIRONMENT_SWITCHER = <EnvironmentSwitcher />
 
 const CONSOLE = (
   <ConsoleDrawer>
@@ -70,6 +74,7 @@ export function App() {
             saveAs: () => useTabsStore.getState().saveAs(),
             newTab: () => void useTabsStore.getState().newTab(),
             closeTab: () => useTabsStore.getState().requestClose(),
+            environmentSwitcher: () => useEnvironmentsStore.getState().openSwitcher(),
           }
         : {},
     [hasActive, send],
@@ -86,7 +91,7 @@ export function App() {
 
   return (
     <AppShell layout={layout} onLayoutChange={setLayout}>
-      <TopBar>{hasWorkspaces ? WORKSPACE_SWITCHER : null}</TopBar>
+      <TopBar end={hasActive ? ENVIRONMENT_SWITCHER : null}>{hasWorkspaces ? WORKSPACE_SWITCHER : null}</TopBar>
       {active ? (
         <>
           <Sidebar>

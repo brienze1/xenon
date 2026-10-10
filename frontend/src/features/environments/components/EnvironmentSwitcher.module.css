@@ -1,0 +1,61 @@
+.container {
+  --wails-draggable: no-drag;
+
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.switcher {
+  --wails-draggable: no-drag;
+}
+
+.name {
+  max-width: 200px;
+  overflow: hidden;
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  color: var(--color-text-muted);
+}
+
+.menu {
+  right: 0;
+  left: auto;
+  max-height: min(420px, calc(100vh - 80px));
+  overflow-y: auto;
+}
+
+.separator {
+  height: 1px;
+  border: 0;
+  margin: var(--space-2) 0;
+  background: var(--color-border);
+}
+
+.broken {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.brokenMark {
+  overflow: hidden;
+  color: var(--neon-red);
+  font-size: var(--font-size-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.error {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: 10;
+  width: max-content;
+  max-width: 420px;
+}

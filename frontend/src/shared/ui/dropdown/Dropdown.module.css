@@ -54,3 +54,13 @@
 .item[aria-checked='true'] {
   color: var(--neon-cyan);
 }
+
+.item:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.item:disabled:hover {
+  background: transparent;
+  color: var(--color-text-muted);
+}

@@ -9,13 +9,15 @@ const WORDMARK = (
 
 interface TopBarProps {
   children?: ReactNode
+  end?: ReactNode
 }
 
-export function TopBar({ children }: TopBarProps) {
+export function TopBar({ children, end }: TopBarProps) {
   return (
     <header className={styles.topBar}>
       {WORDMARK}
       {children}
+      {end ? <div className={styles.end}>{end}</div> : null}
     </header>
   )
 }

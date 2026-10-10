@@ -16,6 +16,7 @@ vi.mock('@/platform/services/workspaces', () => ({
 vi.mock('@/platform/services/dialogs', () => ({ pickFolder: vi.fn(), pickFile: vi.fn(), pickSaveFile: vi.fn() }))
 vi.mock('@/platform/services/ui-state', () => ({ getUIState: vi.fn(), saveUIState: vi.fn() }))
 vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn(), searchTree: vi.fn() }))
+vi.mock('@/platform/services/environments', () => ({ listEnvironments: vi.fn(), setActiveEnvironment: vi.fn() }))
 vi.mock('@/platform/services/requests', () => ({
   autoHeaders: vi.fn(),
   getRequest: vi.fn(),
@@ -36,6 +37,8 @@ const dialogs = await import('@/platform/services/dialogs')
 const uiState = await import('@/platform/services/ui-state')
 const requests = await import('@/platform/services/requests')
 const tree = await import('@/platform/services/tree')
+const environments = await import('@/platform/services/environments')
+const { useEnvironmentsStore } = await import('@/features/environments/store')
 const { useWorkspacesStore } = await import('./store')
 const { useTabsStore } = await import('@/features/tabs/store')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
@@ -70,6 +73,7 @@ describe('workspaces store', () => {
     vi.mocked(uiState.saveUIState).mockResolvedValue()
     vi.mocked(tree.getTree).mockResolvedValue([])
     vi.mocked(tree.searchTree).mockResolvedValue({ matchIds: [], ancestorIds: [] })
+    vi.mocked(environments.listEnvironments).mockResolvedValue({ environments: [], activeId: null })
     useWorkspacesStore.setState({ workspaces: [], activeLocalId: null, missingLocalId: null, status: 'idle', error: null })
   })
 
@@ -91,6 +95,26 @@ describe('workspaces store', () => {
     store().setLayout({ sidebarVisible: false })
     store().markMissing('G')
     expect(store().layout).toEqual(defaultLayout())
+  })
+
+  it('resets the environments on a workspace switch and loads the new workspace ones', async () => {
+    const dev = { id: 'e1', name: 'dev', color: 'green', confirmBeforeSend: false, error: null } as const
+    vi.mocked(services.activateWorkspace).mockResolvedValueOnce(snapshot(acme))
+    vi.mocked(environments.listEnvironments).mockResolvedValueOnce({ environments: [dev], activeId: 'e1' })
+    await store().activate('A')
+    await vi.waitFor(() => expect(useEnvironmentsStore.getState().activeId).toBe('e1'))
+    expect(environments.listEnvironments).toHaveBeenLastCalledWith('A')
+    useEnvironmentsStore.getState().openSwitcher()
+    vi.mocked(services.activateWorkspace).mockResolvedValueOnce(snapshot(globex))
+    let resolveGlobex!: (list: { environments: []; activeId: null }) => void
+    vi.mocked(environments.listEnvironments).mockReturnValueOnce(new Promise((resolve) => (resolveGlobex = resolve)))
+    await store().activate('G')
+    expect(useEnvironmentsStore.getState()).toMatchObject({ environments: [], activeId: null, switcherOpen: false, status: 'loading' })
+    expect(environments.listEnvironments).toHaveBeenLastCalledWith('G')
+    resolveGlobex({ environments: [], activeId: null })
+    await vi.waitFor(() => expect(useEnvironmentsStore.getState().status).toBe('ready'))
+    store().markMissing('G')
+    expect(useEnvironmentsStore.getState().status).toBe('idle')
   })
 
   it('loads the registered workspaces', async () => {

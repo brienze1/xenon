@@ -17,6 +17,10 @@ vi.mock('@/platform/services/tree', () => ({
   saveItemSettings: vi.fn(),
 }))
 vi.mock('@/platform/services/requests', () => ({ parseBulk: vi.fn(), formatBulk: vi.fn() }))
+vi.mock('@/platform/services/environments', () => ({
+  listEnvironments: vi.fn(async () => ({ environments: [], activeId: null })),
+  setActiveEnvironment: vi.fn(async () => null),
+}))
 vi.mock('@/platform/services/workspaces', () => ({ listWorkspaces: vi.fn(), createWorkspace: vi.fn(), activateWorkspace: vi.fn() }))
 
 const tree = await import('@/platform/services/tree')

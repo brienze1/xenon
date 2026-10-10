@@ -47,3 +47,33 @@ export function moveFocus(container: HTMLElement, key: string, selector: string,
   }
   return true
 }
+
+export function typeaheadIndex(labels: readonly string[], current: number, query: string): number | null {
+  const typed = query.trim().toLowerCase()
+  if (typed === '') {
+    return null
+  }
+  const needle = [...typed].every((character) => character === typed[0]) ? typed.charAt(0) : typed
+  const start = needle.length === 1 ? current + 1 : Math.max(current, 0)
+  for (let offset = 0; offset < labels.length; offset++) {
+    const index = (start + offset) % labels.length
+    if ((labels[index] ?? '').trim().toLowerCase().startsWith(needle)) {
+      return index
+    }
+  }
+  return null
+}
+
+export function focusByTypeahead(container: HTMLElement, query: string, selector: string): boolean {
+  const items = Array.from(container.querySelectorAll<HTMLElement>(selector))
+  const next = typeaheadIndex(
+    items.map((item) => item.textContent ?? ''),
+    items.indexOf(document.activeElement as HTMLElement),
+    query,
+  )
+  if (next === null) {
+    return false
+  }
+  items[next]?.focus()
+  return true
+}

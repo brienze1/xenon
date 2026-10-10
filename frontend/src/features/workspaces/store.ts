@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { useEnvironmentsStore } from '@/features/environments/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
@@ -44,6 +45,7 @@ interface WorkspacesState {
 }
 
 function resetWorkspaceStores(): void {
+  useEnvironmentsStore.getState().reset()
   useTabsStore.getState().reset()
   useRequestBuilderStore.getState().reset()
   useResponseViewerStore.getState().reset()
@@ -119,6 +121,7 @@ export const useWorkspacesStore = create<WorkspacesState>()((set, get) => {
         }))
         useSidebarStore.getState().setTree(snapshot.tree)
         useTabsStore.getState().hydrate(localId, snapshot.uiState)
+        void useEnvironmentsStore.getState().load()
       } catch (error) {
         const appError = toAppError(error)
         if (appError.code !== FOLDER_MISSING) {
