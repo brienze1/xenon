@@ -9,6 +9,7 @@ import (
 const forbiddenVariableKeyCharacters = "{}\r\n"
 
 type VariableRow struct {
+	Postman      SourceFields
 	Key          string
 	InitialValue string
 	Description  string

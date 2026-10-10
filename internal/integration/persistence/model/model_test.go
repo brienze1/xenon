@@ -151,7 +151,7 @@ func TestAuthKeepsEveryTypedSubObject(t *testing.T) {
 	if got := write(t, []yamlnode.Field{model.Field()}); got != want {
 		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
 	}
-	if got := model.ToEntity(); got != auth {
+	if got := model.ToEntity(); !reflect.DeepEqual(got, auth) {
 		t.Fatalf("ToEntity() = %+v", got)
 	}
 	bearer := NewAuth(entity.Auth{Type: authtype.Bearer})

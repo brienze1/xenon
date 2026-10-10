@@ -37,6 +37,7 @@ Feature: Create a workspace
       # Xenon — local-only files (never commit)
       .xenon/
       *.xenon-tmp
+      .xenon-import-*/
       """
 
   @success

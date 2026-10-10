@@ -63,7 +63,7 @@ func TestResolveEffectiveRequestAuth(t *testing.T) {
 	for name, tc := range cases {
 		request := entity.NewRequest("", "r")
 		request.Auth = tc.request
-		if got := ResolveEffectiveRequest(request, tc.ancestors, "").Auth; got != tc.want {
+		if got := ResolveEffectiveRequest(request, tc.ancestors, "").Auth; !reflect.DeepEqual(got, tc.want) {
 			t.Errorf("%s: auth = %+v, want %+v", name, got, tc.want)
 		}
 	}

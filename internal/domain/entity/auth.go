@@ -6,9 +6,15 @@ import (
 )
 
 type Auth struct {
-	Type   enums.AuthType
-	Bearer AuthBearer
-	Basic  AuthBasic
+	Unsupported AuthUnsupported
+	Type        enums.AuthType
+	Bearer      AuthBearer
+	Basic       AuthBasic
+	Attributes  []AuthAttribute
+}
+
+func NewUnsupportedAuth(unsupported AuthUnsupported) Auth {
+	return Auth{Type: authtype.Unsupported, Unsupported: unsupported}
 }
 
 func DefaultAuth() Auth {
@@ -47,6 +53,14 @@ func (a Auth) TextFields(prefix string) []TextField {
 	}
 }
 
+func (a Auth) IsUnsupported() bool {
+	return a.Type == authtype.Unsupported
+}
+
+func (a Auth) HasAttributes() bool {
+	return len(a.Attributes) > 0
+}
+
 func (a Auth) IsSupported() bool {
 	switch a.Type {
 	case authtype.Inherit, authtype.None, authtype.Bearer, authtype.Basic:
@@ -65,5 +79,5 @@ func (a Auth) HasBasic() bool {
 }
 
 func (a Auth) LogValue() any {
-	return map[string]any{"type": a.Type, "bearer": a.Bearer.LogValue(), "basic": a.Basic.LogValue()}
+	return map[string]any{"type": a.Type, "bearer": a.Bearer.LogValue(), "basic": a.Basic.LogValue(), "unsupported": a.Unsupported.LogValue()}
 }

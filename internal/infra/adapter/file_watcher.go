@@ -20,6 +20,7 @@ const (
 	watchDebounce   = 150 * time.Millisecond
 	temporarySuffix = ".xenon-tmp"
 	gitDirectory    = ".git"
+	stagingPrefix   = ".xenon-import-"
 )
 
 type fsFileWatcher struct {
@@ -86,7 +87,7 @@ func (f *fsFileWatcher) listen(watcher *fsnotify.Watcher) {
 }
 
 func (f *fsFileWatcher) handle(watcher *fsnotify.Watcher, event fsnotify.Event) {
-	if event.Op == fsnotify.Chmod || strings.HasSuffix(event.Name, temporarySuffix) {
+	if event.Op == fsnotify.Chmod || strings.HasSuffix(event.Name, temporarySuffix) || isStagingPath(event.Name) {
 		return
 	}
 	if event.Has(fsnotify.Create) && isWatchableDirectory(event.Name) {
@@ -139,11 +140,20 @@ func (f *fsFileWatcher) addTree(watcher *fsnotify.Watcher, root string) error {
 		if !entry.IsDir() {
 			return nil
 		}
-		if entry.Name() == gitDirectory {
+		if entry.Name() == gitDirectory || isStagingPath(path) {
 			return filepath.SkipDir
 		}
 		return watcher.Add(path)
 	})
+}
+
+func isStagingPath(path string) bool {
+	for _, segment := range strings.Split(filepath.ToSlash(path), "/") {
+		if strings.HasPrefix(segment, stagingPrefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func isWatchableDirectory(path string) bool {

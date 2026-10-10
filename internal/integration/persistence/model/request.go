@@ -1,15 +1,16 @@
 package model
 
 import (
-	"go.yaml.in/yaml/v3"
-
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
 	"github.com/brienze1/xenon/pkg/yamlnode"
 )
 
 type Request struct {
+	Postman       map[string]any `yaml:"postman" json:"-"`
+	Bruno         map[string]any `yaml:"bruno" json:"-"`
 	Auth          Auth           `yaml:"auth" json:"auth"`
+	Scripts       Scripts        `yaml:"scripts" json:"-"`
 	Body          Body           `yaml:"body" json:"body"`
 	Settings      Settings       `yaml:"settings" json:"settings"`
 	Kind          string         `yaml:"kind" json:"kind"`
@@ -22,6 +23,7 @@ type Request struct {
 	PathVariables []PathVariable `yaml:"pathVariables" json:"path_variables"`
 	Headers       []KeyValue     `yaml:"headers" json:"headers"`
 	AutoHeaders   AutoHeaders    `yaml:"autoHeaders" json:"auto_headers"`
+	Examples      []Example      `yaml:"examples" json:"-"`
 	Xenon         int            `yaml:"xenon" json:"xenon"`
 }
 
@@ -41,6 +43,10 @@ func NewRequest(request entity.Request) Request {
 		Auth:          NewAuth(request.Auth),
 		Body:          NewBody(request.Body),
 		Settings:      NewSettings(request.Settings),
+		Scripts:       NewScripts(request.Scripts),
+		Examples:      newExamples(request.Examples),
+		Postman:       request.Postman,
+		Bruno:         request.Bruno,
 	}
 	for _, variable := range request.PathVariables {
 		model.PathVariables = append(model.PathVariables, NewPathVariable(variable))
@@ -65,6 +71,10 @@ func (r *Request) ToEntity() entity.Request {
 	request.Auth = r.Auth.ToEntity()
 	request.Body = r.Body.ToEntity()
 	request.Settings = r.Settings.ToEntity()
+	request.Scripts = r.Scripts.ToEntity()
+	request.Examples = examplesToEntity(r.Examples)
+	request.Postman = sourceFieldsToEntity(r.Postman)
+	request.Bruno = sourceFieldsToEntity(r.Bruno)
 	return request
 }
 
@@ -76,26 +86,20 @@ func (r *Request) ToStoredEntity(id, revision string) entity.Request {
 }
 
 func (r *Request) Fields() []yamlnode.Field {
-	return append(headerFields(itemkind.Request.String(), r.Id, r.Name, r.Description),
+	fields := append(headerFields(itemkind.Request.String(), r.Id, r.Name, r.Description),
 		yamlnode.String("method", r.Method),
 		yamlnode.String("url", r.Url),
 		yamlnode.List("params", keyValueNodes(r.Params)),
-		yamlnode.List("pathVariables", r.pathVariableNodes()),
+		yamlnode.List("pathVariables", pathVariableNodes(r.PathVariables)),
 		yamlnode.List("headers", keyValueNodes(r.Headers)),
 		yamlnode.Object("autoHeaders", yamlnode.StringList("disabled", r.AutoHeaders.ToEntity())),
 		r.Auth.Field(),
 		r.Body.Field(),
 		r.Settings.Field(),
-		yamlnode.Reserved("scripts", emptyScriptsNode()),
+		yamlnode.Reserved("scripts", r.Scripts.Node()),
 		yamlnode.Reserved("inheritScripts", inheritScriptsNode()),
-		yamlnode.Reserved("postman", yamlnode.EmptyMapping()),
 	)
-}
-
-func (r *Request) pathVariableNodes() []*yaml.Node {
-	nodes := make([]*yaml.Node, 0, len(r.PathVariables))
-	for index := range r.PathVariables {
-		nodes = append(nodes, r.PathVariables[index].Node())
-	}
-	return nodes
+	fields = append(fields, optionalExamples(r.Examples)...)
+	fields = append(fields, sourceFieldsReserved(postmanKey, r.Postman))
+	return append(fields, optionalSourceFields(brunoKey, r.Bruno)...)
 }

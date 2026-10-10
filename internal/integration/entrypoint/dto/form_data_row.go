@@ -9,6 +9,7 @@ type FormDataRow struct {
 	Value       string `json:"value"`
 	Src         string `json:"src"`
 	Description string `json:"description"`
+	SrcState    string `json:"src_state" validate:"omitempty,oneof=ok repick"`
 }
 
 func NewFormDataRow(row entity.FormDataRow) FormDataRow {
@@ -17,6 +18,7 @@ func NewFormDataRow(row entity.FormDataRow) FormDataRow {
 		Type:        row.Type.String(),
 		Value:       row.Value,
 		Src:         row.Src.Src,
+		SrcState:    newFileState(row.Src),
 		Enabled:     &row.Enabled,
 		Description: row.Description,
 	}
@@ -24,7 +26,7 @@ func NewFormDataRow(row entity.FormDataRow) FormDataRow {
 
 func (f *FormDataRow) ToEntity() entity.FormDataRow {
 	row := entity.NewFormDataRow(f.Key, f.Value).WithType(f.Type)
-	row.Src = entity.FileRef{Src: f.Src}
+	row.Src = fileRefToEntity(f.Src, f.SrcState)
 	row.Description = f.Description
 	if f.Enabled != nil {
 		row.Enabled = *f.Enabled

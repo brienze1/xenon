@@ -7,13 +7,14 @@ import (
 )
 
 type Workspace struct {
-	Kind        string        `yaml:"kind"`
-	Id          string        `yaml:"id"`
-	Name        string        `yaml:"name"`
-	Description string        `yaml:"description"`
-	Order       []string      `yaml:"order"`
-	Variables   []VariableRow `yaml:"variables"`
-	Xenon       int           `yaml:"xenon"`
+	Postman     map[string]any `yaml:"postman"`
+	Kind        string         `yaml:"kind"`
+	Id          string         `yaml:"id"`
+	Name        string         `yaml:"name"`
+	Description string         `yaml:"description"`
+	Order       []string       `yaml:"order"`
+	Variables   []VariableRow  `yaml:"variables"`
+	Xenon       int            `yaml:"xenon"`
 }
 
 func NewWorkspace(workspace entity.Workspace) Workspace {
@@ -25,17 +26,19 @@ func NewWorkspace(workspace entity.Workspace) Workspace {
 		Description: workspace.Description,
 		Order:       nonNil(workspace.Order),
 		Variables:   newVariableRows(workspace.Variables),
+		Postman:     workspace.Postman,
 	}
 }
 
 func (w *Workspace) ToEntity() entity.Workspace {
-	return entity.Workspace{ID: w.Id, Name: w.Name, Description: w.Description, Order: nonNil(w.Order), Variables: variableRowsToEntity(w.Variables)}
+	return entity.Workspace{ID: w.Id, Name: w.Name, Description: w.Description, Order: nonNil(w.Order), Variables: variableRowsToEntity(w.Variables), Postman: sourceFieldsToEntity(w.Postman)}
 }
 
 func (w *Workspace) Fields() []yamlnode.Field {
-	return append(headerFields(itemkind.Workspace.String(), w.Id, w.Name, w.Description),
+	fields := append(headerFields(itemkind.Workspace.String(), w.Id, w.Name, w.Description),
 		yamlnode.StringList("order", nonNil(w.Order)),
 		variablesField(w.Variables),
 		yamlnode.Reserved("sync", yamlnode.EmptyMapping()),
 	)
+	return append(fields, optionalSourceFields(postmanKey, w.Postman)...)
 }

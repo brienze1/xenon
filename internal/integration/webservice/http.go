@@ -87,6 +87,10 @@ func parseTarget(raw string) (*url.URL, *entity.SendError) {
 func readFiles(refs []entity.FileRef) (map[string][]byte, *entity.SendError) {
 	files := make(map[string][]byte, len(refs))
 	for _, ref := range refs {
+		if ref.NeedsRepick() {
+			sendErr := entity.NewSendError(senderrorkind.MissingFile, ref.Src)
+			return nil, &sendErr
+		}
 		content, err := os.ReadFile(ref.Src)
 		if os.IsNotExist(err) {
 			sendErr := entity.NewSendError(senderrorkind.MissingFile, ref.Src)

@@ -25,7 +25,7 @@ const (
 	environmentsDir     = "environments"
 	gitignoreFile       = ".gitignore"
 	gitignoreHeader     = "# Xenon — local-only files (never commit)"
-	gitignoreBlock      = gitignoreHeader + "\n.xenon/\n*.xenon-tmp\n"
+	gitignoreBlock      = gitignoreHeader + "\n.xenon/\n*.xenon-tmp\n.xenon-import-*/\n"
 	workspaceDirMode    = 0o755
 	workspaceFileMode   = 0o644
 	latestFormatVersion = 1

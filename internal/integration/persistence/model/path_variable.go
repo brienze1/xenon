@@ -21,6 +21,14 @@ func (p *PathVariable) ToEntity() entity.PathVariable {
 	return entity.PathVariable{Key: p.Key, Value: p.Value, Description: p.Description}
 }
 
+func pathVariableNodes(models []PathVariable) []*yaml.Node {
+	nodes := make([]*yaml.Node, 0, len(models))
+	for index := range models {
+		nodes = append(nodes, models[index].Node())
+	}
+	return nodes
+}
+
 func (p *PathVariable) Node() *yaml.Node {
 	return yamlnode.MappingNode(
 		yamlnode.String("key", p.Key),

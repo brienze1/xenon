@@ -181,10 +181,9 @@ func (v VariableTable) PersistsSecret(keys []string) bool {
 func (v VariableTable) Persisted(keys []string) VariableTable {
 	current := copyValues(v.Current)
 	rows := append([]VariableRow{}, v.Rows...)
-	selected := v.selected(keys)
 	for index, row := range rows {
 		value, overridden := current[row.Key]
-		if !row.Secret && overridden && slices.Contains(selected, row) {
+		if !row.Secret && overridden && isSelectedKey(keys, row.Key) {
 			rows[index].InitialValue = value
 			delete(current, row.Key)
 		}
@@ -266,13 +265,14 @@ func (v VariableTable) row(key string) (VariableRow, bool) {
 	return VariableRow{}, false
 }
 
+func isSelectedKey(keys []string, key string) bool {
+	return len(keys) == 0 || slices.Contains(keys, key)
+}
+
 func (v VariableTable) selected(keys []string) []VariableRow {
-	if len(keys) == 0 {
-		return v.Rows
-	}
-	selected := make([]VariableRow, 0, len(keys))
+	selected := make([]VariableRow, 0, len(v.Rows))
 	for _, row := range v.Rows {
-		if slices.Contains(keys, row.Key) {
+		if isSelectedKey(keys, row.Key) {
 			selected = append(selected, row)
 		}
 	}

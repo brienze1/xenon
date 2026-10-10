@@ -10,6 +10,8 @@ import (
 const productionNameMarker = "prod"
 
 type Environment struct {
+	Postman           SourceFields
+	Bruno             SourceFields
 	ID                string
 	Name              string
 	Description       string

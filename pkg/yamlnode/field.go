@@ -12,6 +12,7 @@ type Field struct {
 	Key          string
 	Fields       []Field
 	KeepExisting bool
+	Remove       bool
 }
 
 func String(key, value string) Field {
@@ -50,6 +51,10 @@ func Reserved(key string, value *yaml.Node) Field {
 	return Field{Key: key, Value: value, KeepExisting: true}
 }
 
+func Absent(key string) Field {
+	return Field{Key: key, Remove: true}
+}
+
 func StringNode(value string) *yaml.Node {
 	node := &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value}
 	if strings.Contains(value, "\n") {
@@ -80,4 +85,14 @@ func (f Field) node() *yaml.Node {
 		return MappingNode(f.Fields...)
 	}
 	return f.Value
+}
+
+// Any encodes a decoded YAML or JSON value (maps, lists, scalars) as a node; empty maps and lists use flow style.
+func Any(value any) *yaml.Node {
+	node := &yaml.Node{}
+	_ = node.Encode(value)
+	if (node.Kind == yaml.MappingNode || node.Kind == yaml.SequenceNode) && len(node.Content) == 0 {
+		node.Style = yaml.FlowStyle
+	}
+	return node
 }

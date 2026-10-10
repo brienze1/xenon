@@ -7,15 +7,16 @@ import (
 )
 
 const (
-	Inherit enums.AuthType = "inherit"
-	None    enums.AuthType = "none"
-	Bearer  enums.AuthType = "bearer"
-	Basic   enums.AuthType = "basic"
-	ApiKey  enums.AuthType = "apikey"
-	OAuth2  enums.AuthType = "oauth2"
-	AwsV4   enums.AuthType = "awsv4"
-	Digest  enums.AuthType = "digest"
-	Unknown enums.AuthType = "unknown"
+	Inherit     enums.AuthType = "inherit"
+	None        enums.AuthType = "none"
+	Bearer      enums.AuthType = "bearer"
+	Basic       enums.AuthType = "basic"
+	ApiKey      enums.AuthType = "apikey"
+	OAuth2      enums.AuthType = "oauth2"
+	AwsV4       enums.AuthType = "awsv4"
+	Digest      enums.AuthType = "digest"
+	Unsupported enums.AuthType = "unsupported"
+	Unknown     enums.AuthType = "unknown"
 )
 
 func GetAuthType(s string) enums.AuthType {
@@ -36,6 +37,8 @@ func GetAuthType(s string) enums.AuthType {
 		return AwsV4
 	case "digest":
 		return Digest
+	case "unsupported":
+		return Unsupported
 	default:
 		return Unknown
 	}

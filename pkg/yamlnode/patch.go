@@ -7,6 +7,10 @@ func Patch(mapping *yaml.Node, fields []Field) {
 	previous := -2
 	for _, field := range fields {
 		index := keyIndex(mapping, field.Key)
+		if field.Remove {
+			removePair(mapping, index)
+			continue
+		}
 		if index < 0 {
 			index = previous + 2
 			insertPair(mapping, index, field)
@@ -37,6 +41,12 @@ func keyIndex(mapping *yaml.Node, key string) int {
 		}
 	}
 	return -1
+}
+
+func removePair(mapping *yaml.Node, index int) {
+	if index >= 0 {
+		mapping.Content = append(mapping.Content[:index], mapping.Content[index+2:]...)
+	}
 }
 
 func insertPair(mapping *yaml.Node, index int, field Field) {

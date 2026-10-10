@@ -12,7 +12,10 @@ import (
 var methodToken = regexp.MustCompile(`^[A-Z][A-Z0-9_-]{0,31}$`)
 
 type Request struct {
+	Postman             SourceFields
+	Bruno               SourceFields
 	Auth                Auth
+	Scripts             Scripts
 	Body                Body
 	ID                  string
 	Name                string
@@ -24,6 +27,7 @@ type Request struct {
 	Headers             []KeyValue
 	Revision            string
 	DisabledAutoHeaders []string
+	Examples            []SavedExample
 	Settings            RequestSettings
 }
 

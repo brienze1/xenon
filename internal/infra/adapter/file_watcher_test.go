@@ -255,3 +255,29 @@ func TestMovingAMissingPathToTheTrashFails(t *testing.T) {
 		t.Fatal("MoveToTrash() of a missing path must fail")
 	}
 }
+
+func TestWatcherIgnoresImportStagingFolders(t *testing.T) {
+	root, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, ".xenon-import-present", "item"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	watcher := NewFileWatcher().(*fsFileWatcher)
+	recorder := newChangeRecorder()
+	if err := watcher.Watch(context.Background(), root, recorder.record); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = watcher.Stop() })
+	write(t, filepath.Join(root, ".xenon-import-present", "item", "a.yaml"), "data")
+	if err := os.MkdirAll(filepath.Join(root, ".xenon-import-new", "item"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	write(t, filepath.Join(root, ".xenon-import-new", "b.yaml"), "data")
+	recorder.expectNone(t)
+	write(t, filepath.Join(root, "workspace.yaml"), "name: Acme")
+	if change := recorder.next(t); change.path != filepath.Join(root, "workspace.yaml") {
+		t.Fatalf("change = %+v", change)
+	}
+}

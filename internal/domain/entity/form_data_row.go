@@ -30,7 +30,7 @@ func (f FormDataRow) WithType(raw string) FormDataRow {
 func (f FormDataRow) MapText(transform func(string) string) FormDataRow {
 	f.Key = transform(f.Key)
 	f.Value = transform(f.Value)
-	f.Src = FileRef{Src: transform(f.Src.Src)}
+	f.Src = f.Src.WithSrc(transform(f.Src.Src))
 	return f
 }
 

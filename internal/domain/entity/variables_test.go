@@ -56,7 +56,7 @@ func TestVariableRowActivityAndSecretValues(t *testing.T) {
 	if cleaned := stray.WithoutSecretValue(); cleaned.InitialValue != "" || !cleaned.Secret || cleaned.Key != "api_key" {
 		t.Errorf("WithoutSecretValue() = %+v", cleaned)
 	}
-	if kept := row.WithoutSecretValue(); kept != row {
+	if kept := row.WithoutSecretValue(); !reflect.DeepEqual(kept, row) {
 		t.Errorf("a plain row keeps its value, got %+v", kept)
 	}
 	if logged := stray.LogValue().(map[string]any); logged["key"] != "api_key" || logged["secret"] != true || logged["enabled"] != true || len(logged) != 3 {
@@ -367,7 +367,7 @@ func TestMapTextWalksEveryResolvableField(t *testing.T) {
 	collection.Headers = []KeyValue{NewKeyValue("ck", "cv")}
 	collection.Variables = []VariableRow{NewVariableRow("k", "v")}
 	mappedCollection := collection.MapText(mark)
-	if mappedCollection.Auth.Basic != (AuthBasic{Username: "<u>", Password: "<p>"}) || mappedCollection.Headers[0] != NewKeyValue("<ck>", "<cv>") || mappedCollection.Variables[0] != NewVariableRow("k", "v") || mappedCollection.Name != "C" {
+	if mappedCollection.Auth.Basic != (AuthBasic{Username: "<u>", Password: "<p>"}) || mappedCollection.Headers[0] != NewKeyValue("<ck>", "<cv>") || !reflect.DeepEqual(mappedCollection.Variables[0], NewVariableRow("k", "v")) || mappedCollection.Name != "C" {
 		t.Errorf("collection MapText() = %+v", mappedCollection)
 	}
 	if collection.Headers[0].Key != "ck" {

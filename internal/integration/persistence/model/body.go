@@ -70,7 +70,7 @@ func (b *Body) Field() yamlnode.Field {
 		fields = append(fields, yamlnode.Object("raw", yamlnode.String("language", b.Raw.Language), yamlnode.String("content", b.Raw.Content)))
 	}
 	if b.Binary != nil {
-		fields = append(fields, yamlnode.Object("binary", yamlnode.String("src", b.Binary.Src)))
+		fields = append(fields, yamlnode.Object("binary", yamlnode.String("src", b.Binary.Src), fileRefStateField(b.Binary.ToEntity())))
 	}
 	if b.GraphQl != nil {
 		fields = append(fields, yamlnode.Object("graphql", yamlnode.String("query", b.GraphQl.Query), yamlnode.String("variables", b.GraphQl.Variables)))

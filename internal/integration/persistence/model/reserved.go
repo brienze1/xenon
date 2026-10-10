@@ -8,10 +8,6 @@ import (
 
 const formatVersion = 1
 
-func emptyScriptsNode() *yaml.Node {
-	return yamlnode.MappingNode(yamlnode.String("preRequest", ""), yamlnode.String("postResponse", ""))
-}
-
 func inheritScriptsNode() *yaml.Node {
 	return yamlnode.Bool("inheritScripts", true).Value
 }

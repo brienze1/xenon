@@ -125,3 +125,23 @@ func TestParseRejectsInvalidDocuments(t *testing.T) {
 		}
 	}
 }
+
+func TestAnyEncodesDecodedValues(t *testing.T) {
+	fields := []Field{
+		{Key: "postman", Value: Any(map[string]any{"id": "x", "variable": []any{map[string]any{"key": "page", "value": "1"}}})},
+		{Key: "empty", Value: Any(map[string]any{})},
+		{Key: "none", Value: Any([]any{})},
+	}
+	want := "postman:\n  id: x\n  variable:\n    - key: page\n      value: \"1\"\nempty: {}\nnone: []\n"
+	if got := encode(t, fields, ""); got != want {
+		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func TestAbsentRemovesTheKeyAndNeverInsertsIt(t *testing.T) {
+	fields := []Field{String("src", "a.bin"), Absent("srcState"), Absent("missing")}
+	want := "src: a.bin\nnext: 1\n"
+	if got := encode(t, fields, "src: old\nsrcState: repick\nnext: 1\n"); got != want {
+		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
+	}
+}

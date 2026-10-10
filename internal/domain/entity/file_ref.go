@@ -3,10 +3,18 @@ package entity
 import (
 	"path/filepath"
 	"strings"
+
+	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/filestate"
 )
 
 type FileRef struct {
-	Src string
+	Src   string
+	State enums.FileState
+}
+
+func NewRepickFileRef(src string) FileRef {
+	return FileRef{Src: src, State: filestate.Repick}
 }
 
 func NewFileRef(workspaceRoot, absolutePath string) FileRef {
@@ -21,6 +29,15 @@ func (f FileRef) IsEmpty() bool {
 	return strings.TrimSpace(f.Src) == ""
 }
 
+func (f FileRef) NeedsRepick() bool {
+	return f.State == filestate.Repick
+}
+
+func (f FileRef) WithSrc(src string) FileRef {
+	f.Src = src
+	return f
+}
+
 func (f FileRef) Resolve(workspaceRoot string) string {
 	if f.IsEmpty() || filepath.IsAbs(f.Src) {
 		return f.Src
@@ -32,5 +49,10 @@ func (f FileRef) RelativeTo(workspaceRoot string) FileRef {
 	if !filepath.IsAbs(f.Src) {
 		return f
 	}
-	return NewFileRef(workspaceRoot, f.Src)
+	return NewFileRef(workspaceRoot, f.Src).withState(f.State)
+}
+
+func (f FileRef) withState(state enums.FileState) FileRef {
+	f.State = state
+	return f
 }

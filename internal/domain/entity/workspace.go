@@ -3,6 +3,7 @@ package entity
 import "strings"
 
 type Workspace struct {
+	Postman     SourceFields
 	ID          string
 	Name        string
 	Description string

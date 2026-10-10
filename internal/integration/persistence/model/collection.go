@@ -8,15 +8,18 @@ import (
 )
 
 type Collection struct {
-	Auth        Auth          `yaml:"auth"`
-	Kind        string        `yaml:"kind"`
-	Id          string        `yaml:"id"`
-	Name        string        `yaml:"name"`
-	Description string        `yaml:"description"`
-	Order       []string      `yaml:"order"`
-	Headers     []KeyValue    `yaml:"headers"`
-	Variables   []VariableRow `yaml:"variables"`
-	Xenon       int           `yaml:"xenon"`
+	Postman     map[string]any `yaml:"postman"`
+	Bruno       map[string]any `yaml:"bruno"`
+	Auth        Auth           `yaml:"auth"`
+	Scripts     Scripts        `yaml:"scripts"`
+	Kind        string         `yaml:"kind"`
+	Id          string         `yaml:"id"`
+	Name        string         `yaml:"name"`
+	Description string         `yaml:"description"`
+	Order       []string       `yaml:"order"`
+	Headers     []KeyValue     `yaml:"headers"`
+	Variables   []VariableRow  `yaml:"variables"`
+	Xenon       int            `yaml:"xenon"`
 }
 
 func NewCollection(collection entity.Collection) Collection {
@@ -30,6 +33,9 @@ func NewCollection(collection entity.Collection) Collection {
 		Auth:        NewAuth(collection.Auth),
 		Headers:     newKeyValues(collection.Headers),
 		Variables:   newVariableRows(collection.Variables),
+		Scripts:     NewScripts(collection.Scripts),
+		Postman:     collection.Postman,
+		Bruno:       collection.Bruno,
 	}
 }
 
@@ -43,6 +49,9 @@ func (c *Collection) ToEntity() entity.Collection {
 		Auth:        c.Auth.ToEntity(),
 		Headers:     keyValuesToEntity(c.Headers),
 		Variables:   variableRowsToEntity(c.Variables),
+		Scripts:     c.Scripts.ToEntity(),
+		Postman:     sourceFieldsToEntity(c.Postman),
+		Bruno:       sourceFieldsToEntity(c.Bruno),
 	}
 }
 
@@ -62,9 +71,10 @@ func (c *Collection) Fields() []yamlnode.Field {
 	if itemkind.Collection.Equals(c.Kind) {
 		fields = append(fields, variablesField(c.Variables))
 	}
-	fields = append(fields, yamlnode.Reserved("scripts", emptyScriptsNode()))
+	fields = append(fields, yamlnode.Reserved("scripts", c.Scripts.Node()))
 	if itemkind.Folder.Equals(c.Kind) {
 		fields = append(fields, yamlnode.Reserved("inheritScripts", inheritScriptsNode()))
 	}
-	return append(fields, yamlnode.Reserved("postman", yamlnode.EmptyMapping()))
+	fields = append(fields, sourceFieldsReserved(postmanKey, c.Postman))
+	return append(fields, optionalSourceFields(brunoKey, c.Bruno)...)
 }

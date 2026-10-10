@@ -50,7 +50,7 @@ func (b Body) ContentType() string {
 func (b Body) MapText(transform func(string) string) Body {
 	b.Raw = b.Raw.MapText(transform)
 	b.GraphQl = b.GraphQl.MapText(transform)
-	b.Binary = FileRef{Src: transform(b.Binary.Src)}
+	b.Binary = b.Binary.WithSrc(transform(b.Binary.Src))
 	rows := make([]FormDataRow, 0, len(b.FormData))
 	for _, row := range b.FormData {
 		rows = append(rows, row.MapText(transform))
@@ -96,10 +96,10 @@ func (b Body) IsMultipart() bool {
 }
 
 func (b Body) ResolveFiles(workspaceRoot string) Body {
-	b.Binary = FileRef{Src: b.Binary.Resolve(workspaceRoot)}
+	b.Binary = b.Binary.WithSrc(b.Binary.Resolve(workspaceRoot))
 	rows := make([]FormDataRow, 0, len(b.FormData))
 	for _, row := range b.FormData {
-		row.Src = FileRef{Src: row.Src.Resolve(workspaceRoot)}
+		row.Src = row.Src.WithSrc(row.Src.Resolve(workspaceRoot))
 		rows = append(rows, row)
 	}
 	b.FormData = rows

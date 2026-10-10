@@ -10,7 +10,10 @@ import (
 )
 
 type Collection struct {
+	Postman     SourceFields
+	Bruno       SourceFields
 	Auth        Auth
+	Scripts     Scripts
 	ID          string
 	Kind        enums.ItemKind
 	Name        string
@@ -63,6 +66,10 @@ func (c Collection) WithOrder(order []string) Collection {
 func (c Collection) WithVariables(rows []VariableRow) Collection {
 	c.Variables = append([]VariableRow{}, rows...)
 	return c
+}
+
+func (c Collection) HasOwnSettings() bool {
+	return !c.Auth.IsInherited() || len(c.Headers) > 0 || !c.Scripts.IsEmpty()
 }
 
 func (c Collection) OwnVariables() []VariableRow {
