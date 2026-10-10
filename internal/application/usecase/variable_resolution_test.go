@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"errors"
 	"reflect"
 	"strconv"
 	"testing"
@@ -8,6 +9,7 @@ import (
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/authtype"
 	"github.com/brienze1/xenon/internal/domain/enums/variablescope"
+	"github.com/brienze1/xenon/pkg/errs"
 )
 
 func rows(pairs ...string) []entity.VariableRow {
@@ -218,15 +220,17 @@ func TestCheckSendPreflightAsksTheConfirmingEnvironment(t *testing.T) {
 	if !preflight.NeedsConfirmation() || preflight.ConfirmEnvironment.ID != "01P" {
 		t.Fatalf("preflight = %+v", preflight)
 	}
-	details := DescribeSendConfirmation(preflight)
-	want := []string{"environment_id=01P", "name=prod", "color=red"}
-	if len(details) != len(want) {
-		t.Fatalf("details = %+v", details)
+	var conflict errs.BaseError
+	if err := RejectUnconfirmedSend(preflight); !errors.As(err, &conflict) || conflict.Code() != "SND-05409" {
+		t.Fatalf("rejection = %v", err)
 	}
-	for index, detail := range details {
-		if got := detail.Attribute + "=" + detail.Messages[0]; got != want[index] || len(detail.Messages) != 1 {
-			t.Errorf("detail %d = %+v, want %s", index, detail, want[index])
-		}
+	want := []errs.ErrorDetails{
+		{Attribute: "environment_id", Messages: []string{"01P"}},
+		{Attribute: "name", Messages: []string{"prod"}},
+		{Attribute: "color", Messages: []string{"red"}},
+	}
+	if got := conflict.ToDto("").Error.ErrorDetails; !reflect.DeepEqual(got, want) {
+		t.Errorf("details = %+v, want %+v", got, want)
 	}
 	if CheckSendPreflight(request, globalsContext(), nil).NeedsConfirmation() {
 		t.Error("no environment needs no confirmation")

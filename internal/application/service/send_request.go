@@ -6,7 +6,6 @@ import (
 	"github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
-	"github.com/brienze1/xenon/pkg/errs"
 	"github.com/brienze1/xenon/pkg/idutils"
 	"github.com/brienze1/xenon/pkg/logger"
 	"github.com/brienze1/xenon/pkg/timeutils"
@@ -63,10 +62,10 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 	inheriting := request.Inheriting(usecase.ResolveEffectiveRequest(request, scopes.ancestors, workspace.Path))
 	preflight := usecase.CheckSendPreflight(inheriting, scopes.context, scopes.environment)
 	if preflight.AwaitsConfirmation(acknowledgement) {
-		return nil, errs.ConflictError("the active environment asks for a confirmation before every send", "SND-05409", usecase.DescribeSendConfirmation(preflight)...)
+		return nil, usecase.RejectUnconfirmedSend(preflight)
 	}
 	if preflight.AwaitsSecretsAcknowledgement(acknowledgement) {
-		return nil, errs.ConflictError("the request uses secrets that have no value on this machine or are locked", "SND-06409", usecase.DescribeUnavailableSecrets(preflight)...)
+		return nil, usecase.RejectUnavailableSecrets(preflight)
 	}
 	secrets := scopes.context.SecretValues()
 	ctx = logger.WithRedactions(ctx, secrets...)

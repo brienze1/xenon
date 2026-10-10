@@ -3,11 +3,10 @@ package service
 import (
 	"context"
 
-	"github.com/brienze1/xenon/pkg/errs"
-
 	"github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/pkg/errs"
 	"github.com/brienze1/xenon/pkg/logger"
 )
 

@@ -13,7 +13,7 @@ func TestRegistryRoundTrip(t *testing.T) {
 	registry := entity.NewAppRegistry()
 	addedAt := time.Date(2026, 10, 9, 10, 30, 0, 123000000, time.FixedZone("BRT", -3*3600))
 	registry.Register(entity.NewRegisteredWorkspace("01L", "/work/acme", "Acme", addedAt))
-	model := NewRegistry(registry, Registry{Window: json.RawMessage(`{"width":1280}`), Vault: json.RawMessage(`{"mode":"keychain"}`)})
+	model := NewRegistry(registry, json.RawMessage(`{"width":1280}`), json.RawMessage(`{"mode":"keychain"}`))
 	data, err := json.Marshal(model)
 	if err != nil {
 		t.Fatal(err)

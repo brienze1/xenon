@@ -14,13 +14,13 @@ type Registry struct {
 	Version       int                   `json:"version"`
 }
 
-func NewRegistry(registry entity.AppRegistry, stored Registry) Registry {
+func NewRegistry(registry entity.AppRegistry, window, vault json.RawMessage) Registry {
 	model := Registry{
 		Version:       registry.Version,
 		ActiveLocalId: registry.ActiveLocalID,
 		Workspaces:    make([]RegisteredWorkspace, 0, len(registry.Workspaces)),
-		Window:        stored.Window,
-		Vault:         stored.Vault,
+		Window:        window,
+		Vault:         vault,
 	}
 	for _, workspace := range registry.Workspaces {
 		model.Workspaces = append(model.Workspaces, NewRegisteredWorkspace(workspace))

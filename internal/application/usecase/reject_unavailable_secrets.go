@@ -10,7 +10,7 @@ const (
 	lockedSecretsAttribute  = "locked_secrets"
 )
 
-func DescribeUnavailableSecrets(preflight entity.SendPreflight) []errs.ErrorDetails {
+func RejectUnavailableSecrets(preflight entity.SendPreflight) error {
 	details := make([]errs.ErrorDetails, 0, 2)
 	if preflight.HasMissingSecrets() {
 		details = append(details, errs.ErrorDetails{Attribute: missingSecretsAttribute, Messages: preflight.MissingSecrets})
@@ -18,5 +18,5 @@ func DescribeUnavailableSecrets(preflight entity.SendPreflight) []errs.ErrorDeta
 	if preflight.HasLockedSecrets() {
 		details = append(details, errs.ErrorDetails{Attribute: lockedSecretsAttribute, Messages: preflight.LockedSecrets})
 	}
-	return details
+	return errs.ConflictError("the request uses secrets that have no value on this machine or are locked", "SND-06409", details...)
 }
