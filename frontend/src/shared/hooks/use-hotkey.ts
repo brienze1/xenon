@@ -13,7 +13,19 @@ export function detectPlatform(platform: string = navigator.platform): HotkeyPla
   return /mac|iphone|ipad/i.test(platform) ? 'mac' : 'other'
 }
 
+const parsedCombos = new Map<string, ParsedCombo>()
+
 function parseCombo(combo: string): ParsedCombo {
+  const cached = parsedCombos.get(combo)
+  if (cached !== undefined) {
+    return cached
+  }
+  const parsed = readCombo(combo)
+  parsedCombos.set(combo, parsed)
+  return parsed
+}
+
+function readCombo(combo: string): ParsedCombo {
   const parts = combo.split('+').map((part) => part.trim().toLowerCase())
   return {
     key: parts[parts.length - 1] ?? '',

@@ -154,8 +154,11 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       }
       if (state.tabs.length === 0) {
         get().newTab()
-      } else if (get().activeTabId === null || !get().tabs.some((tab) => tab.id === get().activeTabId)) {
-        set({ activeTabId: state.tabs[0]!.tabId })
+      } else {
+        const activeTabId = get().activeTabId
+        if (activeTabId === null || !get().tabs.some((tab) => tab.id === activeTabId)) {
+          set({ activeTabId: state.tabs[0]!.tabId })
+        }
       }
     },
 
@@ -317,11 +320,12 @@ export const useTabsStore = create<TabsState>()((set, get) => {
 
     handleDeleted: (requestIds) => {
       const deleted = new Set(requestIds)
+      const drafts = builder().tabs
       for (const tab of get().tabs) {
         if (tab.requestId === null || !deleted.has(tab.requestId)) {
           continue
         }
-        if (isDirty(tab.id)) {
+        if (drafts[tab.id]?.dirty ?? false) {
           set((state) => ({ notices: { ...state.notices, [tab.id]: 'deleted' } }))
         } else {
           get().closeTab(tab.id)
@@ -338,11 +342,13 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         return
       }
       const reloads: Promise<unknown>[] = []
+      const drafts = builder().tabs
       for (const tab of get().tabs) {
-        if (tab.requestId !== event.requestId || builder().tabs[tab.id]?.baseRevision === event.revision) {
+        const draft = drafts[tab.id]
+        if (tab.requestId !== event.requestId || draft?.baseRevision === event.revision) {
           continue
         }
-        if (isDirty(tab.id)) {
+        if (draft?.dirty ?? false) {
           set((state) => ({ notices: { ...state.notices, [tab.id]: 'changed' } }))
         } else {
           reloads.push(builder().openSaved(tab.id, event.requestId))
