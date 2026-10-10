@@ -1,0 +1,51 @@
+{
+  "id": "rw-open-legal-legalnlp-api-1",
+  "covers": [
+    "real-world",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/Open-Legal/LegalNLP-API",
+    "path": "Legal-NLP-API.postman_collection.json",
+    "url": "https://github.com/Open-Legal/LegalNLP-API/blob/785d59f6267d0280163cf116b28147bcce8f4e0c/Legal-NLP-API.postman_collection.json",
+    "licence": "MIT",
+    "item": "Amount"
+  },
+  "phase": "test",
+  "script": "tests[\"Status code is 200\"] = responseCode.code === 200;\ntests[\"Content-Type is present\"] = postman.getResponseHeader(\"Content-Type\");\ntests[\"Client is authenticated\"] = postman.getResponseHeader(\"X-Authenticated-Client\") !== 'anonymous';\ntests[\"API-Version header set\"] = postman.getResponseHeader(\"X-API-Version\") === 'v2';\ntests[\"X-Requests-Available > 0\"] = postman.getResponseHeader(\"X-Requests-Available-Minute\") > 0;\ntests[\"X-RequestCounter-Reset > 0\"] = postman.getResponseHeader(\"X-RequestCounter-Reset\") > 0;",
+  "request": {
+    "url": "http://127.0.0.1/amount",
+    "method": "POST",
+    "header": [
+      {
+        "key": "X-Auth-Token",
+        "value": "redacted-value"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{ \"text\": \"Twenty-seven days until the one-hundred and one dogs arrive\"}"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

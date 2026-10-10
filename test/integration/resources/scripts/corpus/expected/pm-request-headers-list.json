@@ -1,0 +1,91 @@
+{
+  "id": "pm-request-headers-list",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "log",
+      "args": [
+        2,
+        true,
+        true,
+        "abc",
+        "abc",
+        2
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        "Content-Type",
+        1,
+        {
+          "content-type": "application/json",
+          "x-trace": "abc"
+        }
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        [
+          "Content-Type",
+          "X-Trace"
+        ],
+        [
+          "application/json",
+          "abc"
+        ],
+        1,
+        "X-Trace"
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        19
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": {
+    "method": "POST",
+    "url": "https://api.example.com/v1/users?page=2&limit=10",
+    "headers": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "X-Trace",
+        "value": "abc"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\"name\":\"Ada\",\"tags\":[\"a\",\"b\"]}"
+    }
+  },
+  "sentRequests": [],
+  "vault": {}
+}

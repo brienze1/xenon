@@ -1,0 +1,115 @@
+{
+  "id": "rw-rdelfin-idb-1",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Content-Type is present",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Successful request",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Has name",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "jsonData.forEach is not a function"
+    },
+    {
+      "name": "Area Served defined",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "jsonData.forEach is not a function"
+    },
+    {
+      "name": "Carriers defined",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "jsonData.forEach is not a function"
+    },
+    {
+      "name": "Found Date defined",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "jsonData.forEach is not a function"
+    },
+    {
+      "name": "Founders defined",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "jsonData.forEach is not a function"
+    },
+    {
+      "name": "Image defined",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "jsonData.forEach is not a function"
+    },
+    {
+      "name": "Industries defined",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "jsonData.forEach is not a function"
+    },
+    {
+      "name": "Location defined",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "jsonData.forEach is not a function"
+    },
+    {
+      "name": "OSs defined",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "jsonData.forEach is not a function"
+    },
+    {
+      "name": "Parent defined",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "jsonData.forEach is not a function"
+    },
+    {
+      "name": "Models defined",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "jsonData.forEach is not a function"
+    },
+    {
+      "name": "Type defined",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "jsonData.forEach is not a function"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

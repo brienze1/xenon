@@ -1,0 +1,38 @@
+{
+  "id": "rw-agi-inc-agent-protocol-4",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Response time is less than 500ms",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Content-Type is present",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Content-Type is application/json",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

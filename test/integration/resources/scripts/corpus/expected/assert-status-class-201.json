@@ -1,0 +1,157 @@
+{
+  "id": "assert-status-class-201",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "to.be.ok",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'OK' but got 'CREATED'"
+    },
+    {
+      "name": "to.be.error",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response code to be 4XX or 5XX but found 201"
+    },
+    {
+      "name": "to.be.info",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response code to be 1XX but found 201"
+    },
+    {
+      "name": "to.be.success",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "to.be.redirection",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response code to be 3XX but found 201"
+    },
+    {
+      "name": "to.be.clientError",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response code to be 4XX but found 201"
+    },
+    {
+      "name": "to.be.serverError",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response code to be 5XX but found 201"
+    },
+    {
+      "name": "to.be.accepted",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'ACCEPTED' but got 'CREATED'"
+    },
+    {
+      "name": "to.be.withoutContent",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'NO CONTENT' but got 'CREATED'"
+    },
+    {
+      "name": "to.be.badRequest",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'BAD REQUEST' but got 'CREATED'"
+    },
+    {
+      "name": "to.be.unauthorized",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'UNAUTHORIZED' but got 'CREATED'"
+    },
+    {
+      "name": "to.be.unauthorised",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'UNAUTHORISED' but got 'CREATED'"
+    },
+    {
+      "name": "to.be.forbidden",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'FORBIDDEN' but got 'CREATED'"
+    },
+    {
+      "name": "to.be.notFound",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'NOT FOUND' but got 'CREATED'"
+    },
+    {
+      "name": "to.be.notAcceptable",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'ACCEPTABLE' but got 'CREATED'"
+    },
+    {
+      "name": "to.be.rateLimited",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'TOO MANY REQUESTS' but got 'CREATED'"
+    },
+    {
+      "name": "to.not.be.ok",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "to.not.be.error",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

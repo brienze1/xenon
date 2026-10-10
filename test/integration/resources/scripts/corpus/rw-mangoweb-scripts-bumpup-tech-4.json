@@ -1,0 +1,42 @@
+{
+  "id": "rw-mangoweb-scripts-bumpup-tech-4",
+  "covers": [
+    "real-world",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/manGoweb/scripts.bumpup.tech",
+    "path": "postman/BumpUp!.postman_collection.json",
+    "url": "https://github.com/manGoweb/scripts.bumpup.tech/blob/c40f66ca8a1b07ed875176438750e6852a142cda/postman/BumpUp!.postman_collection.json",
+    "licence": "MIT",
+    "item": "Increment build number"
+  },
+  "phase": "test",
+  "script": "var jsonData = JSON.parse(responseBody);\n\n// Status code\ntests[\"Status code is 200\"] = responseCode.code === 200;\n\nvar currentBuild = postman.getEnvironmentVariable(\"BUILD\")\n\n// Token check\ntests[\"Build is bigger than 0\"] = (jsonData[\"build\"] > 0)\ntests[\"Build is bigger than {{BUILD}}\"] = (jsonData[\"build\"] > currentBuild)\n\npostman.setEnvironmentVariable(\"BUILD\", (jsonData[\"build\"] + 10));\n\n// Content type\ntests[\"Content-Type is present\"] = postman.getResponseHeader(\"Content-Type\");\ntests[\"Content-Type is correct\"] = (postman.getResponseHeader(\"Content-Type\") == \"application/json; charset=utf-8\");",
+  "request": {
+    "url": "{{SERVER}}increment?token={{TOKEN}}&bundle={{BUNDLE_ID}}&build={{BUILD}}&plain={{PLAIN}}",
+    "method": "GET",
+    "header": []
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

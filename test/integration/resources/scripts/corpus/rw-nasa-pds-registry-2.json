@@ -1,0 +1,56 @@
+{
+  "id": "rw-nasa-pds-registry-2",
+  "covers": [
+    "real-world",
+    "real-world schema"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/NASA-PDS/registry",
+    "path": "docker/postman/postman_collection.json",
+    "url": "https://github.com/NASA-PDS/registry/blob/da043b9a45bae57b91f9ddb71e2905f8a04391d6/docker/postman/postman_collection.json",
+    "licence": "Apache-2.0",
+    "item": "NASA-PDS/registry-api#277 /properties endpoint"
+  },
+  "phase": "test",
+  "script": "pm.test(\"C2488844 Status code is 200\", () => {\n  pm.response.to.have.status(200);\n});\n\npm.test(\"C2488844 Response takes less than 100ms\", () => {\n    pm.expect(pm.response.responseTime).to.be.below(1000); \n});\n\npm.test(\"C2488844 Response contains same number of properties\", () => {\n    const responseJson = pm.response.json();\n    pm.expect(responseJson.length).to.be.eql(172);\n});\n\npm.test(\"C2488844 Response property objects follow expected schema\", () => {\n    const responseJson = pm.response.json();\n    const expectedKeys = new Set([\"property\", \"type\"]);\n    for (const propertyObj of responseJson) {\n        const keys = new Set(Object.keys(propertyObj));\n        pm.expect(Array.from(keys).every(key => expectedKeys.has(key)) && Array.from(expectedKeys).every(key => keys.has(key))).true;\n    }\n});\n\n// Some additional tests may be warranted in future based on presence of particular keys, key formats, or types.",
+  "request": {
+    "url": "{{baseUrl}}/properties",
+    "method": "GET",
+    "header": [
+      {
+        "key": "Accept",
+        "value": "application/kvp+json"
+      }
+    ]
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [
+    {
+      "key": "baseUrl",
+      "value": "http://registry-api:8080"
+    },
+    {
+      "key": "opensearchUrl",
+      "value": "https://elasticsearch:9200"
+    }
+  ],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "rw-benrandall-idb-4",
+  "covers": [
+    "real-world"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/benrandall/idb",
+    "path": "Postman.json",
+    "url": "https://github.com/benrandall/idb/blob/9dc0846267d2060b64c92bf1eda2155488fab13a/Postman.json",
+    "licence": "MIT",
+    "item": "Skill get"
+  },
+  "phase": "test",
+  "script": "pm.test(\"Content-Type is present and correct\", function () {\n    pm.response.to.have.header(\"Content-Type\");\n    pm.response.to.be.json;\n});\n\n\npm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Contains items relationship with associated data\", function () {\n    pm.expect(pm.response.text()).to.include(\"examine_info\");\n});\n\npm.test(\"local data items exist\", function () {\n    pm.expect(pm.response.json().items.length).not.to.equal(0);\n});\n\npm.test(\"first skill name is correct\", function () {\n   pm.expect(pm.response.json().name).to.equal(\"Crafting\");\n});",
+  "request": {
+    "url": "http://localhost:5000/skills/1",
+    "method": "GET",
+    "header": []
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

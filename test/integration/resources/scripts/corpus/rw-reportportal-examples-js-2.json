@@ -1,0 +1,46 @@
+{
+  "id": "rw-reportportal-examples-js-2",
+  "covers": [
+    "real-world"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/reportportal/examples-js",
+    "path": "example-postman/collections/Example.postman_collection.json",
+    "url": "https://github.com/reportportal/examples-js/blob/8279cf905f58df280d695245aa1a86bfb0626402/example-postman/collections/Example.postman_collection.json",
+    "licence": "Apache-2.0",
+    "item": "Test Three"
+  },
+  "phase": "prerequest",
+  "script": "pm.environment.set(\"rp.attributes\", \"testThreeKey:testThreeValue;testThreeValue2\");\npm.environment.set(\"rp.testCaseId\", \"TestThreeTestCaseId\");\npm.environment.set(\"rp.status\", \"skipped\");\nconsole.log('test', 'Request two LOG');\nconsole.info('test', 'Request two INFO log');\nconsole.debug('test', 'Request two DEBUG log');\nconsole.error('test', 'Request two ERROR log');\nconsole.warn('test', 'Request two WARN log');",
+  "request": {
+    "url": "https://learning.postman.com/",
+    "method": "GET",
+    "header": []
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [
+    {
+      "key": "rp.attributes",
+      "value": "suiteKeyOne:suiteValueOne"
+    },
+    {
+      "key": "rp.testCaseId",
+      "value": "SuiteTestCaseId"
+    },
+    {
+      "key": "rp.launchStatus",
+      "value": "skipped"
+    },
+    {
+      "key": "rp.status",
+      "value": "skipped"
+    }
+  ],
+  "globals": [],
+  "variables": [],
+  "cookies": []
+}

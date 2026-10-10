@@ -1,0 +1,80 @@
+{
+  "id": "assert-body-and-json",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "json",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "withBody",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "have.body",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "body string",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response body to equal 'nope' but got '{\"id\":7,\"name\":\"Ada\",\"items\":[{\"id\":1…'"
+    },
+    {
+      "name": "body regexp",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "body object",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response body json to equal { id: 7 } but got { id: 7, name: 'Ada', …(3) }"
+    },
+    {
+      "name": "not withBody",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to not have content in body"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

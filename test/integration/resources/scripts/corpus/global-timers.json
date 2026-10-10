@@ -1,0 +1,95 @@
+{
+  "id": "global-timers",
+  "covers": [
+    "sandbox-api §3 timers"
+  ],
+  "source": {
+    "kind": "hand-written",
+    "licence": "Xenon project (same licence as this repository)"
+  },
+  "phase": "prerequest",
+  "script": "const order = [];\nsetTimeout(() => order.push('timeout'), 5);\nsetImmediate(() => order.push('immediate'));\nconst i = setInterval(() => { order.push('interval'); clearInterval(i); }, 1);\nconst c = setTimeout(() => order.push('cleared'), 1); clearTimeout(c);\nconst ci = setImmediate(() => order.push('cleared immediate')); clearImmediate(ci);\nawait new Promise((resolve) => setTimeout(resolve, 30));\nconsole.log(order.sort());",
+  "request": {
+    "url": "https://api.example.com/v1/users?page=2&limit=10",
+    "method": "POST",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "X-Trace",
+        "value": "abc"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\"name\":\"Ada\",\"tags\":[\"a\",\"b\"]}"
+    }
+  },
+  "environment": {
+    "name": "dev",
+    "values": [
+      {
+        "key": "base_url",
+        "value": "https://api.example.com"
+      },
+      {
+        "key": "user",
+        "value": "ada"
+      },
+      {
+        "key": "shared",
+        "value": "from-env"
+      }
+    ]
+  },
+  "collectionVariables": [
+    {
+      "key": "version",
+      "value": "v1"
+    },
+    {
+      "key": "shared",
+      "value": "from-collection"
+    },
+    {
+      "key": "coll_only",
+      "value": "c"
+    }
+  ],
+  "globals": [
+    {
+      "key": "tenant",
+      "value": "acme"
+    },
+    {
+      "key": "shared",
+      "value": "from-globals"
+    },
+    {
+      "key": "glob_only",
+      "value": "g"
+    }
+  ],
+  "variables": [
+    {
+      "key": "local_only",
+      "value": "l"
+    }
+  ],
+  "cookies": [
+    {
+      "name": "session",
+      "value": "s1",
+      "domain": "api.example.com",
+      "path": "/"
+    },
+    {
+      "name": "theme",
+      "value": "dark",
+      "domain": "api.example.com",
+      "path": "/"
+    }
+  ]
+}

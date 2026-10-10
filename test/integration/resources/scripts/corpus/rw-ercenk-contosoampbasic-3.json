@@ -1,0 +1,88 @@
+{
+  "id": "rw-ercenk-contosoampbasic-3",
+  "covers": [
+    "real-world",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/Ercenk/ContosoAMPBasic",
+    "path": "ContosoAMPBasic.postman_collection.json",
+    "url": "https://github.com/Ercenk/ContosoAMPBasic/blob/5cfa8bf5e0c21ba17db60cdbf538a87052cbdbeb/ContosoAMPBasic.postman_collection.json",
+    "licence": "MIT",
+    "item": "Partner: Resolve Token to Subscription"
+  },
+  "phase": "test",
+  "script": "var json = JSON.parse(responseBody);\nconsole.log(json);\npostman.setEnvironmentVariable(\"MarketplaceDFSaaSSubscriptionId\",json.id);\nvar resourceNameValue  = postman.getEnvironmentVariable(\"resourceName\");\ntests[\"Status code is 200\"] = responseCode.code === 200;\nvar jsonData = JSON.parse(responseBody);\ntests[\"Subscription is correct\"] = jsonData.subscriptionName === resourceNameValue;",
+  "request": {
+    "url": "{{baseAddressMarketplaceAPI}}/api/saas/subscriptions/resolve?api-version=2017-04-15",
+    "method": "POST",
+    "header": [
+      {
+        "key": "x-ms-requestid",
+        "value": "{{$guid}}"
+      },
+      {
+        "key": "x-ms-correlationid",
+        "value": "{{$guid}}"
+      },
+      {
+        "key": "Authorization",
+        "value": "redacted-value"
+      },
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "x-ms-marketplace-token",
+        "value": "redacted-value"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": ""
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [
+    {
+      "key": "clientId",
+      "value": "......"
+    },
+    {
+      "key": "clientSecret",
+      "value": "redacted-value"
+    },
+    {
+      "key": "tenantId",
+      "value": "......"
+    },
+    {
+      "key": "bearerToken",
+      "value": "redacted-value"
+    },
+    {
+      "key": "apiVersion",
+      "value": "2018-08-31"
+    }
+  ],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

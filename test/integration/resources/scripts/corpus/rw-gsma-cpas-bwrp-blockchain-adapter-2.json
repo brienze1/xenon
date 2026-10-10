@@ -1,0 +1,46 @@
+{
+  "id": "rw-gsma-cpas-bwrp-blockchain-adapter-2",
+  "covers": [
+    "real-world",
+    "real-world schema"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/GSMA-CPAS/BWRP-blockchain-adapter",
+    "path": "testing/postman/BlockchainAdapterPostman.json",
+    "url": "https://github.com/GSMA-CPAS/BWRP-blockchain-adapter/blob/05e46705372f27ef9a1aa13676cf4016afbf56f2/testing/postman/BlockchainAdapterPostman.json",
+    "licence": "Apache-2.0",
+    "item": "Create Private Doc"
+  },
+  "phase": "test",
+  "script": "pm.test(\"Body matches string\", function () {\n    pm.expect(pm.response.text()).to.include(\"documentID\");\n});\n\npm.test(\"Body matches string\", function () {\n    pm.expect(pm.response.text()).to.include(\"txID\");\n});\n\npm.test(\"documentID response check\", function () {\n    var jsonData = pm.response.json();\n    pm.expect(jsonData.documentID).to.lengthOf(64);\n});\npm.test(\"txID response check\", function () {\n    var jsonData = pm.response.json();\n    pm.expect(jsonData.txID).to.lengthOf(64);\n});\npm.test(\"Response time is less than 5s\", function () {\n    pm.expect(pm.response.responseTime).to.be.below(5000);\n});\npm.test(\"Successful POST request\", function () {\n    pm.expect(pm.response.code).to.be.oneOf([201, 202]);\n});\nvar schema = {\n    \"documetnID\": {\n        \"type\": \"string\"\n    },\n    \"txID\": {\n        \"type\": \"string\"\n    }\n};\n\npm.test('Response Structure is valid', function () {\n    pm.expect(tv4.validate(pm.response, schema)).to.be.true;\n});",
+  "request": {
+    "url": "http://{{ip}}:{{port}}/private-documents",
+    "method": "POST",
+    "header": [],
+    "body": {
+      "mode": "raw",
+      "raw": "{   \"toMSP\" : \"TMUS\",\n    \"data\" : \"{\\\"name\\\": \\\"Tilak Vardhan\\\",\\\"age\\\": 27,\\\"cars\\\": {\\\"car1\\\": \\\"Ford\\\",\\\"car2\\\": \\\"BMW\\\",\\\"car3\\\": \\\"Fiat\\\"}}\"}"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

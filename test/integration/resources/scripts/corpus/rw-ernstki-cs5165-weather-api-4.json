@@ -1,0 +1,42 @@
+{
+  "id": "rw-ernstki-cs5165-weather-api-4",
+  "covers": [
+    "real-world",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/ernstki/cs5165-weather-api",
+    "path": "postman_collection_v1.json",
+    "url": "https://github.com/ernstki/cs5165-weather-api/blob/5ba25fbb68516e443b70a60e8e131300cc793071/postman_collection_v1.json",
+    "licence": "MIT",
+    "item": "add temperature data (GET)"
+  },
+  "phase": "test",
+  "script": "tests[\"Status code is 201\"] = responseCode.code === 201;\n\ntests[\"Content-Type is present\"] = postman.getResponseHeader(\"Content-Type\");\ntests[\"Content-Type is 'application/json'\"] =\n  postman.getResponseHeader(\"Content-Type\") === 'application/json';\n\nvar jsonData = JSON.parse(responseBody);\ntests[\"What's returned is an object\"] = typeof(jsonData) === 'object'\n\n//['DATE', 'TMAX', 'TMIN'].forEach(function(prop) {\ntests[\"Check 'DATE' property\"] = jsonData.hasOwnProperty('DATE');",
+  "request": {
+    "url": "{{host}}/historical?DATE=20170304&TMAX=49&TMIN=30",
+    "method": "GET",
+    "header": []
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

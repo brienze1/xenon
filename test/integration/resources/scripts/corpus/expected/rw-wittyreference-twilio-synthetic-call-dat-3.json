@@ -1,0 +1,45 @@
+{
+  "id": "rw-wittyreference-twilio-synthetic-call-dat-3",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Status code is 201 Created",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status code 201 but got 200"
+    },
+    {
+      "name": "Response has success flag and conference ID",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected { id: 1, name: 'example', …(7) } to have property 'conferenceId'"
+    },
+    {
+      "name": "Response includes customer and agent participants",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected { id: 1, name: 'example', …(7) } to have property 'customer'"
+    },
+    {
+      "name": "Timer metadata is provided",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected { id: 1, name: 'example', …(7) } to have property 'timer'"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

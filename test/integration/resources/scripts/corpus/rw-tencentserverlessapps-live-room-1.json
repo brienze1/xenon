@@ -1,0 +1,79 @@
+{
+  "id": "rw-tencentserverlessapps-live-room-1",
+  "covers": [
+    "real-world",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/TencentServerlessApps/live-room",
+    "path": "postman/LiveRoom.postman_collection.json",
+    "url": "https://github.com/TencentServerlessApps/live-room/blob/b5eaec2e59a54683b8049886b38cffe705c8296d/postman/LiveRoom.postman_collection.json",
+    "licence": "MIT",
+    "item": "auth_users/user_query"
+  },
+  "phase": "test",
+  "script": "const res = pm.response.json();\n\npm.test(\"check error\", function () {\n    pm.expect(res.errorCode).to.eql(0);\n});\n\npm.test(\"check fields\", function () {\n    pm.expect(res).to.have.property('data');\n    pm.expect(res.data).to.has.property('avatar');\n    pm.expect(res.data.name).to.eql('Guest');\n});\n\npm.test(\"check fields tags\", function () {\n    pm.expect(res.data.tag).to.eql('im');\n    pm.expect(res.data.tag2).to.eql('mlvb');\n});\n\n// @see https://learning.postman.com/docs/writing-scripts/script-references/test-examples/#asserting-object-properties\npm.test(\"check apaas apis\", function () {\n    pm.expect(res.data).to.have.property('apaasUserId');\n});",
+  "request": {
+    "url": "{{service}}/redacted-value?userId={{userId}}&token={{token}}",
+    "method": "POST",
+    "header": []
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [
+    {
+      "key": "localService",
+      "value": "http://localhost:9000/local"
+    },
+    {
+      "key": "service",
+      "value": ""
+    },
+    {
+      "key": "username",
+      "value": ""
+    },
+    {
+      "key": "password",
+      "value": "redacted-value"
+    },
+    {
+      "key": "salt",
+      "value": ""
+    },
+    {
+      "key": "token",
+      "value": "redacted-value"
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "sdkAppId",
+      "value": ""
+    },
+    {
+      "key": "roomId",
+      "value": ""
+    }
+  ],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "id": "assert-json-body",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "jsonBody",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "jsonBody object",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "jsonBody path",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "jsonBody path value",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "jsonBody path wrong value",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response body json at \"name\" to contain 'Bob' but got 'Ada'"
+    },
+    {
+      "name": "jsonBody missing path",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected { id: 7, name: 'Ada', …(3) } in response to contain property 'missing.path'"
+    },
+    {
+      "name": "not jsonBody path",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected { id: 7, name: 'Ada', …(3) } in response to not contain property 'name'"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

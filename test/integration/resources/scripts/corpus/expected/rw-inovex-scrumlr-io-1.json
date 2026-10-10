@@ -1,0 +1,71 @@
+{
+  "id": "rw-inovex-scrumlr-io-1",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "PreRequestScript – Successful POST request (createBoardTemplate)",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected 200 to equal 201"
+    },
+    {
+      "name": "PreRequestScript – Check id",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "base_url": "http://localhost:8080",
+      "bearer_token": "redacted-value",
+      "board_id": "{board}",
+      "column_id": "{column}",
+      "owner_id": "{user}",
+      "voting_id": "{voting}",
+      "user_id": "{user}",
+      "note_id": "{note}",
+      "reaction_id": "{reaction}",
+      "board_name": "{board_name}",
+      "board_to_delete_id": "{board_to_delete_id}",
+      "timer_end": "{timer_end}",
+      "column_to_delete_id": "{column_to_delete_id}",
+      "note_to_delete_id": "{note_to_delete_id}",
+      "board_template_id": 1,
+      "column_template_id": "{column_template_id}"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": {
+    "method": "POST",
+    "url": "{{base_url}}/templates/{{board_template_id}}/columns",
+    "headers": [],
+    "body": {
+      "mode": "raw",
+      "raw": "{\n    \"name\": \"A created column\",\n    \"description\": \"A created column description\",\n    \"color\": \"backlog-blue\",\n    \"visible\": false\n}"
+    }
+  },
+  "sentRequests": [
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/templates",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json; charset=utf-8"
+        }
+      ],
+      "body": {
+        "mode": "raw",
+        "raw": "{\"name\":\"My new board template\",\"description\":\"This is a new test description for a board template\",\"accessPolicy\":\"PUBLIC\",\"favourite\":true,\"columnTemplates\":[{\"name\":\"Lean coffee\",\"description\":\"A template column description\",\"visible\":true,\"color\":\"backlog-blue\"},{\"name\":\"Actions\",\"description\":\"A template column description\",\"visible\":false,\"color\":\"planning-pink\"}]}"
+      }
+    }
+  ],
+  "vault": {}
+}

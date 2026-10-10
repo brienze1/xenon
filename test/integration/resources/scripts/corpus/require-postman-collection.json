@@ -1,0 +1,95 @@
+{
+  "id": "require-postman-collection",
+  "covers": [
+    "sandbox-api §4 postman-collection"
+  ],
+  "source": {
+    "kind": "hand-written",
+    "licence": "Xenon project (same licence as this repository)"
+  },
+  "phase": "prerequest",
+  "script": "const sdk = require('postman-collection'); const url = new sdk.Url('https://x.example/a?b=1'); console.log(url.getHost(), url.query.get('b')); const h = new sdk.Header({key: 'A', value: '1'}); console.log(h.toString()); const list = new sdk.PropertyList(sdk.Header, null, [{key: 'X', value: 'y'}]); console.log(list.get('X')); const scope = new sdk.VariableScope({values: [{key: 'v', value: 1}]}); console.log(scope.get('v'), new sdk.Variable({key: 'k', value: 'v'}).toString()); const req = new sdk.Request({url: 'https://x.example', method: 'POST'}); console.log(req.method); const res = new sdk.Response({code: 200, body: '{}'}); console.log(res.code);",
+  "request": {
+    "url": "https://api.example.com/v1/users?page=2&limit=10",
+    "method": "POST",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "X-Trace",
+        "value": "abc"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\"name\":\"Ada\",\"tags\":[\"a\",\"b\"]}"
+    }
+  },
+  "environment": {
+    "name": "dev",
+    "values": [
+      {
+        "key": "base_url",
+        "value": "https://api.example.com"
+      },
+      {
+        "key": "user",
+        "value": "ada"
+      },
+      {
+        "key": "shared",
+        "value": "from-env"
+      }
+    ]
+  },
+  "collectionVariables": [
+    {
+      "key": "version",
+      "value": "v1"
+    },
+    {
+      "key": "shared",
+      "value": "from-collection"
+    },
+    {
+      "key": "coll_only",
+      "value": "c"
+    }
+  ],
+  "globals": [
+    {
+      "key": "tenant",
+      "value": "acme"
+    },
+    {
+      "key": "shared",
+      "value": "from-globals"
+    },
+    {
+      "key": "glob_only",
+      "value": "g"
+    }
+  ],
+  "variables": [
+    {
+      "key": "local_only",
+      "value": "l"
+    }
+  ],
+  "cookies": [
+    {
+      "name": "session",
+      "value": "s1",
+      "domain": "api.example.com",
+      "path": "/"
+    },
+    {
+      "name": "theme",
+      "value": "dark",
+      "domain": "api.example.com",
+      "path": "/"
+    }
+  ]
+}

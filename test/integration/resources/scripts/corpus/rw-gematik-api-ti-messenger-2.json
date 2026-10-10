@@ -1,0 +1,46 @@
+{
+  "id": "rw-gematik-api-ti-messenger-2",
+  "covers": [
+    "real-world",
+    "real-world oauth-token-chain"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/gematik/api-ti-messenger",
+    "path": "samples/postman/VZD-FHIR-Directory/FHIRDirectorySearchAPI.json",
+    "url": "https://github.com/gematik/api-ti-messenger/blob/dcd2d280eba14e5094cb231b19c854499cfc9c1a/samples/postman/VZD-FHIR-Directory/FHIRDirectorySearchAPI.json",
+    "licence": "Apache-2.0",
+    "item": "matrixServerLogin"
+  },
+  "phase": "test",
+  "script": "pm.test(\"succeeds\", () => {\n    pm.response.to.have.status(200);\n});\n\nconst json = pm.response.json();\nconst accessToken = json.access_token;\n\npm.test(\"has access token\", () => {\n    pm.expect(accessToken).to.not.be.oneOf([undefined, null]);\n});\n\npm.globals.set(\"accessToken\", accessToken);",
+  "request": {
+    "url": "{{matrix_server}}/_matrix/client/v3/login",
+    "method": "POST",
+    "header": [],
+    "body": {
+      "mode": "raw",
+      "raw": "{\r\n    \"identifier\" : {\r\n        \"type\":\"m.id.user\",\r\n        \"user\": \"{{matrix_user}}\"\r\n    },\r\n    \"password\": \"{{matrix_passwd}}\",\r\n    \"type\": \"m.login.password\"\r\n}"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

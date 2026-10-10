@@ -1,0 +1,45 @@
+{
+  "id": "rw-vcamaral-newman-smoke-testing-1",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Status code is 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Response time is less than 1s",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "User identifier is 1",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "User has an address",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected { id: 1, name: 'example', …(7) } in response to contain property 'address'"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

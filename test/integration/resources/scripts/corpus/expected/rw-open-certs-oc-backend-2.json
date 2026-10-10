@@ -1,0 +1,24 @@
+{
+  "id": "rw-open-certs-oc-backend-2",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Gitlab-Redirected",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "Cannot read properties of undefined (reading 'toLowerCase')"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

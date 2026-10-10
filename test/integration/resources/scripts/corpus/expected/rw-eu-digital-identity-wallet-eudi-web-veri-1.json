@@ -1,0 +1,34 @@
+{
+  "id": "rw-eu-digital-identity-wallet-eudi-web-veri-1",
+  "error": {
+    "name": "TypeError",
+    "message": "Cannot read properties of undefined (reading 'length')"
+  },
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "log",
+      "args": [
+        "response"
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"CryptoJS\" is deprecated. Use global \"crypto\" object instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "request_uri": "s"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

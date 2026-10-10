@@ -1,0 +1,99 @@
+{
+  "id": "rw-acronis-cyberapp-sample-components-2",
+  "covers": [
+    "real-world",
+    "real-world schema"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/acronis/cyberapp-sample-components",
+    "path": "postman_collection.json",
+    "url": "https://github.com/acronis/cyberapp-sample-components/blob/cd28cf6410b2fef8de68370c61cdc088982ce976/postman_collection.json",
+    "licence": "MIT",
+    "item": "Enablement Read"
+  },
+  "phase": "test",
+  "script": "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200)\n})\n\npm.test(\"Response has correct callback response type\", function () {\n    pm.expect(pm.response.json()).to.have.property('type', 'cti.a.p.acgw.response.v1.0~a.p.enablement.read.ok.v1.0')\n})\n\npm.test(\"Response matches against the callback schema\", function () {\n    const responseSchema = {\n        \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n        \"$ref\": \"#/definitions/EnablementRead.OK\",\n        \"definitions\": {\n            \"EnablementRead.OK\": {\n                \"type\": \"object\",\n                \"properties\": {\n                    \"payload\": {\n                        \"type\": \"object\",\n                        \"additionalProperties\": false,\n                        \"properties\": {\n                            \"vendor_tenant_id\": {\n                                \"description\": \"Vendor's tenant id associated with authorization info\",\n                                \"type\": \"string\"\n                            },\n                            \"acronis_tenant_id\": {\n                                \"type\": \"string\",\n                                \"pattern\": \"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$\",\n                                \"description\": \"Acronis tenant id used for application enablement\"\n                            }\n                        },\n                        \"required\": [\n                            \"vendor_tenant_id\"\n                        ]\n                    }\n                },\n                \"required\": [\n                    \"payload\"\n                ]\n            }\n        }\n    }\n\n    pm.expect(pm.response.json()).to.have.jsonSchema(responseSchema)\n})",
+  "request": {
+    "url": "{{BaseUrl}}",
+    "method": "POST",
+    "header": [],
+    "body": {
+      "mode": "raw",
+      "raw": "{\r\n    \"type\": \"cti.a.p.acgw.request.v1.0~a.p.empty.v1.0\",\r\n    \"request_id\": \"{{$guid}}\",\r\n    \"created_at\": \"{{$isoTimestamp}}\",\r\n    \"context\": {\r\n        \"callback_id\": \"cti.a.p.acgw.callback.v1.0~a.p.enablement.read.v1.0\",\r\n        \"endpoint_id\": \"cti.a.p.acgw.endpoint.v1.0~{{AppCode}}.endpoint.v1.0\",\r\n        \"tenant_id\": \"{{TenantId}}\",\r\n        \"datacenter_url\": \"{{CloudUrl}}\"\r\n    }\r\n}"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [
+    {
+      "key": "CyberAppAuth",
+      "value": "redacted-value"
+    },
+    {
+      "key": "CyberAppExtra",
+      "value": "{}"
+    },
+    {
+      "key": "EncryptedCyberAppAuth",
+      "value": "redacted-value"
+    },
+    {
+      "key": "EncryptedCyberAppExtra",
+      "value": ""
+    },
+    {
+      "key": "AppCode",
+      "value": "vendor.app"
+    },
+    {
+      "key": "BaseUrl",
+      "value": "http://127.0.0.1:8080"
+    },
+    {
+      "key": "TenantId",
+      "value": "00000000-0000-0000-0000-000000000000"
+    },
+    {
+      "key": "CloudUrl",
+      "value": "https://eu8-cloud.acronis.com"
+    }
+  ],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Server",
+        "value": "nginx/1.24.0"
+      },
+      {
+        "key": "Date",
+        "value": "Fri, 15 Dec 2023 16:19:10 GMT"
+      },
+      {
+        "key": "Content-Type",
+        "value": "application/json; charset=utf-8"
+      },
+      {
+        "key": "Content-Length",
+        "value": "309"
+      },
+      {
+        "key": "Connection",
+        "value": "keep-alive"
+      },
+      {
+        "key": "Strict-Transport-Security",
+        "value": "max-age=63072000"
+      }
+    ],
+    "body": "{\n    \"type\": \"cti.a.p.acgw.response.v1.0~a.p.enablement.read.ok.v1.0\",\n    \"request_id\": \"redacted-value\",\n    \"response_id\": \"redacted-value\",\n    \"payload\": {\n        \"vendor_tenant_id\": \"redacted-value\"\n    }\n}",
+    "responseTime": 120
+  }
+}

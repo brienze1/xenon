@@ -1,0 +1,65 @@
+{
+  "id": "rw-simoneemedas-junit2ado-1",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "response is ok",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "response body has json with request body",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response body json at \"data\" to contain 'This is expected to be sent back as p…' but got [ { id: 1, value: 'a' }, …(1) ]"
+    },
+    {
+      "name": "testing method",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [
+    {
+      "level": "log",
+      "args": [
+        "rahul",
+        {
+          "access_token": "test-access-token",
+          "token": "test-token",
+          "token_type": "Bearer",
+          "expires_in": 3600,
+          "id": 1,
+          "data": {
+            "id": 1
+          }
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [
+    {
+      "method": "POST",
+      "url": "https://postman-echo.com/post?members&reference&Type&_postman_listIndexKey=key&_postman_listAllowsMultipleValues",
+      "headers": [],
+      "body": {
+        "mode": "raw",
+        "raw": "{\"test\":\"value\"}"
+      }
+    }
+  ],
+  "vault": {}
+}

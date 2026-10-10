@@ -1,0 +1,137 @@
+{
+  "id": "rw-lasersrl-newman-orchard-parallel-tests-1",
+  "covers": [
+    "real-world",
+    "real-world xml-html",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/LaserSrl/Newman-Orchard-Parallel-Tests-",
+    "path": "NewmanTests.postman_collection.json",
+    "url": "https://github.com/LaserSrl/Newman-Orchard-Parallel-Tests-/blob/912b9e477db1223652d247fd3305e0d0e8aff3cd/NewmanTests.postman_collection.json",
+    "licence": "Apache-2.0",
+    "item": "POST create page"
+  },
+  "phase": "test",
+  "script": "tests[\"Status code is 200\"] = responseCode.code === 200;\nif (responseCode.code!== 200) {\n    console.log(responseCode.code);\n}\n\n//tests[\"has been created\"]\n//console.log(responseBody);\nvar $ = cheerio.load(responseBody);\nvar messageDiv = $(\"#main > #messages > div > div.message-Information\");\nvar message = messageDiv.text();\n//console.log(messageDiv.text());\nvar testResult = message.indexOf(\"has been created.\") != -1;\ntests[\"Creation OK\"] = testResult;\ntestResult = testResult & responseCode.code === 200;\nif (!testResult) {\n    console.log(responseBody);\n} else {\n    //postman.setGlobalVariable(\"pageTitle\", postman.getGlobalVariable(\"pageTitle\") + \"a\");\n}\n\nif (responseCode.code === 500) {\n    //Internal server error, likely db related\n    \n}",
+  "request": {
+    "url": "{{baseURL}}/Admin/Contents/Create/Page",
+    "method": "POST",
+    "header": [
+      {
+        "key": "cookie",
+        "value": "redacted-value"
+      }
+    ],
+    "body": {
+      "mode": "formdata",
+      "formdata": [
+        {
+          "key": "Title.Title",
+          "value": "{{pageTitle}}"
+        },
+        {
+          "key": "AutoroutePart.CurrentUrl",
+          "value": ""
+        },
+        {
+          "key": "AutoroutePart.PromoteToHomePage",
+          "value": "false"
+        },
+        {
+          "key": "Tags.Tags",
+          "value": "BTAG"
+        },
+        {
+          "key": "MenuPart.OnMenu",
+          "value": "false"
+        },
+        {
+          "key": "MenuPart.CurrentMenuId",
+          "value": "8"
+        },
+        {
+          "key": "MenuPart.MenuText",
+          "value": ""
+        },
+        {
+          "key": "Editor.Date",
+          "value": ""
+        },
+        {
+          "key": "Editor.Time",
+          "value": ""
+        },
+        {
+          "key": "CommonPart.ContainerId",
+          "value": ""
+        },
+        {
+          "key": "OwnerEditor.Owner",
+          "value": "admin"
+        },
+        {
+          "key": "submit.Publish",
+          "value": "submit.Publish"
+        },
+        {
+          "key": "PublishLater.Editor.ShowDate",
+          "value": "True"
+        },
+        {
+          "key": "PublishLater.Editor.ShowTime",
+          "value": "True"
+        },
+        {
+          "key": "PublishLater.Editor.Date",
+          "value": ""
+        },
+        {
+          "key": "PublishLater.Editor.Time",
+          "value": ""
+        },
+        {
+          "key": "__RequestVerificationToken",
+          "value": "redacted-value"
+        },
+        {
+          "key": "LayoutPart.LayoutEditor.SessionKey",
+          "value": "redacted-value"
+        },
+        {
+          "key": "LayoutPart.LayoutEditor.Data",
+          "value": "{\n\t\"type\": \"Canvas\",\n\t\"data\": \"\",\n\t\"htmlId\": \"\",\n\t\"htmlClass\": \"\",\n\t\"htmlStyle\": \"\",\n\t\"isTemplated\": false,\n\t\"rule\": \"\",\n\t\"children\": [\n\t\t{\n\t\t\t\"type\": \"Grid\",\n\t\t\t\"data\": \"\",\n\t\t\t\"htmlId\": \"\",\n\t\t\t\"htmlClass\": \"\",\n\t\t\t\"htmlStyle\": \"\",\n\t\t\t\"isTemplated\": false,\n\t\t\t\"rule\": \"\",\n\t\t\t\"children\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"Row\",\n\t\t\t\t\t\"data\": \"\",\n\t\t\t\t\t\"htmlId\": \"\",\n\t\t\t\t\t\"htmlClass\": \"\",\n\t\t\t\t\t\"htmlStyle\": \"\",\n\t\t\t\t\t\"isTemplated\": false,\n\t\t\t\t\t\"rule\": \"\",\n\t\t\t\t\t\"children\": [\n\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\"type\": \"Column\",\n\t\t\t\t\t\t\t\"data\": \"\",\n\t\t\t\t\t\t\t\"htmlId\": \"\",\n\t\t\t\t\t\t\t\"htmlClass\": \"\",\n\t\t\t\t\t\t\t\"htmlStyle\": \"\",\n\t\t\t\t\t\t\t\"isTemplated\": false,\n\t\t\t\t\t\t\t\"rule\": \"\",\n\t\t\t\t\t\t\t\"width\": 12,\n\t\t\t\t\t\t\t\"offset\": 0,\n\t\t\t\t\t\t\t\"collapsible\": \"\",\n\t\t\t\t\t\t\t\"children\": []\n\t\t\t\t\t\t}\n\t\t\t\t\t]\n\t\t\t\t}\n\t\t\t]\n\t\t}\n\t]\n}\n"
+        },
+        {
+          "key": "LayoutPart.LayoutEditor.RecycleBin",
+          "value": "{\n\t\"type\": \"RecycleBin\",\n\t\"children\": []\n}\n"
+        },
+        {
+          "key": "Localization.SelectedCulture",
+          "value": "aa-DJ"
+        }
+      ]
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "id": "rw-simoneemedas-junit2ado-1",
+  "covers": [
+    "real-world",
+    "real-world oauth-token-chain"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/simoneemedas/JUnit2ADO",
+    "path": "collection.json",
+    "url": "https://github.com/simoneemedas/JUnit2ADO/blob/a824d9edbe818e8d36212d4117d4dd972dea952a/collection.json",
+    "licence": "Apache-2.0",
+    "item": "POST Raw Text"
+  },
+  "phase": "test",
+  "script": "pm.test(\"response is ok\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"response body has json with request body\", function () {\n    pm.response.to.have.jsonBody('data', \n        'This is expected to be sent back as part of response body.');\n});\n\npm.test(\"testing method\", function () {\n    const requestBody = {\n    \"test\": \"value\"\n    };\n\n    pm.sendRequest({\n        url: pm.request.url,\n        method: pm.request.method,\n        headers: pm.request.headers,\n        body: {\n            mode: 'raw',\n            raw: JSON.stringify(requestBody)\n        }\n    }, function (err, res) {\n        console.log('rahul', res.json());\n    })\n})",
+  "request": {
+    "url": "https://postman-echo.com/post",
+    "method": "POST",
+    "header": [],
+    "body": {
+      "mode": "raw",
+      "raw": "{\n    \"test\": \"value\"\n}"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  },
+  "sendRequest": [
+    {
+      "code": 200,
+      "status": "OK",
+      "header": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": "{\"access_token\":\"test-access-token\",\"token\":\"test-token\",\"token_type\":\"Bearer\",\"expires_in\":3600,\"id\":1,\"data\":{\"id\":1}}",
+      "responseTime": 80
+    },
+    {
+      "code": 200,
+      "status": "OK",
+      "header": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": "{\"access_token\":\"test-access-token\",\"token\":\"test-token\",\"token_type\":\"Bearer\",\"expires_in\":3600,\"id\":1,\"data\":{\"id\":1}}",
+      "responseTime": 80
+    },
+    {
+      "code": 200,
+      "status": "OK",
+      "header": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": "{\"access_token\":\"test-access-token\",\"token\":\"test-token\",\"token_type\":\"Bearer\",\"expires_in\":3600,\"id\":1,\"data\":{\"id\":1}}",
+      "responseTime": 80
+    }
+  ]
+}

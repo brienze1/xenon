@@ -1,0 +1,133 @@
+{
+  "id": "rw-inovex-scrumlr-io-3",
+  "covers": [
+    "real-world",
+    "real-world oauth-token-chain"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/inovex/scrumlr.io",
+    "path": "server/api.postman_collection.json",
+    "url": "https://github.com/inovex/scrumlr.io/blob/6bae213129563eea946ec58e7a38d068dc53e0c3/server/api.postman_collection.json",
+    "licence": "MIT",
+    "item": "Delete board"
+  },
+  "phase": "prerequest",
+  "script": "let body = {\n    \"name\": \"Board to delete\",\n    \"accessPolicy\": \"PUBLIC\",\n    \"columns\": [\n        {\n            \"name\": \"Lean coffee\",\n            \"visible\": true,\n            \"color\": \"backlog-blue\"\n        },\n        {\n            \"name\": \"Actions\",\n            \"visible\": false,\n            \"color\": \"planning-pink\"\n        }\n    ]\n}\nbody = JSON.stringify(body)\n\npm.sendRequest({\n    url: pm.variables.get(\"base_url\") + \"/boards\",\n    method: 'POST',\n    header: {\n        \"Content-Type\": \"application/json; charset=utf-8\",\n        \"Authorization\": pm.collectionVariables.get(\"jwt\"),\n    },\n    body: body,\n\n}, function (err, response) {\n    pm.test(\"PreRequestScript – Successful POST request (createBoard)\", () => {\n        pm.expect(response.code).to.be.equal(201);\n    });\n    \n    const res = response.json();\n    pm.test(\"PreRequestScript – Check id is included\", () => {\n        const id = res.id;\n        pm.expect(id).to.exist;\n        pm.collectionVariables.set(\"board_to_delete_id\", res.id); \n    })\n\n    pm.test(\"PreRequestScript – Check name is included\", () => {\n        const boardName = res.name;\n        pm.expect(boardName).to.exist;\n    })\n});",
+  "request": {
+    "url": "{{base_url}}/boards/{{board_to_delete_id}}",
+    "method": "DELETE",
+    "header": []
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "bearer_token",
+      "value": "redacted-value"
+    },
+    {
+      "key": "board_id",
+      "value": "{board}"
+    },
+    {
+      "key": "column_id",
+      "value": "{column}"
+    },
+    {
+      "key": "owner_id",
+      "value": "{user}"
+    },
+    {
+      "key": "voting_id",
+      "value": "{voting}"
+    },
+    {
+      "key": "user_id",
+      "value": "{user}"
+    },
+    {
+      "key": "note_id",
+      "value": "{note}"
+    },
+    {
+      "key": "reaction_id",
+      "value": "{reaction}"
+    },
+    {
+      "key": "board_name",
+      "value": "{board_name}"
+    },
+    {
+      "key": "board_to_delete_id",
+      "value": "{board_to_delete_id}"
+    },
+    {
+      "key": "timer_end",
+      "value": "{timer_end}"
+    },
+    {
+      "key": "column_to_delete_id",
+      "value": "{column_to_delete_id}"
+    },
+    {
+      "key": "note_to_delete_id",
+      "value": "{note_to_delete_id}"
+    },
+    {
+      "key": "board_template_id",
+      "value": "{board_template_id}"
+    },
+    {
+      "key": "column_template_id",
+      "value": "{column_template_id}"
+    }
+  ],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "sendRequest": [
+    {
+      "code": 200,
+      "status": "OK",
+      "header": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": "{\"access_token\":\"test-access-token\",\"token\":\"test-token\",\"token_type\":\"Bearer\",\"expires_in\":3600,\"id\":1,\"data\":{\"id\":1}}",
+      "responseTime": 80
+    },
+    {
+      "code": 200,
+      "status": "OK",
+      "header": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": "{\"access_token\":\"test-access-token\",\"token\":\"test-token\",\"token_type\":\"Bearer\",\"expires_in\":3600,\"id\":1,\"data\":{\"id\":1}}",
+      "responseTime": 80
+    },
+    {
+      "code": 200,
+      "status": "OK",
+      "header": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": "{\"access_token\":\"test-access-token\",\"token\":\"test-token\",\"token_type\":\"Bearer\",\"expires_in\":3600,\"id\":1,\"data\":{\"id\":1}}",
+      "responseTime": 80
+    }
+  ]
+}

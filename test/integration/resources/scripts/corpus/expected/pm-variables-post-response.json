@@ -1,0 +1,49 @@
+{
+  "id": "pm-variables-post-response",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "log",
+      "args": [
+        "l",
+        {
+          "tenant": "acme",
+          "shared": "from-env",
+          "glob_only": "g",
+          "version": "v1",
+          "coll_only": "c",
+          "base_url": "https://api.example.com",
+          "user": "ada",
+          "local_only": "l",
+          "from_test": "x"
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l",
+      "from_test": "x"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

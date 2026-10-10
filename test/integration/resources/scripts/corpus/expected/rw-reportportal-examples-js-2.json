@@ -1,0 +1,66 @@
+{
+  "id": "rw-reportportal-examples-js-2",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "log",
+      "args": [
+        "test",
+        "Request two LOG"
+      ]
+    },
+    {
+      "level": "info",
+      "args": [
+        "test",
+        "Request two INFO log"
+      ]
+    },
+    {
+      "level": "debug",
+      "args": [
+        "test",
+        "Request two DEBUG log"
+      ]
+    },
+    {
+      "level": "error",
+      "args": [
+        "test",
+        "Request two ERROR log"
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "test",
+        "Request two WARN log"
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "rp.attributes": "testThreeKey:testThreeValue;testThreeValue2",
+      "rp.testCaseId": "TestThreeTestCaseId",
+      "rp.status": "skipped"
+    },
+    "collectionVariables": {
+      "rp.attributes": "suiteKeyOne:suiteValueOne",
+      "rp.testCaseId": "SuiteTestCaseId",
+      "rp.launchStatus": "skipped",
+      "rp.status": "skipped"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": {
+    "method": "GET",
+    "url": "https://learning.postman.com/",
+    "headers": [],
+    "body": null
+  },
+  "sentRequests": [],
+  "vault": {}
+}

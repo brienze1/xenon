@@ -1,0 +1,248 @@
+{
+  "id": "rw-ikosta-gematik-epa-postman-collection-1",
+  "covers": [
+    "real-world",
+    "real-world xml-html"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/ikosta/gematik-epa-postman-collection",
+    "path": "ePA.postman_collection.json",
+    "url": "https://github.com/ikosta/gematik-epa-postman-collection/blob/3576cfbb3970111ffcd32a25bab7aeb3c9f3ba1b/ePA.postman_collection.json",
+    "licence": "Apache-2.0",
+    "item": "GetCards"
+  },
+  "phase": "test",
+  "script": "const responseXML = pm.response.text().replace(/ns\\d+:/g, '');\nconst response = xml2Json(responseXML);\n\ntry {\n    const cardHandle = response['soap:Envelope']['soap:Body']['GetCardsResponse']['Cards']['Card']['CardHandle'];\n    \n    pm.collectionVariables.set('CARD_HANDLE', cardHandle);\n} catch (e) {\n    console.error(e);\n}",
+  "request": {
+    "url": "{{CONNECTOR_URL}}/webservices/eventservice",
+    "method": "POST",
+    "header": [
+      {
+        "key": "SOAPAction",
+        "value": "http://redacted-value#GetCards"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n    <soap:Body>\n        <GetCards xmlns=\"http://redacted-value\" xmlns:ns2=\"http://redacted-value\" xmlns:ns3=\"http://redacted-value\" xmlns:ns4=\"http://redacted-value\">\n            <ns3:Context>\n                <ns2:MandantId>{{MANDANT_ID}}</ns2:MandantId>\n                <ns2:ClientSystemId>{{CLIENT_SYSTEM_ID}}</ns2:ClientSystemId>\n                <ns2:WorkplaceId>{{WORKPLACE_ID}}</ns2:WorkplaceId>\n            </ns3:Context>\n            <ns4:CardType>SMC-B</ns4:CardType>\n        </GetCards>\n    </soap:Body>\n</soap:Envelope>"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [
+    {
+      "key": "CONNECTOR_URL",
+      "value": "https://konnektor.ru.tiaas.rise-ti.de"
+    },
+    {
+      "key": "MANDANT_ID",
+      "value": ""
+    },
+    {
+      "key": "CLIENT_SYSTEM_ID",
+      "value": ""
+    },
+    {
+      "key": "WORKPLACE_ID",
+      "value": ""
+    },
+    {
+      "key": "KVNR",
+      "value": ""
+    },
+    {
+      "key": "KVNR_PROFESSION",
+      "value": "1.2.276.0.76.4.8"
+    },
+    {
+      "key": "AUTHOR_PERSON_LAST_NAME",
+      "value": "redacted-value"
+    },
+    {
+      "key": "AUTHOR_PERSON_FIRST_NAME",
+      "value": "redacted-value"
+    },
+    {
+      "key": "AUTHOR_INSTITUTION_ORGANIZATION_NAME",
+      "value": "redacted-value"
+    },
+    {
+      "key": "AUTHOR_IDENTIFIER",
+      "value": "redacted-value"
+    },
+    {
+      "key": "AUTHOR_PERSON_SECOND_AND_FURTHER_GIVEN_NAMES",
+      "value": "redacted-value"
+    },
+    {
+      "key": "AUTHOR_PERSON_SUFFIX",
+      "value": "redacted-value"
+    },
+    {
+      "key": "AUTHOR_PERSON_PREFIX",
+      "value": "redacted-value"
+    },
+    {
+      "key": "AUTHOR_PERSON_ASSIGNING_AUTHORITY",
+      "value": "redacted-value"
+    },
+    {
+      "key": "AUTHOR_ROLE_CODE",
+      "value": "redacted-value"
+    },
+    {
+      "key": "AUTHOR_ROLE_CODE_SYSTEM_ID",
+      "value": "redacted-value"
+    },
+    {
+      "key": "AUTHOR_INSTITUTION_ASSIGNING_AUTHORITY",
+      "value": "redacted-value"
+    },
+    {
+      "key": "DOCUMENT_ID",
+      "value": ""
+    },
+    {
+      "key": "OLD_DOCUMENT_ID",
+      "value": ""
+    },
+    {
+      "key": "HOME_COMMUNITY_ID",
+      "value": ""
+    },
+    {
+      "key": "CARD_HANDLE",
+      "value": ""
+    },
+    {
+      "key": "DATETIME_FORMAT",
+      "value": ""
+    },
+    {
+      "key": "DATETIME_PAST_FORMAT",
+      "value": ""
+    },
+    {
+      "key": "HEADER_MESSAGE_ID",
+      "value": ""
+    },
+    {
+      "key": "MTOM_BOUNDARY_ID",
+      "value": ""
+    },
+    {
+      "key": "REGISTRY_PACKAGE_ID",
+      "value": ""
+    },
+    {
+      "key": "ASSOCIATION_ID",
+      "value": ""
+    },
+    {
+      "key": "ASSOCIATION_RPLC_ID",
+      "value": ""
+    },
+    {
+      "key": "SUBMISSION_SET_ID",
+      "value": ""
+    },
+    {
+      "key": "DOCUMENT_ENTRY_ID",
+      "value": ""
+    },
+    {
+      "key": "DOCUMENT_CID",
+      "value": ""
+    },
+    {
+      "key": "RANDOM_ID_01",
+      "value": ""
+    },
+    {
+      "key": "RANDOM_ID_02",
+      "value": ""
+    },
+    {
+      "key": "RANDOM_ID_03",
+      "value": ""
+    },
+    {
+      "key": "RANDOM_ID_04",
+      "value": ""
+    },
+    {
+      "key": "RANDOM_ID_05",
+      "value": ""
+    },
+    {
+      "key": "RANDOM_ID_06",
+      "value": ""
+    },
+    {
+      "key": "RANDOM_ID_07",
+      "value": ""
+    },
+    {
+      "key": "RANDOM_ID_08",
+      "value": ""
+    },
+    {
+      "key": "RANDOM_ID_09",
+      "value": ""
+    }
+  ],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "date",
+        "value": "Wed, 13 Mar 2024 16:09:52 GMT"
+      },
+      {
+        "key": "strict-transport-security",
+        "value": "max-age=8035200; includeSubdomains"
+      },
+      {
+        "key": "via",
+        "value": "1.1 gatekeeper"
+      },
+      {
+        "key": "content-type",
+        "value": "text/xml;charset=UTF-8"
+      },
+      {
+        "key": "content-length",
+        "value": "1623"
+      },
+      {
+        "key": "x-frame-options",
+        "value": "SAMEORIGIN"
+      },
+      {
+        "key": "x-content-type-options",
+        "value": "nosniff"
+      },
+      {
+        "key": "x-xss-protection",
+        "value": "1; mode=block"
+      },
+      {
+        "key": "referrer-policy",
+        "value": "strict-origin-when-cross-origin"
+      },
+      {
+        "key": "expect-ct",
+        "value": "enforce, max-age=31536000"
+      }
+    ],
+    "body": "<?xml version='1.0' encoding='UTF-8'?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n    <soap:Body>\n        <ns4:GetCardsResponse xmlns:ns12=\"urn:oasis:names:tc:SAML:1.0:assertion\" xmlns:ns11=\"urn:oasis:names:tc:dss:1.0:core:schema\" xmlns:ns10=\"http://www.w3.org/2000/09/xmldsig#\" xmlns:ns9=\"http://redacted-value\" xmlns:ns8=\"http://redacted-value\" xmlns:ns7=\"http://redacted-value\" xmlns:ns6=\"http://redacted-value\" xmlns:ns5=\"http://redacted-value\" xmlns:ns4=\"http://redacted-value\" xmlns:ns3=\"http://redacted-value\" xmlns:ns2=\"http://redacted-value\">\n            <ns2:Status>\n                <ns2:Result>OK</ns2:Result>\n            </ns2:Status>\n            <ns7:Cards>\n                <ns7:Card>\n                    <ns2:CardHandle>redacted-value</ns2:CardHandle>\n                    <ns6:CardType>SMC-B</ns6:CardType>\n                    <ns7:CardVersion>\n                        <ns7:COSVersion>\n                            <ns7:Major>4</ns7:Major>\n                            <ns7:Minor>6</ns7:Minor>\n                            <ns7:Revision>0</ns7:Revision>\n                        </ns7:COSVersion>\n                        <ns7:ObjectSystemVersion>\n                            <ns7:Major>4</ns7:Major>\n                            <ns7:Minor>8</ns7:Minor>\n                            <ns7:Revision>0</ns7:Revision>\n                        </ns7:ObjectSystemVersion>\n                    </ns7:CardVersion>\n                    <ns6:Iccsn>80276883110000145363</ns6:Iccsn>\n                    <ns6:CtId>00:1B:B5:0B:58:40</ns6:CtId>\n                    <ns6:SlotId>4</ns6:SlotId>\n                    <ns7:InsertTime>2024-03-12T01:49:21.540Z</ns7:InsertTime>\n                    <ns7:CardHolderName>DiGA-Hersteller und Anbieter Dr. Johanna OldenburgTEST-ONLY</ns7:CardHolderName>\n                    <ns7:CertificateExpirationDate>2027-10-26Z</ns7:CertificateExpirationDate>\n                </ns7:Card>\n            </ns7:Cards>\n        </ns4:GetCardsResponse>\n    </soap:Body>\n</soap:Envelope>",
+    "responseTime": 120
+  }
+}

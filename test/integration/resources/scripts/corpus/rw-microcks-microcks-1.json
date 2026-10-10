@@ -1,0 +1,38 @@
+{
+  "id": "rw-microcks-microcks-1",
+  "covers": [
+    "real-world",
+    "real-world schema",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/microcks/microcks",
+    "path": "samples/BeerCatalogAPI-collection.json",
+    "url": "https://github.com/microcks/microcks/blob/a523eab1d049afbe038a1d0a1abe911d5ae74e5d/samples/BeerCatalogAPI-collection.json",
+    "licence": "Apache-2.0",
+    "item": "Get beer having name"
+  },
+  "phase": "test",
+  "script": "var expectedName = globals[\"name\"];\nvar jsonData = JSON.parse(responseBody);\n\nvar schema = {\n \"type\": \"object\",\n \"properties\": {\n    \"name\": { \"type\": \"string\", \"enum\": [expectedName] },\n    \"country\": { \"type\": \"string\" },\n    \"type\": { \"type\": \"string\" },\n    \"rating\": { \"type\": \"number\" },\n    \"status\": { \"type\": \"string\" }\n  }\n};\n\ntests[\"Valid name in response\"] = tv4.validate(jsonData, schema);",
+  "request": {
+    "url": "http:///beer/:name",
+    "method": "GET",
+    "header": []
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [],
+    "body": "{\"name\": \"Rodenbach\", \"country\": \"Belgium\", \"type\": \"Brown ale\", \"rating\": 4.2, \"status\": \"available\"}",
+    "responseTime": 120
+  }
+}

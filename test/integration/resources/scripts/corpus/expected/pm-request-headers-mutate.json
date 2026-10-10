@@ -1,0 +1,99 @@
+{
+  "id": "pm-request-headers-mutate",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "log",
+      "args": [
+        {
+          "x-pre": {
+            "key": "X-Pre",
+            "value": "p"
+          },
+          "x-first": {
+            "key": "X-First",
+            "value": "f"
+          },
+          "x-trace": "changed",
+          "x-added": "1",
+          "x-new": "n",
+          "x-app": {
+            "key": "X-App",
+            "value": "a"
+          }
+        }
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        [
+          "X-First=f",
+          "X-Trace=changed",
+          "X-Added=1",
+          "X-New=n",
+          "X-App=a",
+          "X-AddHeader=ah2"
+        ]
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": {
+    "method": "POST",
+    "url": "https://api.example.com/v1/users?page=2&limit=10",
+    "headers": [
+      {
+        "key": "X-First",
+        "value": "f"
+      },
+      {
+        "key": "X-Trace",
+        "value": "changed"
+      },
+      {
+        "key": "X-Added",
+        "value": "1"
+      },
+      {
+        "key": "X-New",
+        "value": "n"
+      },
+      {
+        "key": "X-App",
+        "value": "a"
+      },
+      {
+        "key": "X-AddHeader",
+        "value": "ah2"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\"name\":\"Ada\",\"tags\":[\"a\",\"b\"]}"
+    }
+  },
+  "sentRequests": [],
+  "vault": {}
+}

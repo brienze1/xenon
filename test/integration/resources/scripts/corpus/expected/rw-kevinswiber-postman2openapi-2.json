@@ -1,0 +1,49 @@
+{
+  "id": "rw-kevinswiber-postman2openapi-2",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "response is ok",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "response has valid json body",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "status in response body must match the one in request",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"_\" is deprecated. Use \"require('lodash')\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "var": "variable_value",
+      "hello_variable_value": "hello",
+      "var_int": "1000"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

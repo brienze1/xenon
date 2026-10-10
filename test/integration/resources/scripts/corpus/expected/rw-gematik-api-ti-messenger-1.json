@@ -1,0 +1,43 @@
+{
+  "id": "rw-gematik-api-ti-messenger-1",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "succeeds",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "has access token",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "has server name",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected undefined to not be one of [ undefined, null ]"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {
+      "matrixopenidtoken": "test-access-token",
+      "matrix_server_name": {
+        "$type": "undefined"
+      }
+    },
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

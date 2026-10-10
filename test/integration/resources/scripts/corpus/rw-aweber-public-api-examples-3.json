@@ -1,0 +1,51 @@
+{
+  "id": "rw-aweber-public-api-examples-3",
+  "covers": [
+    "real-world",
+    "real-world oauth-token-chain"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/aweber/public-api-examples",
+    "path": "postman/Manage Custom Fields.postman_collection.json",
+    "url": "https://github.com/aweber/public-api-examples/blob/c28945cb419805bab30b4db9db41baf0df4338c8/postman/Manage Custom Fields.postman_collection.json",
+    "licence": "BSD-3-Clause",
+    "item": "Get Account"
+  },
+  "phase": "test",
+  "script": "pm.test(\"Check access_token is defined and not empty\", function(){\n   pm.expect(pm.environment.has(\"access_token\")).to.eql(true) && pm.expect(pm.environment.get(\"access_token\")).not.eql('');\n});\n\npm.test(\"Successfully get an account Id\", function(){\n    var jsonData = pm.response.json();\n    pm.globals.set(\"accountId\",jsonData.entries[0].id ) ;   \n});\n\npm.test(\"Successfully submitted request\", function() {\n    pm.response.to.have.status(200);\n});",
+  "request": {
+    "url": "{{base_url}}/accounts",
+    "method": "GET",
+    "header": [],
+    "body": {
+      "mode": "raw",
+      "raw": ""
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [
+    {
+      "key": "base_url",
+      "value": "https://api.aweber.com/1.0"
+    }
+  ],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

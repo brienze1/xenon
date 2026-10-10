@@ -1,0 +1,75 @@
+{
+  "id": "rw-accelbyte-extend-vivox-authorization-ser-2",
+  "covers": [
+    "real-world",
+    "real-world signing"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/AccelByte/extend-vivox-authorization-service-go",
+    "path": "demo/service-extension-demo.postman_collection.json",
+    "url": "https://github.com/AccelByte/extend-vivox-authorization-service-go/blob/34677c453e135fbddd1dac83f6455428190bd20b/demo/service-extension-demo.postman_collection.json",
+    "licence": "MIT",
+    "item": "41-generate-join-muted-token"
+  },
+  "phase": "test",
+  "script": "function parseJwt(token, part) {\n    var base64Url = token.split(\".\")[part];\n    var words = CryptoJS.enc.Base64.parse(base64Url);\n    var jsonPayload = CryptoJS.enc.Utf8.stringify(words);\n    return JSON.parse(jsonPayload);\n}\n\npm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Test access token values\", function () {\n    var responseJson = pm.response.json();\n    var accessToken = responseJson.accessToken;\n\n    pm.expect(accessToken).is.not.undefined;\n\n    var jwtPayload = parseJwt(accessToken, 1);\n\n    pm.expect(jwtPayload.iss).is.a(\"string\");\n    pm.expect(jwtPayload.vxa).is.equals(\"join_muted\");\n    pm.expect(jwtPayload.f).is.a(\"string\")\n        .and.contains(jwtPayload.iss)\n        .and.contains(\"jerky\");\n    pm.expect(jwtPayload.t).is.a(\"string\")\n        .and.contains(jwtPayload.iss)\n        .and.contains(\"-g-\")\n        .and.contains(\"testchannel\");\n});",
+  "request": {
+    "url": "{{EXTEND_APP_SERVICE_URL}}/v1/token",
+    "method": "POST",
+    "header": [],
+    "body": {
+      "mode": "raw",
+      "raw": "{\r\n  \"channelId\": \"testchannel\",\r\n  \"channelType\": \"nonpositional\",\r\n  \"type\": \"join_muted\",\r\n  \"username\": \"jerky\"\r\n}"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [
+    {
+      "key": "CLIENT_ACCESS_TOKEN",
+      "value": "redacted-value"
+    },
+    {
+      "key": "USER_ACCESS_TOKEN",
+      "value": "redacted-value"
+    },
+    {
+      "key": "EXTEND_APP_SERVICE_URL",
+      "value": ""
+    },
+    {
+      "key": "TEST_USER_ID",
+      "value": ""
+    },
+    {
+      "key": "TEST_USER_EMAIL",
+      "value": ""
+    },
+    {
+      "key": "TEST_USER_PASSWORD",
+      "value": "redacted-value"
+    },
+    {
+      "key": "TEST_ROLE_ID",
+      "value": ""
+    }
+  ],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

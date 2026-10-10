@@ -1,0 +1,51 @@
+{
+  "id": "rw-digipen-network-classes-putter-4",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "status code is 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "should return a user ID",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": ".empty was passed non-string primitive 1"
+    },
+    {
+      "name": "should not have the same user ID as the first user",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "should return the correct username",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected { id: 1, name: 'example', …(7) } to have property 'username'"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {
+      "otherUserId": 1
+    },
+    "collectionVariables": {
+      "port": "3100",
+      "address": "localhost",
+      "game_port": "4200"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

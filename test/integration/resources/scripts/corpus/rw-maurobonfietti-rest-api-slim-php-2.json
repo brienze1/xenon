@@ -1,0 +1,47 @@
+{
+  "id": "rw-maurobonfietti-rest-api-slim-php-2",
+  "covers": [
+    "real-world",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/maurobonfietti/rest-api-slim-php",
+    "path": "extras/docs/Rest Api Slim PHP.postman_collection.json",
+    "url": "https://github.com/maurobonfietti/rest-api-slim-php/blob/352ba3698419dfdaaae9c11fb83ad37faebec710/extras/docs/Rest Api Slim PHP.postman_collection.json",
+    "licence": "MIT",
+    "item": "Get One Task"
+  },
+  "phase": "test",
+  "script": "tests[\"Response time is less than 200ms\"] = responseTime < 200;\ntests[\"Content-Type is present\"] = postman.getResponseHeader(\"Content-Type\");\ntests[\"Status code is 200\"] = responseCode.code === 200;\ntests[\"Status code name has string\"] = responseCode.name.has(\"OK\");\ntests[\"Body matches success\"] = responseBody.has(\"success\");\ntests[\"Body matches message\"] = responseBody.has(\"message\");\ntests[\"Body matches task\"] = responseBody.has(\"name\");",
+  "request": {
+    "url": "{{domain-api-rest-slimphp}}/api/v1/tasks/13",
+    "method": "GET",
+    "header": [
+      {
+        "key": "Authorization",
+        "value": "redacted-value"
+      }
+    ]
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

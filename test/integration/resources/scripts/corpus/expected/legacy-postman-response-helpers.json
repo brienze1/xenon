@@ -1,0 +1,64 @@
+{
+  "id": "legacy-postman-response-helpers",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"postman.getResponseHeader\" is deprecated. Use \"pm.response.headers.get()\" instead."
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        "10",
+        {
+          "$type": "undefined"
+        }
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"postman.getResponseCookie\" is deprecated. Use \"pm.cookies.get()\" instead."
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        "s1"
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"postman.setNextRequest\" is deprecated. Use \"pm.execution.setNextRequest()\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

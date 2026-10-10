@@ -1,0 +1,48 @@
+{
+  "id": "rw-polu3g-icubeengine-1",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Status code is 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Extracted first season item text",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected '' not to be empty"
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"cheerio\" is deprecated. Use \"require('cheerio')\" instead."
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        [
+          ""
+        ]
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "firstSeasonItem": ""
+    },
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

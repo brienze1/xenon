@@ -1,0 +1,33 @@
+{
+  "id": "rw-gematik-api-ti-messenger-2",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "succeeds",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "has access token",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {
+      "accessToken": "test-access-token"
+    },
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

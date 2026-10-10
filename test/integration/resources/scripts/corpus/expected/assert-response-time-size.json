@@ -1,0 +1,66 @@
+{
+  "id": "assert-response-time-size",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "responseTime below",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "responseTime chain",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected 123 to be below 100"
+    },
+    {
+      "name": "responseTime chain ok",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "responseSize",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "responseSize exact",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response size to equal 230 but got 5"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

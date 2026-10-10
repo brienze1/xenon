@@ -1,0 +1,59 @@
+{
+  "id": "rw-railsbank-railsbank-postman-collection-1",
+  "covers": [
+    "real-world",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/RailsBank/railsbank-postman-collection",
+    "path": "scenarios/Cards.postman_collection.json",
+    "url": "https://github.com/RailsBank/railsbank-postman-collection/blob/bca1744c5cfcb6ea2d5db85c5bc4cd294aca09c2/scenarios/Cards.postman_collection.json",
+    "licence": "MIT",
+    "item": "Create an Enduser (individual) Copy"
+  },
+  "phase": "test",
+  "script": "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n    \n});\ntests[\"CORS is present\"] = postman.getResponseHeader(\"access-control-allow-origin\");\nvar jsonData = JSON.parse(responseBody);\npostman.setEnvironmentVariable(\"cardenduser_id\", jsonData.enduser_id);",
+  "request": {
+    "url": "{{baseurl}}/v1/customer/endusers",
+    "method": "POST",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "Accept",
+        "value": "application/json"
+      },
+      {
+        "key": "Authorization",
+        "value": "redacted-value"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\n      \"person\": { \n       \"name\": \"Rebecca Baker\", \n       \"email\": \"user@example.com\", \n       \"date_of_birth\": \"1970-11-05\", \n       \"telephone\": \"+44 22 626 2626\", \n       \"address\": {  \n         \"address_refinement\": \"Apartment 42\", \n         \"address_number\": \"29\", \n         \"address_street\": \"Acacia Road\", \n         \"address_city\": \"London\", \n         \"address_postal_code\": \"FX20 7XS\", \n         \"address_iso_country\": \"GBR\"\n         \n       }, \n       \"address_history\": [ \n         { \n           \"address_refinement\": \"Apartment 77\", \n           \"address_number\": \"42\", \n           \"address_street\": \"Kirschbaumstraße\", \n           \"address_city\": \"Berlin\", \n           \"address_postal_code\": \"12059\", \n           \"address_iso_country\": \"DE\", \n           \"address_start_date\": \"2000-09-02\", \n           \"address_end_date\": \"2002-12-20\" \n         } \n       ], \n       \"nationality\": [ \n         \"Czech\" \n       ], \n       \"country_of_residence\": [ \n         \"GBR\" \n       ], \n       \"date_onboarded\": \"2015-11-21\" \n     }, \n      \"enduser_meta\": { \n       \"foo\": \"baa\", \n      \"our_salesforce_reference\": \"http://redacted-value\" \n     } \n   }\n"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

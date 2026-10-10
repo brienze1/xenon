@@ -1,0 +1,62 @@
+{
+  "id": "rw-lasersrl-newman-orchard-parallel-tests-2",
+  "error": {
+    "name": "TypeError",
+    "message": "Cannot read properties of undefined (reading 'substring')"
+  },
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Status code is 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"responseCode\" is deprecated. Use \"pm.response.code\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tests\" is deprecated. Use \"pm.test()\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"cheerio\" is deprecated. Use \"require('cheerio')\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"postman.setEnvironmentVariable\" is deprecated. Use \"pm.environment.set()\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"responseHeaders\" is deprecated. Use \"pm.response.headers\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "RequestVerificationToken": {
+        "$type": "undefined"
+      }
+    },
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

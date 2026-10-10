@@ -1,0 +1,56 @@
+{
+  "id": "rw-n1rjal-postman-to-typescript-1",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Getting User Profile From Token",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Body have _id",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected '{\"id\":1,\"name\":\"example\",\"status\":\"ac…' to include '_id'"
+    },
+    {
+      "name": "Email field is there",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected '{\"id\":1,\"name\":\"example\",\"status\":\"ac…' to include 'email'"
+    },
+    {
+      "name": "Phone field is there",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected '{\"id\":1,\"name\":\"example\",\"status\":\"ac…' to include 'phone'"
+    },
+    {
+      "name": "Check If admin True or False",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected '{\"id\":1,\"name\":\"example\",\"status\":\"ac…' to include 'is_admin'"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "host": "localhost:3001",
+      "testuser 30 days": "redacted-value",
+      "prabesh 30 days": "redacted-value"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

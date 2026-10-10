@@ -1,0 +1,39 @@
+{
+  "id": "rw-accelbyte-extend-vivox-authorization-ser-1",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Status code is 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Test access token values",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected undefined not to be undefined"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "CLIENT_ACCESS_TOKEN": "redacted-value",
+      "USER_ACCESS_TOKEN": "redacted-value",
+      "EXTEND_APP_SERVICE_URL": "",
+      "TEST_USER_ID": "",
+      "TEST_USER_EMAIL": "",
+      "TEST_USER_PASSWORD": "redacted-value",
+      "TEST_ROLE_ID": ""
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

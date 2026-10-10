@@ -1,0 +1,88 @@
+{
+  "id": "rw-solomonxie-pdfeditable-1",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"CryptoJS\" is deprecated. Use global \"crypto\" object instead."
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        {
+          "init": "[Function]",
+          "$super": {
+            "init": "[Function]",
+            "toString": "[Function: toString]",
+            "concat": "[Function: concat]",
+            "clamp": "[Function: clamp]",
+            "clone": "[Function: clone]",
+            "random": "[Function: random]",
+            "$super": {
+              "extend": "[Function: extend]",
+              "create": "[Function: create]",
+              "init": "[Function: init]",
+              "mixIn": "[Function: mixIn]",
+              "clone": "[Function: clone]"
+            }
+          },
+          "words": [
+            -2048301824
+          ],
+          "sigBytes": 3
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": {
+    "method": "POST",
+    "url": "https://redacted-value",
+    "headers": [
+      {
+        "key": "Content-Type",
+        "value": "application/x-www-form-urlencoded"
+      }
+    ],
+    "body": {
+      "mode": "urlencoded",
+      "urlencoded": [
+        {
+          "key": "access_token",
+          "value": "redacted-value"
+        },
+        {
+          "key": "url",
+          "value": "{{url}}"
+        },
+        {
+          "key": "image",
+          "value": "{{image}}"
+        },
+        {
+          "key": "language_type",
+          "value": "CHN_ENG"
+        },
+        {
+          "key": "detect_direction",
+          "value": "true"
+        },
+        {
+          "key": "probability",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "sentRequests": [],
+  "vault": {}
+}

@@ -1,0 +1,42 @@
+{
+  "id": "rw-acronis-cyberapp-sample-components-1",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"CryptoJS\" is deprecated. Use global \"crypto\" object instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "CyberAppAuth": "redacted-value",
+      "CyberAppExtra": "{}",
+      "EncryptedCyberAppAuth": "cmVkYWN0ZWQtdmFsdWU=",
+      "EncryptedCyberAppExtra": "e30=",
+      "AppCode": "vendor.app",
+      "BaseUrl": "http://127.0.0.1:8080",
+      "TenantId": "00000000-0000-0000-0000-000000000000",
+      "CloudUrl": "https://eu8-cloud.acronis.com"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": {
+    "method": "GET",
+    "url": "https://api.example.com/resource",
+    "headers": [
+      {
+        "key": "X-CyberApp-Extra",
+        "value": "{{EncryptedCyberAppExtra}}"
+      }
+    ],
+    "body": null
+  },
+  "sentRequests": [],
+  "vault": {}
+}

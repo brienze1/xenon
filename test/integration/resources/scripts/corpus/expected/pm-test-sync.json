@@ -1,0 +1,66 @@
+{
+  "id": "pm-test-sync",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "passes",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "fails",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected 'a' to equal 'b'"
+    },
+    {
+      "name": "throws",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "custom failure"
+    },
+    {
+      "name": "empty",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [
+    {
+      "level": "log",
+      "args": [
+        4
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

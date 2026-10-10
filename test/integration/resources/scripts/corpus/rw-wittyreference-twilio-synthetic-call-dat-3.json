@@ -1,0 +1,59 @@
+{
+  "id": "rw-wittyreference-twilio-synthetic-call-dat-3",
+  "covers": [
+    "real-world"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/wittyreference/twilio-synthetic-call-data-generator",
+    "path": "postman/collection.json",
+    "url": "https://github.com/wittyreference/twilio-synthetic-call-data-generator/blob/f10e983af33beac0265eb3f971305a58b3d21be3/postman/collection.json",
+    "licence": "MIT",
+    "item": "Create Conference"
+  },
+  "phase": "test",
+  "script": "pm.test('Status code is 201 Created', function () {\n    pm.response.to.have.status(201);\n});\n\npm.test('Response has success flag and conference ID', function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData).to.have.property('success');\n    pm.expect(jsonData.success).to.be.true;\n    pm.expect(jsonData).to.have.property('conferenceId');\n    pm.expect(jsonData.conferenceId).to.be.a('string');\n    pm.expect(jsonData.conferenceId).to.match(/^synth-call-\\d+-[a-z0-9]+$/);\n    \n    // Save conference ID for subsequent requests\n    pm.environment.set('conferenceId', jsonData.conferenceId);\n});\n\npm.test('Response includes customer and agent participants', function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData).to.have.property('customer');\n    pm.expect(jsonData).to.have.property('agent');\n    \n    // Verify customer properties\n    pm.expect(jsonData.customer).to.have.property('name');\n    pm.expect(jsonData.customer).to.have.property('callSid');\n    pm.expect(jsonData.customer.callSid).to.match(/^CA[a-f0-9]{32}$/);\n    \n    // Verify agent properties\n    pm.expect(jsonData.agent).to.have.property('name');\n    pm.expect(jsonData.agent).to.have.property('callSid');\n    pm.expect(jsonData.agent.callSid).to.match(/^CA[a-f0-9]{32}$/);\n    \n    // Save call SIDs for validation\n    pm.environment.set('customerCallSid', jsonData.customer.callSid);\n    pm.environment.set('agentCallSid', jsonData.agent.callSid);\n});\n\npm.test('Timer metadata is provided', function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData).to.have.property('timer');\n    pm.expect(jsonData.timer).to.have.property('scheduled');\n    pm.expect(jsonData.timer.scheduled).to.equal(false);\n    pm.expect(jsonData.timer).to.have.property('note');\n    pm.expect(jsonData.timer).to.have.property('timerUrl');\n    pm.expect(jsonData.timer).to.have.property('suggestedTerminateAt');\n});",
+  "request": {
+    "url": "{{BASE_URL}}/create-conference",
+    "method": "POST",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/x-www-form-urlencoded"
+      }
+    ],
+    "body": {
+      "mode": "urlencoded",
+      "urlencoded": [
+        {
+          "key": "agentPhoneNumber",
+          "value": "{{AGENT_PHONE_NUMBER}}"
+        },
+        {
+          "key": "strategy",
+          "value": "random"
+        }
+      ]
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

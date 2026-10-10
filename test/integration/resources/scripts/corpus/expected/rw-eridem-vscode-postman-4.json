@@ -1,0 +1,58 @@
+{
+  "id": "rw-eridem-vscode-postman-4",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "response is valid JSON",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "response has post data",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "response matches the data posted",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected false to be truthy"
+    },
+    {
+      "name": "content-type equals text/plain",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected undefined to be truthy"
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tests\" is deprecated. Use \"pm.test()\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"_\" is deprecated. Use \"require('lodash')\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

@@ -1,0 +1,157 @@
+{
+  "id": "assert-status-class-100",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "to.be.ok",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'OK' but got 'CONTINUE'"
+    },
+    {
+      "name": "to.be.error",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response code to be 4XX or 5XX but found 100"
+    },
+    {
+      "name": "to.be.info",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "to.be.success",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response code to be 2XX but found 100"
+    },
+    {
+      "name": "to.be.redirection",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response code to be 3XX but found 100"
+    },
+    {
+      "name": "to.be.clientError",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response code to be 4XX but found 100"
+    },
+    {
+      "name": "to.be.serverError",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response code to be 5XX but found 100"
+    },
+    {
+      "name": "to.be.accepted",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'ACCEPTED' but got 'CONTINUE'"
+    },
+    {
+      "name": "to.be.withoutContent",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'NO CONTENT' but got 'CONTINUE'"
+    },
+    {
+      "name": "to.be.badRequest",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'BAD REQUEST' but got 'CONTINUE'"
+    },
+    {
+      "name": "to.be.unauthorized",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'UNAUTHORIZED' but got 'CONTINUE'"
+    },
+    {
+      "name": "to.be.unauthorised",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'UNAUTHORISED' but got 'CONTINUE'"
+    },
+    {
+      "name": "to.be.forbidden",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'FORBIDDEN' but got 'CONTINUE'"
+    },
+    {
+      "name": "to.be.notFound",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'NOT FOUND' but got 'CONTINUE'"
+    },
+    {
+      "name": "to.be.notAcceptable",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'ACCEPTABLE' but got 'CONTINUE'"
+    },
+    {
+      "name": "to.be.rateLimited",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'TOO MANY REQUESTS' but got 'CONTINUE'"
+    },
+    {
+      "name": "to.not.be.ok",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "to.not.be.error",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

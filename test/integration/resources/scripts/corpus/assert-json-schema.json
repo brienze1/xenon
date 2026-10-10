@@ -1,0 +1,115 @@
+{
+  "id": "assert-json-schema",
+  "covers": [
+    "sandbox-api §2 jsonSchema"
+  ],
+  "source": {
+    "kind": "hand-written",
+    "licence": "Xenon project (same licence as this repository)"
+  },
+  "phase": "test",
+  "script": "const schema = {type: 'object', required: ['id', 'name'], properties: {id: {type: 'integer'}, name: {type: 'string'}, items: {type: 'array', items: {type: 'object', required: ['price'], properties: {price: {type: 'number'}}}}}};\npm.test('schema valid', () => pm.response.to.have.jsonSchema(schema));\npm.test('schema invalid', () => pm.response.to.have.jsonSchema({type: 'object', required: ['missing'], properties: {id: {type: 'string'}}}));\npm.test('schema all errors', () => pm.response.to.have.jsonSchema({type: 'object', properties: {id: {type: 'string'}, name: {type: 'number'}}}, {allErrors: true}));\npm.test('not schema', () => pm.response.to.not.have.jsonSchema(schema));",
+  "request": {
+    "url": "https://api.example.com/v1/users?page=2&limit=10",
+    "method": "POST",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "X-Trace",
+        "value": "abc"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\"name\":\"Ada\",\"tags\":[\"a\",\"b\"]}"
+    }
+  },
+  "environment": {
+    "name": "dev",
+    "values": [
+      {
+        "key": "base_url",
+        "value": "https://api.example.com"
+      },
+      {
+        "key": "user",
+        "value": "ada"
+      },
+      {
+        "key": "shared",
+        "value": "from-env"
+      }
+    ]
+  },
+  "collectionVariables": [
+    {
+      "key": "version",
+      "value": "v1"
+    },
+    {
+      "key": "shared",
+      "value": "from-collection"
+    },
+    {
+      "key": "coll_only",
+      "value": "c"
+    }
+  ],
+  "globals": [
+    {
+      "key": "tenant",
+      "value": "acme"
+    },
+    {
+      "key": "shared",
+      "value": "from-globals"
+    },
+    {
+      "key": "glob_only",
+      "value": "g"
+    }
+  ],
+  "variables": [
+    {
+      "key": "local_only",
+      "value": "l"
+    }
+  ],
+  "cookies": [
+    {
+      "name": "session",
+      "value": "s1",
+      "domain": "api.example.com",
+      "path": "/"
+    },
+    {
+      "name": "theme",
+      "value": "dark",
+      "domain": "api.example.com",
+      "path": "/"
+    }
+  ],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json; charset=utf-8"
+      },
+      {
+        "key": "Set-Cookie",
+        "value": "session=s1; Path=/"
+      },
+      {
+        "key": "X-Rate",
+        "value": "10"
+      }
+    ],
+    "body": "{\"id\":7,\"name\":\"Ada\",\"items\":[{\"id\":1,\"price\":2.5},{\"id\":2,\"price\":4}],\"token\":\"tok-1\",\"nested\":{\"deep\":{\"value\":true}}}",
+    "responseTime": 123
+  }
+}

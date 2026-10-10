@@ -1,0 +1,64 @@
+{
+  "id": "rw-ikosta-gematik-epa-postman-collection-1",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"xml2Json\" is deprecated. Use \"require('xml2js')\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "CONNECTOR_URL": "https://konnektor.ru.tiaas.rise-ti.de",
+      "MANDANT_ID": "",
+      "CLIENT_SYSTEM_ID": "",
+      "WORKPLACE_ID": "",
+      "KVNR": "",
+      "KVNR_PROFESSION": "1.2.276.0.76.4.8",
+      "AUTHOR_PERSON_LAST_NAME": "redacted-value",
+      "AUTHOR_PERSON_FIRST_NAME": "redacted-value",
+      "AUTHOR_INSTITUTION_ORGANIZATION_NAME": "redacted-value",
+      "AUTHOR_IDENTIFIER": "redacted-value",
+      "AUTHOR_PERSON_SECOND_AND_FURTHER_GIVEN_NAMES": "redacted-value",
+      "AUTHOR_PERSON_SUFFIX": "redacted-value",
+      "AUTHOR_PERSON_PREFIX": "redacted-value",
+      "AUTHOR_PERSON_ASSIGNING_AUTHORITY": "redacted-value",
+      "AUTHOR_ROLE_CODE": "redacted-value",
+      "AUTHOR_ROLE_CODE_SYSTEM_ID": "redacted-value",
+      "AUTHOR_INSTITUTION_ASSIGNING_AUTHORITY": "redacted-value",
+      "DOCUMENT_ID": "",
+      "OLD_DOCUMENT_ID": "",
+      "HOME_COMMUNITY_ID": "",
+      "CARD_HANDLE": "redacted-value",
+      "DATETIME_FORMAT": "",
+      "DATETIME_PAST_FORMAT": "",
+      "HEADER_MESSAGE_ID": "",
+      "MTOM_BOUNDARY_ID": "",
+      "REGISTRY_PACKAGE_ID": "",
+      "ASSOCIATION_ID": "",
+      "ASSOCIATION_RPLC_ID": "",
+      "SUBMISSION_SET_ID": "",
+      "DOCUMENT_ENTRY_ID": "",
+      "DOCUMENT_CID": "",
+      "RANDOM_ID_01": "",
+      "RANDOM_ID_02": "",
+      "RANDOM_ID_03": "",
+      "RANDOM_ID_04": "",
+      "RANDOM_ID_05": "",
+      "RANDOM_ID_06": "",
+      "RANDOM_ID_07": "",
+      "RANDOM_ID_08": "",
+      "RANDOM_ID_09": ""
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

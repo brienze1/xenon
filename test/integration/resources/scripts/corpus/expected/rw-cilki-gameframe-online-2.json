@@ -1,0 +1,52 @@
+{
+  "id": "rw-cilki-gameframe-online-2",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "HTTP Code",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "CORS Header",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have header with key 'Access-Control-Allow-Origin'"
+    },
+    {
+      "name": "Response Time",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Response Content",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected undefined to deeply equal NaN"
+    },
+    {
+      "name": "Response Links",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "Cannot read properties of undefined (reading 'length')"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

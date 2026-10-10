@@ -1,0 +1,59 @@
+{
+  "id": "rw-swaggertagger-octo-tagger-backend-1",
+  "covers": [
+    "real-world",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/SwaggerTagger/octo-tagger-backend",
+    "path": "octo-tagger.postman_collection.json",
+    "url": "https://github.com/SwaggerTagger/octo-tagger-backend/blob/c2a146ba0a902b6cab2c8b88c940f935dc1e115f/octo-tagger.postman_collection.json",
+    "licence": "MIT",
+    "item": "Sign In"
+  },
+  "phase": "test",
+  "script": "tests[\"Status code is 200\"] = responseCode.code === 200;\ntests[\"X-Auth-Token is present\"] = postman.getResponseHeader(\"X-Auth-Token\");\nif(responseCode.code === 200){\n    postman.setEnvironmentVariable(\"token\", postman.getResponseHeader(\"X-Auth-Token\"));\n}",
+  "request": {
+    "url": "{{host}}{{prefix}}/signIn",
+    "method": "POST",
+    "header": [
+      {
+        "key": "Csrf-Token",
+        "value": "redacted-value"
+      },
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "X-Auth-Token",
+        "value": "redacted-value"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\n  \"email\":\"{{user}}\",\n  \"password\":\"{{password}}\"\n}"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "id": "rw-kkommatt-classwebapplication-1",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Response has a 200 status code",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Response has the correct Content-Type header",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected 'Content-Type' response header to be 'application/json; charset=utf-8' but got 'application/json'"
+    },
+    {
+      "name": "Response body is an array",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected { id: 1, name: 'example', …(7) } to be an array"
+    },
+    {
+      "name": "Each item in the response has the expected structure",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "responseBody.forEach is not a function"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

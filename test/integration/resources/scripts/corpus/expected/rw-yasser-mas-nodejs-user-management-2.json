@@ -1,0 +1,32 @@
+{
+  "id": "rw-yasser-mas-nodejs-user-management-2",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"_\" is deprecated. Use \"require('lodash')\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "url": "localhost:8082"
+    },
+    "globals": {
+      "user_token": {
+        "$type": "undefined"
+      },
+      "user_refresh_token": {
+        "$type": "undefined"
+      }
+    },
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

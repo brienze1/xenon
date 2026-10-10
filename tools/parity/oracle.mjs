@@ -3,6 +3,8 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 
+process.env.TZ = 'UTC';
+
 const require = createRequire(import.meta.url);
 const Sandbox = require('postman-sandbox');
 const sdk = require('postman-collection');

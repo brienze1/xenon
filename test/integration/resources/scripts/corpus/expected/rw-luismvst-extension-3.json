@@ -1,0 +1,39 @@
+{
+  "id": "rw-luismvst-extension-3",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Login 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "access_token present",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "baseUrl": "http://127.0.0.1:8080",
+      "token": "test-access-token",
+      "carrier": "tipsa",
+      "expedition_id": "EXP001",
+      "order_id": "MIR-001",
+      "webhook_secret": "redacted-value",
+      "computed_signature": "redacted-value"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

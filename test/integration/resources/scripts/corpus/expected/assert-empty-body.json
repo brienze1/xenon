@@ -1,0 +1,52 @@
+{
+  "id": "assert-empty-body",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "withBody",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have content in body"
+    },
+    {
+      "name": "withoutContent",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "json",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response body to be a valid json but got error No data, empty input at 1:1"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

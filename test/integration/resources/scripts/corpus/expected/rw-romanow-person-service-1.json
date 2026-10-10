@@ -1,0 +1,30 @@
+{
+  "id": "rw-romanow-person-service-1",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Check Person exists in response",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected { id: 1, name: 'example', …(7) } to be an array"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "name": "",
+      "address": "",
+      "work": "",
+      "age": "",
+      "personId": ""
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

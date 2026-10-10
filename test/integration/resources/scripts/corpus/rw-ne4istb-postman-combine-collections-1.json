@@ -1,0 +1,99 @@
+{
+  "id": "rw-ne4istb-postman-combine-collections-1",
+  "covers": [
+    "real-world",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/Ne4istb/postman-combine-collections",
+    "path": "samples/Postman Echo.postman_collection.json",
+    "url": "https://github.com/Ne4istb/postman-combine-collections/blob/8586a0530e5baebe5573144458c5e656a589daf6/samples/Postman Echo.postman_collection.json",
+    "licence": "Apache-2.0",
+    "item": "Delete Cookies"
+  },
+  "phase": "test",
+  "script": "var responseJSON;\ntry {\n    tests[\"Body contains cookies\"] = responseBody.has(\"cookies\");\n    responseJSON = JSON.parse(responseBody);\n    tests[\"Body contains cookie foo1\"] = ('foo1' in responseJSON.cookies);\n    tests[\"Body does not contain cookie foo2\"] = !('foo2' in responseJSON.cookies);\n}\ncatch (e) { }\n\ntests[\"Status code is 200\"] = responseCode.code === 200;",
+  "request": {
+    "url": "https://echo.getpostman.com/cookies/delete?foo1",
+    "method": "GET",
+    "header": [],
+    "body": {
+      "mode": "raw",
+      "raw": ""
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [
+    {
+      "key": "Echo-variable",
+      "value": "check"
+    },
+    {
+      "key": "test",
+      "value": "1"
+    }
+  ],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Access-Control-Allow-Credentials",
+        "value": "redacted-value"
+      },
+      {
+        "key": "Access-Control-Allow-Headers",
+        "value": ""
+      },
+      {
+        "key": "Access-Control-Allow-Methods",
+        "value": ""
+      },
+      {
+        "key": "Access-Control-Allow-Origin",
+        "value": ""
+      },
+      {
+        "key": "Connection",
+        "value": "keep-alive"
+      },
+      {
+        "key": "Content-Encoding",
+        "value": "gzip"
+      },
+      {
+        "key": "Content-Length",
+        "value": "46"
+      },
+      {
+        "key": "Content-Type",
+        "value": "application/json; charset=utf-8"
+      },
+      {
+        "key": "Date",
+        "value": "Thu, 29 Oct 2015 06:16:00 GMT"
+      },
+      {
+        "key": "Server",
+        "value": "nginx/1.6.2"
+      },
+      {
+        "key": "Vary",
+        "value": "Accept-Encoding"
+      },
+      {
+        "key": "X-Powered-By",
+        "value": "Sails <sailsjs.org>"
+      }
+    ],
+    "body": "{\"cookies\":{\"foo2\":\"bar\"}}",
+    "responseTime": 120
+  }
+}

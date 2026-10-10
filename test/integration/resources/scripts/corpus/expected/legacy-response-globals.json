@@ -1,0 +1,78 @@
+{
+  "id": "legacy-response-globals",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"responseCode\" is deprecated. Use \"pm.response.code\" instead."
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        120,
+        200,
+        "OK",
+        "string",
+        123
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"responseHeaders\" is deprecated. Use \"pm.response.headers\" instead."
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        "10",
+        "application/json; charset=utf-8",
+        3
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"responseCookies\" is deprecated. Use \"pm.cookies\" instead."
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        {
+          "$type": "undefined"
+        },
+        {
+          "$type": "undefined"
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

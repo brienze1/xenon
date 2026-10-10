@@ -1,0 +1,87 @@
+{
+  "id": "rw-gsma-cpas-bwrp-blockchain-adapter-1",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Status code is 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Body contains algorithm",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected '{\"id\":1,\"name\":\"example\",\"status\":\"ac…' to include 'algorithm'"
+    },
+    {
+      "name": "Body contains certificate",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected '{\"id\":1,\"name\":\"example\",\"status\":\"ac…' to include 'certificate'"
+    },
+    {
+      "name": "Body contains signature",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected '{\"id\":1,\"name\":\"example\",\"status\":\"ac…' to include 'signature'"
+    },
+    {
+      "name": "Content-Type is present",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Response time is less than 5000ms",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Status code name has string",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Schema is valid",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Non Null Responses",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "Target cannot be null or undefined."
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tv4\" is deprecated. Use \"require('ajv')\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

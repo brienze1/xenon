@@ -1,0 +1,66 @@
+{
+  "id": "rw-reportportal-examples-js-1",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "log",
+      "args": [
+        "test",
+        "LOG"
+      ]
+    },
+    {
+      "level": "info",
+      "args": [
+        "test",
+        "INFO log"
+      ]
+    },
+    {
+      "level": "debug",
+      "args": [
+        "test",
+        "DEBUG log"
+      ]
+    },
+    {
+      "level": "error",
+      "args": [
+        "test",
+        "ERROR log"
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "test",
+        "WARN log"
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "rp.attributes": "testOneKey:testOneValue;testOneValue2",
+      "rp.testCaseId": "TestOneTestCaseId",
+      "rp.status": "skipped"
+    },
+    "collectionVariables": {
+      "rp.attributes": "suiteKeyOne:suiteValueOne",
+      "rp.testCaseId": "SuiteTestCaseId",
+      "rp.launchStatus": "skipped",
+      "rp.status": "skipped"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": {
+    "method": "GET",
+    "url": "https://learn.javascript.ru?attr=1234",
+    "headers": [],
+    "body": null
+  },
+  "sentRequests": [],
+  "vault": {}
+}

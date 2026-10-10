@@ -1,0 +1,54 @@
+{
+  "id": "rw-blorenty-olc1-conferencia-2s2025-2",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Status 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Tiene campos esperados",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected { id: 1, name: 'example', …(7) } to have property 'consola'"
+    },
+    {
+      "name": "Sin errores",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected false to deeply equal true"
+    },
+    {
+      "name": "Consola = 15",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "Cannot read properties of undefined (reading 'trim')"
+    },
+    {
+      "name": "Símbolos contiene x=15",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected undefined to be an object"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "baseUrl": "http://localhost:3001"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

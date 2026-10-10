@@ -1,0 +1,51 @@
+{
+  "id": "rw-halcyongrid-halcyon-4",
+  "covers": [
+    "real-world",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/HalcyonGrid/halcyon",
+    "path": "doc/remote_admin.postman_collection.json",
+    "url": "https://github.com/HalcyonGrid/halcyon/blob/3125cc15fca1a25f9ce0a9df4217bda5a3ced2ea/doc/remote_admin.postman_collection.json",
+    "licence": "BSD-3-Clause",
+    "item": "Get JWT Auth Token"
+  },
+  "phase": "test",
+  "script": "var jsonObject = {};\n\ntry\n{\n    jsonObject = JSON.parse(responseBody);\n    \n    tests[\"body: \" + responseBody] = true;\n    \n    if (jsonObject.hasOwnProperty(\"token\"))\n    {\n        tests[\"Parameter 'token' in response object\"] = jsonObject.hasOwnProperty(\"token\");\n        tests[\"Parameter 'token' is a string\"] = Object.prototype.toString.call(jsonObject.token) === \"[object String]\";\n        tests[\"Token: \" + jsonObject.token] = true;\n        postman.setEnvironmentVariable(\"restadmin_jwt_token\", jsonObject.token);\n    }\n    else\n    {\n        tests[\"Parameter 'denied' in response object\"] = jsonObject.hasOwnProperty(\"denied\");\n        tests[\"Parameter 'denied' is a string\"] = Object.prototype.toString.call(jsonObject.denied) === \"[object String]\";\n        tests[\"Denial reason: \" + jsonObject.denied] = false; // Fail the test so the user knows that something's amiss.\n    }\n}\ncatch(e)\n{\n    tests[\"parserr: \" + JSON.stringify(e)] = false;\n    tests[\"data: \" + JSON.stringify(jsonObject)] = false;\n}",
+  "request": {
+    "url": "{{PROTOCOL}}://{{USERSERVER_URL}}:{{USERSERVER_PORT}}/auth/jwt/remote-admin",
+    "method": "POST",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\n    \"username\": \"{{USER}}\",\n    \"password\": \"{{PASS}}\"\n}"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

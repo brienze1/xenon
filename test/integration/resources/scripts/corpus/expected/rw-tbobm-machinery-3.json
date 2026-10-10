@@ -1,0 +1,48 @@
+{
+  "id": "rw-tbobm-machinery-3",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Status code is 201",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status code 201 but got 200"
+    },
+    {
+      "name": "Response contains a workflow_id",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tv4\" is deprecated. Use \"require('ajv')\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"postman.setGlobalVariable\" is deprecated. Use \"pm.globals.set()\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {
+      "workflow_id": {
+        "$type": "undefined"
+      }
+    },
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

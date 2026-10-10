@@ -1,0 +1,77 @@
+{
+  "id": "rw-grokify-go-scim-client-1",
+  "covers": [
+    "real-world",
+    "real-world oauth-token-chain",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/grokify/go-scim-client",
+    "path": "codegen/ringcentral.postman2.base.json",
+    "url": "https://github.com/grokify/go-scim-client/blob/e70772fb26211907108837b2620cb7a6985f486f/codegen/ringcentral.postman2.base.json",
+    "licence": "MIT",
+    "item": "Fetch access_token"
+  },
+  "phase": "test",
+  "script": "var jsonData = JSON.parse(responseBody);\ntests[\"Contains an access_token\"] = jsonData.hasOwnProperty('access_token');\n\ntests[\"Status code is 200\"] = responseCode.code === 200;\n\npostman.setEnvironmentVariable(\"my_access_token\", jsonData.access_token);",
+  "request": {
+    "url": "https://{{RINGCENTRAL_SERVER_HOSTNAME}}/restapi/oauth/token",
+    "method": "POST",
+    "header": [
+      {
+        "key": "Authorization",
+        "value": "redacted-value"
+      },
+      {
+        "key": "Accept",
+        "value": "application/json"
+      },
+      {
+        "key": "Content-Type",
+        "value": "application/x-www-form-urlencoded;charset=UTF-8"
+      }
+    ],
+    "body": {
+      "mode": "urlencoded",
+      "urlencoded": [
+        {
+          "key": "grant_type",
+          "value": "password"
+        },
+        {
+          "key": "username",
+          "value": "{{RINGCENTRAL_USERNAME}}"
+        },
+        {
+          "key": "password",
+          "value": "redacted-value"
+        },
+        {
+          "key": "extension",
+          "value": "{{RINGCENTRAL_EXTENSION}}"
+        }
+      ]
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

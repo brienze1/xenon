@@ -1,0 +1,94 @@
+{
+  "id": "rw-sassoftware-rest-api-use-cases-2",
+  "covers": [
+    "real-world",
+    "real-world oauth-token-chain",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/sassoftware/rest-api-use-cases",
+    "path": "postman/catalog/create-and-search-on-tags/create-and-search-on-tags.postman_collection.json",
+    "url": "https://github.com/sassoftware/rest-api-use-cases/blob/77cf903a1430138d233ef60eedf8984573f61929/postman/catalog/create-and-search-on-tags/create-and-search-on-tags.postman_collection.json",
+    "licence": "Apache-2.0",
+    "item": "7. Remove Instance from a Tag"
+  },
+  "phase": "test",
+  "script": "if(pm.response.code === 200) {\n    console.log(\"7. Instance untagged successfully\");\n\n    // Need to update the tag's etag since the tag was updated\n    const update_etag_request = {\n        url: `${pm.environment.get('sasserver')}/catalog/tags/${pm.environment.get(\"tag_id\")}`,\n        method: 'GET',\n        header: {\n            'Accept': 'application/vnd.sas.metadata.tag+json',\n            'Authorization': `Bearer ${pm.environment.get('access_token')}`\n        },\n    }\n    pm.sendRequest(update_etag_request, (error, response) => {\n        pm.environment.set(\"tag_etag\", response.headers.get(\"ETag\"));\n    });\n\n    // Set tag_last_modified to be used in the PATCH tag request\n    postman.setEnvironmentVariable(\"tag_last_modified\", postman.getResponseHeader(\"Last-Modified\"));\n} else {\n    console.log(\"7. Untag instance failed with status: \" + pm.response.status);\n}",
+  "request": {
+    "url": "{{sasserver}}/catalog/tags?onConflict=update",
+    "method": "PATCH",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/vnd.sas.metadata.patch.archive+json"
+      },
+      {
+        "key": "If-Unmodified-Since",
+        "value": "{{tag_last_modified}}"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\r\n    \"tags\": {\r\n        \"{{tag_id}}\": [\r\n            {\r\n                \"op\": \"remove\",\r\n                \"path\": \"/members/resources\",\r\n                \"value\": \"{{sample_instance2_id}}\"\r\n            }\r\n        ]\r\n    }\r\n}"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  },
+  "sendRequest": [
+    {
+      "code": 200,
+      "status": "OK",
+      "header": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": "{\"access_token\":\"test-access-token\",\"token\":\"test-token\",\"token_type\":\"Bearer\",\"expires_in\":3600,\"id\":1,\"data\":{\"id\":1}}",
+      "responseTime": 80
+    },
+    {
+      "code": 200,
+      "status": "OK",
+      "header": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": "{\"access_token\":\"test-access-token\",\"token\":\"test-token\",\"token_type\":\"Bearer\",\"expires_in\":3600,\"id\":1,\"data\":{\"id\":1}}",
+      "responseTime": 80
+    },
+    {
+      "code": 200,
+      "status": "OK",
+      "header": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": "{\"access_token\":\"test-access-token\",\"token\":\"test-token\",\"token_type\":\"Bearer\",\"expires_in\":3600,\"id\":1,\"data\":{\"id\":1}}",
+      "responseTime": 80
+    }
+  ]
+}

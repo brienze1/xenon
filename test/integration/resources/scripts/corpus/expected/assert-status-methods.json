@@ -1,0 +1,108 @@
+{
+  "id": "assert-status-methods",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "status code",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "status code wrong",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status code 201 but got 200"
+    },
+    {
+      "name": "status reason",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "status reason wrong",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'Created' but got 'OK'"
+    },
+    {
+      "name": "statusCode",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "statusCode wrong",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status code 404 but got 200"
+    },
+    {
+      "name": "statusCodeClass",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "statusCodeClass wrong",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response code to be 4XX but found 200"
+    },
+    {
+      "name": "statusReason",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "statusReason wrong",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have status reason 'Not Found' but got 'OK'"
+    },
+    {
+      "name": "not status",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to not have status code 200"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

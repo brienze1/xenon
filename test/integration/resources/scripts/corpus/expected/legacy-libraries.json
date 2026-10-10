@@ -1,0 +1,94 @@
+{
+  "id": "legacy-libraries",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"CryptoJS\" is deprecated. Use global \"crypto\" object instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tv4\" is deprecated. Use \"require('ajv')\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"_\" is deprecated. Use \"require('lodash')\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"Backbone\" is deprecated."
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        "0cc175b9c0f1b6a831c399e269772661",
+        true,
+        "3.10.2",
+        "function",
+        "function"
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"cheerio\" is deprecated. Use \"require('cheerio')\" instead."
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        "x"
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": {
+    "method": "POST",
+    "url": "https://api.example.com/v1/users?page=2&limit=10",
+    "headers": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "X-Trace",
+        "value": "abc"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\"name\":\"Ada\",\"tags\":[\"a\",\"b\"]}"
+    }
+  },
+  "sentRequests": [],
+  "vault": {}
+}

@@ -1,0 +1,53 @@
+{
+  "id": "pm-request-body-graphql",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "log",
+      "args": [
+        "graphql",
+        "query { me { id } }",
+        "\"{\\\"a\\\":1}\""
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": {
+    "method": "POST",
+    "url": "https://api.example.com/graphql",
+    "headers": [],
+    "body": {
+      "mode": "graphql",
+      "graphql": {
+        "query": "query { me { id } }",
+        "operationName": {
+          "$type": "undefined"
+        },
+        "variables": "{\"a\":1}"
+      }
+    }
+  },
+  "sentRequests": [],
+  "vault": {}
+}

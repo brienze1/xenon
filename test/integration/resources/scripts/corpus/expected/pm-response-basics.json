@@ -1,0 +1,88 @@
+{
+  "id": "pm-response-basics",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "log",
+      "args": [
+        200,
+        "OK",
+        123,
+        "OK",
+        120,
+        2
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        "10",
+        true,
+        3
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        {
+          "contentType": "application/json",
+          "mimeType": "text",
+          "mimeFormat": "json",
+          "charset": "utf8",
+          "fileExtension": "json",
+          "fileName": "response.json"
+        },
+        {
+          "body": 120,
+          "header": 110,
+          "total": 230
+        }
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        {
+          "name": "OK",
+          "detail": "Standard response for successful HTTP requests. The actual response will depend on the request method used. In a GET request, the response will contain an entity corresponding to the requested resource. In a POST request the response will contain an entity describing or containing the result of the action.",
+          "code": 200,
+          "standardName": "OK"
+        },
+        "data:application/json;base64, eyJpZCI6NywibmFtZSI6IkFkYSIsIml0ZW1zIjpbeyJpZCI6MSwicHJpY2UiOjIuNX0seyJpZCI6MiwicHJpY2UiOjR9XSwidG9rZW4iOiJ0b2stMSIsIm5lc3RlZCI6eyJkZWVwIjp7InZhbHVlIjp0cnVlfX19",
+        {
+          "format": {
+            "$type": "undefined"
+          },
+          "source": {
+            "$type": "undefined"
+          }
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

@@ -1,0 +1,45 @@
+{
+  "id": "rw-refgenie-refgenieserver-3",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Status code is 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Test data type of the response",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Test data includes genome",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "the argument to property must be a string, number, or symbol"
+    },
+    {
+      "name": "Test data type",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected undefined to be an array"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

@@ -1,0 +1,46 @@
+{
+  "id": "rw-wcandillon-courrier-1",
+  "covers": [
+    "real-world",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/wcandillon/courrier",
+    "path": "collections/documentation-examples.json",
+    "url": "https://github.com/wcandillon/courrier/blob/b76ba71be001cddeeddc279571211e21f2eed6ae/collections/documentation-examples.json",
+    "licence": "Apache-2.0",
+    "item": "Docs"
+  },
+  "phase": "test",
+  "script": "tests[\"Status code is 200\"] = responseCode.code === 200;\nvar body = JSON.parse(responseBody);\ntests[\"Returns swagger file\"] = body.swagger === \"2.0\";",
+  "request": {
+    "url": "{{endpoint}}/_queries/public/api/docs",
+    "method": "GET",
+    "header": [],
+    "body": {
+      "mode": "formdata",
+      "formdata": []
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}
