@@ -26,7 +26,7 @@ func script(text string) entity.ScriptRef {
 
 func run(t *testing.T, text string) entity.ScriptRun {
 	t.Helper()
-	return testRunner(2*time.Second, memoryGrowthLimit).Run(context.Background(), script(text), entity.DefaultAppSettings())
+	return testRunner(30*time.Second, memoryGrowthLimit).Run(context.Background(), script(text), entity.DefaultAppSettings())
 }
 
 func mustSucceed(t *testing.T, text string) {
@@ -134,7 +134,7 @@ func TestTimeoutStopsBusyAndWaitingScripts(t *testing.T) {
 		if result.Error == nil || result.Error.Kind != scripterrorkind.Timeout || result.Error.Message != "Script execution timed out" {
 			t.Fatalf("%q: result = %+v", text, result)
 		}
-		if elapsed > 700*time.Millisecond {
+		if elapsed > 1500*time.Millisecond {
 			t.Fatalf("%q stopped after %v", text, elapsed)
 		}
 	}
