@@ -15,8 +15,7 @@
   }
 
   function isBuffer (value) {
-    return typeof value === 'object' && value !== null && value.constructor && value.constructor.name === 'Buffer' &&
-      typeof value.constructor.isBuffer === 'function' && value.constructor.isBuffer(value);
+    return typeof value === 'object' && value !== null && value._isBuffer === true;
   }
 
   function indexed (values) {

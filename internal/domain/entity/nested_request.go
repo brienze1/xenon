@@ -4,8 +4,8 @@ type NestedRequest struct {
 	Response  *Response
 	RequestID string
 	Error     string
-	Request   EffectiveRequest
 	Scopes    ScriptScopes
+	Request   EffectiveRequest
 	Skipped   bool
 }
 

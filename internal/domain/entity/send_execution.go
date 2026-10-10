@@ -18,8 +18,8 @@ type SendExecution struct {
 	PostRuns    []ScriptRun
 	Tests       []TestResult
 	Nested      []NestedRequest
-	Request     Request
 	Scopes      ScriptScopes
+	Request     Request
 }
 
 func NewSendExecution(id string) SendExecution {
