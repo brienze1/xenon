@@ -132,7 +132,7 @@ US5 Bruno · US6 cURL
 > `EditRequestService`) and Detect turns a pasted command into one `request` item named by
 > `DeriveCurlRequestName`; plan items take an optional `name`, and a request needs a
 > `target_parent_id` (`IMP-35400`). Staged files are plain writes (the commit rename is the atomic
-> step) and the writer publishes `import:progress` every 200 ms while an item is written.
+> step) and the writer publishes `import:progress` every 100 ms while an item is written.
 
 ## Phase 9: Polish
 

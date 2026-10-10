@@ -9,7 +9,7 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums"
 )
 
-const importHeartbeatInterval = 200 * time.Millisecond
+const importHeartbeatInterval = 100 * time.Millisecond
 
 type importWriter struct {
 	stageImportItem       usecase.StageImportItem
