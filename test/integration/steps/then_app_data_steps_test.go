@@ -17,6 +17,7 @@ func (t *testUtils) registerThenAppDataSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the app data file "([^"]*)" should exist$`, t.theAppDataFileShouldExist)
 	ctx.Then(`^the app data file "([^"]*)" should not exist$`, t.theAppDataFileShouldNotExist)
 	ctx.Then(`^the app data file "([^"]*)" should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theAppDataFileShouldContainTheFieldEqualTo)
+	ctx.Then(`^the app data file "([^"]*)" should contain the field "([^"]*)" equal to$`, t.theAppDataFileShouldContainTheFieldEqualToText)
 	ctx.Then(`^the app data file "([^"]*)" should contain the field "([^"]*)" array length equal to (\d+)$`, t.theAppDataFileShouldContainTheFieldArrayLengthEqualTo)
 	ctx.Then(`^the app data file "([^"]*)" should not contain "([^"]*)"$`, t.theAppDataFileShouldNotContain)
 	ctx.Then(`^the app data file "([^"]*)" should have (\d+) lines$`, t.theAppDataFileShouldHaveLines)
@@ -49,6 +50,10 @@ func (t *testUtils) theAppDataFileShouldContainTheFieldEqualTo(path, field, expe
 		return err
 	}
 	return expectEqual(stringify(value), t.substitute(expected), field)
+}
+
+func (t *testUtils) theAppDataFileShouldContainTheFieldEqualToText(path, field string, expected *godog.DocString) error {
+	return t.theAppDataFileShouldContainTheFieldEqualTo(path, field, expected.Content)
 }
 
 func (t *testUtils) theAppDataFileShouldContainTheFieldArrayLengthEqualTo(path, field string, length int) error {
