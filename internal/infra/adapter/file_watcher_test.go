@@ -97,7 +97,6 @@ func TestWatcherReportsAWrittenFileOnceAfterABurst(t *testing.T) {
 	path := filepath.Join(root, "collections", "billing", "ping.yaml")
 	for index := 0; index < 5; index++ {
 		write(t, path, "name: ping")
-		time.Sleep(20 * time.Millisecond)
 	}
 	change := recorder.next(t)
 	if change.path != path || change.removed {

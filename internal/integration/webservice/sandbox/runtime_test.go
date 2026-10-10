@@ -148,7 +148,7 @@ func TestStackOverflow(t *testing.T) {
 }
 
 func TestMemoryGuard(t *testing.T) {
-	result := testRunner(20*time.Second, 64<<20).Run(context.Background(), script("const keep = []; while (true) { keep.push(new Array(100000).fill('xxxxxxxx')) }"), entity.DefaultAppSettings())
+	result := testRunner(20*time.Second, 16<<20).Run(context.Background(), script("const keep = []; while (true) { keep.push(new Array(100000).fill('xxxxxxxx')) }"), entity.DefaultAppSettings())
 	if result.Error == nil || result.Error.Kind != scripterrorkind.Memory || result.Error.Message != "Script stopped: it used too much memory" {
 		t.Fatalf("result = %+v", result.Error)
 	}
