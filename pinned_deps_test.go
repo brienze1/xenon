@@ -5,6 +5,8 @@ import (
 	_ "github.com/Bios-Marcel/wastebasket/v2"
 	_ "github.com/andybalholm/brotli"
 	_ "github.com/cucumber/godog"
+	_ "github.com/dop251/goja"
+	_ "github.com/dop251/goja_nodejs/eventloop"
 	_ "github.com/fsnotify/fsnotify"
 	_ "github.com/go-playground/validator/v10"
 	_ "github.com/oklog/ulid/v2"
