@@ -12,7 +12,7 @@ var brunoObjects = []string{"bru", "req", "res"}
 
 func TranslateBrunoScript(script entity.BrunoScript) entity.ScriptTranslation {
 	translation := entity.NewScriptTranslation()
-	if strings.TrimSpace(script.Text) == "" {
+	if script.IsEmpty() {
 		return translation
 	}
 	originals := strings.Split(script.Text, "\n")

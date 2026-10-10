@@ -15,24 +15,24 @@ type curlOption struct {
 var longOptions = map[string]curlOption{
 	"--request":        {takesValue: true, apply: func(c *dto.Command, v string) { c.Method = v }},
 	"--header":         {takesValue: true, apply: func(c *dto.Command, v string) { c.AddHeader(v) }},
-	"--data":           {takesValue: true, apply: addData},
-	"--data-ascii":     {takesValue: true, apply: addData},
-	"--data-raw":       {takesValue: true, apply: func(c *dto.Command, v string) { c.Data = append(c.Data, dto.NewDataPart(v, true)) }},
-	"--data-binary":    {takesValue: true, apply: addData},
-	"--data-urlencode": {takesValue: true, apply: func(c *dto.Command, v string) { c.Data = append(c.Data, dto.NewUrlEncodedPart(v)) }},
-	"--form":           {takesValue: true, apply: func(c *dto.Command, v string) { c.Forms = append(c.Forms, v) }},
-	"--form-string":    {takesValue: true, apply: func(c *dto.Command, v string) { c.Forms = append(c.Forms, v) }},
+	"--data":           {takesValue: true, apply: (*dto.Command).AddData},
+	"--data-ascii":     {takesValue: true, apply: (*dto.Command).AddData},
+	"--data-raw":       {takesValue: true, apply: (*dto.Command).AddRawData},
+	"--data-binary":    {takesValue: true, apply: (*dto.Command).AddData},
+	"--data-urlencode": {takesValue: true, apply: (*dto.Command).AddUrlEncodedData},
+	"--form":           {takesValue: true, apply: (*dto.Command).AddForm},
+	"--form-string":    {takesValue: true, apply: (*dto.Command).AddForm},
 	"--get":            {apply: func(c *dto.Command, _ string) { c.Get = true }},
 	"--head":           {apply: func(c *dto.Command, _ string) { c.Head = true }},
 	"--upload-file":    {takesValue: true, apply: func(c *dto.Command, v string) { c.UploadFile = v }},
-	"--url":            {takesValue: true, apply: func(c *dto.Command, v string) { c.Urls = append(c.Urls, v) }},
-	"--user":           {takesValue: true, apply: func(c *dto.Command, v string) { c.User = &v }},
+	"--url":            {takesValue: true, apply: (*dto.Command).AddUrl},
+	"--user":           {takesValue: true, apply: (*dto.Command).SetUser},
 	"--basic":          {apply: func(c *dto.Command, _ string) { c.Digest = false }},
 	"--digest":         {apply: func(c *dto.Command, _ string) { c.Digest = true }},
-	"--cookie":         {takesValue: true, apply: addCookie},
-	"--user-agent":     {takesValue: true, apply: func(c *dto.Command, v string) { c.SetHeader("User-Agent", v) }},
-	"--referer":        {takesValue: true, apply: func(c *dto.Command, v string) { c.SetHeader("Referer", v) }},
-	"--json":           {takesValue: true, apply: func(c *dto.Command, v string) { c.Json = append(c.Json, v) }},
+	"--cookie":         {takesValue: true, apply: (*dto.Command).AddCookie},
+	"--user-agent":     {takesValue: true, apply: (*dto.Command).SetUserAgent},
+	"--referer":        {takesValue: true, apply: (*dto.Command).SetReferer},
+	"--json":           {takesValue: true, apply: (*dto.Command).AddJson},
 	"--insecure":       {apply: func(c *dto.Command, _ string) { c.Insecure = true }},
 	"--location":       {apply: func(c *dto.Command, _ string) { c.Location = true }},
 }
@@ -76,7 +76,7 @@ func parseCurlOptions(arguments []string) *dto.Command {
 		case strings.HasPrefix(argument, "-") && len(argument) > 1:
 			position = applyShort(command, argument, arguments, position)
 		default:
-			command.Urls = append(command.Urls, argument)
+			command.AddUrl(argument)
 		}
 	}
 	return command
@@ -131,16 +131,4 @@ func optionValue(takesValue bool, attached string, arguments []string, position 
 	default:
 		return "", position
 	}
-}
-
-func addData(command *dto.Command, value string) {
-	command.Data = append(command.Data, dto.NewDataPart(value, false))
-}
-
-func addCookie(command *dto.Command, value string) {
-	if !strings.Contains(value, "=") {
-		command.Notice("Ignored the cookie file " + value)
-		return
-	}
-	command.AddCookie(value)
 }

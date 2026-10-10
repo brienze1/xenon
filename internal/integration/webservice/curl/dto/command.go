@@ -17,8 +17,10 @@ import (
 const (
 	filePrefix         = "@"
 	jsonContentType    = "application/json"
-	acceptHeader       = "Accept"
 	cookieHeader       = "Cookie"
+	refererHeader      = "Referer"
+	usernameAttribute  = "username"
+	passwordAttribute  = "password"
 	formUrlEncodedType = "application/x-www-form-urlencoded"
 )
 
@@ -52,7 +54,47 @@ func (c *Command) SetHeader(key, value string) {
 	c.Headers = append(c.Headers, entity.NewKeyValue(key, value))
 }
 
+func (c *Command) AddData(value string) {
+	c.Data = append(c.Data, NewDataPart(value, false))
+}
+
+func (c *Command) AddRawData(value string) {
+	c.Data = append(c.Data, NewDataPart(value, true))
+}
+
+func (c *Command) AddUrlEncodedData(value string) {
+	c.Data = append(c.Data, NewUrlEncodedPart(value))
+}
+
+func (c *Command) AddForm(form string) {
+	c.Forms = append(c.Forms, form)
+}
+
+func (c *Command) AddJson(json string) {
+	c.Json = append(c.Json, json)
+}
+
+func (c *Command) AddUrl(address string) {
+	c.Urls = append(c.Urls, address)
+}
+
+func (c *Command) SetUser(user string) {
+	c.User = &user
+}
+
+func (c *Command) SetUserAgent(userAgent string) {
+	c.SetHeader(entity.HeaderUserAgent, userAgent)
+}
+
+func (c *Command) SetReferer(referer string) {
+	c.SetHeader(refererHeader, referer)
+}
+
 func (c *Command) AddCookie(cookie string) {
+	if !strings.Contains(cookie, "=") {
+		c.Notice("Ignored the cookie file " + cookie)
+		return
+	}
 	for index, header := range c.Headers {
 		if header.HasKey(cookieHeader) {
 			c.Headers[index].Value += "; " + cookie
@@ -113,7 +155,7 @@ func (c *Command) headers() []entity.KeyValue {
 	if len(c.Json) == 0 {
 		return headers
 	}
-	for _, name := range []string{entity.HeaderContentType, acceptHeader} {
+	for _, name := range []string{entity.HeaderContentType, entity.HeaderAccept} {
 		if !hasHeader(headers, name) {
 			headers = append(headers, entity.NewKeyValue(name, jsonContentType))
 		}
@@ -127,7 +169,7 @@ func (c *Command) auth() entity.Auth {
 	}
 	username, password, _ := strings.Cut(*c.User, ":")
 	if c.Digest {
-		return entity.Auth{Type: authtype.Digest, Attributes: []entity.AuthAttribute{{Key: "username", Value: username}, {Key: "password", Value: password}}}
+		return entity.Auth{Type: authtype.Digest, Attributes: []entity.AuthAttribute{{Key: usernameAttribute, Value: username}, {Key: passwordAttribute, Value: password}}}
 	}
 	return entity.Auth{Type: authtype.Basic, Basic: entity.AuthBasic{Username: username, Password: password}}
 }

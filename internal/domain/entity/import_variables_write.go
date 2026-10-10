@@ -15,6 +15,10 @@ func (i ImportVariablesWrite) IsEmpty() bool {
 	return i.Environment == nil && i.Globals == nil
 }
 
+func (i ImportVariablesWrite) ReplacesEnvironment() bool {
+	return i.Replaced != nil
+}
+
 func (i ImportVariablesWrite) Scope() ScopeRef {
 	if i.Environment != nil {
 		return i.Environment.ScopeRef()

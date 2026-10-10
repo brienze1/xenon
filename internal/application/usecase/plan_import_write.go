@@ -8,7 +8,7 @@ import (
 func PlanImportWrite(placement entity.ImportPlacement, siblings entity.TreeNode, replaced []entity.TreeNode, collection *entity.Collection, variables []entity.VariableRow, resolution enums.ClashResolution) entity.ImportWrite {
 	replacements, appended := importedFileNames(placement.Nodes, replaced)
 	write := entity.ImportWrite{Nodes: placement.Nodes, Replaced: replaced, Order: siblings.OrderImporting(replacements, appended), Merge: placement.Merge, Wrapped: placement.Wrapped}
-	if placement.Parent != nil {
+	if placement.HasParent() {
 		parent := placement.Parent.WithOrder(write.Order)
 		write.Parent = &parent
 	}
@@ -18,7 +18,7 @@ func PlanImportWrite(placement entity.ImportPlacement, siblings entity.TreeNode,
 	rows, kept := entity.MergeImportedVariables(collection.Variables, variables, resolution)
 	write.KeptVariables = kept
 	write.AddedVariables = len(rows) - len(collection.Variables)
-	if write.Parent != nil && write.Parent.ID == collection.ID {
+	if write.HasParent(collection.ID) {
 		parent := write.Parent.WithVariables(rows)
 		write.Parent = &parent
 		return write

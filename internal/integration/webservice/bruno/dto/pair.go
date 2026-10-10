@@ -9,8 +9,8 @@ type Pair struct {
 	Enabled bool
 }
 
-func NewPair(key, value string, enabled bool) Pair {
-	return Pair{Key: key, Value: value, Enabled: enabled}
+func NewPair(key, value string, line int, enabled bool) Pair {
+	return Pair{Key: key, Value: value, Line: line, Enabled: enabled}
 }
 
 func (p Pair) ToKeyValue() entity.KeyValue {

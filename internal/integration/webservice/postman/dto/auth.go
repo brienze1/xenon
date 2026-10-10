@@ -10,7 +10,12 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums/importorigin"
 )
 
-const noAuth = "noauth"
+const (
+	noAuth      = "noauth"
+	tokenKey    = "token"
+	usernameKey = "username"
+	passwordKey = "password"
+)
 
 var reservedAuthTypes = []string{authtype.ApiKey.String(), authtype.OAuth2.String(), authtype.AwsV4.String(), authtype.Digest.String()}
 
@@ -41,9 +46,9 @@ func (a *Auth) ToEntity() entity.Auth {
 	case a.Type == noAuth:
 		return entity.Auth{Type: authtype.None}
 	case a.Type == authtype.Bearer.String():
-		return entity.Auth{Type: authtype.Bearer, Bearer: entity.AuthBearer{Token: text(attributeValue(attributes, "token"))}}
+		return entity.Auth{Type: authtype.Bearer, Bearer: entity.AuthBearer{Token: text(attributeValue(attributes, tokenKey))}}
 	case a.Type == authtype.Basic.String():
-		return entity.Auth{Type: authtype.Basic, Basic: entity.AuthBasic{Username: text(attributeValue(attributes, "username")), Password: text(attributeValue(attributes, "password"))}}
+		return entity.Auth{Type: authtype.Basic, Basic: entity.AuthBasic{Username: text(attributeValue(attributes, usernameKey)), Password: text(attributeValue(attributes, passwordKey))}}
 	case slices.Contains(reservedAuthTypes, a.Type):
 		return entity.Auth{Type: authtype.GetAuthType(a.Type), Attributes: authAttributes(attributes)}
 	default:

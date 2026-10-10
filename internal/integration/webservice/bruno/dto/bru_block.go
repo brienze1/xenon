@@ -31,5 +31,5 @@ func (b BruBlock) Lookup(key string) (BruEntry, bool) {
 			return entry, true
 		}
 	}
-	return BruEntry{}, false
+	return NewBruEntry("", "", 0, false), false
 }

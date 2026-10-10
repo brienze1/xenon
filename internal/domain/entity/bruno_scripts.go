@@ -2,7 +2,6 @@ package entity
 
 import (
 	"strconv"
-	"strings"
 
 	"github.com/brienze1/xenon/internal/domain/enums/warningcode"
 )
@@ -22,7 +21,7 @@ type BrunoScripts struct {
 }
 
 func (b BrunoScripts) IsEmpty() bool {
-	return strings.TrimSpace(b.PreRequest.Text+b.PostResponse.Text+b.Tests.Text) == "" &&
+	return b.PreRequest.IsEmpty() && b.PostResponse.IsEmpty() && b.Tests.IsEmpty() &&
 		len(b.PreRequestVars)+len(b.PostResponseVars)+len(b.Assertions) == 0
 }
 

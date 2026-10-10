@@ -11,14 +11,16 @@ import (
 
 const (
 	postmanFileMode    = "file"
-	postmanFormData    = "formdata"
-	postmanUrlEncoded  = "urlencoded"
-	postmanRaw         = "raw"
-	postmanGraphQl     = "graphql"
 	postmanRawLanguage = "language"
 )
 
-var postmanRawLanguages = []string{"json", "javascript", "xml", "html", "text"}
+var (
+	postmanFormData     = bodymode.FormData.String()
+	postmanUrlEncoded   = bodymode.UrlEncoded.String()
+	postmanRaw          = bodymode.Raw.String()
+	postmanGraphQl      = bodymode.GraphQl.String()
+	postmanRawLanguages = []string{rawlanguage.Json.String(), rawlanguage.JavaScript.String(), rawlanguage.Xml.String(), rawlanguage.Html.String(), rawlanguage.Text.String()}
+)
 
 type Body struct {
 	Raw        map[string]any `json:"-"`

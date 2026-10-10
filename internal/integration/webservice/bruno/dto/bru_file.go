@@ -16,7 +16,7 @@ func (b BruFile) Block(name string) (BruBlock, bool) {
 			return block, true
 		}
 	}
-	return BruBlock{}, false
+	return NewBruBlock("", 0), false
 }
 
 func (b BruFile) Entries(name string) []BruEntry {

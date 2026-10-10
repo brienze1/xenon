@@ -13,6 +13,10 @@ type MultipartRow struct {
 	Enabled     bool
 }
 
+func NewMultipartRow(key, value, contentType string, enabled bool) MultipartRow {
+	return MultipartRow{Key: key, Value: value, ContentType: contentType, Enabled: enabled, Files: []string{}}
+}
+
 func (m MultipartRow) toEntity() entity.FormDataRow {
 	row := entity.NewFormDataRow(m.Key, m.Value)
 	row.Enabled = m.Enabled

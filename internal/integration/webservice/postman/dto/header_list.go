@@ -21,7 +21,7 @@ func (h *HeaderList) UnmarshalJSON(data []byte) error {
 	for _, line := range strings.Split(strings.ReplaceAll(raw, "\r\n", "\n"), "\n") {
 		key, value, found := strings.Cut(line, ":")
 		if found && strings.TrimSpace(key) != "" {
-			h.Rows = append(h.Rows, KeyValue{Key: strings.TrimSpace(key), Value: strings.TrimSpace(value)})
+			h.Rows = append(h.Rows, NewKeyValue(strings.TrimSpace(key), strings.TrimSpace(value)))
 		}
 	}
 	return nil

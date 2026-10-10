@@ -34,7 +34,7 @@ func NewRequestFromYaml(source YamlRequest, file string) Request {
 		Auth:     yamlAuth(source.Http.Auth),
 		Body:     yamlBody(source.Http.Body),
 		Docs:     trimFinalNewline(source.Docs),
-		Scripts:  yamlScripts(source.Runtime.Scripts, source.Runtime.Variables, source.Runtime.Assertions),
+		Scripts:  NewScriptsFromYaml(source.Runtime.Scripts, source.Runtime.Variables, source.Runtime.Assertions),
 	}
 	for _, param := range source.Http.Params {
 		if param.Type == pathParam {
@@ -54,7 +54,7 @@ func NewFolderFromYaml(source YamlFolder, file, fallbackName string) Folder {
 		Docs:    trimFinalNewline(source.Docs),
 		Headers: yamlPairs(source.Request.Headers),
 		Auth:    yamlAuth(source.Request.Auth),
-		Scripts: yamlScripts(source.Request.Scripts, source.Request.Variables, source.Request.Asserts),
+		Scripts: NewScriptsFromYaml(source.Request.Scripts, source.Request.Variables, source.Request.Asserts),
 	}
 	if folder.Name == "" {
 		folder.Name = fallbackName
@@ -63,7 +63,7 @@ func NewFolderFromYaml(source YamlFolder, file, fallbackName string) Folder {
 }
 
 func NewCollectionFromYaml(source YamlCollection, file string) Collection {
-	scripts := yamlScripts(source.Request.Scripts, source.Request.Variables, source.Request.Asserts)
+	scripts := NewScriptsFromYaml(source.Request.Scripts, source.Request.Variables, source.Request.Asserts)
 	collection := Collection{
 		Name:      source.Info.Name,
 		File:      file,
@@ -125,7 +125,7 @@ func yamlBody(source *YamlBody) Body {
 }
 
 func yamlMultipartRow(source YamlFormRow) MultipartRow {
-	row := MultipartRow{Key: source.Name, ContentType: source.ContentType, Enabled: !source.Disabled, Files: []string{}}
+	row := NewMultipartRow(source.Name, "", source.ContentType, !source.Disabled)
 	if source.Type != FileBody {
 		row.Value = source.Value.Value
 		return row
@@ -138,7 +138,7 @@ func yamlMultipartRow(source YamlFormRow) MultipartRow {
 	return row
 }
 
-func yamlScripts(scripts []YamlScript, variables []YamlPair, assertions []YamlAssertion) Scripts {
+func NewScriptsFromYaml(scripts []YamlScript, variables []YamlPair, assertions []YamlAssertion) Scripts {
 	result := Scripts{PreRequestVars: []Pair{}, PostResponseVars: []Pair{}, Assertions: []entity.BrunoAssertion{}}
 	for _, script := range scripts {
 		code := entity.BrunoScript{Text: trimFinalNewline(script.Code), Line: script.Line}
@@ -172,7 +172,7 @@ func yamlAuth(node yaml.Node) Auth {
 			auth.Mode = value
 			continue
 		}
-		auth.Values = append(auth.Values, NewPair(key, value, true))
+		auth.Values = append(auth.Values, NewPair(key, value, 0, true))
 	}
 	return auth
 }
@@ -188,7 +188,7 @@ func yamlPairs(rows []YamlPair) []Pair {
 func yamlSettings(node yaml.Node) []Pair {
 	result := make([]Pair, 0)
 	for index := 0; index+1 < len(node.Content); index += 2 {
-		result = append(result, NewPair(node.Content[index].Value, node.Content[index+1].Value, true))
+		result = append(result, NewPair(node.Content[index].Value, node.Content[index+1].Value, 0, true))
 	}
 	return result
 }

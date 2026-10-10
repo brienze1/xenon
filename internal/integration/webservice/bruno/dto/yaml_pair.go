@@ -27,5 +27,5 @@ func (y YamlPair) IsEnabled() bool {
 }
 
 func (y YamlPair) ToPair() Pair {
-	return Pair{Key: y.Name, Value: y.Value, Line: y.Line, Enabled: y.IsEnabled()}
+	return NewPair(y.Name, y.Value, y.Line, y.IsEnabled())
 }

@@ -85,6 +85,10 @@ func (e Environment) Renamed(name string) Environment {
 	return e
 }
 
+func (e Environment) IsMovedFrom(previous Environment) bool {
+	return previous.HasID(e.ID) && previous.FileName != e.FileName
+}
+
 func (e Environment) WithFileName(fileName string) Environment {
 	e.FileName = fileName
 	return e

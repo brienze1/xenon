@@ -16,6 +16,10 @@ type KeyValue struct {
 	Disabled    bool           `json:"disabled"`
 }
 
+func NewKeyValue(key, value string) KeyValue {
+	return KeyValue{Key: key, Value: value}
+}
+
 func (k *KeyValue) UnmarshalJSON(data []byte) error {
 	type plain KeyValue
 	if err := json.Unmarshal(data, (*plain)(k)); err != nil {

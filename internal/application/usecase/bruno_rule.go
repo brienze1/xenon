@@ -3,6 +3,7 @@ package usecase
 import (
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/brunoruleform"
+	"github.com/brienze1/xenon/internal/domain/enums/pmapi"
 )
 
 type brunoRule struct {
@@ -33,15 +34,15 @@ var brunoRules = map[string]brunoRule{
 	"req.getBody":          {replacement: "JSON.parse(pm.request.body.raw)", form: brunoruleform.EmptyCall},
 	"req.body":             {replacement: "JSON.parse(pm.request.body.raw)", form: brunoruleform.Property},
 	"req.setBody":          {replacement: "pm.request.body.update(JSON.stringify(%s))", form: brunoruleform.WrappedCall, arity: 1},
-	"res.getStatus":        {replacement: "pm.response.code", form: brunoruleform.EmptyCall},
-	"res.status":           {replacement: "pm.response.code", form: brunoruleform.Property},
+	"res.getStatus":        {replacement: pmapi.ResponseCode.String(), form: brunoruleform.EmptyCall},
+	"res.status":           {replacement: pmapi.ResponseCode.String(), form: brunoruleform.Property},
 	"res.getBody":          {replacement: "pm.response.json()", form: brunoruleform.EmptyCall},
 	"res.body":             {replacement: "pm.response.json()", form: brunoruleform.Property},
 	"res.getHeader":        {replacement: "pm.response.headers.get", form: brunoruleform.RenamedCall},
 	"res.getHeaders":       {replacement: "pm.response.headers.toObject()", form: brunoruleform.EmptyCall},
 	"res.headers":          {replacement: "pm.response.headers.toObject()", form: brunoruleform.Property},
-	"res.getResponseTime":  {replacement: "pm.response.responseTime", form: brunoruleform.EmptyCall},
-	"res.responseTime":     {replacement: "pm.response.responseTime", form: brunoruleform.Property},
-	"test":                 {replacement: "pm.test", form: brunoruleform.RenamedCall},
-	"expect":               {replacement: "pm.expect", form: brunoruleform.RenamedCall},
+	"res.getResponseTime":  {replacement: pmapi.ResponseTime.String(), form: brunoruleform.EmptyCall},
+	"res.responseTime":     {replacement: pmapi.ResponseTime.String(), form: brunoruleform.Property},
+	"test":                 {replacement: pmapi.Test.String(), form: brunoruleform.RenamedCall},
+	"expect":               {replacement: pmapi.Expect.String(), form: brunoruleform.RenamedCall},
 }

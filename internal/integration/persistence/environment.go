@@ -81,7 +81,7 @@ func (e *environmentPersistence) Save(ctx context.Context, root string, environm
 	}
 	e.index.RecordWrite(ctx, path, data)
 	for _, previous := range environments {
-		if previous.HasID(environment.ID) && previous.FileName != environment.FileName {
+		if environment.IsMovedFrom(previous) {
 			if err := os.Remove(filepath.Join(dir, previous.FileName)); err != nil {
 				return nil, errs.FileError(err, "ENV-09500")
 			}
@@ -144,7 +144,7 @@ func readEnvironment(dir, fileName string) entity.Environment {
 	if reason := readDocument(filepath.Join(dir, fileName), itemkind.Environment, &stored.Xenon, &stored.Kind, &stored); reason != "" {
 		return entity.NewMalformedEnvironment(fileName, reason)
 	}
-	if strings.TrimSpace(stored.Id) == "" {
+	if !stored.HasId() {
 		return entity.NewMalformedEnvironment(fileName, fileName+" has no id")
 	}
 	return stored.ToEntity(fileName)

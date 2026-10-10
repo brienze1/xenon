@@ -38,7 +38,7 @@ export function sourceLabel(kind: string, version: string): string {
 }
 
 export function countsLabel(counts: ImportCounts): string {
-  const parts = COUNT_LABELS.filter(([key]) => counts[key] > 0).map(([key, one, many]) => `${formatNumber(counts[key], 0)} ${counts[key] === 1 ? one : many}`)
+  const parts = COUNT_LABELS.flatMap(([key, one, many]) => (counts[key] > 0 ? [`${formatNumber(counts[key], 0)} ${counts[key] === 1 ? one : many}`] : []))
   return parts.length > 0 ? parts.join(' · ') : 'nothing'
 }
 

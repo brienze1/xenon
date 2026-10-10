@@ -100,7 +100,7 @@ func (i *importStagingPersistence) apply(ctx context.Context, index *entity.Tree
 	if err := i.writeOrder(ctx, index, staged, journal); err != nil {
 		return err
 	}
-	if staged.Collection == nil {
+	if !staged.HasCollectionUpdate() {
 		return nil
 	}
 	item, _ := index.Item(staged.Collection.ID)
@@ -109,7 +109,7 @@ func (i *importStagingPersistence) apply(ctx context.Context, index *entity.Tree
 }
 
 func (i *importStagingPersistence) writeOrder(ctx context.Context, index *entity.TreeIndex, staged entity.StagedImport, journal *commitJournal) error {
-	if staged.ParentID == "" {
+	if staged.IsIntoWorkspaceRoot() {
 		_, stored, err := readWorkspace(staged.Root)
 		if err != nil {
 			return err
@@ -149,7 +149,7 @@ func (i *importStagingPersistence) write(ctx context.Context, path string, field
 }
 
 func importTargetDir(index *entity.TreeIndex, staged entity.StagedImport) (string, error) {
-	if staged.ParentID == "" {
+	if staged.IsIntoWorkspaceRoot() {
 		return filepath.Join(staged.Root, collectionsDir), nil
 	}
 	item, found := index.Item(staged.ParentID)

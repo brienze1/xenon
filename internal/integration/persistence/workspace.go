@@ -49,10 +49,13 @@ func (w *workspacePersistence) Inspect(ctx context.Context, root string) (*entit
 	}
 	if err == nil {
 		entries, _ := os.ReadDir(root)
-		folder.Exists = true
-		folder.IsDirectory = info.IsDir()
-		folder.EntryCount = len(entries)
-		folder.HasWorkspaceFile = isFile(filepath.Join(root, workspaceFile))
+		folder = entity.FolderInfo{
+			Path:             root,
+			Exists:           true,
+			IsDirectory:      info.IsDir(),
+			EntryCount:       len(entries),
+			HasWorkspaceFile: isFile(filepath.Join(root, workspaceFile)),
+		}
 	}
 
 	logger.Debug(ctx, "Finished", folder)

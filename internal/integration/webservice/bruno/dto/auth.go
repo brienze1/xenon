@@ -13,8 +13,6 @@ const (
 	apiKeyLocation   = "in"
 	queryPlacement   = "queryparams"
 	queryLocation    = "query"
-	inheritMode      = "inherit"
-	noneMode         = "none"
 	bearerTokenKey   = "token"
 	basicUsernameKey = "username"
 	basicPasswordKey = "password"
@@ -61,9 +59,9 @@ func (a Auth) value(key string) string {
 
 func (a Auth) ToEntity() entity.Auth {
 	switch {
-	case a.Mode == "" || a.Mode == inheritMode:
+	case a.Mode == "" || a.Mode == authtype.Inherit.String():
 		return entity.DefaultAuth()
-	case a.Mode == noneMode:
+	case a.Mode == authtype.None.String():
 		return entity.Auth{Type: authtype.None}
 	case a.Mode == authtype.Bearer.String():
 		return entity.Auth{Type: authtype.Bearer, Bearer: entity.AuthBearer{Token: a.value(bearerTokenKey)}}

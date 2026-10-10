@@ -49,7 +49,7 @@ func (w importVariablesWriter) environment(ctx context.Context, workspace entity
 	if err != nil {
 		return err
 	}
-	if write.Replaced != nil {
+	if write.ReplacesEnvironment() {
 		if err := w.deleteEnvironment.Delete(ctx, workspace.Path, write.Replaced.ID); err != nil {
 			w.vaults.restore(ctx, vault, write.Scope(), nil)
 			return err
@@ -60,7 +60,7 @@ func (w importVariablesWriter) environment(ctx context.Context, workspace entity
 		w.vaults.restore(ctx, vault, write.Scope(), nil)
 		return err
 	}
-	if write.Replaced != nil {
+	if write.ReplacesEnvironment() {
 		if _, err := w.values.drop(ctx, workspace.LocalID, *write.Replaced); err != nil {
 			logger.Error(ctx, err, "The replaced environment's local and secret values could not be removed", map[string]any{"localId": workspace.LocalID})
 		}

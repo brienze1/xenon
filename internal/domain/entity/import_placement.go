@@ -11,6 +11,10 @@ func NewTopLevelPlacement(root ImportNode) ImportPlacement {
 	return ImportPlacement{Nodes: []ImportNode{root}}
 }
 
+func (i ImportPlacement) HasParent() bool {
+	return i.Parent != nil
+}
+
 func (i ImportPlacement) WithNodes(nodes []ImportNode) ImportPlacement {
 	i.Nodes = nodes
 	return i

@@ -1,6 +1,8 @@
 package model
 
 import (
+	"strings"
+
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/envcolor"
 	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
@@ -51,6 +53,10 @@ func (e *Environment) ToEntity(fileName string) entity.Environment {
 		Postman:           sourceFieldsToEntity(e.Postman),
 		Bruno:             sourceFieldsToEntity(e.Bruno),
 	}
+}
+
+func (e *Environment) HasId() bool {
+	return strings.TrimSpace(e.Id) != ""
 }
 
 func (e *Environment) Fields() []yamlnode.Field {

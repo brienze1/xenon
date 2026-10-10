@@ -108,7 +108,7 @@ func queryOf(raw string) []KeyValue {
 			continue
 		}
 		key, value, _ := strings.Cut(pair, "=")
-		rows = append(rows, KeyValue{Key: key, Value: value})
+		rows = append(rows, NewKeyValue(key, value))
 	}
 	return rows
 }

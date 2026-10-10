@@ -93,5 +93,5 @@ func (b Body) selectedFile() FilePart {
 	if len(b.Files) > 0 {
 		return b.Files[0]
 	}
-	return FilePart{}
+	return NewFilePart("", "", false)
 }

@@ -16,6 +16,10 @@ func (i ImportWrite) IsEmpty() bool {
 	return len(i.Nodes) == 0 && !i.Merge
 }
 
+func (i ImportWrite) HasParent(id string) bool {
+	return i.Parent != nil && i.Parent.ID == id
+}
+
 func (i ImportWrite) Staged(sourceId, itemKey, root, parentId string) StagedImport {
 	replaces := make([]string, 0, len(i.Replaced))
 	for _, node := range i.Replaced {

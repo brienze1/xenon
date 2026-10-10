@@ -53,7 +53,7 @@ func NewRequestFromBru(file BruFile) Request {
 		Path:     pairs(file.Entries(pathBlock)),
 		Headers:  pairs(file.Entries(headersBlock)),
 		Settings: pairs(file.Entries(settingsBlock)),
-		Scripts:  bruScripts(file),
+		Scripts:  NewScriptsFromBru(file),
 	}
 	method, block := methodBlock(file)
 	request.Method = method
@@ -76,7 +76,7 @@ func NewFolderFromBru(file BruFile, fallbackName string) Folder {
 		Headers: pairs(file.Entries(headersBlock)),
 		Auth:    bruAuth(file, file.Value(authBlock, "mode")),
 		Docs:    textOf(file, docsBlock),
-		Scripts: bruScripts(file),
+		Scripts: NewScriptsFromBru(file),
 	}
 	if folder.Name == "" {
 		folder.Name = fallbackName
@@ -85,7 +85,7 @@ func NewFolderFromBru(file BruFile, fallbackName string) Folder {
 }
 
 func NewCollectionFromBru(file BruFile, name string, config map[string]any) Collection {
-	scripts := bruScripts(file)
+	scripts := NewScriptsFromBru(file)
 	collection := Collection{
 		Name:      name,
 		Config:    config,
@@ -120,7 +120,7 @@ func methodBlock(file BruFile) (string, BruBlock) {
 			return block.Value("method"), block
 		}
 	}
-	return "", BruBlock{}
+	return "", NewBruBlock("", 0)
 }
 
 func unsupportedType(file BruFile) string {
@@ -159,7 +159,7 @@ func bruBody(file BruFile, mode string) Body {
 }
 
 func multipartRow(entry BruEntry) MultipartRow {
-	row := MultipartRow{Key: entry.Key, Value: entry.Value, Enabled: entry.Enabled, Files: []string{}, ContentType: annotation(contentAnnotation, entry.Value)}
+	row := NewMultipartRow(entry.Key, entry.Value, annotation(contentAnnotation, entry.Value), entry.Enabled)
 	if files := annotation(fileAnnotation, entry.Value); fileAnnotation.MatchString(entry.Value) {
 		row.Files = strings.Split(files, "|")
 		row.Value = ""
@@ -167,7 +167,7 @@ func multipartRow(entry BruEntry) MultipartRow {
 	return row
 }
 
-func bruScripts(file BruFile) Scripts {
+func NewScriptsFromBru(file BruFile) Scripts {
 	return Scripts{
 		PreRequest:       script(file, preScriptBlock),
 		PostResponse:     script(file, postScriptBlock),
@@ -198,7 +198,7 @@ func assertions(entries []BruEntry) []entity.BrunoAssertion {
 func pairs(entries []BruEntry) []Pair {
 	result := make([]Pair, 0, len(entries))
 	for _, entry := range entries {
-		result = append(result, Pair{Key: entry.Key, Value: entry.Value, Line: entry.Line, Enabled: entry.Enabled})
+		result = append(result, NewPair(entry.Key, entry.Value, entry.Line, entry.Enabled))
 	}
 	return result
 }

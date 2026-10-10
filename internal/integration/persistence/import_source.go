@@ -175,7 +175,8 @@ func readImportFile(path, name string, size int64) (*entity.ImportInput, error) 
 }
 
 func readImportFolder(root, name string) (*entity.ImportInput, error) {
-	input := entity.ImportInput{Root: root, Probe: entity.ImportProbe{Name: name, IsFolder: true, Entries: []string{}}, Documents: []entity.ImportDocument{}}
+	entries := []string{}
+	documents := []entity.ImportDocument{}
 	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -191,7 +192,7 @@ func readImportFolder(root, name string) (*entity.ImportInput, error) {
 			return err
 		}
 		relative = filepath.ToSlash(relative)
-		input.Probe.Entries = append(input.Probe.Entries, relative)
+		entries = append(entries, relative)
 		if !isImportDocument(relative) {
 			return nil
 		}
@@ -203,7 +204,7 @@ func readImportFolder(root, name string) (*entity.ImportInput, error) {
 		if err != nil {
 			return err
 		}
-		input.Documents = append(input.Documents, entity.ImportDocument{Path: relative, Data: data})
+		documents = append(documents, entity.ImportDocument{Path: relative, Data: data})
 		return nil
 	})
 	var custom errs.BaseError
@@ -213,6 +214,7 @@ func readImportFolder(root, name string) (*entity.ImportInput, error) {
 	if err != nil {
 		return nil, errs.FileError(err, "IMP-21500")
 	}
+	input := entity.ImportInput{Root: root, Probe: entity.ImportProbe{Name: name, IsFolder: true, Entries: entries}, Documents: documents}
 	return &input, nil
 }
 

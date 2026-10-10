@@ -16,6 +16,7 @@ const responseBody = await import('@/platform/services/response-body')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { useExamplesStore } = await import('@/features/examples/store')
 const { ExampleTab } = await import('./ExampleTab')
+await import('@/shared/ui/code-editor/CodeEditor')
 
 function example(overrides: Partial<Example['response']> = {}): Example {
   return {

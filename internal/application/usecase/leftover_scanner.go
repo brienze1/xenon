@@ -2,6 +2,8 @@ package usecase
 
 import "strings"
 
+const requireCall = "require"
+
 type leftoverScanner struct {
 	text     string
 	flagged  []bool
@@ -53,7 +55,7 @@ func (l *leftoverScanner) identifier() {
 	if member {
 		return
 	}
-	if (isBrunoObject(name) && (next == '.' || next == '(')) || (name == "require" && next == '(') {
+	if (isBrunoObject(name) && (next == '.' || next == '(')) || (name == requireCall && next == '(') {
 		l.flagged[l.line] = true
 	}
 }
