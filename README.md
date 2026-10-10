@@ -46,9 +46,13 @@ Other useful targets:
 
 **Workspace data** is the folder you pick when you create or open a workspace: `workspace.yaml`,
 `collections/` (one folder per collection and folder, one YAML file per request) and
-`environments/`. The format is described in
-[`specs/XEN-001-shell-and-storage/contracts/workspace-format.md`](specs/XEN-001-shell-and-storage/contracts/workspace-format.md).
-Nothing else is ever written into a workspace folder.
+`environments/` (one YAML file per environment). Variables are stored as rows with their
+**initial values** only: globals in `workspace.yaml`, collection variables in `collection.yaml`,
+environment variables in their environment file. A secret row keeps only its name, `secret: true`,
+enabled and description — never a value. The format is described in
+[`specs/XEN-001-shell-and-storage/contracts/workspace-format.md`](specs/XEN-001-shell-and-storage/contracts/workspace-format.md)
+and [`specs/XEN-002-environments-and-secrets/contracts/format-additions.md`](specs/XEN-002-environments-and-secrets/contracts/format-additions.md).
+Nothing else is ever written into a workspace folder, so it is safe to commit.
 
 **Local data** stays on this machine, in Xenon's app-data folder:
 
@@ -60,15 +64,28 @@ Nothing else is ever written into a workspace folder.
 
 ```
 Xenon/
-├── app.json                   ← registered workspaces, the active one, window size and position
-├── logs/xenon.log             ← rotated log (never contains header values, auth or bodies)
+├── app.json                   ← registered workspaces, the active one, window size and position,
+│                                vault mode (keychain | passphrase) and the passphrase check
+├── logs/xenon.log             ← rotated log (never contains header values, auth, bodies or secrets)
 └── workspaces/<localId>/
     ├── state.json             ← open tabs with unsaved drafts, sidebar state and layout
-    └── history.jsonl          ← the 1,000 most recent sends of that workspace
+    ├── history.jsonl          ← the 1,000 most recent sends of that workspace (unresolved {{variables}})
+    ├── variables.json         ← the active environment and the current values of plain variables
+    ├── vault.age              ← secret values, encrypted with age to this workspace's vault key
+    └── vault-key.age          ← passphrase mode only: the vault key, encrypted with your passphrase
 ```
 
 On macOS and Linux these folders are owner-only (`0700`) and the files `0600`. Set
 `XENON_DATA_DIR` to use another folder (the BDD suite does this to stay isolated).
+
+**Secrets.** Each workspace has its own vault key. Normally it lives in the OS keychain (macOS
+Keychain, Windows Credential Manager, Linux Secret Service) under the service
+`dev.brienze.xenon.vault` with the workspace's local id as the account, so no password is
+needed. When the keychain is unavailable Xenon asks once for a passphrase (stored nowhere; asked
+again after each start to unlock) and keeps the key in `vault-key.age` instead. Removing a
+workspace deletes its `variables.json`, vault files and keychain entry. A lost key or forgotten
+passphrase cannot be recovered: "Reset vault" starts an empty vault and the secrets show as
+missing until you type them again.
 
 ## Repository layout
 

@@ -98,34 +98,39 @@ US5 colour/confirm/quick look · US6 dynamic variables
 
 ## Phase 6: User Story 4 — Inspect, highlight, Variables panel (P2)
 
-- [ ] T036 [P] [US4] BDD `test/integration/features/variables/inspect_and_suggest.feature`: `Inspect` returns references with field/start/end/status/scope for URL, tables and body, including inherited auth/headers; secrets masked; dynamic marked `dynamic`; `Suggest` prefix filtering across scopes + dynamic names, max 50; `AddVariable` to env/collection/globals, including `secret: true` (value goes to the vault — used by "Move to secret variable")
-- [ ] T037 [US4] Run T036 → **red**; implement `inspect_request_variables.go` use case + `inspect_variables.go` service (no generation, masking), `Suggest`, controllers/DTOs, binding methods → **green**
-- [ ] T038 [US4] `frontend/src/shared/ui/code-editor/`: `singleLine` variant plus generic `decorations` (`{from,to,tone,tooltip}`) and `completionSource` props; switch the URL bar and key/value table cells to it; RTL tests for decorations/completion (domain-free)
-- [ ] T039 [US4] `features/request-builder/lib/variable-decorations.ts` (Inspect → decorations, debounced 120 ms; tones resolved/unresolved/secret/dynamic) + completion wiring via `Suggest`; RTL tests
-- [ ] T040 [US4] `features/side-panel/components/VariablesPanel.tsx` (list with value/scope/status, inline edit → `SetCurrent`, secrets masked with reveal/copy, unresolved → "Add to environment / collection / globals"); "Move to secret variable" action for a literal value selected in a request field (asks name + scope, calls `AddVariable` with `secret: true`, replaces the selection with `{{name}}`); refresh on `variables:changed`; RTL tests
+- [x] T036 [P] [US4] BDD `test/integration/features/variables/inspect_and_suggest.feature`: `Inspect` returns references with field/start/end/status/scope for URL, tables and body, including inherited auth/headers; secrets masked; dynamic marked `dynamic`; `Suggest` prefix filtering across scopes + dynamic names, max 50; `AddVariable` to env/collection/globals, including `secret: true` (value goes to the vault — used by "Move to secret variable")
+- [x] T037 [US4] Run T036 → **red**; implement `inspect_request_variables.go` use case + `inspect_variables.go` service (no generation, masking), `Suggest`, controllers/DTOs, binding methods → **green**
+  - *Done:* plus `suggest_variables.go`; Inspect also returns `scopes: [{scope, ref}]` (the tables the request can use) so the Variables panel edits/adds in place; offsets are UTF-16 (JS) units; field names and suggestion order documented in contracts/bindings.md.
+- [x] T038 [US4] `frontend/src/shared/ui/code-editor/`: `singleLine` variant plus generic `decorations` (`{from,to,tone,tooltip}`) and `completionSource` props; switch the URL bar and key/value table cells to it; RTL tests for decorations/completion (domain-free)
+- [x] T039 [US4] `features/request-builder/lib/variable-decorations.ts` (Inspect → decorations, debounced 120 ms; tones resolved/unresolved/secret/dynamic) + completion wiring via `Suggest`; RTL tests
+- [x] T040 [US4] `features/side-panel/components/VariablesPanel.tsx` (list with value/scope/status, inline edit → `SetCurrent`, secrets masked with reveal/copy, unresolved → "Add to environment / collection / globals"); "Move to secret variable" action for a literal value selected in a request field (asks name + scope, calls `AddVariable` with `secret: true`, replaces the selection with `{{name}}`); refresh on `variables:changed`; RTL tests
 
 ---
 
 ## Phase 7: User Story 5 — Colour, confirm-before-send, quick look (P2)
 
-- [ ] T041 [P] [US5] BDD `test/integration/features/sending/confirm_before_send.feature`: env with flag → Send returns `SND-05409` with env details, nothing sent, no history; re-send with `confirmed_environment_id` → sent; mismatched id → still refused; `prod*` names default red + flag on, others none/off
-- [ ] T042 [US5] Run T041 → **red**; implement confirm part of `check_send_preflight.go` and `default_environment_settings.go` → **green**
-- [ ] T043 [US5] Frontend: switcher colour + glow from tokens (`--neon-*`, glow shadows), colour picker and flag in `EnvironmentsManager`, `ConfirmSendDialog.tsx` (names env, colour accent), `QuickLook.tsx` (eye button: active env + globals tables, editable, secrets masked); RTL tests
+- [x] T041 [P] [US5] BDD `test/integration/features/sending/confirm_before_send.feature`: env with flag → Send returns `SND-05409` with env details, nothing sent, no history; re-send with `confirmed_environment_id` → sent; mismatched id → still refused; `prod*` names default red + flag on, others none/off
+- [x] T042 [US5] Run T041 → **red**; implement confirm part of `check_send_preflight.go` and `default_environment_settings.go` → **green**
+  - *Done:* the prod-name defaults already live in `entity.NewEnvironment` (T008, entities own business rules), so no separate `default_environment_settings.go`; Send takes an `entity.SendAcknowledgement` (confirmed environment id + missing secrets).
+- [x] T043 [US5] Frontend: switcher colour + glow from tokens (`--neon-*`, glow shadows), colour picker and flag in `EnvironmentsManager`, `ConfirmSendDialog.tsx` (names env, colour accent), `QuickLook.tsx` (eye button: active env + globals tables, editable, secrets masked); RTL tests
 
 ---
 
 ## Phase 8: User Story 6 — Dynamic variables (P3)
 
-- [ ] T044 [P] [US6] BDD `test/integration/features/variables/dynamic_variables.feature`: every name in `resources/postman-dynamic-variables.txt` resolves and matches its format regex (Scenario Outline, 118 rows); two `{{$guid}}` differ; user variable `$guid` wins; `{{$nope}}` literal; `$timestamp`/`$isoTimestamp` follow the time mock; 1,000-iteration format check (SC-005)
-- [ ] T045 [US6] Run T044 → **red**; implement `internal/integration/webservice/dynamic_values.go` (gofakeit v7 instance + `webservice/dynamicdata/` lists for the *custom* names in contracts/dynamic-variables.md), adapter `dynamic_value_generator.go`, use case `generate_dynamic_value.go`, injected into `resolve_text` → **green**; unit test asserts the Go name list equals the vendored list
+- [x] T044 [P] [US6] BDD `test/integration/features/variables/dynamic_variables.feature`: every name in `resources/postman-dynamic-variables.txt` resolves and matches its format regex (Scenario Outline, 118 rows); two `{{$guid}}` differ; user variable `$guid` wins; `{{$nope}}` literal; `$timestamp`/`$isoTimestamp` follow the time mock; 1,000-iteration format check (SC-005)
+- [x] T045 [US6] Run T044 → **red**; implement `internal/integration/webservice/dynamic_values.go` (gofakeit v7 instance + `webservice/dynamicdata/` lists for the *custom* names in contracts/dynamic-variables.md), adapter `dynamic_value_generator.go`, use case `generate_dynamic_value.go`, injected into `resolve_text` → **green**; unit test asserts the Go name list equals the vendored list
+  - *Done:* the adapter is `dynamic_values_webservice.go` (webservice naming) over an injected `RandomSource` boundary (`external.SetRandomSource`; BDD seeds `mock/random_source.go` per scenario — the T004 dynamic generator mock). Unit tests: parity with the vendored list, seeded golden file, IBAN mod 97. The BDD outline generates every name 1,000 times in one request (SC-005).
 
 ---
 
 ## Phase 9: Polish
 
-- [ ] T046 [P] Performance: BDD `features/variables/inspect_performance.feature` — 200 references Inspect < 100 ms, send-time resolution < 10 ms (SC-004)
-- [ ] T047 [P] Security sweep test in `test/integration/features/secrets/secret_sweep.feature`: after a full scenario (create, send, history, duplicate, switch type, restart, a send that fails with a DNS error on `https://{{secret_host}}/` and a timeout with a secret in the query), grep workspace folder, app data (except `*.age`), log file, History result summaries and error messages for the secret value → 0 matches
+- [x] T046 [P] Performance: BDD `features/variables/inspect_performance.feature` — 200 references Inspect < 100 ms, send-time resolution < 10 ms (SC-004)
+  - *Done:* the BDD holds Inspect (warm) and the whole Send under 100 ms; the < 10 ms resolution is a unit test of `ResolveRequestVariables` (a BDD call cannot isolate it from HTTP and History I/O).
+- [x] T047 [P] Security sweep test in `test/integration/features/secrets/secret_sweep.feature`: after a full scenario (create, send, history, duplicate, switch type, restart, a send that fails with a DNS error on `https://{{secret_host}}/` and a timeout with a secret in the query), grep workspace folder, app data (except `*.age`), log file, History result summaries and error messages for the secret value → 0 matches
 - [ ] T048 Update `README.md` "Where data lives" with variables.json, vault files and keychain entry; `/refactor-diff` until clean; `make validate`; CI green on 3 OSes; walk [quickstart.md](quickstart.md)
+  - *README part done* ("Where your data lives": variable rows, variables.json, vault.age, vault-key.age, keychain entry, removal and reset).
 
 ---
 
