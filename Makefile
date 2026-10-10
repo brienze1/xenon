@@ -16,6 +16,10 @@ TAG ?= @all
 GO_FILES = $(shell find . -name '*.go' -not -path './frontend/*' -not -path './build/*' -not -path './.git/*')
 INTERNAL_PACKAGES = $(shell go list ./internal/... 2>/dev/null)
 NO_INTERNAL_NOTE := "No packages under internal/ yet - skipping (the gate enforces once backend code exists)."
+ifeq ($(OS),Windows_NT)
+MUTATION_SKIP := true
+MUTATION_SKIP_NOTE := "Mutation gates skipped on Windows: gremlins $(GREMLINS_VERSION) keys coverage by backslash paths and reports every mutant NOT COVERED there. macOS and Linux enforce them on the same code."
+endif
 
 .PHONY: setup dev bindings build package ensure-dist sort-imports fix-struct-alignment vet \
 	check-dead-code dependency-check tests bdd validate-coverage mutation-test \
@@ -160,7 +164,12 @@ validate-coverage:
 	@echo "Coverage validation completed!"
 
 mutation-test: ensure-dist
-	@if [ -z "$(INTERNAL_PACKAGES)" ]; then \
+	@if [ -n "$(MUTATION_SKIP)" ]; then \
+		echo $(MUTATION_SKIP_NOTE); \
+		rm -f mutation_results.log; \
+		exit 0; \
+	fi; \
+	if [ -z "$(INTERNAL_PACKAGES)" ]; then \
 		echo $(NO_INTERNAL_NOTE); \
 		rm -f mutation_results.log; \
 		exit 0; \
@@ -202,6 +211,7 @@ validate-mutation-coverage:
 	@echo "Validating mutation coverage..."
 	@coverage=$$(grep -E 'Mutator coverage: [0-9]+(\.[0-9]+)?%' mutation_results.log 2>/dev/null | tail -1 | awk '{print $$3}' | sed 's/%//'); \
 	if [ -z "$$coverage" ]; then \
+		if [ -n "$(MUTATION_SKIP)" ]; then echo $(MUTATION_SKIP_NOTE); exit 0; fi; \
 		if [ -z "$(INTERNAL_PACKAGES)" ]; then echo $(NO_INTERNAL_NOTE); exit 0; fi; \
 		echo "No mutation coverage found in mutation_results.log - run make mutation-test first."; \
 		exit 1; \
@@ -219,6 +229,7 @@ validate-test-efficacy:
 	@echo "Validating test efficacy..."
 	@efficacy=$$(grep -E 'Test efficacy: [0-9]+(\.[0-9]+)?%' mutation_results.log 2>/dev/null | tail -1 | awk '{print $$3}' | sed 's/%//'); \
 	if [ -z "$$efficacy" ]; then \
+		if [ -n "$(MUTATION_SKIP)" ]; then echo $(MUTATION_SKIP_NOTE); exit 0; fi; \
 		if [ -z "$(INTERNAL_PACKAGES)" ]; then echo $(NO_INTERNAL_NOTE); exit 0; fi; \
 		echo "No test efficacy found in mutation_results.log - run make mutation-test first."; \
 		exit 1; \
