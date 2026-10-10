@@ -8,50 +8,53 @@ import (
 )
 
 type Collection struct {
-	Postman     map[string]any `yaml:"postman"`
-	Bruno       map[string]any `yaml:"bruno"`
-	Kind        string         `yaml:"kind"`
-	Id          string         `yaml:"id"`
-	Name        string         `yaml:"name"`
-	Description string         `yaml:"description"`
-	Scripts     Scripts        `yaml:"scripts"`
-	Order       []string       `yaml:"order"`
-	Headers     []KeyValue     `yaml:"headers"`
-	Variables   []VariableRow  `yaml:"variables"`
-	Auth        Auth           `yaml:"auth"`
-	Xenon       int            `yaml:"xenon"`
+	Postman        map[string]any `yaml:"postman"`
+	Bruno          map[string]any `yaml:"bruno"`
+	Kind           string         `yaml:"kind"`
+	Id             string         `yaml:"id"`
+	Name           string         `yaml:"name"`
+	Description    string         `yaml:"description"`
+	Scripts        Scripts        `yaml:"scripts"`
+	InheritScripts *bool          `yaml:"inheritScripts"`
+	Order          []string       `yaml:"order"`
+	Headers        []KeyValue     `yaml:"headers"`
+	Variables      []VariableRow  `yaml:"variables"`
+	Auth           Auth           `yaml:"auth"`
+	Xenon          int            `yaml:"xenon"`
 }
 
 func NewCollection(collection entity.Collection) Collection {
 	return Collection{
-		Xenon:       formatVersion,
-		Kind:        collection.Kind.String(),
-		Id:          collection.ID,
-		Name:        collection.Name,
-		Description: collection.Description,
-		Order:       nonNil(collection.Order),
-		Auth:        NewAuth(collection.Auth),
-		Headers:     newKeyValues(collection.Headers),
-		Variables:   newVariableRows(collection.Variables),
-		Scripts:     NewScripts(collection.Scripts),
-		Postman:     collection.Postman,
-		Bruno:       collection.Bruno,
+		Xenon:          formatVersion,
+		Kind:           collection.Kind.String(),
+		Id:             collection.ID,
+		Name:           collection.Name,
+		Description:    collection.Description,
+		Order:          nonNil(collection.Order),
+		Auth:           NewAuth(collection.Auth),
+		Headers:        newKeyValues(collection.Headers),
+		Variables:      newVariableRows(collection.Variables),
+		Scripts:        NewScripts(collection.Scripts),
+		InheritScripts: &collection.InheritScripts,
+		Postman:        collection.Postman,
+		Bruno:          collection.Bruno,
 	}
 }
 
 func (c *Collection) ToEntity() entity.Collection {
 	return entity.Collection{
-		ID:          c.Id,
-		Kind:        itemkind.GetItemKind(c.Kind),
-		Name:        c.Name,
-		Description: c.Description,
-		Order:       nonNil(c.Order),
-		Auth:        c.Auth.ToEntity(),
-		Headers:     keyValuesToEntity(c.Headers),
-		Variables:   variableRowsToEntity(c.Variables),
-		Scripts:     c.Scripts.ToEntity(),
-		Postman:     sourceFieldsToEntity(c.Postman),
-		Bruno:       sourceFieldsToEntity(c.Bruno),
+		ID:             c.Id,
+		Kind:           itemkind.GetItemKind(c.Kind),
+		Name:           c.Name,
+		Description:    c.Description,
+		Order:          nonNil(c.Order),
+		Auth:           c.Auth.ToEntity(),
+		Headers:        keyValuesToEntity(c.Headers),
+		Variables:      variableRowsToEntity(c.Variables),
+		Scripts:        c.Scripts.ToEntity(),
+		InheritScripts: inheritsScripts(c.InheritScripts),
+		Postman:        sourceFieldsToEntity(c.Postman),
+		Bruno:          sourceFieldsToEntity(c.Bruno),
 	}
 }
 
@@ -73,7 +76,7 @@ func (c *Collection) Fields() []yamlnode.Field {
 	}
 	fields = append(fields, yamlnode.Reserved("scripts", c.Scripts.Node()))
 	if itemkind.Folder.Equals(c.Kind) {
-		fields = append(fields, yamlnode.Reserved("inheritScripts", inheritScriptsNode()))
+		fields = append(fields, yamlnode.Reserved("inheritScripts", inheritScriptsNode(c.InheritScripts)))
 	}
 	fields = append(fields, sourceFieldsReserved(postmanKey, c.Postman))
 	return append(fields, optionalSourceFields(brunoKey, c.Bruno)...)

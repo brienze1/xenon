@@ -20,6 +20,17 @@ func (a AppSettings) HasValidScriptTimeout() bool {
 	return a.ScriptTimeoutMs >= MinScriptTimeoutMs && a.ScriptTimeoutMs <= MaxScriptTimeoutMs
 }
 
+func (a AppSettings) OrDefault() AppSettings {
+	if a.HasValidScriptTimeout() {
+		return a
+	}
+	return DefaultAppSettings()
+}
+
 func (a AppSettings) ScriptTimeout() time.Duration {
 	return time.Duration(a.ScriptTimeoutMs) * time.Millisecond
+}
+
+func (a AppSettings) LogValue() any {
+	return map[string]any{"script_timeout_ms": a.ScriptTimeoutMs}
 }

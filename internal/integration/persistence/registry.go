@@ -63,7 +63,7 @@ func (r *registryPersistence) Save(ctx context.Context, registry entity.AppRegis
 	if err := os.MkdirAll(appDataPath(), appDataDirMode); err != nil {
 		return errs.FileError(err, "WKS-13500")
 	}
-	data, _ := json.MarshalIndent(model.NewRegistry(registry, stored.Window, stored.Vault), "", "  ")
+	data, _ := json.MarshalIndent(model.NewRegistry(registry, *stored), "", "  ")
 	if err := fileutils.WriteFileAtomic(appDataPath(registryFile), append(data, '\n'), appDataFileMode); err != nil {
 		return errs.FileError(err, "WKS-14500")
 	}
@@ -102,13 +102,50 @@ func (r *registryPersistence) SaveWindow(ctx context.Context, state entity.Windo
 	if err := os.MkdirAll(appDataPath(), appDataDirMode); err != nil {
 		return errs.FileError(err, "WIN-02500")
 	}
-	window, _ := json.Marshal(model.NewWindowState(state))
-	data, _ := json.MarshalIndent(model.NewRegistry(stored.ToEntity(), window, stored.Vault), "", "  ")
+	stored.Window, _ = json.Marshal(model.NewWindowState(state))
+	data, _ := json.MarshalIndent(model.NewRegistry(stored.ToEntity(), *stored), "", "  ")
 	if err := fileutils.WriteFileAtomic(appDataPath(registryFile), append(data, '\n'), appDataFileMode); err != nil {
 		return errs.FileError(err, "WIN-03500")
 	}
 
 	logger.Debug(ctx, "Finished", state)
+	return nil
+}
+
+func (r *registryPersistence) FindAppSettings(ctx context.Context) (*entity.AppSettings, error) {
+	logger.Debug(ctx, "Started")
+
+	stored, err := r.read()
+	if err != nil {
+		return nil, err
+	}
+	var settings model.AppSettings
+	if err := json.Unmarshal(stored.Settings, &settings); err != nil {
+		settings = model.NewAppSettings(entity.DefaultAppSettings())
+	}
+	found := settings.ToEntity()
+
+	logger.Debug(ctx, "Finished", found)
+	return &found, nil
+}
+
+func (r *registryPersistence) SaveAppSettings(ctx context.Context, settings entity.AppSettings) error {
+	logger.Debug(ctx, "Started", settings)
+
+	stored, err := r.read()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(appDataPath(), appDataDirMode); err != nil {
+		return errs.FileError(err, "SCR-02500")
+	}
+	stored.Settings, _ = json.Marshal(model.NewAppSettings(settings))
+	data, _ := json.MarshalIndent(model.NewRegistry(stored.ToEntity(), *stored), "", "  ")
+	if err := fileutils.WriteFileAtomic(appDataPath(registryFile), append(data, '\n'), appDataFileMode); err != nil {
+		return errs.FileError(err, "SCR-03500")
+	}
+
+	logger.Debug(ctx, "Finished", settings)
 	return nil
 }
 

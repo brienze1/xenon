@@ -2,10 +2,12 @@ package sandbox
 
 import (
 	"context"
+	"maps"
 
 	"github.com/dop251/goja"
 	"github.com/dop251/goja_nodejs/eventloop"
 
+	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/pkg/logger"
@@ -23,7 +25,10 @@ func NewScriptRunnerWebservice() adapter.ScriptRunnerWebservice {
 
 type execution struct {
 	loopTimers       loopTimers
+	ctx              context.Context
+	requests         usecase.SendScriptRequest
 	moduleRequire    goja.Value
+	keepAlive        goja.Value
 	vm               *goja.Runtime
 	errorConstructor goja.Constructor
 	loop             *eventloop.EventLoop
@@ -31,10 +36,18 @@ type execution struct {
 	loaded           map[string]*goja.Object
 	timers           map[int64]func()
 	failure          *entity.ScriptError
+	local            map[string]any
+	requestSnapshot  goja.Callable
+	jsonStringify    goja.Callable
 	script           entity.ScriptRef
-	logs             []consoleCall
+	logs             []entity.ScriptLog
+	nested           []entity.NestedRequest
 	rejections       []*goja.Promise
+	scope            entity.ScriptContext
 	nextTimer        int64
+	pendingRequests  int
+	skipped          bool
+	finished         bool
 }
 
 type loopStopper struct {
@@ -50,34 +63,48 @@ func (l loopStopper) StopNoWait() {
 	l.loop.StopNoWait()
 }
 
-func (w *scriptRunnerWebservice) Run(ctx context.Context, script entity.ScriptRef, settings entity.AppSettings) entity.ScriptRun {
+func (w *scriptRunnerWebservice) Run(ctx context.Context, script entity.ScriptRef, scope entity.ScriptContext, requests usecase.SendScriptRequest, settings entity.AppSettings) entity.ScriptRun {
 	logger.Debug(ctx, "Started", map[string]any{"script": script.Label()})
 
 	run := entity.NewScriptRun(script, timeutils.Now())
 	program, err := goja.Compile(scriptFile, wrap(script.Text), false)
 	if err != nil {
-		run = run.Failed(syntaxError(err, script)).Finished(timeutils.Now())
+		run = run.Failed(syntaxError(err, script)).WithEffects(scope.Request, maps.Clone(scope.LocalVariables), nil, nil).Finished(timeutils.Now())
 		logger.Debug(ctx, "Finished", map[string]any{"script": script.Label(), "status": run.Status})
 		return run
 	}
-	if scriptError := w.execute(program, script, w.limits(settings)); scriptError != nil {
-		run = run.Failed(*scriptError)
-	}
-	run = run.Finished(timeutils.Now())
+	run = w.execute(ctx, program, run, scope, requests, w.limits(settings)).Finished(timeutils.Now())
 
 	logger.Debug(ctx, "Finished", map[string]any{"script": script.Label(), "status": run.Status})
 	return run
 }
 
-func (w *scriptRunnerWebservice) execute(program *goja.Program, script entity.ScriptRef, limits limits) *entity.ScriptError {
+func (w *scriptRunnerWebservice) execute(ctx context.Context, program *goja.Program, run entity.ScriptRun, scope entity.ScriptContext, requests usecase.SendScriptRequest, limits limits) entity.ScriptRun {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	loop := eventloop.NewEventLoop(eventloop.EnableConsole(false))
-	e := &execution{loop: loop, modules: w.modules, loaded: map[string]*goja.Object{}, timers: map[int64]func(){}, script: script}
+	e := &execution{
+		ctx:      ctx,
+		loop:     loop,
+		modules:  w.modules,
+		loaded:   map[string]*goja.Object{},
+		timers:   map[int64]func(){},
+		script:   run.Script,
+		scope:    scope,
+		local:    maps.Clone(scope.LocalVariables),
+		requests: requests,
+		logs:     []entity.ScriptLog{},
+		nested:   []entity.NestedRequest{},
+	}
+	if e.local == nil {
+		e.local = map[string]any{}
+	}
 	var wrapper *goja.Promise
 	var watch *guard
 	loop.Run(func(vm *goja.Runtime) {
 		e.vm = vm
-		e.prepare()
 		watch = limits.watch(loopStopper{vm: vm, loop: loop})
+		e.prepare()
 		value, err := vm.RunProgram(program)
 		if err != nil {
 			e.fail(err)
@@ -86,21 +113,23 @@ func (w *scriptRunnerWebservice) execute(program *goja.Program, script entity.Sc
 		wrapper, _ = value.Export().(*goja.Promise)
 	})
 	tripped := watch.stop()
+	e.finished = true
 	loop.Terminate()
 	if tripped != "" {
-		scriptError := limitError(tripped.String(), script)
-		return &scriptError
+		return run.Failed(limitError(tripped.String(), run.Script)).WithEffects(scope.Request, e.local, e.logs, e.nested)
 	}
-	return e.outcome(wrapper)
+	return e.result(run, wrapper)
 }
 
 func (e *execution) prepare() {
 	e.vm.SetMaxCallStackSize(maxCallStackSize)
 	e.vm.SetPromiseRejectionTracker(e.trackRejection)
 	e.vm.GlobalObject().Delete("require")
+	e.jsonStringify, _ = goja.AssertFunction(e.vm.Get("JSON").ToObject(e.vm).Get("stringify"))
 	e.installTimers()
 	e.installConsole()
 	e.installRequire()
+	e.installPm()
 }
 
 func (e *execution) set(name string, value any) {
@@ -128,6 +157,17 @@ func (e *execution) trackRejection(promise *goja.Promise, operation goja.Promise
 			return
 		}
 	}
+}
+
+func (e *execution) result(run entity.ScriptRun, wrapper *goja.Promise) entity.ScriptRun {
+	if scriptError := e.outcome(wrapper); scriptError != nil {
+		return run.Failed(*scriptError).WithEffects(e.scope.Request, e.local, e.logs, e.nested)
+	}
+	run = run.WithEffects(e.sentRequest(), e.local, e.logs, e.nested)
+	if e.skipped {
+		return run.SkippedRequest()
+	}
+	return run
 }
 
 func (e *execution) outcome(wrapper *goja.Promise) *entity.ScriptError {

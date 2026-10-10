@@ -7,46 +7,48 @@ import (
 )
 
 type Request struct {
-	Settings      Settings       `yaml:"settings" json:"settings"`
-	Postman       map[string]any `yaml:"postman" json:"-"`
-	Bruno         map[string]any `yaml:"bruno" json:"-"`
-	Kind          string         `yaml:"kind" json:"kind"`
-	Id            string         `yaml:"id" json:"id"`
-	Name          string         `yaml:"name" json:"name"`
-	Description   string         `yaml:"description" json:"description"`
-	Method        string         `yaml:"method" json:"method"`
-	Url           string         `yaml:"url" json:"url"`
-	Body          Body           `yaml:"body" json:"body"`
-	Scripts       Scripts        `yaml:"scripts" json:"-"`
-	Params        []KeyValue     `yaml:"params" json:"params"`
-	PathVariables []PathVariable `yaml:"pathVariables" json:"path_variables"`
-	Headers       []KeyValue     `yaml:"headers" json:"headers"`
-	AutoHeaders   AutoHeaders    `yaml:"autoHeaders" json:"auto_headers"`
-	Examples      []Example      `yaml:"examples" json:"-"`
-	Auth          Auth           `yaml:"auth" json:"auth"`
-	Xenon         int            `yaml:"xenon" json:"xenon"`
+	Settings       Settings       `yaml:"settings" json:"settings"`
+	Postman        map[string]any `yaml:"postman" json:"-"`
+	Bruno          map[string]any `yaml:"bruno" json:"-"`
+	Kind           string         `yaml:"kind" json:"kind"`
+	Id             string         `yaml:"id" json:"id"`
+	Name           string         `yaml:"name" json:"name"`
+	Description    string         `yaml:"description" json:"description"`
+	Method         string         `yaml:"method" json:"method"`
+	Url            string         `yaml:"url" json:"url"`
+	Body           Body           `yaml:"body" json:"body"`
+	Scripts        Scripts        `yaml:"scripts" json:"-"`
+	InheritScripts *bool          `yaml:"inheritScripts" json:"-"`
+	Params         []KeyValue     `yaml:"params" json:"params"`
+	PathVariables  []PathVariable `yaml:"pathVariables" json:"path_variables"`
+	Headers        []KeyValue     `yaml:"headers" json:"headers"`
+	AutoHeaders    AutoHeaders    `yaml:"autoHeaders" json:"auto_headers"`
+	Examples       []Example      `yaml:"examples" json:"-"`
+	Auth           Auth           `yaml:"auth" json:"auth"`
+	Xenon          int            `yaml:"xenon" json:"xenon"`
 }
 
 func NewRequest(request entity.Request) Request {
 	model := Request{
-		Xenon:         formatVersion,
-		Kind:          itemkind.Request.String(),
-		Id:            request.ID,
-		Name:          request.Name,
-		Description:   request.Description,
-		Method:        request.MethodOrDefault(),
-		Url:           request.URL,
-		Params:        newKeyValues(request.Params),
-		PathVariables: make([]PathVariable, 0, len(request.PathVariables)),
-		Headers:       newKeyValues(request.Headers),
-		AutoHeaders:   NewAutoHeaders(request.DisabledAutoHeaders),
-		Auth:          NewAuth(request.Auth),
-		Body:          NewBody(request.Body),
-		Settings:      NewSettings(request.Settings),
-		Scripts:       NewScripts(request.Scripts),
-		Examples:      newExamples(request.Examples),
-		Postman:       request.Postman,
-		Bruno:         request.Bruno,
+		Xenon:          formatVersion,
+		Kind:           itemkind.Request.String(),
+		Id:             request.ID,
+		Name:           request.Name,
+		Description:    request.Description,
+		Method:         request.MethodOrDefault(),
+		Url:            request.URL,
+		Params:         newKeyValues(request.Params),
+		PathVariables:  make([]PathVariable, 0, len(request.PathVariables)),
+		Headers:        newKeyValues(request.Headers),
+		AutoHeaders:    NewAutoHeaders(request.DisabledAutoHeaders),
+		Auth:           NewAuth(request.Auth),
+		Body:           NewBody(request.Body),
+		Settings:       NewSettings(request.Settings),
+		Scripts:        NewScripts(request.Scripts),
+		InheritScripts: &request.InheritScripts,
+		Examples:       newExamples(request.Examples),
+		Postman:        request.Postman,
+		Bruno:          request.Bruno,
 	}
 	for _, variable := range request.PathVariables {
 		model.PathVariables = append(model.PathVariables, NewPathVariable(variable))
@@ -72,6 +74,7 @@ func (r *Request) ToEntity() entity.Request {
 	request.Body = r.Body.ToEntity()
 	request.Settings = r.Settings.ToEntity()
 	request.Scripts = r.Scripts.ToEntity()
+	request.InheritScripts = inheritsScripts(r.InheritScripts)
 	request.Examples = examplesToEntity(r.Examples)
 	request.Postman = sourceFieldsToEntity(r.Postman)
 	request.Bruno = sourceFieldsToEntity(r.Bruno)
@@ -105,7 +108,7 @@ func (r *Request) fields(examples []yamlnode.Field) []yamlnode.Field {
 		r.Body.Field(),
 		r.Settings.Field(),
 		yamlnode.Reserved("scripts", r.Scripts.Node()),
-		yamlnode.Reserved("inheritScripts", inheritScriptsNode()),
+		yamlnode.Reserved("inheritScripts", inheritScriptsNode(r.InheritScripts)),
 	)
 	fields = append(fields, examples...)
 	fields = append(fields, sourceFieldsReserved(postmanKey, r.Postman))

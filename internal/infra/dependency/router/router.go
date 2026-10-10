@@ -28,6 +28,8 @@ func GetRouter() adapter.Router {
 				binding.GetVaultService(),
 				binding.GetImportService(),
 				binding.GetExampleService(),
+				binding.GetSettingsService(),
+				binding.GetConsoleService(),
 			)
 		})
 	}

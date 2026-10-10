@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"maps"
+
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/senderrorkind"
 	"github.com/brienze1/xenon/internal/domain/enums/sendoutcome"
@@ -16,6 +18,7 @@ type SendExecution struct {
 	PostRuns       []ScriptRun
 	Tests          []TestResult
 	Nested         []NestedRequest
+	Request        Request
 }
 
 func NewSendExecution(id string) SendExecution {
@@ -29,18 +32,37 @@ func NewSendExecution(id string) SendExecution {
 	}
 }
 
+func (s *SendExecution) Start(request Request) {
+	s.Request = request
+}
+
+func (s *SendExecution) ScriptContext(variables VariableContext) ScriptContext {
+	return ScriptContext{Request: s.Request, Response: s.Response, LocalVariables: maps.Clone(s.LocalVariables), Variables: variables}
+}
+
+func (s *SendExecution) Variables(context VariableContext) VariableContext {
+	return context.WithLocal(s.LocalVariables)
+}
+
 func (s *SendExecution) AddRun(run ScriptRun) {
 	if run.Script.IsPreRequest() {
 		s.PreRuns = append(s.PreRuns, run)
+		s.Request = run.Request
 	} else {
 		s.PostRuns = append(s.PostRuns, run)
 	}
+	s.LocalVariables = maps.Clone(run.LocalVariables)
+	s.Nested = append(s.Nested, run.Nested...)
 	if run.HasFailed() && run.StopsSend() {
 		s.Outcome = sendoutcome.StoppedByScriptError
 	}
 	if run.HasSkippedRequest() && run.StopsSend() {
 		s.Outcome = sendoutcome.SkippedByScript
 	}
+}
+
+func (s *SendExecution) RunsPostScripts() bool {
+	return s.Outcome == sendoutcome.Sent
 }
 
 func (s *SendExecution) ShouldSend() bool {
@@ -88,4 +110,12 @@ func (s *SendExecution) ScriptErrors() []ScriptError {
 
 func (s *SendExecution) AddNested(nested NestedRequest) {
 	s.Nested = append(s.Nested, nested)
+}
+
+func (s SendExecution) LogValue() any {
+	value := map[string]any{"id": s.ID, "outcome": s.Outcome, "pre_runs": len(s.PreRuns), "post_runs": len(s.PostRuns)}
+	if s.Response != nil {
+		value["status_code"] = s.Response.StatusCode
+	}
+	return value
 }

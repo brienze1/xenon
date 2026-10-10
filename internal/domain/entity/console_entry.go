@@ -6,6 +6,7 @@ import (
 
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/consoleentrykind"
+	"github.com/brienze1/xenon/internal/domain/enums/consolelevel"
 )
 
 const consoleSummaryLimit = 200
@@ -35,6 +36,35 @@ func NewConsoleLogEntry(id, sendId string, level enums.ConsoleLevel, script Scri
 		Arguments: append([]string{}, arguments...),
 		CreatedAt: createdAt,
 	}
+}
+
+func NewConsoleErrorEntry(id, sendId string, scriptError ScriptError, createdAt time.Time) ConsoleEntry {
+	script := scriptError.Script
+	return ConsoleEntry{
+		ID:        id,
+		SendID:    sendId,
+		Kind:      consoleentrykind.Error,
+		Level:     consolelevel.Error,
+		Script:    &script,
+		Summary:   ConsoleSummary(scriptError.Message),
+		Arguments: []string{scriptError.Message},
+		CreatedAt: createdAt,
+	}
+}
+
+// WithSecretsMasked replaces secret values in the summary and arguments; mask reports whether it replaced anything.
+func (c ConsoleEntry) WithSecretsMasked(mask func(text string) (string, bool)) ConsoleEntry {
+	summary, masked := mask(c.Summary)
+	c.Summary = summary
+	arguments := make([]string, 0, len(c.Arguments))
+	for _, argument := range c.Arguments {
+		text, replaced := mask(argument)
+		arguments = append(arguments, text)
+		masked = masked || replaced
+	}
+	c.Arguments = arguments
+	c.Masked = c.Masked || masked
+	return c
 }
 
 func ConsoleSummary(text string) string {

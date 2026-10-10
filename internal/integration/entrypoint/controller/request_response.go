@@ -41,7 +41,7 @@ func (r *requestResponse) LastResult(bindingCtx context.Context, request dto.Tab
 	if err != nil {
 		return nil, err
 	}
-	result := dto.NewSendResult(request.TabId, *last)
+	result := dto.NewLastSendResult(request.TabId, *last)
 
 	logger.Info(ctx, "Finished", result)
 	return &result, nil

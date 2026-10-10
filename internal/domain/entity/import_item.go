@@ -12,12 +12,12 @@ import (
 
 type ImportItem struct {
 	Variables *ImportVariables
-	Root      ImportNode
 	Key       string
 	Kind      enums.ImportItemKind
 	Name      string
 	Warnings  []ImportWarning
 	PmUsages  []PmUsage
+	Root      ImportNode
 }
 
 func NewImportItem(key string, kind enums.ImportItemKind, root ImportNode, warnings []ImportWarning) ImportItem {

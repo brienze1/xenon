@@ -8,16 +8,28 @@ import (
 )
 
 type ScriptRun struct {
-	StartedAt time.Time
-	Error     *ScriptError
-	Script    ScriptRef
-	Status    enums.ScriptRunStatus
-	Duration  time.Duration
-	TestCount int
+	StartedAt      time.Time
+	Error          *ScriptError
+	LocalVariables map[string]any
+	Script         ScriptRef
+	Status         enums.ScriptRunStatus
+	Logs           []ScriptLog
+	Nested         []NestedRequest
+	Request        Request
+	Duration       time.Duration
+	TestCount      int
 }
 
 func NewScriptRun(script ScriptRef, startedAt time.Time) ScriptRun {
-	return ScriptRun{Script: script, StartedAt: startedAt, Status: scriptrunstatus.Ok}
+	return ScriptRun{Script: script, StartedAt: startedAt, Status: scriptrunstatus.Ok, Logs: []ScriptLog{}, Nested: []NestedRequest{}}
+}
+
+func (r ScriptRun) WithEffects(request Request, localVariables map[string]any, logs []ScriptLog, nested []NestedRequest) ScriptRun {
+	r.Request = request
+	r.LocalVariables = localVariables
+	r.Logs = append([]ScriptLog{}, logs...)
+	r.Nested = append([]NestedRequest{}, nested...)
+	return r
 }
 
 func (r ScriptRun) Failed(scriptError ScriptError) ScriptRun {

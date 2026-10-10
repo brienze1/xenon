@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/scriptownerkind"
 	"github.com/brienze1/xenon/internal/domain/enums/scriptphase"
@@ -173,14 +174,14 @@ func diff(expected, actual map[string]any) []string {
 }
 
 func runCase(runner interface {
-	Run(context.Context, entity.ScriptRef, entity.AppSettings) entity.ScriptRun
+	Run(context.Context, entity.ScriptRef, entity.ScriptContext, usecase.SendScriptRequest, entity.AppSettings) entity.ScriptRun
 }, testCase corpusCase) outcome {
 	phase := scriptphase.PostResponse
 	if testCase.Phase == "prerequest" {
 		phase = scriptphase.PreRequest
 	}
 	script := entity.ScriptRef{Phase: phase, OwnerKind: scriptownerkind.Request, ItemID: testCase.ID, OwnerName: testCase.ID, Text: testCase.Script}
-	run := runner.Run(context.Background(), script, entity.DefaultAppSettings())
+	run := runner.Run(context.Background(), script, entity.ScriptContext{Request: entity.NewRequest("", testCase.ID)}, nil, entity.DefaultAppSettings())
 	result := outcome{
 		ID:           testCase.ID,
 		Tests:        []any{},

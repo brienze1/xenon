@@ -32,14 +32,17 @@ func TestNewHistoryEntryKeepsTheRequestAsWrittenAndTheResult(t *testing.T) {
 	request.URL = "{{base}}/Ping"
 	sentAt := time.Date(2026, 10, 9, 10, 0, 0, 0, time.UTC)
 	ok := NewResponse(204, "No Content", "HTTP/1.1", nil, nil, 0, Timings{Total: 15 * time.Millisecond})
-	entry := NewHistoryEntry("01JHIS", sentAt, request, ok)
+	execution := NewSendExecution("01JSND")
+	execution.RecordResponse(EffectiveRequest{}, ok)
+	entry := NewHistoryEntry("01JHIS", sentAt, request, execution)
 	if entry.ID != "01JHIS" || entry.SourceRequestID != "01JREQ" || !entry.SentAt.Equal(sentAt) || entry.Request.URL != "{{base}}/Ping" {
 		t.Fatalf("NewHistoryEntry = %+v", entry)
 	}
 	if !entry.Result.IsOk() || entry.Result.StatusCode != 204 || entry.Result.StatusText != "No Content" || entry.Result.Total != 15*time.Millisecond {
 		t.Fatalf("result = %+v", entry.Result)
 	}
-	failed := NewHistoryEntry("01JHIT", sentAt, request, NewFailedResponse(NewSendError(senderrorkind.Timeout, "10"), Timings{}))
+	execution.RecordResponse(EffectiveRequest{}, NewFailedResponse(NewSendError(senderrorkind.Timeout, "10"), Timings{}))
+	failed := NewHistoryEntry("01JHIT", sentAt, request, execution)
 	if failed.Result.IsOk() || failed.Result.ErrorKind != senderrorkind.Timeout || failed.Result.ErrorMessage != "Timed out after 10 ms" {
 		t.Fatalf("failed result = %+v", failed.Result)
 	}

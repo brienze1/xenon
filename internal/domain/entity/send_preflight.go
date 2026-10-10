@@ -1,6 +1,9 @@
 package entity
 
-import "slices"
+import (
+	"slices"
+	"strings"
+)
 
 type SendPreflight struct {
 	ConfirmEnvironment *Environment
@@ -38,6 +41,10 @@ func (s SendPreflight) AwaitsConfirmation(acknowledgement SendAcknowledgement) b
 
 func (s SendPreflight) AwaitsSecretsAcknowledgement(acknowledgement SendAcknowledgement) bool {
 	return s.HasUnavailableSecrets() && !acknowledgement.MissingSecrets
+}
+
+func (s SendPreflight) UnavailableSecretsMessage() string {
+	return "The request uses secrets that have no value on this machine or are locked: " + strings.Join(append(append([]string{}, s.MissingSecrets...), s.LockedSecrets...), ", ")
 }
 
 func (s SendPreflight) IsClear() bool {

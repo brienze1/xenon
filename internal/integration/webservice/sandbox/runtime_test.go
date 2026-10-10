@@ -26,7 +26,7 @@ func script(text string) entity.ScriptRef {
 
 func run(t *testing.T, text string) entity.ScriptRun {
 	t.Helper()
-	return testRunner(30*time.Second, memoryGrowthLimit).Run(context.Background(), script(text), entity.DefaultAppSettings())
+	return testRunner(30*time.Second, memoryGrowthLimit).Run(context.Background(), script(text), entity.ScriptContext{}, nil, entity.DefaultAppSettings())
 }
 
 func mustSucceed(t *testing.T, text string) {
@@ -53,7 +53,7 @@ func mustFail(t *testing.T, text string, kind enums.ScriptErrorKind, message str
 }
 
 func TestNewScriptRunnerWebserviceRunsScripts(t *testing.T) {
-	result := NewScriptRunnerWebservice().Run(context.Background(), script("const a = 1 + 1; if (a !== 2) { throw new Error('math') }"), entity.DefaultAppSettings())
+	result := NewScriptRunnerWebservice().Run(context.Background(), script("const a = 1 + 1; if (a !== 2) { throw new Error('math') }"), entity.ScriptContext{}, nil, entity.DefaultAppSettings())
 	if result.Status != scriptrunstatus.Ok || result.Error != nil || result.Script.Text == "" || result.Duration < 0 {
 		t.Fatalf("result = %+v", result)
 	}
@@ -129,7 +129,7 @@ func TestTimeoutStopsBusyAndWaitingScripts(t *testing.T) {
 		"await new Promise((resolve) => setTimeout(resolve, 60000))",
 	} {
 		start := time.Now()
-		result := testRunner(200*time.Millisecond, memoryGrowthLimit).Run(context.Background(), script(text), entity.DefaultAppSettings())
+		result := testRunner(200*time.Millisecond, memoryGrowthLimit).Run(context.Background(), script(text), entity.ScriptContext{}, nil, entity.DefaultAppSettings())
 		elapsed := time.Since(start)
 		if result.Error == nil || result.Error.Kind != scripterrorkind.Timeout || result.Error.Message != "Script execution timed out" {
 			t.Fatalf("%q: result = %+v", text, result)
@@ -148,7 +148,7 @@ func TestStackOverflow(t *testing.T) {
 }
 
 func TestMemoryGuard(t *testing.T) {
-	result := testRunner(20*time.Second, 16<<20).Run(context.Background(), script("const keep = []; while (true) { keep.push(new Array(100000).fill('xxxxxxxx')) }"), entity.DefaultAppSettings())
+	result := testRunner(20*time.Second, 16<<20).Run(context.Background(), script("const keep = []; while (true) { keep.push(new Array(100000).fill('xxxxxxxx')) }"), entity.ScriptContext{}, nil, entity.DefaultAppSettings())
 	if result.Error == nil || result.Error.Kind != scripterrorkind.Memory || result.Error.Message != "Script stopped: it used too much memory" {
 		t.Fatalf("result = %+v", result.Error)
 	}
@@ -215,7 +215,7 @@ func TestIntlAssetLoads(t *testing.T) {
 const m = require('intl-test');
 const n = new m.Intl.NumberFormat('en-US', {style: 'currency', currency: 'USD'}).format(1234.5);
 const d = new m.Intl.DateTimeFormat('en-US', {timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric'}).format(new Date(Date.UTC(2024, 1, 29)));
-if (n !== '$1,234.50' || d !== 'February 29, 2024') { throw new Error(n + ' ' + d) }`), entity.DefaultAppSettings())
+if (n !== '$1,234.50' || d !== 'February 29, 2024') { throw new Error(n + ' ' + d) }`), entity.ScriptContext{}, nil, entity.DefaultAppSettings())
 	if result.HasFailed() {
 		t.Fatalf("intl: %+v", *result.Error)
 	}
@@ -237,14 +237,14 @@ if (CryptoJS !== 'mine') { throw new Error('overwrite') }`)
 func TestModuleErrorsSurfaceAsScriptErrors(t *testing.T) {
 	registry := &moduleRegistry{files: map[string]string{"broken": "missing.js"}}
 	runner := &scriptRunnerWebservice{modules: registry, limits: newLimits}
-	result := runner.Run(context.Background(), script("require('broken')"), entity.DefaultAppSettings())
+	result := runner.Run(context.Background(), script("require('broken')"), entity.ScriptContext{}, nil, entity.DefaultAppSettings())
 	if result.Error == nil || !strings.HasPrefix(result.Error.Message, "Error: Cannot load module 'broken': ") {
 		t.Fatalf("result = %+v", result.Error)
 	}
 }
 
 func TestStopperForwardsToRuntimeAndLoop(t *testing.T) {
-	result := testRunner(50*time.Millisecond, memoryGrowthLimit).Run(context.Background(), script("for (;;) {}"), entity.DefaultAppSettings())
+	result := testRunner(50*time.Millisecond, memoryGrowthLimit).Run(context.Background(), script("for (;;) {}"), entity.ScriptContext{}, nil, entity.DefaultAppSettings())
 	if result.Error == nil || result.Error.Kind != scripterrorkind.Timeout {
 		t.Fatalf("result = %+v", result.Error)
 	}

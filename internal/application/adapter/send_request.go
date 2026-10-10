@@ -7,5 +7,5 @@ import (
 )
 
 type SendRequestService interface {
-	Send(ctx context.Context, localId, tabId string, request entity.Request, appVersion string, acknowledgement entity.SendAcknowledgement) (*entity.Response, error)
+	Send(ctx context.Context, localId, tabId string, request entity.Request, appVersion string, acknowledgement entity.SendAcknowledgement) (*entity.SendExecution, error)
 }

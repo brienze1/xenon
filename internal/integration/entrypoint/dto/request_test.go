@@ -12,7 +12,11 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums/bodymode"
 	"github.com/brienze1/xenon/internal/domain/enums/formdatatype"
 	"github.com/brienze1/xenon/internal/domain/enums/rawlanguage"
+	"github.com/brienze1/xenon/internal/domain/enums/scripterrorkind"
+	"github.com/brienze1/xenon/internal/domain/enums/scriptownerkind"
+	"github.com/brienze1/xenon/internal/domain/enums/scriptphase"
 	"github.com/brienze1/xenon/internal/domain/enums/senderrorkind"
+	"github.com/brienze1/xenon/internal/domain/enums/teststatus"
 )
 
 func decodeRequest(t *testing.T, raw string) Request {
@@ -70,7 +74,8 @@ func TestRequestToEntity(t *testing.T) {
 			Binary:     entity.FileRef{Src: "b.bin"},
 			GraphQl:    entity.BodyGraphQl{Query: "q", Variables: "{}"},
 		},
-		Settings: entity.RequestSettings{TimeoutMs: 10},
+		Settings:       entity.RequestSettings{TimeoutMs: 10},
+		InheritScripts: true,
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("ToEntity =\n%+v\nwant\n%+v", got, want)
@@ -99,7 +104,7 @@ func TestCommandLogValues(t *testing.T) {
 		{NewBulkText("abc").LogValue(), map[string]any{"length": 3}},
 		{BulkRows{Rows: []KeyValue{{}, {}}}.LogValue(), map[string]any{"rows": 2}},
 		{NewAutoHeaderList([]entity.AutoHeader{{Key: "A"}}).LogValue(), map[string]any{"headers": 1}},
-		{SendResult{TabId: "t", Ok: true, StatusCode: 200, SizeBytes: 5}.LogValue(), map[string]any{"tab_id": "t", "ok": true, "status_code": 200, "size_bytes": int64(5)}},
+		{SendResult{TabId: "t", SendId: "s", Outcome: "sent", Ok: true, StatusCode: 200, SizeBytes: 5}.LogValue(), map[string]any{"tab_id": "t", "send_id": "s", "outcome": "sent", "ok": true, "status_code": 200, "size_bytes": int64(5)}},
 	}
 	for _, tc := range cases {
 		if !reflect.DeepEqual(tc.got, tc.want) {
@@ -126,7 +131,7 @@ func TestBulkAndAutoHeaders(t *testing.T) {
 func TestNewSendResult(t *testing.T) {
 	timings := entity.Timings{Dns: 1500 * time.Microsecond, Connect: 2 * time.Millisecond, Tls: 3 * time.Millisecond, FirstByte: 4 * time.Millisecond, Download: 5 * time.Millisecond, Total: 15 * time.Millisecond}
 	headers := []entity.KeyValue{entity.NewKeyValue("Content-Type", "text/plain")}
-	ok := NewSendResult("tab", entity.NewResponse(200, "OK", "HTTP/1.1", headers, []byte("hi"), 2, timings))
+	ok := NewLastSendResult("tab", entity.NewResponse(200, "OK", "HTTP/1.1", headers, []byte("hi"), 2, timings))
 	if !ok.Ok || ok.Error != nil || *ok.InlineBody != "hi" || ok.BodyUrl != "/xenon/response/tab" || ok.ContentType != "text/plain" || ok.IsBinary {
 		t.Fatalf("ok = %+v", ok)
 	}
@@ -136,14 +141,40 @@ func TestNewSendResult(t *testing.T) {
 	if ok.Timings != (SendResultTimings{DnsMs: 1.5, ConnectMs: 2, TlsMs: 3, FirstByteMs: 4, DownloadMs: 5, TotalMs: 15}) {
 		t.Fatalf("timings = %+v", ok.Timings)
 	}
-	binary := NewSendResult("tab", entity.NewResponse(200, "OK", "HTTP/1.1", nil, []byte{0}, 1, timings))
+	binary := NewLastSendResult("tab", entity.NewResponse(200, "OK", "HTTP/1.1", nil, []byte{0}, 1, timings))
 	if binary.InlineBody != nil || !binary.IsBinary {
 		t.Fatalf("binary = %+v", binary)
 	}
-	failed := NewSendResult("tab", entity.NewFailedResponse(entity.NewSendError(senderrorkind.Timeout, "5"), timings))
+	failed := NewLastSendResult("tab", entity.NewFailedResponse(entity.NewSendError(senderrorkind.Timeout, "5"), timings))
 	if failed.Ok || failed.InlineBody != nil || *failed.Error != (SendResultError{Kind: "timeout", Message: "Timed out after 5 ms", Hint: "Increase the timeout in the request Settings (0 = no timeout)"}) || failed.Headers == nil {
 		t.Fatalf("failed = %+v", failed)
 	}
+	if ok.Outcome != "sent" || failed.Outcome != "error" || len(ok.Tests) != 0 || ok.Tests == nil || len(ok.ScriptErrors) != 0 || ok.ScriptErrors == nil {
+		t.Fatalf("outcomes = %+v / %+v", ok, failed)
+	}
+}
+
+func TestNewSendResultOfAStoppedSend(t *testing.T) {
+	script := entity.ScriptRef{Phase: scriptphase.PreRequest, OwnerKind: scriptownerkind.Folder, ItemID: "01F", OwnerName: "Auth"}
+	execution := entity.NewSendExecution("01SEND")
+	execution.AddRun(entity.NewScriptRun(script, time.Time{}).Failed(entity.NewScriptError(scripterrorkind.Runtime, "Error: boom", script).At(2, 7)))
+	execution.AddTests([]entity.TestResult{{Name: "pre", Status: teststatus.Passed, Script: script}})
+	result := NewSendResult("tab", execution)
+	want := []ScriptError{{Kind: "script_runtime", Message: "Error: boom", Line: intPointer(2), Column: intPointer(7), Script: ScriptRef{OwnerKind: "folder", OwnerId: "01F", OwnerName: "Auth", Phase: "preRequest"}}}
+	if result.Outcome != "stopped_by_script_error" || result.SendId != "01SEND" || result.Ok || result.BodyUrl != "" || result.Headers == nil || !reflect.DeepEqual(result.ScriptErrors, want) {
+		t.Fatalf("result = %+v", result)
+	}
+	if !reflect.DeepEqual(result.Tests, []TestResult{{Name: "pre", Status: "passed", Script: want[0].Script}}) {
+		t.Fatalf("tests = %+v", result.Tests)
+	}
+	unlocated := NewScriptError(entity.NewScriptError(scripterrorkind.Timeout, "t", script))
+	if unlocated.Line != nil || unlocated.Column != nil {
+		t.Fatalf("unlocated = %+v", unlocated)
+	}
+}
+
+func intPointer(value int) *int {
+	return &value
 }
 
 func TestResponseBodyAndSavePath(t *testing.T) {

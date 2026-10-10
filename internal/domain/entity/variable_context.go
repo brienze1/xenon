@@ -18,6 +18,15 @@ func NewVariableContext(layers ...VariableLayer) VariableContext {
 	return VariableContext{Layers: append([]VariableLayer{}, layers...)}
 }
 
+// WithLocal puts the send's script variables (pm.variables) in front of every other scope.
+func (v VariableContext) WithLocal(values map[string]any) VariableContext {
+	variables := make(map[string]ContextVariable, len(values))
+	for name, value := range values {
+		variables[name] = ContextVariable{Name: name, Value: LocalVariableText(value), Scope: variablescope.Local}
+	}
+	return NewVariableContext(append([]VariableLayer{{Scope: variablescope.Local, Variables: variables}}, v.Layers...)...)
+}
+
 func (v VariableContext) Lookup(name string) (ContextVariable, bool) {
 	for _, layer := range v.Layers {
 		if variable, found := layer.Lookup(name); found {

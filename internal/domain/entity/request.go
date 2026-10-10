@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/brienze1/xenon/internal/domain/enums/httpmethod"
+	"github.com/brienze1/xenon/internal/domain/enums/scriptownerkind"
 )
 
 var methodToken = regexp.MustCompile(`^[A-Z][A-Z0-9_-]{0,31}$`)
@@ -29,6 +30,7 @@ type Request struct {
 	DisabledAutoHeaders []string
 	Examples            []SavedExample
 	Settings            RequestSettings
+	InheritScripts      bool
 }
 
 func NewRequest(id, name string) Request {
@@ -43,7 +45,23 @@ func NewRequest(id, name string) Request {
 		Auth:                DefaultAuth(),
 		Body:                DefaultBody(),
 		Settings:            DefaultRequestSettings(),
+		InheritScripts:      true,
 	}
+}
+
+func (r Request) WithScriptsOf(stored Request) Request {
+	r.Scripts = stored.Scripts
+	r.InheritScripts = stored.InheritScripts
+	return r
+}
+
+// ScriptOwners lists the owners of the scripts a send runs, outermost first: the ancestors, then the request.
+func (r Request) ScriptOwners(ancestors []Collection) []ScriptOwner {
+	owners := make([]ScriptOwner, 0, len(ancestors)+1)
+	for _, ancestor := range ancestors {
+		owners = append(owners, ancestor.ScriptOwner())
+	}
+	return append(owners, NewScriptOwner(scriptownerkind.Request, r.ID, r.Name, r.Scripts, r.InheritScripts))
 }
 
 func (r Request) HasValidName() bool {

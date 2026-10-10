@@ -11,9 +11,9 @@ const importPathSeparator = "/"
 
 type ImportNode struct {
 	Request   *Request
-	Container Collection
 	FileName  string
 	Children  []ImportNode
+	Container Collection
 }
 
 func NewRequestImportNode(request Request) ImportNode {

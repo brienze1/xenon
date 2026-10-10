@@ -28,7 +28,7 @@ var sandboxAllowlist = []string{
 }
 
 var pendingGlobals = []string{
-	"pm", "atob", "btoa", "URL", "URLSearchParams", "TextEncoder", "TextDecoder", "structuredClone",
+	"atob", "btoa", "URL", "URLSearchParams", "TextEncoder", "TextDecoder", "structuredClone",
 	"queueMicrotask", "crypto", "AbortController", "AbortSignal", "Event", "EventTarget", "DOMException",
 	"Blob", "Intl", "tests", "globals", "environment", "data", "request", "responseCookies",
 	"responseHeaders", "responseTime", "responseCode", "responseBody", "iteration", "postman", "xml2Json",
@@ -72,7 +72,7 @@ const names = Object.getOwnPropertyNames(globalThis);
 const extra = names.filter((name) => !builtins.includes(name) && !allowed.includes(name));
 const missing = allowed.filter((name) => !names.includes(name));
 if (extra.length || missing.length) { throw new Error('extra=' + extra.join(',') + ' missing=' + missing.join(',')) }`
-	result := testRunner(time.Minute, memoryGrowthLimit).Run(context.Background(), script(text), entity.DefaultAppSettings())
+	result := testRunner(time.Minute, memoryGrowthLimit).Run(context.Background(), script(text), entity.ScriptContext{}, nil, entity.DefaultAppSettings())
 	if result.HasFailed() {
 		t.Fatalf("global object differs from the allowlist: %s", result.Error.Message)
 	}

@@ -9,18 +9,21 @@ import (
 type Registry struct {
 	Window        json.RawMessage       `json:"window,omitempty"`
 	Vault         json.RawMessage       `json:"vault,omitempty"`
+	Settings      json.RawMessage       `json:"settings,omitempty"`
 	ActiveLocalId string                `json:"active_local_id"`
 	Workspaces    []RegisteredWorkspace `json:"workspaces"`
 	Version       int                   `json:"version"`
 }
 
-func NewRegistry(registry entity.AppRegistry, window, vault json.RawMessage) Registry {
+// NewRegistry keeps the window, vault and settings sections of the stored app.json.
+func NewRegistry(registry entity.AppRegistry, stored Registry) Registry {
 	model := Registry{
 		Version:       registry.Version,
 		ActiveLocalId: registry.ActiveLocalID,
 		Workspaces:    make([]RegisteredWorkspace, 0, len(registry.Workspaces)),
-		Window:        window,
-		Vault:         vault,
+		Window:        stored.Window,
+		Vault:         stored.Vault,
+		Settings:      stored.Settings,
 	}
 	for _, workspace := range registry.Workspaces {
 		model.Workspaces = append(model.Workspaces, NewRegisteredWorkspace(workspace))

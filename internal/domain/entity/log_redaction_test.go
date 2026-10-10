@@ -68,9 +68,13 @@ func TestHistoryEntryLogNeverContainsSecrets(t *testing.T) {
 	request.Body = secretBody()
 	request.Headers = []entity.KeyValue{entity.NewKeyValue("Cookie", redactionHeader)}
 	response := entity.NewResponse(200, "OK", "HTTP/1.1", []entity.KeyValue{entity.NewKeyValue("Set-Cookie", redactionHeader)}, []byte(redactionBody), 10, entity.Timings{})
-	entry := entity.NewHistoryEntry("entry-1", time.Now(), request, response)
+	execution := entity.NewSendExecution("send-1")
+	execution.Start(request)
+	execution.LocalVariables["token"] = redactionHeader
+	execution.RecordResponse(entity.EffectiveRequest{URL: "https://api.example.test/history", Headers: request.Headers}, response)
+	entry := entity.NewHistoryEntry("entry-1", time.Now(), request, execution)
 
-	logger.Info(context.Background(), "Finished", entry, entity.HistoryEntries{entry}, map[string]any{"result": entry, "response": response})
+	logger.Info(context.Background(), "Finished", entry, entity.HistoryEntries{entry}, map[string]any{"result": entry, "response": response, "execution": execution})
 
 	assertRedacted(t, logs.String(), "https://api.example.test/history")
 }

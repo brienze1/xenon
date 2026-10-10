@@ -10,6 +10,7 @@ type HistoryEntry struct {
 	Url             string `json:"url"`
 	ErrorKind       string `json:"error_kind,omitempty"`
 	SourceRequestId string `json:"source_request_id"`
+	Outcome         string `json:"outcome"`
 	TotalMs         int64  `json:"total_ms"`
 	SizeBytes       int64  `json:"size_bytes"`
 }
@@ -22,10 +23,11 @@ func NewHistoryEntry(entry entity.HistoryEntry) HistoryEntry {
 		Url:             entry.Request.URL,
 		ErrorKind:       entry.Result.ErrorKind.String(),
 		SourceRequestId: entry.SourceRequestID,
+		Outcome:         entry.Outcome.String(),
 		TotalMs:         entry.Result.Total.Milliseconds(),
 		SizeBytes:       entry.Result.SizeBytes,
 	}
-	if entry.Result.IsOk() {
+	if entry.HasStatus() {
 		statusCode := entry.Result.StatusCode
 		result.StatusCode = &statusCode
 	}

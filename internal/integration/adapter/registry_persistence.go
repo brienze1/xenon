@@ -7,4 +7,6 @@ type RegistryPersistence interface {
 	usecase.SaveWorkspaceRegistry
 	usecase.FindWindowState
 	usecase.SaveWindowState
+	usecase.FindAppSettings
+	usecase.SaveAppSettings
 }

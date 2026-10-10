@@ -7,20 +7,22 @@ import (
 
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
+	"github.com/brienze1/xenon/internal/domain/enums/scriptownerkind"
 )
 
 type Collection struct {
-	Postman     SourceFields
-	Bruno       SourceFields
-	Auth        Auth
-	Scripts     Scripts
-	ID          string
-	Kind        enums.ItemKind
-	Name        string
-	Description string
-	Order       []string
-	Headers     []KeyValue
-	Variables   []VariableRow
+	Postman        SourceFields
+	Bruno          SourceFields
+	Auth           Auth
+	Scripts        Scripts
+	ID             string
+	Kind           enums.ItemKind
+	Name           string
+	Description    string
+	Order          []string
+	Headers        []KeyValue
+	Variables      []VariableRow
+	InheritScripts bool
 }
 
 func NewCollection(id, name string) Collection {
@@ -33,13 +35,14 @@ func NewFolder(id, name string) Collection {
 
 func newContainer(id, name string, kind enums.ItemKind) Collection {
 	return Collection{
-		ID:        id,
-		Kind:      kind,
-		Name:      strings.TrimSpace(name),
-		Order:     []string{},
-		Auth:      DefaultAuth(),
-		Headers:   []KeyValue{},
-		Variables: []VariableRow{},
+		ID:             id,
+		Kind:           kind,
+		Name:           strings.TrimSpace(name),
+		Order:          []string{},
+		Auth:           DefaultAuth(),
+		Headers:        []KeyValue{},
+		Variables:      []VariableRow{},
+		InheritScripts: true,
 	}
 }
 
@@ -77,6 +80,13 @@ func (c Collection) WithImportedSettings(imported Collection) Collection {
 	c.Headers = append([]KeyValue{}, imported.Headers...)
 	c.Scripts = imported.Scripts
 	return c
+}
+
+func (c Collection) ScriptOwner() ScriptOwner {
+	if c.IsFolder() {
+		return NewScriptOwner(scriptownerkind.Folder, c.ID, c.Name, c.Scripts, c.InheritScripts)
+	}
+	return NewScriptOwner(scriptownerkind.Collection, c.ID, c.Name, c.Scripts, c.InheritScripts)
 }
 
 func (c Collection) OwnVariables() []VariableRow {

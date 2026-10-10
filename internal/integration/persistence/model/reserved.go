@@ -12,8 +12,12 @@ const (
 	authKey       = "auth"
 )
 
-func inheritScriptsNode() *yaml.Node {
-	return yamlnode.Bool("inheritScripts", true).Value
+func inheritScriptsNode(inherit *bool) *yaml.Node {
+	return yamlnode.Bool("inheritScripts", inheritsScripts(inherit)).Value
+}
+
+func inheritsScripts(inherit *bool) bool {
+	return inherit == nil || *inherit
 }
 
 func headerFields(kind, id, name, description string) []yamlnode.Field {
