@@ -129,7 +129,7 @@ US5 colour/confirm/quick look · US6 dynamic variables
 - [x] T046 [P] Performance: BDD `features/variables/inspect_performance.feature` — 200 references Inspect < 100 ms, send-time resolution < 10 ms (SC-004)
   - *Done:* the BDD holds Inspect (warm) and the whole Send under 100 ms; the < 10 ms resolution is a unit test of `ResolveRequestVariables` (a BDD call cannot isolate it from HTTP and History I/O).
 - [x] T047 [P] Security sweep test in `test/integration/features/secrets/secret_sweep.feature`: after a full scenario (create, send, history, duplicate, switch type, restart, a send that fails with a DNS error on `https://{{secret_host}}/` and a timeout with a secret in the query), grep workspace folder, app data (except `*.age`), log file, History result summaries and error messages for the secret value → 0 matches
-- [ ] T048 Update `README.md` "Where data lives" with variables.json, vault files and keychain entry; `/refactor-diff` until clean; `make validate`; CI green on 3 OSes; walk [quickstart.md](quickstart.md)
+- [x] T048 Update `README.md` "Where data lives" with variables.json, vault files and keychain entry; `/refactor-diff` until clean; `make validate`; CI green on 3 OSes; walk [quickstart.md](quickstart.md)
   - *README part done* ("Where your data lives": variable rows, variables.json, vault.age, vault-key.age, keychain entry, removal and reset).
 
 ---
