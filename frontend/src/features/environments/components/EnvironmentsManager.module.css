@@ -150,3 +150,83 @@ button.item:focus-visible {
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
+
+.look {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.colors {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  float: left;
+  margin-right: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.colorOption {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.colorOption:has(:checked) {
+  box-shadow: 0 0 0 2px var(--color-text-muted);
+}
+
+.colorOption:has(:focus-visible) {
+  box-shadow: var(--focus-ring);
+}
+
+.colorSwatch {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+.colorSwatch[data-color='green'] {
+  background: var(--neon-green);
+  box-shadow: var(--glow-green);
+}
+
+.colorSwatch[data-color='cyan'] {
+  background: var(--neon-cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+.colorSwatch[data-color='magenta'] {
+  background: var(--neon-magenta);
+  box-shadow: var(--glow-magenta);
+}
+
+.colorSwatch[data-color='yellow'] {
+  background: var(--neon-yellow);
+  box-shadow: var(--glow-yellow);
+}
+
+.colorSwatch[data-color='red'] {
+  background: var(--neon-red);
+  box-shadow: var(--glow-red);
+}
+
+.confirm {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}

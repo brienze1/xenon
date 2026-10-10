@@ -1,11 +1,13 @@
 import { lazy, Suspense } from 'react'
-import { BODY_MODES, RAW_LANGUAGES, type BodyMode, type FormDataRow, type RawLanguage } from '@/platform/mappers/request'
+import { BODY_MODES, RAW_LANGUAGES, type BodyMode, type FormDataRow, type KeyValueRow, type RawLanguage } from '@/platform/mappers/request'
 import { Button } from '@/shared/ui/button/Button'
 import { IconButton } from '@/shared/ui/icon-button/IconButton'
 import { KeyValueTable, type KeyValueExamples } from '@/shared/ui/key-value-table/KeyValueTable'
 import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
+import { SingleLineEditor } from '@/shared/ui/code-editor/SingleLineEditor'
 import { PanelSection } from '@/shared/ui/panel-section/PanelSection'
 import { useMissingFile } from '@/features/request-builder/hooks/use-missing-file'
+import { useTableFields, useVariableEditing } from '@/features/request-builder/hooks/use-variable-editing'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import styles from './BodyPanel.module.css'
 
@@ -93,6 +95,8 @@ const BODY_TYPE_LEGEND = <legend className="visually-hidden">Body type</legend>
 
 const DIRECTORY_PREFIX = /^.*[\\/]/
 
+const NO_ROWS: KeyValueRow[] = []
+
 const EMPTY_FORM_ROW: Omit<FormDataRow, 'id'> = {
   key: '',
   value: '',
@@ -110,6 +114,8 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
   const setBulkText = useRequestBuilderStore((state) => state.setBulkText)
   const chooseBodyFile = useRequestBuilderStore((state) => state.chooseBodyFile)
   const missingFile = useMissingFile(tabId)
+  const editing = useVariableEditing(tabId)
+  const { cellDecorations, onCellSelection } = useTableFields('body.urlencoded', body?.urlencoded ?? NO_ROWS, editing)
   if (!body) {
     return null
   }
@@ -162,6 +168,8 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
             className={styles.editor}
             language={body.raw.language}
             value={body.raw.content}
+            decorations={editing.decorationsOf('body.raw')}
+            completionSource={editing.completionSource}
             onChange={(content) => updateBody(tabId, { raw: { ...body.raw, content } })}
           />
         </Suspense>
@@ -179,6 +187,9 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
           onRowChange={(id, patch) => updateBody(tabId, { urlencoded: patchRow(urlencoded, id, patch) })}
           onRowAdd={(row) => updateBody(tabId, { urlencoded: addRow(urlencoded, row) })}
           onRowRemove={(id) => updateBody(tabId, { urlencoded: removeRow(urlencoded, id) })}
+          cellDecorations={cellDecorations}
+          completionSource={editing.completionSource}
+          onCellSelection={onCellSelection}
         />
       ) : null}
 
@@ -186,7 +197,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
         <table aria-label="Form-data body" className={styles.table}>
           {FORM_DATA_HEAD}
           <tbody>
-            {formdata.map((row) => (
+            {formdata.map((row, index) => (
               <tr key={row.id}>
                 <td>
                   <input
@@ -204,20 +215,14 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                   />
                 </td>
                 <td>
-                  <input
-                    aria-label="Key"
-                    name="formdata-key"
-                    autoComplete="off"
-                    spellCheck={false}
-                    className={styles.cell}
+                  <SingleLineEditor
+                    label="Key"
+                    className={styles.codeCell}
                     value={row.key}
-                    onChange={(event) =>
-                      updateBody(tabId, {
-                        formdata: patchRow(formdata, row.id, {
-                          key: event.target.value,
-                        }),
-                      })
-                    }
+                    decorations={editing.decorationsOf(`body.formdata.${index}.key`)}
+                    completionSource={editing.completionSource}
+                    onSelectionChange={(selection) => editing.selectIn(`body.formdata.${index}.key`, selection)}
+                    onChange={(key) => updateBody(tabId, { formdata: patchRow(formdata, row.id, { key }) })}
                   />
                 </td>
                 <td>
@@ -249,20 +254,14 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
                       {missingFile !== null && row.src !== '' && missingFile.endsWith(row.src.replace(DIRECTORY_PREFIX, '')) ? MISSING_FILE : null}
                     </div>
                   ) : (
-                    <input
-                      aria-label="Value"
-                      name="formdata-value"
-                      autoComplete="off"
-                      spellCheck={false}
-                      className={styles.cell}
+                    <SingleLineEditor
+                      label="Value"
+                      className={styles.codeCell}
                       value={row.value}
-                      onChange={(event) =>
-                        updateBody(tabId, {
-                          formdata: patchRow(formdata, row.id, {
-                            value: event.target.value,
-                          }),
-                        })
-                      }
+                      decorations={editing.decorationsOf(`body.formdata.${index}.value`)}
+                      completionSource={editing.completionSource}
+                      onSelectionChange={(selection) => editing.selectIn(`body.formdata.${index}.value`, selection)}
+                      onChange={(value) => updateBody(tabId, { formdata: patchRow(formdata, row.id, { value }) })}
                     />
                   )}
                 </td>
@@ -317,6 +316,8 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
             className={styles.editor}
             language="text"
             value={body.graphql.query}
+            decorations={editing.decorationsOf('body.graphql.query')}
+            completionSource={editing.completionSource}
             onChange={(query) => updateBody(tabId, { graphql: { ...body.graphql, query } })}
           />
           {GRAPHQL_VARIABLES_HEADING}
@@ -325,6 +326,8 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
             className={styles.editor}
             language="json"
             value={body.graphql.variables}
+            decorations={editing.decorationsOf('body.graphql.variables')}
+            completionSource={editing.completionSource}
             onChange={(variables) => updateBody(tabId, { graphql: { ...body.graphql, variables } })}
           />
         </Suspense>

@@ -1,0 +1,12 @@
+.root {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.root :global(.cm-editor) {
+  height: 100%;
+}
+
+.root :global(.cm-editor.cm-focused) {
+  outline: none;
+}

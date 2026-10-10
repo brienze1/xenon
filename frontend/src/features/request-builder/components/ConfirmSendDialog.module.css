@@ -1,0 +1,52 @@
+.dialog {
+  border-top: 3px solid var(--color-border);
+}
+
+.environment {
+  font-weight: var(--font-weight-semibold);
+}
+
+.green {
+  border-top-color: var(--neon-green);
+  box-shadow: var(--shadow-raised), var(--glow-green);
+}
+
+.green .environment {
+  color: var(--neon-green);
+}
+
+.cyan {
+  border-top-color: var(--neon-cyan);
+  box-shadow: var(--shadow-raised), var(--glow-cyan);
+}
+
+.cyan .environment {
+  color: var(--neon-cyan);
+}
+
+.magenta {
+  border-top-color: var(--neon-magenta);
+  box-shadow: var(--shadow-raised), var(--glow-magenta);
+}
+
+.magenta .environment {
+  color: var(--neon-magenta);
+}
+
+.yellow {
+  border-top-color: var(--neon-yellow);
+  box-shadow: var(--shadow-raised), var(--glow-yellow);
+}
+
+.yellow .environment {
+  color: var(--neon-yellow);
+}
+
+.red {
+  border-top-color: var(--neon-red);
+  box-shadow: var(--shadow-raised), var(--glow-red);
+}
+
+.red .environment {
+  color: var(--neon-red);
+}

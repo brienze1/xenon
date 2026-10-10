@@ -5,7 +5,7 @@ import { PassphraseDialog } from '@/features/environments/components/PassphraseD
 import { VariableTable } from '@/features/environments/components/VariableTable'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
-import { InfoPanel } from '@/features/side-panel/components/InfoPanel'
+import { SidePanel } from '@/features/side-panel/components/SidePanel'
 import { SidebarPanel } from '@/features/sidebar/components/SidebarPanel'
 import { useTabsStore } from '@/features/tabs/store'
 import { MissingFolderNotice } from '@/features/workspaces/components/MissingFolderNotice'
@@ -119,7 +119,12 @@ export function App() {
           </MainArea>
           <RightPanel>
             {activeTabId ? (
-              <InfoPanel key={active.localId} tabId={activeTabId} />
+              <SidePanel
+                key={active.localId}
+                tabId={activeTabId}
+                view={layout.rightPanelView}
+                onViewChange={(rightPanelView) => setLayout({ rightPanelView })}
+              />
             ) : (
               NO_REQUEST_SELECTED
             )}

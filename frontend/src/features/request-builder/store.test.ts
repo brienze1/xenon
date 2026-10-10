@@ -23,14 +23,16 @@ vi.mock('@/platform/services/environments', () => ({
 }))
 vi.mock('@/platform/services/workspaces', () => ({ listWorkspaces: vi.fn(), createWorkspace: vi.fn(), activateWorkspace: vi.fn() }))
 vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn() }))
+vi.mock('@/platform/services/variables', () => ({ inspectVariables: vi.fn(), suggestVariables: vi.fn() }))
 
 const requests = await import('@/platform/services/requests')
 const dialogs = await import('@/platform/services/dialogs')
 const tree = await import('@/platform/services/tree')
+const variables = await import('@/platform/services/variables')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
 const { useSidebarStore } = await import('@/features/sidebar/store')
-const { SYNC_DELAY_MS, useRequestBuilderStore } = await import('./store')
+const { INSPECT_DELAY_MS, SYNC_DELAY_MS, useRequestBuilderStore } = await import('./store')
 
 function row(key: string, value: string, enabled = true) {
   return { id: `id-${key}`, key, value, description: '', enabled }
@@ -263,7 +265,7 @@ describe('request builder store', () => {
     expect(state().tabs[tabId]!.pending).not.toBeNull()
     expect(useResponseViewerStore.getState().entries[tabId]?.sending).toBe(true)
     await sending
-    expect(requests.sendRequest).toHaveBeenCalledWith('ws', tabId, draft(tabId), false)
+    expect(requests.sendRequest).toHaveBeenCalledWith('ws', tabId, draft(tabId), { confirmedEnvironmentId: '', missingSecrets: false })
     expect(state().tabs[tabId]!.pending).toBeNull()
     expect(useResponseViewerStore.getState().entries[tabId]?.result?.statusCode).toBe(200)
   })
@@ -303,8 +305,8 @@ describe('request builder store', () => {
     vi.mocked(requests.sendRequest).mockReturnValueOnce({ result: Promise.reject(refused), cancel: vi.fn() })
     await state().send(tabId)
     vi.mocked(requests.sendRequest).mockReturnValueOnce({ result: Promise.resolve({ ...okResult, tabId }), cancel: vi.fn() })
-    await state().send(tabId, true)
-    expect(requests.sendRequest).toHaveBeenLastCalledWith('ws', tabId, draft(tabId), true)
+    await state().send(tabId, { missingSecrets: true })
+    expect(requests.sendRequest).toHaveBeenLastCalledWith('ws', tabId, draft(tabId), { confirmedEnvironmentId: '', missingSecrets: true })
     expect(state().tabs[tabId]!.missingSecrets).toBeNull()
   })
 
@@ -430,5 +432,128 @@ describe('request builder store - saved requests', () => {
     state().setName(tabId, 'Ping')
     state().setDescription(tabId, 'docs')
     expect(activeTab().draft).toMatchObject({ name: 'Ping', description: 'docs' })
+  })
+})
+
+describe('request builder store - variables', () => {
+  const tabId = 'tab-v'
+  const inspection = {
+    references: [{ field: 'url', name: 'base', start: 0, end: 8, status: 'resolved' as const, scope: 'environment' as const, displayValue: 'x', secret: false }],
+    variables: [],
+    scopes: { globals: 'globals' },
+  }
+
+  beforeEach(() => {
+    resetStores()
+    vi.resetAllMocks()
+    vi.useFakeTimers()
+    mockDefaults()
+    vi.mocked(variables.inspectVariables).mockResolvedValue(inspection)
+    useWorkspacesStore.setState({ activeLocalId: 'ws' })
+    state().ensureTab(tabId)
+  })
+
+  afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
+  })
+
+  it('inspects the draft once typing pauses', async () => {
+    state().setUrl(tabId, '{{b')
+    state().setUrl(tabId, '{{base}}')
+    await vi.advanceTimersByTimeAsync(INSPECT_DELAY_MS - 1)
+    expect(variables.inspectVariables).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(variables.inspectVariables).toHaveBeenCalledTimes(1)
+    expect(variables.inspectVariables).toHaveBeenCalledWith('ws', expect.objectContaining({ url: '{{base}}' }))
+    expect(state().tabs[tabId]!.inspection).toEqual(inspection)
+  })
+
+  it('drops answers for a draft that changed meanwhile and keeps the last one on failure', async () => {
+    let answer: (value: typeof inspection) => void = () => undefined
+    vi.mocked(variables.inspectVariables).mockReturnValueOnce(new Promise((resolve) => (answer = resolve)))
+    const pending = state().inspect(tabId)
+    state().setName(tabId, 'changed')
+    answer(inspection)
+    await pending
+    expect(state().tabs[tabId]!.inspection).toBeNull()
+    await state().inspect(tabId)
+    expect(state().tabs[tabId]!.inspection).toEqual(inspection)
+    vi.mocked(variables.inspectVariables).mockRejectedValueOnce(new AppError('VAR-15400', 'invalid'))
+    await state().inspect(tabId)
+    expect(state().tabs[tabId]!.inspection).toEqual(inspection)
+  })
+
+  it('refreshes every open tab and skips without a workspace', async () => {
+    state().ensureTab('tab-w')
+    state().refreshInspections()
+    await vi.runOnlyPendingTimersAsync()
+    expect(variables.inspectVariables).toHaveBeenCalledTimes(2)
+    useWorkspacesStore.setState({ activeLocalId: null })
+    await state().inspect(tabId)
+    expect(variables.inspectVariables).toHaveBeenCalledTimes(2)
+    await expect(state().suggest(tabId, 'a')).resolves.toEqual([])
+  })
+
+  it('suggests with the saved request id and swallows failures', async () => {
+    useRequestBuilderStore.setState((current) => ({ tabs: { ...current.tabs, [tabId]: { ...current.tabs[tabId]!, draft: { ...draft(tabId), id: 'r1' } } } }))
+    vi.mocked(variables.suggestVariables).mockResolvedValueOnce([{ name: 'base', scope: 'globals', description: '', secret: false, dynamic: false }])
+    await expect(state().suggest(tabId, 'ba')).resolves.toHaveLength(1)
+    expect(variables.suggestVariables).toHaveBeenCalledWith('ws', 'r1', 'ba')
+    vi.mocked(variables.suggestVariables).mockRejectedValueOnce(new AppError('VAR-16400', 'invalid'))
+    await expect(state().suggest(tabId, 'ba')).resolves.toEqual([])
+  })
+
+  it('replaces the selected text of a field with a reference', async () => {
+    state().updateHeaders(tabId, [row('Authorization', 'Bearer abc')])
+    state().setSelection(tabId, { field: 'headers.0.value', from: 7, to: 10, text: 'abc' })
+    expect(state().replaceSelection(tabId, '{{token}}')).toBe(true)
+    expect(draft(tabId).headers[0]!.value).toBe('Bearer {{token}}')
+    expect(state().tabs[tabId]!.selection).toBeNull()
+    expect(state().replaceSelection(tabId, '{{token}}')).toBe(false)
+    state().setSelection(tabId, { field: 'headers.0.value', from: 0, to: 3, text: 'xyz' })
+    expect(state().replaceSelection(tabId, '{{t}}')).toBe(false)
+    state().setSelection(tabId, { field: 'auth.bearer.token', from: 0, to: 1, text: 'a' })
+    expect(state().replaceSelection(tabId, '{{t}}')).toBe(false)
+    state().setSelection('missing-tab', { field: 'url', from: 0, to: 1, text: 'a' })
+    expect(state().tabs['missing-tab']).toBeUndefined()
+  })
+
+  it('syncs the URL or the params after replacing in them', async () => {
+    state().setUrl(tabId, 'https://h/abc')
+    await vi.advanceTimersByTimeAsync(SYNC_DELAY_MS)
+    vi.mocked(requests.applyUrl).mockClear()
+    state().setSelection(tabId, { field: 'url', from: 10, to: 13, text: 'abc' })
+    state().replaceSelection(tabId, '{{id}}')
+    await vi.advanceTimersByTimeAsync(SYNC_DELAY_MS)
+    expect(requests.applyUrl).toHaveBeenCalledWith(expect.objectContaining({ url: 'https://h/{{id}}' }))
+    state().updateParams(tabId, [row('key', 'abc')])
+    await vi.advanceTimersByTimeAsync(SYNC_DELAY_MS)
+    vi.mocked(requests.applyParams).mockClear()
+    state().setSelection(tabId, { field: 'params.0.value', from: 0, to: 3, text: 'abc' })
+    state().replaceSelection(tabId, '{{k}}')
+    await vi.advanceTimersByTimeAsync(SYNC_DELAY_MS)
+    expect(requests.applyParams).toHaveBeenCalledTimes(1)
+  })
+
+  it('asks to confirm the environment, then sends with the confirmation and keeps it for a secrets prompt', async () => {
+    const confirm = new AppError('SND-05409', 'confirm', [
+      { attribute: 'environment_id', messages: ['01P'] },
+      { attribute: 'name', messages: ['prod'] },
+      { attribute: 'color', messages: ['red'] },
+    ])
+    const secrets = new AppError('SND-06409', 'secrets', [{ attribute: 'missing_secrets', messages: ['api_key'] }])
+    vi.mocked(requests.sendRequest).mockReturnValueOnce({ result: Promise.reject(confirm), cancel: vi.fn() })
+    await state().send(tabId)
+    expect(state().tabs[tabId]!.confirmation).toEqual({ environmentId: '01P', name: 'prod', color: 'red' })
+    expect(useResponseViewerStore.getState().entries[tabId]?.sending).toBe(false)
+    vi.mocked(requests.sendRequest).mockReturnValueOnce({ result: Promise.reject(secrets), cancel: vi.fn() })
+    await state().send(tabId, { confirmedEnvironmentId: '01P' })
+    expect(requests.sendRequest).toHaveBeenLastCalledWith('ws', tabId, draft(tabId), { confirmedEnvironmentId: '01P', missingSecrets: false })
+    expect(state().tabs[tabId]!.confirmation).toBeNull()
+    expect(state().tabs[tabId]!.missingSecrets).toEqual({ missing: ['api_key'], locked: [] })
+    expect(state().tabs[tabId]!.acknowledgement).toEqual({ confirmedEnvironmentId: '01P', missingSecrets: false })
+    state().dismissConfirmation(tabId)
+    expect(state().tabs[tabId]!.confirmation).toBeNull()
   })
 })

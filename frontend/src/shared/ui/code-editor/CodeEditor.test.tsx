@@ -27,3 +27,21 @@ describe('CodeEditor', () => {
     expect(screen.getByLabelText('Body')).toHaveAttribute('contenteditable', 'true')
   })
 })
+
+describe('CodeEditor decorations and completion', () => {
+  it('decorates ranges and offers completions in a multi-line body', async () => {
+    const source = vi.fn(async (_text: string, position: number) => ({ from: position, options: [{ label: 'user', detail: 'Globals', apply: 'user}}' }] }))
+    const { container } = render(
+      <CodeEditor
+        value={'{"who": "{{user}}"}'}
+        language="text"
+        label="Raw body"
+        onChange={vi.fn()}
+        decorations={[{ from: 9, to: 17, tone: 'success', tooltip: 'luis — Globals' }]}
+        completionSource={source}
+      />,
+    )
+    await waitFor(() => expect(container.querySelector('[data-tone="success"]')).toHaveTextContent('{{user}}'))
+    expect(container.querySelector('[data-tone="success"]')).toHaveAttribute('title', 'luis — Globals')
+  })
+})

@@ -1,5 +1,7 @@
 import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui/button/Button'
+import type { CompletionSource, EditorDecoration, EditorSelection } from '@/shared/ui/code-editor/editor-extensions'
+import { SingleLineEditor } from '@/shared/ui/code-editor/SingleLineEditor'
 import { IconButton } from '@/shared/ui/icon-button/IconButton'
 import styles from './KeyValueTable.module.css'
 
@@ -25,7 +27,14 @@ interface KeyValueTableProps {
   onRowAdd: (row: KeyValueFields) => void
   onRowRemove: (id: string) => void
   examples: KeyValueExamples
+  /** Decorations of a key or value cell (code cells only). */
+  cellDecorations?: (id: string, field: CodeField) => readonly EditorDecoration[] | undefined
+  completionSource?: CompletionSource
+  onCellSelection?: (id: string, field: CodeField, selection: EditorSelection) => void
 }
+
+/** The cells edited as code (with decorations and completion); the description stays plain text. */
+export type CodeField = 'key' | 'value'
 
 export type KeyValueExamples = Record<TextField, string>
 
@@ -59,6 +68,12 @@ const TABLE_HEAD = (
   </thead>
 )
 
+const CODE_FIELDS: ReadonlySet<TextField> = new Set<TextField>(['key', 'value'])
+
+function isCodeField(field: TextField): field is CodeField {
+  return CODE_FIELDS.has(field)
+}
+
 export function KeyValueTable({
   label,
   rows,
@@ -70,6 +85,9 @@ export function KeyValueTable({
   onRowAdd,
   onRowRemove,
   examples,
+  cellDecorations,
+  completionSource,
+  onCellSelection,
 }: KeyValueTableProps) {
   const bulk = mode === 'bulk'
   return (
@@ -106,17 +124,29 @@ export function KeyValueTable({
                     />
                   </div>
                 </td>
-                {COLUMNS.map((column) => (
-                  <td key={column.field}>
-                    <input
-                      name={column.field}
-                      autoComplete="off"
-                      aria-label={column.title}
-                      className={styles.cell}
-                      spellCheck={false}
-                      value={row[column.field]}
-                      onChange={(event) => onRowChange(row.id, { [column.field]: event.target.value })}
-                    />
+                {COLUMNS.map(({ field, title }) => (
+                  <td key={field}>
+                    {isCodeField(field) ? (
+                      <SingleLineEditor
+                        label={title}
+                        className={styles.codeCell}
+                        value={row[field]}
+                        decorations={cellDecorations?.(row.id, field)}
+                        completionSource={completionSource}
+                        onSelectionChange={onCellSelection ? (selection) => onCellSelection(row.id, field, selection) : undefined}
+                        onChange={(value) => onRowChange(row.id, { [field]: value })}
+                      />
+                    ) : (
+                      <input
+                        name={field}
+                        autoComplete="off"
+                        aria-label={title}
+                        className={styles.cell}
+                        spellCheck={false}
+                        value={row[field]}
+                        onChange={(event) => onRowChange(row.id, { [field]: event.target.value })}
+                      />
+                    )}
                   </td>
                 ))}
                 <td>

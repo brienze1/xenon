@@ -131,4 +131,33 @@ describe('EnvironmentsManager', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(useEnvironmentsStore.getState().editor).toBeNull()
   })
+
+  it('picks a neon colour and turns "Confirm before send" on for the selected environment', async () => {
+    vi.mocked(services.getEnvironment).mockResolvedValue({ ...detail('e1', 'dev'), description: 'local', color: 'green' })
+    vi.mocked(services.updateEnvironment).mockResolvedValue(detail('e1', 'dev'))
+    vi.mocked(services.listEnvironments).mockResolvedValue({ environments: [{ ...dev, color: 'red', confirmBeforeSend: true }, hml], activeId: 'e1' })
+    const dialog = open()
+    const colours = within(dialog).getByRole('group', { name: 'Colour' })
+    expect(within(colours).getAllByRole('radio').map((radio) => radio.getAttribute('aria-label'))).toEqual([
+      'No colour',
+      'Neon green',
+      'Neon cyan',
+      'Neon magenta',
+      'Neon yellow',
+      'Neon red',
+    ])
+    expect(within(colours).getByRole('radio', { name: 'Neon green' })).toBeChecked()
+    await userEvent.click(within(colours).getByRole('radio', { name: 'Neon red' }))
+    expect(services.updateEnvironment).toHaveBeenCalledWith('A', { id: 'e1', name: 'dev', description: 'local', color: 'red', confirmBeforeSend: false })
+    expect(await within(dialog).findByRole('checkbox', { name: 'Confirm before send' })).toBeChecked()
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Confirm before send' }))
+    expect(services.updateEnvironment).toHaveBeenLastCalledWith('A', { id: 'e1', name: 'dev', description: 'local', color: 'red', confirmBeforeSend: false })
+  })
+
+  it('shows a failed colour change', async () => {
+    vi.mocked(services.getEnvironment).mockRejectedValue(new AppError('ENV-01404', 'environment gone'))
+    const dialog = open()
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Confirm before send' }))
+    expect(await within(dialog).findByText(/environment gone/)).toBeInTheDocument()
+  })
 })

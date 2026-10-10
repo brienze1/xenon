@@ -1,5 +1,6 @@
 import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { EditorView } from '@codemirror/view'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
 import { emptyDraft, type RequestDraft } from '@/platform/mappers/request'
@@ -24,10 +25,12 @@ vi.mock('@/platform/services/environments', () => ({
 }))
 vi.mock('@/platform/services/workspaces', () => ({ listWorkspaces: vi.fn(), createWorkspace: vi.fn(), activateWorkspace: vi.fn() }))
 vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn() }))
+vi.mock('@/platform/services/variables', () => ({ inspectVariables: vi.fn(), suggestVariables: vi.fn() }))
 
 const requests = await import('@/platform/services/requests')
 const dialogs = await import('@/platform/services/dialogs')
 const tree = await import('@/platform/services/tree')
+const variables = await import('@/platform/services/variables')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
@@ -73,6 +76,8 @@ describe('RequestBuilder', () => {
     vi.mocked(requests.lastResult).mockResolvedValue(null)
     vi.mocked(requests.releaseResponse).mockResolvedValue()
     vi.mocked(tree.getTree).mockResolvedValue([])
+    vi.mocked(variables.inspectVariables).mockResolvedValue({ references: [], variables: [], scopes: {} })
+    vi.mocked(variables.suggestVariables).mockResolvedValue([])
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
     tabId = 'tab-1'
     useRequestBuilderStore.getState().ensureTab(tabId)
@@ -96,10 +101,50 @@ describe('RequestBuilder', () => {
     render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
     await user.type(screen.getByRole('textbox', { name: 'Request URL' }), 'https://api.test/users?page=2&limit=10')
     const table = await screen.findByRole('table', { name: 'Query params' })
-    await within(table).findByDisplayValue('limit')
-    expect(within(table).getByDisplayValue('page')).toBeInTheDocument()
+    await vi.waitFor(() =>
+      expect(within(table).getAllByRole('textbox', { name: 'Key' }).map((cell) => cell.textContent)).toEqual(['page', 'limit']),
+    )
     await user.click(within(table).getByRole('checkbox', { name: 'Enable limit' }))
-    await vi.waitFor(() => expect(screen.getByRole('textbox', { name: 'Request URL' })).toHaveValue('https://api.test/users?page=2'))
+    await vi.waitFor(() => expect(screen.getByRole('textbox', { name: 'Request URL' })).toHaveTextContent('https://api.test/users?page=2'))
+  })
+
+  it('highlights the variables Go inspected in the URL and the tables', async () => {
+    vi.mocked(variables.inspectVariables).mockResolvedValue({
+      references: [
+        { field: 'url', name: 'base_url', start: 0, end: 12, status: 'resolved', scope: 'globals', displayValue: 'https://api', secret: false },
+        { field: 'url', name: 'id', start: 13, end: 19, status: 'unresolved', scope: 'none', displayValue: '', secret: false },
+        { field: 'params.0.value', name: 'page', start: 0, end: 8, status: 'dynamic', scope: 'dynamic', displayValue: '', secret: false },
+      ],
+      variables: [],
+      scopes: {},
+    })
+    const user = userEvent.setup()
+    const { container } = render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    await user.type(screen.getByRole('textbox', { name: 'Request URL' }), '{{{{base_url}}/{{{{id}}?p={{{{page}}')
+    await vi.waitFor(() => expect(variables.inspectVariables).toHaveBeenCalled())
+    await vi.waitFor(() => expect(container.querySelector('[data-tone="danger"]')).toHaveTextContent('{{id}}'))
+    expect(container.querySelector('[data-tone="success"]')).toHaveAttribute('title', 'https://api — Globals')
+    await vi.waitFor(() => expect(container.querySelector('[data-tone="info"]')).toHaveAttribute('title', 'Generated at send — Dynamic variable'))
+  })
+
+  it('suggests variable names after {{ in the URL', async () => {
+    vi.mocked(variables.suggestVariables).mockResolvedValue([{ name: 'base_url', scope: 'globals', description: '', secret: false, dynamic: false }])
+    const user = userEvent.setup()
+    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    await user.type(screen.getByRole('textbox', { name: 'Request URL' }), '{{{{ba')
+    expect(await screen.findByRole('option', { name: /base_url/ })).toHaveTextContent('Globals')
+    expect(variables.suggestVariables).toHaveBeenLastCalledWith('ws', '', 'ba')
+  })
+
+  it('remembers a selection in the URL for "Move to secret variable"', async () => {
+    const user = userEvent.setup()
+    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    const url = screen.getByRole('textbox', { name: 'Request URL' })
+    await user.type(url, 'https://x')
+    act(() => EditorView.findFromDOM(url)?.dispatch({ selection: { anchor: 0, head: 5 } }))
+    await vi.waitFor(() =>
+      expect(useRequestBuilderStore.getState().tabs[tabId]!.selection).toMatchObject({ field: 'url', from: 0, to: 5, text: 'https' }),
+    )
   })
 
   it('lists path variables and stores their values', async () => {
@@ -132,7 +177,7 @@ describe('RequestBuilder', () => {
     vi.mocked(requests.sendRequest).mockReturnValue({ result: new Promise(() => undefined), cancel: vi.fn() })
     render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
     await user.type(screen.getByRole('textbox', { name: 'Request URL' }), 'https://api.test{Enter}')
-    expect(requests.sendRequest).toHaveBeenCalledWith('ws', tabId, expect.objectContaining({ url: 'https://api.test' }), false)
+    expect(requests.sendRequest).toHaveBeenCalledWith('ws', tabId, expect.objectContaining({ url: 'https://api.test' }), { confirmedEnvironmentId: '', missingSecrets: false })
   })
 
   it('picks standard and custom methods', async () => {
@@ -290,7 +335,7 @@ describe('RequestBuilder saving', () => {
     vi.mocked(requests.getRequest).mockResolvedValue({ draft: saved, revision: 'rev-1' })
     vi.mocked(requests.saveRequest).mockResolvedValue({ draft: saved, revision: 'rev-2' })
     await act(() => useRequestBuilderStore.getState().openSaved(tabId, 'r1'))
-    expect(screen.getByRole('textbox', { name: 'Request URL' })).toHaveValue('https://x/ping')
+    expect(screen.getByRole('textbox', { name: 'Request URL' })).toHaveTextContent('https://x/ping')
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(requests.saveRequest).toHaveBeenCalledWith('ws', saved, 'rev-1', false)
   })

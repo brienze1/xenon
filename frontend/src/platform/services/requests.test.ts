@@ -91,7 +91,7 @@ describe('request service', () => {
   it('sends and keeps the cancellable call', async () => {
     const cancel = vi.fn()
     vi.mocked(RequestService.Send).mockReturnValue(Object.assign(Promise.resolve(sendResult), { cancel }) as never)
-    const pending = requests.sendRequest('ws', 'tab', emptyDraft(), false)
+    const pending = requests.sendRequest('ws', 'tab', emptyDraft(), { confirmedEnvironmentId: '', missingSecrets: false })
     await expect(pending.result).resolves.toMatchObject({ statusCode: 200, inlineBody: 'hi' })
     pending.cancel()
     expect(cancel).toHaveBeenCalled()
@@ -100,14 +100,17 @@ describe('request service', () => {
       tab_id: 'tab',
       request: toRequestDto(emptyDraft()),
       acknowledge_missing_secrets: false,
+      confirmed_environment_id: '',
     })
-    requests.sendRequest('ws', 'tab', emptyDraft(), true)
-    expect(RequestService.Send).toHaveBeenLastCalledWith(expect.objectContaining({ acknowledge_missing_secrets: true }))
+    requests.sendRequest('ws', 'tab', emptyDraft(), { confirmedEnvironmentId: 'env-1', missingSecrets: true })
+    expect(RequestService.Send).toHaveBeenLastCalledWith(
+      expect.objectContaining({ acknowledge_missing_secrets: true, confirmed_environment_id: 'env-1' }),
+    )
   })
 
   it('maps send failures to AppError', async () => {
     vi.mocked(RequestService.Send).mockReturnValue(Object.assign(Promise.reject(failure('SND-00400')), { cancel: vi.fn() }) as never)
-    await expect(requests.sendRequest('ws', 'tab', emptyDraft(), false).result).rejects.toMatchObject({ code: 'SND-00400' })
+    await expect(requests.sendRequest('ws', 'tab', emptyDraft(), { confirmedEnvironmentId: '', missingSecrets: false }).result).rejects.toMatchObject({ code: 'SND-00400' })
   })
 
   it('returns the last result or null when the tab has none', async () => {

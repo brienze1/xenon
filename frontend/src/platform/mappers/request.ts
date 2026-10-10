@@ -311,3 +311,31 @@ export function missingSecretsOf(error: AppError): MissingSecrets | null {
   const names = (attribute: string) => error.details.find((detail) => detail.attribute === attribute)?.messages ?? []
   return { missing: names('missing_secrets'), locked: names('locked_secrets') }
 }
+
+export const CONFIRMATION_REQUIRED = 'SND-05409'
+
+/** The environment a send must be confirmed for (`SND-05409`). */
+export interface SendConfirmation {
+  environmentId: string
+  name: string
+  color: string
+}
+
+/** What the user already agreed to for this send. */
+export interface SendAcknowledgement {
+  confirmedEnvironmentId: string
+  missingSecrets: boolean
+}
+
+export function noAcknowledgement(): SendAcknowledgement {
+  return { confirmedEnvironmentId: '', missingSecrets: false }
+}
+
+/** Reads the environment a send preflight asks to confirm (`SND-05409`), or `null` for any other error. */
+export function confirmationOf(error: AppError): SendConfirmation | null {
+  if (error.code !== CONFIRMATION_REQUIRED) {
+    return null
+  }
+  const first = (attribute: string) => error.details.find((detail) => detail.attribute === attribute)?.messages[0] ?? ''
+  return { environmentId: first('environment_id'), name: first('name'), color: first('color') }
+}

@@ -135,7 +135,7 @@ describe('App', () => {
     press('Enter')
     const tabId = useTabsStore.getState().activeTabId
     expect(requests.sendRequest).toHaveBeenCalledTimes(1)
-    expect(requests.sendRequest).toHaveBeenCalledWith('A', tabId, expect.objectContaining({ method: 'GET' }), false)
+    expect(requests.sendRequest).toHaveBeenCalledWith('A', tabId, expect.objectContaining({ method: 'GET' }), { confirmedEnvironmentId: '', missingSecrets: false })
   })
 
   it('opens, saves and closes tabs with the keyboard', async () => {

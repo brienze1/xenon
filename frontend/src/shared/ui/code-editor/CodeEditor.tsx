@@ -6,6 +6,14 @@ import { EditorView, drawSelection, keymap, lineNumbers } from '@codemirror/view
 import { useEffect, useRef } from 'react'
 import { cn } from '@/shared/lib/cn'
 import styles from './CodeEditor.module.css'
+import {
+  completionExtension,
+  decorationsEffect,
+  decorationsExtension,
+  toneTheme,
+  type CompletionSource,
+  type EditorDecoration,
+} from './editor-extensions'
 import { loadLanguage, type CodeLanguage } from './languages'
 
 interface CodeEditorProps {
@@ -13,8 +21,12 @@ interface CodeEditorProps {
   language: CodeLanguage
   label: string
   onChange?: (value: string) => void
+  decorations?: readonly EditorDecoration[]
+  completionSource?: CompletionSource
   className?: string
 }
+
+const NO_DECORATIONS: readonly EditorDecoration[] = []
 
 const theme = EditorView.theme(
   {
@@ -27,16 +39,26 @@ const theme = EditorView.theme(
   { dark: true },
 )
 
-export function CodeEditor({ value, language, label, onChange, className }: CodeEditorProps) {
+export function CodeEditor({
+  value,
+  language,
+  label,
+  onChange,
+  decorations = NO_DECORATIONS,
+  completionSource,
+  className,
+}: CodeEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const languageRef = useRef(new Compartment())
   const onChangeRef = useRef(onChange)
+  const completionRef = useRef(completionSource)
   const readOnly = onChange === undefined
 
   useEffect(() => {
     onChangeRef.current = onChange
-  }, [onChange])
+    completionRef.current = completionSource
+  }, [onChange, completionSource])
 
   useEffect(() => {
     const view = new EditorView({
@@ -52,6 +74,8 @@ export function CodeEditor({ value, language, label, onChange, className }: Code
           syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
           keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, ...foldKeymap]),
           languageRef.current.of([]),
+          decorationsExtension(),
+          completionExtension(() => completionRef.current),
           EditorState.readOnly.of(readOnly),
           EditorView.editable.of(!readOnly),
           EditorView.contentAttributes.of({ 'aria-label': label }),
@@ -61,6 +85,7 @@ export function CodeEditor({ value, language, label, onChange, className }: Code
             }
           }),
           theme,
+          toneTheme,
         ],
       }),
     })
@@ -78,6 +103,10 @@ export function CodeEditor({ value, language, label, onChange, className }: Code
       view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: value } })
     }
   }, [value])
+
+  useEffect(() => {
+    viewRef.current?.dispatch({ effects: decorationsEffect(decorations) })
+  }, [decorations, value, readOnly, label])
 
   useEffect(() => {
     let active = true

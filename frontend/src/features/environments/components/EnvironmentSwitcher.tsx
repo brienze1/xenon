@@ -1,4 +1,5 @@
 import { useShallow } from 'zustand/react/shallow'
+import { cn } from '@/shared/lib/cn'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Dropdown } from '@/shared/ui/dropdown/Dropdown'
@@ -6,6 +7,7 @@ import { useEnvironmentsStore } from '@/features/environments/store'
 import { EnvironmentsManager } from './EnvironmentsManager'
 import styles from './EnvironmentSwitcher.module.css'
 import { GlobalsDialog } from './GlobalsDialog'
+import { QuickLook } from './QuickLook'
 
 export const NO_ENVIRONMENT_LABEL = 'No environment'
 
@@ -37,12 +39,15 @@ export function EnvironmentSwitcher() {
   const error = useEnvironmentsStore((state) => state.error)
   const clearError = useEnvironmentsStore((state) => state.clearError)
   const openEditor = useEnvironmentsStore((state) => state.openEditor)
-  const activeName = environments.find((environment) => environment.id === activeId)?.name ?? NO_ENVIRONMENT_LABEL
+  const active = environments.find((environment) => environment.id === activeId)
+  const activeName = active?.name ?? NO_ENVIRONMENT_LABEL
+  const activeColor = active?.color ?? 'none'
 
   return (
     <div className={styles.container}>
       <Dropdown.Root className={styles.switcher} open={switcherOpen} onOpenChange={setSwitcherOpen}>
-        <Dropdown.Trigger label={`Environment: ${activeName}`}>
+        <Dropdown.Trigger label={`Environment: ${activeName}`} className={cn(styles.trigger, styles[activeColor])}>
+          <span className={styles.swatch} data-color={activeColor} aria-hidden="true" />
           <span className={styles.name} translate="no">
             {activeName}
           </span>
@@ -60,7 +65,10 @@ export function EnvironmentSwitcher() {
                 checked={environment.id === activeId}
                 onSelect={() => void setActive(environment.id)}
               >
-                <span translate="no">{environment.name}</span>
+                <span className={styles.option}>
+                  <span className={styles.swatch} data-color={environment.color} aria-hidden="true" />
+                  <span translate="no">{environment.name}</span>
+                </span>
               </Dropdown.RadioItem>
             ) : (
               <Dropdown.Item key={environment.id} disabled onSelect={() => undefined}>
@@ -76,6 +84,7 @@ export function EnvironmentSwitcher() {
           <Dropdown.Item onSelect={() => openEditor('manager')}>Manage Environments…</Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown.Root>
+      <QuickLook />
       {error ? (
         <Banner.Root tone="error" className={styles.error}>
           <Banner.Message>Could not change the environment: {error.description || error.code}</Banner.Message>

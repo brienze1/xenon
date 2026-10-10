@@ -1,7 +1,9 @@
 import type { KeyValueRow, PathVariableRow } from '@/platform/mappers/request'
 import { KeyValueTable, type KeyValueExamples } from '@/shared/ui/key-value-table/KeyValueTable'
 import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
+import { SingleLineEditor } from '@/shared/ui/code-editor/SingleLineEditor'
 import { PanelSection } from '@/shared/ui/panel-section/PanelSection'
+import { useTableFields, useVariableEditing } from '@/features/request-builder/hooks/use-variable-editing'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import styles from './ParamsPanel.module.css'
 
@@ -36,6 +38,8 @@ export function ParamsPanel({ tabId }: ParamsPanelProps) {
   const updatePathVariables = useRequestBuilderStore((state) => state.updatePathVariables)
   const setBulkMode = useRequestBuilderStore((state) => state.setBulkMode)
   const setBulkText = useRequestBuilderStore((state) => state.setBulkText)
+  const editing = useVariableEditing(tabId)
+  const { cellDecorations, onCellSelection } = useTableFields('params', params, editing)
 
   return (
     <div>
@@ -52,6 +56,9 @@ export function ParamsPanel({ tabId }: ParamsPanelProps) {
           onRowChange={(id, patch) => updateParams(tabId, patchRow(params, id, patch))}
           onRowAdd={(row) => updateParams(tabId, addRow(params, row))}
           onRowRemove={(id) => updateParams(tabId, removeRow(params, id))}
+          cellDecorations={cellDecorations}
+          completionSource={editing.completionSource}
+          onCellSelection={onCellSelection}
         />
       </PanelSection.Root>
       {pathVariables.length > 0 ? (
@@ -60,25 +67,18 @@ export function ParamsPanel({ tabId }: ParamsPanelProps) {
           <table aria-label="Path variables" className={styles.table}>
             {PATH_VARIABLES_HEAD}
             <tbody>
-              {pathVariables.map((variable) => (
+              {pathVariables.map((variable, index) => (
                 <tr key={variable.id}>
                   <td translate="no">{variable.key}</td>
                   <td>
-                    <input
-                      name="path-variable-value"
-                      autoComplete="off"
-                      aria-label={`Value of ${variable.key}`}
-                      className={styles.cell}
-                      spellCheck={false}
+                    <SingleLineEditor
+                      label={`Value of ${variable.key}`}
+                      className={styles.codeCell}
                       value={variable.value}
-                      onChange={(event) =>
-                        updatePathVariables(
-                          tabId,
-                          patchRow(pathVariables, variable.id, {
-                            value: event.target.value,
-                          }),
-                        )
-                      }
+                      decorations={editing.decorationsOf(`path_variables.${index}.value`)}
+                      completionSource={editing.completionSource}
+                      onSelectionChange={(selection) => editing.selectIn(`path_variables.${index}.value`, selection)}
+                      onChange={(value) => updatePathVariables(tabId, patchRow(pathVariables, variable.id, { value }))}
                     />
                   </td>
                   <td>

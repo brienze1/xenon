@@ -8,10 +8,14 @@ vi.mock('../../../bindings/github.com/brienze1/xenon/internal/infra/server/bindi
   Reset: vi.fn(),
   Persist: vi.fn(),
   AddVariable: vi.fn(),
+  Inspect: vi.fn(),
+  Suggest: vi.fn(),
 }))
 
 const VariableService = await import('../../../bindings/github.com/brienze1/xenon/internal/infra/server/binding/variableservice')
-const { getVariableTable, saveVariableTable, setCurrentValue, resetVariables, persistVariables } = await import('./variables')
+const { getVariableTable, saveVariableTable, setCurrentValue, resetVariables, persistVariables, inspectVariables, suggestVariables, addVariable } =
+  await import('./variables')
+const { emptyDraft, toRequestDto } = await import('../mappers/request')
 
 const plainDto = {
   key: 'base_url',
@@ -129,5 +133,57 @@ describe('variables service', () => {
     await expect(setCurrentValue('L1', 'globals', 'k', 'v')).rejects.toMatchObject({ code: 'UNK-00204' })
     vi.mocked(VariableService.Persist).mockRejectedValue({ cause: { error: { code: 'VAR-02422', description: 'secret' } } })
     await expect(persistVariables('L1', 'globals', ['token'])).rejects.toMatchObject({ code: 'VAR-02422' })
+  })
+})
+
+describe('variables service - inspect, suggest, add', () => {
+  beforeEach(() => vi.resetAllMocks())
+
+  it('inspects a draft and maps references, usages and the usable tables', async () => {
+    vi.mocked(VariableService.Inspect).mockResolvedValue({
+      references: [
+        { field: 'url', name: 'base_url', start: 0, end: 12, status: 'resolved', scope: 'environment', display_value: 'https://dev', secret: false },
+        { field: 'url', name: 'x', start: 13, end: 18, status: 'bogus', scope: 'bogus', display_value: '', secret: false },
+      ],
+      variables: [{ name: 'base_url', status: 'resolved', scope: 'environment', display_value: 'https://dev', secret: false, used_in: ['url'] }],
+      scopes: [
+        { scope: 'environment', ref: 'env:e1' },
+        { scope: 'globals', ref: 'globals' },
+        { scope: 'local', ref: 'local' },
+      ],
+    } as never)
+    const inspection = await inspectVariables('L1', emptyDraft())
+    expect(VariableService.Inspect).toHaveBeenCalledWith({ local_id: 'L1', request: toRequestDto(emptyDraft()) })
+    expect(inspection.references[0]).toEqual({
+      field: 'url',
+      name: 'base_url',
+      start: 0,
+      end: 12,
+      status: 'resolved',
+      scope: 'environment',
+      displayValue: 'https://dev',
+      secret: false,
+    })
+    expect(inspection.references[1]).toMatchObject({ status: 'unresolved', scope: 'none' })
+    expect(inspection.variables).toEqual([{ name: 'base_url', status: 'resolved', scope: 'environment', displayValue: 'https://dev', secret: false, usedIn: ['url'] }])
+    expect(inspection.scopes).toEqual({ environment: 'env:e1', globals: 'globals' })
+    vi.mocked(VariableService.Inspect).mockResolvedValue(null as never)
+    await expect(inspectVariables('L1', emptyDraft())).resolves.toEqual({ references: [], variables: [], scopes: {} })
+  })
+
+  it('suggests names for autocomplete', async () => {
+    vi.mocked(VariableService.Suggest).mockResolvedValue([{ name: '$guid', scope: 'dynamic', description: '', secret: false, dynamic: true }] as never)
+    await expect(suggestVariables('L1', 'r1', '$g')).resolves.toEqual([{ name: '$guid', scope: 'dynamic', description: '', secret: false, dynamic: true }])
+    expect(VariableService.Suggest).toHaveBeenCalledWith({ local_id: 'L1', request_id: 'r1', prefix: '$g' })
+    vi.mocked(VariableService.Suggest).mockResolvedValue(null as never)
+    await expect(suggestVariables('L1', '', 'x')).resolves.toEqual([])
+  })
+
+  it('adds a variable, as a secret too', async () => {
+    vi.mocked(VariableService.AddVariable).mockResolvedValue({ ...secretDto, key: 'token', secret_state: 'set' } as never)
+    await expect(addVariable('L1', 'env:e1', 'token', 's3cr3t', true)).resolves.toMatchObject({ key: 'token', secret: true, secretState: 'set', currentValue: '' })
+    expect(VariableService.AddVariable).toHaveBeenCalledWith({ local_id: 'L1', scope: 'env:e1', key: 'token', value: 's3cr3t', secret: true, description: '' })
+    vi.mocked(VariableService.AddVariable).mockRejectedValue({ cause: { error: { code: 'VAR-04409', description: 'exists' } } })
+    await expect(addVariable('L1', 'globals', 'token', '', false)).rejects.toMatchObject({ code: 'VAR-04409' })
   })
 })

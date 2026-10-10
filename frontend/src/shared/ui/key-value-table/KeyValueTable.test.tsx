@@ -34,8 +34,9 @@ describe('KeyValueTable', () => {
 
   it('reports edits, toggles and removals per row', async () => {
     const handlers = renderTable()
-    fireEvent.change(screen.getAllByRole('textbox', { name: 'Value' })[0] as HTMLElement, { target: { value: '3' } })
-    expect(handlers.onRowChange).toHaveBeenCalledWith('r1', { value: '3' })
+    await userEvent.type(screen.getAllByRole('textbox', { name: 'Value' })[0] as HTMLElement, '3')
+    expect(handlers.onRowChange).toHaveBeenCalledWith('r1', { value: expect.stringMatching(/^(23|32)$/) })
+    expect(screen.getAllByRole('textbox', { name: 'Key' })[1]).toHaveTextContent('limit')
     await userEvent.click(screen.getByRole('checkbox', { name: 'Enable limit' }))
     expect(handlers.onRowChange).toHaveBeenCalledWith('r2', { enabled: true })
     await userEvent.click(screen.getByRole('button', { name: 'Remove page' }))
@@ -67,6 +68,29 @@ describe('KeyValueTable', () => {
     expect(handlers.onBulkTextChange).toHaveBeenCalledWith('page:3')
     await userEvent.click(screen.getByRole('button', { name: 'Key-Value Edit' }))
     expect(handlers.onModeChange).toHaveBeenCalledWith('table')
+  })
+
+  it('decorates code cells and reports their selection', async () => {
+    const onCellSelection = vi.fn()
+    const { container } = render(
+      <KeyValueTable
+        label="Headers"
+        rows={[{ id: 'h1', key: 'X-Tenant', value: '{{tenant}}', description: '', enabled: true }]}
+        mode="table"
+        bulkText=""
+        onModeChange={vi.fn()}
+        onBulkTextChange={vi.fn()}
+        onRowChange={vi.fn()}
+        onRowAdd={vi.fn()}
+        onRowRemove={vi.fn()}
+        examples={EXAMPLES}
+        cellDecorations={(id, field) => (id === 'h1' && field === 'value' ? [{ from: 0, to: 10, tone: 'danger', tooltip: 'Unresolved' }] : undefined)}
+        onCellSelection={onCellSelection}
+      />,
+    )
+    await vi.waitFor(() => expect(container.querySelector('[data-tone="danger"]')).toHaveTextContent('{{tenant}}'))
+    await userEvent.click(screen.getByRole('textbox', { name: 'Value' }))
+    expect(onCellSelection).toHaveBeenCalledWith('h1', 'value', expect.objectContaining({ text: '' }))
   })
 
   it('names unnamed rows generically', () => {

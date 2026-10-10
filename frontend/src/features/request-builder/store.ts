@@ -3,9 +3,12 @@ import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import { SAVE_CONFLICT_CODE, toAppError, type AppError } from '@/platform/errors'
+import type { VariableSuggestion } from '@/platform/mappers/inspection'
 import {
   cancelledResult,
+  confirmationOf,
   emptyDraft,
+  noAcknowledgement,
   type KeyValueRow,
   type PathVariableRow,
   type RequestAuth,
@@ -13,6 +16,7 @@ import {
   type RequestDraft,
   missingSecretsOf,
   type RequestSettings,
+  type SendAcknowledgement,
 } from '@/platform/mappers/request'
 import {
   applyParams,
@@ -27,12 +31,16 @@ import {
   type PendingSend,
 } from '@/platform/services/requests'
 import { pickFile } from '@/platform/services/dialogs'
+import { inspectVariables, suggestVariables } from '@/platform/services/variables'
 import { keepRowIds } from '@/shared/lib/rows'
 import type { Result } from '@/shared/types/result'
+import { fieldText, withFieldText } from './lib/draft-fields'
 import { rowsOf, withRows, withSavedRows } from './lib/draft-rows'
-import type { BulkTable, SubTab, TabDraft } from './model'
+import type { BulkTable, FieldSelection, SubTab, TabDraft } from './model'
 
 export const SYNC_DELAY_MS = 150
+/** Highlighting and the Variables panel follow typing after this pause (SC-004: within 100 ms of Inspect). */
+export const INSPECT_DELAY_MS = 120
 
 interface RequestBuilderState {
   tabs: Record<string, TabDraft>
@@ -60,22 +68,28 @@ interface RequestBuilderState {
   setBulkText: (tabId: string, table: BulkTable, text: string) => void
   chooseBodyFile: (tabId: string, rowId?: string) => Promise<void>
   refreshAutoHeaders: (tabId: string) => Promise<void>
-  send: (tabId: string, acknowledgeMissingSecrets?: boolean) => Promise<void>
+  send: (tabId: string, acknowledgement?: Partial<SendAcknowledgement>) => Promise<void>
   dismissMissingSecrets: (tabId: string) => void
+  dismissConfirmation: (tabId: string) => void
+  inspect: (tabId: string) => Promise<void>
+  refreshInspections: () => void
+  suggest: (tabId: string, prefix: string) => Promise<VariableSuggestion[]>
+  setSelection: (tabId: string, selection: FieldSelection | null) => void
+  replaceSelection: (tabId: string, text: string) => boolean
   cancel: (tabId: string) => void
   reset: () => void
 }
 
 const timers = new Map<string, ReturnType<typeof setTimeout>>()
 
-function debounce(key: string, action: () => Promise<void>) {
+function debounce(key: string, action: () => Promise<void>, delay = SYNC_DELAY_MS) {
   clearTimeout(timers.get(key))
   timers.set(
     key,
     setTimeout(() => {
       timers.delete(key)
       void action()
-    }, SYNC_DELAY_MS),
+    }, delay),
   )
 }
 
@@ -96,6 +110,10 @@ function newTab(): TabDraft {
     bulk: {},
     pending: null,
     missingSecrets: null,
+    confirmation: null,
+    acknowledgement: noAcknowledgement(),
+    inspection: null,
+    selection: null,
     error: null,
     baseRevision: null,
     conflict: false,
@@ -111,6 +129,9 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
 
   function patchTab(tabId: string, update: Partial<TabDraft>) {
     set((state) => ({ tabs: { ...state.tabs, [tabId]: { ...(state.tabs[tabId] ?? newTab()), ...update } } }))
+    if (update.draft !== undefined) {
+      debounce(`${tabId}:inspect`, () => get().inspect(tabId), INSPECT_DELAY_MS)
+    }
   }
 
   function patchDraft(tabId: string, update: (draft: RequestDraft) => RequestDraft) {
@@ -380,27 +401,32 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
       }
     },
 
-    send: async (tabId, acknowledgeMissingSecrets = false) => {
+    send: async (tabId, acknowledgement = {}) => {
       const localId = useWorkspacesStore.getState().activeLocalId
       if (!localId || tab(tabId).pending) {
         return
       }
+      const acknowledged = { ...noAcknowledgement(), ...acknowledgement }
       const responses = useResponseViewerStore.getState()
       let pending: PendingSend
       try {
-        pending = sendRequest(localId, tabId, tab(tabId).draft, acknowledgeMissingSecrets)
+        pending = sendRequest(localId, tabId, tab(tabId).draft, acknowledged)
       } catch (error) {
         responses.setFailure(tabId, toAppError(error))
         return
       }
-      patchTab(tabId, { pending, missingSecrets: null })
+      patchTab(tabId, { pending, missingSecrets: null, confirmation: null, acknowledgement: acknowledged })
       responses.startSending(tabId)
       try {
         responses.setResult(tabId, await pending.result)
       } catch (error) {
         const appError = toAppError(error)
         const missingSecrets = missingSecretsOf(appError)
-        if (missingSecrets) {
+        const confirmation = confirmationOf(appError)
+        if (confirmation) {
+          responses.stopSending(tabId)
+          patchTab(tabId, { confirmation })
+        } else if (missingSecrets) {
           responses.stopSending(tabId)
           patchTab(tabId, { missingSecrets })
         } else if (appError.cancelled) {
@@ -414,6 +440,66 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
     },
 
     dismissMissingSecrets: (tabId) => patchTab(tabId, { missingSecrets: null }),
+
+    dismissConfirmation: (tabId) => patchTab(tabId, { confirmation: null }),
+
+    inspect: async (tabId) => {
+      const localId = useWorkspacesStore.getState().activeLocalId
+      if (!localId || !get().tabs[tabId]) {
+        return
+      }
+      const draft = tab(tabId).draft
+      try {
+        const inspection = await inspectVariables(localId, draft)
+        if (get().tabs[tabId] && tab(tabId).draft === draft && useWorkspacesStore.getState().activeLocalId === localId) {
+          set((state) => ({ tabs: { ...state.tabs, [tabId]: { ...tab(tabId), inspection } } }))
+        }
+      } catch {
+        // Highlighting is a hint: without an answer the editors keep the last decorations.
+        return
+      }
+    },
+
+    refreshInspections: () => {
+      for (const tabId of Object.keys(get().tabs)) {
+        void get().inspect(tabId)
+      }
+    },
+
+    suggest: async (tabId, prefix) => {
+      const localId = useWorkspacesStore.getState().activeLocalId
+      if (!localId) {
+        return []
+      }
+      try {
+        return await suggestVariables(localId, tab(tabId).draft.id, prefix)
+      } catch {
+        return []
+      }
+    },
+
+    setSelection: (tabId, selection) => {
+      if (get().tabs[tabId]) {
+        set((state) => ({ tabs: { ...state.tabs, [tabId]: { ...tab(tabId), selection } } }))
+      }
+    },
+
+    replaceSelection: (tabId, text) => {
+      const { draft, selection } = tab(tabId)
+      const current = selection === null ? null : fieldText(draft, selection.field)
+      if (selection === null || current === null || current.slice(selection.from, selection.to) !== selection.text) {
+        return false
+      }
+      const replaced = current.slice(0, selection.from) + text + current.slice(selection.to)
+      patchDraft(tabId, (previous) => withFieldText(previous, selection.field, replaced))
+      patchTab(tabId, { selection: null })
+      if (selection.field === 'url') {
+        syncUrl(tabId)
+      } else if (selection.field.startsWith('params.') || selection.field.startsWith('path_variables.')) {
+        syncParams(tabId)
+      }
+      return true
+    },
 
     cancel: (tabId) => tab(tabId).pending?.cancel(),
 

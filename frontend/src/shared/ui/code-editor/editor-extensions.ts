@@ -1,0 +1,123 @@
+import { autocompletion, type CompletionContext, type CompletionResult } from '@codemirror/autocomplete'
+import { StateEffect, StateField, type Extension, type Range } from '@codemirror/state'
+import { Decoration, EditorView, type DecorationSet } from '@codemirror/view'
+
+/** Visual tone of a decorated range; the meaning is decided by whoever passes the decorations. */
+export type EditorTone = 'success' | 'danger' | 'accent' | 'info'
+
+export interface EditorDecoration {
+  from: number
+  to: number
+  tone: EditorTone
+  tooltip: string
+}
+
+export interface EditorCompletionOption {
+  label: string
+  detail: string
+  apply: string
+}
+
+export interface EditorCompletions {
+  /** Position the chosen option replaces from (up to the cursor). */
+  from: number
+  options: EditorCompletionOption[]
+}
+
+/** Asked on every keystroke with the document and the cursor; `null` offers nothing. */
+export type CompletionSource = (text: string, position: number) => Promise<EditorCompletions | null>
+
+export interface EditorSelection {
+  from: number
+  to: number
+  text: string
+}
+
+const replaceDecorations = StateEffect.define<readonly EditorDecoration[]>()
+
+function toDecorationSet(decorations: readonly EditorDecoration[], length: number): DecorationSet {
+  const ranges: Range<Decoration>[] = []
+  for (const decoration of decorations) {
+    if (decoration.from < decoration.to && decoration.to <= length) {
+      ranges.push(
+        Decoration.mark({
+          class: `cm-tone-${decoration.tone}`,
+          attributes: { title: decoration.tooltip, 'data-tone': decoration.tone },
+        }).range(decoration.from, decoration.to),
+      )
+    }
+  }
+  return Decoration.set(ranges, true)
+}
+
+const decorationField = StateField.define<DecorationSet>({
+  create: () => Decoration.none,
+  update(decorations, transaction) {
+    let next = decorations.map(transaction.changes)
+    for (const effect of transaction.effects) {
+      if (effect.is(replaceDecorations)) {
+        next = toDecorationSet(effect.value, transaction.state.doc.length)
+      }
+    }
+    return next
+  },
+  provide: (field) => EditorView.decorations.from(field),
+})
+
+/** Decorations come from props: dispatch `decorationsEffect(list)` whenever they change. */
+export function decorationsExtension(): Extension {
+  return decorationField
+}
+
+export function decorationsEffect(decorations: readonly EditorDecoration[]): StateEffect<readonly EditorDecoration[]> {
+  return replaceDecorations.of(decorations)
+}
+
+/** Completion reads the source through a getter so a new callback never rebuilds the editor. */
+export function completionExtension(source: () => CompletionSource | undefined): Extension {
+  return autocompletion({
+    activateOnTyping: true,
+    icons: false,
+    override: [
+      async (context: CompletionContext): Promise<CompletionResult | null> => {
+        const current = source()
+        if (!current) {
+          return null
+        }
+        const completions = await current(context.state.doc.toString(), context.pos)
+        if (!completions || completions.options.length === 0) {
+          return null
+        }
+        return {
+          from: completions.from,
+          filter: false,
+          options: completions.options.map((option) => ({ label: option.label, detail: option.detail, apply: option.apply })),
+        }
+      },
+    ],
+  })
+}
+
+export function selectionListener(onSelection: () => ((selection: EditorSelection) => void) | undefined): Extension {
+  return EditorView.updateListener.of((update) => {
+    const listener = onSelection()
+    if (listener && (update.selectionSet || update.docChanged)) {
+      const { from, to } = update.state.selection.main
+      listener({ from, to, text: update.state.sliceDoc(from, to) })
+    }
+  })
+}
+
+export const toneTheme = EditorView.theme({
+  '.cm-tone-success': { color: 'var(--neon-green)' },
+  '.cm-tone-danger': { color: 'var(--neon-red)', textDecoration: 'underline wavy var(--neon-red)' },
+  '.cm-tone-accent': { color: 'var(--neon-magenta)' },
+  '.cm-tone-info': { color: 'var(--neon-cyan)' },
+  '.cm-tooltip-autocomplete': {
+    backgroundColor: 'var(--color-surface-raised)',
+    border: '1px solid var(--color-border)',
+    boxShadow: 'var(--shadow-raised)',
+  },
+  '.cm-tooltip-autocomplete > ul > li[aria-selected]': { backgroundColor: 'var(--color-selection)', color: 'var(--color-text)' },
+  '.cm-completionDetail': { color: 'var(--color-text-muted)', marginLeft: 'var(--space-3)', fontStyle: 'normal' },
+})

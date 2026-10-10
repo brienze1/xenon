@@ -1,8 +1,10 @@
-import { useState, type KeyboardEvent } from 'react'
+import { useCallback, useState, type KeyboardEvent } from 'react'
 import { STANDARD_METHODS } from '@/platform/mappers/request'
 import { Button } from '@/shared/ui/button/Button'
 import { Dropdown } from '@/shared/ui/dropdown/Dropdown'
+import { SingleLineEditor } from '@/shared/ui/code-editor/SingleLineEditor'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
+import { useVariableEditing } from '@/features/request-builder/hooks/use-variable-editing'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import styles from './RequestBar.module.css'
 
@@ -24,13 +26,10 @@ export function RequestBar({ tabId, onSave }: RequestBarProps) {
   const send = useRequestBuilderStore((state) => state.send)
   const cancel = useRequestBuilderStore((state) => state.cancel)
   const [customMethod, setCustomMethod] = useState('')
-
-  function onUrlKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key === 'Enter' && !event.metaKey && !event.ctrlKey) {
-      event.preventDefault()
-      void send(tabId)
-    }
-  }
+  const { decorationsOf, completionSource, selectIn } = useVariableEditing(tabId)
+  const onUrlChange = useCallback((value: string) => setUrl(tabId, value), [setUrl, tabId])
+  const onUrlEnter = useCallback(() => void send(tabId), [send, tabId])
+  const onUrlSelection = useCallback((selection: Parameters<typeof selectIn>[1]) => selectIn('url', selection), [selectIn])
 
   function onCustomKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     event.stopPropagation()
@@ -66,19 +65,16 @@ export function RequestBar({ tabId, onSave }: RequestBarProps) {
           />
         </Dropdown.Menu>
       </Dropdown.Root>
-      <input
-        name="url"
-        type="text"
-        inputMode="url"
-        autoComplete="off"
-        aria-label="Request URL"
+      <SingleLineEditor
+        label="Request URL"
         className={styles.url}
         placeholder="https://api.example.com/users…"
-        translate="no"
-        spellCheck={false}
         value={url}
-        onChange={(event) => setUrl(tabId, event.target.value)}
-        onKeyDown={onUrlKeyDown}
+        decorations={decorationsOf('url')}
+        completionSource={completionSource}
+        onChange={onUrlChange}
+        onEnter={onUrlEnter}
+        onSelectionChange={onUrlSelection}
       />
       {sending ? (
         <Button variant="running" className={styles.send} onClick={() => cancel(tabId)}>

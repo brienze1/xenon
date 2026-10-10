@@ -26,8 +26,21 @@ export function bootstrap(): () => void {
       }
     }),
     onRequestChangedOnDisk((event) => void useTabsStore.getState().handleChangedOnDisk(event)),
-    onVariablesChanged((event) => useEnvironmentsStore.getState().handleVariablesChanged(event)),
-    onVaultStatusChanged((status) => useEnvironmentsStore.getState().applyVaultStatus(status)),
+    onVariablesChanged((event) => {
+      useEnvironmentsStore.getState().handleVariablesChanged(event)
+      if (event.localId === useWorkspacesStore.getState().activeLocalId) {
+        useRequestBuilderStore.getState().refreshInspections()
+      }
+    }),
+    onVaultStatusChanged((status) => {
+      useEnvironmentsStore.getState().applyVaultStatus(status)
+      useRequestBuilderStore.getState().refreshInspections()
+    }),
+    useEnvironmentsStore.subscribe((state, previous) => {
+      if (state.activeId !== previous.activeId) {
+        useRequestBuilderStore.getState().refreshInspections()
+      }
+    }),
     useRequestBuilderStore.subscribe((state, previous) => {
       if (state.tabs !== previous.tabs) {
         useTabsStore.getState().pinIfEdited()

@@ -1,6 +1,6 @@
 import { useState, useTransition, type FormEvent } from 'react'
 import type { AppError } from '@/platform/errors'
-import type { EnvironmentSummary } from '@/platform/mappers/environment'
+import { ENVIRONMENT_COLORS, type EnvironmentColor, type EnvironmentSummary } from '@/platform/mappers/environment'
 import { environmentScope } from '@/platform/mappers/variable'
 import { DUPLICATE_ENVIRONMENT_NAME } from '@/platform/services/environments'
 import { cn } from '@/shared/lib/cn'
@@ -36,6 +36,17 @@ function ErrorBanner({ error, name }: ErrorBannerProps) {
     </Banner.Root>
   )
 }
+
+const COLOR_NAMES: Record<EnvironmentColor, string> = {
+  none: 'No colour',
+  green: 'Neon green',
+  cyan: 'Neon cyan',
+  magenta: 'Neon magenta',
+  yellow: 'Neon yellow',
+  red: 'Neon red',
+}
+
+const COLOR_LEGEND = <legend className={styles.legend}>Colour</legend>
 
 const NO_ENVIRONMENTS = <p className={styles.note}>No environments yet. Create one to group variables such as a base URL per stage.</p>
 
@@ -158,6 +169,7 @@ interface EnvironmentDetailProps {
 
 function EnvironmentDetail({ environment, onDuplicated }: EnvironmentDetailProps) {
   const renameEnvironment = useEnvironmentsStore((state) => state.renameEnvironment)
+  const updateEnvironmentLook = useEnvironmentsStore((state) => state.updateEnvironmentLook)
   const duplicateEnvironment = useEnvironmentsStore((state) => state.duplicateEnvironment)
   const deleteEnvironment = useEnvironmentsStore((state) => state.deleteEnvironment)
   const [name, setName] = useState(environment.name)
@@ -168,6 +180,10 @@ function EnvironmentDetail({ environment, onDuplicated }: EnvironmentDetailProps
   function rename(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     startAction(async () => setError(await renameEnvironment(environment.id, name)))
+  }
+
+  function changeLook(color: EnvironmentColor, confirmBeforeSend: boolean) {
+    startAction(async () => setError(await updateEnvironmentLook(environment.id, { color, confirmBeforeSend })))
   }
 
   function duplicate() {
@@ -212,6 +228,35 @@ function EnvironmentDetail({ environment, onDuplicated }: EnvironmentDetailProps
         <Button variant="ghost" size="sm" disabled={busy} onClick={() => setConfirmingDelete(true)}>
           Delete
         </Button>
+      </div>
+      <div className={styles.look}>
+        <fieldset className={styles.colors}>
+          {COLOR_LEGEND}
+          {ENVIRONMENT_COLORS.map((color) => (
+            <label key={color} className={styles.colorOption} title={COLOR_NAMES[color]}>
+              <input
+                type="radio"
+                name={`${environment.id}-color`}
+                className="visually-hidden"
+                checked={environment.color === color}
+                disabled={busy}
+                aria-label={COLOR_NAMES[color]}
+                onChange={() => changeLook(color, environment.confirmBeforeSend)}
+              />
+              <span className={styles.colorSwatch} data-color={color} aria-hidden="true" />
+            </label>
+          ))}
+        </fieldset>
+        <label className={styles.confirm}>
+          <input
+            type="checkbox"
+            name="confirm-before-send"
+            checked={environment.confirmBeforeSend}
+            disabled={busy}
+            onChange={(event) => changeLook(environment.color, event.target.checked)}
+          />
+          Confirm before send
+        </label>
       </div>
       {confirmingDelete ? (
         <Banner.Root tone="warning">

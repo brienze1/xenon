@@ -2,6 +2,7 @@ import type { AutoHeader, KeyValueRow } from '@/platform/mappers/request'
 import { KeyValueTable, type KeyValueExamples } from '@/shared/ui/key-value-table/KeyValueTable'
 import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
 import { PanelSection } from '@/shared/ui/panel-section/PanelSection'
+import { useTableFields, useVariableEditing } from '@/features/request-builder/hooks/use-variable-editing'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import styles from './HeadersPanel.module.css'
 
@@ -42,6 +43,8 @@ export function HeadersPanel({ tabId }: HeadersPanelProps) {
   const setAutoHeaderEnabled = useRequestBuilderStore((state) => state.setAutoHeaderEnabled)
   const setBulkMode = useRequestBuilderStore((state) => state.setBulkMode)
   const setBulkText = useRequestBuilderStore((state) => state.setBulkText)
+  const editing = useVariableEditing(tabId)
+  const { cellDecorations, onCellSelection } = useTableFields('headers', headers, editing)
 
   return (
     <div>
@@ -58,6 +61,9 @@ export function HeadersPanel({ tabId }: HeadersPanelProps) {
           onRowChange={(id, patch) => updateHeaders(tabId, patchRow(headers, id, patch))}
           onRowAdd={(row) => updateHeaders(tabId, addRow(headers, row))}
           onRowRemove={(id) => updateHeaders(tabId, removeRow(headers, id))}
+          cellDecorations={cellDecorations}
+          completionSource={editing.completionSource}
+          onCellSelection={onCellSelection}
         />
       </PanelSection.Root>
       {autoHeaders.length > 0 ? (

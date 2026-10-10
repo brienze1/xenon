@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import { AppError, toAppError } from '@/platform/errors'
 import type { VariablesChanged } from '@/platform/events'
-import type { Environment, EnvironmentSummary } from '@/platform/mappers/environment'
+import type { Environment, EnvironmentColor, EnvironmentSummary } from '@/platform/mappers/environment'
 import { environmentScope, type VariableEdit, type VariableTable } from '@/platform/mappers/variable'
 import { emptyVaultStatus, type VaultStatus } from '@/platform/mappers/vault'
 import {
@@ -14,7 +14,14 @@ import {
   setActiveEnvironment,
   updateEnvironment,
 } from '@/platform/services/environments'
-import { getVariableTable, persistVariables, resetVariables, saveVariableTable } from '@/platform/services/variables'
+import {
+  addVariable,
+  getVariableTable,
+  persistVariables,
+  resetVariables,
+  saveVariableTable,
+  setCurrentValue,
+} from '@/platform/services/variables'
 import {
   copySecret,
   getVaultStatus,
@@ -48,12 +55,15 @@ interface EnvironmentsState {
   closeEditor: () => void
   createEnvironment: (name: string) => Promise<Result<Environment, AppError>>
   renameEnvironment: (id: string, name: string) => Promise<AppError | null>
+  updateEnvironmentLook: (id: string, look: EnvironmentLook) => Promise<AppError | null>
   duplicateEnvironment: (id: string) => Promise<Result<Environment, AppError>>
   deleteEnvironment: (id: string) => Promise<AppError | null>
   loadTable: (scope: string) => Promise<void>
   saveTable: (scope: string, edits: VariableEdit[], confirmReveal: boolean) => Promise<AppError | null>
   resetValues: (scope: string, keys: string[]) => Promise<AppError | null>
   persistValues: (scope: string, keys: string[]) => Promise<AppError | null>
+  setCurrentValue: (scope: string, key: string, value: string) => Promise<AppError | null>
+  addVariable: (scope: string, key: string, value: string, secret: boolean) => Promise<AppError | null>
   revealSecret: (scope: string, key: string) => Promise<Result<string, AppError>>
   copySecret: (scope: string, key: string) => Promise<AppError | null>
   handleVariablesChanged: (event: VariablesChanged) => void
@@ -68,6 +78,12 @@ interface EnvironmentsState {
 }
 
 const NO_WORKSPACE = 'WKS-00000'
+
+/** How an environment warns before sending: its neon colour and "Confirm before send". */
+export interface EnvironmentLook {
+  color: EnvironmentColor
+  confirmBeforeSend: boolean
+}
 
 /** Workspace-scoped state: cleared on every workspace switch. The vault status is app-wide. */
 const INITIAL_STATE = {
@@ -238,6 +254,18 @@ export const useEnvironmentsStore = create<EnvironmentsState>()((set, get) => {
       return null
     },
 
+    updateEnvironmentLook: async (id, look) => {
+      const updated = await inWorkspace(async (localId) => {
+        const current = await getEnvironment(localId, id)
+        return updateEnvironment(localId, { id, name: current.name, description: current.description, ...look })
+      })
+      if (!updated.ok) {
+        return updated.error
+      }
+      await get().load()
+      return null
+    },
+
     duplicateEnvironment: async (id) => {
       const duplicated = await inWorkspace((localId) => duplicateEnvironment(localId, id))
       if (duplicated.ok) {
@@ -277,6 +305,24 @@ export const useEnvironmentsStore = create<EnvironmentsState>()((set, get) => {
     resetValues: (scope, keys) => tableAction(scope, (localId) => resetVariables(localId, scope, keys)),
 
     persistValues: (scope, keys) => tableAction(scope, (localId) => persistVariables(localId, scope, keys)),
+
+    setCurrentValue: async (scope, key, value) => {
+      const saved = await inWorkspace((localId) => setCurrentValue(localId, scope, key, value))
+      if (!saved.ok) {
+        return saved.error.code === NO_WORKSPACE ? null : saved.error
+      }
+      refreshTables([scope])
+      return null
+    },
+
+    addVariable: async (scope, key, value, secret) => {
+      const added = await inWorkspace((localId) => addVariable(localId, scope, key, value, secret))
+      if (!added.ok) {
+        return added.error.code === NO_WORKSPACE ? null : added.error
+      }
+      refreshTables([scope])
+      return null
+    },
 
     revealSecret: (scope, key) => inWorkspace((localId) => revealSecret(localId, scope, key)),
 

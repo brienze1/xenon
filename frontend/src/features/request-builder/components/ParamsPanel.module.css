@@ -31,3 +31,14 @@
   font-family: var(--font-mono);
   font-size: var(--font-size-sm);
 }
+
+.codeCell {
+  display: flex;
+  height: 30px;
+  align-items: center;
+  padding: 0;
+}
+
+.codeCell:focus-within {
+  box-shadow: inset 0 0 0 1px var(--neon-cyan);
+}

@@ -4,6 +4,7 @@ import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
+import { ConfirmSendDialog } from './ConfirmSendDialog'
 import { MissingSecretsDialog } from './MissingSecretsDialog'
 import { RequestBar } from './RequestBar'
 import styles from './RequestBuilder.module.css'
@@ -59,6 +60,7 @@ export function RequestBuilder({ tabId, onSave }: RequestBuilderProps) {
         </Banner.Root>
       ) : null}
       <RequestTabs tabId={tabId} />
+      <ConfirmSendDialog tabId={tabId} />
       <MissingSecretsDialog tabId={tabId} />
     </section>
   )

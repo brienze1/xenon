@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
@@ -112,5 +112,36 @@ describe('EnvironmentSwitcher', () => {
     await userEvent.click(screen.getByRole('menuitem', { name: 'Manage Environments…' }))
     expect(screen.getByRole('dialog', { name: 'Environments' })).toBeInTheDocument()
     expect(await screen.findByRole('table', { name: 'dev variables' })).toBeInTheDocument()
+  })
+
+  it('shows the active environment in its colour and glow, none without one', async () => {
+    const { rerender } = render(<EnvironmentSwitcher />)
+    expect(screen.getByRole('button', { name: 'Environment: No environment' })).not.toHaveClass('red')
+    act(() => useEnvironmentsStore.setState({ activeId: 'e3' }))
+    rerender(<EnvironmentSwitcher />)
+    expect(screen.getByRole('button', { name: 'Environment: prod' })).toHaveClass('red')
+    act(() => useEnvironmentsStore.setState({ activeId: 'e1' }))
+    expect(screen.getByRole('button', { name: 'Environment: dev' })).toHaveClass('green')
+  })
+
+  it('opens a quick look at the active environment and the globals', async () => {
+    vi.mocked(variables.getVariableTable).mockImplementation(async (_localId, scope) => ({ scope, rows: [], warnings: [] }))
+    useEnvironmentsStore.setState({ activeId: 'e3' })
+    render(<EnvironmentSwitcher />)
+    await userEvent.click(screen.getByRole('button', { name: 'Quick look at variables' }))
+    const dialog = screen.getByRole('dialog', { name: 'Quick Look' })
+    expect(within(dialog).getByRole('region', { name: 'Active environment variables' })).toHaveTextContent('prod')
+    expect(within(dialog).getByRole('region', { name: 'Global variables' })).toBeInTheDocument()
+    expect(variables.getVariableTable).toHaveBeenCalledWith('A', 'env:e3')
+    expect(variables.getVariableTable).toHaveBeenCalledWith('A', 'globals')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Close' }))
+    expect(screen.queryByRole('dialog', { name: 'Quick Look' })).not.toBeInTheDocument()
+  })
+
+  it('tells that no environment is active in the quick look', async () => {
+    vi.mocked(variables.getVariableTable).mockImplementation(async (_localId, scope) => ({ scope, rows: [], warnings: [] }))
+    render(<EnvironmentSwitcher />)
+    await userEvent.click(screen.getByRole('button', { name: 'Quick look at variables' }))
+    expect(screen.getByText(/No environment is active/)).toBeInTheDocument()
   })
 })

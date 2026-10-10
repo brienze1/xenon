@@ -12,6 +12,7 @@ import {
   type KeyValueRow,
   type RequestDraft,
   type SavedRequest,
+  type SendAcknowledgement,
   type SendResult,
 } from '../mappers/request'
 
@@ -76,12 +77,13 @@ export function autoHeaders(localId: string, draft: RequestDraft): Promise<AutoH
   return call(async () => (await RequestService.AutoHeaders({ local_id: localId, request: toRequestDto(draft) }) ?? []).map(toAutoHeader))
 }
 
-export function sendRequest(localId: string, tabId: string, draft: RequestDraft, acknowledgeMissingSecrets: boolean): PendingSend {
+export function sendRequest(localId: string, tabId: string, draft: RequestDraft, acknowledgement: SendAcknowledgement): PendingSend {
   const pending = RequestService.Send({
     local_id: localId,
     tab_id: tabId,
     request: toRequestDto(draft),
-    acknowledge_missing_secrets: acknowledgeMissingSecrets,
+    acknowledge_missing_secrets: acknowledgement.missingSecrets,
+    confirmed_environment_id: acknowledgement.confirmedEnvironmentId,
   })
   return {
     result: call(async () => toSendResult(required(await pending))),
