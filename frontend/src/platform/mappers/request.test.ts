@@ -87,6 +87,10 @@ describe('request mapper', () => {
     const timings = { dns_ms: 1, connect_ms: 2, tls_ms: 3, first_byte_ms: 4, download_ms: 5, total_ms: 15 }
     const ok = toSendResult({
       tab_id: 't',
+      send_id: 's',
+      outcome: 'sent',
+      tests: [],
+      script_errors: [],
       ok: true,
       status_code: 200,
       status_text: 'OK',
@@ -100,7 +104,7 @@ describe('request mapper', () => {
       timings,
     })
     expect(ok).toMatchObject({ tabId: 't', inlineBody: 'hi', error: null, timings: { dnsMs: 1, totalMs: 15 }, headers: [{ key: 'A', value: '1' }] })
-    const failed = toSendResult({ ...ok, tab_id: 't', ok: false, status_code: 0, status_text: '', proto: '', headers: null, size_bytes: 0, content_type: '', is_binary: false, body_url: '', timings, error: { kind: 'nope', message: 'm', hint: 'h' } })
+    const failed = toSendResult({ ...ok, tab_id: 't', send_id: 's', outcome: 'error', tests: null, script_errors: null, ok: false, status_code: 0, status_text: '', proto: '', headers: null, size_bytes: 0, content_type: '', is_binary: false, body_url: '', timings, error: { kind: 'nope', message: 'm', hint: 'h' } })
     expect(failed).toMatchObject({ inlineBody: null, headers: [], error: { kind: 'other', message: 'm', hint: 'h' } })
     expect(cancelledResult('t')).toMatchObject({ ok: false, error: { kind: 'cancelled', message: 'Request cancelled' } })
   })

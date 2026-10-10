@@ -64,12 +64,32 @@ US1 execution · US2 tests · US3 pm API & libraries · US4 console · US5 edito
 
 ## Phase 3: User Story 1 — Execution pipeline (P1) 🎯 MVP
 
-- [ ] T010 [P] [US1] BDD `test/integration/features/scripts/execution_order.feature` and `inheritance.feature`: order across collection/folder/nested folder/request for both phases (via console log entries); inherit off on folder and on request; disabled scripts skipped; separate scopes (`const` not shared)
-- [ ] T011 [P] [US1] BDD `test/integration/features/scripts/request_mutation.feature`: headers/query/body/method changes reach the ApiMock; stored request and History unchanged; variables set in pre-request resolve in the same send
-- [ ] T012 [P] [US1] BDD `test/integration/features/scripts/errors_and_limits.feature`: pre-request throw/syntax error → `outcome: stopped_by_script_error`, no request reaches the mock, error has script + line/column; post-response throw → response shown, later post scripts run; timeout (setting 1000 ms) on `while(true){}` and on a never-resolving `setTimeout` chain; stack overflow; memory guard; unhandled rejection; `skipRequest`
-- [ ] T013 [US1] Run T010–T012 → **red**
-- [ ] T014 [US1] Extend `internal/application/service/send_request.go` with the pipeline (data-model state machine), local scope plugged into the XEN-002 resolver, nested send support flagging History suppression (nested sends inherit the main send's confirm-before-send acknowledgement; missing/locked secrets in nested sends reject with an error); History entries gain `outcome` (sent / skipped_by_script / stopped_by_script_error / cancelled / error); `SendResult` additions (bindings §1); controllers/DTOs updated → **green**
-- [ ] T015 [US1] Settings: `app.json` `settings.scriptTimeoutMs`, `SettingsService` (use cases, controller, binding), `features/settings` UI field; BDD `features/scripts/settings_timeout.feature`
+- [x] T010 [P] [US1] BDD `test/integration/features/scripts/execution_order.feature` and `inheritance.feature`: order across collection/folder/nested folder/request for both phases (via console log entries); inherit off on folder and on request; disabled scripts skipped; separate scopes (`const` not shared)
+- [x] T011 [P] [US1] BDD `test/integration/features/scripts/request_mutation.feature`: headers/query/body/method changes reach the ApiMock; stored request and History unchanged; variables set in pre-request resolve in the same send
+- [x] T012 [P] [US1] BDD `test/integration/features/scripts/errors_and_limits.feature`: pre-request throw/syntax error → `outcome: stopped_by_script_error`, no request reaches the mock, error has script + line/column; post-response throw → response shown, later post scripts run; timeout (setting 1000 ms) on `while(true){}` and on a never-resolving `setTimeout` chain; stack overflow; memory guard; unhandled rejection; `skipRequest`
+- [x] T013 [US1] Run T010–T012 → **red**
+- [x] T014 [US1] Extend `internal/application/service/send_request.go` with the pipeline (data-model state machine), local scope plugged into the XEN-002 resolver, nested send support flagging History suppression (nested sends inherit the main send's confirm-before-send acknowledgement; missing/locked secrets in nested sends reject with an error); History entries gain `outcome` (sent / skipped_by_script / stopped_by_script_error / cancelled / error); `SendResult` additions (bindings §1); controllers/DTOs updated → **green**
+- [x] T015 [US1] Settings: `app.json` `settings.scriptTimeoutMs`, `SettingsService` (use cases, controller, binding), `features/settings` UI field; BDD `features/scripts/settings_timeout.feature`
+
+**Phase 3 notes (implemented)**:
+- The request's own scripts and `inheritScripts` come from its saved file (the request DTO does
+  not carry scripts yet — T031 adds them with the Scripts panel); an unsaved request has none.
+  `inheritScripts` is read from collection/folder/request files (default true).
+- Minimal pm surface for US1 over JS shims in `sandbox/shims/` (`property_list.js`, `url.js`,
+  `pm_request.js`, `pm_response.js`, `pm.js`) and a Go bridge: `pm.variables` (has/get/set/unset/
+  clear/replaceIn/toObject), `pm.request` (Url, header PropertyList, RequestBody), 
+  `pm.execution.skipRequest`, `pm.sendRequest` (callback + promise). T020/T021 extend these.
+- Script requests: `usecase.SendScriptRequest` is implemented in the send service
+  (`script_requests.go`); they resolve with the send's local scope at call time, inherit the main
+  send's confirmation, reject missing/locked secrets with "The request uses secrets that have no
+  value on this machine or are locked: <names>", and never reach History
+  (`features/scripts/nested_send_preflight.feature`).
+- Post-response scripts run only when the request went out and got a response (outcome `sent`).
+- A minimal `ConsoleService` (`List`, `Clear`; in-memory 5,000-entry buffer; log and error
+  entries masked at creation) exists so the US1 features can assert order; T027 adds request
+  entries, `Get`, the `console:entries` publisher and `console.clear()` wiring.
+- Settings: `SettingsService` (`Get`/`Save`, `SCR-01400`), `app.json` `settings.scriptTimeoutMs`
+  (out-of-range file values fall back to 10000), Settings dialog opened from the top-bar gear.
 
 ---
 

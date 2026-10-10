@@ -9,6 +9,8 @@ import { useEnvironmentsStore } from '@/features/environments/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { SidePanel } from '@/features/side-panel/components/SidePanel'
 import { useExamplesStore } from '@/features/examples/store'
+import { SettingsButton } from '@/features/settings/components/SettingsButton'
+import { SettingsDialog } from '@/features/settings/components/SettingsDialog'
 import { SidebarPanel } from '@/features/sidebar/components/SidebarPanel'
 import { useTabsStore } from '@/features/tabs/store'
 import { MissingFolderNotice } from '@/features/workspaces/components/MissingFolderNotice'
@@ -42,6 +44,17 @@ const ENVIRONMENT_SWITCHER = <EnvironmentSwitcher />
 const PASSPHRASE_DIALOG = <PassphraseDialog />
 
 const IMPORT_DIALOG = <ImportDialog />
+
+const SETTINGS_DIALOG = <SettingsDialog />
+
+const SETTINGS_BUTTON = <SettingsButton />
+
+const TOP_BAR_END_WITH_ENVIRONMENTS = (
+  <>
+    {ENVIRONMENT_SWITCHER}
+    {SETTINGS_BUTTON}
+  </>
+)
 
 function collectionVariables(collectionId: string) {
   return <VariableTable scope={collectionScope(collectionId)} label="Collection variables" />
@@ -107,7 +120,7 @@ export function App() {
 
   return (
     <AppShell layout={layout} onLayoutChange={setLayout}>
-      <TopBar end={hasActive ? ENVIRONMENT_SWITCHER : null}>{hasWorkspaces ? WORKSPACE_SWITCHER : null}</TopBar>
+      <TopBar end={hasActive ? TOP_BAR_END_WITH_ENVIRONMENTS : SETTINGS_BUTTON}>{hasWorkspaces ? WORKSPACE_SWITCHER : null}</TopBar>
       {active ? (
         <>
           <Sidebar>
@@ -150,6 +163,7 @@ export function App() {
       )}
       {active ? CONSOLE : null}
       {PASSPHRASE_DIALOG}
+      {SETTINGS_DIALOG}
       {active ? IMPORT_DIALOG : null}
       <Footer>
         {active ? (
