@@ -3,6 +3,7 @@ package steps
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/cucumber/godog"
 )
@@ -20,6 +21,11 @@ func (t *testUtils) registerThenApiSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the (\d+) "([^"]*)" request to "([^"]*)" should have the body field "([^"]*)" equal to "([^"]*)"$`, t.theRequestShouldHaveTheBodyFieldEqualTo)
 	ctx.Then(`^the (\d+) "([^"]*)" request to "([^"]*)" should have the body field "([^"]*)" matching "([^"]*)"$`, t.theRequestShouldHaveTheBodyFieldMatching)
 	ctx.Then(`^the "([^"]*)" request to "([^"]*)" should have been received (\d+) times$`, t.theRequestShouldHaveBeenReceivedTimes)
+	ctx.Then(`^the (\d+) "([^"]*)" request to "([^"]*)" should have the query "([^"]*)" matching "([^"]*)"$`, t.theRequestShouldHaveTheQueryMatching)
+	ctx.Then(`^the (\d+) "([^"]*)" request to "([^"]*)" should have the body matching "([^"]*)"$`, t.theRequestShouldHaveTheBodyMatching)
+	ctx.Then(`^the (\d+) "([^"]*)" request to "([^"]*)" should have the body split by "([^"]*)" into (\d+) parts all matching "([^"]*)"$`, t.theRequestShouldHaveTheBodySplitIntoPartsAllMatching)
+	ctx.Then(`^the (\d+) "([^"]*)" request to "([^"]*)" should have the body split by "([^"]*)" into (\d+) distinct parts$`, t.theRequestShouldHaveTheBodySplitIntoDistinctParts)
+	ctx.Then(`^the (\d+) "([^"]*)" requests to "([^"]*)" should have different bodies$`, t.theRequestsShouldHaveDifferentBodies)
 }
 
 func (t *testUtils) theRequestShouldHaveTheHeaderEqualTo(index int, method, path, key, expected string) error {
@@ -133,6 +139,78 @@ func expectMatch(actual, pattern, what string) error {
 	}
 	if !expression.MatchString(actual) {
 		return fmt.Errorf("%s: %q does not match %q", what, actual, pattern)
+	}
+	return nil
+}
+
+func (t *testUtils) theRequestShouldHaveTheQueryMatching(index int, method, path, key, pattern string) error {
+	value, found := t.api.GetRequestQuery(index, method, path, key)
+	if !found {
+		return fmt.Errorf("request %d %s %s has no query parameter %s", index, method, path, key)
+	}
+	return expectMatch(value, pattern, "query "+key)
+}
+
+func (t *testUtils) theRequestShouldHaveTheBodyMatching(index int, method, path, pattern string) error {
+	body, found := t.api.GetRequestBody(index, method, path)
+	if !found {
+		return fmt.Errorf("request %d %s %s was not received", index, method, path)
+	}
+	return expectMatch(string(body), pattern, "body")
+}
+
+func (t *testUtils) theRequestShouldHaveTheBodySplitIntoPartsAllMatching(index int, method, path, separator string, count int, pattern string) error {
+	parts, err := t.requestBodyParts(index, method, path, separator, count)
+	if err != nil {
+		return err
+	}
+	for position, part := range parts {
+		if err := expectMatch(part, pattern, fmt.Sprintf("body part %d", position+1)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (t *testUtils) theRequestShouldHaveTheBodySplitIntoDistinctParts(index int, method, path, separator string, count int) error {
+	parts, err := t.requestBodyParts(index, method, path, separator, count)
+	if err != nil {
+		return err
+	}
+	return expectDistinct(parts, "body parts")
+}
+
+func (t *testUtils) theRequestsShouldHaveDifferentBodies(count int, method, path string) error {
+	bodies := make([]string, 0, count)
+	for index := 1; index <= count; index++ {
+		body, found := t.api.GetRequestBody(index, method, path)
+		if !found {
+			return fmt.Errorf("request %d %s %s was not received", index, method, path)
+		}
+		bodies = append(bodies, string(body))
+	}
+	return expectDistinct(bodies, "bodies")
+}
+
+func (t *testUtils) requestBodyParts(index int, method, path, separator string, count int) ([]string, error) {
+	body, found := t.api.GetRequestBody(index, method, path)
+	if !found {
+		return nil, fmt.Errorf("request %d %s %s was not received", index, method, path)
+	}
+	parts := strings.Split(string(body), separator)
+	if len(parts) != count {
+		return nil, fmt.Errorf("body of request %d %s %s has %d parts, expected %d", index, method, path, len(parts), count)
+	}
+	return parts, nil
+}
+
+func expectDistinct(values []string, what string) error {
+	seen := make(map[string]int, len(values))
+	for position, value := range values {
+		if previous, repeated := seen[value]; repeated {
+			return fmt.Errorf("%s %d and %d are both %q", what, previous+1, position+1, value)
+		}
+		seen[value] = position
 	}
 	return nil
 }

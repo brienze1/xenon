@@ -32,6 +32,7 @@ func (t *testUtils) registerGivenWorkspaceSteps(ctx *godog.ScenarioContext) {
 	ctx.Given(`^the "([^"]*)" variable is set to the mocked tls api url$`, t.theVariableIsSetToTheMockedTlsApiUrl)
 	ctx.Given(`^the "([^"]*)" variable is set to a closed port url$`, t.theVariableIsSetToAClosedPortUrl)
 	ctx.Given(`^the "([^"]*)" variable is set to "([^"]*)"$`, t.theVariableIsSetTo)
+	ctx.Given(`^the "([^"]*)" variable is set to "([^"]*)" repeated (\d+) times separated by "([^"]*)"$`, t.theVariableIsSetToRepeatedTimesSeparatedBy)
 	ctx.Given(`^the workspace folder "([^"]*)" holds (\d+) generated requests across (\d+) collections$`, t.theWorkspaceFolderHoldsGeneratedRequests)
 }
 
@@ -150,6 +151,15 @@ func (t *testUtils) theVariableIsSetToAClosedPortUrl(name string) error {
 
 func (t *testUtils) theVariableIsSetTo(name, value string) error {
 	t.vars[name] = t.substitute(value)
+	return nil
+}
+
+func (t *testUtils) theVariableIsSetToRepeatedTimesSeparatedBy(name, value string, times int, separator string) error {
+	parts := make([]string, times)
+	for index := range parts {
+		parts[index] = t.substitute(value)
+	}
+	t.vars[name] = strings.Join(parts, separator)
 	return nil
 }
 
