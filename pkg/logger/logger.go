@@ -67,7 +67,7 @@ func log(ctx context.Context, logLevel level, err error, message string, metadat
 		pattern.Metadata = []any{"unserializable metadata"}
 		line, _ = json.Marshal(pattern)
 	}
-	write(append(line, '\n'))
+	write(append(redactLine(ctx, line), '\n'))
 }
 
 func operationName() string {

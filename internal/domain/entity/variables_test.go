@@ -87,7 +87,7 @@ func TestVariableRowContextVariable(t *testing.T) {
 		t.Error("only missing variables are not resolvable")
 	}
 	logged := variable.LogValue().(map[string]any)
-	if logged["name"] != "x" || logged["scope"] != variablescope.Environment || logged["secret"] != true || logged["missing"] != true || len(logged) != 4 {
+	if logged["name"] != "x" || logged["scope"] != variablescope.Environment || logged["secret"] != true || logged["missing"] != true || logged["locked"] != false || len(logged) != 5 {
 		t.Errorf("LogValue() = %v", logged)
 	}
 }
@@ -101,8 +101,8 @@ func TestVariableLayerAndContextPrecedence(t *testing.T) {
 		{Key: "dup_disabled", InitialValue: "kept", Enabled: true},
 		{Key: "dup_disabled", InitialValue: "ignored", Enabled: false},
 		{InitialValue: "no key", Enabled: true},
-	}, map[string]string{"tenant": "dev-current"}, nil)
-	globals := NewVariableLayer(variablescope.Globals, []VariableRow{NewVariableRow("tenant", "global"), NewVariableRow("region", "eu")}, nil, nil)
+	}, map[string]string{"tenant": "dev-current"}, nil, false)
+	globals := NewVariableLayer(variablescope.Globals, []VariableRow{NewVariableRow("tenant", "global"), NewVariableRow("region", "eu")}, nil, nil, false)
 	context := NewVariableContext(environment, globals)
 	expectations := map[string]ContextVariable{
 		"tenant":       {Name: "tenant", Value: "dev-current", Scope: variablescope.Environment},

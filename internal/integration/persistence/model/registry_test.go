@@ -13,7 +13,7 @@ func TestRegistryRoundTrip(t *testing.T) {
 	registry := entity.NewAppRegistry()
 	addedAt := time.Date(2026, 10, 9, 10, 30, 0, 123000000, time.FixedZone("BRT", -3*3600))
 	registry.Register(entity.NewRegisteredWorkspace("01L", "/work/acme", "Acme", addedAt))
-	model := NewRegistry(registry, json.RawMessage(`{"width":1280}`))
+	model := NewRegistry(registry, Registry{Window: json.RawMessage(`{"width":1280}`), Vault: json.RawMessage(`{"mode":"keychain"}`)})
 	data, err := json.Marshal(model)
 	if err != nil {
 		t.Fatal(err)
@@ -22,7 +22,7 @@ func TestRegistryRoundTrip(t *testing.T) {
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		t.Fatal(err)
 	}
-	if decoded.Workspaces[0].AddedAt != "2026-10-09T13:30:00.123Z" || string(decoded.Window) != `{"width":1280}` || decoded.Version != 1 {
+	if decoded.Workspaces[0].AddedAt != "2026-10-09T13:30:00.123Z" || string(decoded.Window) != `{"width":1280}` || string(decoded.Vault) != `{"mode":"keychain"}` || decoded.Version != 1 {
 		t.Fatalf("decoded = %+v", decoded)
 	}
 	got := decoded.ToEntity()

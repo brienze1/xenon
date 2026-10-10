@@ -24,7 +24,7 @@ func DeriveFileName(name string, kind enums.ItemKind, siblings []string) string 
 }
 
 func fileExtension(kind enums.ItemKind) string {
-	if kind == itemkind.Request {
+	if kind == itemkind.Request || kind == itemkind.Environment {
 		return requestFileExtension
 	}
 	return ""

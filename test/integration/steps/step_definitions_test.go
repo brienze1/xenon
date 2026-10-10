@@ -82,11 +82,11 @@ func TestFeatures(t *testing.T) {
 func InitializeScenario(ctx *godog.ScenarioContext) {
 	suiteOnce.Do(func() {
 		suite = &testUtils{
-			api:     mock.NewApiServer(),
-			time:    mock.NewTime(),
-			events:  mock.NewEventEmitter(),
-			dialog:  mock.NewDialog(),
-			trash:   mock.NewTrash(),
+			api:       mock.NewApiServer(),
+			time:      mock.NewTime(),
+			events:    mock.NewEventEmitter(),
+			dialog:    mock.NewDialog(),
+			trash:     mock.NewTrash(),
 			watcher:   mock.NewFileWatcher(),
 			keychain:  mock.NewKeychain(),
 			clipboard: mock.NewClipboard(),
@@ -201,5 +201,7 @@ func (t *testUtils) startApp() {
 		binding.GetWindowService(),
 		binding.GetResponseBodyRoute(),
 		binding.GetEnvironmentService(),
+		binding.GetVariableService(),
+		binding.GetVaultService(),
 	}
 }

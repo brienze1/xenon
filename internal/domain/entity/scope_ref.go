@@ -47,6 +47,14 @@ func (s ScopeRef) IsValid() bool {
 	return s.Scope != variablescope.Unknown
 }
 
+func (s ScopeRef) IsEnvironment() bool {
+	return s.Scope == variablescope.Environment
+}
+
+func (s ScopeRef) IsCollection() bool {
+	return s.Scope == variablescope.Collection
+}
+
 func (s ScopeRef) String() string {
 	switch s.Scope {
 	case variablescope.Environment:

@@ -262,3 +262,27 @@ func assertFile(t *testing.T, path, want string) {
 		t.Errorf("%s = %q, want %q", filepath.Base(path), content, want)
 	}
 }
+
+func TestWithRedactionsMasksValuesInEveryLine(t *testing.T) {
+	t.Setenv("LOG_LEVEL", "INFO")
+	buffer := capture(t)
+	ctx := WithRedactions(GetContext(context.Background()), "s3cr3t", "", `quo"te<`)
+	ctx = WithRedactions(ctx, "second")
+	Info(ctx, "Started", map[string]any{"url": "https://api.test/s3cr3t", "header": `quo"te<`, "other": "second"})
+	Info(context.Background(), "Unrelated", map[string]any{"value": "s3cr3t"})
+	output := buffer.String()
+	lines := decodeLines(t, output)
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 lines, got %d: %s", len(lines), output)
+	}
+	first := strings.Split(strings.TrimSpace(output), "\n")[0]
+	if strings.Contains(first, "s3cr3t") || strings.Contains(first, "quo") || strings.Contains(first, "second") {
+		t.Fatalf("redacted values leaked: %s", first)
+	}
+	if strings.Count(first, "•••••") != 3 {
+		t.Fatalf("expected three masks: %s", first)
+	}
+	if !strings.Contains(output, `"value":"s3cr3t"`) {
+		t.Fatalf("a context without redactions must log as is: %s", output)
+	}
+}

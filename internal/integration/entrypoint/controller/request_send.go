@@ -38,7 +38,7 @@ func (r *requestSend) Send(bindingCtx context.Context, request dto.SendRequest) 
 		return nil, err
 	}
 
-	sent, err := r.sendRequestService.Send(ctx, request.LocalId, request.TabId, request.ToEntity(), properties.Properties().Application.Version)
+	sent, err := r.sendRequestService.Send(ctx, request.LocalId, request.TabId, request.ToEntity(), properties.Properties().Application.Version, request.AcknowledgeMissingSecrets)
 	if err != nil {
 		return nil, err
 	}

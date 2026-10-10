@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 
+	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/pkg/errs"
 )
 
@@ -24,6 +25,7 @@ func CustomValidator() Validate {
 	_ = validate.RegisterValidation("not_blank", notBlank)
 	_ = validate.RegisterValidation("absolute_path", absolutePath)
 	_ = validate.RegisterValidation("has_id", hasId)
+	_ = validate.RegisterValidation("variable_scope", variableScope)
 	validate.RegisterTagNameFunc(jsonName)
 	return &customValidator{validator: validate}
 }
@@ -58,6 +60,10 @@ func absolutePath(field validator.FieldLevel) bool {
 func hasId(field validator.FieldLevel) bool {
 	id := field.Field().FieldByName("Id")
 	return id.IsValid() && strings.TrimSpace(id.String()) != ""
+}
+
+func variableScope(field validator.FieldLevel) bool {
+	return entity.ParseScopeRef(field.Field().String()).IsValid()
 }
 
 func jsonName(field reflect.StructField) string {

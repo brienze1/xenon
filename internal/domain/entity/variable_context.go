@@ -16,3 +16,11 @@ func (v VariableContext) Lookup(name string) (ContextVariable, bool) {
 	}
 	return ContextVariable{}, false
 }
+
+func (v VariableContext) SecretValues() []string {
+	values := make([]string, 0)
+	for _, layer := range v.Layers {
+		values = append(values, layer.secretValues()...)
+	}
+	return values
+}

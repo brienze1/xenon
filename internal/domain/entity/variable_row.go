@@ -58,3 +58,12 @@ func (v VariableRow) ContextVariable(scope enums.VariableScope, current, secrets
 func (v VariableRow) LogValue() any {
 	return map[string]any{"key": v.Key, "secret": v.Secret, "enabled": v.Enabled}
 }
+
+func HasSecretRows(rows []VariableRow) bool {
+	for _, row := range rows {
+		if row.Secret {
+			return true
+		}
+	}
+	return false
+}

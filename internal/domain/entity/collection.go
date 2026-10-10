@@ -58,6 +58,11 @@ func (c Collection) WithOrder(order []string) Collection {
 	return c
 }
 
+func (c Collection) WithVariables(rows []VariableRow) Collection {
+	c.Variables = append([]VariableRow{}, rows...)
+	return c
+}
+
 func (c Collection) OwnVariables() []VariableRow {
 	if c.IsFolder() {
 		return []VariableRow{}

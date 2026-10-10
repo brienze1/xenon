@@ -3,6 +3,8 @@ package persistence
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"io/fs"
 	"os"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
@@ -50,5 +52,16 @@ func (l *localVariablesPersistence) Save(ctx context.Context, localId string, lo
 	}
 
 	logger.Debug(ctx, "Finished", local, map[string]any{"localId": localId})
+	return nil
+}
+
+func (l *localVariablesPersistence) Delete(ctx context.Context, localId string) error {
+	logger.Debug(ctx, "Started", map[string]any{"localId": localId})
+
+	if err := os.Remove(appDataPath(workspacesDataDir, localId, localVariablesFile)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return errs.FileError(err, "VAR-14500")
+	}
+
+	logger.Debug(ctx, "Finished", map[string]any{"localId": localId})
 	return nil
 }

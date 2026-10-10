@@ -31,6 +31,15 @@ Feature: Secret values never reach the workspace folder, local files, responses 
       id: {{billing}}
       name: Billing
       """
+    And the workspace file "acme/collections/billing/secure.yaml" contains
+      """
+      xenon: 1
+      kind: request
+      id: 01JE0000000000000000000002
+      name: Secure
+      method: GET
+      url: "{{base_url}}/secure"
+      """
     And the workspace file "acme/environments/dev.yaml" contains
       """
       xenon: 1
@@ -151,6 +160,7 @@ Feature: Secret values never reach the workspace folder, local files, responses 
         "local_id": "{{Acme.local_id}}",
         "tab_id": "tab-1",
         "request": {
+          "id": "01JE0000000000000000000002",
           "method": "GET",
           "url": "{{base_url}}/secure/{{api_key}}?token={{token}}",
           "headers": [ { "key": "X-Password", "value": "{{password}}" } ]

@@ -7,5 +7,5 @@ import (
 )
 
 type SendRequestService interface {
-	Send(ctx context.Context, localId, tabId string, request entity.Request, appVersion string) (*entity.Response, error)
+	Send(ctx context.Context, localId, tabId string, request entity.Request, appVersion string, acknowledgeMissingSecrets bool) (*entity.Response, error)
 }

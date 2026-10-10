@@ -18,6 +18,7 @@ type sendRequest struct {
 	loadWorkspace         usecase.LoadWorkspace
 	findEnvironment       usecase.FindEnvironment
 	findLocalVariables    usecase.FindLocalVariables
+	findVault             usecase.FindVault
 	sendHttpRequest       usecase.SendHttpRequest
 	saveResponse          usecase.SaveResponse
 	saveHistoryEntry      usecase.SaveHistoryEntry
@@ -29,6 +30,7 @@ func NewSendRequestService(
 	loadWorkspace usecase.LoadWorkspace,
 	findEnvironment usecase.FindEnvironment,
 	findLocalVariables usecase.FindLocalVariables,
+	findVault usecase.FindVault,
 	sendHttpRequest usecase.SendHttpRequest,
 	saveResponse usecase.SaveResponse,
 	saveHistoryEntry usecase.SaveHistoryEntry,
@@ -39,14 +41,15 @@ func NewSendRequestService(
 		loadWorkspace:         loadWorkspace,
 		findEnvironment:       findEnvironment,
 		findLocalVariables:    findLocalVariables,
+		findVault:             findVault,
 		sendHttpRequest:       sendHttpRequest,
 		saveResponse:          saveResponse,
 		saveHistoryEntry:      saveHistoryEntry,
 	}
 }
 
-func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request entity.Request, appVersion string) (*entity.Response, error) {
-	logger.Info(ctx, "Started", map[string]any{"localId": localId, "tabId": tabId, "request": request, "appVersion": appVersion})
+func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request entity.Request, appVersion string, acknowledgeMissingSecrets bool) (*entity.Response, error) {
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "tabId": tabId, "request": request, "appVersion": appVersion, "acknowledgeMissingSecrets": acknowledgeMissingSecrets})
 
 	workspace, err := s.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
@@ -63,11 +66,17 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 	if err != nil {
 		return nil, err
 	}
+	preflight := usecase.CheckSendPreflight(request, ancestors, *variables)
+	if preflight.HasUnavailableSecrets() && !acknowledgeMissingSecrets {
+		return nil, errs.ConflictError("the request uses secrets that have no value on this machine or are locked", "SND-06409", unavailableSecretDetails(preflight)...)
+	}
+	secrets := variables.SecretValues()
+	ctx = logger.WithRedactions(ctx, secrets...)
 	sentAt := timeutils.Now()
 	resolved, resolvedAncestors := usecase.ResolveRequestVariables(request, ancestors, *variables, nil)
 	effective := usecase.ResolveEffectiveRequest(resolved, resolvedAncestors, workspace.Path)
 	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, appVersion))
-	response := s.sendHttpRequest.Send(ctx, effective)
+	response := s.sendHttpRequest.Send(ctx, effective).WithMaskedValues(secrets)
 	if err := s.saveResponse.Save(ctx, tabId, response); err != nil {
 		return nil, err
 	}
@@ -92,8 +101,37 @@ func (s *sendRequest) variableContext(ctx context.Context, localId, root string,
 	if err != nil {
 		return nil, err
 	}
-	variables := usecase.BuildVariableContext(environment, ancestors, workspace.Variables, *local)
+	vault, err := vaultFor(ctx, s.findVault, localId, environmentRows(environment), collectionRows(ancestors), workspace.Variables)
+	if err != nil {
+		return nil, err
+	}
+	variables := usecase.BuildVariableContext(environment, ancestors, workspace.Variables, *local, *vault)
 	return &variables, nil
+}
+
+func environmentRows(environment *entity.Environment) []entity.VariableRow {
+	if environment == nil {
+		return nil
+	}
+	return environment.Variables
+}
+
+func collectionRows(ancestors []entity.Collection) []entity.VariableRow {
+	if len(ancestors) == 0 {
+		return nil
+	}
+	return ancestors[0].OwnVariables()
+}
+
+func unavailableSecretDetails(preflight entity.SendPreflight) []errs.ErrorDetails {
+	details := make([]errs.ErrorDetails, 0, 2)
+	if len(preflight.MissingSecrets) > 0 {
+		details = append(details, errs.ErrorDetails{Attribute: "missing_secrets", Messages: preflight.MissingSecrets})
+	}
+	if len(preflight.LockedSecrets) > 0 {
+		details = append(details, errs.ErrorDetails{Attribute: "locked_secrets", Messages: preflight.LockedSecrets})
+	}
+	return details
 }
 
 func (s *sendRequest) activeEnvironment(ctx context.Context, root string, local entity.LocalVariables) (*entity.Environment, error) {

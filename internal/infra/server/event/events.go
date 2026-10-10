@@ -10,4 +10,6 @@ func init() {
 	wails.RegisterEvent[dto.WorkspaceTreeChanged](dto.WorkspaceTreeChangedEvent)
 	wails.RegisterEvent[dto.RequestChangedOnDisk](dto.RequestChangedOnDiskEvent)
 	wails.RegisterEvent[dto.WorkspaceFolderMissing](dto.WorkspaceFolderMissingEvent)
+	wails.RegisterEvent[dto.VariablesChanged](dto.VariablesChangedEvent)
+	wails.RegisterEvent[dto.VaultStatusChanged](dto.VaultStatusChangedEvent)
 }

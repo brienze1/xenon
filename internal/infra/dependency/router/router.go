@@ -24,6 +24,8 @@ func GetRouter() adapter.Router {
 				binding.GetWindowService(),
 				binding.GetResponseBodyRoute(),
 				binding.GetEnvironmentService(),
+				binding.GetVariableService(),
+				binding.GetVaultService(),
 			)
 		})
 	}

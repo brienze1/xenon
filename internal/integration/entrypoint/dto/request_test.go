@@ -95,7 +95,7 @@ func TestCommandLogValues(t *testing.T) {
 	}{
 		{ApplyRequest{Request: request}.LogValue(), request.LogValue()},
 		{AutoHeadersRequest{LocalId: "ws", Request: request}.LogValue(), map[string]any{"local_id": "ws", "request": request.LogValue()}},
-		{SendRequest{LocalId: "ws", TabId: "t", Request: request}.LogValue(), map[string]any{"local_id": "ws", "tab_id": "t", "request": request.LogValue()}},
+		{SendRequest{LocalId: "ws", TabId: "t", Request: request, AcknowledgeMissingSecrets: true}.LogValue(), map[string]any{"local_id": "ws", "tab_id": "t", "request": request.LogValue(), "acknowledge_missing_secrets": true}},
 		{NewBulkText("abc").LogValue(), map[string]any{"length": 3}},
 		{BulkRows{Rows: []KeyValue{{}, {}}}.LogValue(), map[string]any{"rows": 2}},
 		{NewAutoHeaderList([]entity.AutoHeader{{Key: "A"}}).LogValue(), map[string]any{"headers": 1}},

@@ -1,10 +1,16 @@
 package entity
 
 type FileChange struct {
-	Requests []RequestChange
-	OwnWrite bool
+	Requests            []RequestChange
+	VariableScopes      []ScopeRef
+	OwnWrite            bool
+	EnvironmentsChanged bool
 }
 
 func (f FileChange) IsOwnWrite() bool {
 	return f.OwnWrite
+}
+
+func (f FileChange) ChangesVariables() bool {
+	return f.EnvironmentsChanged || len(f.VariableScopes) > 0
 }

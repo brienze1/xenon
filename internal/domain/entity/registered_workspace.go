@@ -10,6 +10,7 @@ const (
 	temporaryFileSuffix = ".xenon-tmp"
 	workspaceFileName   = "workspace.yaml"
 	collectionsFolder   = "collections"
+	environmentsFolder  = "environments"
 )
 
 type RegisteredWorkspace struct {
@@ -45,7 +46,7 @@ func (r RegisteredWorkspace) Watches(path string) bool {
 	}
 	relative, _ := filepath.Rel(r.Path, path)
 	segments := strings.Split(filepath.ToSlash(relative), "/")
-	return relative == workspaceFileName || segments[0] == collectionsFolder
+	return relative == workspaceFileName || segments[0] == collectionsFolder || segments[0] == environmentsFolder
 }
 
 func (r RegisteredWorkspace) IsMissing() bool {

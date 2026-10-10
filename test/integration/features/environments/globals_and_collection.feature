@@ -152,7 +152,7 @@ Feature: Globals and collection variables use the same table
       """
       { "local_id": "{{Acme.local_id}}", "scope": "collection:01JD9999999999999999999999" }
       """
-    Then the call should fail with code "TRE-02404"
+    Then the call should fail with code "TRE-30404"
 
   @keys @errors
   Scenario Outline: Invalid keys are rejected and nothing is written - <case>
@@ -168,7 +168,7 @@ Feature: Globals and collection variables use the same table
       | empty         |           |
       | opening brace | a{b       |
       | closing brace | a}b       |
-      | line break    | a\nb      |
+      | line break    | a\\nb     |
 
   @keys
   Scenario: Keys are stored exactly as typed and duplicates are flagged while the last enabled row wins

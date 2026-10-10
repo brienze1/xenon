@@ -19,7 +19,7 @@ func rows(pairs ...string) []entity.VariableRow {
 }
 
 func globalsContext(pairs ...string) entity.VariableContext {
-	return BuildVariableContext(nil, nil, rows(pairs...), entity.NewLocalVariables())
+	return BuildVariableContext(nil, nil, rows(pairs...), entity.NewLocalVariables(), entity.Vault{})
 }
 
 func TestTokenizeReferences(t *testing.T) {
@@ -70,7 +70,7 @@ func TestBuildVariableContextPrecedence(t *testing.T) {
 		{"globals only", nil, nil, map[string]string{"tenant": "globals", "only_global": "global-current"}, 1},
 	}
 	for _, tc := range cases {
-		context := BuildVariableContext(tc.environment, tc.ancestors, globals, local)
+		context := BuildVariableContext(tc.environment, tc.ancestors, globals, local, entity.Vault{})
 		if len(context.Layers) != tc.scopes {
 			t.Errorf("%s: %d layers, want %d", tc.name, len(context.Layers), tc.scopes)
 		}
@@ -80,7 +80,7 @@ func TestBuildVariableContextPrecedence(t *testing.T) {
 			}
 		}
 	}
-	context := BuildVariableContext(&environment, []entity.Collection{collection}, globals, local)
+	context := BuildVariableContext(&environment, []entity.Collection{collection}, globals, local, entity.Vault{})
 	scopes := []any{context.Layers[0].Scope, context.Layers[1].Scope, context.Layers[2].Scope}
 	if want := []any{variablescope.Environment, variablescope.Collection, variablescope.Globals}; !reflect.DeepEqual(scopes, want) {
 		t.Errorf("layer scopes = %v", scopes)
@@ -198,7 +198,7 @@ func TestResolveTextDynamicValuesComeLastAndAreFreshPerOccurrence(t *testing.T) 
 func TestResolveTextLeavesMissingSecretsLiteralWithoutFallingThrough(t *testing.T) {
 	environment := entity.NewEnvironment("e", "dev")
 	environment.Variables = []entity.VariableRow{{Key: "api_key", Secret: true, Enabled: true}}
-	context := BuildVariableContext(&environment, nil, rows("api_key", "global-plain"), entity.NewLocalVariables())
+	context := BuildVariableContext(&environment, nil, rows("api_key", "global-plain"), entity.NewLocalVariables(), entity.Vault{})
 	dynamic := func(string) (string, bool) { return "generated", true }
 	if got := ResolveText("{{api_key}}", context, dynamic); got != "{{api_key}}" {
 		t.Errorf("a missing secret is sent literally, got %q", got)

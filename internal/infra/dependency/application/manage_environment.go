@@ -18,8 +18,13 @@ func GetManageEnvironmentService() adapter.ManageEnvironmentService {
 				integration.GetRegistryPersistence(),
 				integration.GetEnvironmentPersistence(),
 				integration.GetEnvironmentPersistence(),
+				integration.GetEnvironmentPersistence(),
+				integration.GetEnvironmentPersistence(),
 				integration.GetLocalVariablesPersistence(),
 				integration.GetLocalVariablesPersistence(),
+				integration.GetVaultPersistence(),
+				integration.GetVaultPersistence(),
+				integration.GetVariableEventPublisher(),
 			)
 		})
 	}

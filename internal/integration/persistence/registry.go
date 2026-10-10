@@ -63,7 +63,7 @@ func (r *registryPersistence) Save(ctx context.Context, registry entity.AppRegis
 	if err := os.MkdirAll(appDataPath(), appDataDirMode); err != nil {
 		return errs.FileError(err, "WKS-13500")
 	}
-	data, _ := json.MarshalIndent(model.NewRegistry(registry, stored.Window), "", "  ")
+	data, _ := json.MarshalIndent(model.NewRegistry(registry, *stored), "", "  ")
 	if err := fileutils.WriteFileAtomic(appDataPath(registryFile), append(data, '\n'), appDataFileMode); err != nil {
 		return errs.FileError(err, "WKS-14500")
 	}
@@ -103,7 +103,9 @@ func (r *registryPersistence) SaveWindow(ctx context.Context, state entity.Windo
 		return errs.FileError(err, "WIN-02500")
 	}
 	window, _ := json.Marshal(model.NewWindowState(state))
-	data, _ := json.MarshalIndent(model.NewRegistry(stored.ToEntity(), window), "", "  ")
+	updated := *stored
+	updated.Window = window
+	data, _ := json.MarshalIndent(model.NewRegistry(stored.ToEntity(), updated), "", "  ")
 	if err := fileutils.WriteFileAtomic(appDataPath(registryFile), append(data, '\n'), appDataFileMode); err != nil {
 		return errs.FileError(err, "WIN-03500")
 	}

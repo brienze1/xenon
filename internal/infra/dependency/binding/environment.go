@@ -13,7 +13,7 @@ var environmentServiceInstance *binding.EnvironmentService
 func GetEnvironmentService() *binding.EnvironmentService {
 	if environmentServiceInstance == nil {
 		environmentServiceOnce.Do(func() {
-			environmentServiceInstance = binding.NewEnvironmentService(controller.GetEnvironmentListController(), controller.GetEnvironmentSetActiveController())
+			environmentServiceInstance = binding.NewEnvironmentService(controller.GetEnvironmentListController(), controller.GetEnvironmentSetActiveController(), controller.GetEnvironmentManageController())
 		})
 	}
 	return environmentServiceInstance

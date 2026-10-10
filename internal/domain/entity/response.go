@@ -69,6 +69,14 @@ func (r Response) KeepsBodyInMemory() bool {
 	return r.BodyLength <= MemoryBodyLimit
 }
 
+func (r Response) WithMaskedValues(values []string) Response {
+	if r.Error != nil {
+		masked := r.Error.Masked(values)
+		r.Error = &masked
+	}
+	return r
+}
+
 func (r Response) WithoutBody() Response {
 	r.Body = nil
 	return r

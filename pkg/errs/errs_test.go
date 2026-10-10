@@ -30,6 +30,7 @@ func TestFactories(t *testing.T) {
 		{name: "server", err: ServerError("upstream", "TST-00502", http.StatusBadGateway), message: "server error", code: "TST-00502", status: http.StatusBadGateway, retries: 5, abort: false, notified: true},
 		{name: "client", err: ClientError("rejected", "TST-00422", http.StatusUnprocessableEntity), message: "client error", code: "TST-00422", status: http.StatusUnprocessableEntity, retries: 0, abort: true, notified: true},
 		{name: "conflict", err: ConflictError("taken", "TST-00409"), message: "conflict", code: "TST-00409", status: http.StatusConflict, retries: 0, abort: true, notified: true},
+		{name: "unauthorized", err: UnauthorizedError("wrong", "TST-00401"), message: "unauthorized", code: "TST-00401", status: http.StatusUnauthorized, retries: 0, abort: true, notified: true},
 		{name: "forbidden", err: ForbiddenError("denied", "TST-00403"), message: "forbidden", code: "TST-00403", status: http.StatusForbidden, retries: 0, abort: true, notified: true},
 		{name: "unprocessable entity", err: UnprocessableEntityError("unreadable", "TST-01422"), message: "unprocessable entity", code: "TST-01422", status: http.StatusUnprocessableEntity, retries: 0, abort: true, notified: true},
 	}
@@ -153,5 +154,16 @@ func TestFileError(t *testing.T) {
 				t.Errorf("FileError() = %d %q %q", got.StatusCode(), got.Code(), got.Error())
 			}
 		})
+	}
+}
+
+func TestConflictDetails(t *testing.T) {
+	err := ConflictError("missing", "TST-01409", ErrorDetails{Attribute: "missing_secrets", Messages: []string{"api_key"}})
+	dto := err.ToDto("tx")
+	if len(dto.Error.ErrorDetails) != 1 || dto.Error.ErrorDetails[0].Messages[0] != "api_key" {
+		t.Fatalf("details not carried: %+v", dto)
+	}
+	if err.ErrorDetails()["attribute"] != "missing_secrets" {
+		t.Fatalf("ErrorDetails() = %v", err.ErrorDetails())
 	}
 }

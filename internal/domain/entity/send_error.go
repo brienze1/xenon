@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"strings"
+
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/senderrorkind"
 )
@@ -51,4 +53,14 @@ func invalidUrlMessage(detail string) string {
 		return "Enter a URL to send the request"
 	}
 	return "Invalid URL: " + detail
+}
+
+func (s SendError) Masked(values []string) SendError {
+	for _, value := range values {
+		if value != "" {
+			s.Message = strings.ReplaceAll(s.Message, value, MaskedValue)
+			s.Hint = strings.ReplaceAll(s.Hint, value, MaskedValue)
+		}
+	}
+	return s
 }

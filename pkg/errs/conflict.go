@@ -6,23 +6,25 @@ import (
 )
 
 type conflictError struct {
-	message     string
-	description string
-	code        string
-	statusCode  int
+	message      string
+	description  string
+	code         string
+	errorDetails []ErrorDetails
+	statusCode   int
 }
 
-func ConflictError(description, code string) BaseError {
+func ConflictError(description, code string, details ...ErrorDetails) BaseError {
 	return &conflictError{
-		statusCode:  http.StatusConflict,
-		message:     "conflict",
-		description: description,
-		code:        code,
+		statusCode:   http.StatusConflict,
+		message:      "conflict",
+		description:  description,
+		code:         code,
+		errorDetails: details,
 	}
 }
 
 func (c *conflictError) ToDto(transactionId string) Error {
-	return toDto(transactionId, c.description, c.code, nil)
+	return toDto(transactionId, c.description, c.code, c.errorDetails)
 }
 
 func (c *conflictError) SetStatusCode(statusCode int, description string) {
@@ -42,4 +44,4 @@ func (c *conflictError) Code() string                 { return c.code }
 func (c *conflictError) Retries() int                 { return 0 }
 func (c *conflictError) InternalNotify() bool         { return true }
 func (c *conflictError) Abort() bool                  { return true }
-func (c *conflictError) ErrorDetails() map[string]any { return map[string]any{} }
+func (c *conflictError) ErrorDetails() map[string]any { return detailsToMap(c.errorDetails) }

@@ -15,6 +15,8 @@ type removeWorkspace struct {
 	moveToTrash           usecase.MoveToTrash
 	deleteUIState         usecase.DeleteUIState
 	unwatchWorkspace      usecase.UnwatchWorkspace
+	deleteVault           usecase.DeleteVault
+	deleteLocalVariables  usecase.DeleteLocalVariables
 }
 
 func NewRemoveWorkspaceService(
@@ -23,6 +25,8 @@ func NewRemoveWorkspaceService(
 	moveToTrash usecase.MoveToTrash,
 	deleteUIState usecase.DeleteUIState,
 	unwatchWorkspace usecase.UnwatchWorkspace,
+	deleteVault usecase.DeleteVault,
+	deleteLocalVariables usecase.DeleteLocalVariables,
 ) adapter.RemoveWorkspaceService {
 	return &removeWorkspace{
 		findWorkspaceRegistry: findWorkspaceRegistry,
@@ -30,6 +34,8 @@ func NewRemoveWorkspaceService(
 		moveToTrash:           moveToTrash,
 		deleteUIState:         deleteUIState,
 		unwatchWorkspace:      unwatchWorkspace,
+		deleteVault:           deleteVault,
+		deleteLocalVariables:  deleteLocalVariables,
 	}
 }
 
@@ -54,6 +60,7 @@ func (r *removeWorkspace) Remove(ctx context.Context, localId string, moveToTras
 	if err := r.saveWorkspaceRegistry.Save(ctx, *registry); err != nil {
 		return nil, err
 	}
+	r.deleteLocalData(ctx, localId)
 	if err := r.deleteUIState.Delete(ctx, localId); err != nil {
 		return nil, err
 	}
@@ -65,4 +72,13 @@ func (r *removeWorkspace) Remove(ctx context.Context, localId string, moveToTras
 
 	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "moveToTrash": moveToTrash, "result": registry})
 	return registry, nil
+}
+
+func (r *removeWorkspace) deleteLocalData(ctx context.Context, localId string) {
+	if err := r.deleteVault.Delete(ctx, localId); err != nil {
+		logger.Warn(ctx, err, "The workspace vault could not be fully deleted", map[string]any{"localId": localId})
+	}
+	if err := r.deleteLocalVariables.Delete(ctx, localId); err != nil {
+		logger.Warn(ctx, err, "The workspace local variables could not be deleted", map[string]any{"localId": localId})
+	}
 }

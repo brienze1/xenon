@@ -264,6 +264,18 @@ Feature: Create, rename, duplicate and delete environments
     And the workspace file "acme/environments/hml.yaml" should not exist
     And the app data file "workspaces/{{Acme.local_id}}/variables.json" should contain the field "activeEnvironmentId" equal to ""
     And the app data file "workspaces/{{Acme.local_id}}/variables.json" should not contain "localhost:7000"
+    Given the workspace file "acme/environments/restored.yaml" contains
+      """
+      xenon: 1
+      kind: environment
+      id: {{hml}}
+      name: restored from git
+      variables:
+        - key: api_key
+          secret: true
+          enabled: true
+          description: ""
+      """
     When I call "VaultService.Reveal" with
       """
       { "local_id": "{{Acme.local_id}}", "scope": "env:{{hml}}", "key": "api_key" }
@@ -273,7 +285,7 @@ Feature: Create, rename, duplicate and delete environments
       """
       { "local_id": "{{Acme.local_id}}" }
       """
-    Then the response should contain the field "environments" array length equal to 0
+    Then the response should contain the field "environments" array length equal to 1
     And the response should contain the field "active_id" equal to ""
 
   @delete

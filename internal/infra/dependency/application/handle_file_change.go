@@ -19,6 +19,14 @@ func GetHandleFileChangeService() adapter.HandleFileChangeService {
 				integration.GetTreePersistence(),
 				integration.GetWorkspaceWatcherWebservice(),
 				integration.GetWorkspaceEventPublisher(),
+				integration.GetEnvironmentPersistence(),
+				integration.GetTreePersistence(),
+				integration.GetWorkspacePersistence(),
+				integration.GetLocalVariablesPersistence(),
+				integration.GetLocalVariablesPersistence(),
+				integration.GetVaultPersistence(),
+				integration.GetVaultPersistence(),
+				integration.GetVariableEventPublisher(),
 			)
 		})
 	}

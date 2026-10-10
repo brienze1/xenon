@@ -26,3 +26,8 @@ func (w Workspace) Renamed(name string) Workspace {
 	w.Name = strings.TrimSpace(name)
 	return w
 }
+
+func (w Workspace) WithVariables(rows []VariableRow) Workspace {
+	w.Variables = append([]VariableRow{}, rows...)
+	return w
+}
