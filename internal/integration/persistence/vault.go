@@ -109,7 +109,7 @@ func (v *vaultPersistence) Delete(ctx context.Context, localId string) error {
 	}
 	if settings.Mode == vaultmode.Keychain {
 		if err := v.keychain.Delete(vaultKeychainService, localId); err != nil {
-			return errs.InternalServerError(err, "VLT-24500", "the vault key could not be removed from the OS keychain")
+			return errs.ServiceUnavailableError(err, "VLT-24503", "the vault key could not be removed from the OS keychain")
 		}
 	}
 

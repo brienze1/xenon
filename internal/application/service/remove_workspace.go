@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 
+	"github.com/brienze1/xenon/pkg/errs"
+
 	"github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
@@ -61,6 +63,9 @@ func (r *removeWorkspace) Remove(ctx context.Context, localId string, moveToTras
 		return nil, err
 	}
 	if err := r.deleteVault.Delete(ctx, localId); err != nil {
+		if !errs.IsServiceUnavailableError(err) {
+			return nil, err
+		}
 		logger.Warn(ctx, err, "The workspace vault could not be fully deleted", map[string]any{"localId": localId})
 	}
 	if err := r.deleteLocalVariables.Delete(ctx, localId); err != nil {

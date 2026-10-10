@@ -32,6 +32,7 @@ func TestFactories(t *testing.T) {
 		{name: "conflict", err: ConflictError("taken", "TST-00409"), message: "conflict", code: "TST-00409", status: http.StatusConflict, retries: 0, abort: true, notified: true},
 		{name: "unauthorized", err: UnauthorizedError("wrong", "TST-00401"), message: "unauthorized", code: "TST-00401", status: http.StatusUnauthorized, retries: 0, abort: true, notified: true},
 		{name: "forbidden", err: ForbiddenError("denied", "TST-00403"), message: "forbidden", code: "TST-00403", status: http.StatusForbidden, retries: 0, abort: true, notified: true},
+		{name: "service unavailable", err: ServiceUnavailableError(errors.New("down"), "TST-00503", "keychain down"), message: "service unavailable", code: "TST-00503", status: http.StatusServiceUnavailable, retries: 0, abort: false, notified: true},
 		{name: "unprocessable entity", err: UnprocessableEntityError("unreadable", "TST-01422"), message: "unprocessable entity", code: "TST-01422", status: http.StatusUnprocessableEntity, retries: 0, abort: true, notified: true},
 	}
 	for _, tc := range cases {
@@ -109,6 +110,15 @@ func TestIsNotFoundError(t *testing.T) {
 	}
 	if IsNotFoundError(errors.New("other")) {
 		t.Error("plain error is not a not found error")
+	}
+}
+
+func TestIsServiceUnavailableError(t *testing.T) {
+	if !IsServiceUnavailableError(fmt.Errorf("x: %w", ServiceUnavailableError(errors.New("down"), "c", "m"))) {
+		t.Error("expected service unavailable")
+	}
+	if IsServiceUnavailableError(InternalServerError(errors.New("boom"), "c", "m")) {
+		t.Error("internal server error is not a service unavailable error")
 	}
 }
 
