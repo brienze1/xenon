@@ -1,4 +1,4 @@
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import type { AppError } from '@/platform/errors'
 import { GIT_HISTORY_WARNING, type VariableRow } from '@/platform/mappers/variable'
 import { CONFIRM_REVEAL_REQUIRED } from '@/platform/services/variables'
@@ -149,26 +149,28 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
   const [failure, setFailure] = useState<AppError | null>(null)
   const [dismissedWarnings, setDismissedWarnings] = useState<string[] | null>(null)
   const [busy, startAction] = useTransition()
+  const tableRef = useRef<HTMLTableElement>(null)
 
   if (table.rows !== draft.base && !draft.dirty) {
     setDraft(draftOf(table.rows))
   }
 
-  useEffect(() => {
-    if (!draft.dirty) {
-      return
-    }
-    setTableDirty(scope, true)
-    return () => setTableDirty(scope, false)
-  }, [draft.dirty, scope, setTableDirty])
+  // Unmounting drops the draft, so the scope no longer has unsaved edits to guard.
+  useEffect(() => () => setTableDirty(scope, false), [scope, setTableDirty])
 
   const stale = draft.dirty && table.rows !== draft.base
   const hasOverrides = table.rows.some((row) => !row.secret && row.hasCurrentOverride)
   const showGitHistory = table.warnings.includes(GIT_HISTORY_WARNING) && dismissedWarnings !== table.warnings
   const counts = keyCounts(draft.rows)
 
+  // Every handler that changes draft.dirty also sets the store flag the discard guard reads.
   function edit(change: (rows: DraftRow[]) => DraftRow[]) {
     setDraft((current) => ({ ...current, rows: change(current.rows), dirty: true }))
+    setTableDirty(scope, true)
+  }
+
+  function focusFirstInvalidName() {
+    tableRef.current?.querySelector<HTMLInputElement>('input[name="key"][aria-invalid="true"]')?.focus()
   }
 
   const actions: RowActions = {
@@ -193,6 +195,7 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
     setConfirming(null)
     setFailure(null)
     setDraft(draftOf(table.rows))
+    setTableDirty(scope, false)
   }
 
   function requestSave() {
@@ -219,7 +222,10 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
       if (error === null) {
         setConfirming(null)
         setDraft((current) => ({ ...current, dirty: false }))
+        setTableDirty(scope, false)
+        return
       }
+      focusFirstInvalidName()
     })
   }
 
@@ -262,7 +268,7 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
       ) : null}
       {stale ? <Banner.Root tone="info">{STALE_MESSAGE}</Banner.Root> : null}
       <div className={styles.scroller}>
-        <table aria-label={label} className={styles.table}>
+        <table ref={tableRef} aria-label={label} className={styles.table}>
           {TABLE_HEAD}
           <tbody>
             {draft.rows.length === 0 ? (

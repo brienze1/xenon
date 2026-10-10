@@ -164,6 +164,20 @@ describe('VariableTable', () => {
     expect(useEnvironmentsStore.getState().dirtyScopes).toEqual([SCOPE])
     await user.click(screen.getByRole('button', { name: 'Discard Changes' }))
     expect(useEnvironmentsStore.getState().dirtyScopes).toEqual([])
+    await user.type(screen.getByRole('textbox', { name: 'Description of base_url' }), '!')
+    vi.mocked(variables.saveVariableTable).mockResolvedValue(tableOf([plain({ description: 'API root!' })]))
+    await user.click(screen.getByRole('button', { name: 'Save Variables' }))
+    expect(await screen.findByRole('textbox', { name: 'Description of base_url' })).toHaveValue('API root!')
+    expect(useEnvironmentsStore.getState().dirtyScopes).toEqual([])
+  })
+
+  it('clears its unsaved-edits flag when it closes', async () => {
+    vi.mocked(variables.getVariableTable).mockResolvedValue(tableOf([plain()]))
+    const { unmount } = render(<VariableTable scope={SCOPE} label="dev variables" />)
+    await user.type(await screen.findByRole('textbox', { name: 'Description of base_url' }), '!')
+    expect(useEnvironmentsStore.getState().dirtyScopes).toEqual([SCOPE])
+    unmount()
+    expect(useEnvironmentsStore.getState().dirtyScopes).toEqual([])
   })
 
   it('adds, renames and removes rows, then saves the whole table', async () => {
@@ -202,6 +216,15 @@ describe('VariableTable', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('the variable name is invalid')
     expect(screen.getByText('Invalid name')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Save Variables' })).toBeEnabled()
+  })
+
+  it('moves focus to the first invalid name after a failed save', async () => {
+    await renderTable([plain({ key: 'ok' }), plain({ key: 'other' })])
+    await user.type(screen.getByRole('textbox', { name: 'Name of other' }), '{{')
+    vi.mocked(variables.saveVariableTable).mockRejectedValue(new AppError('VAR-00400', 'the variable name is invalid'))
+    await user.click(screen.getByRole('button', { name: 'Save Variables' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('the variable name is invalid')
+    expect(screen.getByRole('textbox', { name: 'Name of other{' })).toHaveFocus()
   })
 
   it('masks secret values, reveals one row on demand and hides it again', async () => {

@@ -17,8 +17,26 @@ const MESSAGES: Record<string, string> = {
 
 const PASSPHRASE_REQUIRED = 'Type the passphrase.'
 
-function messageOf(error: AppError): string {
-  return MESSAGES[error.code] ?? withNextStep(error.description || error.code, 'Try again.')
+/** The field a passphrase error is about, so it can be focused and described by the error. */
+type ErrorField = 'passphrase' | 'confirmation'
+
+const FIELD_OF: Record<string, ErrorField> = {
+  [PASSPHRASE_MISMATCH]: 'confirmation',
+  [PASSPHRASE_TOO_SHORT]: 'passphrase',
+  [WRONG_PASSPHRASE]: 'passphrase',
+}
+
+interface FormError {
+  message: string
+  field: ErrorField | null
+}
+
+function formErrorOf(code: string): FormError {
+  return { message: MESSAGES[code] ?? code, field: FIELD_OF[code] ?? null }
+}
+
+function backendErrorOf(error: AppError): FormError {
+  return MESSAGES[error.code] ? formErrorOf(error.code) : { message: withNextStep(error.description || error.code, 'Try again.'), field: null }
 }
 
 const SETUP_INTRO = (
@@ -51,12 +69,25 @@ function PassphraseForm({ prompt, onCancel }: PassphraseFormProps) {
   const unlockVault = useEnvironmentsStore((state) => state.unlockVault)
   const [passphrase, setPassphrase] = useState('')
   const [confirmation, setConfirmation] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<FormError | null>(null)
   const [passphraseRequired, setPassphraseRequired] = useState(false)
   const [submitting, startSubmit] = useTransition()
   const passphraseRef = useRef<HTMLInputElement>(null)
+  const confirmationRef = useRef<HTMLInputElement>(null)
   const passphraseErrorId = useId()
+  const formErrorId = useId()
   const setup = prompt === 'setup'
+  const passphraseInvalid = passphraseRequired || error?.field === 'passphrase'
+  const confirmationInvalid = error?.field === 'confirmation'
+
+  function show(next: FormError | null) {
+    setError(next)
+    if (next?.field === 'passphrase') {
+      passphraseRef.current?.focus()
+    } else if (next?.field === 'confirmation') {
+      confirmationRef.current?.focus()
+    }
+  }
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -67,16 +98,16 @@ function PassphraseForm({ prompt, onCancel }: PassphraseFormProps) {
       return
     }
     if (setup && passphrase.length < MIN_PASSPHRASE_LENGTH) {
-      setError(MESSAGES[PASSPHRASE_TOO_SHORT] ?? null)
+      show(formErrorOf(PASSPHRASE_TOO_SHORT))
       return
     }
     if (setup && passphrase !== confirmation) {
-      setError(MESSAGES[PASSPHRASE_MISMATCH] ?? null)
+      show(formErrorOf(PASSPHRASE_MISMATCH))
       return
     }
     startSubmit(async () => {
       const failure = setup ? await setupPassphrase(passphrase, confirmation) : await unlockVault(passphrase)
-      setError(failure ? messageOf(failure) : null)
+      show(failure ? backendErrorOf(failure) : null)
     })
   }
 
@@ -94,8 +125,8 @@ function PassphraseForm({ prompt, onCancel }: PassphraseFormProps) {
               type="password"
               autoComplete={setup ? 'new-password' : 'current-password'}
               className={styles.input}
-              aria-invalid={error || passphraseRequired ? true : undefined}
-              aria-describedby={passphraseRequired ? passphraseErrorId : undefined}
+              aria-invalid={passphraseInvalid ? true : undefined}
+              aria-describedby={passphraseRequired ? passphraseErrorId : error?.field === 'passphrase' ? formErrorId : undefined}
               value={passphrase}
               onChange={(event) => {
                 setPassphrase(event.target.value)
@@ -112,11 +143,13 @@ function PassphraseForm({ prompt, onCancel }: PassphraseFormProps) {
             <label className={styles.field}>
               Confirm Passphrase
               <input
+                ref={confirmationRef}
                 name="confirmation"
                 type="password"
                 autoComplete="new-password"
                 className={styles.input}
-                aria-invalid={error ? true : undefined}
+                aria-invalid={confirmationInvalid ? true : undefined}
+                aria-describedby={confirmationInvalid ? formErrorId : undefined}
                 value={confirmation}
                 onChange={(event) => setConfirmation(event.target.value)}
               />
@@ -125,7 +158,9 @@ function PassphraseForm({ prompt, onCancel }: PassphraseFormProps) {
         </div>
         {error ? (
           <Banner.Root tone="error" className={styles.error}>
-            <Banner.Message>{error}</Banner.Message>
+            <Banner.Message>
+              <span id={formErrorId}>{error.message}</span>
+            </Banner.Message>
           </Banner.Root>
         ) : null}
       </Dialog.Body>
