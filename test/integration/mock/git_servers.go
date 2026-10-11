@@ -35,11 +35,11 @@ import (
 )
 
 const (
-	gitDefaultBranch   = "main"
-	gitUploadPack      = "git-upload-pack"
-	gitReceivePack     = "git-receive-pack"
-	gitTeammateName    = "Teammate"
-	gitTeammateEmail   = "teammate@example.test"
+	gitDefaultBranch    = "main"
+	gitUploadPack       = "git-upload-pack"
+	gitReceivePack      = "git-receive-pack"
+	gitTeammateName     = "Teammate"
+	gitTeammateEmail    = "teammate@example.test"
 	gitRepositorySuffix = ".git"
 )
 
