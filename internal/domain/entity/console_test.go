@@ -211,3 +211,27 @@ func TestBodyPreviewText(t *testing.T) {
 		t.Fatalf("file row = %+v", file)
 	}
 }
+
+func TestEditedScripts(t *testing.T) {
+	stored := NewRequest("01R", "Create")
+	stored.Scripts = Scripts{PreRequest: "saved"}
+	stored.InheritScripts = false
+	draft := NewRequest("01R", "Create")
+	if got := draft.WithScriptsOf(stored); got.Scripts.PreRequest != "saved" || got.InheritScripts {
+		t.Errorf("a draft without scripts takes the stored ones: %+v", got.Scripts)
+	}
+	draft.Scripts = Scripts{PreRequest: "edited"}
+	draft.ScriptsEdited = true
+	if got := draft.WithScriptsOf(stored); got.Scripts.PreRequest != "edited" || !got.InheritScripts {
+		t.Errorf("edited scripts win: %+v", got.Scripts)
+	}
+	folder := Collection{Scripts: Scripts{PostResponse: "saved"}, InheritScripts: true}
+	kept := folder.WithSettings(Collection{Description: "d"})
+	if kept.Scripts.PostResponse != "saved" || !kept.InheritScripts || kept.ScriptsEdited || kept.Description != "d" {
+		t.Errorf("settings without scripts keep them: %+v", kept)
+	}
+	edited := folder.WithSettings(Collection{Scripts: Scripts{PreRequest: "new"}, ScriptsEdited: true})
+	if edited.Scripts.PreRequest != "new" || edited.Scripts.PostResponse != "" || edited.InheritScripts || !edited.ScriptsEdited {
+		t.Errorf("edited settings replace the scripts: %+v", edited)
+	}
+}

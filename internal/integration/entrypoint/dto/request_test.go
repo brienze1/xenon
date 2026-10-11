@@ -81,7 +81,9 @@ func TestRequestToEntity(t *testing.T) {
 		t.Fatalf("ToEntity =\n%+v\nwant\n%+v", got, want)
 	}
 	back := NewRequest(got)
-	if !reflect.DeepEqual(back.ToEntity(), got) {
+	edited := got
+	edited.ScriptsEdited = true
+	if !reflect.DeepEqual(back.ToEntity(), edited) {
 		t.Fatalf("NewRequest must round trip: %+v", back)
 	}
 	if back.Method != "PURGE" || back.Settings.TimeoutMs != 10 || *back.Settings.VerifySsl || *back.Params[1].Enabled {

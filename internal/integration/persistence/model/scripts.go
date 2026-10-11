@@ -39,3 +39,15 @@ func (s *Scripts) Node() *yaml.Node {
 	}
 	return yamlnode.MappingNode(fields...)
 }
+
+// scriptsField keeps the file's scripts unless they were edited in the app.
+func scriptsField(scripts Scripts, edited bool) yamlnode.Field {
+	return scriptsReserved(yamlnode.Reserved(scriptsKey, scripts.Node()), edited)
+}
+
+func scriptsReserved(field yamlnode.Field, edited bool) yamlnode.Field {
+	if edited {
+		return overwritten(field)
+	}
+	return field
+}

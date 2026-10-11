@@ -21,6 +21,7 @@ type Collection struct {
 	Variables      []VariableRow  `yaml:"variables"`
 	Auth           Auth           `yaml:"auth"`
 	Xenon          int            `yaml:"xenon"`
+	ScriptsEdited  bool           `yaml:"-"`
 }
 
 func NewCollection(collection entity.Collection) Collection {
@@ -36,6 +37,7 @@ func NewCollection(collection entity.Collection) Collection {
 		Variables:      newVariableRows(collection.Variables),
 		Scripts:        NewScripts(collection.Scripts),
 		InheritScripts: &collection.InheritScripts,
+		ScriptsEdited:  collection.ScriptsEdited,
 		Postman:        collection.Postman,
 		Bruno:          collection.Bruno,
 	}
@@ -74,9 +76,9 @@ func (c *Collection) Fields() []yamlnode.Field {
 	if itemkind.Collection.Equals(c.Kind) {
 		fields = append(fields, variablesField(c.Variables))
 	}
-	fields = append(fields, yamlnode.Reserved("scripts", c.Scripts.Node()))
+	fields = append(fields, scriptsField(c.Scripts, c.ScriptsEdited))
 	if itemkind.Folder.Equals(c.Kind) {
-		fields = append(fields, yamlnode.Reserved("inheritScripts", inheritScriptsNode(c.InheritScripts)))
+		fields = append(fields, scriptsReserved(yamlnode.Reserved("inheritScripts", inheritScriptsNode(c.InheritScripts)), c.ScriptsEdited))
 	}
 	fields = append(fields, sourceFieldsReserved(postmanKey, c.Postman))
 	return append(fields, optionalSourceFields(brunoKey, c.Bruno)...)

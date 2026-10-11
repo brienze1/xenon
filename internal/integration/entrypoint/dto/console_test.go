@@ -9,6 +9,7 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums/bodymode"
 	"github.com/brienze1/xenon/internal/domain/enums/consolefilter"
 	"github.com/brienze1/xenon/internal/domain/enums/consolelevel"
+	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
 	"github.com/brienze1/xenon/internal/domain/enums/scriptownerkind"
 	"github.com/brienze1/xenon/internal/domain/enums/scriptphase"
 	"github.com/brienze1/xenon/internal/domain/enums/senderrorkind"
@@ -94,5 +95,42 @@ func TestConsoleLogAndErrorEntryDto(t *testing.T) {
 	}
 	if got := NewConsoleEntries(nil); got == nil || len(got) != 0 {
 		t.Errorf("no entries = %+v", got)
+	}
+}
+
+func TestRequestScripts(t *testing.T) {
+	inherit := false
+	edited := Request{Name: "x", Scripts: &Scripts{PreRequest: "a", PostResponse: "b", Disabled: []string{"postResponse"}}, InheritScripts: &inherit}
+	request := edited.ToEntity()
+	if !request.ScriptsEdited || request.Scripts.PreRequest != "a" || request.Scripts.PostResponse != "b" || len(request.Scripts.Disabled) != 1 || request.Scripts.Disabled[0] != scriptphase.PostResponse || request.InheritScripts {
+		t.Fatalf("request = %+v", request)
+	}
+	defaulted := Request{Scripts: &Scripts{}}
+	if got := defaulted.ToEntity(); !got.InheritScripts || !got.ScriptsEdited || got.Scripts.Disabled != nil {
+		t.Errorf("inherit defaults to true: %+v", got)
+	}
+	plain := Request{}
+	if got := plain.ToEntity(); got.ScriptsEdited || !got.InheritScripts {
+		t.Errorf("no scripts = %+v", got)
+	}
+	back := NewRequest(request)
+	if back.Scripts.PreRequest != "a" || back.Scripts.Disabled[0] != "postResponse" || *back.InheritScripts {
+		t.Errorf("dto = %+v", back.Scripts)
+	}
+	if empty := NewScripts(entity.Scripts{}); empty.Disabled == nil {
+		t.Errorf("disabled is never nil")
+	}
+	settings := SaveItemSettings{Id: "01F", Scripts: &Scripts{PreRequest: "p"}}
+	if got := settings.ToEntity(); !got.ScriptsEdited || got.Scripts.PreRequest != "p" || !got.InheritScripts {
+		t.Errorf("settings = %+v", got)
+	}
+	plainSettings := SaveItemSettings{Id: "01F"}
+	if got := plainSettings.ToEntity(); got.ScriptsEdited {
+		t.Errorf("settings without scripts = %+v", got)
+	}
+	folder := NewItemSettings(entity.Collection{Kind: itemkind.Folder, InheritScripts: true})
+	collection := NewItemSettings(entity.Collection{Kind: itemkind.Collection, InheritScripts: true})
+	if folder.InheritScripts == nil || !*folder.InheritScripts || collection.InheritScripts != nil || collection.Scripts == nil {
+		t.Errorf("folder %+v collection %+v", folder, collection)
 	}
 }

@@ -15,8 +15,8 @@ type HistoryEntry struct {
 	Id              string        `json:"id"`
 	SourceRequestId string        `json:"source_request_id"`
 	Outcome         string        `json:"outcome"`
-	Request         Request       `json:"request"`
 	Result          HistoryResult `json:"result"`
+	Request         Request       `json:"request"`
 	Version         int           `json:"version"`
 }
 

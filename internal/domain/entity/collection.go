@@ -23,6 +23,7 @@ type Collection struct {
 	Headers        []KeyValue
 	Variables      []VariableRow
 	InheritScripts bool
+	ScriptsEdited  bool
 }
 
 func NewCollection(id, name string) Collection {
@@ -58,6 +59,11 @@ func (c Collection) WithSettings(settings Collection) Collection {
 	c.Description = settings.Description
 	c.Auth = settings.Auth
 	c.Headers = append([]KeyValue{}, settings.Headers...)
+	if settings.ScriptsEdited {
+		c.Scripts = settings.Scripts
+		c.InheritScripts = settings.InheritScripts
+		c.ScriptsEdited = true
+	}
 	return c
 }
 

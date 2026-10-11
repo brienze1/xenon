@@ -31,6 +31,7 @@ type Request struct {
 	Examples            []SavedExample
 	Settings            RequestSettings
 	InheritScripts      bool
+	ScriptsEdited       bool
 }
 
 func NewRequest(id, name string) Request {
@@ -49,7 +50,11 @@ func NewRequest(id, name string) Request {
 	}
 }
 
+// WithScriptsOf takes the stored request's scripts unless this request carries scripts edited in the app.
 func (r Request) WithScriptsOf(stored Request) Request {
+	if r.ScriptsEdited {
+		return r
+	}
 	r.Scripts = stored.Scripts
 	r.InheritScripts = stored.InheritScripts
 	return r

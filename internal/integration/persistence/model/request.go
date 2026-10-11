@@ -26,6 +26,7 @@ type Request struct {
 	Examples       []Example      `yaml:"examples" json:"-"`
 	Auth           Auth           `yaml:"auth" json:"auth"`
 	Xenon          int            `yaml:"xenon" json:"xenon"`
+	ScriptsEdited  bool           `yaml:"-" json:"-"`
 }
 
 func NewRequest(request entity.Request) Request {
@@ -46,6 +47,7 @@ func NewRequest(request entity.Request) Request {
 		Settings:       NewSettings(request.Settings),
 		Scripts:        NewScripts(request.Scripts),
 		InheritScripts: &request.InheritScripts,
+		ScriptsEdited:  request.ScriptsEdited,
 		Examples:       newExamples(request.Examples),
 		Postman:        request.Postman,
 		Bruno:          request.Bruno,
@@ -107,8 +109,8 @@ func (r *Request) fields(examples []yamlnode.Field) []yamlnode.Field {
 		r.Auth.Field(),
 		r.Body.Field(),
 		r.Settings.Field(),
-		yamlnode.Reserved("scripts", r.Scripts.Node()),
-		yamlnode.Reserved("inheritScripts", inheritScriptsNode(r.InheritScripts)),
+		scriptsField(r.Scripts, r.ScriptsEdited),
+		scriptsReserved(yamlnode.Reserved("inheritScripts", inheritScriptsNode(r.InheritScripts)), r.ScriptsEdited),
 	)
 	fields = append(fields, examples...)
 	fields = append(fields, sourceFieldsReserved(postmanKey, r.Postman))

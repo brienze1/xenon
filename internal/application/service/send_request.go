@@ -140,7 +140,7 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 }
 
 func (s *sendRequest) scriptOwners(ctx context.Context, root string, request entity.Request, ancestors []entity.Collection) ([]entity.ScriptOwner, error) {
-	if !entity.IsSavedRequestID(request.ID) {
+	if request.ScriptsEdited || !entity.IsSavedRequestID(request.ID) {
 		return request.ScriptOwners(ancestors), nil
 	}
 	stored, err := s.findRequest.Find(ctx, root, request.ID)
