@@ -57,15 +57,15 @@ US1 Postman export · US2 Xenon YAML export · US3 Xenon YAML import · US4 dial
 
 ## Phase 6: User Story 4 — Dialog and summary (P2)
 
-- [ ] T018 [P] [US4] BDD `test/integration/features/export/atomic_cancel.feature`: cancel mid-export leaves no file; write failure leaves no file and reports `EXP-02500`; progress events for > 200 items
-- [ ] T019 [US4] Run → **red** then **green** with T004 refinements
-- [ ] T020 [US4] UI `features/export/`: `ExportDialog` (format, shape per item kind from `Options`, include secrets hidden for Postman with explanation, passphrase ×2, current-values checkbox, save location), `ExportSummary` (counts, dropped fields, warnings, Show in folder); "Export…" in sidebar and environment context menus; File → Export; Import dialog passphrase prompt; RTL tests
+- [x] T018 [P] [US4] BDD `test/integration/features/export/atomic_cancel.feature`: cancel mid-export leaves no file; write failure leaves no file and reports `EXP-02500`; progress events for > 200 items
+- [x] T019 [US4] Run → **red** then **green** with T004 refinements
+- [x] T020 [US4] UI `features/export/`: `ExportDialog` (format, shape per item kind from `Options`, include secrets hidden for Postman with explanation, passphrase ×2, current-values checkbox, save location), `ExportSummary` (counts, dropped fields, warnings, Show in folder); "Export…" in sidebar and environment context menus; File → Export; Import dialog passphrase prompt; RTL tests
 
 ---
 
 ## Phase 7: Polish
 
-- [ ] T021 [P] Performance BDD: 1,000-request workspace export < 5 s (SC-005)
+- [x] T021 [P] Performance BDD: 1,000-request workspace export < 5 s (SC-005)
 - [ ] T022 `/refactor-diff` until clean; `make validate`; `make newman`; CI on 3 OSes; walk [quickstart.md](quickstart.md)
 
 ---
@@ -164,3 +164,45 @@ US4 → Polish.
 - CI: the XEN-004 parity case `pm-test-async-done` reordered its async tests once on a loaded
   macOS runner (timers of 1/5/10 ms on separate Go timers); its delays are now 1/60/120 ms, with
   the oracle expectation unchanged.
+
+## Implementation notes (T018–T021)
+
+- T018/T019: `features/export/atomic_cancel.feature`. Red before the change: the progress and
+  mid-export cancel scenarios (only a start and an end event existed, so a cancel on the 2nd/3rd
+  event came after the file was complete). Already green before the change and kept as guards:
+  the write-failure scenarios (`EXP-02500`, temp file removed; the target is an existing folder
+  so the rename fails portably), the already-cancelled export and the small-export events.
+  Progress rule (`ExportProgress.IsMilestone`): an archive of more than 200 files announces
+  `export:progress` after every 50th file, plus the start (0) and the end (total); a cancel
+  between files stops the zip, removes the temp file and keeps a file it would have replaced
+  (`EXP-05499`). `SaveArchive` takes a `written(done)` callback. New generic step
+  `I call "<Service>.<Method>" and cancel it on the <n> "<event>" event with` (the event mock
+  runs a hook synchronously on the n-th emission, so the cancel is deterministic on every OS).
+- T020 UI: the export dialog is its own feature folder `features/export/` (own store, as the
+  plan says) next to `features/import-export/`. Entry points: Export… in the sidebar context
+  menu (collections, folders, requests; not examples), the environment context menu and an
+  Export… button in the environment editor, Export Workspace… in the workspace switcher (every
+  OS) and the macOS File menu (`export:requested`; no accelerator, Cmd+Shift+E is the
+  environment switcher). Save location: `PickTarget` now takes the shape and suggests the
+  matching Xenon YAML extension (`.zip`/`.yaml`, BDD in `postman_collection.feature`).
+  Progress bar only when the export has more than 200 files; Cancel returns to the options
+  with "no file was written". The summary shows counts, the secrets line (when the item has
+  secrets), dropped/changed fields, warnings and Show in Folder. Import dialog: `IMP-50401`
+  asks for the passphrase, `IMP-08401` asks again (wrong), "Import Without Secrets" sends
+  `skip_secrets`; a workspace export row offers Choose Folder… instead of a workspace and
+  location, sends `target_folder`, and the workspace list is reloaded after the import. The
+  passphrase lives in the store only while the dialog is open and is cleared after use.
+  Globals have no Export… entry of their own (the workspace export carries them).
+- T021: `features/export/large_workspace.feature`, 1,000 requests across 4 collections, Xenon
+  YAML and Postman zips each under 5 s (about 0.3 s locally); green on the first run (the
+  writer already met SC-005), so it is a guard.
+- Chunk 2 leftovers (BDD first, both red before the fix): a collection export imported into
+  another collection merges its variables into that collection, so its encrypted secret
+  values now go to that collection's vault scope, following the clash resolution like the
+  globals import (shared pure use case `MergeImportedSecrets`; keep_both/skip keep the
+  existing value, replace overwrites, other secrets of the target untouched). A workspace
+  import that fails after copying (load, vault or registry) removes the copied folder and the
+  new vault, registers the workspace last, and the result no longer carries a workspace entry
+  with an empty id (only `items[].status: failed` and `failed[]`).
+- Mutation: gremlins unit mode over this chunk's diff kills 19/19 covered mutants.
+
