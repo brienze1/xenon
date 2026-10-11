@@ -14,7 +14,6 @@ import (
 	"time"
 )
 
-// tNow is the synthetic current time used as now during testing.
 var tNow = time.Date(2013, 1, 1, 12, 0, 0, 0, time.UTC)
 
 func newTestJar() *Jar {
@@ -106,9 +105,6 @@ var canonicalHostTests = map[string]string{
 	"[2001:4860:0:::68]:8080": "2001:4860:0:::68",
 	"www.bücher.de":           "www.xn--bcher-kva.de",
 	"www.example.com.":        "www.example.com",
-	// TODO: Fix canonicalHost so that all of the following malformed
-	// domain names trigger an error. (This list is not exhaustive, e.g.
-	// malformed internationalized domain names are missing.)
 	".":                       "",
 	"..":                      ".",
 	"...":                     "..",
@@ -170,15 +166,13 @@ var jarKeyTests = map[string]string{
 	"192.168.0.5":         "192.168.0.5",
 	"www.buggy.psl":       "buggy.psl",
 	"www2.buggy.psl":      "buggy.psl",
-	// The following are actual outputs of canonicalHost for
-	// malformed inputs to canonicalHost (see above).
-	"":              "",
-	".":             ".",
-	"..":            ".",
-	".net":          ".net",
-	"a.":            "a.",
-	"b.a.":          "a.",
-	"weird.stuff..": ".",
+	"":                    "",
+	".":                   ".",
+	"..":                  ".",
+	".net":                ".net",
+	"a.":                  "a.",
+	"b.a.":                "a.",
+	"weird.stuff..":       ".",
 }
 
 func TestJarKey(t *testing.T) {
@@ -232,11 +226,11 @@ func TestDefaultPath(t *testing.T) {
 }
 
 var domainAndTypeTests = [...]struct {
-	host         string // host Set-Cookie header was received from
-	domain       string // domain attribute in Set-Cookie header
-	wantDomain   string // expected domain of cookie
-	wantHostOnly bool   // expected host-cookie flag
-	wantErr      error  // expected error
+	host         string
+	domain       string
+	wantDomain   string
+	wantHostOnly bool
+	wantErr      error
 }{
 	{"www.example.com", "", "www.example.com", true, nil},
 	{"127.0.0.1", "", "127.0.0.1", true, nil},
@@ -284,13 +278,11 @@ func TestDomainAndType(t *testing.T) {
 	}
 }
 
-// expiresIn creates an expires attribute delta seconds from tNow.
 func expiresIn(delta int) string {
 	t := tNow.Add(time.Duration(delta) * time.Second)
 	return "expires=" + t.Format(time.RFC1123)
 }
 
-// mustParseURL parses s to a URL and panics on error.
 func mustParseURL(s string) *url.URL {
 	u, err := url.Parse(s)
 	if err != nil || u.Scheme == "" || u.Host == "" {
@@ -299,33 +291,22 @@ func mustParseURL(s string) *url.URL {
 	return u
 }
 
-// jarTest encapsulates the following actions on a jar:
-//  1. Perform SetCookies with fromURL and the cookies from setCookies.
-//     (Done at time tNow + 0 ms.)
-//  2. Check that the entries in the jar matches content.
-//     (Done at time tNow + 1001 ms.)
-//  3. For each query in tests: Check that Cookies with toURL yields the
-//     cookies in want.
-//     (Query n done at tNow + (n+2)*1001 ms.)
 type jarTest struct {
-	description string   // The description of what this test is supposed to test
-	fromURL     string   // The full URL of the request from which Set-Cookie headers where received
-	setCookies  []string // All the cookies received from fromURL
-	content     string   // The whole (non-expired) content of the jar
-	queries     []query  // Queries to test the Jar.Cookies method
+	description string
+	fromURL     string
+	setCookies  []string
+	content     string
+	queries     []query
 }
 
-// query contains one test of the cookies returned from Jar.Cookies.
 type query struct {
-	toURL string // the URL in the Cookies call
-	want  string // the expected list of cookies (order matters)
+	toURL string
+	want  string
 }
 
-// run runs the jarTest.
 func (test jarTest) run(t *testing.T, jar *Jar) {
 	now := tNow
 
-	// Populate jar with cookies.
 	setCookies := make([]*http.Cookie, len(test.setCookies))
 	for i, cs := range test.setCookies {
 		cookies := (&http.Response{Header: http.Header{"Set-Cookie": {cs}}}).Cookies()
@@ -339,7 +320,6 @@ func (test jarTest) run(t *testing.T, jar *Jar) {
 	}
 	now = now.Add(1001 * time.Millisecond)
 
-	// Serialize non-expired entries in the form "name1=val1 name2=val2".
 	var cs []string
 	for _, submap := range jar.entries {
 		for _, cookie := range submap {
@@ -357,13 +337,11 @@ func (test jarTest) run(t *testing.T, jar *Jar) {
 	slices.Sort(cs)
 	got := strings.Join(cs, " ")
 
-	// Make sure jar content matches our expectations.
 	if got != test.content {
 		t.Errorf("Test %q Content\ngot  %q\nwant %q",
 			test.description, got, test.content)
 	}
 
-	// Test different calls to Cookies.
 	for i, query := range test.queries {
 		now = now.Add(1001 * time.Millisecond)
 		var s []string
@@ -376,8 +354,6 @@ func (test jarTest) run(t *testing.T, jar *Jar) {
 	}
 }
 
-// basicsTests contains fundamental tests. Each jarTest has to be performed on
-// a fresh, empty Jar.
 var basicsTests = [...]jarTest{
 	{
 		"Retrieval of a plain host cookie.",
@@ -601,9 +577,9 @@ var basicsTests = [...]jarTest{
 		"Domain cookies on IP.",
 		"http://192.168.0.10",
 		[]string{
-			"a=1; domain=192.168.0.10",  // allowed
-			"b=2; domain=172.31.9.9",    // rejected, can't set cookie for other IP
-			"c=3; domain=.192.168.0.10", // rejected like in most browsers
+			"a=1; domain=192.168.0.10",
+			"b=2; domain=172.31.9.9",
+			"c=3; domain=.192.168.0.10",
 		},
 		"a=1",
 		[]query{
@@ -643,7 +619,7 @@ var basicsTests = [...]jarTest{
 		},
 	},
 	{
-		"Retrieval of cookies with quoted values", // issue #46443
+		"Retrieval of cookies with quoted values",
 		"http://www.host.test/",
 		[]string{
 			`cookie-1="quoted"`,
@@ -668,8 +644,6 @@ func TestBasics(t *testing.T) {
 	}
 }
 
-// updateAndDeleteTests contains jarTests which must be performed on the same
-// Jar.
 var updateAndDeleteTests = [...]jarTest{
 	{
 		"Set initial cookies.",
@@ -712,10 +686,10 @@ var updateAndDeleteTests = [...]jarTest{
 		"Delete all.",
 		"http://www.host.test/",
 		[]string{
-			"a=1; max-Age=-1",                    // delete via MaxAge
-			"b=2; " + expiresIn(-10),             // delete via Expires
-			"c=2; max-age=-1; " + expiresIn(-10), // delete via both
-			"d=4; max-age=-1; " + expiresIn(10)}, // MaxAge takes precedence
+			"a=1; max-Age=-1",
+			"b=2; " + expiresIn(-10),
+			"c=2; max-age=-1; " + expiresIn(-10),
+			"d=4; max-age=-1; " + expiresIn(10)},
 		"",
 		[]query{{"http://www.host.test", ""}},
 	},
@@ -830,28 +804,17 @@ func TestExpiration(t *testing.T) {
 			"e=5; " + expiresIn(5),
 			"f=6; max-age=100",
 		},
-		"a=1 b=2 c=3 d=4 e=5 f=6", // executed at t0 + 1001 ms
+		"a=1 b=2 c=3 d=4 e=5 f=6",
 		[]query{
-			{"http://www.host.test", "a=1 b=2 c=3 d=4 e=5 f=6"}, // t0 + 2002 ms
-			{"http://www.host.test", "a=1 d=4 e=5 f=6"},         // t0 + 3003 ms
-			{"http://www.host.test", "a=1 d=4 e=5 f=6"},         // t0 + 4004 ms
-			{"http://www.host.test", "a=1 f=6"},                 // t0 + 5005 ms
-			{"http://www.host.test", "a=1 f=6"},                 // t0 + 6006 ms
+			{"http://www.host.test", "a=1 b=2 c=3 d=4 e=5 f=6"},
+			{"http://www.host.test", "a=1 d=4 e=5 f=6"},
+			{"http://www.host.test", "a=1 d=4 e=5 f=6"},
+			{"http://www.host.test", "a=1 f=6"},
+			{"http://www.host.test", "a=1 f=6"},
 		},
 	}.run(t, jar)
 }
 
-//
-// Tests derived from Chromium's cookie_store_unittest.h.
-//
-
-// See http://src.chromium.org/viewvc/chrome/trunk/src/net/cookies/cookie_store_unittest.h?revision=159685&content-type=text/plain
-// Some of the original tests are in a bad condition (e.g.
-// DomainWithTrailingDotTest) or are not RFC 6265 conforming (e.g.
-// TestNonDottedAndTLD #1 and #6) and have not been ported.
-
-// chromiumBasicsTests contains fundamental tests. Each jarTest has to be
-// performed on a fresh, empty Jar.
 var chromiumBasicsTests = [...]jarTest{
 	{
 		"DomainWithTrailingDotTest.",
@@ -916,7 +879,7 @@ var chromiumBasicsTests = [...]jarTest{
 			"n=14; domain=.foo.bar.com:",
 			"o=15; domain=.foo.bar.com#sup",
 		},
-		"", // Jar is empty.
+		"",
 		[]query{{"http://foo.bar.com", ""}},
 	},
 	{
@@ -1056,8 +1019,6 @@ func TestChromiumBasics(t *testing.T) {
 	}
 }
 
-// chromiumDomainTests contains jarTests which must be executed all on the
-// same Jar.
 var chromiumDomainTests = [...]jarTest{
 	{
 		"Fill #1.",
@@ -1118,7 +1079,6 @@ func TestChromiumDomain(t *testing.T) {
 
 }
 
-// chromiumDeletionTests must be performed all on the same Jar.
 var chromiumDeletionTests = [...]jarTest{
 	{
 		"Create session cookie a1.",
@@ -1185,8 +1145,6 @@ func TestChromiumDeletion(t *testing.T) {
 	}
 }
 
-// domainHandlingTests tests and documents the rules for domain handling.
-// Each test must be performed on an empty new Jar.
 var domainHandlingTests = [...]jarTest{
 	{
 		"Host cookie",
