@@ -9,6 +9,7 @@ require (
 	github.com/Bios-Marcel/wastebasket/v2 v2.0.3
 	github.com/andybalholm/brotli v1.2.6
 	github.com/aws/aws-sdk-go-v2 v1.47.2
+	github.com/aws/smithy-go v1.28.4
 	github.com/brianvoe/gofakeit/v7 v7.17.1
 	github.com/cucumber/godog v0.16.0
 	github.com/dop251/goja v0.0.0-20261009133625-a4bedf5f6000
@@ -20,6 +21,7 @@ require (
 	github.com/wailsapp/wails/v3 v3.0.0-beta.28
 	github.com/zalando/go-keyring v0.2.8
 	go.yaml.in/yaml/v3 v3.0.5
+	golang.org/x/net v0.60.0
 	golang.org/x/sys v0.48.0
 	golang.org/x/text v0.42.0
 	mvdan.cc/sh/v3 v3.14.1
@@ -28,7 +30,6 @@ require (
 require (
 	filippo.io/hpke v0.4.0 // indirect
 	github.com/adrg/xdg v0.5.3 // indirect
-	github.com/aws/smithy-go v1.28.4 // indirect
 	github.com/coder/websocket v1.8.14 // indirect
 	github.com/cucumber/gherkin/go/v42 v42.0.0 // indirect
 	github.com/cucumber/messages/go/v34 v34.2.0 // indirect
