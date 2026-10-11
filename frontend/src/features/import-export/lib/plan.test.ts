@@ -5,9 +5,11 @@ import {
   assignIncluded,
   buildPlan,
   containerLocations,
+  createsWorkspaces,
   defaultTargets,
   hasIncludedItems,
   missingLocations,
+  needsFolder,
   needsLocation,
   pendingClashes,
   skippedParts,
@@ -108,5 +110,20 @@ describe('import plan helpers', () => {
     expect(withRequestLocations(mixed, targets, 'L', locations)).toEqual({ ...targets, '2': { include: true, localId: 'L', parentId: 'C' } })
     expect(withRequestLocations(mixed, targets, 'L', [])).toEqual(targets)
     expect(withRequestLocations(mixed, { '2': { include: true, localId: 'L', parentId: 'F' } }, 'L', locations)).toEqual({ '2': { include: true, localId: 'L', parentId: 'F' } })
+  })
+
+  it('sends a workspace export to its new folder instead of a workspace and needs that folder', () => {
+    const workspace: ImportPreview = { ...preview, kind: 'xenon_workspace_zip', items: [{ key: '0', kind: 'workspace', name: 'Acme', counts, warningsCount: 0 }] }
+    expect(needsFolder('workspace')).toBe(true)
+    expect(needsFolder('collection')).toBe(false)
+    expect(missingLocations(workspace, { '0': { include: true, localId: 'L', parentId: '' } })).toBe(true)
+    expect(missingLocations(workspace, { '0': { include: false, localId: 'L', parentId: '' } })).toBe(false)
+    expect(missingLocations(workspace, { '0': { include: true, localId: 'L', parentId: '', folder: '/w/new' } })).toBe(false)
+    expect(createsWorkspaces(workspace, { '0': { include: true, localId: 'L', parentId: '' } })).toBe(true)
+    expect(createsWorkspaces(workspace, { '0': { include: false, localId: 'L', parentId: '' } })).toBe(false)
+    expect(createsWorkspaces(preview, defaultTargets(preview, 'L'))).toBe(false)
+    expect(buildPlan('S', { '0': { include: true, localId: 'L', parentId: 'P', folder: '/w/new' } }, {}, null).items).toEqual([
+      { key: '0', include: true, targetLocalId: '', targetParentId: '', targetFolder: '/w/new', resolution: null },
+    ])
   })
 })

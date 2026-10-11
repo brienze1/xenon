@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defaultUIState } from '@/platform/mappers/ui-state'
-import type { ImportProgress, RequestChangedOnDisk, VariablesChanged } from '@/platform/events'
+import type { ExportProgress, ImportProgress, RequestChangedOnDisk, VariablesChanged } from '@/platform/events'
 import type { ConsoleEntriesEvent } from '@/platform/mappers/console'
 import type { VaultStatus } from '@/platform/mappers/vault'
 
@@ -16,6 +16,8 @@ const handlers: {
   filesDropped?: (paths: string[]) => void
   consoleEntries?: (event: ConsoleEntriesEvent) => void
   cookiesChanged?: (localId: string) => void
+  exportProgress?: (progress: ExportProgress) => void
+  exportRequested?: () => void
 } = {}
 
 vi.mock('@/platform/events', () => ({
@@ -59,6 +61,20 @@ vi.mock('@/platform/events', () => ({
     handlers.filesDropped = callback
     return unsubscribe
   }),
+  onExportProgress: vi.fn((callback) => {
+    handlers.exportProgress = callback
+    return unsubscribe
+  }),
+  onExportRequested: vi.fn((callback) => {
+    handlers.exportRequested = callback
+    return unsubscribe
+  }),
+}))
+vi.mock('@/platform/services/export', () => ({
+  getExportOptions: vi.fn(),
+  pickExportTarget: vi.fn(),
+  runExport: vi.fn(),
+  showExportInFolder: vi.fn(),
 }))
 vi.mock('@/platform/services/import', () => ({
   detectImport: vi.fn(),
@@ -109,6 +125,8 @@ const { useTabsStore, PERSIST_DELAY_MS } = await import('@/features/tabs/store')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { useImportStore } = await import('@/features/import-export/store')
 const importService = await import('@/platform/services/import')
+const exportService = await import('@/platform/services/export')
+const { useExportStore } = await import('@/features/export/store')
 const { bootstrap, openLastWorkspace } = await import('./bootstrap')
 
 function resetWorkspaceStores() {
@@ -194,7 +212,7 @@ describe('bootstrap', () => {
     handlers.cookiesChanged?.('A')
     expect(jarChanged).toHaveBeenCalledWith('A')
     cleanup()
-    expect(unsubscribe).toHaveBeenCalledTimes(10)
+    expect(unsubscribe).toHaveBeenCalledTimes(12)
   })
 
   it('opens the import dialog from the menu and from dropped files only when a workspace is active', async () => {
@@ -215,6 +233,25 @@ describe('bootstrap', () => {
     handlers.importProgress?.({ sourceId: 'S', done: 1, total: 2, currentItem: 'Acme API' })
     expect(useImportStore.getState().progress).toEqual({ done: 1, total: 2, currentItem: 'Acme API' })
     useImportStore.getState().reset()
+    cleanup()
+  })
+
+  it('opens the workspace export from the menu only when a workspace is active and follows its progress', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
+    vi.mocked(exportService.getExportOptions).mockResolvedValue({ suggestedFileName: 'acme', formats: [], hasSecrets: false, hasCurrentValues: false })
+    const cleanup = await started()
+    handlers.exportRequested?.()
+    expect(useExportStore.getState().step).toBe('closed')
+    useWorkspacesStore.setState({ activeLocalId: 'A' })
+    handlers.exportRequested?.()
+    await vi.waitFor(() => expect(useExportStore.getState().step).toBe('configure'))
+    expect(exportService.getExportOptions).toHaveBeenCalledWith({ localId: 'A', kind: 'workspace', itemId: '', name: 'Acme' })
+    handlers.exportProgress?.({ done: 50, total: 1007 })
+    expect(useExportStore.getState().progress).toBeNull()
+    useExportStore.setState({ step: 'exporting' })
+    handlers.exportProgress?.({ done: 50, total: 1007 })
+    expect(useExportStore.getState().progress).toEqual({ done: 50, total: 1007 })
+    useExportStore.getState().reset()
     cleanup()
   })
 

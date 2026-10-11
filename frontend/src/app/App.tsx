@@ -3,6 +3,7 @@ import { ConsoleDrawer as ConsoleContent } from '@/features/console/components/C
 import { CookiesButton } from '@/features/cookies/components/CookiesButton'
 import { CookiesDialog } from '@/features/cookies/components/CookiesDialog'
 import { EnvironmentSwitcher } from '@/features/environments/components/EnvironmentSwitcher'
+import { ExportDialog } from '@/features/export/components/ExportDialog'
 import { ImportDialog } from '@/features/import-export/components/ImportDialog'
 import { useImportStore } from '@/features/import-export/store'
 import { PassphraseDialog } from '@/features/environments/components/PassphraseDialog'
@@ -54,6 +55,8 @@ const ENVIRONMENT_SWITCHER = <EnvironmentSwitcher />
 const PASSPHRASE_DIALOG = <PassphraseDialog />
 
 const IMPORT_DIALOG = <ImportDialog />
+
+const EXPORT_DIALOG = <ExportDialog />
 
 const SETTINGS_DIALOG = <SettingsDialog shortcuts={HOTKEYS} />
 
@@ -220,6 +223,7 @@ export function App() {
       {PASSPHRASE_DIALOG}
       {SETTINGS_DIALOG}
       {active ? IMPORT_DIALOG : null}
+      {active ? EXPORT_DIALOG : null}
       {active ? COOKIES_DIALOG : null}
       {active ? QUICK_SEARCH : null}
       <Footer>

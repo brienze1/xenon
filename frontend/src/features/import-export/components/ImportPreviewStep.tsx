@@ -2,7 +2,7 @@ import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { useImportStore } from '@/features/import-export/store'
 import { countsLabel, sourceLabel } from '@/features/import-export/lib/labels'
-import { hasIncludedItems, missingLocations, needsLocation } from '@/features/import-export/lib/plan'
+import { hasIncludedItems, missingLocations, needsFolder, needsLocation } from '@/features/import-export/lib/plan'
 import type { ImportPreview, ImportPreviewItem } from '@/platform/mappers/import'
 import { formatNumber } from '@/shared/lib/number-format'
 import { DumpAssignment } from './DumpAssignment'
@@ -34,9 +34,33 @@ interface ItemRowProps {
   item: ImportPreviewItem
 }
 
+function WorkspaceFolderCells({ item }: ItemRowProps) {
+  const target = useImportStore((state) => state.targets[item.key])
+  const chooseFolder = useImportStore((state) => state.chooseFolder)
+  if (!target) {
+    return null
+  }
+  return (
+    <>
+      <td>
+        <span className={styles.muted}>New workspace</span>
+      </td>
+      <td>
+        <div className={styles.folderRow}>
+          <span className={styles.path} translate={target.folder ? 'no' : undefined}>
+            {target.folder ?? 'Choose an empty folder'}
+          </span>
+          <Button size="sm" aria-label={`Choose Folder for ${item.name}`} disabled={!target.include} onClick={() => void chooseFolder(item.key)}>
+            Choose Folder…
+          </Button>
+        </div>
+      </td>
+    </>
+  )
+}
+
 function ItemRow({ item }: ItemRowProps) {
   const target = useImportStore((state) => state.targets[item.key])
-  const locations = useImportStore((state) => (target ? state.locations[target.localId] : undefined))
   const setTarget = useImportStore((state) => state.setTarget)
   if (!target) {
     return null
@@ -76,6 +100,25 @@ function ItemRow({ item }: ItemRowProps) {
           {item.warningsCount > 0 ? ` · ${formatNumber(item.warningsCount, 0)} to review` : ''}
         </span>
       </td>
+      {needsFolder(item.kind) ? (
+        <WorkspaceFolderCells item={item} />
+      ) : (
+        <ItemPlacementCells item={item} />
+      )}
+    </tr>
+  )
+}
+
+function ItemPlacementCells({ item }: ItemRowProps) {
+  const target = useImportStore((state) => state.targets[item.key])
+  const locations = useImportStore((state) => (target ? state.locations[target.localId] : undefined))
+  const setTarget = useImportStore((state) => state.setTarget)
+  if (!target) {
+    return null
+  }
+
+  return (
+    <>
       <td>
         <WorkspacePicker
           forKey={item.key}
@@ -112,7 +155,7 @@ function ItemRow({ item }: ItemRowProps) {
           </select>
         )}
       </td>
-    </tr>
+    </>
   )
 }
 

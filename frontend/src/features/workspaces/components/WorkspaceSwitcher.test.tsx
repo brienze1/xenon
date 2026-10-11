@@ -17,6 +17,7 @@ vi.mock('@/platform/services/workspaces', () => ({
   removeWorkspace: vi.fn(),
   locateWorkspace: vi.fn(),
 }))
+vi.mock('@/platform/services/export', () => ({ getExportOptions: vi.fn(), pickExportTarget: vi.fn(), runExport: vi.fn(), showExportInFolder: vi.fn() }))
 vi.mock('@/platform/services/dialogs', () => ({ pickFolder: vi.fn(), pickFile: vi.fn(), pickSaveFile: vi.fn() }))
 vi.mock('@/platform/services/ui-state', () => ({ getUIState: vi.fn(), saveUIState: vi.fn() }))
 vi.mock('@/platform/services/requests', () => ({ autoHeaders: vi.fn(async () => []), releaseResponse: vi.fn(async () => undefined), getRequest: vi.fn() }))
@@ -30,6 +31,8 @@ const { useResponseViewerStore } = await import('@/features/response-viewer/stor
 const { useSidebarStore } = await import('@/features/sidebar/store')
 const dialogs = await import('@/platform/services/dialogs')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
+const exportService = await import('@/platform/services/export')
+const { useExportStore } = await import('@/features/export/store')
 const { WorkspaceSwitcher } = await import('./WorkspaceSwitcher')
 const { MissingFolderNotice } = await import('./MissingFolderNotice')
 
@@ -76,6 +79,20 @@ describe('WorkspaceSwitcher', () => {
     expect(screen.getByText('(missing)')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('menuitemradio', { name: /^Acme/ }))
     expect(services.activateWorkspace).toHaveBeenCalledWith('A')
+  })
+
+  it('exports the active workspace, and not a missing one', async () => {
+    vi.mocked(exportService.getExportOptions).mockResolvedValue({ suggestedFileName: 'globex', formats: [], hasSecrets: false, hasCurrentValues: false })
+    const { unmount } = render(<WorkspaceSwitcher />)
+    await openMenu()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Export Workspace…' }))
+    expect(exportService.getExportOptions).toHaveBeenCalledWith({ localId: 'G', kind: 'workspace', itemId: '', name: 'Globex' })
+    useExportStore.getState().reset()
+    unmount()
+    useWorkspacesStore.setState({ activeLocalId: null, missingLocalId: 'A' })
+    render(<WorkspaceSwitcher />)
+    await openMenu('Workspace: Acme')
+    expect(screen.queryByRole('menuitem', { name: 'Export Workspace…' })).not.toBeInTheDocument()
   })
 
   it('says when there is no workspace', () => {

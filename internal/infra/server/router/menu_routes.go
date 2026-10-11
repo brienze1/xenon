@@ -20,6 +20,9 @@ func (r *router) registerMenuRoutes(app *wails.App) {
 	file.Add("Import…").SetAccelerator("CmdOrCtrl+O").OnClick(func(*wails.Context) {
 		app.Event.Emit(dto.ImportRequestedEvent, dto.NewImportRequested(menuSource))
 	})
+	file.Add("Export Workspace…").OnClick(func(*wails.Context) {
+		app.Event.Emit(dto.ExportRequestedEvent, dto.NewExportRequested(menuSource))
+	})
 	file.AddSeparator()
 	file.AddRole(wails.CloseWindow)
 	menu.AddRole(wails.EditMenu)

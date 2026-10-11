@@ -4,8 +4,11 @@ import type { TreeNode } from '@/platform/mappers/tree'
 
 vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn(), searchTree: vi.fn(), moveItem: vi.fn() }))
 vi.mock('@/platform/services/workspaces', () => ({ listWorkspaces: vi.fn(), createWorkspace: vi.fn(), activateWorkspace: vi.fn() }))
+vi.mock('@/platform/services/export', () => ({ getExportOptions: vi.fn(), pickExportTarget: vi.fn(), runExport: vi.fn(), showExportInFolder: vi.fn() }))
 
 const treeService = await import('@/platform/services/tree')
+const exportService = await import('@/platform/services/export')
+const { useExportStore } = await import('@/features/export/store')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { useSidebarStore } = await import('@/features/sidebar/store')
 const { CollectionTree, TREE_ROW_HEIGHT } = await import('./CollectionTree')
@@ -111,5 +114,22 @@ describe('CollectionTree drag and drop', () => {
     render(<CollectionTree {...actions} />)
     fireEvent.click(row('r2'))
     expect(actions.onOpenRequest).toHaveBeenCalledWith('r2')
+  })
+
+  it('exports collections, folders and requests from their context menu, but not examples', async () => {
+    vi.mocked(exportService.getExportOptions).mockResolvedValue({ suggestedFileName: 'x', formats: [], hasSecrets: false, hasCurrentValues: false })
+    useSidebarStore.setState({ tree: [node('c1', 'collection', [node('f1', 'folder'), { ...node('r2', 'request'), examples: [{ id: 'e1', name: 'Name e1', code: 200 }] }])], expanded: { c1: true, r2: true } })
+    render(<CollectionTree {...actions} />)
+    for (const [id, kind] of [['c1', 'collection'], ['f1', 'folder'], ['r2', 'request']] as const) {
+      useExportStore.getState().reset()
+      fireEvent.contextMenu(row(id), { clientX: 10, clientY: 10 })
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Export…' }))
+      await waitFor(() => expect(useExportStore.getState().step).toBe('configure'))
+      expect(exportService.getExportOptions).toHaveBeenLastCalledWith({ localId: 'L1', kind, itemId: id, name: `Name ${id}` })
+    }
+    fireEvent.contextMenu(row('e1'), { clientX: 10, clientY: 10 })
+    expect(screen.getByRole('menu', { name: 'Name e1 actions' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Export…' })).not.toBeInTheDocument()
+    useExportStore.getState().reset()
   })
 })

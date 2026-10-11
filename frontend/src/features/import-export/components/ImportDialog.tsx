@@ -5,6 +5,7 @@ import { ImportPreviewStep } from './ImportPreviewStep'
 import { ImportProgress } from './ImportProgress'
 import { ImportSourceStep } from './ImportSourceStep'
 import { ImportSummary } from './ImportSummary'
+import { PassphrasePrompt } from './PassphrasePrompt'
 import styles from './ImportDialog.module.css'
 
 const IMPORT_TITLE = <Dialog.Title>Import</Dialog.Title>
@@ -19,6 +20,7 @@ export function ImportDialog() {
       {step === 'choose' || step === 'detecting' ? <ImportSourceStep /> : null}
       {step === 'preview' ? <ImportPreviewStep /> : null}
       {step === 'clashes' ? <ClashPrompt /> : null}
+      {step === 'passphrase' ? <PassphrasePrompt /> : null}
       {step === 'importing' ? <ImportProgress /> : null}
       {step === 'summary' ? <ImportSummary /> : null}
     </Dialog.Root>

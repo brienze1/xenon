@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { useAuthStore } from '@/features/auth/store'
 import { useCookiesStore } from '@/features/cookies/store'
 import { useEnvironmentsStore } from '@/features/environments/store'
+import { useExportStore } from '@/features/export/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSearchStore } from '@/features/search/store'
@@ -60,6 +61,7 @@ function resetWorkspaceStores(): void {
   useSidebarStore.getState().reset()
   useSearchStore.getState().reset()
   useSidePanelStore.getState().reset()
+  useExportStore.getState().reset()
 }
 
 export const useWorkspacesStore = create<WorkspacesState>()((set, get) => {

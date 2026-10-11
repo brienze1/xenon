@@ -11,6 +11,8 @@ export const ACTIVE_ENVIRONMENT_REMOVED = 'active_environment_removed'
 export const IMPORT_PROGRESS = 'import:progress'
 export const IMPORT_FILES_DROPPED = 'import:files-dropped'
 export const IMPORT_REQUESTED = 'import:requested'
+export const EXPORT_PROGRESS = 'export:progress'
+export const EXPORT_REQUESTED = 'export:requested'
 export const CONSOLE_ENTRIES = 'console:entries'
 export const COOKIES_CHANGED = 'cookies:changed'
 
@@ -38,6 +40,11 @@ export interface VariablesChanged {
 export interface ImportProgress {
   sourceId: string
   currentItem: string
+  done: number
+  total: number
+}
+
+export interface ExportProgress {
   done: number
   total: number
 }
@@ -95,6 +102,20 @@ export function onImportFilesDropped(callback: (paths: string[]) => void): Unsub
 /** The native File → Import… menu item. */
 export function onImportRequested(callback: () => void): Unsubscribe {
   return Events.On(IMPORT_REQUESTED, () => {
+    callback()
+  })
+}
+
+/** Files written by the running export, announced every 50 files when it writes more than 200. */
+export function onExportProgress(callback: (progress: ExportProgress) => void): Unsubscribe {
+  return Events.On(EXPORT_PROGRESS, (event) => {
+    callback({ done: event.data.done, total: event.data.total })
+  })
+}
+
+/** The native File → Export Workspace… menu item. */
+export function onExportRequested(callback: () => void): Unsubscribe {
+  return Events.On(EXPORT_REQUESTED, () => {
     callback()
   })
 }

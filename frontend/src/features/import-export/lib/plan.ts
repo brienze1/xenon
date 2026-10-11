@@ -5,10 +5,16 @@ import type { ImportLocation, ImportTarget } from '@/features/import-export/mode
 const PATH_SEPARATOR = ' / '
 const SKIPPED_PART = 'skipped_part'
 const REQUEST_ITEM = 'request'
+const WORKSPACE_ITEM = 'workspace'
 
 /** A request can only go into an existing collection or folder, never become a collection itself. */
 export function needsLocation(kind: string): boolean {
   return kind === REQUEST_ITEM
+}
+
+/** A workspace export becomes a new workspace in a folder of its own rather than going into an existing one. */
+export function needsFolder(kind: string): boolean {
+  return kind === WORKSPACE_ITEM
 }
 
 export function defaultTargets(preview: ImportPreview, localId: string): Record<string, ImportTarget> {
@@ -27,9 +33,10 @@ export function buildPlan(
     items: Object.entries(targets).map(([key, target]) => ({
       key,
       include: target.include,
-      targetLocalId: target.localId,
-      targetParentId: target.parentId,
+      targetLocalId: target.folder ? '' : target.localId,
+      targetParentId: target.folder ? '' : target.parentId,
       ...(target.name?.trim() ? { name: target.name.trim() } : {}),
+      ...(target.folder ? { targetFolder: target.folder } : {}),
       resolution: resolutions[key] ?? null,
     })),
   }
@@ -55,9 +62,20 @@ export function hasIncludedItems(targets: Readonly<Record<string, ImportTarget>>
   return Object.values(targets).some((target) => target.include)
 }
 
-/** True while an included request has no collection or folder to go into. */
+/** True while an included request has no collection or folder to go into, or an included workspace no folder to become. */
 export function missingLocations(preview: ImportPreview, targets: Readonly<Record<string, ImportTarget>>): boolean {
-  return preview.items.some((item) => needsLocation(item.kind) && targets[item.key]?.include === true && targets[item.key]?.parentId === '')
+  return preview.items.some((item) => {
+    const target = targets[item.key]
+    if (target?.include !== true) {
+      return false
+    }
+    return (needsLocation(item.kind) && target.parentId === '') || (needsFolder(item.kind) && !target.folder)
+  })
+}
+
+/** True when an included item becomes a new workspace, so the workspace list must be reloaded after the import. */
+export function createsWorkspaces(preview: ImportPreview, targets: Readonly<Record<string, ImportTarget>>): boolean {
+  return preview.items.some((item) => needsFolder(item.kind) && targets[item.key]?.include === true)
 }
 
 /** Puts requests without a location yet into the first collection or folder of their workspace. */

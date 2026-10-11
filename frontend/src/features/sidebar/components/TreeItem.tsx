@@ -4,6 +4,7 @@ import { cn } from '@/shared/lib/cn'
 import { ContextMenu } from '@/shared/ui/context-menu/ContextMenu'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
 import type { TreeNode } from '@/platform/mappers/tree'
+import { useExportStore } from '@/features/export/store'
 import { isDraggable } from '@/features/sidebar/lib/tree-drop'
 import { isContainer, isExpandable, type TreeRow } from '@/features/sidebar/lib/tree-rows'
 import { useSidebarStore } from '@/features/sidebar/store'
@@ -27,6 +28,12 @@ const ERROR_MARK = (
 )
 
 const DUPLICATE_ID_WARNING = <span className={styles.warning}>Duplicate ID</span>
+
+function exportNode(node: TreeNode) {
+  if (node.kind === 'collection' || node.kind === 'folder' || node.kind === 'request') {
+    void useExportStore.getState().openItem(node.kind, node.id, node.name)
+  }
+}
 
 interface TreeItemProps extends TreeItemActions {
   row: TreeRow
@@ -166,6 +173,7 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenEx
           ) : null}
           <ContextMenu.Item onSelect={() => startRename(node.id)}>Rename</ContextMenu.Item>
           <ContextMenu.Item onSelect={() => void (isExample ? duplicateExample(node.id) : duplicate(node.id))}>Duplicate</ContextMenu.Item>
+          {isExample ? null : <ContextMenu.Item onSelect={() => exportNode(node)}>Export…</ContextMenu.Item>}
           <ContextMenu.Item tone="danger" onSelect={() => onDelete(node)}>
             Delete
           </ContextMenu.Item>

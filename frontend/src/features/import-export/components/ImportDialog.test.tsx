@@ -12,9 +12,13 @@ vi.mock('@/platform/services/import', () => ({
   runImport: vi.fn(),
 }))
 vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn() }))
+vi.mock('@/platform/services/dialogs', () => ({ pickFolder: vi.fn() }))
+vi.mock('@/platform/services/workspaces', () => ({ listWorkspaces: vi.fn() }))
 
 const service = await import('@/platform/services/import')
 const tree = await import('@/platform/services/tree')
+const dialogs = await import('@/platform/services/dialogs')
+const workspaces = await import('@/platform/services/workspaces')
 const { useImportStore } = await import('@/features/import-export/store')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { ImportDialog } = await import('./ImportDialog')
@@ -218,5 +222,76 @@ describe('ImportDialog', () => {
     expect(screen.getByText('There is nothing to import in this source.')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Back' }))
     expect(screen.getByRole('button', { name: 'Choose Files…' })).toBeInTheDocument()
+  })
+
+  it('asks for the passphrase of encrypted secrets, retries a wrong one and can import without them', async () => {
+    useImportStore.setState({ step: 'preview', preview: { ...preview, kind: 'xenon_zip', encryptedSecrets: true }, targets: { '0': { include: true, localId: 'A', parentId: '' } } })
+    render(<ImportDialog />)
+    vi.mocked(service.findImportClashes).mockResolvedValue([])
+    vi.mocked(service.runImport).mockImplementationOnce(() => ({ result: Promise.reject(new AppError('IMP-50401', 'the export has encrypted secrets')), cancel: vi.fn() }))
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    expect(await screen.findByText(/This export carries secret values encrypted with a passphrase/)).toBeInTheDocument()
+    const submit = screen.getByRole('button', { name: 'Import' })
+    expect(submit).toBeDisabled()
+    vi.mocked(service.runImport).mockImplementationOnce(() => ({ result: Promise.reject(new AppError('IMP-08401', 'wrong passphrase')), cancel: vi.fn() }))
+    await userEvent.type(screen.getByLabelText('Passphrase'), 'wrong horse{Enter}')
+    expect(vi.mocked(service.runImport).mock.calls[1]![0]).toMatchObject({ passphrase: 'wrong horse' })
+    expect(await screen.findByRole('alert')).toHaveTextContent('That passphrase does not open the export’s secrets.')
+    expect(screen.getByLabelText('Passphrase')).toHaveValue('')
+    expect(screen.getByLabelText('Passphrase')).toHaveAttribute('aria-invalid', 'true')
+    vi.mocked(service.runImport).mockReturnValueOnce({ result: Promise.resolve(result), cancel: vi.fn() })
+    await userEvent.type(screen.getByLabelText('Passphrase'), 'correct horse')
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    expect(vi.mocked(service.runImport).mock.calls[2]![0]).toMatchObject({ passphrase: 'correct horse' })
+    expect(vi.mocked(service.runImport).mock.calls[2]![0]).not.toHaveProperty('skipSecrets')
+    expect(await screen.findByRole('button', { name: 'Done' })).toBeInTheDocument()
+    expect(useImportStore.getState().passphrase).toBe('')
+    useImportStore.setState({ step: 'passphrase', passphraseRequest: 'missing' })
+    vi.mocked(service.runImport).mockReturnValueOnce({ result: Promise.resolve(result), cancel: vi.fn() })
+    await userEvent.click(await screen.findByRole('button', { name: 'Import Without Secrets' }))
+    expect(vi.mocked(service.runImport).mock.calls[3]![0]).toMatchObject({ skipSecrets: true })
+    expect(vi.mocked(service.runImport).mock.calls[3]![0]).not.toHaveProperty('passphrase')
+  })
+
+  it('imports a workspace export as a new workspace in a chosen folder and reloads the workspace list', async () => {
+    const workspaceItem = { key: '0', kind: 'workspace', name: 'Acme', counts, warningsCount: 0 }
+    vi.mocked(workspaces.listWorkspaces).mockResolvedValue({
+      workspaces: [{ localId: 'A', name: 'Acme', path: '/w/acme', missing: false }, { localId: 'N', name: 'Acme', path: '/w/restored', missing: false }],
+      activeLocalId: 'A',
+    })
+    useImportStore.setState({ step: 'preview', preview: { ...preview, kind: 'xenon_workspace_zip', items: [workspaceItem] }, targets: { '0': { include: true, localId: 'A', parentId: '' } } })
+    render(<ImportDialog />)
+    expect(screen.queryByRole('combobox', { name: 'Workspace for Acme' })).not.toBeInTheDocument()
+    expect(screen.getByText('New workspace')).toBeInTheDocument()
+    expect(screen.getByText('Choose an empty folder')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Import' })).toBeDisabled()
+    vi.mocked(dialogs.pickFolder).mockResolvedValueOnce(null)
+    await userEvent.click(screen.getByRole('button', { name: 'Choose Folder for Acme' }))
+    expect(screen.getByRole('button', { name: 'Import' })).toBeDisabled()
+    vi.mocked(dialogs.pickFolder).mockResolvedValueOnce('/w/restored')
+    await userEvent.click(screen.getByRole('button', { name: 'Choose Folder for Acme' }))
+    expect(await screen.findByText('/w/restored')).toHaveAttribute('translate', 'no')
+    vi.mocked(service.findImportClashes).mockResolvedValue([])
+    vi.mocked(service.runImport).mockReturnValue({
+      result: Promise.resolve({ ...result, items: [{ key: '0', status: 'imported', localId: 'N', id: 'W', name: 'Acme' }], workspaces: [{ localId: 'N', created: counts, replaced: 0, skipped: 0 }], warnings: [], pmUsages: [], failed: [] }),
+      cancel: vi.fn(),
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    expect(service.runImport).toHaveBeenCalledWith({
+      sourceId: 'S',
+      applyToAll: null,
+      items: [{ key: '0', include: true, targetLocalId: '', targetParentId: '', targetFolder: '/w/restored', resolution: null }],
+    })
+    await vi.waitFor(() => expect(workspaces.listWorkspaces).toHaveBeenCalled())
+    expect(await screen.findByText(': 1 collection · 3 folders · 14 requests · 3 examples · 3 variables · 7 scripts')).toBeInTheDocument()
+  })
+
+  it('reports a folder picker that failed', async () => {
+    const workspaceItem = { key: '0', kind: 'workspace', name: 'Acme', counts, warningsCount: 0 }
+    useImportStore.setState({ step: 'preview', preview: { ...preview, kind: 'xenon_workspace_zip', items: [workspaceItem] }, targets: { '0': { include: true, localId: 'A', parentId: '' } } })
+    render(<ImportDialog />)
+    vi.mocked(dialogs.pickFolder).mockRejectedValueOnce(new AppError('DLG-00500', 'no dialog'))
+    await userEvent.click(screen.getByRole('button', { name: 'Choose Folder for Acme' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('no dialog')
   })
 })

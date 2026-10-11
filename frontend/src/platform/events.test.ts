@@ -35,6 +35,20 @@ describe('platform events', () => {
     expect(callback).toHaveBeenCalledWith({ localId: 'L1', requestId: 'R1', deleted: true, revision: 'abc' })
   })
 
+  it('maps export:progress payloads', () => {
+    const callback = vi.fn()
+    expect(events.onExportProgress(callback)).toBe(unsubscribe)
+    handlers.get(events.EXPORT_PROGRESS)?.({ data: { done: 50, total: 1007 } })
+    expect(callback).toHaveBeenCalledWith({ done: 50, total: 1007 })
+  })
+
+  it('calls back on export:requested', () => {
+    const callback = vi.fn()
+    expect(events.onExportRequested(callback)).toBe(unsubscribe)
+    handlers.get(events.EXPORT_REQUESTED)?.({ data: { source: 'menu' } })
+    expect(callback).toHaveBeenCalledOnce()
+  })
+
   it('maps cookies:changed payloads', () => {
     const callback = vi.fn()
     expect(events.onCookiesChanged(callback)).toBe(unsubscribe)

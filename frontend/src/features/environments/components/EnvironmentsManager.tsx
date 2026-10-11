@@ -7,10 +7,12 @@ import { cn } from '@/shared/lib/cn'
 import { withNextStep } from '@/shared/lib/next-step'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
+import { ContextMenu } from '@/shared/ui/context-menu/ContextMenu'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { useDiscardGuard } from '@/features/environments/hooks/use-discard-guard'
 import { useEnvironmentsStore } from '@/features/environments/store'
+import { useExportStore } from '@/features/export/store'
 import { DiscardChangesConfirm } from './DiscardChangesConfirm'
 import { VariableTable } from './VariableTable'
 import styles from './EnvironmentsManager.module.css'
@@ -20,6 +22,10 @@ const ENVIRONMENT_NEXT_STEP = 'Check that the workspace folder exists and is wri
 const BROKEN_NEXT_STEP = 'Fix or remove the file in the workspace folder.'
 
 const NAME_REQUIRED = 'Type a name for the environment.'
+
+function exportEnvironment(environment: EnvironmentSummary) {
+  void useExportStore.getState().openItem('environment', environment.id, environment.name)
+}
 
 function errorText(error: AppError, name: string): string {
   if (error.code === DUPLICATE_ENVIRONMENT_NAME) {
@@ -188,12 +194,19 @@ function EnvironmentItem({ environment, selected, onSelect }: EnvironmentItemPro
     )
   }
   return (
-    <button type="button" aria-current={selected ? 'true' : undefined} className={styles.item} onClick={onSelect}>
-      <span className={styles.swatch} data-color={environment.color} aria-hidden="true" />
-      <span className={styles.itemName} translate="no">
-        {environment.name}
-      </span>
-    </button>
+    <ContextMenu.Root>
+      <ContextMenu.Trigger>
+        <button type="button" aria-current={selected ? 'true' : undefined} className={styles.item} onClick={onSelect}>
+          <span className={styles.swatch} data-color={environment.color} aria-hidden="true" />
+          <span className={styles.itemName} translate="no">
+            {environment.name}
+          </span>
+        </button>
+      </ContextMenu.Trigger>
+      <ContextMenu.Menu label={`${environment.name} actions`}>
+        <ContextMenu.Item onSelect={() => exportEnvironment(environment)}>Export…</ContextMenu.Item>
+      </ContextMenu.Menu>
+    </ContextMenu.Root>
   )
 }
 
@@ -276,6 +289,9 @@ function EnvironmentDetail({ environment, onDuplicated }: EnvironmentDetailProps
         </form>
         <Button variant="ghost" size="sm" disabled={busy} onClick={duplicate}>
           Duplicate
+        </Button>
+        <Button variant="ghost" size="sm" disabled={busy} onClick={() => exportEnvironment(environment)}>
+          Export…
         </Button>
         <Button variant="ghost" size="sm" disabled={busy} onClick={() => setConfirmingDelete(true)}>
           Delete

@@ -1,4 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
@@ -28,7 +28,11 @@ vi.mock('@/platform/services/vault', () => ({
   copySecret: vi.fn(),
 }))
 
+vi.mock('@/platform/services/export', () => ({ getExportOptions: vi.fn(), pickExportTarget: vi.fn(), runExport: vi.fn(), showExportInFolder: vi.fn() }))
+
 const services = await import('@/platform/services/environments')
+const exportService = await import('@/platform/services/export')
+const { useExportStore } = await import('@/features/export/store')
 const variables = await import('@/platform/services/variables')
 const { useEnvironmentsStore } = await import('@/features/environments/store')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
@@ -70,6 +74,19 @@ describe('EnvironmentsManager', () => {
     await userEvent.click(within(list).getByRole('button', { name: 'hml' }))
     expect(await screen.findByRole('table', { name: 'hml variables' })).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'Environment name' })).toHaveValue('hml')
+  })
+
+  it('exports an environment from its context menu and from its detail bar', async () => {
+    vi.mocked(exportService.getExportOptions).mockResolvedValue({ suggestedFileName: 'dev', formats: [], hasSecrets: false, hasCurrentValues: false })
+    const dialog = open()
+    const list = within(dialog).getByRole('list', { name: 'Environments' })
+    fireEvent.contextMenu(within(list).getByRole('button', { name: 'hml' }), { clientX: 10, clientY: 10 })
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Export…' }))
+    expect(exportService.getExportOptions).toHaveBeenLastCalledWith({ localId: 'A', kind: 'environment', itemId: 'e2', name: 'hml' })
+    useExportStore.getState().reset()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Export…' }))
+    expect(exportService.getExportOptions).toHaveBeenLastCalledWith({ localId: 'A', kind: 'environment', itemId: 'e1', name: 'dev' })
+    useExportStore.getState().reset()
   })
 
   it('creates an environment and selects it', async () => {
