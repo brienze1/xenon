@@ -57,7 +57,7 @@ func (t *testUtils) iRunTheResponseFieldWithInTheWorkspaceFolder(field, name, fo
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), programTimeout)
 	defer cancel()
-	command := exec.CommandContext(ctx, tool, append(append([]string{}, programs[name].args...), file)...)
+	command := exec.CommandContext(ctx, tool, append(append([]string{}, programs[name].args...), filepath.ToSlash(file))...)
 	command.Dir = t.workspacePath(folder)
 	if output, err := command.CombinedOutput(); err != nil {
 		return fmt.Errorf("running the %s program failed: %w\n%s\n--- program ---\n%s", name, err, output, source)
