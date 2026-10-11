@@ -2,6 +2,7 @@ package steps
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -25,6 +26,7 @@ func (t *testUtils) registerThenResponseSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the response field "([^"]*)" should exist$`, t.theResponseFieldShouldExist)
 	ctx.Then(`^the response field "([^"]*)" should not exist$`, t.theResponseFieldShouldNotExist)
 	ctx.Then(`^the response should match the field "([^"]*)" of the resource file "([^"]*)"$`, t.theResponseShouldMatchTheFieldOfTheResourceFile)
+	ctx.Then(`^the response field "([^"]*)" should equal the resource file "([^"]*)"$`, t.theResponseFieldShouldEqualTheResourceFile)
 }
 
 func (t *testUtils) theCallShouldSucceed() error {
@@ -146,6 +148,21 @@ func (t *testUtils) theResponseShouldMatchTheFieldOfTheResourceFile(field, resou
 	}
 	if err := matchFields(actual, expected, ""); err != nil {
 		return fmt.Errorf("%w in %s", err, t.response)
+	}
+	return nil
+}
+
+func (t *testUtils) theResponseFieldShouldEqualTheResourceFile(path, name string) error {
+	actual, err := t.responseField(path)
+	if err != nil {
+		return err
+	}
+	expected, err := os.ReadFile(resourcePath(t.substitute(name)))
+	if err != nil {
+		return err
+	}
+	if stringify(actual) != string(expected) {
+		return fmt.Errorf("%s differs from the resource %s:\n--- expected ---\n%s\n--- actual ---\n%s", path, name, expected, stringify(actual))
 	}
 	return nil
 }

@@ -1,0 +1,90 @@
+# Xenon request drafts equivalent to requests/*.json (the golden corpus inputs): auth is configured
+# with Xenon's auth types where the materialised header is deterministic, otherwise the corpus's
+# headers are typed literally; Content-Type comes from Xenon's auto header unless switched off.
+requests:
+  auth-apikey-query:
+    method: GET
+    url: https://api.example.test/search?q=x
+    auth: { type: apikey, apikey: { key: api_key, value: k3y, in: query } }
+  auth-awsv4:
+    method: GET
+    url: https://abc123.execute-api.us-east-1.amazonaws.com/prod/items
+    auth: { type: none }
+    headers:
+      - { key: X-Amz-Date, value: 20150830T123600Z }
+      - { key: Authorization, value: "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/execute-api/aws4_request, SignedHeaders=host;x-amz-date, Signature=0123456789abcdef" }
+  auth-basic:
+    method: GET
+    url: https://api.example.test/me
+    auth: { type: basic, basic: { username: ana, password: s3cret } }
+  auth-bearer:
+    method: GET
+    url: https://api.example.test/me
+    auth: { type: bearer, bearer: { token: abc.def.ghi } }
+  auth-digest:
+    method: GET
+    url: https://api.example.test/digest
+    auth: { type: none }
+    headers:
+      - { key: Authorization, value: 'Digest username="ana", realm="xenon@test", nonce="n1", uri="/digest", algorithm=MD5, response="6629fae49393a05397450978507c4ef1", qop=auth, nc=00000001, cnonce="0a4f113b"' }
+  auth-oauth2:
+    method: DELETE
+    url: https://api.example.test/orders/7
+    auth: { type: none }
+    headers:
+      - { key: Authorization, value: Bearer access-1 }
+  get-query:
+    method: GET
+    url: https://api.example.test/users?page=2&limit=10&q=ana%20maria
+    auth: { type: none }
+    headers:
+      - { key: Accept, value: application/json }
+      - { key: X-Trace, value: "it's me" }
+  post-formdata:
+    method: POST
+    url: https://api.example.test/upload
+    auth: { type: none }
+    body:
+      mode: formdata
+      formdata:
+        - { key: note, value: hello, type: text }
+        - { key: file, src: files/invoice.txt, type: file }
+  post-graphql:
+    method: POST
+    url: https://api.example.test/graphql
+    auth: { type: none }
+    body:
+      mode: graphql
+      graphql: { query: "query User($id: ID!) { user(id: $id) { name } }", variables: '{"id": "42"}' }
+  post-raw-json:
+    method: POST
+    url: https://api.example.test/users
+    auth: { type: none }
+    body:
+      mode: raw
+      raw: { language: json, content: "{\n  \"name\": \"Ana\",\n  \"tags\": [\"a\", \"b\"]\n}" }
+  post-raw-text-at:
+    method: POST
+    url: https://api.example.test/notes
+    auth: { type: none }
+    body:
+      mode: raw
+      raw: { language: text, content: "  @mention the team  " }
+  post-urlencoded:
+    method: POST
+    url: https://api.example.test/login
+    auth: { type: none }
+    auto_headers: { disabled: [Content-Type] }
+    body:
+      mode: urlencoded
+      urlencoded:
+        - { key: user, value: ana }
+        - { key: pass, value: "s3 cret&x" }
+        - { key: skip, value: "1", enabled: false }
+  put-binary:
+    method: PUT
+    url: https://api.example.test/blob
+    auth: { type: none }
+    body:
+      mode: binary
+      binary: { src: files/invoice.txt }

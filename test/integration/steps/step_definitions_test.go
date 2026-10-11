@@ -134,6 +134,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	test.registerGivenApiSteps(ctx)
 	test.registerGivenDialogSteps(ctx)
 	test.registerWhenBindingSteps(ctx)
+	test.registerWhenProgramSteps(ctx)
 	test.registerWhenRouteSteps(ctx)
 	test.registerThenRouteSteps(ctx)
 	test.registerThenResponseSteps(ctx)

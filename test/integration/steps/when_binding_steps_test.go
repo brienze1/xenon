@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 func (t *testUtils) registerWhenBindingSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^I call "(\w+)\.(\w+)" with$`, t.iCallWith)
 	ctx.Step(`^I call "(\w+)\.(\w+)"$`, t.iCall)
+	ctx.Step(`^I call "(\w+)\.(\w+)" with resource fields$`, t.iCallWithResourceFields)
 	ctx.When(`^I call "(\w+)\.(\w+)" (\d+) times cycling through the payloads$`, t.iCallTimesCyclingThroughThePayloads)
 	ctx.When(`^I call "(\w+)\.(\w+)" and cancel it after (\d+)ms with$`, t.iCallAndCancelItAfterWith)
 	ctx.When(`^I call "(\w+)\.(\w+)" already cancelled with$`, t.iCallAlreadyCancelledWith)
@@ -66,6 +68,29 @@ func (t *testUtils) theBackgroundCallShouldFinishWithin(milliseconds int) error 
 
 func (t *testUtils) iCallWith(service, method string, payload *godog.DocString) error {
 	return t.call(context.Background(), service, method, payload.Content)
+}
+
+var resourceField = regexp.MustCompile(`\{\{resource:([^#}]+)#([^}]*)\}\}`)
+
+func (t *testUtils) iCallWithResourceFields(service, method string, payload *godog.DocString) error {
+	var failure error
+	expanded := resourceField.ReplaceAllStringFunc(payload.Content, func(match string) string {
+		parts := resourceField.FindStringSubmatch(match)
+		value, err := resourceFileField(parts[1], parts[2])
+		if err != nil {
+			failure = err
+			return match
+		}
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			failure = err
+		}
+		return string(encoded)
+	})
+	if failure != nil {
+		return failure
+	}
+	return t.call(context.Background(), service, method, expanded)
 }
 
 func (t *testUtils) iCall(service, method string) error {
