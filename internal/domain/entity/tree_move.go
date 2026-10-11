@@ -9,6 +9,10 @@ type TreeMove struct {
 	TargetOrder    []string
 }
 
+func IsTopLevelParent(parentId string) bool {
+	return parentId == ""
+}
+
 func NewTreeMove(item, source, target TreeNode, fileName string, index int) TreeMove {
 	move := TreeMove{ID: item.ID, FileName: fileName, SourceParentID: source.ID, TargetParentID: target.ID}
 	if move.IsReorder() {

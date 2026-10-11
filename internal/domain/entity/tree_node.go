@@ -239,6 +239,10 @@ func (t TreeNode) Contains(id string) bool {
 	return false
 }
 
+func (t TreeNode) RenamesOnMove(item, source TreeNode) bool {
+	return source.ID != t.ID && t.HoldsEntry(item.FileName)
+}
+
 func (t TreeNode) HoldsEntry(fileName string) bool {
 	for _, entry := range t.Entries {
 		if strings.EqualFold(entry, fileName) {

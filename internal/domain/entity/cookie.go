@@ -34,6 +34,10 @@ func (c Cookie) Is(domain, path, name string) bool {
 	return c.IsOn(domain) && c.Path == path && c.Name == name
 }
 
+func (c Cookie) MovedFrom(previous *Cookie) bool {
+	return previous != nil && !c.Is(previous.Domain, previous.Path, previous.Name)
+}
+
 func (c Cookie) LogValue() any {
 	return map[string]any{"name": c.Name, "domain": c.Domain, "path": c.Path}
 }

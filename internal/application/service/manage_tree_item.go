@@ -179,7 +179,7 @@ func (m *manageTreeItem) Move(ctx context.Context, localId, id, parentId string,
 	if err != nil {
 		return nil, err
 	}
-	move, err := usecase.ResolveTreeMove(*tree, id, parentId, index)
+	move, err := m.resolveMove(*tree, id, parentId, index)
 	if err != nil {
 		return nil, err
 	}
@@ -190,6 +190,37 @@ func (m *manageTreeItem) Move(ctx context.Context, localId, id, parentId string,
 
 	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "id": id, "parentId": parentId, "index": index, "collections": len(moved.Collections())})
 	return moved, nil
+}
+
+func (m *manageTreeItem) resolveMove(tree entity.Tree, id, parentId string, index int) (*entity.TreeMove, error) {
+	item, err := usecase.ResolveItem(tree, id)
+	if err != nil {
+		return nil, err
+	}
+	target, err := m.moveTarget(tree, *item, parentId)
+	if err != nil {
+		return nil, err
+	}
+	if err := usecase.RejectMoveIntoItself(*item, *target); err != nil {
+		return nil, err
+	}
+	source, _ := tree.Parent(id)
+	fileName := item.FileName
+	if target.RenamesOnMove(*item, *source) {
+		fileName = usecase.DeriveFileName(item.Name, item.Kind, target.Entries)
+	}
+	move := entity.NewTreeMove(*item, *source, *target, fileName, index)
+	return &move, nil
+}
+
+func (m *manageTreeItem) moveTarget(tree entity.Tree, item entity.TreeNode, parentId string) (*entity.TreeNode, error) {
+	if entity.IsTopLevelParent(parentId) {
+		return usecase.ResolveTopLevelTarget(tree, item)
+	}
+	if err := usecase.RejectNestedCollection(item); err != nil {
+		return nil, err
+	}
+	return usecase.ResolveParent(tree, parentId)
 }
 
 func (m *manageTreeItem) load(ctx context.Context, localId string) (string, *entity.Tree, error) {

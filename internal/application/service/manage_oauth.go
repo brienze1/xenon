@@ -123,14 +123,10 @@ func (m *manageOAuth) Get(ctx context.Context, localId, owner string) (*entity.O
 func (m *manageOAuth) Reveal(ctx context.Context, localId, owner, which string) (string, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "owner": owner, "which": which})
 
-	token, err := m.tokens.find(ctx, localId, owner)
+	value, err := m.part(ctx, localId, owner, which)
 	if err != nil {
 		return "", err
 	}
-	if token == nil {
-		return "", usecase.RejectMissingOAuthToken()
-	}
-	value := token.Part(which)
 
 	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "owner": owner, "which": which})
 	return value, nil
@@ -139,7 +135,7 @@ func (m *manageOAuth) Reveal(ctx context.Context, localId, owner, which string) 
 func (m *manageOAuth) Copy(ctx context.Context, localId, owner, which string) error {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "owner": owner, "which": which})
 
-	value, err := m.Reveal(ctx, localId, owner, which)
+	value, err := m.part(ctx, localId, owner, which)
 	if err != nil {
 		return err
 	}
@@ -179,6 +175,17 @@ func (m *manageOAuth) Clear(ctx context.Context, localId, owner string) error {
 
 	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "owner": owner})
 	return nil
+}
+
+func (m *manageOAuth) part(ctx context.Context, localId, owner, which string) (string, error) {
+	token, err := m.tokens.find(ctx, localId, owner)
+	if err != nil {
+		return "", err
+	}
+	if token == nil {
+		return "", usecase.RejectMissingOAuthToken()
+	}
+	return token.Part(which), nil
 }
 
 func (m *manageOAuth) config(ctx context.Context, localId, owner string, draft *entity.OAuth2Config) (*entity.OAuth2Config, error) {

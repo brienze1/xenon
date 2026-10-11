@@ -588,3 +588,10 @@ func TestAuthIsBasic(t *testing.T) {
 		t.Fatal("IsBasic")
 	}
 }
+
+func TestCookieMovedFrom(t *testing.T) {
+	cookie := Cookie{Domain: "a.test", Path: "/", Name: "n"}
+	if cookie.MovedFrom(nil) || cookie.MovedFrom(&Cookie{Domain: "A.test", Path: "/", Name: "n"}) || !cookie.MovedFrom(&Cookie{Domain: "a.test", Path: "/", Name: "old"}) {
+		t.Fatal("MovedFrom")
+	}
+}

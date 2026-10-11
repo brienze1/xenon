@@ -77,7 +77,7 @@ func (m *manageCookies) Upsert(ctx context.Context, localId, domain, setCookie s
 		if err != nil {
 			return err
 		}
-		if replaces != nil && !cookie.Is(replaces.Domain, replaces.Path, replaces.Name) {
+		if cookie.MovedFrom(replaces) {
 			m.jar.manageCookieJar.RemoveCookies(ctx, localId, []entity.Cookie{*replaces})
 		}
 		stored = cookie

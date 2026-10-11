@@ -66,6 +66,16 @@ func (s *generateSnippet) Languages(ctx context.Context) []entity.SnippetLanguag
 func (s *generateSnippet) Generate(ctx context.Context, input entity.SnippetInput) (*entity.Snippet, error) {
 	logger.Info(ctx, "Started", input)
 
+	snippet, err := s.generate(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info(ctx, "Finished", map[string]any{"input": input, "result": snippet})
+	return snippet, nil
+}
+
+func (s *generateSnippet) generate(ctx context.Context, input entity.SnippetInput) (*entity.Snippet, error) {
 	workspace, err := s.findWorkspaceRegistry.FindWorkspace(ctx, input.LocalID)
 	if err != nil {
 		return nil, err
@@ -96,15 +106,13 @@ func (s *generateSnippet) Generate(ctx context.Context, input entity.SnippetInpu
 		masked, _ := usecase.MaskSecrets(snippet.Text, entity.SnippetSecretForms(secrets))
 		*snippet = snippet.WithText(masked)
 	}
-
-	logger.Info(ctx, "Finished", map[string]any{"input": input, "result": snippet})
 	return snippet, nil
 }
 
 func (s *generateSnippet) Copy(ctx context.Context, input entity.SnippetInput) error {
 	logger.Info(ctx, "Started", input)
 
-	snippet, err := s.Generate(ctx, input)
+	snippet, err := s.generate(ctx, input)
 	if err != nil {
 		return err
 	}

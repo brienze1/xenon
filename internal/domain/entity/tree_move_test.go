@@ -115,3 +115,16 @@ func TestTreeNodeKindHelpersForMoves(t *testing.T) {
 		t.Error("error nodes do not hold items")
 	}
 }
+
+func TestTopLevelParentAndRenamesOnMove(t *testing.T) {
+	if !IsTopLevelParent("") || IsTopLevelParent("c1") {
+		t.Fatal("IsTopLevelParent")
+	}
+	item := TreeNode{ID: "r1", FileName: "status.yaml"}
+	source := TreeNode{ID: "c1", Entries: []string{"status.yaml"}}
+	target := TreeNode{ID: "c2", Entries: []string{"status.yaml"}}
+	empty := TreeNode{ID: "c3"}
+	if !target.RenamesOnMove(item, source) || source.RenamesOnMove(item, source) || empty.RenamesOnMove(item, source) {
+		t.Fatal("RenamesOnMove")
+	}
+}
