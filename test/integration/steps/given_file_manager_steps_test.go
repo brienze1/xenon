@@ -21,7 +21,7 @@ func (t *testUtils) theFileManagerFailsWith(message string) error {
 func (t *testUtils) theFileManagerShouldHaveShown(path string) error {
 	expected := filepath.FromSlash(t.substitute(path))
 	for _, shown := range t.fileManager.Shown() {
-		if shown == expected {
+		if filepath.FromSlash(shown) == expected {
 			return nil
 		}
 	}

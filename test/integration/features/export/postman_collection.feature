@@ -273,7 +273,7 @@ Feature: Export a Xenon collection as a Postman collection v2.1
       { "suggested_file_name": "shop-api.postman_collection.json", "format": "postman", "shape": "file" }
       """
     Then the call should succeed
-    And the response should contain the field "path" equal to "{{temp_root}}/chosen.postman_collection.json"
+    And the response should contain the path field "path" equal to "{{temp_root}}/chosen.postman_collection.json"
     And the save dialog should have suggested the name "shop-api.postman_collection.json"
     And the save dialog should have been opened with the title "Export as Postman"
 

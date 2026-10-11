@@ -17,7 +17,11 @@ const (
 	newmanOn      = "on"
 )
 
-var newmanScript = filepath.Join("..", "..", "..", "tools", "newman", "node_modules", "newman", "bin", "newman.js")
+var (
+	newmanFolder  = filepath.Join("..", "..", "..", "tools", "newman")
+	newmanRunner  = filepath.Join(newmanFolder, "run.mjs")
+	newmanInstall = filepath.Join(newmanFolder, "node_modules", "newman")
+)
 
 func (t *testUtils) registerWhenNewmanSteps(ctx *godog.ScenarioContext) {
 	ctx.When(`^I send the saved request "([^"]*)" in the workspace "([^"]*)"$`, t.iSendTheSavedRequestInTheWorkspace)
@@ -50,7 +54,7 @@ func (t *testUtils) iSendTheSavedRequestInTheWorkspace(id, workspace string) err
 }
 
 func (t *testUtils) iRunNewmanOnTheFile(collection, environment, folder string) error {
-	_, missing := os.Stat(newmanScript)
+	_, missing := os.Stat(newmanInstall)
 	if missing != nil && os.Getenv(newmanSwitch) != newmanOn {
 		return godog.ErrSkip
 	}
@@ -63,10 +67,7 @@ func (t *testUtils) iRunNewmanOnTheFile(collection, environment, folder string) 
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), newmanTimeout)
 	defer cancel()
-	command := exec.CommandContext(ctx, node, newmanScript, "run", t.tempPath(collection),
-		"--environment", t.tempPath(environment),
-		"--working-dir", t.workspacePath(folder),
-		"--reporters", "cli", "--color", "off", "--disable-unicode")
+	command := exec.CommandContext(ctx, node, newmanRunner, t.tempPath(collection), t.tempPath(environment), t.workspacePath(folder))
 	if output, err := command.CombinedOutput(); err != nil {
 		return fmt.Errorf("newman failed: %w\n%s", err, output)
 	}
