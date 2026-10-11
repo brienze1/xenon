@@ -180,7 +180,8 @@ US1 execution · US2 tests · US3 pm API & libraries · US4 console · US5 edito
 
 - [x] T032 [P] Performance BDD `features/scripts/performance.feature`: four typical scripts add < 100 ms (SC-002); endless loop stopped within limit + 0.5 s while another binding call stays responsive (SC-003)
 - [ ] T033 Run Luis's imported collections (from XEN-003 T036) end to end; record results against the stage-3 pm-usage report in `docs/prd/pm-usage-report.md` (SC-006)
-- [ ] T034 `/refactor-diff` until clean; `make validate`, `make parity`, `make sandbox-assets` drift check; CI green on 3 OSes; walk [quickstart.md](quickstart.md)
+- [x] T034 `/refactor-diff` until clean; `make validate`, `make parity`, `make sandbox-assets` drift check; CI green on 3 OSes; walk [quickstart.md](quickstart.md)
+  - Refactor passes f11e0ca and 9ada6fb (one struct per DTO/entity file, DTO constructors, script scope logic on entities, store-owned routed body); the watcher now drops a change whose file content is unchanged since the last report (Windows late notification). `make validate` (coverage 91.8%, mutation efficacy 100%), `make bdd`, `make parity` (246/249), `make build` green; CI run 38105668707 green on all 6 jobs (validate + sandbox assets & parity on ubuntu, macOS, Windows).
 
 **Phases 5–8 notes (implemented)**:
 - US2: the runner and chai-postman landed with T022, so `test_results`/`async_tests` (42 scenarios,
