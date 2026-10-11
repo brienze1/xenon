@@ -30,6 +30,7 @@ type router struct {
 	console      *binding.ConsoleService
 	script       *binding.ScriptService
 	oauth        *binding.OAuthService
+	gitAccount   *binding.GitAccountService
 	cookie       *binding.CookieService
 	snippet      *binding.SnippetService
 	exporter     *binding.ExportService
@@ -53,6 +54,7 @@ func NewRouter(
 	console *binding.ConsoleService,
 	script *binding.ScriptService,
 	oauth *binding.OAuthService,
+	gitAccount *binding.GitAccountService,
 	cookie *binding.CookieService,
 	snippet *binding.SnippetService,
 	exporter *binding.ExportService,
@@ -75,6 +77,7 @@ func NewRouter(
 		console:      console,
 		script:       script,
 		oauth:        oauth,
+		gitAccount:   gitAccount,
 		cookie:       cookie,
 		snippet:      snippet,
 		exporter:     exporter,
@@ -149,6 +152,7 @@ func (r *router) registerServices() []wails.Service {
 		r.registerConsoleRoutes(),
 		r.registerScriptRoutes(),
 		r.registerOAuthRoutes(),
+		r.registerGitAccountRoutes(),
 		r.registerCookieRoutes(),
 		r.registerSnippetRoutes(),
 	}

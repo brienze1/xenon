@@ -32,6 +32,7 @@ func GetRouter() adapter.Router {
 				binding.GetConsoleService(),
 				binding.GetScriptService(),
 				binding.GetOAuthService(),
+				binding.GetGitAccountService(),
 				binding.GetCookieService(),
 				binding.GetSnippetService(),
 				binding.GetExportService(),

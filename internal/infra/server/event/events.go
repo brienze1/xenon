@@ -19,4 +19,5 @@ func init() {
 	wails.RegisterEvent[dto.ExportRequested](dto.ExportRequestedEvent)
 	wails.RegisterEvent[dto.ConsoleEntries](dto.ConsoleEntriesEvent)
 	wails.RegisterEvent[dto.CookiesChanged](dto.CookiesChangedEvent)
+	wails.RegisterEvent[dto.GitHostKeyUnknown](dto.GitHostKeyUnknownEvent)
 }

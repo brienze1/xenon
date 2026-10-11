@@ -10,4 +10,6 @@ type UIStatePersistence interface {
 	usecase.SaveDigestState
 	usecase.FindCookieAllowlist
 	usecase.SaveCookieAllowlist
+	usecase.FindLocalSyncSettings
+	usecase.SaveLocalSyncSettings
 }

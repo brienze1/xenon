@@ -14,4 +14,7 @@ type VaultPersistence interface {
 	usecase.LockOAuthToken
 	usecase.FindCookies
 	usecase.SaveCookies
+	usecase.SaveGitCredential
+	usecase.FindGitCredential
+	usecase.DeleteGitCredential
 }

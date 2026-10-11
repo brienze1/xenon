@@ -95,3 +95,11 @@ func (a *AppRegistry) neighbourOf(index int) string {
 func (a *AppRegistry) IsActive(localId string) bool {
 	return a.ActiveLocalID == localId
 }
+
+func (a *AppRegistry) LocalIDs() []string {
+	ids := make([]string, 0, len(a.Workspaces))
+	for _, workspace := range a.Workspaces {
+		ids = append(ids, workspace.LocalID)
+	}
+	return ids
+}

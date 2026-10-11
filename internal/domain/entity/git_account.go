@@ -2,6 +2,7 @@ package entity
 
 import (
 	"net"
+	"net/url"
 	"strings"
 	"time"
 
@@ -142,12 +143,21 @@ func (g GitAccount) BasicAuthUsername() string {
 }
 
 func (g GitAccount) ServesHost(host string) bool {
-	wanted := strings.ToLower(host)
-	if g.Host == wanted {
+	own := unbracketed(g.Host)
+	wanted := unbracketed(strings.ToLower(host))
+	if own == wanted {
 		return true
 	}
-	hostname, _, err := net.SplitHostPort(wanted)
-	return err == nil && g.Host == hostname
+	hostname, _, err := net.SplitHostPort(strings.ToLower(host))
+	return err == nil && own == hostname
+}
+
+func (g GitAccount) ServesRepository(repository string) bool {
+	return g.ServesHost(repositoryHost(repository))
+}
+
+func (g GitAccount) CanUploadPublicKey() bool {
+	return g.IsSsh() && g.PublicKey != ""
 }
 
 func (g GitAccount) defaultDisplayName() string {
@@ -155,4 +165,21 @@ func (g GitAccount) defaultDisplayName() string {
 		return g.Host
 	}
 	return g.Username + accountDisplayNameSeparator + g.Host
+}
+
+func repositoryHost(repository string) string {
+	if strings.Contains(repository, "://") {
+		parsed, err := url.Parse(repository)
+		if err != nil {
+			return ""
+		}
+		return parsed.Host
+	}
+	afterUser := repository[strings.Index(repository, "@")+1:]
+	host, _, _ := strings.Cut(afterUser, ":")
+	return host
+}
+
+func unbracketed(host string) string {
+	return strings.NewReplacer("[", "", "]", "").Replace(host)
 }

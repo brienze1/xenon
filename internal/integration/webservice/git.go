@@ -1,6 +1,7 @@
 package webservice
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"io"
@@ -18,6 +19,7 @@ import (
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/pkg/errs"
+	"github.com/brienze1/xenon/pkg/logger"
 )
 
 const (
@@ -126,4 +128,20 @@ func newHostKey(host string, key ssh.PublicKey) entity.HostKey {
 		Fingerprint: ssh.FingerprintSHA256(key),
 		Key:         base64.StdEncoding.EncodeToString(key.Marshal()),
 	}
+}
+
+func (g *gitWebservice) CheckAgent(ctx context.Context) error {
+	logger.Debug(ctx, "Started")
+
+	signers, closer, err := g.sshAgent.Signers()
+	if err != nil {
+		return errs.BadRequestError("no SSH agent is running: "+err.Error(), "ACC-11400")
+	}
+	_ = closer.Close()
+	if len(signers) == 0 {
+		return errs.BadRequestError("the SSH agent holds no keys; add one with ssh-add", "ACC-53400")
+	}
+
+	logger.Debug(ctx, "Finished", map[string]any{"keys": len(signers)})
+	return nil
 }

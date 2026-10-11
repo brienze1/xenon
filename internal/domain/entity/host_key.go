@@ -10,3 +10,7 @@ type HostKey struct {
 func (h HostKey) SameKey(other HostKey) bool {
 	return h.KeyType == other.KeyType && h.Key == other.Key
 }
+
+func (h HostKey) HasFingerprint(fingerprint string) bool {
+	return h.Fingerprint == fingerprint
+}

@@ -12,4 +12,5 @@ type GitWebservice interface {
 	usecase.ReadTreeVersions
 	usecase.WriteSyncCommit
 	usecase.CheckoutBranch
+	usecase.CheckSshAgent
 }

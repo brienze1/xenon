@@ -65,14 +65,14 @@ Feature: SSH key accounts
       """
       { "mode": "key_file", "key_path": "{{temp_root}}/<path>", "passphrase": "<passphrase>", "host": "{{ssh_host}}", "commit_name": "Luis", "commit_email": "luis@acme.test" }
       """
-    Then the call should fail with code "ACC-10400"
+    Then the call should fail with code "<code>"
     And the keychain should contain 0 entries
 
     Examples:
-      | case               | path         | passphrase      |
-      | wrong passphrase   | keys/work    | not-the-one     |
-      | missing passphrase | keys/work    |                 |
-      | missing file       | keys/nothing | correct-horse-7 |
+      | case               | path         | passphrase      | code      |
+      | wrong passphrase   | keys/work    | not-the-one     | ACC-42400 |
+      | missing passphrase | keys/work    |                 | ACC-42400 |
+      | missing file       | keys/nothing | correct-horse-7 | ACC-10400 |
 
   @agent
   Scenario: The SSH agent
@@ -99,12 +99,12 @@ Feature: SSH key accounts
       """
       { "mode": "agent", "host": "{{ssh_host}}", "commit_name": "Luis", "commit_email": "luis@acme.test" }
       """
-    Then the call should fail with code "ACC-11400"
+    Then the call should fail with code "<code>"
 
     Examples:
-      | case        | agent                                 |
-      | not running | the keychain is available             |
-      | no keys     | the ssh agent is running without keys |
+      | case        | agent                                 | code      |
+      | not running | the keychain is available             | ACC-11400 |
+      | no keys     | the ssh agent is running without keys | ACC-53400 |
 
   @agent @invalid
   Scenario: A key the server does not accept fails the connection test with a next step

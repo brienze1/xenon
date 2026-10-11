@@ -137,7 +137,7 @@ Feature: GitHub browser sign-in (device flow)
   Scenario: A code past its lifetime expires without asking GitHub
     Given I call "GitAccountService.StartGitHubSignIn"
     And I save the response field "session_id" as "session"
-    And the current time is "2026-10-11T12:15:00Z"
+    And the current time is "2026-10-11T12:15:01Z"
     When I call "GitAccountService.PollGitHubSignIn" with
       """
       { "session_id": "{{session}}" }

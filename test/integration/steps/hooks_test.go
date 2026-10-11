@@ -106,6 +106,7 @@ func (t *testUtils) startApp() {
 		binding.GetConsoleService(),
 		binding.GetScriptService(),
 		binding.GetOAuthService(),
+		binding.GetGitAccountService(),
 		binding.GetCookieService(),
 		binding.GetSnippetService(),
 		binding.GetExportService(),
