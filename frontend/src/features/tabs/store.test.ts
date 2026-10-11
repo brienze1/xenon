@@ -410,3 +410,267 @@ describe('tabs store', () => {
     expect(tabs()).toMatchObject({ tabs: [], activeTabId: null, previewTabId: null, closePrompt: null, saveDialog: null, notices: {} })
   })
 })
+
+describe('tabs store: context menu, duplicates, closed tabs and positions', () => {
+  beforeEach(() => {
+    tabs().reset()
+    builder().reset()
+    useResponseViewerStore.getState().reset()
+    useSidebarStore.getState().reset()
+    vi.resetAllMocks()
+    vi.useFakeTimers()
+    vi.mocked(requests.autoHeaders).mockResolvedValue([])
+    vi.mocked(requests.applyUrl).mockImplementation(async (sent) => sent)
+    vi.mocked(requests.applyParams).mockImplementation(async (sent) => sent)
+    vi.mocked(requests.releaseResponse).mockResolvedValue()
+    vi.mocked(uiState.saveUIState).mockResolvedValue()
+    vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: saved(id, `Request ${id}`), revision: `rev-${id}` }))
+    vi.mocked(tree.getTree).mockResolvedValue([])
+    vi.mocked(tree.searchTree).mockResolvedValue({ matchIds: [], ancestorIds: [] })
+    vi.mocked(history.listHistory).mockResolvedValue([])
+    useWorkspacesStore.setState({ activeLocalId: 'ws' })
+    tabs().hydrate('ws', defaultUIState())
+  })
+
+  afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
+  })
+
+  function ids(): string[] {
+    return tabs().tabs.map((tab) => tab.id)
+  }
+
+  async function openThree(): Promise<[string, string, string, string]> {
+    const blank = tabs().activeTabId!
+    await tabs().openPinned('A')
+    const a = tabs().activeTabId!
+    await tabs().openPinned('B')
+    const b = tabs().activeTabId!
+    await tabs().openPinned('C')
+    const c = tabs().activeTabId!
+    return [blank, a, b, c]
+  }
+
+  it('duplicates a tab as a second tab on the same request with its own draft', async () => {
+    await tabs().openPinned('A')
+    const first = tabs().activeTabId!
+    builder().setUrl(first, 'https://edited')
+    const copy = tabs().duplicateTab(first)
+    expect(copy).not.toBeNull()
+    expect(tabs().tabs.map((tab) => tab.requestId)).toEqual([null, 'A', 'A'])
+    expect(tabs().tabs.at(-1)).toMatchObject({ id: copy, requestId: 'A', pinned: true })
+    expect(tabs().activeTabId).toBe(copy)
+    expect(builder().tabs[copy!]!.draft.url).toBe('https://edited')
+    expect(builder().tabs[copy!]!.baseRevision).toBe('rev-A')
+    expect(dirty(copy!)).toBe(true)
+    builder().setUrl(copy!, 'https://other')
+    expect(builder().tabs[first]!.draft.url).toBe('https://edited')
+  })
+
+  it('duplicates a clean tab as a clean second tab placed right after it', async () => {
+    const [, a, b] = await openThree()
+    const copy = tabs().duplicateTab(a)!
+    expect(ids().indexOf(copy)).toBe(ids().indexOf(a) + 1)
+    expect(ids().indexOf(b)).toBe(ids().indexOf(copy) + 1)
+    expect(dirty(copy)).toBe(false)
+    expect(builder().tabs[copy]!.draft.id).toBe('A')
+  })
+
+  it('shows the changed-on-disk banner in the other tab of a request after a save', async () => {
+    await tabs().openPinned('A')
+    const first = tabs().activeTabId!
+    builder().setUrl(first, 'https://mine')
+    const copy = tabs().duplicateTab(first)!
+    vi.mocked(requests.saveRequest).mockResolvedValue({ draft: { ...saved('A', 'Request A'), url: 'https://mine' }, revision: 'rev-2' })
+    await tabs().save(first)
+    expect(tabs().notices[copy]).toBe('changed')
+    expect(tabs().notices[first]).toBeUndefined()
+  })
+
+  it('reloads the clean other tab of a request after a save', async () => {
+    await tabs().openPinned('A')
+    const first = tabs().activeTabId!
+    const copy = tabs().duplicateTab(first)!
+    builder().setUrl(first, 'https://mine')
+    vi.mocked(requests.saveRequest).mockResolvedValue({ draft: { ...saved('A', 'Request A'), url: 'https://mine' }, revision: 'rev-2' })
+    vi.mocked(requests.getRequest).mockResolvedValue({ draft: { ...saved('A', 'Request A'), url: 'https://mine' }, revision: 'rev-2' })
+    await tabs().save(first)
+    expect(tabs().notices[copy]).toBeUndefined()
+    expect(builder().tabs[copy]!.draft.url).toBe('https://mine')
+    expect(builder().tabs[copy]!.baseRevision).toBe('rev-2')
+  })
+
+  it('focuses the most recently active tab of a request when it is clicked in the sidebar', async () => {
+    await tabs().openPinned('A')
+    const first = tabs().activeTabId!
+    const copy = tabs().duplicateTab(first)!
+    tabs().activate(first)
+    tabs().newTab()
+    await tabs().openPreview('A')
+    expect(tabs().activeTabId).toBe(first)
+    tabs().activate(copy)
+    tabs().newTab()
+    await tabs().openPinned('A')
+    expect(tabs().activeTabId).toBe(copy)
+  })
+
+  it('force closes a dirty tab without asking', async () => {
+    await tabs().openPinned('A')
+    const tabId = tabs().activeTabId!
+    builder().setUrl(tabId, 'https://changed')
+    tabs().forceClose(tabId)
+    expect(tabs().closePrompt).toBeNull()
+    expect(ids()).not.toContain(tabId)
+    expect(requests.saveRequest).not.toHaveBeenCalled()
+  })
+
+  it('closes the other tabs, asking about each dirty one in turn', async () => {
+    const [blank, a, b, c] = await openThree()
+    builder().setUrl(a, 'https://a')
+    builder().setUrl(c, 'https://c')
+    tabs().closeOthers(b)
+    expect(ids()).toEqual([a, b, c])
+    expect(tabs().closePrompt).toBe(a)
+    await tabs().resolveClose('discard')
+    expect(ids()).toEqual([b, c])
+    expect(tabs().closePrompt).toBe(c)
+    await tabs().resolveClose('discard')
+    expect(ids()).toEqual([b])
+    expect(tabs().closePrompt).toBeNull()
+    expect(ids()).not.toContain(blank)
+  })
+
+  it('stops closing the remaining tabs when a prompt is cancelled', async () => {
+    const [, a, b, c] = await openThree()
+    builder().setUrl(a, 'https://a')
+    builder().setUrl(b, 'https://b')
+    tabs().closeAll()
+    expect(ids()).toEqual([a, b])
+    expect(tabs().closePrompt).toBe(a)
+    await tabs().resolveClose('cancel')
+    expect(tabs().closePrompt).toBeNull()
+    expect(ids()).toEqual([a, b])
+    expect(ids()).not.toContain(c)
+  })
+
+  it('closes the tabs to the left and to the right of a tab', async () => {
+    const [blank, a, b, c] = await openThree()
+    tabs().closeLeft(b)
+    expect(ids()).toEqual([b, c])
+    expect(ids()).not.toContain(blank)
+    expect(ids()).not.toContain(a)
+    tabs().closeRight(b)
+    expect(ids()).toEqual([b])
+    expect(tabs().activeTabId).toBe(b)
+  })
+
+  it('force closes all tabs without asking', async () => {
+    const [, a] = await openThree()
+    builder().setUrl(a, 'https://a')
+    tabs().forceCloseAll()
+    expect(ids()).toEqual([])
+    expect(tabs().closePrompt).toBeNull()
+    expect(tabs().activeTabId).toBeNull()
+  })
+
+  it('opens a new request tab from the menu', () => {
+    const before = ids().length
+    const id = tabs().newTab()
+    expect(ids()).toHaveLength(before + 1)
+    expect(tabs().activeTabId).toBe(id)
+  })
+
+  it('reveals the request of a tab in the sidebar', async () => {
+    await tabs().openPinned('A')
+    const tabId = tabs().activeTabId!
+    const request = { id: 'A', kind: 'request' as const, name: 'A', method: 'GET', url: null, error: null, warning: null, children: [] }
+    const folder = { id: 'f1', kind: 'folder' as const, name: 'F', method: null, url: null, error: null, warning: null, children: [request] }
+    useSidebarStore.setState({ tree: [{ id: 'c1', kind: 'collection', name: 'C', method: null, url: null, error: null, warning: null, children: [folder] }], view: 'history', expanded: {} })
+    useWorkspacesStore.getState().setLayout({ sidebarVisible: false })
+    tabs().revealInSidebar(tabId)
+    expect(useSidebarStore.getState()).toMatchObject({ selectedId: 'A', view: 'collections', expanded: { c1: true, f1: true } })
+    expect(useWorkspacesStore.getState().layout.sidebarVisible).toBe(true)
+  })
+
+  it('reopens closed tabs newest first, with their unsaved drafts', async () => {
+    const [, a, b] = await openThree()
+    builder().setUrl(a, 'https://unsaved-a')
+    tabs().forceClose(a)
+    tabs().closeTab(b)
+    expect(tabs().closedTabs.map((closed) => closed.tab.requestId)).toEqual(['A', 'B'])
+    await tabs().reopenClosed()
+    expect(tabs().tabs.at(-1)).toMatchObject({ requestId: 'B', pinned: true })
+    expect(dirty(tabs().activeTabId!)).toBe(false)
+    await tabs().reopenClosed()
+    const reopened = tabs().activeTabId!
+    expect(tabs().tabs.find((tab) => tab.id === reopened)?.requestId).toBe('A')
+    expect(builder().tabs[reopened]!.draft.url).toBe('https://unsaved-a')
+    expect(builder().tabs[reopened]!.baseRevision).toBe('rev-A')
+    expect(dirty(reopened)).toBe(true)
+    expect(tabs().closedTabs).toEqual([])
+    await tabs().reopenClosed()
+    expect(tabs().tabs.filter((tab) => tab.requestId === 'A')).toHaveLength(1)
+  })
+
+  it('keeps the 20 most recently closed tabs and persists them', async () => {
+    for (let index = 0; index < 22; index++) {
+      const id = tabs().openDraft({ ...emptyDraft(), url: `https://x/${index}` })
+      tabs().closeTab(id)
+    }
+    expect(tabs().closedTabs).toHaveLength(20)
+    expect(tabs().closedTabs[0]!.tab.draft?.url).toBe('https://x/2')
+    expect(tabs().closedTabs.at(-1)!.tab.draft?.url).toBe('https://x/21')
+    await tabs().flushPersist()
+    const [, state] = vi.mocked(uiState.saveUIState).mock.calls.at(-1)!
+    expect(state.closedTabs).toHaveLength(20)
+    expect(state.closedTabs.at(-1)!.closedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+  })
+
+  it('does not remember an empty untitled tab or the tabs of deleted requests', async () => {
+    const blank = tabs().activeTabId!
+    tabs().closeTab(blank)
+    await tabs().openPinned('A')
+    tabs().handleDeleted(['A'])
+    expect(tabs().closedTabs).toEqual([])
+  })
+
+  it('reopens a tab closed in an earlier session', async () => {
+    tabs().reset()
+    builder().reset()
+    tabs().hydrate('ws', {
+      ...defaultUIState(),
+      tabs: [{ tabId: 't1', requestId: 'A', pinned: true, baseRevision: 'rev-A', draft: null }],
+      activeTabId: 't1',
+      closedTabs: [{ closedAt: '2026-10-11T10:00:00.000Z', tab: { tabId: 'old', requestId: 'B', pinned: true, baseRevision: 'rev-B', draft: null } }],
+    })
+    await tabs().reopenClosed()
+    expect(tabs().tabs.at(-1)).toMatchObject({ requestId: 'B' })
+    expect(tabs().activeTabId).not.toBe('t1')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(builder().tabs[tabs().activeTabId!]!.draft.id).toBe('B')
+  })
+
+  it('activates tabs 1 to 8 by position and 9 as the last tab', async () => {
+    const [blank, a, , c] = await openThree()
+    tabs().activateIndex(1)
+    expect(tabs().activeTabId).toBe(blank)
+    tabs().activateIndex(2)
+    expect(tabs().activeTabId).toBe(a)
+    tabs().activateIndex(8)
+    expect(tabs().activeTabId).toBe(a)
+    tabs().activateIndex(9)
+    expect(tabs().activeTabId).toBe(c)
+  })
+
+  it('cycles to the next and previous tab, wrapping around', async () => {
+    const [blank, , b, c] = await openThree()
+    tabs().cycle(1)
+    expect(tabs().activeTabId).toBe(blank)
+    tabs().cycle(-1)
+    expect(tabs().activeTabId).toBe(c)
+    tabs().cycle(-1)
+    expect(tabs().activeTabId).toBe(b)
+  })
+})
+
