@@ -11,20 +11,23 @@ import (
 )
 
 func TestJavascriptNumbersAndStringsFollowJsonStringify(t *testing.T) {
-	cases := map[string]string{
-		`[0, -0, 1.0, 1E3, 1e21, 1.5e21, 0.000001, 1e-7, -2.5e-8, 123456789012345680000, 1e400, 0.1]`: `[0,0,1,1000,1e+21,1.5e+21,0.000001,1e-7,-2.5e-8,123456789012345680000,null,0.1]`,
-		`{"b":1,"2":true,"1":false,"a":null,"10":[],"x":{}}`:                                       `{"1":false,"2":true,"10":[],"b":1,"a":null,"x":{}}`,
-		`{"a":1,"a":2}`:                         `{"a":2}`,
-		"\"tab\\t\\u0001\\u001f<&>é\\\"\\\\\"": `"tab\t\u0001\u001f<&>é\"\\"`,
-		`{"4294967295":1,"01":2,"3":3}`:         `{"3":3,"4294967295":1,"01":2}`,
+	cases := []struct {
+		input string
+		want  string
+	}{
+		{input: `[0, -0, 1.0, 1E3, 1e21, 1.5e21, 0.000001, 1e-7, -2.5e-8, 123456789012345680000, 1e400, 0.1]`, want: `[0,0,1,1000,1e+21,1.5e+21,0.000001,1e-7,-2.5e-8,123456789012345680000,null,0.1]`},
+		{input: `{"b":1,"2":true,"1":false,"a":null,"10":[],"x":{}}`, want: `{"1":false,"2":true,"10":[],"b":1,"a":null,"x":{}}`},
+		{input: `{"a":1,"a":2}`, want: `{"a":2}`},
+		{input: "\"tab\\t\\u0001\\u001f<&>\u00e9\\\"\\\\\"", want: "\"tab\\t\\u0001\\u001f<&>\u00e9\\\"\\\\\""},
+		{input: `{"4294967295":1,"01":2,"3":3}`, want: `{"3":3,"4294967295":1,"01":2}`},
 	}
-	for input, want := range cases {
-		parsed, valid := parseJson(input)
+	for _, tc := range cases {
+		parsed, valid := parseJson(tc.input)
 		if !valid {
-			t.Fatalf("%s did not parse", input)
+			t.Fatalf("%s did not parse", tc.input)
 		}
-		if got := stringifyJson(parsed, 0, javascriptLiterals); got != want {
-			t.Errorf("stringify(%s) = %s, want %s", input, got, want)
+		if got := stringifyJson(parsed, 0, javascriptLiterals); got != tc.want {
+			t.Errorf("stringify(%s) = %s, want %s", tc.input, got, tc.want)
 		}
 	}
 	for _, invalid := range []string{"", "{", "[1,]", "1 2", `{"a":}`, "nul"} {

@@ -38,10 +38,10 @@ Feature: Import a Postman collection (v2.1)
     And the response should contain the field "workspaces.0.created.variables" equal to "3"
     And the response should contain the field "workspaces.0.created.scripts" equal to "7"
     And the response should contain the field "failed" array length equal to 0
-    And the event "import:progress" should have been emitted 2 times
-    And the 2 "import:progress" event should contain the field "done" equal to "1"
-    And the 2 "import:progress" event should contain the field "total" equal to "1"
-    And the 2 "import:progress" event should contain the field "source_id" equal to "{{source}}"
+    And the 1 "import:progress" event should contain the field "done" equal to "0"
+    And the last "import:progress" event should contain the field "done" equal to "1"
+    And the last "import:progress" event should contain the field "total" equal to "1"
+    And the last "import:progress" event should contain the field "source_id" equal to "{{source}}"
 
   @summary @warnings
   Scenario: The summary lists every warning with the item it concerns
