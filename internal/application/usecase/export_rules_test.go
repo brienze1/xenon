@@ -65,7 +65,11 @@ func TestEffectiveExportRootOfAFolder(t *testing.T) {
 		{name: "own auth wins", folder: func() entity.Collection { f := folder; f.Auth = entity.Auth{Type: authtype.None}; return f }(), parent: parent, wantAuth: entity.Auth{Type: authtype.None}, inherited: []entity.Scripts{{PreRequest: "collectionPre()", PostResponse: "collectionPost()"}, {PreRequest: "parentPre()"}}},
 		{name: "folder cuts inheritance", folder: func() entity.Collection { f := folder; f.InheritScripts = false; return f }(), parent: parent, wantAuth: bearerAuth("{{token}}"), inherited: []entity.Scripts{}},
 		{name: "parent cuts inheritance", folder: folder, parent: func() entity.Collection { p := parent; p.InheritScripts = false; return p }(), wantAuth: bearerAuth("{{token}}"), inherited: []entity.Scripts{{PreRequest: "parentPre()"}}},
-		{name: "disabled ancestor scripts do not run", folder: folder, parent: func() entity.Collection { p := parent; p.Scripts.Disabled = []enums.ScriptPhase{scriptphase.PreRequest}; return p }(), wantAuth: bearerAuth("{{token}}"), inherited: []entity.Scripts{{PreRequest: "collectionPre()", PostResponse: "collectionPost()"}}},
+		{name: "disabled ancestor scripts do not run", folder: folder, parent: func() entity.Collection {
+			p := parent
+			p.Scripts.Disabled = []enums.ScriptPhase{scriptphase.PreRequest}
+			return p
+		}(), wantAuth: bearerAuth("{{token}}"), inherited: []entity.Scripts{{PreRequest: "collectionPre()", PostResponse: "collectionPost()"}}},
 	}
 	for _, tc := range cases {
 		node := entity.NewContainerExportNode(tc.folder, "Billing/Parent/Invoices", []entity.ExportNode{})
