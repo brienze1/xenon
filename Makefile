@@ -295,4 +295,4 @@ newman: ensure-dist
 	@echo "Installing the pinned Newman (tools/newman)..."
 	cd tools/newman && npm ci --no-audit --no-fund
 	@echo "Exporting the Xenon-created corpus to Postman and running it with Newman against the mock server..."
-	go test ./test/integration/steps/... -v -count=1 --scenarios=@newman
+	XENON_NEWMAN=on go test ./test/integration/steps/... -v -count=1 --scenarios=@newman

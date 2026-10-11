@@ -224,3 +224,8 @@ func routeKey(method, path string) string {
 func requestKey(method, path string, index int) string {
 	return fmt.Sprintf("%s:%s:%d", method, path, index)
 }
+
+func (m *ApiMock) GetRequest(index int, method, path string) (http.Header, url.Values, []byte, bool) {
+	request, found := m.request(index, method, path)
+	return request.headers, request.query, request.body, found
+}
