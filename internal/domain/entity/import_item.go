@@ -128,7 +128,7 @@ func (i ImportItem) Counts() ImportCounts {
 }
 
 func (i ImportItem) Scripts() []ScriptRef {
-	if i.IsVariables() || i.IsWorkspace() {
+	if i.IsVariables() {
 		return []ScriptRef{}
 	}
 	return i.Root.Scripts("")

@@ -175,7 +175,7 @@ func containerImportNode(dir string, kind enums.ItemKind) (*entity.ImportNode, e
 	folders, _ := (&treeScan{}).classifyDirectories(dir, listing, folderMarker)
 	requests := requestFiles(listing)
 	reads := readRequests(dir, requests)
-	children := make([]entity.ImportNode, 0, len(folders)+len(requests))
+	children := make([]entity.ImportNode, 0)
 	for _, name := range container.ArrangedChildren(append(append([]string{}, folders...), requests...)) {
 		if slices.Contains(folders, name) {
 			child, err := containerImportNode(filepath.Join(dir, name), itemkind.Folder)

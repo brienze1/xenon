@@ -23,7 +23,7 @@ func NewImportWorkspace(folder, name string, collections []TreeNode, environment
 }
 
 func treeCounts(node TreeNode) ImportCounts {
-	if !node.IsItem() || node.Ignored {
+	if !node.IsItem() {
 		return ImportCounts{}
 	}
 	counts := ImportCounts{}

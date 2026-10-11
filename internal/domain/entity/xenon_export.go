@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"maps"
+
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/exportshape"
 )
@@ -31,10 +33,8 @@ func (x XenonExport) WithNode(node ExportNode) XenonExport {
 }
 
 func (x XenonExport) WithVariables(scope ScopeRef, rows []VariableRow) XenonExport {
-	variables := make(map[string][]VariableRow, len(x.Variables)+1)
-	for key, value := range x.Variables {
-		variables[key] = value
-	}
+	variables := map[string][]VariableRow{}
+	maps.Copy(variables, x.Variables)
 	variables[scope.String()] = append([]VariableRow{}, rows...)
 	x.Variables = variables
 	return x
