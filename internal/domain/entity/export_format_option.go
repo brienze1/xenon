@@ -16,6 +16,8 @@ const (
 	postmanGlobalsSuffix     = ".postman_globals.json"
 	xenonZipSuffix           = ".zip"
 	xenonYamlSuffix          = ".yaml"
+	xenonPickerTitle         = "Export as Xenon YAML"
+	postmanPickerTitle       = "Export as Postman"
 )
 
 type ExportFormatOption struct {
@@ -69,6 +71,13 @@ func ExportFileNameForShape(name string, format enums.ExportFormat, shape enums.
 	}
 	base := strings.TrimSuffix(strings.TrimSuffix(name, xenonZipSuffix), xenonYamlSuffix)
 	return ExportFileName(base, exportitemkind.Unknown, format, shape)
+}
+
+func ExportPickerTitle(format enums.ExportFormat) string {
+	if format == exportformat.Postman {
+		return postmanPickerTitle
+	}
+	return xenonPickerTitle
 }
 
 func exportShapes(kind enums.ExportItemKind, format enums.ExportFormat) []enums.ExportShape {

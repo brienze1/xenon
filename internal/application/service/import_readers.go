@@ -107,9 +107,9 @@ func (i importReaders) xenon(ctx context.Context, input entity.ImportInput, read
 	}
 	read.secrets = exported.Secrets
 	switch {
-	case exported.Workspace != nil:
+	case exported.IsWorkspace():
 		read.items = append(read.items, entity.NewWorkspaceImportItem(read.nextKey(), *exported.Workspace))
-	case exported.Environment != nil:
+	case exported.IsEnvironment():
 		environment := exported.Environment.Duplicated(idutils.NewUlid(), exported.Environment.Name)
 		item := entity.NewVariablesImportItem(read.nextKey(), importitemkind.Environment, entity.NewImportVariables(environment, nil))
 		read.items = append(read.items, item.FromSource(exported.Environment.ID))

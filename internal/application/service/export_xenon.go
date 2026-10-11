@@ -6,7 +6,6 @@ import (
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/exportitemkind"
-	"github.com/brienze1/xenon/internal/domain/enums/exportsecrets"
 )
 
 type xenonExport struct {
@@ -34,20 +33,16 @@ func (x xenonExport) documents(ctx context.Context, root string, request entity.
 		}
 		export = export.WithCurrentValues(scopes, *local)
 	}
-	secrets := exportsecrets.Omitted
 	if request.IncludeSecrets {
 		if export, err = x.withSecrets(ctx, export, request, scopes); err != nil {
 			return nil, err
-		}
-		if export.HasSecrets() {
-			secrets = exportsecrets.Included
 		}
 	}
 	entries, err := x.writeXenonExport.WriteXenonExport(ctx, root, export)
 	if err != nil {
 		return nil, err
 	}
-	return &exportDocuments{entries: entries, summary: entity.NewExportSummary(request.TargetPath, secrets).With(counts, nil, nil)}, nil
+	return &exportDocuments{entries: entries, summary: entity.NewExportSummary(request.TargetPath, export.ExportedSecrets()).With(counts, nil, nil)}, nil
 }
 
 func (x xenonExport) exported(ctx context.Context, root string, request entity.ExportRequest) (entity.XenonExport, entity.ExportCounts, error) {
@@ -61,7 +56,7 @@ func (x xenonExport) exported(ctx context.Context, root string, request entity.E
 		if err != nil {
 			return export, entity.ExportCounts{}, err
 		}
-		return export, entity.ExportCounts{Environments: 1, Variables: len(environment.Variables)}, nil
+		return export, environment.ExportCounts(), nil
 	default:
 		node, _, err := x.items.item(ctx, root, request.ItemID)
 		if err != nil {
@@ -84,10 +79,8 @@ func (x xenonExport) workspaceCounts(ctx context.Context, root string) (entity.E
 	if err != nil {
 		return counts, err
 	}
-	for _, environment := range environments {
-		if !environment.IsMalformed() {
-			counts = counts.Add(entity.ExportCounts{Environments: 1, Variables: len(environment.Variables)})
-		}
+	for _, environment := range entity.WellFormedEnvironments(environments) {
+		counts = counts.Add(environment.ExportCounts())
 	}
 	return counts, nil
 }

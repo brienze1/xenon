@@ -14,15 +14,15 @@ import (
 const importPickerTitle = "Choose files, folders or zips to import"
 
 type manageImport struct {
-	decryptExportSecrets usecase.DecryptExportSecrets
-	readImportSource     usecase.ReadImportSource
-	saveImportSource     usecase.SaveImportSource
-	findImportSource     usecase.FindImportSource
-	discardImportSource  usecase.DiscardImportSource
-	pickPath             usecase.PickPath
-	readers              importReaders
-	targets              importTargets
-	writer               importWriter
+	readImportSource    usecase.ReadImportSource
+	saveImportSource    usecase.SaveImportSource
+	findImportSource    usecase.FindImportSource
+	discardImportSource usecase.DiscardImportSource
+	pickPath            usecase.PickPath
+	secrets             importSecrets
+	readers             importReaders
+	targets             importTargets
+	writer              importWriter
 }
 
 func NewManageImportService(
@@ -74,12 +74,12 @@ func NewManageImportService(
 		publishVariableEvent: publishVariableEvent,
 	}
 	return &manageImport{
-		decryptExportSecrets: decryptExportSecrets,
-		readImportSource:     readImportSource,
-		saveImportSource:     saveImportSource,
-		findImportSource:     findImportSource,
-		discardImportSource:  discardImportSource,
-		pickPath:             pickPath,
+		readImportSource:    readImportSource,
+		saveImportSource:    saveImportSource,
+		findImportSource:    findImportSource,
+		discardImportSource: discardImportSource,
+		pickPath:            pickPath,
+		secrets:             importSecrets{decryptExportSecrets: decryptExportSecrets},
 		readers: importReaders{
 			readPostmanCollection:  readPostmanCollection,
 			readPostmanEnvironment: readPostmanEnvironment,
@@ -189,7 +189,7 @@ func (m *manageImport) Import(ctx context.Context, plan entity.ImportPlan) (*ent
 	if err != nil {
 		return nil, err
 	}
-	source, err := m.unlocked(ctx, *found, plan)
+	source, err := m.secrets.unlocked(ctx, *found, plan)
 	if err != nil {
 		return nil, err
 	}
@@ -237,21 +237,6 @@ func (m *manageImport) detected(ctx context.Context, inputs []entity.ImportInput
 	}
 	source := entity.NewImportSource(idutils.NewUlid(), detected, tempDirs, timeutils.Now()).WithItems(read.items).WithSourceWarnings(read.warnings).WithEncryptedSecrets(read.secrets)
 	return &source, nil
-}
-
-func (m *manageImport) unlocked(ctx context.Context, source entity.ImportSource, plan entity.ImportPlan) (*entity.ImportSource, error) {
-	if !plan.NeedsPassphrase(source) {
-		return &source, nil
-	}
-	if plan.Passphrase == "" {
-		return nil, usecase.RejectMissingImportPassphrase()
-	}
-	secrets, err := m.decryptExportSecrets.Decrypt(ctx, source.EncryptedSecrets, plan.Passphrase)
-	if err != nil {
-		return nil, err
-	}
-	unlocked := source.WithSecrets(*secrets)
-	return &unlocked, nil
 }
 
 func unresolvedClashes(plan entity.ImportPlan, targets []importTarget) []entity.Clash {

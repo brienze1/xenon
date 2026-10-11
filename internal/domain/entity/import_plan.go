@@ -17,6 +17,10 @@ func (i ImportPlan) NeedsPassphrase(source ImportSource) bool {
 	return source.HasEncryptedSecrets() && !i.SkipSecrets
 }
 
+func (i ImportPlan) HasPassphrase() bool {
+	return i.Passphrase != ""
+}
+
 func (i ImportPlan) Included() []ImportPlanItem {
 	included := make([]ImportPlanItem, 0, len(i.Items))
 	for _, item := range i.Items {

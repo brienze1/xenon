@@ -51,6 +51,20 @@ func (e Environment) IsMalformed() bool {
 	return e.Error != ""
 }
 
+func (e Environment) ExportCounts() ExportCounts {
+	return ExportCounts{Environments: 1, Variables: len(e.Variables)}
+}
+
+func WellFormedEnvironments(environments []Environment) []Environment {
+	wellFormed := make([]Environment, 0, len(environments))
+	for _, environment := range environments {
+		if !environment.IsMalformed() {
+			wellFormed = append(wellFormed, environment)
+		}
+	}
+	return wellFormed
+}
+
 func (e Environment) HasID(id string) bool {
 	return !e.IsMalformed() && e.ID == id
 }

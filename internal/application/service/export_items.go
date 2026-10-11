@@ -30,11 +30,7 @@ func (e exportItems) item(ctx context.Context, root, id string) (entity.ExportNo
 	if err != nil {
 		return entity.ExportNode{}, nil, err
 	}
-	path := ""
-	for _, ancestor := range ancestors {
-		path = entity.JoinImportPath(path, ancestor.Name)
-	}
-	node, err := e.node(ctx, root, *found, entity.JoinImportPath(path, found.Name))
+	node, err := e.node(ctx, root, *found, entity.ExportPath(ancestors, found.Name))
 	return node, ancestors, err
 }
 
@@ -69,11 +65,9 @@ func (e exportItems) node(ctx context.Context, root string, found entity.TreeNod
 	if err != nil {
 		return entity.ExportNode{}, err
 	}
-	children := make([]entity.ExportNode, 0, len(found.Children))
-	for _, child := range found.Children {
-		if !child.IsItem() || child.Ignored {
-			continue
-		}
+	exportable := entity.ExportableChildren(found)
+	children := make([]entity.ExportNode, 0, len(exportable))
+	for _, child := range exportable {
 		node, err := e.node(ctx, root, child, entity.JoinImportPath(path, child.Name))
 		if err != nil {
 			return entity.ExportNode{}, err
@@ -142,10 +136,8 @@ func (e exportItems) workspaceScopes(ctx context.Context, root string) (string, 
 	if err != nil {
 		return "", nil, err
 	}
-	for _, environment := range environments {
-		if !environment.IsMalformed() {
-			scopes = append(scopes, entity.NewExportScope(environment.ScopeRef(), environment.Variables))
-		}
+	for _, environment := range entity.WellFormedEnvironments(environments) {
+		scopes = append(scopes, entity.NewExportScope(environment.ScopeRef(), environment.Variables))
 	}
 	collections, err := e.collections(ctx, root)
 	if err != nil {

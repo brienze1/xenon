@@ -55,6 +55,10 @@ func (i ImportItem) WithSecrets(bundle SecretBundle) ImportItem {
 	return i
 }
 
+func (i ImportItem) HasCollectionSecrets() bool {
+	return len(i.CollectionSecrets) > 0
+}
+
 func (i ImportItem) IsWorkspace() bool {
 	return i.Workspace != nil
 }

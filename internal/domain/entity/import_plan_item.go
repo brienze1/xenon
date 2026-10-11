@@ -12,6 +12,10 @@ type ImportPlanItem struct {
 	Include        bool
 }
 
+func (i ImportPlanItem) HasTargetFolder() bool {
+	return i.TargetFolder != ""
+}
+
 func (i ImportPlanItem) IsIntoParent() bool {
 	return i.TargetParentID != ""
 }

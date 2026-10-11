@@ -111,7 +111,7 @@ func (w importWriter) keepTokens(ctx context.Context, localId string, tokens []e
 }
 
 func (w importWriter) keepCollectionSecrets(ctx context.Context, target importTarget, resolution enums.ClashResolution) {
-	if len(target.item.CollectionSecrets) == 0 {
+	if !target.item.HasCollectionSecrets() {
 		return
 	}
 	scope, existing := entity.NewCollectionScopeRef(target.item.Root.ID()), []entity.VariableRow{}

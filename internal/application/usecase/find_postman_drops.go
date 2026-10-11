@@ -61,7 +61,7 @@ func containerDrops(node entity.ExportNode, isRoot bool) []entity.ExportDrop {
 	if !isRoot && container.ScriptOwner().CutsInheritance() {
 		drops = append(drops, entity.NewExportDrop(node.Path, "inheritScripts", dropInheritScripts))
 	}
-	if len(container.Headers) > 0 {
+	if node.HasContainerHeaders() {
 		drops = append(drops, entity.NewExportDrop(node.Path, "headers", dropHeaders))
 	}
 	return append(drops, sharedDrops(node.Path, container.Auth, container.Bruno, container.Auth.TextFields("auth"))...)

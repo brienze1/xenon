@@ -2,6 +2,7 @@ package dto
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
 )
@@ -10,6 +11,7 @@ const (
 	globalsScope      = "globals"
 	environmentScope  = "environment"
 	globalsNameSuffix = " Globals"
+	exportedAtLayout  = "2006-01-02T15:04:05.000Z"
 )
 
 var (
@@ -57,12 +59,12 @@ func (e *Environment) Passthrough() map[string]any {
 	return without(e.Raw, environmentKeys...)
 }
 
-func NewEnvironment(environment entity.Environment, exportedAt, exportedUsing string) Environment {
+func NewEnvironment(environment entity.Environment, exportedAt time.Time, exportedUsing string) Environment {
 	passthrough := map[string]any(environment.Postman)
 	return newVariablesDocument(environment.ID, environment.Name, environmentScope, environment.Variables, passthrough, exportedAt, exportedUsing)
 }
 
-func NewGlobals(workspace entity.Workspace, exportedAt, exportedUsing string) Environment {
+func NewGlobals(workspace entity.Workspace, exportedAt time.Time, exportedUsing string) Environment {
 	passthrough := asMap(workspace.Postman[globalsScope])
 	name := workspace.Name + globalsNameSuffix
 	if stored, found := passthrough["name"]; found {
@@ -71,7 +73,7 @@ func NewGlobals(workspace entity.Workspace, exportedAt, exportedUsing string) En
 	return newVariablesDocument(workspace.ID, name, globalsScope, workspace.Variables, passthrough, exportedAt, exportedUsing)
 }
 
-func newVariablesDocument(id, name, scope string, rows []entity.VariableRow, passthrough map[string]any, exportedAt, exportedUsing string) Environment {
+func newVariablesDocument(id, name, scope string, rows []entity.VariableRow, passthrough map[string]any, exportedAt time.Time, exportedUsing string) Environment {
 	values := make([]EnvironmentValue, 0, len(rows))
 	for _, row := range rows {
 		values = append(values, NewEnvironmentValue(row))
@@ -80,7 +82,7 @@ func newVariablesDocument(id, name, scope string, rows []entity.VariableRow, pas
 	if _, found := fields["id"]; !found {
 		fields["id"] = id
 	}
-	fields["_postman_exported_at"] = exportedAt
+	fields["_postman_exported_at"] = exportedAt.UTC().Format(exportedAtLayout)
 	fields["_postman_exported_using"] = exportedUsing
 	return Environment{Name: name, Scope: scope, Values: values, Raw: fields}
 }

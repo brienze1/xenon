@@ -1,6 +1,8 @@
 package model
 
 import (
+	"time"
+
 	"go.yaml.in/yaml/v3"
 
 	"github.com/brienze1/xenon/pkg/yamlnode"
@@ -10,6 +12,7 @@ const (
 	exportManifestKind = "export"
 	secretsInFile      = "file"
 	SecretsKey         = "secrets"
+	exportedAtLayout   = time.RFC3339
 )
 
 type ExportManifest struct {
@@ -22,8 +25,8 @@ type ExportManifest struct {
 	CurrentValuesAsInitial bool   `yaml:"currentValuesAsInitial"`
 }
 
-func NewExportManifest(root, exportedAt, exportedBy string, currentValuesAsInitial, hasSecrets bool) ExportManifest {
-	manifest := ExportManifest{Xenon: formatVersion, Kind: exportManifestKind, Root: root, ExportedAt: exportedAt, ExportedBy: exportedBy, CurrentValuesAsInitial: currentValuesAsInitial}
+func NewExportManifest(root string, exportedAt time.Time, exportedBy string, currentValuesAsInitial, hasSecrets bool) ExportManifest {
+	manifest := ExportManifest{Xenon: formatVersion, Kind: exportManifestKind, Root: root, ExportedAt: exportedAt.UTC().Format(exportedAtLayout), ExportedBy: exportedBy, CurrentValuesAsInitial: currentValuesAsInitial}
 	if hasSecrets {
 		manifest.Secrets = secretsInFile
 	}

@@ -7,6 +7,14 @@ type XenonImport struct {
 	Secrets     string
 }
 
+func (x XenonImport) IsWorkspace() bool {
+	return x.Workspace != nil
+}
+
+func (x XenonImport) IsEnvironment() bool {
+	return x.Environment != nil
+}
+
 func (x XenonImport) LogValue() any {
 	logged := map[string]any{"hasSecrets": x.Secrets != ""}
 	if x.Root != nil {

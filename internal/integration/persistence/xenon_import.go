@@ -168,7 +168,7 @@ func readXenonZip(input entity.ImportInput) (*entity.XenonImport, error) {
 func containerImportNode(dir string, kind enums.ItemKind) (*entity.ImportNode, error) {
 	stored, reason := readCollection(filepath.Join(dir, markerFile(kind)), kind)
 	if reason != "" {
-		return nil, errs.UnprocessableEntityError(reason, "IMP-47422")
+		return nil, errs.UnprocessableEntityError(reason, "IMP-51422")
 	}
 	container := stored.ToContainerEntity(stored.Id, kind)
 	listing := readEntries(dir)
@@ -186,7 +186,7 @@ func containerImportNode(dir string, kind enums.ItemKind) (*entity.ImportNode, e
 			continue
 		}
 		if reads[name].reason != "" {
-			return nil, errs.UnprocessableEntityError(reads[name].reason, "IMP-47422")
+			return nil, errs.UnprocessableEntityError(reads[name].reason, "IMP-52422")
 		}
 		children = append(children, entity.NewRequestImportNode(reads[name].stored.ToEntity()))
 	}

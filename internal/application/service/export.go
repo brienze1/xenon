@@ -7,21 +7,9 @@ import (
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums"
-	"github.com/brienze1/xenon/internal/domain/enums/exportformat"
 	"github.com/brienze1/xenon/pkg/fileutils"
 	"github.com/brienze1/xenon/pkg/logger"
 )
-
-const (
-	exportPickerTitle        = "Export as Xenon YAML"
-	postmanExportPickerTitle = "Export as Postman"
-)
-
-type exportDocuments struct {
-	entries []entity.ExportEntry
-	names   []string
-	summary entity.ExportSummary
-}
 
 type export struct {
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry
@@ -104,11 +92,7 @@ func (e *export) Options(ctx context.Context, localId string, kind enums.ExportI
 func (e *export) PickTarget(ctx context.Context, suggestedFileName string, format enums.ExportFormat, shape enums.ExportShape) (string, error) {
 	logger.Info(ctx, "Started", map[string]any{"suggestedFileName": suggestedFileName, "format": format, "shape": shape})
 
-	title := exportPickerTitle
-	if format == exportformat.Postman {
-		title = postmanExportPickerTitle
-	}
-	path, err := e.pickPath.PickSaveFile(ctx, title, entity.ExportFileNameForShape(suggestedFileName, format, shape))
+	path, err := e.pickPath.PickSaveFile(ctx, entity.ExportPickerTitle(format), entity.ExportFileNameForShape(suggestedFileName, format, shape))
 	if err != nil {
 		return "", err
 	}

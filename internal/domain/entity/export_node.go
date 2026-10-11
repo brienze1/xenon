@@ -20,6 +20,31 @@ func (e ExportNode) IsRequest() bool {
 	return e.Request != nil
 }
 
+func (e ExportNode) ID() string {
+	if e.IsRequest() {
+		return e.Request.ID
+	}
+	return e.Container.ID
+}
+
+func (e ExportNode) Auth() Auth {
+	if e.IsRequest() {
+		return e.Request.Auth
+	}
+	return e.Container.Auth
+}
+
+func (e ExportNode) HasContainerHeaders() bool {
+	return !e.IsRequest() && len(e.Container.Headers) > 0
+}
+
+func (e ExportNode) ScopeRefWithin(ancestors []Collection) ScopeRef {
+	if collection, found := RootCollection(ancestors); found {
+		return collection.ScopeRef()
+	}
+	return e.Container.ScopeRef()
+}
+
 func (e ExportNode) Name() string {
 	if e.IsRequest() {
 		return e.Request.Name
@@ -60,4 +85,22 @@ func (e ExportNode) Nodes() []ExportNode {
 		nodes = append(nodes, child.Nodes()...)
 	}
 	return nodes
+}
+
+func ExportPath(ancestors []Collection, name string) string {
+	path := ""
+	for _, ancestor := range ancestors {
+		path = JoinImportPath(path, ancestor.Name)
+	}
+	return JoinImportPath(path, name)
+}
+
+func ExportableChildren(node TreeNode) []TreeNode {
+	children := make([]TreeNode, 0, len(node.Children))
+	for _, child := range node.Children {
+		if child.IsItem() && !child.Ignored {
+			children = append(children, child)
+		}
+	}
+	return children
 }

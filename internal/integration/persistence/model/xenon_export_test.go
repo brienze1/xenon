@@ -3,12 +3,15 @@ package model
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"go.yaml.in/yaml/v3"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/pkg/yamlnode"
 )
+
+var exportedAt = time.Date(2026, 10, 11, 7, 0, 0, 0, time.FixedZone("BRT", -3*60*60))
 
 func encodeDocument(t *testing.T, document *yaml.Node) string {
 	t.Helper()
@@ -20,7 +23,7 @@ func encodeDocument(t *testing.T, document *yaml.Node) string {
 }
 
 func TestExportManifestDocument(t *testing.T) {
-	with := NewExportManifest("workspace", "2026-10-11T10:00:00Z", "Xenon/1.0.0", true, true)
+	with := NewExportManifest("workspace", exportedAt, "Xenon/1.0.0", true, true)
 	if !with.HasSecretsFile() {
 		t.Error("a manifest with secrets points at the secrets file")
 	}
@@ -28,7 +31,7 @@ func TestExportManifestDocument(t *testing.T) {
 	if got := encodeDocument(t, with.Document()); got != want {
 		t.Errorf("manifest = %q", got)
 	}
-	without := NewExportManifest("folder", "t", "b", false, false)
+	without := NewExportManifest("folder", exportedAt, "b", false, false)
 	if without.HasSecretsFile() || !strings.HasSuffix(encodeDocument(t, without.Document()), "currentValuesAsInitial: false\nsecrets: null\n") {
 		t.Errorf("manifest = %q", encodeDocument(t, without.Document()))
 	}
@@ -38,12 +41,12 @@ func TestExportBundleDocument(t *testing.T) {
 	item := WithChildren(yamlnode.MappingNode(yamlnode.String("kind", "collection")), []*yaml.Node{
 		WithChildren(yamlnode.MappingNode(yamlnode.String("kind", "folder")), nil),
 	})
-	bundle := NewExportBundle("collection", "t", "b", item, "line1\nline2\n")
-	want := "xenon: 1\nkind: bundle\nroot: collection\nexportedAt: t\nexportedBy: b\nitem:\n  kind: collection\n  children:\n    - kind: folder\n      children: []\nsecrets: |\n  line1\n  line2\n"
+	bundle := NewExportBundle("collection", exportedAt, "b", item, "line1\nline2\n")
+	want := "xenon: 1\nkind: bundle\nroot: collection\nexportedAt: \"2026-10-11T10:00:00Z\"\nexportedBy: b\nitem:\n  kind: collection\n  children:\n    - kind: folder\n      children: []\nsecrets: |\n  line1\n  line2\n"
 	if got := encodeDocument(t, bundle.Document()); got != want {
 		t.Errorf("bundle = %q", got)
 	}
-	plain := NewExportBundle("folder", "t", "b", yamlnode.MappingNode(yamlnode.String("kind", "folder")), "")
+	plain := NewExportBundle("folder", exportedAt, "b", yamlnode.MappingNode(yamlnode.String("kind", "folder")), "")
 	if got := encodeDocument(t, plain.Document()); !strings.HasSuffix(got, "secrets: null\n") {
 		t.Errorf("bundle = %q", got)
 	}

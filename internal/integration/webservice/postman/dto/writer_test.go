@@ -2,6 +2,7 @@ package dto
 
 import (
 	"testing"
+	"time"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums"
@@ -11,6 +12,8 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums/rawlanguage"
 	"github.com/brienze1/xenon/internal/domain/enums/scriptphase"
 )
+
+var exportedAt = time.Date(2026, 10, 11, 7, 0, 0, 0, time.FixedZone("BRT", -3*60*60))
 
 func compact(t *testing.T, value any) string {
 	t.Helper()
@@ -183,15 +186,15 @@ func TestNewCollectionAndVariableDocuments(t *testing.T) {
 	disabled := entity.NewVariableRow("off", "0")
 	disabled.Enabled = false
 	environment.Variables = []entity.VariableRow{plain, hidden, nowPlain, disabled}
-	expectJson(t, "environment", NewEnvironment(environment, "2026-10-11T10:00:00.000Z", "Xenon/1.0.0"), `{"id":"e1","name":"dev","values":[{"key":"base","value":"http://x","type":"text","enabled":true,"description":"api"},{"key":"key","value":"","type":"secret","enabled":true},{"key":"was","value":"v","type":"default","enabled":true},{"key":"off","value":"0","type":"default","enabled":false}],"_postman_variable_scope":"environment","_postman_exported_at":"2026-10-11T10:00:00.000Z","_postman_exported_using":"Xenon/1.0.0"}`)
+	expectJson(t, "environment", NewEnvironment(environment, exportedAt, "Xenon/1.0.0"), `{"id":"e1","name":"dev","values":[{"key":"base","value":"http://x","type":"text","enabled":true,"description":"api"},{"key":"key","value":"","type":"secret","enabled":true},{"key":"was","value":"v","type":"default","enabled":true},{"key":"off","value":"0","type":"default","enabled":false}],"_postman_variable_scope":"environment","_postman_exported_at":"2026-10-11T10:00:00.000Z","_postman_exported_using":"Xenon/1.0.0"}`)
 	environment.Postman = entity.SourceFields{"id": "env-1", "_postman_variable_scope": "environment", "_postman_exported_at": "old", "color": "x"}
-	expectJson(t, "imported environment", NewEnvironment(environment, "at", "using"), `{"id":"env-1","name":"dev","values":[{"key":"base","value":"http://x","type":"text","enabled":true,"description":"api"},{"key":"key","value":"","type":"secret","enabled":true},{"key":"was","value":"v","type":"default","enabled":true},{"key":"off","value":"0","type":"default","enabled":false}],"_postman_variable_scope":"environment","_postman_exported_at":"at","_postman_exported_using":"using","color":"x"}`)
+	expectJson(t, "imported environment", NewEnvironment(environment, exportedAt, "using"), `{"id":"env-1","name":"dev","values":[{"key":"base","value":"http://x","type":"text","enabled":true,"description":"api"},{"key":"key","value":"","type":"secret","enabled":true},{"key":"was","value":"v","type":"default","enabled":true},{"key":"off","value":"0","type":"default","enabled":false}],"_postman_variable_scope":"environment","_postman_exported_at":"2026-10-11T10:00:00.000Z","_postman_exported_using":"using","color":"x"}`)
 
 	workspace := entity.NewWorkspace("w1", "Acme")
 	workspace.Variables = []entity.VariableRow{entity.NewVariableRow("region", "eu")}
-	expectJson(t, "globals", NewGlobals(workspace, "at", "using"), `{"id":"w1","name":"Acme Globals","values":[{"key":"region","value":"eu","type":"default","enabled":true}],"_postman_variable_scope":"globals","_postman_exported_at":"at","_postman_exported_using":"using"}`)
+	expectJson(t, "globals", NewGlobals(workspace, exportedAt, "using"), `{"id":"w1","name":"Acme Globals","values":[{"key":"region","value":"eu","type":"default","enabled":true}],"_postman_variable_scope":"globals","_postman_exported_at":"2026-10-11T10:00:00.000Z","_postman_exported_using":"using"}`)
 	workspace = workspace.WithPostmanGlobals(entity.SourceFields{"id": "g-1", "name": "My Globals", "_postman_variable_scope": "globals"})
-	expectJson(t, "imported globals", NewGlobals(workspace, "at", "using"), `{"id":"g-1","name":"My Globals","values":[{"key":"region","value":"eu","type":"default","enabled":true}],"_postman_variable_scope":"globals","_postman_exported_at":"at","_postman_exported_using":"using"}`)
+	expectJson(t, "imported globals", NewGlobals(workspace, exportedAt, "using"), `{"id":"g-1","name":"My Globals","values":[{"key":"region","value":"eu","type":"default","enabled":true}],"_postman_variable_scope":"globals","_postman_exported_at":"2026-10-11T10:00:00.000Z","_postman_exported_using":"using"}`)
 }
 
 func TestNewAuth(t *testing.T) {

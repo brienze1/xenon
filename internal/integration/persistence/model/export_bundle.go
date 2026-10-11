@@ -1,6 +1,8 @@
 package model
 
 import (
+	"time"
+
 	"go.yaml.in/yaml/v3"
 
 	"github.com/brienze1/xenon/pkg/yamlnode"
@@ -22,12 +24,8 @@ type ExportBundle struct {
 	Xenon      int       `yaml:"xenon"`
 }
 
-type ExportBundleChildren struct {
-	Children []yaml.Node `yaml:"children"`
-}
-
-func NewExportBundle(root, exportedAt, exportedBy string, item *yaml.Node, secrets string) ExportBundle {
-	return ExportBundle{Xenon: formatVersion, Kind: bundleKind, Root: root, ExportedAt: exportedAt, ExportedBy: exportedBy, Item: *item, Secrets: secrets}
+func NewExportBundle(root string, exportedAt time.Time, exportedBy string, item *yaml.Node, secrets string) ExportBundle {
+	return ExportBundle{Xenon: formatVersion, Kind: bundleKind, Root: root, ExportedAt: exportedAt.UTC().Format(exportedAtLayout), ExportedBy: exportedBy, Item: *item, Secrets: secrets}
 }
 
 func (e *ExportBundle) Document() *yaml.Node {

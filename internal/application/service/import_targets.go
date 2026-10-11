@@ -59,7 +59,7 @@ func (i importTargets) target(ctx context.Context, source entity.ImportSource, p
 }
 
 func (i importTargets) workspaceTarget(ctx context.Context, item entity.ImportItem, planned entity.ImportPlanItem) (*importTarget, error) {
-	if planned.TargetFolder == "" {
+	if !planned.HasTargetFolder() {
 		return nil, usecase.RejectMissingWorkspaceFolder()
 	}
 	registry, err := i.findWorkspaceRegistry.Find(ctx)

@@ -9,6 +9,10 @@ type ExportCounts struct {
 	Variables    int
 }
 
+func NewVariablesExportCounts(rows []VariableRow) ExportCounts {
+	return ExportCounts{Variables: len(rows)}
+}
+
 func (e ExportCounts) Add(other ExportCounts) ExportCounts {
 	return ExportCounts{
 		Collections:  e.Collections + other.Collections,

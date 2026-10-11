@@ -372,3 +372,86 @@ func TestExportFileNameForShape(t *testing.T) {
 		}
 	}
 }
+
+func TestExportPickerTitle(t *testing.T) {
+	if got := ExportPickerTitle(exportformat.Postman); got != "Export as Postman" {
+		t.Errorf("postman title = %q", got)
+	}
+	if got := ExportPickerTitle(exportformat.XenonYaml); got != "Export as Xenon YAML" {
+		t.Errorf("xenon title = %q", got)
+	}
+}
+
+func TestExportNodeIdentityAuthHeadersAndScope(t *testing.T) {
+	collection := NewCollection("c", "Billing")
+	collection.Auth = Auth{Type: authtype.Bearer}
+	request := NewRequest("r", "Create")
+	request.Auth = Auth{Type: authtype.Basic}
+	container := NewContainerExportNode(collection, "Billing", nil)
+	leaf := NewRequestExportNode(request, "Billing/Create")
+	if container.ID() != "c" || leaf.ID() != "r" {
+		t.Errorf("ids = %q, %q", container.ID(), leaf.ID())
+	}
+	if container.Auth().Type != authtype.Bearer || leaf.Auth().Type != authtype.Basic {
+		t.Errorf("auth = %v, %v", container.Auth().Type, leaf.Auth().Type)
+	}
+	if container.HasContainerHeaders() || leaf.HasContainerHeaders() {
+		t.Error("no headers yet")
+	}
+	collection.Headers = []KeyValue{{Key: "X", Value: "1", Enabled: true}}
+	if !NewContainerExportNode(collection, "Billing", nil).HasContainerHeaders() {
+		t.Error("a container with headers has container headers")
+	}
+	folder := NewContainerExportNode(NewFolder("f", "Invoices"), "Billing/Invoices", nil)
+	if folder.ScopeRefWithin(nil) != NewCollectionScopeRef("f") {
+		t.Errorf("own scope = %v", folder.ScopeRefWithin(nil))
+	}
+	if folder.ScopeRefWithin([]Collection{collection, NewFolder("g", "G")}) != NewCollectionScopeRef("c") {
+		t.Errorf("root scope = %v", folder.ScopeRefWithin([]Collection{collection}))
+	}
+}
+
+func TestExportPathAndExportableChildren(t *testing.T) {
+	if got := ExportPath([]Collection{NewCollection("c", "Billing"), NewFolder("f", "Invoices")}, "Create"); got != "Billing/Invoices/Create" {
+		t.Errorf("path = %q", got)
+	}
+	if got := ExportPath(nil, "Billing"); got != "Billing" {
+		t.Errorf("root path = %q", got)
+	}
+	kept := NewRequestNode(NewRequest("r", "R"), "r.yaml")
+	ignored := NewRequestNode(NewRequest("i", "I"), "i.yaml")
+	ignored.Ignored = true
+	broken := NewErrorNode("x", "x.yaml", "bad", false)
+	parent := TreeNode{Children: []TreeNode{kept, ignored, broken}}
+	children := ExportableChildren(parent)
+	if len(children) != 1 || children[0].ID != "r" {
+		t.Errorf("children = %+v", children)
+	}
+}
+
+func TestEnvironmentExportCounts(t *testing.T) {
+	environment := NewEnvironment("e", "dev")
+	environment.Variables = []VariableRow{NewVariableRow("a", "1"), NewVariableRow("b", "2")}
+	if got := environment.ExportCounts(); got != (ExportCounts{Environments: 1, Variables: 2}) {
+		t.Errorf("counts = %+v", got)
+	}
+	if got := NewVariablesExportCounts(environment.Variables); got != (ExportCounts{Variables: 2}) {
+		t.Errorf("variables counts = %+v", got)
+	}
+	malformed := NewMalformedEnvironment("bad.yaml", "broken")
+	wellFormed := WellFormedEnvironments([]Environment{malformed, environment})
+	if len(wellFormed) != 1 || wellFormed[0].ID != "e" {
+		t.Errorf("well formed = %+v", wellFormed)
+	}
+}
+
+func TestXenonExportKindsAndSecrets(t *testing.T) {
+	workspace := XenonExport{Kind: exportitemkind.Workspace}
+	environment := XenonExport{Kind: exportitemkind.Environment}
+	if !workspace.IsWorkspace() || workspace.IsEnvironment() || !environment.IsEnvironment() || environment.IsWorkspace() {
+		t.Error("kinds are told apart")
+	}
+	if workspace.ExportedSecrets() != exportsecrets.Omitted || workspace.WithSecrets("armored").ExportedSecrets() != exportsecrets.Included {
+		t.Error("secrets are included only when the export carries them")
+	}
+}

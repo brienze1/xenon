@@ -7,7 +7,6 @@ import (
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/exportitemkind"
 	"github.com/brienze1/xenon/internal/domain/enums/exportsecrets"
-	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
 )
 
 const (
@@ -56,11 +55,8 @@ func (p postmanExport) item(ctx context.Context, root string, request entity.Exp
 func (p postmanExport) collection(ctx context.Context, node entity.ExportNode, ancestors []entity.Collection, request entity.ExportRequest, local entity.LocalVariables, documents *exportDocuments) error {
 	exported := usecase.EffectiveExportRoot(node, ancestors)
 	if request.CurrentValuesAsInitial {
-		scope := exported.Container.ScopeRef()
-		if collection, found := entity.RootCollection(ancestors); found {
-			scope = collection.ScopeRef()
-		}
-		exported.Container = exported.Container.WithVariables(usecase.ApplyCurrentValuesAsInitial(exported.Container.Variables, local.CurrentValues(scope)))
+		current := local.CurrentValues(exported.ScopeRefWithin(ancestors))
+		exported.Container = exported.Container.WithVariables(usecase.ApplyCurrentValuesAsInitial(exported.Container.Variables, current))
 	}
 	data, err := p.writePostmanExport.WriteCollection(ctx, exported)
 	if err != nil {
@@ -89,8 +85,7 @@ func (p postmanExport) environment(ctx context.Context, environment entity.Envir
 		return err
 	}
 	documents.add(postmanEnvironmentsFolder, environment.Name, postmanEnvironmentSuffix, data)
-	counts := entity.ExportCounts{Environments: 1, Variables: len(environment.Variables)}
-	documents.summary = documents.summary.With(counts, usecase.FindPostmanEnvironmentDrops(environment, environment.Name), nil)
+	documents.summary = documents.summary.With(environment.ExportCounts(), usecase.FindPostmanEnvironmentDrops(environment, environment.Name), nil)
 	return nil
 }
 
@@ -107,7 +102,7 @@ func (p postmanExport) globals(ctx context.Context, root string, request entity.
 		return err
 	}
 	documents.entries = append(documents.entries, entity.NewExportEntry(postmanGlobalsEntry, data))
-	documents.summary = documents.summary.With(entity.ExportCounts{Variables: len(workspace.Variables)}, nil, nil)
+	documents.summary = documents.summary.With(entity.NewVariablesExportCounts(workspace.Variables), nil, nil)
 	return nil
 }
 
@@ -125,19 +120,10 @@ func (p postmanExport) workspace(ctx context.Context, root string, request entit
 	if err != nil {
 		return err
 	}
-	for _, environment := range environments {
-		if environment.IsMalformed() {
-			continue
-		}
+	for _, environment := range entity.WellFormedEnvironments(environments) {
 		if err := p.environment(ctx, environment, request, local, documents); err != nil {
 			return err
 		}
 	}
 	return p.globals(ctx, root, request, local, documents)
-}
-
-func (d *exportDocuments) add(folder, name, suffix string, data []byte) {
-	base := usecase.DeriveFileName(name, itemkind.Folder, d.names)
-	d.names = append(d.names, base)
-	d.entries = append(d.entries, entity.NewExportEntry(folder+base+suffix, data))
 }

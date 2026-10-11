@@ -8,12 +8,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"go.yaml.in/yaml/v3"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
-	"github.com/brienze1/xenon/internal/domain/enums/exportitemkind"
 	"github.com/brienze1/xenon/internal/infra/properties"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/persistence/model"
@@ -49,9 +47,9 @@ func (x *xenonExportPersistence) WriteXenonExport(ctx context.Context, root stri
 	var entries []entity.ExportEntry
 	var err error
 	switch {
-	case export.Kind == exportitemkind.Workspace:
+	case export.IsWorkspace():
 		entries, err = archiveEntries(root, export)
-	case export.Kind == exportitemkind.Environment:
+	case export.IsEnvironment():
 		entries, err = environmentEntries(root, export)
 	default:
 		entries, err = x.itemEntries(ctx, root, export)
@@ -102,7 +100,7 @@ func (x *xenonExportPersistence) itemEntries(ctx context.Context, root string, e
 }
 
 func archiveEntries(dir string, export entity.XenonExport) ([]entity.ExportEntry, error) {
-	manifest := model.NewExportManifest(export.Kind.String(), exportedAt(), exportedBy(), export.CurrentValuesAsInitial, export.HasSecrets())
+	manifest := model.NewExportManifest(export.Kind.String(), timeutils.Now(), exportedBy(), export.CurrentValuesAsInitial, export.HasSecrets())
 	data, err := yamlnode.Encode(manifest.Document())
 	if err != nil {
 		return nil, errs.InternalServerError(err, "EXP-17500", "the export manifest could not be encoded")
@@ -171,7 +169,7 @@ func bundleEntries(index *entity.TreeIndex, export entity.XenonExport) ([]entity
 	if err != nil {
 		return nil, err
 	}
-	bundle := model.NewExportBundle(export.Kind.String(), exportedAt(), exportedBy(), item, export.Secrets)
+	bundle := model.NewExportBundle(export.Kind.String(), timeutils.Now(), exportedBy(), item, export.Secrets)
 	data, err := yamlnode.Encode(bundle.Document())
 	if err != nil {
 		return nil, errs.InternalServerError(err, "EXP-20500", "the bundle could not be encoded")
@@ -180,11 +178,7 @@ func bundleEntries(index *entity.TreeIndex, export entity.XenonExport) ([]entity
 }
 
 func bundleItem(index *entity.TreeIndex, node entity.ExportNode, export entity.XenonExport) (*yaml.Node, error) {
-	id := node.Container.ID
-	if node.IsRequest() {
-		id = node.Request.ID
-	}
-	indexed, _ := index.Item(id)
+	indexed, _ := index.Item(node.ID())
 	path := indexed.Path
 	if !node.IsRequest() {
 		path = filepath.Join(indexed.Path, markerFile(indexed.Kind))
@@ -255,10 +249,6 @@ func withSecretsBlock(data []byte, armored string) []byte {
 
 func isLocalOnlyDir(name string) bool {
 	return name == localStateDir || name == gitDir || strings.HasPrefix(name, stagingDirPrefix)
-}
-
-func exportedAt() string {
-	return timeutils.Now().UTC().Format(time.RFC3339)
 }
 
 func exportedBy() string {

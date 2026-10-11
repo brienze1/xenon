@@ -428,15 +428,15 @@ func TestReadXenonZipFailures(t *testing.T) {
 	zip := t.TempDir()
 	input := entity.ImportInput{Kind: importkind.XenonZip, Root: zip, Probe: entity.ImportProbe{XenonRoot: "collection", Entries: []string{"shop/collection.yaml"}}}
 	_, err := persistence.ReadXenonExport(ctx, input)
-	expectErrorCode(t, err, "IMP-47422")
+	expectErrorCode(t, err, "IMP-51422")
 	writeTestFile(t, filepath.Join(zip, "shop", "collection.yaml"), exportCollection)
 	writeTestFile(t, filepath.Join(zip, "shop", "b.yaml"), "name: [\n")
 	_, err = persistence.ReadXenonExport(ctx, input)
-	expectErrorCode(t, err, "IMP-47422")
+	expectErrorCode(t, err, "IMP-52422")
 	writeTestFile(t, filepath.Join(zip, "shop", "b.yaml"), exportSecond)
 	writeTestFile(t, filepath.Join(zip, "shop", "products", "folder.yaml"), "xenon: 1\nkind: request\n")
 	_, err = persistence.ReadXenonExport(ctx, input)
-	expectErrorCode(t, err, "IMP-47422")
+	expectErrorCode(t, err, "IMP-51422")
 	writeTestFile(t, filepath.Join(zip, "shop", "products", "folder.yaml"), exportFolder)
 	if err := os.Mkdir(filepath.Join(zip, exportSecretsFile), 0o755); err != nil {
 		t.Fatal(err)

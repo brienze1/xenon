@@ -181,3 +181,20 @@ func TestImportResultLeavesOutWorkspacelessFailures(t *testing.T) {
 		t.Errorf("workspaces = %+v", result.Workspaces)
 	}
 }
+
+func TestImportPredicates(t *testing.T) {
+	workspace := XenonImport{Workspace: &ImportWorkspace{}}
+	environment := XenonImport{Environment: &Environment{}}
+	if !workspace.IsWorkspace() || workspace.IsEnvironment() || !environment.IsEnvironment() || environment.IsWorkspace() {
+		t.Error("xenon import kinds are told apart")
+	}
+	if (ImportPlan{}).HasPassphrase() || !(ImportPlan{Passphrase: "secret"}).HasPassphrase() {
+		t.Error("a plan has a passphrase only when one was typed")
+	}
+	if (ImportPlanItem{}).HasTargetFolder() || !(ImportPlanItem{TargetFolder: "/w"}).HasTargetFolder() {
+		t.Error("a plan item has a target folder only when one was chosen")
+	}
+	if (ImportItem{}).HasCollectionSecrets() || !(ImportItem{CollectionSecrets: map[string]string{"k": "v"}}).HasCollectionSecrets() {
+		t.Error("an item has collection secrets only when some were unlocked")
+	}
+}
