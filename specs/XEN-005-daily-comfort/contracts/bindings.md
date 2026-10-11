@@ -30,14 +30,14 @@ acknowledgement `send_with_expired_token: true`.
 | Method | Input | Output |
 |---|---|---|
 | `Languages()` | — | `[{ id: curl\|js_fetch\|go_native\|python_requests, options: [{ id, type, default, values? }] }]` |
-| `Generate(req)` | `{ local_id, request (draft), language, options, include_secrets }` | `{ text, notices[] }` |
+| `Generate(req)` | `{ local_id, tab_id?, request (draft), language, options, include_secrets }` | `{ text, notices[] }` (`SNP-00400` invalid, `SNP-02400` unknown language) |
 | `Copy(req)` | same as Generate | — (Go writes clipboard; avoids passing secrets to UI when masked view is shown) |
 
 ## 4. `TreeService` additions
 | Method | Input | Output | Notes |
 |---|---|---|---|
 | `Move(req)` | `{ local_id, id, new_parent_id, index }` | `TreeNode[]` (updated tree) | `TRE-02422` into own descendant; collections: `new_parent_id = ""` reorders; cross-workspace impossible by contract |
-| `QuickSearch(req)` | `{ local_id, query, limit }` | `[{ id, name, method, url, path }]` | Cmd/Ctrl+K, ranked: name prefix > name contains > URL contains |
+| `QuickSearch(req)` | `{ local_id, query, limit }` | `[{ id, name, method, url, path }]` | Cmd/Ctrl+K, ranked: name prefix > name contains > URL contains > path contains; `limit` 0 → 50; `TRE-40400` invalid |
 
 ## 5. `UIStateService` additions
 `ClosedTabs` stack inside UIState (reopen handled client-side through `UIState.Save`).

@@ -166,27 +166,71 @@ US1 auth · US2 cookies · US3 drag & drop · US4 tabs & hotkeys · US5 snippets
 
 ## Phase 6: User Story 4 — Tabs, hotkeys, quick search (P2)
 
-- [ ] T022 [P] [US4] BDD `test/integration/features/tree/quick_search.feature`: ranking (name prefix > name contains > URL contains), workspace scope, limit
-- [ ] T023 [US4] Run → **red**; implement `rank_quick_search.go` + `TreeService.QuickSearch` → **green**
-- [ ] T024 [P] [US4] Vitest `frontend/src/features/tabs/store.test.ts` additions: every context-menu action (close/force variants, others, all, left, right, reveal, new request), duplicate tab = same request in two tabs with independent drafts, sidebar click focuses most recent, closed-tab stack (20, LIFO, drafts restored), Cmd+1..9
-- [ ] T025 [P] [US4] Vitest `frontend/src/app/hotkeys.test.ts`: every FR-012 combination on mac/win/linux profiles; `event.code` matching; AltGraph events never trigger Ctrl+Alt shortcuts; Ctrl+Tab and Cmd+Shift+]/[ both cycle
-- [ ] T026 [US4] Implement `features/tabs/components/TabContextMenu.tsx`, closed-tab stack in tabs store (persisted via UIState), duplicate-tab support, full `app/hotkeys.ts`, `features/search/QuickSearch.tsx`, `features/settings/ShortcutsList.tsx` → T024/T025 **green**; manual per-OS check of webview accelerators recorded in quickstart
+- [x] T022 [P] [US4] BDD `test/integration/features/tree/quick_search.feature`: ranking (name prefix > name contains > URL contains), workspace scope, limit
+- [x] T023 [US4] Run → **red**; implement `rank_quick_search.go` + `TreeService.QuickSearch` → **green**
+- [x] T024 [P] [US4] Vitest `frontend/src/features/tabs/store.test.ts` additions: every context-menu action (close/force variants, others, all, left, right, reveal, new request), duplicate tab = same request in two tabs with independent drafts, sidebar click focuses most recent, closed-tab stack (20, LIFO, drafts restored), Cmd+1..9
+- [x] T025 [P] [US4] Vitest `frontend/src/app/hotkeys.test.ts`: every FR-012 combination on mac/win/linux profiles; `event.code` matching; AltGraph events never trigger Ctrl+Alt shortcuts; Ctrl+Tab and Cmd+Shift+]/[ both cycle
+- [x] T026 [US4] Implement `features/tabs/components/TabContextMenu.tsx`, closed-tab stack in tabs store (persisted via UIState), duplicate-tab support, full `app/hotkeys.ts`, `features/search/QuickSearch.tsx`, `features/settings/ShortcutsList.tsx` → T024/T025 **green**; manual per-OS check of webview accelerators recorded in quickstart
 
 ---
 
 ## Phase 7: User Story 5 — Code snippets (P2)
 
-- [ ] T027 [P] [US5] BDD `test/integration/features/snippets/generation_golden.feature` (every golden case × language × option set), `masking.feature` (secrets masked unless include_secrets; Copy matches shown text), `execution.feature` (CI runs generated curl/node/go/python snippets against ApiMock and compares received requests — SC-006)
-- [ ] T028 [US5] Run → **red**; implement `materialise_auth.go` use case, `webservice/snippets/{curl,jsfetch,gonative,pythonrequests}.go`, `snippets.go` service, controllers/bindings (bindings §3) → **green**
-- [ ] T029 [US5] UI `features/side-panel/components/CodePanel.tsx` (language picker, options per language remembered, include-secrets toggle, read-only CodeMirror, copy); RTL tests
+- [x] T027 [P] [US5] BDD `test/integration/features/snippets/generation_golden.feature` (every golden case × language × option set), `masking.feature` (secrets masked unless include_secrets; Copy matches shown text), `execution.feature` (CI runs generated curl/node/go/python snippets against ApiMock and compares received requests — SC-006)
+- [x] T028 [US5] Run → **red**; implement `materialise_auth.go` use case, `webservice/snippets/{curl,jsfetch,gonative,pythonrequests}.go`, `snippets.go` service, controllers/bindings (bindings §3) → **green**
+- [x] T029 [US5] UI `features/side-panel/components/CodePanel.tsx` (language picker, options per language remembered, include-secrets toggle, read-only CodeMirror, copy); RTL tests
 
 ---
 
 ## Phase 8: Polish
 
-- [ ] T030 [P] Security sweep BDD `features/auth/secret_sweep.feature`: after OAuth, cookies, digest and snippet flows, no token/cookie/secret value in workspace files, unencrypted app data, logs or console (SC-004)
-- [ ] T031 [P] Performance: move in a 1,000-request workspace < 200 ms; snippet generation < 50 ms (BDD timing assertions)
+- [x] T030 [P] Security sweep BDD `features/auth/secret_sweep.feature`: after OAuth, cookies, digest and snippet flows, no token/cookie/secret value in workspace files, unencrypted app data, logs or console (SC-004)
+- [x] T031 [P] Performance: move in a 1,000-request workspace < 200 ms; snippet generation < 50 ms (BDD timing assertions)
 - [ ] T032 `/refactor-diff` until clean; `make validate`; CI on 3 OSes (incl. snippet execution); walk [quickstart.md](quickstart.md) on all three OSes including the AltGr check
+
+---
+
+**Phase 6–8 notes (implemented)**:
+- Red runs (test commits): quick search 13 scenarios, 13 failed; snippets 186 scenarios with the
+  shared `@snippets` tag, 185 failed (the passing one is XEN-004's script-snippet scenario); stage-5
+  secret sweep 1 failed (a nil draft config panicked the logger); Code view + closed tabs
+  (`ui_state_roundtrip`) 1 of 2 failed; Vitest `tabs/store.test.ts` 16 of 40 failed and
+  `app/hotkeys.test.ts` failed to collect. T031 shipped green (moves and snippets existed).
+- T022/T023: `TreeService.QuickSearch { local_id, query, limit }` → `[{ id, name, method, url, path }]`
+  where `path` is "Collection / Folder"; ranks name prefix > name contains > URL contains > path
+  contains (FR-014 searches the path too), sidebar order within a rank, `limit` 0 → 50, blank query →
+  none; `TRE-40400` validation.
+- T024–T026: Duplicate tab is placed after its source with a copy of the draft (same base revision).
+  Go suppresses watcher events for its own writes, so after a save the tabs store itself flags the
+  other tabs of the request (dirty → changed-on-disk banner, clean → reload). Sidebar clicks pick the
+  most recently active tab of a request. Close Others/All/Left/Right close clean tabs at once and ask
+  about each dirty one in turn; Cancel stops the batch. The closed-tab stack skips empty untitled
+  tabs and tabs closed because their request was deleted; it persists via `closed_tabs`. Hotkeys
+  match `event.code` (`key` only when an event has no code), `Ctrl` means Control on every OS (Ctrl+Tab
+  on macOS), AltGr blocks every shortcut. Focus URL and Find in response use store ticks consumed
+  by the URL bar and the response body editor. `TabContextMenu` and the shared `ContextMenu` gain
+  disabled items and separators. The manual per-OS accelerator check is a table in quickstart.md,
+  walked at T032.
+- T027/T028: `SnippetService { Languages, Generate, Copy }`; Generate/Copy take `{ local_id, tab_id?,
+  request, language, options (id → value), include_secrets }` and return `{ text, notices[] }`.
+  The generators reproduce postman-code-generators 2.1.1 byte for byte (all 130 golden snippets, also
+  as a unit test), including its quirks (Go form-data line break, fetch/Go/Python "<file contents
+  here>" for binary bodies, fetch reading form files from `fileInput`); Xenon's auto Content-Type is
+  part of the snippet except for form-data (the corpus's url-encoded case switches it off). File
+  paths stay as written (relative to the workspace folder). Auth is materialised as for a send
+  without refreshing tokens: a missing OAuth token, a `mac` token, a Digest owner without a learned
+  or typed challenge and unsupported auth types become a notice and a comment line. Secrets and the
+  credentials computed from them (Basic credential, AWS signature, Digest response) are masked in
+  their URL/JSON/shell/Python-escaped forms unless `include_secrets`. Codes `SNP-00400`/`SNP-01400`
+  validation, `SNP-02400` unknown language. The execution feature runs snippets with bash+curl,
+  node, `go run` and python+requests (CI installs requests via setup-python on all three OSes;
+  outside CI a missing runtime skips those scenarios; `XENON_SNIPPET_PYTHON` picks the interpreter).
+- T029: the right panel gains the `code` view (Go accepts it in the layout). Options are remembered
+  per language in `snippet_options`; the last entry is the language last used.
+- T030: `features/auth/secret_sweep.feature` (OAuth token, persistent cookie, Digest password, client
+  secret, snippets) found the logger panicking on a nil redactable pointer; it now logs `null`.
+- T031: `features/tree/large_workspace_moves.feature`: moves < 200 ms (≈50 ms locally), snippets of a
+  saved request < 50 ms (< 1 ms locally).
 
 ---
 
