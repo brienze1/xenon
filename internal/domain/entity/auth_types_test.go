@@ -122,7 +122,7 @@ func TestOAuth2ConfigPlacementAndHeaders(t *testing.T) {
 }
 
 func TestOAuth2ConfigInvalidReason(t *testing.T) {
-	if reason := validCodeConfig().InvalidReason(); reason != "" {
+	if reason := validCodeConfig().InvalidReason(); reason != "" || !validCodeConfig().CanObtainToken() {
 		t.Fatalf("valid config: %q", reason)
 	}
 	cases := map[string]func(*OAuth2Config){
@@ -134,7 +134,7 @@ func TestOAuth2ConfigInvalidReason(t *testing.T) {
 	for want, change := range cases {
 		config := validCodeConfig()
 		change(&config)
-		if reason := config.InvalidReason(); !strings.Contains(reason, want) {
+		if reason := config.InvalidReason(); !strings.Contains(reason, want) || config.CanObtainToken() {
 			t.Errorf("%s: got %q", want, reason)
 		}
 	}

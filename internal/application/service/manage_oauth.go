@@ -76,8 +76,8 @@ func (m *manageOAuth) GetNewToken(ctx context.Context, localId, owner string, dr
 	if err != nil {
 		return nil, err
 	}
-	if reason := config.InvalidReason(); reason != "" {
-		return nil, usecase.RejectInvalidOAuthConfig(reason)
+	if !config.CanObtainToken() {
+		return nil, usecase.RejectInvalidOAuthConfig(config.InvalidReason())
 	}
 	token, err := m.obtain(ctx, *config)
 	if err != nil {

@@ -122,6 +122,10 @@ func (o OAuth2Config) UsesPostmanCallback() bool {
 	return err == nil && strings.EqualFold(parsed.Hostname(), postmanCallbackHost)
 }
 
+func (o OAuth2Config) CanObtainToken() bool {
+	return o.InvalidReason() == ""
+}
+
 // InvalidReason explains why the configuration cannot obtain a token; empty when it can.
 func (o OAuth2Config) InvalidReason() string {
 	switch {
