@@ -14,6 +14,7 @@ import (
 	"github.com/brienze1/xenon/pkg/errs"
 	"github.com/brienze1/xenon/pkg/fileutils"
 	"github.com/brienze1/xenon/pkg/logger"
+	"github.com/brienze1/xenon/pkg/timeutils"
 )
 
 const (
@@ -49,7 +50,7 @@ func (e *exportFilePersistence) SaveFile(ctx context.Context, target string, dat
 func (e *exportFilePersistence) SaveArchive(ctx context.Context, target string, entries []entity.ExportEntry, written func(done int)) error {
 	logger.Debug(ctx, "Started", map[string]any{"path": target, "entries": len(entries)})
 
-	modified := time.Now()
+	modified := timeutils.Now()
 	err := fileutils.WriteStreamAtomic(target, exportedFileMode, func(writer io.Writer) error {
 		archive := zip.NewWriter(writer)
 		for index, entry := range entries {

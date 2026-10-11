@@ -14,10 +14,8 @@ func NewImportWorkspace(folder, name string, collections []TreeNode, environment
 	for _, collection := range collections {
 		counts = counts.Add(treeCounts(collection))
 	}
-	for _, environment := range environments {
-		if !environment.IsMalformed() {
-			counts = counts.Add(ImportCounts{Environments: 1, Variables: len(environment.Variables)})
-		}
+	for _, environment := range WellFormedEnvironments(environments) {
+		counts = counts.Add(ImportCounts{Environments: 1, Variables: len(environment.Variables)})
 	}
 	return ImportWorkspace{Folder: folder, Name: name, Counts: counts, Secrets: NewSecretBundle(nil)}
 }
