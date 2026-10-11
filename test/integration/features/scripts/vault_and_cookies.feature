@@ -7,8 +7,8 @@ Feature: pm.vault uses the workspace secrets and pm.cookies the response cookies
   pm.vault.get, set and unset return promises and read and write them in the XEN-002 vault
   (set on a new name adds a secret row to the globals), and {{vault:name}} resolves to the same
   value anywhere a variable can be used. pm.cookies lists the cookies the response set (has, get,
-  toObject and the rest of Postman's list API); pm.cookies.jar() belongs to the workspace cookie
-  jar of stage 5 and fails with "cookie jar not available yet" until then.
+  toObject and the rest of Postman's list API); pm.cookies.jar() is the workspace cookie jar of
+  stage 5 (features/cookies/script_jar_allowlist.feature).
 
   Background:
     Given the workspace "Acme" exists
@@ -116,7 +116,7 @@ Feature: pm.vault uses the workspace secrets and pm.cookies the response cookies
         postResponse: |
           console.log(pm.cookies.count(), pm.cookies.has("session"), pm.cookies.get("session"), pm.cookies.get("nope"), JSON.stringify(pm.cookies.toObject()))
           console.log(pm.cookies.one("session").httpOnly, pm.cookies.one("session").path, pm.response.cookies.count())
-          try { pm.cookies.jar() } catch (e) { console.log(e.message) }
+          console.log(typeof pm.cookies.jar().get, typeof pm.cookies.jar().clear)
       """
     When I call "RequestService.Send" with
       """
@@ -133,4 +133,4 @@ Feature: pm.vault uses the workspace secrets and pm.cookies the response cookies
       2 true s-1 undefined {"session":"s-1","theme":"dark"}
       """
     And the response should contain the field "1.summary" equal to "true / 2"
-    And the response should contain the field "2.summary" equal to "cookie jar not available yet"
+    And the response should contain the field "2.summary" equal to "function function"

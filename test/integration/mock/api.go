@@ -200,6 +200,11 @@ func (m *ApiMock) handler(w http.ResponseWriter, r *http.Request) {
 	case <-r.Context().Done():
 		return
 	}
+	for key, values := range extraHeaders {
+		for _, value := range values {
+			w.Header().Add(key, value)
+		}
+	}
 	if redirected {
 		http.Redirect(w, r, redirect.target, redirect.statusCode)
 		return
@@ -208,11 +213,6 @@ func (m *ApiMock) handler(w http.ResponseWriter, r *http.Request) {
 		response = apiResponse{statusCode: http.StatusOK, body: []byte("{}"), contentType: "application/json"}
 	}
 	w.Header().Set("Content-Type", response.contentType)
-	for key, values := range extraHeaders {
-		for _, value := range values {
-			w.Header().Add(key, value)
-		}
-	}
 	w.WriteHeader(response.statusCode)
 	_, _ = w.Write(response.body)
 }
