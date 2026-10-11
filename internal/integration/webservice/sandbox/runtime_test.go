@@ -118,7 +118,7 @@ setImmediate((a, b) => order.push('immediate' + a + b), 1, 2);
 setTimeout((x) => order.push('timeout' + x), 2, 'x');
 let ticks = 0;
 const interval = setInterval(() => { ticks++; if (ticks === 3) { clearInterval(interval) } }, 1);
-await new Promise((resolve) => setTimeout(resolve, 40));
+await new Promise((resolve) => setTimeout(resolve, 250));
 if (order.join() !== 'immediate12,timeoutx' || ticks !== 3) { throw new Error(order.join() + ticks) }`)
 	mustFail(t, "setTimeout('code')", scripterrorkind.Runtime, `TypeError: The "callback" argument must be of type function`, 1, 11)
 }

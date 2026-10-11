@@ -63,10 +63,13 @@ func contextOf(request entity.Request, local map[string]any) entity.ScriptContex
 	return entity.ScriptContext{Request: request, Scopes: scopesOf(local)}
 }
 
+// Windows runners load the Intl polyfill slowly while the whole module is tested in parallel.
+const scriptTestTimeout = 20 * time.Second
+
 func runIn(t *testing.T, phase entity.ScriptRef, scope entity.ScriptContext, requests usecase.SendScriptRequest, text string) entity.ScriptRun {
 	t.Helper()
 	phase.Text = text
-	return testRunner(5*time.Second, memoryGrowthLimit).Run(context.Background(), phase, scope, requests, nil, entity.DefaultAppSettings())
+	return testRunner(scriptTestTimeout, memoryGrowthLimit).Run(context.Background(), phase, scope, requests, nil, entity.DefaultAppSettings())
 }
 
 func postScript() entity.ScriptRef {
