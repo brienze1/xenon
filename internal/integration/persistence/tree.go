@@ -39,6 +39,20 @@ func (t *treePersistence) Load(ctx context.Context, root string) (*entity.Tree, 
 	return &index.Tree, nil
 }
 
+func (t *treePersistence) LoadIndexed(ctx context.Context, root string) (*entity.Tree, error) {
+	logger.Debug(ctx, "Started", map[string]any{"root": root})
+	t.index.Lock(ctx)
+	defer t.index.Unlock(ctx)
+
+	index, err := t.index.Indexed(ctx, root)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Debug(ctx, "Finished", map[string]any{"root": root, "items": index.Size()})
+	return &index.Tree, nil
+}
+
 func (t *treePersistence) FindContainer(ctx context.Context, root, id string) (*entity.Collection, error) {
 	logger.Debug(ctx, "Started", map[string]any{"root": root, "id": id})
 	t.index.Lock(ctx)

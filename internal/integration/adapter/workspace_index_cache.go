@@ -18,5 +18,6 @@ type WorkspaceIndexCache interface {
 	Cached(ctx context.Context, root string) (*entity.TreeIndex, bool)
 	Current(ctx context.Context, root string) (*entity.TreeIndex, error)
 	Refresh(ctx context.Context, root string) (*entity.TreeIndex, error)
+	Indexed(ctx context.Context, root string) (*entity.TreeIndex, error)
 	Resolve(ctx context.Context, root, id string) (*entity.TreeIndex, entity.IndexedItem, bool, error)
 }

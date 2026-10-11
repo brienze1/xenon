@@ -5,8 +5,10 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums"
@@ -21,6 +23,11 @@ const (
 	folderMarker     = "folder.yaml"
 	requestExtension = ".yaml"
 )
+
+type requestRead struct {
+	stored *model.Request
+	reason string
+}
 
 type treeScan struct {
 	identities *entity.ItemIdentities
@@ -61,21 +68,22 @@ func (s *treeScan) container(dir, fileName string, kind enums.ItemKind) entity.T
 	listing := readEntries(dir)
 	folders, unmarked := s.classifyDirectories(dir, listing, folderMarker)
 	requests := requestFiles(listing)
+	reads := readRequests(dir, requests)
 	node := entity.NewContainerNode(container, fileName, entryNames(listing)).WithWarning(warning)
 	for _, name := range container.ArrangedChildren(append(append([]string{}, folders...), requests...)) {
 		if slices.Contains(folders, name) {
 			node.Children = append(node.Children, s.container(filepath.Join(dir, name), name, itemkind.Folder))
 			continue
 		}
-		node.Children = append(node.Children, s.request(filepath.Join(dir, name), name))
+		node.Children = append(node.Children, s.request(filepath.Join(dir, name), name, reads[name]))
 	}
 	node.Children = append(node.Children, s.ignoredNodes(dir, unmarked, folderMarker)...)
 	s.items[id] = entity.NewIndexedItem(dir, kind)
 	return node
 }
 
-func (s *treeScan) request(path, fileName string) entity.TreeNode {
-	stored, reason := readRequest(path)
+func (s *treeScan) request(path, fileName string, read requestRead) entity.TreeNode {
+	stored, reason := read.stored, read.reason
 	if reason != "" {
 		return s.errorNode(path, fileName, reason, false)
 	}
@@ -112,6 +120,28 @@ func (s *treeScan) classifyDirectories(dir string, listing []fs.DirEntry, marker
 		unmarked = append(unmarked, entry.Name())
 	}
 	return marked, unmarked
+}
+
+func readRequests(dir string, names []string) map[string]requestRead {
+	reads := make([]requestRead, len(names))
+	slots := make(chan struct{}, runtime.GOMAXPROCS(0)*2)
+	var group sync.WaitGroup
+	for index, name := range names {
+		group.Add(1)
+		slots <- struct{}{}
+		go func() {
+			defer group.Done()
+			stored, reason := readRequest(filepath.Join(dir, name))
+			reads[index] = requestRead{stored: stored, reason: reason}
+			<-slots
+		}()
+	}
+	group.Wait()
+	byName := make(map[string]requestRead, len(names))
+	for index, name := range names {
+		byName[name] = reads[index]
+	}
+	return byName
 }
 
 func requestFiles(listing []fs.DirEntry) []string {

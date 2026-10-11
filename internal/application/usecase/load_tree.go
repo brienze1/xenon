@@ -8,4 +8,5 @@ import (
 
 type LoadTree interface {
 	Load(ctx context.Context, root string) (*entity.Tree, error)
+	LoadIndexed(ctx context.Context, root string) (*entity.Tree, error)
 }

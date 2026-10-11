@@ -12,6 +12,7 @@ import (
 	"net/http/httptrace"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -109,7 +110,7 @@ func TestSendReturnsTheResponseWithTimings(t *testing.T) {
 		t.Fatalf("headers keep the received order of repeated values: %+v", response.Headers)
 	}
 	timings := response.Timings
-	if timings.Dns <= 0 || timings.Connect <= 0 || timings.FirstByte < 20*time.Millisecond || timings.Download < 20*time.Millisecond || timings.Total < timings.FirstByte+timings.Download {
+	if timings.Dns <= 0 || connectNotMeasured(timings.Connect) || timings.FirstByte < 20*time.Millisecond || timings.Download < 20*time.Millisecond || timings.Total < timings.FirstByte+timings.Download {
 		t.Fatalf("timings = %+v", timings)
 	}
 	if timings.Tls != 0 {
@@ -410,4 +411,12 @@ func TestSendDecodesAndKeepsTheWireSize(t *testing.T) {
 	if got := server.last(t).header.Get("Accept-Encoding"); got != "gzip, deflate, br" {
 		t.Fatalf("accept-encoding = %q", got)
 	}
+}
+
+// A loopback connect can finish within one tick of the Windows clock, so only a negative time is wrong there.
+func connectNotMeasured(connect time.Duration) bool {
+	if runtime.GOOS == "windows" {
+		return connect < 0
+	}
+	return connect <= 0
 }

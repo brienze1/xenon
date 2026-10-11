@@ -170,7 +170,12 @@ func (m *manageTreeItem) Delete(ctx context.Context, localId, id string) ([]stri
 func (m *manageTreeItem) Move(ctx context.Context, localId, id, parentId string, index int) (*entity.Tree, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id, "parentId": parentId, "index": index})
 
-	root, tree, err := m.load(ctx, localId)
+	workspace, err := m.findWorkspaceRegistry.FindWorkspace(ctx, localId)
+	if err != nil {
+		return nil, err
+	}
+	root := workspace.Path
+	tree, err := m.loadTree.LoadIndexed(ctx, root)
 	if err != nil {
 		return nil, err
 	}
