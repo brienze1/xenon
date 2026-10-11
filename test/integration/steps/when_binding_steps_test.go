@@ -21,6 +21,7 @@ func (t *testUtils) registerWhenBindingSteps(ctx *godog.ScenarioContext) {
 	ctx.When(`^I call "(\w+)\.(\w+)" (\d+) times cycling through the payloads$`, t.iCallTimesCyclingThroughThePayloads)
 	ctx.When(`^I call "(\w+)\.(\w+)" and cancel it after (\d+)ms with$`, t.iCallAndCancelItAfterWith)
 	ctx.When(`^I call "(\w+)\.(\w+)" already cancelled with$`, t.iCallAlreadyCancelledWith)
+	ctx.When(`^I call "(\w+)\.(\w+)" and cancel it on the (\d+) "([^"]*)" event with$`, t.iCallAndCancelItOnTheEventWith)
 	ctx.Step(`^I save the response field "([^"]*)" as "([^"]*)"$`, t.iSaveTheResponseFieldAs)
 	ctx.Step(`^I save every "([^"]*)" found in the response as "([^"]*)"$`, t.iSaveEveryFoundInTheResponseAs)
 	ctx.When(`^I start calling "(\w+)\.(\w+)" in the background with$`, t.iStartCallingInTheBackgroundWith)
@@ -108,6 +109,13 @@ func (t *testUtils) iCallAndCancelItAfterWith(service, method string, millisecon
 func (t *testUtils) iCallAlreadyCancelledWith(service, method string, payload *godog.DocString) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
+	return t.call(ctx, service, method, payload.Content)
+}
+
+func (t *testUtils) iCallAndCancelItOnTheEventWith(service, method string, index int, event string, payload *godog.DocString) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	t.events.OnEmit(event, index, cancel)
 	return t.call(ctx, service, method, payload.Content)
 }
 
