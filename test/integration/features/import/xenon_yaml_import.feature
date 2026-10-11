@@ -370,6 +370,61 @@ Feature: Import Xenon YAML exports
       | inside a workspace | , "target_folder": "{{Beta.path}}/nested"                   | WKS-02409 |
       | no folder          | , "target_local_id": "{{Beta.local_id}}"                    | IMP-43400 |
 
+  @workspace @errors @partial
+  Scenario: A workspace import that cannot copy its files fails cleanly
+    Given I call "ImportService.Detect" with
+      """
+      { "paths": ["{{Acme.path}}"] }
+      """
+    And I save the response field "source_id" as "source"
+    And the workspace path "acme" is removed
+    When I call "ImportService.Import" with
+      """
+      { "source_id": "{{source}}", "items": [ { "key": "0", "include": true, "target_folder": "{{temp_root}}/copy" } ] }
+      """
+    Then the call should succeed
+    And the response should contain the field "items.0.status" equal to "failed"
+    And the response should contain the field "items.0.local_id" equal to ""
+    And the response should contain the field "failed" array length equal to 1
+    And the response should contain the field "failed.0.name" equal to "Acme"
+    And the response should contain the field "workspaces" array length equal to 0
+    And the file "copy/workspace.yaml" should not exist
+    And the file ".copy.xenon-tmp" should not exist
+    When I call "WorkspaceService.List"
+    Then the response should contain the field "workspaces" array length equal to 2
+
+  @workspace @errors @partial @secrets
+  Scenario: A workspace import whose secrets cannot be stored leaves no workspace behind
+    Given I call "ExportService.Export" with
+      """
+      {
+        "local_id": "{{Acme.local_id}}", "item_kind": "workspace",
+        "format": "xenon_yaml", "shape": "zip", "include_secrets": true,
+        "passphrase": "correct horse", "passphrase_confirmation": "correct horse",
+        "target_path": "{{temp_root}}/acme.zip"
+      }
+      """
+    And I call "ImportService.Detect" with
+      """
+      { "paths": ["{{temp_root}}/acme.zip"] }
+      """
+    And I save the response field "source_id" as "source"
+    And the keychain fails with "keychain locked"
+    When I call "ImportService.Import" with
+      """
+      { "source_id": "{{source}}", "passphrase": "correct horse", "items": [ { "key": "0", "include": true, "target_folder": "{{temp_root}}/restored" } ] }
+      """
+    Then the call should succeed
+    And the response should contain the field "items.0.status" equal to "failed"
+    And the response should contain the field "items.0.local_id" equal to ""
+    And the response should contain the field "failed" array length equal to 1
+    And the response should contain the field "workspaces" array length equal to 0
+    And the response should not contain "import-SECRET-key"
+    And the file "restored/workspace.yaml" should not exist
+    And the file ".restored.xenon-tmp" should not exist
+    When I call "WorkspaceService.List"
+    Then the response should contain the field "workspaces" array length equal to 2
+
   @secrets @environment
   Scenario: Encrypted secrets go into the target vault with the right passphrase
     Given I call "ExportService.Export" with
@@ -476,6 +531,103 @@ Feature: Import Xenon YAML exports
       """
     Then the call should succeed
     And the response should contain the field "value" equal to "collection-SECRET-key"
+
+  @secrets @collection @into_collection
+  Scenario: A collection's encrypted secrets imported into another collection go to that collection's vault
+    Given I call "TreeService.CreateCollection" with
+      """
+      { "local_id": "{{Beta.local_id}}", "name": "Main" }
+      """
+    And I save the response field "id" as "main"
+    And I call "ExportService.Export" with
+      """
+      {
+        "local_id": "{{Acme.local_id}}", "item_kind": "collection", "item_id": "01JX0000000000000000000001",
+        "format": "xenon_yaml", "shape": "bundle", "include_secrets": true,
+        "passphrase": "correct horse", "passphrase_confirmation": "correct horse",
+        "target_path": "{{temp_root}}/shop-api.yaml"
+      }
+      """
+    And I call "ImportService.Detect" with
+      """
+      { "paths": ["{{temp_root}}/shop-api.yaml"] }
+      """
+    And I save the response field "source_id" as "source"
+    When I call "ImportService.Import" with
+      """
+      { "source_id": "{{source}}", "passphrase": "correct horse", "items": [ { "key": "0", "include": true, "target_local_id": "{{Beta.local_id}}", "target_parent_id": "{{main}}" } ] }
+      """
+    Then the call should succeed
+    And the response should not contain "collection-SECRET-key"
+    And the workspace file "beta/collections/main/collection.yaml" should contain the field "variables.3.key" equal to "api_secret"
+    And the workspace file "beta/collections/main/collection.yaml" should contain the field "variables.3.secret" equal to "true"
+    And no file under the workspace folder should contain "collection-SECRET-key"
+    When I call "VaultService.Reveal" with
+      """
+      { "local_id": "{{Beta.local_id}}", "scope": "collection:{{main}}", "key": "api_secret" }
+      """
+    Then the call should succeed
+    And the response should contain the field "value" equal to "collection-SECRET-key"
+
+  @secrets @collection @into_collection @clash
+  Scenario Outline: An imported collection secret that clashes with the target collection's follows the resolution (<resolution>)
+    Given I call "TreeService.CreateCollection" with
+      """
+      { "local_id": "{{Beta.local_id}}", "name": "Main" }
+      """
+    And I save the response field "id" as "main"
+    And I call "VariableService.SaveTable" with
+      """
+      {
+        "local_id": "{{Beta.local_id}}", "scope": "collection:{{main}}",
+        "rows": [
+          { "key": "api_secret", "secret": true, "enabled": true, "description": "" },
+          { "key": "main_secret", "secret": true, "enabled": true, "description": "" }
+        ]
+      }
+      """
+    And I call "VariableService.SetCurrent" with
+      """
+      { "local_id": "{{Beta.local_id}}", "scope": "collection:{{main}}", "key": "api_secret", "value": "main-SECRET-key" }
+      """
+    And I call "VariableService.SetCurrent" with
+      """
+      { "local_id": "{{Beta.local_id}}", "scope": "collection:{{main}}", "key": "main_secret", "value": "untouched-SECRET-key" }
+      """
+    And I call "ExportService.Export" with
+      """
+      {
+        "local_id": "{{Acme.local_id}}", "item_kind": "collection", "item_id": "01JX0000000000000000000001",
+        "format": "xenon_yaml", "shape": "zip", "include_secrets": true,
+        "passphrase": "correct horse", "passphrase_confirmation": "correct horse",
+        "target_path": "{{temp_root}}/shop-api.zip"
+      }
+      """
+    And I call "ImportService.Detect" with
+      """
+      { "paths": ["{{temp_root}}/shop-api.zip"] }
+      """
+    And I save the response field "source_id" as "source"
+    When I call "ImportService.Import" with
+      """
+      { "source_id": "{{source}}", "passphrase": "correct horse", "items": [ { "key": "0", "include": true, "target_local_id": "{{Beta.local_id}}", "target_parent_id": "{{main}}", "resolution": "<resolution>" } ] }
+      """
+    Then the call should succeed
+    When I call "VaultService.Reveal" with
+      """
+      { "local_id": "{{Beta.local_id}}", "scope": "collection:{{main}}", "key": "api_secret" }
+      """
+    Then the response should contain the field "value" equal to "<value>"
+    When I call "VaultService.Reveal" with
+      """
+      { "local_id": "{{Beta.local_id}}", "scope": "collection:{{main}}", "key": "main_secret" }
+      """
+    Then the response should contain the field "value" equal to "untouched-SECRET-key"
+
+    Examples:
+      | resolution | value                 |
+      | keep_both  | main-SECRET-key       |
+      | replace    | collection-SECRET-key |
 
   @secrets @workspace
   Scenario: A workspace zip's encrypted secrets go into the new workspace's vault
