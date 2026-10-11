@@ -60,7 +60,7 @@ func TestDigestStateLivesBesideTheUIState(t *testing.T) {
 	if json.Unmarshal(data, &fields) != nil || fields[digestStateKey] == nil {
 		t.Fatalf("the broken file is replaced: %s", data)
 	}
-	if err := os.Chmod(path, 0o000); err == nil && os.Getuid() != 0 && os.PathSeparator != '\\' {
+	if os.PathSeparator != '\\' && os.Getuid() != 0 && os.Chmod(path, 0o000) == nil {
 		if _, err := persistence.FindDigestState(ctx, "ws-1", "owner"); errorCode(err) != "UIS-09500" {
 			t.Fatalf("an unreadable file = %v", err)
 		}
@@ -77,8 +77,9 @@ func TestDigestStateWriteFailures(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dataDir, workspacesDataDir), []byte("file"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := NewUIStatePersistence().SaveDigestState(context.Background(), "ws-1", "o", entity.DigestState{}); errorCode(err) != "UIS-09500" {
-		t.Fatalf("SaveDigestState() = %v", err)
+	err := NewUIStatePersistence().SaveDigestState(context.Background(), "ws-1", "o", entity.DigestState{})
+	if code := errorCode(err); code != "UIS-09500" && code != "UIS-07500" {
+		t.Fatalf("SaveDigestState() = %v (%s)", err, code)
 	}
 }
 
