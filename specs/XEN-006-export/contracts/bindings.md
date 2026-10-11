@@ -10,7 +10,9 @@ Prefix `EXP`.
 | `Export(req)` | `ExportRequest` | `ExportSummary` | cancellable via ctx; `EXP-00400` invalid combination; `EXP-01400` passphrase too short/mismatch; `EXP-02500` write failure (temp removed) |
 | `ShowInFolder(req)` | `{ path }` | — | OS file manager |
 
-Event `export:progress { done, total }`.
+Event `export:progress { done, total }`: the start (0), every 50th file of an archive of more
+than 200 files, and the end (total). Event `export:requested { source }`: the native File →
+Export Workspace… menu item. `PickTarget` suggests the extension of the given Xenon YAML shape.
 
 ## `ImportService` additions (XEN-003)
 - `Detect` recognises Xenon kinds; preview includes `encrypted_secrets`.
