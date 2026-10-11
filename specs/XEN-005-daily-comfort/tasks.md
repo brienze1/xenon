@@ -229,8 +229,23 @@ US1 auth · US2 cookies · US3 drag & drop · US4 tabs & hotkeys · US5 snippets
   per language in `snippet_options`; the last entry is the language last used.
 - T030: `features/auth/secret_sweep.feature` (OAuth token, persistent cookie, Digest password, client
   secret, snippets) found the logger panicking on a nil redactable pointer; it now logs `null`.
-- T031: `features/tree/large_workspace_moves.feature`: moves < 200 ms (≈50 ms locally), snippets of a
-  saved request < 50 ms (< 1 ms locally).
+- T031: `features/tree/large_workspace_moves.feature`: moves < 200 ms, snippets of a saved request
+  < 50 ms (< 1 ms locally). The first CI run measured 340–570 ms per move on the Windows runner
+  because `TreeService.Move` scanned the workspace twice; a move now resolves on the index the
+  persistence already keeps (`LoadTree.LoadIndexed`, item paths still checked when the move runs)
+  and scans once afterwards, and the scan reads a folder's request files in parallel (locally a move
+  went from ≈48 ms to ≈25 ms, a full tree load from ≈21 ms to ≈16 ms).
+- CI (polish): `make mutation-test` runs with `XENON_SNIPPET_PROGRAMS=off` — the snippet execution
+  scenarios (bash+curl, node, `go run`, python) ran for every mutant and added more than half an hour
+  to the Linux validate job; generator mutants are killed by the 130 golden snippets, and the
+  execution feature still runs in the normal BDD step on all three OSes.
+- Test hardening for CI timing (no product behaviour changed): the sandbox timer test waits 250 ms
+  for three 1 ms ticks (Windows timers tick every ≈15.6 ms) and pm tests run with a 20 s script limit
+  (Intl polyfill load on a busy Windows runner); the XEN-004 timers parity example uses a 50 ms
+  timeout so a scheduler stall on macOS cannot reorder it; the JSON stringify cases are a slice so
+  gofmt versions agree; the Postman import summary checks the first and last `import:progress`
+  event instead of an exact count (the 100 ms heartbeat may add one); the HTTP timings unit test
+  accepts a zero connect time on Windows only.
 
 ---
 
