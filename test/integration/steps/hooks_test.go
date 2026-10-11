@@ -89,5 +89,6 @@ func (t *testUtils) startApp() {
 		binding.GetExampleService(),
 		binding.GetSettingsService(),
 		binding.GetConsoleService(),
+		binding.GetScriptService(),
 	}
 }

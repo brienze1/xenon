@@ -30,6 +30,7 @@ func GetRouter() adapter.Router {
 				binding.GetExampleService(),
 				binding.GetSettingsService(),
 				binding.GetConsoleService(),
+				binding.GetScriptService(),
 			)
 		})
 	}

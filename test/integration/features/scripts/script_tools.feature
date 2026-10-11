@@ -69,7 +69,7 @@ Feature: Script editor tools
       | pm.request.headers.toObject          | function |
       | pm.request.body.update               | function |
       | pm.request.addQueryParams            | function |
-      | pm.request.auth                      | property |
+      | pm.request.auth                      | object   |
       | pm.response.code                     | property |
       | pm.response.responseTime             | property |
       | pm.response.json                     | function |

@@ -27,7 +27,7 @@ endif
 .PHONY: setup dev bindings build package ensure-dist sort-imports fix-struct-alignment vet \
 	check-dead-code dependency-check tests bdd validate-coverage mutation-test \
 	validate-mutation-coverage validate-test-efficacy frontend-check validate \
-	sandbox-assets parity-oracle parity-diff parity
+	sandbox-assets parity-oracle parity-diff parity script-reference
 
 setup:
 	@echo "Installing pinned tools..."
@@ -274,3 +274,8 @@ parity-diff:
 	TZ=UTC go test -tags parity -count=1 -v -run TestSandboxMatchesPostmanOracle ./test/integration/parity/... | grep -E -- "--- FAIL|differs|parity:|^(ok|FAIL)"; exit $${PIPESTATUS[0]}
 
 parity: parity-oracle parity-diff
+
+script-reference:
+	@echo "Generating the script editor reference from reference/members.tsv and the sandbox shims..."
+	go test ./internal/integration/webservice/sandbox/ -run TestScriptReferenceIsGenerated -count=1 -update-reference
+	@echo "Reference written to internal/integration/webservice/sandbox/reference/reference.json."

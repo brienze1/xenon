@@ -4,6 +4,8 @@ import (
 	"errors"
 	"regexp"
 	"strconv"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/dop251/goja"
 
@@ -44,7 +46,17 @@ func syntaxError(err error, script entity.ScriptRef) entity.ScriptError {
 		return entity.NewScriptError(scripterrorkind.Syntax, "SyntaxError: "+message, script)
 	}
 	text := bareToken.ReplaceAllString(moreErrors.ReplaceAllString(match[3], ""), "Unexpected token '$1'")
-	return entity.NewScriptError(scripterrorkind.Syntax, "SyntaxError: "+text, script).At(userLine(match[1]), number(match[2]))
+	line, column := withinScript(script.Text, userLine(match[1]), number(match[2]))
+	return entity.NewScriptError(scripterrorkind.Syntax, "SyntaxError: "+text, script).At(line, column)
+}
+
+// withinScript moves a position past the script's end (inside the wrapper) to just after its last character.
+func withinScript(text string, line, column int) (int, int) {
+	lines := strings.Split(text, "\n")
+	if line <= len(lines) {
+		return line, column
+	}
+	return len(lines), utf8.RuneCountInString(lines[len(lines)-1]) + 1
 }
 
 func (e *execution) runtimeError(err error) entity.ScriptError {

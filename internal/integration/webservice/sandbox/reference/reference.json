@@ -1,0 +1,1354 @@
+{
+  "members": [
+    {
+      "path": "pm",
+      "signature": "pm",
+      "description": "The Postman scripting object: variables, request, response, tests and helpers.",
+      "kind": "object"
+    },
+    {
+      "path": "pm.variables",
+      "signature": "pm.variables",
+      "description": "Variables of every scope, resolved local → environment → collection → globals; writes stay for this send.",
+      "kind": "object"
+    },
+    {
+      "path": "pm.variables.has",
+      "signature": "has(key: string): boolean",
+      "description": "Whether a variable with this name is defined in any scope.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.variables.get",
+      "signature": "get(key: string): any",
+      "description": "The value of the variable, from the strongest scope that defines it.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.variables.set",
+      "signature": "set(key: string, value: any): void",
+      "description": "Sets a local variable for the rest of this send (it wins over every other scope).",
+      "kind": "function"
+    },
+    {
+      "path": "pm.variables.unset",
+      "signature": "unset(key: string): void",
+      "description": "Removes a local variable set during this send.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.variables.clear",
+      "signature": "clear(): void",
+      "description": "Removes every local variable set during this send.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.variables.replaceIn",
+      "signature": "replaceIn(template: string): string",
+      "description": "Replaces {{variables}} in the text with their values.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.variables.toObject",
+      "signature": "toObject(): object",
+      "description": "Every resolved variable as a plain object.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.environment",
+      "signature": "pm.environment",
+      "description": "The active environment's variables.",
+      "kind": "object"
+    },
+    {
+      "path": "pm.environment.name",
+      "signature": "name: string",
+      "description": "The name of the active environment.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.environment.has",
+      "signature": "has(key: string): boolean",
+      "description": "Whether the active environment defines this variable.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.environment.get",
+      "signature": "get(key: string): any",
+      "description": "The current value of a variable in the active environment.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.environment.set",
+      "signature": "set(key: string, value: any): void",
+      "description": "Sets the current value of a variable in the active environment.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.environment.unset",
+      "signature": "unset(key: string): void",
+      "description": "Clears the current value of a variable in the active environment.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.environment.clear",
+      "signature": "clear(): void",
+      "description": "Clears the current values of every variable in the active environment.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.environment.replaceIn",
+      "signature": "replaceIn(template: string): string",
+      "description": "Replaces {{variables}} in the text with the active environment's values.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.environment.toObject",
+      "signature": "toObject(): object",
+      "description": "The active environment's variables as a plain object.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.collectionVariables",
+      "signature": "pm.collectionVariables",
+      "description": "The variables of the request's collection.",
+      "kind": "object"
+    },
+    {
+      "path": "pm.collectionVariables.has",
+      "signature": "has(key: string): boolean",
+      "description": "Whether the collection defines this variable.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.collectionVariables.get",
+      "signature": "get(key: string): any",
+      "description": "The current value of a collection variable.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.collectionVariables.set",
+      "signature": "set(key: string, value: any): void",
+      "description": "Sets the current value of a collection variable.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.collectionVariables.unset",
+      "signature": "unset(key: string): void",
+      "description": "Clears the current value of a collection variable.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.collectionVariables.clear",
+      "signature": "clear(): void",
+      "description": "Clears the current values of every collection variable.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.collectionVariables.replaceIn",
+      "signature": "replaceIn(template: string): string",
+      "description": "Replaces {{variables}} in the text with the collection's values.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.collectionVariables.toObject",
+      "signature": "toObject(): object",
+      "description": "The collection variables as a plain object.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.globals",
+      "signature": "pm.globals",
+      "description": "The workspace's global variables.",
+      "kind": "object"
+    },
+    {
+      "path": "pm.globals.has",
+      "signature": "has(key: string): boolean",
+      "description": "Whether a global variable with this name exists.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.globals.get",
+      "signature": "get(key: string): any",
+      "description": "The current value of a global variable.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.globals.set",
+      "signature": "set(key: string, value: any): void",
+      "description": "Sets the current value of a global variable.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.globals.unset",
+      "signature": "unset(key: string): void",
+      "description": "Clears the current value of a global variable.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.globals.clear",
+      "signature": "clear(): void",
+      "description": "Clears the current values of every global variable.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.globals.replaceIn",
+      "signature": "replaceIn(template: string): string",
+      "description": "Replaces {{variables}} in the text with the global values.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.globals.toObject",
+      "signature": "toObject(): object",
+      "description": "The global variables as a plain object.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.iterationData",
+      "signature": "pm.iterationData",
+      "description": "Collection-runner data; always empty in Xenon.",
+      "kind": "object"
+    },
+    {
+      "path": "pm.iterationData.has",
+      "signature": "has(key: string): boolean",
+      "description": "Always false: Xenon has no collection runner.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.iterationData.get",
+      "signature": "get(key: string): any",
+      "description": "Always undefined: Xenon has no collection runner.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.iterationData.unset",
+      "signature": "unset(key: string): void",
+      "description": "Does nothing: Xenon has no collection runner.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.iterationData.toObject",
+      "signature": "toObject(): object",
+      "description": "Always an empty object.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.iterationData.toJSON",
+      "signature": "toJSON(): object",
+      "description": "Always an empty object.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request",
+      "signature": "pm.request",
+      "description": "The request being sent; changes in pre-request scripts apply to this send only.",
+      "kind": "object"
+    },
+    {
+      "path": "pm.request.url",
+      "signature": "url: Url",
+      "description": "The request URL.",
+      "kind": "object"
+    },
+    {
+      "path": "pm.request.url.toString",
+      "signature": "toString(): string",
+      "description": "The full URL as text.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.url.getHost",
+      "signature": "getHost(): string",
+      "description": "The host name.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.url.getPath",
+      "signature": "getPath(): string",
+      "description": "The path, starting with /.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.url.getPathWithQuery",
+      "signature": "getPathWithQuery(): string",
+      "description": "The path followed by the query string.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.url.getQueryString",
+      "signature": "getQueryString(): string",
+      "description": "The query string without the leading ?.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.url.getRaw",
+      "signature": "getRaw(): string",
+      "description": "The URL as written.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.url.getRemote",
+      "signature": "getRemote(): string",
+      "description": "The host and port.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.url.update",
+      "signature": "update(url: string | object): void",
+      "description": "Replaces the URL.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.url.addQueryParams",
+      "signature": "addQueryParams(params: string | object[]): void",
+      "description": "Adds query parameters.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.url.removeQueryParams",
+      "signature": "removeQueryParams(params: string | string[]): void",
+      "description": "Removes query parameters by name.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.url.query",
+      "signature": "query: PropertyList",
+      "description": "The query parameters.",
+      "kind": "object"
+    },
+    {
+      "path": "pm.request.method",
+      "signature": "method: string",
+      "description": "The HTTP method.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.request.headers",
+      "signature": "headers: HeaderList",
+      "description": "The request headers.",
+      "kind": "object"
+    },
+    {
+      "path": "pm.request.headers.add",
+      "signature": "add(header: { key: string, value: string }): void",
+      "description": "Adds a header.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.upsert",
+      "signature": "upsert(header: { key: string, value: string }): void",
+      "description": "Adds a header or replaces the one with the same name.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.remove",
+      "signature": "remove(key: string): void",
+      "description": "Removes the headers with this name.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.get",
+      "signature": "get(key: string): string",
+      "description": "The value of a header.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.has",
+      "signature": "has(key: string, value?: string): boolean",
+      "description": "Whether a header with this name (and value) exists.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.one",
+      "signature": "one(key: string): Header",
+      "description": "The header with this name.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.all",
+      "signature": "all(): Header[]",
+      "description": "Every header.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.each",
+      "signature": "each(callback: (header) =\u003e void): void",
+      "description": "Calls the callback for every header.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.filter",
+      "signature": "filter(callback: (header) =\u003e boolean): Header[]",
+      "description": "The headers the callback accepts.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.find",
+      "signature": "find(callback: (header) =\u003e boolean): Header",
+      "description": "The first header the callback accepts.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.map",
+      "signature": "map(callback: (header) =\u003e any): any[]",
+      "description": "Maps every header.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.reduce",
+      "signature": "reduce(callback, initial): any",
+      "description": "Reduces the headers to one value.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.count",
+      "signature": "count(): number",
+      "description": "The number of headers.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.clear",
+      "signature": "clear(): void",
+      "description": "Removes every header.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.toObject",
+      "signature": "toObject(): object",
+      "description": "The headers as a name → value object.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.insert",
+      "signature": "insert(header, before?): void",
+      "description": "Inserts a header, before another one if given.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.prepend",
+      "signature": "prepend(header): void",
+      "description": "Adds a header at the start.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.append",
+      "signature": "append(header): void",
+      "description": "Adds a header at the end.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.populate",
+      "signature": "populate(headers): void",
+      "description": "Adds several headers.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.repopulate",
+      "signature": "repopulate(headers): void",
+      "description": "Replaces every header.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.idx",
+      "signature": "idx(index: number): Header",
+      "description": "The header at this position.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.headers.indexOf",
+      "signature": "indexOf(header): number",
+      "description": "The position of a header.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.body",
+      "signature": "body: RequestBody",
+      "description": "The request body.",
+      "kind": "object"
+    },
+    {
+      "path": "pm.request.body.mode",
+      "signature": "mode: string",
+      "description": "The body mode: raw, urlencoded, formdata, file or graphql.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.request.body.raw",
+      "signature": "raw: string",
+      "description": "The raw body text.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.request.body.urlencoded",
+      "signature": "urlencoded: PropertyList",
+      "description": "The URL-encoded form fields.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.request.body.formdata",
+      "signature": "formdata: PropertyList",
+      "description": "The multipart form fields.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.request.body.update",
+      "signature": "update(body: string | object): void",
+      "description": "Replaces the body.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.body.isEmpty",
+      "signature": "isEmpty(): boolean",
+      "description": "Whether the body has no content.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.body.toString",
+      "signature": "toString(): string",
+      "description": "The body as text.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.body.toJSON",
+      "signature": "toJSON(): object",
+      "description": "The body as a plain object.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.addHeader",
+      "signature": "addHeader(header): void",
+      "description": "Adds a header.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.upsertHeader",
+      "signature": "upsertHeader(header): void",
+      "description": "Adds a header or replaces the one with the same name.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.removeHeader",
+      "signature": "removeHeader(key: string): void",
+      "description": "Removes a header.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.addQueryParams",
+      "signature": "addQueryParams(params): void",
+      "description": "Adds query parameters.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.removeQueryParams",
+      "signature": "removeQueryParams(params): void",
+      "description": "Removes query parameters.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.update",
+      "signature": "update(request: object): void",
+      "description": "Replaces parts of the request.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.clone",
+      "signature": "clone(): Request",
+      "description": "A copy of the request.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.size",
+      "signature": "size(): object",
+      "description": "The size of the request.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.toJSON",
+      "signature": "toJSON(): object",
+      "description": "The request as a plain object.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.request.auth",
+      "signature": "auth: RequestAuth",
+      "description": "The request's authorization.",
+      "kind": "object"
+    },
+    {
+      "path": "pm.response",
+      "signature": "pm.response",
+      "description": "The response (post-response scripts only).",
+      "kind": "object"
+    },
+    {
+      "path": "pm.response.code",
+      "signature": "code: number",
+      "description": "The status code.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.status",
+      "signature": "status: string",
+      "description": "The status text, e.g. OK.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.headers",
+      "signature": "headers: HeaderList",
+      "description": "The response headers.",
+      "kind": "object"
+    },
+    {
+      "path": "pm.response.headers.get",
+      "signature": "get(key: string): string",
+      "description": "The value of a response header.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.headers.has",
+      "signature": "has(key: string, value?: string): boolean",
+      "description": "Whether a response header with this name (and value) exists.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.headers.toObject",
+      "signature": "toObject(): object",
+      "description": "The response headers as a name → value object.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.responseTime",
+      "signature": "responseTime: number",
+      "description": "How long the response took, in milliseconds.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.responseSize",
+      "signature": "responseSize: number",
+      "description": "The size of the response body, in bytes.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.cookies",
+      "signature": "cookies: CookieList",
+      "description": "The cookies the response set.",
+      "kind": "object"
+    },
+    {
+      "path": "pm.response.json",
+      "signature": "json(): any",
+      "description": "The body parsed as JSON.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.jsonp",
+      "signature": "jsonp(callback?: string): any",
+      "description": "The body parsed as JSONP.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.text",
+      "signature": "text(): string",
+      "description": "The body as text.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.reason",
+      "signature": "reason(): string",
+      "description": "The status reason phrase.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.details",
+      "signature": "details(): object",
+      "description": "The status code, name and detail.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.size",
+      "signature": "size(): object",
+      "description": "The body and header sizes.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.mime",
+      "signature": "mime(): object",
+      "description": "The content type of the body.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.contentInfo",
+      "signature": "contentInfo(): object",
+      "description": "The content type, charset and file name of the body.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.dataURI",
+      "signature": "dataURI(): string",
+      "description": "The body as a data URI.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.encoding",
+      "signature": "encoding(): object",
+      "description": "The encoding of the body.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.to",
+      "signature": "to: Assertion",
+      "description": "Starts an assertion on the response (pm.response.to.have.status(200)).",
+      "kind": "object"
+    },
+    {
+      "path": "pm.response.to.have.status",
+      "signature": "status(code: number | string)",
+      "description": "Asserts the status code, or the reason when given a string.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.to.have.statusCode",
+      "signature": "statusCode(code: number)",
+      "description": "Asserts the status code.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.to.have.statusCodeClass",
+      "signature": "statusCodeClass(digit: number)",
+      "description": "Asserts the first digit of the status code.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.to.have.statusReason",
+      "signature": "statusReason(reason: string)",
+      "description": "Asserts the status reason phrase.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.to.have.header",
+      "signature": "header(key: string, value?: string)",
+      "description": "Asserts a header exists (with this value).",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.to.have.body",
+      "signature": "body(value?: string | object)",
+      "description": "Asserts the body (equals the value).",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.to.have.jsonBody",
+      "signature": "jsonBody(path?: string, value?: any)",
+      "description": "Asserts the body is JSON (with this value at the path).",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.to.have.jsonSchema",
+      "signature": "jsonSchema(schema: object, ajvOptions?: object)",
+      "description": "Asserts the JSON body matches the schema.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.response.to.have.responseTime",
+      "signature": "responseTime",
+      "description": "Asserts on the response time (e.g. .below(200)).",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.have.responseSize",
+      "signature": "responseSize",
+      "description": "Asserts on the response size.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.ok",
+      "signature": "ok",
+      "description": "Asserts status 200 OK.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.error",
+      "signature": "error",
+      "description": "Asserts a 4xx or 5xx status.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.json",
+      "signature": "json",
+      "description": "Asserts the body is JSON.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.withBody",
+      "signature": "withBody",
+      "description": "Asserts the response has a body.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.info",
+      "signature": "info",
+      "description": "Asserts a 1xx status.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.success",
+      "signature": "success",
+      "description": "Asserts a 2xx status.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.redirection",
+      "signature": "redirection",
+      "description": "Asserts a 3xx status.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.clientError",
+      "signature": "clientError",
+      "description": "Asserts a 4xx status.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.serverError",
+      "signature": "serverError",
+      "description": "Asserts a 5xx status.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.accepted",
+      "signature": "accepted",
+      "description": "Asserts status 202 Accepted.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.withoutContent",
+      "signature": "withoutContent",
+      "description": "Asserts status 204 No Content.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.badRequest",
+      "signature": "badRequest",
+      "description": "Asserts status 400 Bad Request.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.unauthorized",
+      "signature": "unauthorized",
+      "description": "Asserts status 401 Unauthorized.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.unauthorised",
+      "signature": "unauthorised",
+      "description": "Asserts status 401 Unauthorized.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.forbidden",
+      "signature": "forbidden",
+      "description": "Asserts status 403 Forbidden.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.notFound",
+      "signature": "notFound",
+      "description": "Asserts status 404 Not Found.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.notAcceptable",
+      "signature": "notAcceptable",
+      "description": "Asserts status 406 Not Acceptable.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.rateLimited",
+      "signature": "rateLimited",
+      "description": "Asserts status 429 Too Many Requests.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.postmanRequest",
+      "signature": "postmanRequest",
+      "description": "Asserts the value is a Postman request.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.postmanResponse",
+      "signature": "postmanResponse",
+      "description": "Asserts the value is a Postman response.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.response.to.be.postmanRequestOrResponse",
+      "signature": "postmanRequestOrResponse",
+      "description": "Asserts the value is a Postman request or response.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.info",
+      "signature": "pm.info",
+      "description": "Information about the running script.",
+      "kind": "object"
+    },
+    {
+      "path": "pm.info.eventName",
+      "signature": "eventName: string",
+      "description": "prerequest or test.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.info.iteration",
+      "signature": "iteration: number",
+      "description": "Always 0: Xenon has no collection runner.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.info.iterationCount",
+      "signature": "iterationCount: number",
+      "description": "Always 1: Xenon has no collection runner.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.info.requestName",
+      "signature": "requestName: string",
+      "description": "The name of the request being sent.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.info.requestId",
+      "signature": "requestId: string",
+      "description": "The id of the request being sent.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.cookies",
+      "signature": "pm.cookies",
+      "description": "The cookies for the request's domain.",
+      "kind": "object"
+    },
+    {
+      "path": "pm.cookies.has",
+      "signature": "has(name: string): boolean",
+      "description": "Whether a cookie with this name exists.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.cookies.get",
+      "signature": "get(name: string): string",
+      "description": "The value of a cookie.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.cookies.toObject",
+      "signature": "toObject(): object",
+      "description": "The cookies as a name → value object.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.cookies.jar",
+      "signature": "jar(): CookieJar",
+      "description": "The workspace cookie jar (get, getAll, set, unset, clear).",
+      "kind": "function"
+    },
+    {
+      "path": "pm.sendRequest",
+      "signature": "sendRequest(request: string | object, callback?: (err, response) =\u003e void): Promise\u003cResponse\u003e",
+      "description": "Sends another request; resolves {{variables}}; await it or pass a callback.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.execution",
+      "signature": "pm.execution",
+      "description": "Controls the current send.",
+      "kind": "object"
+    },
+    {
+      "path": "pm.execution.skipRequest",
+      "signature": "skipRequest(): void",
+      "description": "Skips sending the request (pre-request scripts only).",
+      "kind": "function"
+    },
+    {
+      "path": "pm.execution.runRequest",
+      "signature": "runRequest(requestId: string, options?: { variables }): Promise\u003cResponse\u003e",
+      "description": "Runs a saved request with its scripts.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.execution.location",
+      "signature": "location: string[]",
+      "description": "The path of the item whose script runs; .current is that item.",
+      "kind": "property"
+    },
+    {
+      "path": "pm.execution.setNextRequest",
+      "signature": "setNextRequest(name: string): void",
+      "description": "Does nothing: Xenon has no collection runner.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.test",
+      "signature": "test(name: string, fn: (done?) =\u003e void): pm",
+      "description": "Defines a test; take done for asynchronous tests.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.test.skip",
+      "signature": "skip(name: string): pm",
+      "description": "Defines a skipped test.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.test.index",
+      "signature": "index(): number",
+      "description": "The number of tests defined so far.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.expect",
+      "signature": "expect(value: any): Assertion",
+      "description": "Starts a Chai assertion.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.vault",
+      "signature": "pm.vault",
+      "description": "The workspace secrets.",
+      "kind": "object"
+    },
+    {
+      "path": "pm.vault.get",
+      "signature": "get(key: string): Promise\u003cstring\u003e",
+      "description": "The value of a workspace secret.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.vault.set",
+      "signature": "set(key: string, value: string): Promise\u003cvoid\u003e",
+      "description": "Sets a workspace secret.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.vault.unset",
+      "signature": "unset(key: string): Promise\u003cvoid\u003e",
+      "description": "Removes the value of a workspace secret.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.visualizer",
+      "signature": "pm.visualizer",
+      "description": "Postman's visualizer; not rendered in Xenon.",
+      "kind": "object"
+    },
+    {
+      "path": "pm.visualizer.set",
+      "signature": "set(template: string, data?: object): void",
+      "description": "Does nothing: Xenon does not render visualizations.",
+      "kind": "function"
+    },
+    {
+      "path": "pm.visualizer.clear",
+      "signature": "clear(): void",
+      "description": "Does nothing: Xenon does not render visualizations.",
+      "kind": "function"
+    },
+    {
+      "path": "console",
+      "signature": "console",
+      "description": "Writes to the console.",
+      "kind": "object"
+    },
+    {
+      "path": "console.log",
+      "signature": "log(...values: any[]): void",
+      "description": "Logs values.",
+      "kind": "function"
+    },
+    {
+      "path": "console.info",
+      "signature": "info(...values: any[]): void",
+      "description": "Logs values at info level.",
+      "kind": "function"
+    },
+    {
+      "path": "console.warn",
+      "signature": "warn(...values: any[]): void",
+      "description": "Logs values at warning level.",
+      "kind": "function"
+    },
+    {
+      "path": "console.error",
+      "signature": "error(...values: any[]): void",
+      "description": "Logs values at error level.",
+      "kind": "function"
+    },
+    {
+      "path": "console.debug",
+      "signature": "debug(...values: any[]): void",
+      "description": "Logs values at debug level.",
+      "kind": "function"
+    },
+    {
+      "path": "console.clear",
+      "signature": "clear(): void",
+      "description": "Clears the console.",
+      "kind": "function"
+    },
+    {
+      "path": "setTimeout",
+      "signature": "setTimeout(callback: () =\u003e void, ms?: number): number",
+      "description": "Runs the callback after a delay; the script waits for it.",
+      "kind": "function"
+    },
+    {
+      "path": "clearTimeout",
+      "signature": "clearTimeout(id: number): void",
+      "description": "Cancels a timeout.",
+      "kind": "function"
+    },
+    {
+      "path": "setInterval",
+      "signature": "setInterval(callback: () =\u003e void, ms?: number): number",
+      "description": "Runs the callback repeatedly.",
+      "kind": "function"
+    },
+    {
+      "path": "clearInterval",
+      "signature": "clearInterval(id: number): void",
+      "description": "Cancels an interval.",
+      "kind": "function"
+    },
+    {
+      "path": "setImmediate",
+      "signature": "setImmediate(callback: () =\u003e void): number",
+      "description": "Runs the callback as soon as possible.",
+      "kind": "function"
+    },
+    {
+      "path": "clearImmediate",
+      "signature": "clearImmediate(id: number): void",
+      "description": "Cancels an immediate callback.",
+      "kind": "function"
+    },
+    {
+      "path": "atob",
+      "signature": "atob(base64: string): string",
+      "description": "Decodes base64 text.",
+      "kind": "function"
+    },
+    {
+      "path": "btoa",
+      "signature": "btoa(text: string): string",
+      "description": "Encodes text as base64.",
+      "kind": "function"
+    },
+    {
+      "path": "Buffer",
+      "signature": "Buffer",
+      "description": "Node's Buffer for binary data.",
+      "kind": "function"
+    },
+    {
+      "path": "URL",
+      "signature": "URL",
+      "description": "Parses and builds URLs.",
+      "kind": "function"
+    },
+    {
+      "path": "URLSearchParams",
+      "signature": "URLSearchParams",
+      "description": "Parses and builds query strings.",
+      "kind": "function"
+    },
+    {
+      "path": "TextEncoder",
+      "signature": "TextEncoder",
+      "description": "Encodes text as UTF-8 bytes.",
+      "kind": "function"
+    },
+    {
+      "path": "TextDecoder",
+      "signature": "TextDecoder",
+      "description": "Decodes UTF-8 bytes to text.",
+      "kind": "function"
+    },
+    {
+      "path": "structuredClone",
+      "signature": "structuredClone(value: any): any",
+      "description": "A deep copy of the value.",
+      "kind": "function"
+    },
+    {
+      "path": "queueMicrotask",
+      "signature": "queueMicrotask(callback: () =\u003e void): void",
+      "description": "Runs the callback after the current task.",
+      "kind": "function"
+    },
+    {
+      "path": "crypto",
+      "signature": "crypto",
+      "description": "Web Crypto.",
+      "kind": "object"
+    },
+    {
+      "path": "crypto.getRandomValues",
+      "signature": "getRandomValues(array: TypedArray): TypedArray",
+      "description": "Fills the array with random values.",
+      "kind": "function"
+    },
+    {
+      "path": "crypto.randomUUID",
+      "signature": "randomUUID(): string",
+      "description": "A random UUID v4.",
+      "kind": "function"
+    },
+    {
+      "path": "crypto.subtle",
+      "signature": "crypto.subtle",
+      "description": "Web Crypto digests and HMAC.",
+      "kind": "object"
+    },
+    {
+      "path": "crypto.subtle.digest",
+      "signature": "digest(algorithm: string, data: BufferSource): Promise\u003cArrayBuffer\u003e",
+      "description": "Hashes data (SHA-1, SHA-256, SHA-384, SHA-512).",
+      "kind": "function"
+    },
+    {
+      "path": "crypto.subtle.importKey",
+      "signature": "importKey(format, keyData, algorithm, extractable, usages): Promise\u003cCryptoKey\u003e",
+      "description": "Imports an HMAC key.",
+      "kind": "function"
+    },
+    {
+      "path": "crypto.subtle.sign",
+      "signature": "sign(algorithm, key, data): Promise\u003cArrayBuffer\u003e",
+      "description": "Signs data with an HMAC key.",
+      "kind": "function"
+    },
+    {
+      "path": "crypto.subtle.verify",
+      "signature": "verify(algorithm, key, signature, data): Promise\u003cboolean\u003e",
+      "description": "Verifies an HMAC signature.",
+      "kind": "function"
+    },
+    {
+      "path": "AbortController",
+      "signature": "AbortController",
+      "description": "Creates abort signals.",
+      "kind": "function"
+    },
+    {
+      "path": "AbortSignal",
+      "signature": "AbortSignal",
+      "description": "A signal that something was aborted.",
+      "kind": "function"
+    },
+    {
+      "path": "Event",
+      "signature": "Event",
+      "description": "A DOM event.",
+      "kind": "function"
+    },
+    {
+      "path": "EventTarget",
+      "signature": "EventTarget",
+      "description": "Dispatches DOM events.",
+      "kind": "function"
+    },
+    {
+      "path": "DOMException",
+      "signature": "DOMException",
+      "description": "A DOM error.",
+      "kind": "function"
+    },
+    {
+      "path": "Blob",
+      "signature": "Blob",
+      "description": "Binary data with a type.",
+      "kind": "function"
+    },
+    {
+      "path": "Intl",
+      "signature": "Intl",
+      "description": "Number and date formatting (en-US).",
+      "kind": "object"
+    },
+    {
+      "path": "require",
+      "signature": "require(name: string): any",
+      "description": "Loads a library: ajv, chai, cheerio, crypto-js, lodash, moment, uuid, xml2js, …",
+      "kind": "function"
+    },
+    {
+      "path": "CryptoJS",
+      "signature": "CryptoJS",
+      "description": "crypto-js 3.3.0 (HmacSHA256, SHA256, AES, enc.Base64, …).",
+      "kind": "object"
+    },
+    {
+      "path": "_",
+      "signature": "_",
+      "description": "lodash 3 (the legacy global; require('lodash') gives lodash 4).",
+      "kind": "function"
+    },
+    {
+      "path": "tv4",
+      "signature": "tv4",
+      "description": "Tiny Validator for JSON Schema.",
+      "kind": "object"
+    },
+    {
+      "path": "cheerio",
+      "signature": "cheerio",
+      "description": "jQuery-style HTML parsing.",
+      "kind": "function"
+    },
+    {
+      "path": "xml2Json",
+      "signature": "xml2Json(xml: string): object",
+      "description": "Converts XML to a JSON object.",
+      "kind": "function"
+    },
+    {
+      "path": "postman",
+      "signature": "postman",
+      "description": "The legacy postman object (setEnvironmentVariable, getResponseHeader, …).",
+      "kind": "object"
+    },
+    {
+      "path": "tests",
+      "signature": "tests",
+      "description": "Legacy tests: tests[\"name\"] = condition.",
+      "kind": "object"
+    },
+    {
+      "path": "responseBody",
+      "signature": "responseBody: string",
+      "description": "Legacy: the response body as text.",
+      "kind": "property"
+    },
+    {
+      "path": "responseCode",
+      "signature": "responseCode: { code, name, detail }",
+      "description": "Legacy: the response status.",
+      "kind": "object"
+    },
+    {
+      "path": "responseHeaders",
+      "signature": "responseHeaders: object",
+      "description": "Legacy: the response headers.",
+      "kind": "object"
+    },
+    {
+      "path": "responseTime",
+      "signature": "responseTime: number",
+      "description": "Legacy: the response time in milliseconds.",
+      "kind": "property"
+    }
+  ]
+}

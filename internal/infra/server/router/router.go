@@ -28,6 +28,7 @@ type router struct {
 	example      *binding.ExampleService
 	settings     *binding.SettingsService
 	console      *binding.ConsoleService
+	script       *binding.ScriptService
 }
 
 func NewRouter(
@@ -46,6 +47,7 @@ func NewRouter(
 	example *binding.ExampleService,
 	settings *binding.SettingsService,
 	console *binding.ConsoleService,
+	script *binding.ScriptService,
 ) serverAdapter.Router {
 	return &router{
 		workspace:    workspace,
@@ -63,6 +65,7 @@ func NewRouter(
 		example:      example,
 		settings:     settings,
 		console:      console,
+		script:       script,
 	}
 }
 
@@ -131,5 +134,6 @@ func (r *router) registerServices() []wails.Service {
 		r.registerExampleRoutes(),
 		r.registerSettingsRoutes(),
 		r.registerConsoleRoutes(),
+		r.registerScriptRoutes(),
 	}
 }
