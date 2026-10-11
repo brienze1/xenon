@@ -114,18 +114,53 @@ US1 auth · US2 cookies · US3 drag & drop · US4 tabs & hotkeys · US5 snippets
 
 ## Phase 4: User Story 2 — Cookies (P1)
 
-- [ ] T015 [P] [US2] BDD `test/integration/features/cookies/jar_send_store.feature`, `redirects.feature`, `disable_jar.feature`, `isolation.feature`: Set-Cookie stored, sent on matching requests and shown as auto-generated header, merged with manual Cookie header, redirect hops captured, disable jar per request, per-workspace isolation, `cookies_set` in SendResult
-- [ ] T016 [P] [US2] BDD `test/integration/features/cookies/dialog_crud.feature`, `persistence_encrypted.feature`, `script_jar_allowlist.feature`: CRUD + domain ops + clear; restart keeps persistent cookies, drops session cookies; `cookies.age` not plaintext (grep value → 0 matches); locked vault keeps cookies in memory until unlock; `pm.cookies.jar()` methods allowed/denied by allowlist with Postman errors
-- [ ] T017 [US2] Run → **red**; implement `webservice/cookiejar/` fork (+ unit tests ported from stdlib), `persistence/cookies.go`, service `cookies.go`, send integration, `pm.cookies.jar()` wiring in the XEN-004 sandbox, controllers/bindings (bindings §2), event `cookies:changed` → **green**
-- [ ] T018 [US2] UI `features/cookies/`: `CookiesDialog` (domains list, cookie editor with raw `Set-Cookie`-style input, delete domain, clear all, allowlist tab), `ResponseCookiesTab`; RTL tests
+- [x] T015 [P] [US2] BDD `test/integration/features/cookies/jar_send_store.feature`, `redirects.feature`, `disable_jar.feature`, `isolation.feature`: Set-Cookie stored, sent on matching requests and shown as auto-generated header, merged with manual Cookie header, redirect hops captured, disable jar per request, per-workspace isolation, `cookies_set` in SendResult
+- [x] T016 [P] [US2] BDD `test/integration/features/cookies/dialog_crud.feature`, `persistence_encrypted.feature`, `script_jar_allowlist.feature`: CRUD + domain ops + clear; restart keeps persistent cookies, drops session cookies; `cookies.age` not plaintext (grep value → 0 matches); locked vault keeps cookies in memory until unlock; `pm.cookies.jar()` methods allowed/denied by allowlist with Postman errors
+- [x] T017 [US2] Run → **red**; implement `webservice/cookiejar/` fork (+ unit tests ported from stdlib), `persistence/cookies.go`, service `cookies.go`, send integration, `pm.cookies.jar()` wiring in the XEN-004 sandbox, controllers/bindings (bindings §2), event `cookies:changed` → **green**
+- [x] T018 [US2] UI `features/cookies/`: `CookiesDialog` (domains list, cookie editor with raw `Set-Cookie`-style input, delete domain, clear all, allowlist tab), `ResponseCookiesTab`; RTL tests
 
 ---
 
 ## Phase 5: User Story 3 — Drag and drop (P2)
 
-- [ ] T019 [P] [US3] BDD `test/integration/features/tree/drag_drop_moves.feature`: request across folders/collections (file moved, both orders rewritten, unique file name on clash), reorder within folder, folder reorder/nest/un-nest, collection reorder, into-own-descendant `TRE-02422`, watcher emits no external-change events for own moves, open tab ids unaffected
-- [ ] T020 [US3] Run → **red**; implement `persistence/tree.go` Move + `move_tree_item` use case + `TreeService.Move` → **green**
-- [ ] T021 [US3] UI sidebar dnd-kit tree (drop indicators before/inside/after, auto-expand 600 ms, edge auto-scroll, Esc cancel); RTL tests with dnd-kit test utilities
+- [x] T019 [P] [US3] BDD `test/integration/features/tree/drag_drop_moves.feature`: request across folders/collections (file moved, both orders rewritten, unique file name on clash), reorder within folder, folder reorder/nest/un-nest, collection reorder, into-own-descendant `TRE-02422`, watcher emits no external-change events for own moves, open tab ids unaffected
+- [x] T020 [US3] Run → **red**; implement `persistence/tree.go` Move + `move_tree_item` use case + `TreeService.Move` → **green**
+- [x] T021 [US3] UI sidebar dnd-kit tree (drop indicators before/inside/after, auto-expand 600 ms, edge auto-scroll, Esc cancel); RTL tests with dnd-kit test utilities
+
+
+**Phase 4–5 notes (implemented)**:
+- Red runs (test commits): cookies 43 scenarios, 2 passed / 41 failed (the passing ones are guards
+  that already held: a disabled jar sends nothing; session-only cookies write no file); drag and drop
+  25 scenarios, 25 failed. Green: every `@cookies` and `@drag_drop_moves` scenario and the full suite.
+- T017 jar: `webservice/cookiejar` forks `net/http/cookiejar` (LICENSE kept, stdlib tests ported;
+  punycode via `x/net/idna`, always `x/net/publicsuffix`) adding `SetCookie`/`Parse` with errors,
+  `Matching`, `All`, `Delete`, `Import` and a revision counter. One jar per workspace (keyed by app
+  data dir + local id, so a restart in BDD starts empty) behind `CookieJarWebservice`
+  (`ManageCookieJar` port + `HttpJar` for the HTTP client). Every send and `pm.sendRequest` uses it
+  unless `disableCookieJar`; the Cookie auto header (computed, resolved URL) shows the jar cookies and
+  switching it off keeps storing but sends none; a manual Cookie header is merged by `net/http`.
+  `SendResult.cookies_set` lists the cookies the final response set (redirect hops go to the jar).
+- Persistence: `cookies.age` (vault persistence, encrypted to the workspace identity) is written
+  synchronously after a send or dialog change that changed the jar (not debounced: the BDD restart
+  must see it); the first persistent cookie creates the vault like a first secret (mode chosen as
+  for secrets); session cookies are never written; a locked, undecided or needs-passphrase vault
+  keeps the cookies in memory, and the next cookie call after unlock merges the file and writes.
+- CookieService: `Upsert { local_id, domain, raw, replaces? }` takes the dialog's Set-Cookie line
+  (Go parses it against `https://<domain>/`: no Domain attribute = host-only); codes `CKE-00400`
+  invalid, `CKE-01400…07400` controller validation, `CKE-08409` vault cannot hold cookies,
+  `CKE-09403` script access denied, `CKE-10400` invalid script URL, `CKE-13500` encryption. "Add
+  domain" is UI-only until a cookie is saved for it. The allowlist lives in `state.json`
+  `cookie_allowlist` (Go-owned key), normalised, subdomains allowed.
+- `pm.cookies.jar()` follows postman-sandbox's `PostmanCookieJar`: callback or promise
+  (`dualModeFunction`), TypeErrors delivered to the callback/promise, "callback needs to be a
+  function" thrown; denied hosts fail with `CookieStore: programmatic access to "<host>" is denied`.
+  `RunScript.Run` gains a `ScriptCookieJar` port (implemented by the send run).
+- T020: `ResolveTreeMove` (pure) + `MoveTreeItem` port; `index` is the position among the new
+  parent's other children (clamped). Extra codes: `TRE-38422` only collections at the top level,
+  `TRE-39422` collections stay at the top level, `TRE-14400` validation. The index cache records own
+  moves (source and target paths, 2 s like own writes), so the watcher reports neither side.
+- T018/T021 UI: Cookies button in the footer opens `CookiesDialog`; `ResponseCookiesTab` sits before
+  Headers. The tree drag uses dnd-kit with pointer sensor only (keyboard users keep the menus).
 
 ---
 
