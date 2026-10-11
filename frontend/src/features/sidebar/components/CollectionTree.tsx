@@ -1,15 +1,45 @@
+import {
+  DndContext,
+  MeasuringStrategy,
+  PointerSensor,
+  pointerWithin,
+  useSensor,
+  useSensors,
+  type Announcements,
+  type ScreenReaderInstructions,
+} from '@dnd-kit/core'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { rovingIndex } from '@/shared/lib/roving-focus'
 import { Button } from '@/shared/ui/button/Button'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
 import { StackArt } from '@/shared/ui/empty-state/illustrations/StackArt'
+import { useTreeDrag } from '@/features/sidebar/hooks/use-tree-drag'
 import { isExpandable, visibleRows, type TreeRow } from '@/features/sidebar/lib/tree-rows'
 import { useSidebarStore } from '@/features/sidebar/store'
 import styles from './CollectionTree.module.css'
 import { TreeItem, type TreeItemActions } from './TreeItem'
 
 export const TREE_ROW_HEIGHT = 28
+
+const DRAG_DISTANCE_PX = 5
+
+const MEASURING = { droppable: { strategy: MeasuringStrategy.Always } }
+
+const AUTO_SCROLL = { threshold: { x: 0, y: 0.15 } }
+
+const SCREEN_READER_INSTRUCTIONS: ScreenReaderInstructions = {
+  draggable: 'Drag an item onto a folder or collection to move it inside, or between items to reorder; press Escape to cancel.',
+}
+
+const ANNOUNCEMENTS: Announcements = {
+  onDragStart: () => 'You picked up the item.',
+  onDragOver: ({ over }) => (over ? 'You moved the item over another one.' : 'The item is no longer over a drop position.'),
+  onDragEnd: ({ over }) => (over ? 'You dropped the item.' : 'You dropped the item back in place.'),
+  onDragCancel: () => 'You cancelled moving the item.',
+}
+
+const ACCESSIBILITY = { screenReaderInstructions: SCREEN_READER_INSTRUCTIONS, announcements: ANNOUNCEMENTS }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- the tree takes exactly the row actions it forwards
 interface CollectionTreeProps extends TreeItemActions {}
@@ -49,6 +79,8 @@ export function CollectionTree(actions: CollectionTreeProps) {
   const focusId = [activeId, selectedId].find((id) => rows.some((row) => row.node.id === id)) ?? rows[0]?.node.id ?? null
   const scrollRef = useRef<HTMLDivElement>(null)
   const pendingFocus = useRef<string | null>(null)
+  const drag = useTreeDrag()
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: DRAG_DISTANCE_PX } }))
   // eslint-disable-next-line react-hooks/incompatible-library -- the virtualizer is read during render only, never memoized
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -127,20 +159,33 @@ export function CollectionTree(actions: CollectionTreeProps) {
 
   return (
     <div ref={scrollRef} className={styles.scroll}>
-      <div role="tree" aria-label="Collections" className={styles.tree} style={{ height: virtualizer.getTotalSize() }} onKeyDown={onKeyDown}>
-        {virtualizer.getVirtualItems().map((item) => {
-          const row = rows[item.index]
-          return row ? (
-            <div
-              key={row.node.id}
-              className={styles.slot}
-              style={{ height: item.size, transform: `translateY(${item.start}px)` }}
-            >
-              <TreeItem row={row} focusable={row.node.id === focusId} {...actions} />
-            </div>
-          ) : null
-        })}
-      </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={pointerWithin}
+        measuring={MEASURING}
+        autoScroll={AUTO_SCROLL}
+        accessibility={ACCESSIBILITY}
+        onDragStart={drag.onDragStart}
+        onDragMove={drag.onDragMove}
+        onDragOver={drag.onDragMove}
+        onDragEnd={drag.onDragEnd}
+        onDragCancel={drag.onDragCancel}
+      >
+        <div role="tree" aria-label="Collections" className={styles.tree} style={{ height: virtualizer.getTotalSize() }} onKeyDown={onKeyDown}>
+          {virtualizer.getVirtualItems().map((item) => {
+            const row = rows[item.index]
+            return row ? (
+              <div
+                key={row.node.id}
+                className={styles.slot}
+                style={{ height: item.size, transform: `translateY(${item.start}px)` }}
+              >
+                <TreeItem row={row} focusable={row.node.id === focusId} {...actions} />
+              </div>
+            ) : null
+          })}
+        </div>
+      </DndContext>
     </div>
   )
 }

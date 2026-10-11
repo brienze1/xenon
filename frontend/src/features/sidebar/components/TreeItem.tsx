@@ -1,8 +1,10 @@
+import { useDraggable, useDroppable } from '@dnd-kit/core'
 import type { CSSProperties, KeyboardEvent, MouseEvent } from 'react'
 import { cn } from '@/shared/lib/cn'
 import { ContextMenu } from '@/shared/ui/context-menu/ContextMenu'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
 import type { TreeNode } from '@/platform/mappers/tree'
+import { isDraggable } from '@/features/sidebar/lib/tree-drop'
 import { isContainer, isExpandable, type TreeRow } from '@/features/sidebar/lib/tree-rows'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { RenameInput } from './RenameInput'
@@ -45,6 +47,10 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenEx
   const duplicateExample = useSidebarStore((state) => state.duplicateExample)
   const createFolder = useSidebarStore((state) => state.createFolder)
   const createRequest = useSidebarStore((state) => state.createRequest)
+  const dropPosition = useSidebarStore((state) => (state.dropTarget?.id === node.id ? state.dropTarget.position : null))
+  const dragging = useSidebarStore((state) => state.draggingId === node.id)
+  const draggable = useDraggable({ id: node.id, disabled: renaming || !isDraggable(node) })
+  const droppable = useDroppable({ id: node.id, disabled: node.kind === 'example' })
   const container = isContainer(node)
   const expandable = isExpandable(node)
   const isExample = node.kind === 'example'
@@ -104,14 +110,27 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenEx
     <ContextMenu.Root>
       <ContextMenu.Trigger>
         <div
+          ref={(element) => {
+            draggable.setNodeRef(element)
+            droppable.setNodeRef(element)
+          }}
+          {...draggable.listeners}
+          aria-describedby={draggable.attributes['aria-describedby']}
           role="treeitem"
           data-tree-id={node.id}
+          data-drop={dropPosition ?? undefined}
           aria-level={depth + 1}
           aria-expanded={expandable ? expanded : undefined}
           aria-selected={selected}
           tabIndex={focusable ? 0 : -1}
           title={node.error ?? node.warning ?? undefined}
-          className={cn(styles.row, selected && styles.selected, node.kind === 'error' && styles.error)}
+          className={cn(
+            styles.row,
+            selected && styles.selected,
+            node.kind === 'error' && styles.error,
+            dragging && styles.dragging,
+            dropPosition && styles[dropPosition],
+          )}
           style={{ '--depth': depth } as CSSProperties}
           onClick={activate}
           onDoubleClick={pinItem}

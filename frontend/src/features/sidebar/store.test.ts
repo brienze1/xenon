@@ -14,6 +14,7 @@ vi.mock('@/platform/services/tree', () => ({
   deleteItem: vi.fn(),
   getItemSettings: vi.fn(),
   saveItemSettings: vi.fn(),
+  moveItem: vi.fn(),
 }))
 vi.mock('@/platform/services/requests', () => ({ parseBulk: vi.fn(), formatBulk: vi.fn() }))
 vi.mock('@/platform/services/environments', () => ({
@@ -224,5 +225,28 @@ describe('sidebar store', () => {
   it('describes the location of an item', () => {
     expect(selectLocation(sample, 'r1')).toEqual(['name-c1', 'name-r1'])
     expect(selectLocation(sample, 'x')).toEqual([])
+  })
+
+  it('tracks the dragged item and its drop target, keeping an unchanged target as is', () => {
+    state().startDrag('r1')
+    state().setDropTarget({ id: 'c1', position: 'inside' })
+    const target = state().dropTarget
+    state().setDropTarget({ id: 'c1', position: 'inside' })
+    expect(state().dropTarget).toBe(target)
+    expect(state()).toMatchObject({ draggingId: 'r1', dropTarget: { id: 'c1', position: 'inside' } })
+    state().setDropTarget(null)
+    expect(state().dropTarget).toBeNull()
+    state().endDrag()
+    expect(state()).toMatchObject({ draggingId: null, dropTarget: null })
+  })
+
+  it('moves an item, showing the new tree, or reports why it could not', async () => {
+    vi.mocked(tree.moveItem).mockResolvedValueOnce(sample)
+    await state().move('r1', { parentId: '', index: 0 })
+    expect(tree.moveItem).toHaveBeenCalledWith('ws', 'r1', '', 0)
+    expect(state()).toMatchObject({ tree: sample, selectedId: 'r1', expanded: {} })
+    vi.mocked(tree.moveItem).mockRejectedValueOnce(new AppError('TRE-02422', 'a folder cannot be moved into itself'))
+    await state().move('c1', { parentId: 'c1', index: 0 })
+    expect(state().error).toMatchObject({ code: 'TRE-02422' })
   })
 })

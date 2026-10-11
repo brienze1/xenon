@@ -16,11 +16,13 @@ import {
   duplicateItem,
   getItemSettings,
   getTree,
+  moveItem,
   renameItem,
   saveItemSettings,
   searchTree,
 } from '@/platform/services/tree'
 import { deleteExample, duplicateExample, renameExample } from '@/platform/services/examples'
+import type { DropTarget, MoveTarget } from './lib/tree-drop'
 import { findExampleRequest, findPath } from './lib/tree-rows'
 import type { SidebarSnapshot, SidebarStatus } from './model'
 
@@ -42,6 +44,10 @@ interface SidebarState {
   renamingId: string | null
   query: string
   search: TreeSearchResult | null
+  /** The item being dragged in the tree. */
+  draggingId: string | null
+  /** Where the dragged item would drop now (the drop indicator). */
+  dropTarget: DropTarget | null
   load: () => Promise<void>
   setTree: (tree: TreeNode[]) => void
   applyState: (state: SidebarSnapshot) => void
@@ -70,6 +76,11 @@ interface SidebarState {
   saveSettings: (settings: ItemSettings) => Promise<AppError | null>
   formatBulk: (rows: KeyValueRow[]) => Promise<Result<string, AppError>>
   parseBulk: (text: string) => Promise<Result<KeyValueRow[], AppError>>
+  startDrag: (id: string) => void
+  setDropTarget: (target: DropTarget | null) => void
+  endDrag: () => void
+  /** Moves the item to the new parent and index and shows the moved item. */
+  move: (id: string, target: MoveTarget) => Promise<void>
   clearError: () => void
   reset: () => void
 }
@@ -94,6 +105,8 @@ const initialState = {
   renamingId: null as string | null,
   query: '',
   search: null as TreeSearchResult | null,
+  draggingId: null as string | null,
+  dropTarget: null as DropTarget | null,
 }
 
 export const useSidebarStore = create<SidebarState>()((set, get) => {
@@ -347,6 +360,29 @@ export const useSidebarStore = create<SidebarState>()((set, get) => {
     formatBulk: (rows) => attempt(() => formatBulkRows(rows)),
 
     parseBulk: (text) => attempt(() => parseBulkText(text)),
+
+    startDrag: (id) => set({ draggingId: id, dropTarget: null }),
+
+    setDropTarget: (target) =>
+      set((state) =>
+        state.dropTarget?.id === target?.id && state.dropTarget?.position === target?.position ? state : { dropTarget: target },
+      ),
+
+    endDrag: () => set({ draggingId: null, dropTarget: null }),
+
+    move: async (id, target) => {
+      await run(async (localId) => {
+        const tree = await moveItem(localId, id, target.parentId, target.index)
+        if (activeLocalId() !== localId) {
+          return
+        }
+        set((state) => ({
+          tree,
+          selectedId: id,
+          expanded: target.parentId ? { ...state.expanded, [target.parentId]: true } : state.expanded,
+        }))
+      })
+    },
 
     clearError: () => set({ error: null }),
 
