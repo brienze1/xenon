@@ -305,7 +305,7 @@ func diff(expected, actual map[string]any) []string {
 }
 
 func runCase(runner interface {
-	Run(context.Context, entity.ScriptRef, entity.ScriptContext, usecase.SendScriptRequest, entity.AppSettings) entity.ScriptRun
+	Run(context.Context, entity.ScriptRef, entity.ScriptContext, usecase.SendScriptRequest, usecase.ScriptCookieJar, entity.AppSettings) entity.ScriptRun
 }, testCase corpusCase) outcome {
 	phase := scriptphase.PostResponse
 	if testCase.Phase == "prerequest" {
@@ -313,7 +313,7 @@ func runCase(runner interface {
 	}
 	script := entity.ScriptRef{Phase: phase, OwnerKind: scriptownerkind.Request, ItemID: testCase.ID, OwnerName: testCase.ID, Text: testCase.Script}
 	requests := &fixtureRequests{sent: []any{}, sends: testCase.SendRequest, runs: testCase.RunRequest}
-	run := runner.Run(context.Background(), script, contextOf(testCase), requests, entity.DefaultAppSettings())
+	run := runner.Run(context.Background(), script, contextOf(testCase), requests, nil, entity.DefaultAppSettings())
 	result := outcome{
 		ID:           testCase.ID,
 		Tests:        []outcomeTest{},
