@@ -37,6 +37,17 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install the snippet runtimes (curl, node, go and python requests run generated snippets in BDD)
+        run: |
+          python -m pip install requests==2.32.3
+          curl --version
+          node --version
+          go version
+
       - name: Install Linux webview dependencies
         if: runner.os == 'Linux'
         run: |

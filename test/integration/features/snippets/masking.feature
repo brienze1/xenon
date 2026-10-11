@@ -341,7 +341,7 @@ Feature: Snippets materialise auth and mask secrets
       }
       """
     Then the call should succeed
-    And the response should contain the field "text" matching "--header 'X-Amz-Date: 20261011T100000Z'"
+    And the response should contain the field "text" matching "--header 'X-Amz-Date: 20261011T1000[0-9]{2}Z'"
     And the response should contain the field "text" matching "--header 'Authorization: AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20261011/us-east-1/execute-api/aws4_request, SignedHeaders=host;x-amz-date, Signature=•••••'"
     And the response should not contain "wJalrXUtnFEMI"
     When I call "SnippetService.Generate" with

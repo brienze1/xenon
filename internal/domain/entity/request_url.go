@@ -53,6 +53,15 @@ func (r RequestUrl) QueryParams() []KeyValue {
 	return params
 }
 
+func (r RequestUrl) QueryValue(name string) string {
+	for _, param := range r.QueryParams() {
+		if param.Key == name {
+			return param.Value
+		}
+	}
+	return ""
+}
+
 func (r RequestUrl) WithQuery(params []KeyValue) RequestUrl {
 	pairs := make([]string, 0, len(params))
 	for _, param := range params {

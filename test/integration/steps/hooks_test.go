@@ -100,5 +100,6 @@ func (t *testUtils) startApp() {
 		binding.GetScriptService(),
 		binding.GetOAuthService(),
 		binding.GetCookieService(),
+		binding.GetSnippetService(),
 	}
 }

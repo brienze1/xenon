@@ -33,6 +33,7 @@ func GetRouter() adapter.Router {
 				binding.GetScriptService(),
 				binding.GetOAuthService(),
 				binding.GetCookieService(),
+				binding.GetSnippetService(),
 			)
 		})
 	}

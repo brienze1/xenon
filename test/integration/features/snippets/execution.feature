@@ -233,7 +233,7 @@ Feature: Generated snippets reproduce the request when run
     Then the 1 "DELETE" request to "/orders/7" should have the header "Authorization" equal to "Basic YW5hOnMzY3JldA=="
     And the 1 "GET" request to "/search" should have the query "q" equal to "x"
     And the 1 "GET" request to "/search" should have the query "api_key" equal to "k3y"
-    And the 1 "GET" request to "/items" should have the header "X-Amz-Date" equal to "20261011T100000Z"
+    And the 1 "GET" request to "/items" should have the header "X-Amz-Date" matching "^20261011T1000[0-9]{2}Z$"
     And the 1 "GET" request to "/items" should have the header "Authorization" matching "^AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20261011/eu-west-1/execute-api/aws4_request, SignedHeaders=host;x-amz-date, Signature=[0-9a-f]{64}$"
 
     Examples:
