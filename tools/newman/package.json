@@ -1,0 +1,10 @@
+{
+  "name": "xenon-newman",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Runs Xenon's Postman exports with Newman against the BDD harness's mock server (XEN-006 SC-002).",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "newman": "6.2.2"
+  }
+}

@@ -18,6 +18,7 @@ require (
 	github.com/go-playground/validator/v10 v10.30.5
 	github.com/icholy/digest v1.2.0
 	github.com/oklog/ulid/v2 v2.1.2
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 	github.com/wailsapp/wails/v3 v3.0.0-beta.28
 	github.com/zalando/go-keyring v0.2.8
 	go.yaml.in/yaml/v3 v3.0.5

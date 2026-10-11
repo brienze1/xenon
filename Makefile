@@ -28,7 +28,7 @@ endif
 .PHONY: setup dev bindings build package ensure-dist sort-imports fix-struct-alignment vet \
 	check-dead-code dependency-check tests bdd validate-coverage mutation-test \
 	validate-mutation-coverage validate-test-efficacy frontend-check validate \
-	sandbox-assets parity-oracle parity-diff parity script-reference snippet-golden
+	sandbox-assets parity-oracle parity-diff parity script-reference snippet-golden newman
 
 setup:
 	@echo "Installing pinned tools..."
@@ -290,3 +290,9 @@ script-reference:
 	@echo "Generating the script editor reference from reference/members.tsv and the sandbox shims..."
 	go test ./internal/integration/webservice/sandbox/ -run TestScriptReferenceIsGenerated -count=1 -update-reference
 	@echo "Reference written to internal/integration/webservice/sandbox/reference/reference.json."
+
+newman: ensure-dist
+	@echo "Installing the pinned Newman (tools/newman)..."
+	cd tools/newman && npm ci --no-audit --no-fund
+	@echo "Exporting the Xenon-created corpus to Postman and running it with Newman against the mock server..."
+	go test ./test/integration/steps/... -v -count=1 --scenarios=@newman

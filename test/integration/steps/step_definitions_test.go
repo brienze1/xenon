@@ -139,6 +139,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	test.registerThenRouteSteps(ctx)
 	test.registerThenResponseSteps(ctx)
 	test.registerThenFileSteps(ctx)
+	test.registerThenExportFileSteps(ctx)
 	test.registerThenEventSteps(ctx)
 	test.registerThenApiSteps(ctx)
 	test.registerThenApiBodySteps(ctx)
