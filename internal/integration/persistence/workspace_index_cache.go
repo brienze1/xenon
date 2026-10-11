@@ -127,10 +127,19 @@ func (w *workspaceIndexCache) Refresh(ctx context.Context, root string) (*entity
 }
 
 func (w *workspaceIndexCache) Indexed(ctx context.Context, root string) (*entity.TreeIndex, error) {
-	if index, found := w.roots[root]; found {
-		return index, nil
+	logger.Debug(ctx, "Started", map[string]any{"root": root})
+
+	index, found := w.roots[root]
+	if !found {
+		refreshed, err := w.Refresh(ctx, root)
+		if err != nil {
+			return nil, err
+		}
+		index = refreshed
 	}
-	return w.Refresh(ctx, root)
+
+	logger.Debug(ctx, "Finished", map[string]any{"root": root, "items": index.Size()})
+	return index, nil
 }
 
 func (w *workspaceIndexCache) Resolve(ctx context.Context, root, id string) (*entity.TreeIndex, entity.IndexedItem, bool, error) {

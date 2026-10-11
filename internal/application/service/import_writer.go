@@ -98,10 +98,7 @@ func (w importWriter) keepTokens(ctx context.Context, localId string, tokens []e
 		return
 	}
 	_, err := w.variables.vaults.update(ctx, localId, func(vault entity.Vault) entity.Vault {
-		for _, token := range tokens {
-			vault = vault.WithToken(token)
-		}
-		return vault
+		return vault.WithTokens(tokens)
 	})
 	if err != nil {
 		logger.Warn(ctx, err, "The imported OAuth 2.0 tokens could not be kept in the vault", map[string]any{"localId": localId, "tokens": len(tokens)})

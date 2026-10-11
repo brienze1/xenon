@@ -7,6 +7,6 @@ import (
 )
 
 type AnswerDigestChallenge interface {
-	ReadChallenge(ctx context.Context, challenge string) (*entity.DigestState, error)
+	ReadChallenge(ctx context.Context, challenge string) (*entity.DigestState, bool)
 	Answer(ctx context.Context, request entity.EffectiveRequest, auth entity.DigestAuth, state entity.DigestState) (string, error)
 }

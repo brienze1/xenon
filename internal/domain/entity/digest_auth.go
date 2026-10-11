@@ -45,6 +45,16 @@ func (d DigestAuth) TypedState() (DigestState, bool) {
 	return DigestState{Realm: d.Realm, Nonce: d.Nonce, Opaque: d.Opaque, Algorithm: d.Algorithm, Qop: d.Qop, NonceCount: int(count)}, true
 }
 
+func (d DigestAuth) KnownState(stored *DigestState) *DigestState {
+	if stored != nil {
+		return stored
+	}
+	if typed, found := d.TypedState(); found {
+		return &typed
+	}
+	return nil
+}
+
 func (d DigestAuth) MapText(transform func(string) string) DigestAuth {
 	d.Username = transform(d.Username)
 	d.Password = transform(d.Password)

@@ -35,17 +35,18 @@ func NewDigestWebservice() adapter.DigestWebservice {
 	return &digestWebservice{}
 }
 
-func (d *digestWebservice) ReadChallenge(ctx context.Context, challenge string) (*entity.DigestState, error) {
+func (d *digestWebservice) ReadChallenge(ctx context.Context, challenge string) (*entity.DigestState, bool) {
 	logger.Debug(ctx, "Started", map[string]any{"challenge": challenge})
 
 	parsed, err := digest.ParseChallenge(challenge)
 	if err != nil {
-		return nil, errs.BadRequestError("the server's Digest challenge could not be read: "+err.Error(), "DIG-01400")
+		logger.Debug(ctx, "Finished", map[string]any{"challenge": challenge, "readable": false, "reason": err.Error()})
+		return nil, false
 	}
 	state := entity.DigestState{Realm: parsed.Realm, Nonce: parsed.Nonce, Opaque: parsed.Opaque, Algorithm: challengeAlgorithm(parsed.Algorithm), Qop: challengeQop(parsed.QOP)}
 
 	logger.Debug(ctx, "Finished", state)
-	return &state, nil
+	return &state, true
 }
 
 func (d *digestWebservice) Answer(ctx context.Context, request entity.EffectiveRequest, auth entity.DigestAuth, state entity.DigestState) (string, error) {

@@ -278,9 +278,9 @@ func digestParam(header, key string) string {
 
 func TestDigestReadChallengeAndAnswer(t *testing.T) {
 	service := NewDigestWebservice()
-	state, err := service.ReadChallenge(context.Background(), `Digest realm="r", nonce="n", opaque="o", algorithm=MD5-sess, qop="auth-int, auth"`)
-	if err != nil || *state != (entity.DigestState{Realm: "r", Nonce: "n", Opaque: "o", Algorithm: digestalgorithm.MD5Sess, Qop: digestqop.Auth}) {
-		t.Fatalf("state = %+v, %v", state, err)
+	state, readable := service.ReadChallenge(context.Background(), `Digest realm="r", nonce="n", opaque="o", algorithm=MD5-sess, qop="auth-int, auth"`)
+	if !readable || *state != (entity.DigestState{Realm: "r", Nonce: "n", Opaque: "o", Algorithm: digestalgorithm.MD5Sess, Qop: digestqop.Auth}) {
+		t.Fatalf("state = %+v, %v", state, readable)
 	}
 	if state, _ := service.ReadChallenge(context.Background(), `Digest realm="r", nonce="n", algorithm=SHA-1, qop="auth-int"`); state.Algorithm != digestalgorithm.MD5 || state.Qop != digestqop.AuthInt {
 		t.Fatalf("fallbacks = %+v", state)
@@ -288,8 +288,8 @@ func TestDigestReadChallengeAndAnswer(t *testing.T) {
 	if state, _ := service.ReadChallenge(context.Background(), `Digest realm="r", nonce="n"`); state.Qop != digestqop.None {
 		t.Fatalf("no qop = %+v", state)
 	}
-	if _, err := service.ReadChallenge(context.Background(), `Basic realm="r"`); codeOf(t, err) != "DIG-01400" {
-		t.Fatalf("basic = %v", err)
+	if state, readable := service.ReadChallenge(context.Background(), `Basic realm="r"`); readable || state != nil {
+		t.Fatalf("basic = %+v, %v", state, readable)
 	}
 	request := entity.EffectiveRequest{Method: "GET", URL: "http://h/dir/index.html?x=1"}
 	auth := entity.DigestAuth{Username: "Mufasa", Password: "Circle of Life", Algorithm: digestalgorithm.MD5, ClientNonce: "0a4f113b"}

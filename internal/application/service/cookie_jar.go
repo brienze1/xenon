@@ -53,7 +53,7 @@ func (c cookieJar) settle(ctx context.Context, localId string, before uint64) er
 	if state.Loaded && state.HasUnsavedChanges() {
 		c.save(ctx, localId, state)
 	}
-	if state.Revision == before {
+	if !state.ChangedSince(before) {
 		return nil
 	}
 	return c.publishWorkspaceEvent.CookiesChanged(ctx, localId)

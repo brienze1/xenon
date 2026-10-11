@@ -551,3 +551,40 @@ func TestVaultTokens(t *testing.T) {
 		t.Fatal("NewVaultFromStorage keeps the tokens")
 	}
 }
+
+func TestDigestKnownStatePrefersTheStoredChallenge(t *testing.T) {
+	stored := &DigestState{Realm: "stored", Nonce: "s"}
+	typed := DigestAuth{Realm: "typed", Nonce: "t", NonceCount: "0a"}
+	if got := typed.KnownState(stored); got != stored {
+		t.Fatalf("stored state = %+v", got)
+	}
+	if got := typed.KnownState(nil); got == nil || got.Realm != "typed" || got.NonceCount != 10 {
+		t.Fatalf("typed state = %+v", got)
+	}
+	if got := (DigestAuth{}).KnownState(nil); got != nil {
+		t.Fatalf("no state = %+v", got)
+	}
+}
+
+func TestVaultWithTokensKeepsEveryOwner(t *testing.T) {
+	vault := Vault{}.WithTokens([]OAuth2Token{{Owner: "a"}, {Owner: "b"}})
+	if _, found := vault.OAuth2Tokens["a"]; !found {
+		t.Fatal("token a missing")
+	}
+	if _, found := vault.OAuth2Tokens["b"]; !found {
+		t.Fatal("token b missing")
+	}
+}
+
+func TestCookieJarStateChangedSince(t *testing.T) {
+	state := CookieJarState{Revision: 3}
+	if state.ChangedSince(3) || !state.ChangedSince(2) {
+		t.Fatalf("ChangedSince = %v / %v", state.ChangedSince(3), state.ChangedSince(2))
+	}
+}
+
+func TestAuthIsBasic(t *testing.T) {
+	if !(Auth{Type: authtype.Basic}).IsBasic() || (Auth{Type: authtype.Bearer}).IsBasic() {
+		t.Fatal("IsBasic")
+	}
+}

@@ -92,6 +92,13 @@ func (v Vault) WithToken(token OAuth2Token) Vault {
 	return v
 }
 
+func (v Vault) WithTokens(tokens []OAuth2Token) Vault {
+	for _, token := range tokens {
+		v = v.WithToken(token)
+	}
+	return v
+}
+
 func (v Vault) WithoutToken(owner string) Vault {
 	v.OAuth2Tokens = copyTokens(v.OAuth2Tokens)
 	delete(v.OAuth2Tokens, owner)

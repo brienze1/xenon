@@ -110,6 +110,10 @@ func (a Auth) HasDigest() bool {
 	return a.IsDigest() && a.Digest.Algorithm != "" || !a.Digest.IsBlank()
 }
 
+func (a Auth) IsBasic() bool {
+	return a.Type == authtype.Basic
+}
+
 func (a Auth) IsApiKey() bool {
 	return a.Type == authtype.ApiKey
 }

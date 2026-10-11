@@ -160,13 +160,11 @@ func (s *generateSnippet) authorize(ctx context.Context, localId string, request
 }
 
 func (s *generateSnippet) digest(ctx context.Context, localId string, request entity.EffectiveRequest) (entity.EffectiveRequest, []string, error) {
-	state, err := s.findDigestState.FindDigestState(ctx, localId, request.AuthOwner)
+	stored, err := s.findDigestState.FindDigestState(ctx, localId, request.AuthOwner)
 	if err != nil {
 		return request, nil, err
 	}
-	if typed, found := request.Auth.Digest.TypedState(); state == nil && found {
-		state = &typed
-	}
+	state := request.Auth.Digest.KnownState(stored)
 	if state == nil {
 		return request, []string{entity.DigestChallengeNotice}, nil
 	}
