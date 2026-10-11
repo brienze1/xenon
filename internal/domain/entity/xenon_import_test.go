@@ -169,3 +169,15 @@ func TestVaultWithBundle(t *testing.T) {
 		t.Error("the original vault is not changed")
 	}
 }
+
+func TestImportResultLeavesOutWorkspacelessFailures(t *testing.T) {
+	failure := ImportFailure{ItemKey: "0", Name: "Acme"}
+	result := NewImportResult().WithOutcome(ImportOutcome{Item: ImportItemResult{Key: "0", Name: "Acme"}, Failure: &failure})
+	if len(result.Workspaces) != 0 || len(result.Failed) != 1 || len(result.Items) != 1 {
+		t.Errorf("result = %+v", result)
+	}
+	result = result.WithOutcome(ImportOutcome{Item: ImportItemResult{Key: "1", LocalID: "local"}})
+	if len(result.Workspaces) != 1 || result.Workspaces[0].LocalID != "local" {
+		t.Errorf("workspaces = %+v", result.Workspaces)
+	}
+}

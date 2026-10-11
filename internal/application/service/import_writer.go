@@ -94,7 +94,7 @@ func (w importWriter) importOne(ctx context.Context, sourceId string, target imp
 		return usecase.FailImportItem(target.item, target.workspace.LocalID, err)
 	}
 	w.keepTokens(ctx, target.workspace.LocalID, tokens)
-	w.keepCollectionSecrets(ctx, target)
+	w.keepCollectionSecrets(ctx, target, resolution)
 	return target.item.Completed(write, entity.ImportLocation{LocalID: target.workspace.LocalID, ParentPath: target.parentPath, CollectionPath: target.collectionPath()})
 }
 
@@ -110,13 +110,20 @@ func (w importWriter) keepTokens(ctx context.Context, localId string, tokens []e
 	}
 }
 
-func (w importWriter) keepCollectionSecrets(ctx context.Context, target importTarget) {
-	if len(target.item.CollectionSecrets) == 0 || target.placement.HasParent() {
+func (w importWriter) keepCollectionSecrets(ctx context.Context, target importTarget, resolution enums.ClashResolution) {
+	if len(target.item.CollectionSecrets) == 0 {
 		return
 	}
-	scope := entity.NewCollectionScopeRef(target.item.Root.ID())
+	scope, existing := entity.NewCollectionScopeRef(target.item.Root.ID()), []entity.VariableRow{}
+	if target.placement.HasParent() {
+		if target.collection == nil {
+			return
+		}
+		scope, existing = entity.NewCollectionScopeRef(target.collection.ID), target.collection.Variables
+	}
 	_, err := w.variables.vaults.update(ctx, target.workspace.LocalID, func(vault entity.Vault) entity.Vault {
-		return vault.WithSecrets(scope, target.item.CollectionSecrets)
+		secrets := usecase.MergeImportedSecrets(existing, target.item.Root.Container.Variables, vault.SecretsFor(scope), target.item.CollectionSecrets, resolution)
+		return vault.WithSecrets(scope, secrets)
 	})
 	if err != nil {
 		logger.Warn(ctx, err, "The imported collection secrets could not be kept in the vault", map[string]any{"localId": target.workspace.LocalID, "scope": scope.String()})

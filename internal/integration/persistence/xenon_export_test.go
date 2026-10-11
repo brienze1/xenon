@@ -496,6 +496,20 @@ func TestCopyFolderFailures(t *testing.T) {
 	expectErrorCode(t, err, "WKS-33500")
 }
 
+func TestRemoveFolderRemovesTheCopiedWorkspace(t *testing.T) {
+	ctx := context.Background()
+	persistence := NewWorkspacePersistence(NewWorkspaceIndexCache())
+	parent := t.TempDir()
+	writeTestFile(t, filepath.Join(parent, "copy", "collections", "a.yaml"), "x")
+	if err := persistence.RemoveFolder(ctx, filepath.Join(parent, "copy")); err != nil {
+		t.Fatal(err)
+	}
+	expectOnly(t, parent)
+	if err := persistence.RemoveFolder(ctx, filepath.Join(parent, "copy")); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestReadImportSourceProbesXenonExports(t *testing.T) {
 	dir := t.TempDir()
 	writeTestFile(t, filepath.Join(dir, "r.yaml"), exportRequest)

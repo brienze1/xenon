@@ -37,6 +37,9 @@ func (i ImportResult) WithSourceWarnings(warnings []ImportWarning) ImportResult 
 
 func (i ImportResult) workspacesWith(outcome ImportOutcome) []ImportWorkspaceResult {
 	workspaces := append([]ImportWorkspaceResult{}, i.Workspaces...)
+	if outcome.Item.LocalID == "" {
+		return workspaces
+	}
 	index := len(workspaces)
 	for position, workspace := range workspaces {
 		if workspace.LocalID == outcome.Item.LocalID {

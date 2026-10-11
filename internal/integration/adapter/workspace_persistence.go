@@ -7,4 +7,5 @@ type WorkspacePersistence interface {
 	usecase.SaveWorkspaceFile
 	usecase.InspectWorkspaceFolder
 	usecase.CopyWorkspaceFolder
+	usecase.RemoveWorkspaceFolder
 }

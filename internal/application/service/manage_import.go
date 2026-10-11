@@ -45,6 +45,7 @@ func NewManageImportService(
 	loadWorkspace usecase.LoadWorkspace,
 	inspectWorkspaceFolder usecase.InspectWorkspaceFolder,
 	copyWorkspaceFolder usecase.CopyWorkspaceFolder,
+	removeWorkspaceFolder usecase.RemoveWorkspaceFolder,
 	saveWorkspaceRegistry usecase.SaveWorkspaceRegistry,
 	stageImportItem usecase.StageImportItem,
 	commitImportItem usecase.CommitImportItem,
@@ -56,6 +57,7 @@ func NewManageImportService(
 	saveLocalVariables usecase.SaveLocalVariables,
 	findVault usecase.FindVault,
 	saveVault usecase.SaveVault,
+	deleteVault usecase.DeleteVault,
 	findVaultSettings usecase.FindVaultSettings,
 	saveVaultSettings usecase.SaveVaultSettings,
 	probeKeychain usecase.ProbeKeychain,
@@ -102,9 +104,11 @@ func NewManageImportService(
 			publishWorkspaceEvent: publishWorkspaceEvent,
 			workspaces: importWorkspaceWriter{
 				copyWorkspaceFolder:   copyWorkspaceFolder,
+				removeWorkspaceFolder: removeWorkspaceFolder,
 				findWorkspaceRegistry: findWorkspaceRegistry,
 				saveWorkspaceRegistry: saveWorkspaceRegistry,
 				loadWorkspace:         loadWorkspace,
+				deleteVault:           deleteVault,
 				vaults:                vaults,
 			},
 			variables: importVariablesWriter{

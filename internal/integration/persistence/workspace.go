@@ -187,6 +187,17 @@ func (w *workspacePersistence) CopyFolder(ctx context.Context, source, target st
 	return nil
 }
 
+func (w *workspacePersistence) RemoveFolder(ctx context.Context, path string) error {
+	logger.Debug(ctx, "Started", map[string]any{"path": path})
+
+	if err := os.RemoveAll(path); err != nil {
+		return errs.FileError(err, "WKS-36500")
+	}
+
+	logger.Debug(ctx, "Finished", map[string]any{"path": path})
+	return nil
+}
+
 func copyWorkspaceFiles(source, target string) error {
 	return filepath.WalkDir(source, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
