@@ -10,7 +10,3 @@ type Pkce struct {
 	Challenge string
 	Method    string
 }
-
-func (p Pkce) IsEmpty() bool {
-	return p.Verifier == ""
-}

@@ -8,6 +8,8 @@ import (
 const (
 	tokenExpiryMargin = 30 * time.Second
 	macTokenType      = "mac"
+	tokenPartRefresh  = "refresh"
+	tokenPartID       = "id"
 )
 
 type OAuth2Token struct {
@@ -45,6 +47,17 @@ func (o OAuth2Token) Value() string {
 	return o.AccessToken
 }
 
+func (o OAuth2Token) Part(which string) string {
+	switch which {
+	case tokenPartRefresh:
+		return o.RefreshToken
+	case tokenPartID:
+		return o.IDToken
+	default:
+		return o.AccessToken
+	}
+}
+
 func (o OAuth2Token) Secrets() []string {
 	secrets := make([]string, 0, 3)
 	for _, value := range []string{o.AccessToken, o.RefreshToken, o.IDToken} {
@@ -53,6 +66,13 @@ func (o OAuth2Token) Secrets() []string {
 		}
 	}
 	return secrets
+}
+
+func (o *OAuth2Token) SecretsOrNone() []string {
+	if o == nil {
+		return []string{}
+	}
+	return o.Secrets()
 }
 
 func (o OAuth2Token) Using(useToken string) OAuth2Token {

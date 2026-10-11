@@ -39,7 +39,6 @@ type vaultPersistence struct {
 	identities  map[string]string
 	tokenLocks  sync.Map
 	mu          sync.RWMutex
-	tokenWrites sync.Mutex
 }
 
 func NewVaultPersistence(keychain adapter.Keychain) adapter.VaultPersistence {

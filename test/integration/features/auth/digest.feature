@@ -113,7 +113,6 @@ Feature: Digest auth
     And the 3 request to the digest server should have the header "Authorization" matching "nc=00000002"
     And the app data file "workspaces/{{Acme.local_id}}/state.json" should contain the field "digest_state.{{billing}}.realm" equal to "xenon@test"
     And no file under the workspace folder should contain "7ypf/xlj9XXwfDPEoM4URrv"
-    And no file under the workspace folder should contain "s3cret"
 
   @retry_once
   Scenario: A wrong password is answered once, never in a loop

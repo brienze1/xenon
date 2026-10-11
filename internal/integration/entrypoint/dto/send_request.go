@@ -8,6 +8,7 @@ type SendRequest struct {
 	ConfirmedEnvironmentId    string  `json:"confirmed_environment_id"`
 	Request                   Request `json:"request"`
 	AcknowledgeMissingSecrets bool    `json:"acknowledge_missing_secrets"`
+	SendWithExpiredToken      bool    `json:"send_with_expired_token"`
 }
 
 func (s SendRequest) LogValue() any {
@@ -19,5 +20,5 @@ func (s *SendRequest) ToEntity() entity.Request {
 }
 
 func (s *SendRequest) ToAcknowledgement() entity.SendAcknowledgement {
-	return entity.SendAcknowledgement{ConfirmedEnvironmentID: s.ConfirmedEnvironmentId, MissingSecrets: s.AcknowledgeMissingSecrets}
+	return entity.SendAcknowledgement{ConfirmedEnvironmentID: s.ConfirmedEnvironmentId, MissingSecrets: s.AcknowledgeMissingSecrets, ExpiredToken: s.SendWithExpiredToken}
 }

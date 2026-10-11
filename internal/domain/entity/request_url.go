@@ -65,6 +65,37 @@ func (r RequestUrl) WithQuery(params []KeyValue) RequestUrl {
 	return r
 }
 
+func (r RequestUrl) withoutQueryKey(name string) RequestUrl {
+	kept := make([]string, 0)
+	for _, pair := range strings.Split(r.query, "&") {
+		key, _, _ := strings.Cut(pair, "=")
+		if pair != "" && decodedQueryKey(key) != name {
+			kept = append(kept, pair)
+		}
+	}
+	r.query = strings.Join(kept, "&")
+	r.hasQuery = len(kept) > 0
+	return r
+}
+
+func (r RequestUrl) withQueryPair(key, value string) RequestUrl {
+	pair := url.QueryEscape(key) + "=" + url.QueryEscape(value)
+	if r.query != "" {
+		pair = r.query + "&" + pair
+	}
+	r.query = pair
+	r.hasQuery = true
+	return r
+}
+
+func decodedQueryKey(raw string) string {
+	decoded, err := url.QueryUnescape(raw)
+	if err != nil {
+		return raw
+	}
+	return decoded
+}
+
 func (r RequestUrl) PathVariableNames() []string {
 	names := make([]string, 0)
 	for _, segment := range strings.Split(r.base, "/") {

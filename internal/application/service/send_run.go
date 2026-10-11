@@ -22,7 +22,9 @@ type sendRun struct {
 	service    *sendRequest
 	scopes     *requestScopes
 	caller     *entity.ScriptRef
+	token      *entity.OAuth2Token
 	localId    string
+	tabId      string
 	root       string
 	appVersion string
 	sendId     string
@@ -67,8 +69,16 @@ func (r sendRun) runScripts(ctx context.Context, execution *entity.SendExecution
 func (r sendRun) send(ctx context.Context, tabId string, request entity.Request, ancestors []entity.Collection, execution *entity.SendExecution) error {
 	resolved, resolvedAncestors := usecase.ResolveRequestVariables(execution.Request, ancestors, r.variables(execution), r.dynamic(ctx))
 	effective := usecase.ResolveEffectiveRequest(resolved, resolvedAncestors, r.root)
-	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, r.appVersion))
-	response := r.service.sendHttpRequest.Send(ctx, effective).WithMaskedValues(r.secrets).WithSentRequest(request)
+	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, r.appVersion)).WithAuthOwner(r.tabId)
+	effective, err := r.authorize(ctx, effective)
+	if err != nil {
+		return err
+	}
+	effective, response, err := r.exchange(ctx, effective)
+	if err != nil {
+		return err
+	}
+	response = response.WithMaskedValues(r.secrets).WithSentRequest(request)
 	if tabId != "" {
 		if err := r.service.saveResponse.Save(ctx, tabId, response); err != nil {
 			return err
@@ -77,6 +87,69 @@ func (r sendRun) send(ctx context.Context, tabId string, request entity.Request,
 	execution.RecordResponse(effective, response)
 	r.service.console.append(ctx, r.requestEntry(effective, response, r.depth > 0).WithSecretsMasked(r.mask(r.secretsOf(execution))))
 	return nil
+}
+
+func (r sendRun) authorize(ctx context.Context, request entity.EffectiveRequest) (entity.EffectiveRequest, error) {
+	auth := request.Auth
+	switch {
+	case auth.IsApiKey():
+		return usecase.ApplyApiKey(request, auth.ApiKey), nil
+	case auth.IsOAuth2():
+		return usecase.ApplyOAuthToken(request, auth.OAuth2, r.token), nil
+	case auth.IsAwsV4():
+		signed, err := r.service.signAwsRequest.Sign(ctx, request, auth.AwsV4)
+		if err != nil {
+			return request, err
+		}
+		return *signed, nil
+	default:
+		return request, nil
+	}
+}
+
+func (r sendRun) exchange(ctx context.Context, request entity.EffectiveRequest) (entity.EffectiveRequest, entity.Response, error) {
+	if !request.Auth.IsDigest() {
+		return request, r.service.sendHttpRequest.Send(ctx, request), nil
+	}
+	digest := request.Auth.Digest
+	state, err := r.service.findDigestState.FindDigestState(ctx, r.localId, request.AuthOwner)
+	if err != nil {
+		return request, entity.Response{}, err
+	}
+	if typed, found := digest.TypedState(); state == nil && found {
+		state = &typed
+	}
+	if state != nil {
+		if request, err = r.answerDigest(ctx, request, *state); err != nil {
+			return request, entity.Response{}, err
+		}
+	}
+	response := r.service.sendHttpRequest.Send(ctx, request)
+	challenge, challenged := response.DigestChallenge()
+	if !challenged || !digest.RetriesChallenge() {
+		return request, response, nil
+	}
+	r.service.console.append(ctx, r.requestEntry(request, response.WithMaskedValues(r.secrets), false).WithSecretsMasked(r.mask(r.secrets)))
+	fresh, err := r.service.answerDigest.ReadChallenge(ctx, challenge)
+	if err != nil {
+		return request, response, nil
+	}
+	if request, err = r.answerDigest(ctx, request, *fresh); err != nil {
+		return request, entity.Response{}, err
+	}
+	return request, r.service.sendHttpRequest.Send(ctx, request), nil
+}
+
+func (r sendRun) answerDigest(ctx context.Context, request entity.EffectiveRequest, state entity.DigestState) (entity.EffectiveRequest, error) {
+	next := state.Next()
+	header, err := r.service.answerDigest.Answer(ctx, request, request.Auth.Digest, next)
+	if err != nil {
+		return request, err
+	}
+	if err := r.service.saveDigestState.SaveDigestState(ctx, r.localId, request.AuthOwner, next); err != nil {
+		return request, err
+	}
+	return request.WithHeader(entity.HeaderAuthorization, header), nil
 }
 
 func (r sendRun) variables(execution *entity.SendExecution) entity.VariableContext {

@@ -77,6 +77,7 @@ func (w importWriter) importOne(ctx context.Context, sourceId string, target imp
 	if write.IsEmpty() {
 		return target.item.Skipped(target.workspace.LocalID)
 	}
+	write, tokens := write.WithoutLiteralTokens()
 	staged := write.Staged(sourceId, target.item.Key, target.workspace.Path, target.planned.TargetParentID)
 	written, err := w.stageImportItem.Stage(ctx, staged)
 	if err != nil {
@@ -88,5 +89,21 @@ func (w importWriter) importOne(ctx context.Context, sourceId string, target imp
 		}
 		return usecase.FailImportItem(target.item, target.workspace.LocalID, err)
 	}
+	w.keepTokens(ctx, target.workspace.LocalID, tokens)
 	return target.item.Completed(write, entity.ImportLocation{LocalID: target.workspace.LocalID, ParentPath: target.parentPath, CollectionPath: target.collectionPath()})
+}
+
+func (w importWriter) keepTokens(ctx context.Context, localId string, tokens []entity.OAuth2Token) {
+	if len(tokens) == 0 {
+		return
+	}
+	_, err := w.variables.vaults.update(ctx, localId, func(vault entity.Vault) entity.Vault {
+		for _, token := range tokens {
+			vault = vault.WithToken(token)
+		}
+		return vault
+	})
+	if err != nil {
+		logger.Warn(ctx, err, "The imported OAuth 2.0 tokens could not be kept in the vault", map[string]any{"localId": localId, "tokens": len(tokens)})
+	}
 }

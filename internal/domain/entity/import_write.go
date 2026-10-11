@@ -61,3 +61,22 @@ func (i ImportWrite) collectionID() string {
 	}
 	return i.Parent.ID
 }
+
+func (i ImportWrite) WithoutLiteralTokens() (ImportWrite, []OAuth2Token) {
+	tokens := make([]OAuth2Token, 0)
+	nodes := make([]ImportNode, 0, len(i.Nodes))
+	for _, node := range i.Nodes {
+		stripped, nodeTokens := node.WithoutLiteralTokens()
+		nodes = append(nodes, stripped)
+		tokens = append(tokens, nodeTokens...)
+	}
+	i.Nodes = nodes
+	if i.Collection != nil {
+		collection := *i.Collection
+		auth, token := collection.Auth.WithoutLiteralAccessToken()
+		collection.Auth = auth
+		i.Collection = &collection
+		tokens = appendOwnedToken(tokens, token, collection.ID)
+	}
+	return i, tokens
+}

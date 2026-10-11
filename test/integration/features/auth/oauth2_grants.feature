@@ -294,7 +294,7 @@ Feature: OAuth 2.0 grants and token use
   Scenario: The token replaces an Authorization header, with the configured prefix
     Given I call "OAuthService.GetNewToken" with
       """
-      { "local_id": "{{Acme.local_id}}", "owner_id": "01JG00000000000000000000AA", "auth": { "grant_type": "client_credentials", "access_token_url": "{{oauth}}/token", "client_id": "xenon", "client_secret": "s3cret" } }
+      { "local_id": "{{Acme.local_id}}", "owner_id": "tab-1", "auth": { "grant_type": "client_credentials", "access_token_url": "{{oauth}}/token", "client_id": "xenon", "client_secret": "s3cret" } }
       """
     When I call "RequestService.Send" with
       """
@@ -302,7 +302,6 @@ Feature: OAuth 2.0 grants and token use
         "local_id": "{{Acme.local_id}}",
         "tab_id": "tab-1",
         "request": {
-          "id": "01JG00000000000000000000AA",
           "method": "GET",
           "url": "{{api}}/things",
           "headers": [ { "key": "authorization", "value": "Basic old", "enabled": true } ],
@@ -317,7 +316,7 @@ Feature: OAuth 2.0 grants and token use
   Scenario: The token goes to the access_token query parameter, replacing one
     Given I call "OAuthService.GetNewToken" with
       """
-      { "local_id": "{{Acme.local_id}}", "owner_id": "01JG00000000000000000000AA", "auth": { "grant_type": "client_credentials", "access_token_url": "{{oauth}}/token", "client_id": "xenon", "client_secret": "s3cret" } }
+      { "local_id": "{{Acme.local_id}}", "owner_id": "tab-1", "auth": { "grant_type": "client_credentials", "access_token_url": "{{oauth}}/token", "client_id": "xenon", "client_secret": "s3cret" } }
       """
     When I call "RequestService.Send" with
       """
@@ -325,7 +324,6 @@ Feature: OAuth 2.0 grants and token use
         "local_id": "{{Acme.local_id}}",
         "tab_id": "tab-1",
         "request": {
-          "id": "01JG00000000000000000000AA",
           "method": "GET",
           "url": "{{api}}/things?access_token=old&page=1",
           "params": [ { "key": "access_token", "value": "old", "enabled": true }, { "key": "page", "value": "1", "enabled": true } ],

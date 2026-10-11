@@ -9,8 +9,9 @@ Feature: AWS Signature Version 4
   X-Amz-Date, X-Amz-Security-Token (with a session token) and Authorization (plus
   X-Amz-Content-Sha256 for S3); query mode presigns the URL. Form-data bodies are signed as an empty
   payload, as Postman does. The signatures match AWS's SigV4 test suite for every vector that
-  applies to an HTTP client (path normalisation, single path encoding, line folding, duplicate
-  header names and the header-after-signing token case do not apply; see the spec's assumptions).
+  applies to an HTTP client (path normalisation, single path encoding, line folding, repeated
+  header names - Xenon sends one header per name - and the header-after-signing token case do not
+  apply; see the spec's assumptions).
 
   Background:
     Given the workspace "Acme" exists
@@ -29,7 +30,6 @@ Feature: AWS Signature Version 4
 
     Examples:
       | vector | method | path | authz | request |
-      | get-header-value-order | GET | / | aws-sigv4-test-suite/get-header-value-order/get-header-value-order.authz | {"method": "GET", "url": "{{api}}/", "headers": [{"key": "Host", "value": "example.amazonaws.com", "enabled": true}, {"key": "My-Header1", "value": "value4", "enabled": true}, {"key": "My-Header1", "value": "value1", "enabled": true}, {"key": "My-Header1", "value": "value3", "enabled": true}, {"key": "My-Header1", "value": "value2", "enabled": true}, {"key": "X-Amz-Date", "value": "20150830T123600Z", "enabled": true}], "auto_headers": {"disabled": ["User-Agent", "Accept", "Accept-Encoding", "Connection", "Content-Type"]}, "settings": {"timeout_ms": 0}, "auth": {"type": "awsv4", "awsv4": {"access_key": "AKIDEXAMPLE", "secret_key": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY", "session_token": "", "region": "us-east-1", "service": "service"}}} |
       | get-header-value-trim | GET | / | aws-sigv4-test-suite/get-header-value-trim/get-header-value-trim.authz | {"method": "GET", "url": "{{api}}/", "headers": [{"key": "Host", "value": "example.amazonaws.com", "enabled": true}, {"key": "My-Header1", "value": " value1", "enabled": true}, {"key": "My-Header2", "value": " \"a   b   c\"", "enabled": true}, {"key": "X-Amz-Date", "value": "20150830T123600Z", "enabled": true}], "auto_headers": {"disabled": ["User-Agent", "Accept", "Accept-Encoding", "Connection", "Content-Type"]}, "settings": {"timeout_ms": 0}, "auth": {"type": "awsv4", "awsv4": {"access_key": "AKIDEXAMPLE", "secret_key": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY", "session_token": "", "region": "us-east-1", "service": "service"}}} |
       | get-unreserved | GET | /-._~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz | aws-sigv4-test-suite/get-unreserved/get-unreserved.authz | {"method": "GET", "url": "{{api}}/-._~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", "headers": [{"key": "Host", "value": "example.amazonaws.com", "enabled": true}, {"key": "X-Amz-Date", "value": "20150830T123600Z", "enabled": true}], "auto_headers": {"disabled": ["User-Agent", "Accept", "Accept-Encoding", "Connection", "Content-Type"]}, "settings": {"timeout_ms": 0}, "auth": {"type": "awsv4", "awsv4": {"access_key": "AKIDEXAMPLE", "secret_key": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY", "session_token": "", "region": "us-east-1", "service": "service"}}} |
       | get-vanilla | GET | / | aws-sigv4-test-suite/get-vanilla/get-vanilla.authz | {"method": "GET", "url": "{{api}}/", "headers": [{"key": "Host", "value": "example.amazonaws.com", "enabled": true}, {"key": "X-Amz-Date", "value": "20150830T123600Z", "enabled": true}], "auto_headers": {"disabled": ["User-Agent", "Accept", "Accept-Encoding", "Connection", "Content-Type"]}, "settings": {"timeout_ms": 0}, "auth": {"type": "awsv4", "awsv4": {"access_key": "AKIDEXAMPLE", "secret_key": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY", "session_token": "", "region": "us-east-1", "service": "service"}}} |

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"time"
 )
 
 const (
@@ -12,12 +13,18 @@ const (
 	defaultScryptLogN         = 18
 	defaultImportArchiveLimit = 1 << 30
 	defaultImportFileLimit    = 200 << 20
+	defaultOAuthCallbackMs    = 5 * 60 * 1000
 )
 
 type properties struct {
 	Application *application
 	Vault       *vault
 	Import      *imports
+	OAuth       *oauth
+}
+
+type oauth struct {
+	CallbackTimeout time.Duration
 }
 
 type application struct {
@@ -54,6 +61,9 @@ func Properties() *properties {
 		Import: &imports{
 			ArchiveLimitBytes: int64(positiveIntOrDefault(os.Getenv("XENON_IMPORT_ARCHIVE_LIMIT"), defaultImportArchiveLimit)),
 			FileLimitBytes:    int64(positiveIntOrDefault(os.Getenv("XENON_IMPORT_FILE_LIMIT"), defaultImportFileLimit)),
+		},
+		OAuth: &oauth{
+			CallbackTimeout: time.Duration(positiveIntOrDefault(os.Getenv("XENON_OAUTH_CALLBACK_TIMEOUT_MS"), defaultOAuthCallbackMs)) * time.Millisecond,
 		},
 	}
 }

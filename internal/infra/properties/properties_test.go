@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestPropertiesReadsEnvironmentOnEveryCall(t *testing.T) {
@@ -69,5 +70,16 @@ func TestPositiveIntOrDefault(t *testing.T) {
 		if got := positiveIntOrDefault(raw, 18); got != want {
 			t.Errorf("positiveIntOrDefault(%q) = %d, want %d", raw, got, want)
 		}
+	}
+}
+
+func TestOAuthCallbackTimeoutDefaultAndOverride(t *testing.T) {
+	t.Setenv("XENON_OAUTH_CALLBACK_TIMEOUT_MS", "")
+	if got := Properties().OAuth.CallbackTimeout; got != 5*time.Minute {
+		t.Fatalf("default CallbackTimeout = %s, want 5m", got)
+	}
+	t.Setenv("XENON_OAUTH_CALLBACK_TIMEOUT_MS", "250")
+	if got := Properties().OAuth.CallbackTimeout; got != 250*time.Millisecond {
+		t.Fatalf("CallbackTimeout = %s, want 250ms", got)
 	}
 }

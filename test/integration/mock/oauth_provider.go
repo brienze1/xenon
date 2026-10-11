@@ -35,11 +35,11 @@ type OAuthTokenRequest struct {
 
 type OAuthProvider struct {
 	server         *httptest.Server
-	config         OAuthProviderConfig
 	codes          map[string]url.Values
 	refreshTokens  map[string]bool
 	authorizations []url.Values
 	tokenRequests  []OAuthTokenRequest
+	config         OAuthProviderConfig
 	issued         int
 	mu             sync.Mutex
 }
@@ -161,12 +161,15 @@ func (o *OAuthProvider) token(w http.ResponseWriter, r *http.Request) {
 	if grant == "" {
 		grant = r.URL.Query().Get("grant_type")
 	}
+	scope := form.Get("scope")
 	switch grant {
 	case "authorization_code":
-		if problem := o.redeemCode(form); problem != "" {
+		authorizedScope, problem := o.redeemCode(form)
+		if problem != "" {
 			o.fail(w, "invalid_grant", problem)
 			return
 		}
+		scope = authorizedScope
 	case "refresh_token":
 		if !o.redeemRefreshToken(form.Get("refresh_token")) {
 			o.fail(w, "invalid_grant", "the refresh token is not valid")
@@ -178,25 +181,28 @@ func (o *OAuthProvider) token(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(o.tokenAnswer(form.Get("scope")))
+	_ = json.NewEncoder(w).Encode(o.tokenAnswer(scope))
 }
 
-func (o *OAuthProvider) redeemCode(form url.Values) string {
+func (o *OAuthProvider) redeemCode(form url.Values) (string, string) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 	authorization, found := o.codes[form.Get("code")]
 	if !found {
-		return "unknown code"
+		return "", "unknown code"
 	}
 	delete(o.codes, form.Get("code"))
 	if authorization.Get("redirect_uri") != form.Get("redirect_uri") {
-		return "redirect_uri mismatch"
+		return "", "redirect_uri mismatch"
 	}
+	return authorization.Get("scope"), pkceProblem(authorization, form.Get("code_verifier"))
+}
+
+func pkceProblem(authorization url.Values, verifier string) string {
 	challenge := authorization.Get("code_challenge")
 	if challenge == "" {
 		return ""
 	}
-	verifier := form.Get("code_verifier")
 	if authorization.Get("code_challenge_method") == "plain" {
 		if verifier != challenge {
 			return "code_verifier mismatch"

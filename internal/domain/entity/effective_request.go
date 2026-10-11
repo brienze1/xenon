@@ -2,6 +2,7 @@ package entity
 
 import (
 	"net/url"
+	"slices"
 	"strings"
 )
 
@@ -73,4 +74,42 @@ func (e EffectiveRequest) Host() string {
 		return ""
 	}
 	return parsed.Hostname()
+}
+
+func (e EffectiveRequest) WithoutHeader(name string) EffectiveRequest {
+	e.Headers = slices.DeleteFunc(slices.Clone(e.Headers), func(header KeyValue) bool {
+		return header.HasKey(name)
+	})
+	e.AutoHeaders = slices.DeleteFunc(slices.Clone(e.AutoHeaders), func(header AutoHeader) bool {
+		return strings.EqualFold(header.Key, name)
+	})
+	return e
+}
+
+func (e EffectiveRequest) WithHeader(name, value string) EffectiveRequest {
+	e = e.WithoutHeader(name)
+	e.Headers = append(e.Headers, NewKeyValue(name, value))
+	return e
+}
+
+func (e EffectiveRequest) WithoutQueryParam(name string) EffectiveRequest {
+	e.URL = ParseRequestUrl(e.URL).withoutQueryKey(name).String()
+	return e
+}
+
+func (e EffectiveRequest) WithQueryParam(name, value string) EffectiveRequest {
+	e.URL = ParseRequestUrl(e.URL).withoutQueryKey(name).withQueryPair(name, value).String()
+	return e
+}
+
+func (e EffectiveRequest) WithURL(raw string) EffectiveRequest {
+	e.URL = raw
+	return e
+}
+
+func (e EffectiveRequest) WithAuthOwner(owner string) EffectiveRequest {
+	if e.AuthOwner == "" {
+		e.AuthOwner = owner
+	}
+	return e
 }

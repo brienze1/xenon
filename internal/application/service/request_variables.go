@@ -34,6 +34,10 @@ func (r requestVariables) load(ctx context.Context, localId, root, requestId str
 		}
 		ancestors = found
 	}
+	return r.loadChain(ctx, localId, root, ancestors)
+}
+
+func (r requestVariables) loadChain(ctx context.Context, localId, root string, ancestors []entity.Collection) (*requestScopes, error) {
 	local, err := r.findLocalVariables.Find(ctx, localId)
 	if local, err = localVariablesOrDefaults(ctx, localId, local, err); err != nil {
 		return nil, err

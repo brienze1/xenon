@@ -163,3 +163,33 @@ func JoinImportPath(parent, name string) string {
 	}
 	return strings.Join([]string{parent, name}, importPathSeparator)
 }
+
+// WithoutLiteralTokens moves typed-in OAuth 2.0 access tokens out of the node and its children, owned by their items.
+func (i ImportNode) WithoutLiteralTokens() (ImportNode, []OAuth2Token) {
+	tokens := make([]OAuth2Token, 0)
+	if i.IsRequest() {
+		request := *i.Request
+		auth, token := request.Auth.WithoutLiteralAccessToken()
+		request.Auth = auth
+		i.Request = &request
+		return i, appendOwnedToken(tokens, token, request.ID)
+	}
+	auth, token := i.Container.Auth.WithoutLiteralAccessToken()
+	i.Container.Auth = auth
+	tokens = appendOwnedToken(tokens, token, i.Container.ID)
+	children := make([]ImportNode, 0, len(i.Children))
+	for _, child := range i.Children {
+		stripped, childTokens := child.WithoutLiteralTokens()
+		children = append(children, stripped)
+		tokens = append(tokens, childTokens...)
+	}
+	i.Children = children
+	return i, tokens
+}
+
+func appendOwnedToken(tokens []OAuth2Token, token *OAuth2Token, owner string) []OAuth2Token {
+	if token == nil {
+		return tokens
+	}
+	return append(tokens, token.OwnedBy(owner, token.UseToken))
+}

@@ -41,6 +41,12 @@ func GetSendRequestService() adapter.SendRequestService {
 				integration.GetResponseBodyPersistence(),
 				integration.GetResponseBodyPersistence(),
 				integration.GetHistoryPersistence(),
+				integration.GetVaultPersistence(),
+				integration.GetOAuth2Webservice(),
+				integration.GetAwsV4Webservice(),
+				integration.GetDigestWebservice(),
+				integration.GetUIStatePersistence(),
+				integration.GetUIStatePersistence(),
 			)
 		})
 	}

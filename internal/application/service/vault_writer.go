@@ -18,6 +18,12 @@ type vaultWriter struct {
 }
 
 func (v vaultWriter) write(ctx context.Context, vault entity.Vault, scope entity.ScopeRef, secrets map[string]string) (entity.Vault, error) {
+	return v.update(ctx, vault.LocalID, func(current entity.Vault) entity.Vault {
+		return current.WithSecrets(scope, secrets)
+	})
+}
+
+func (v vaultWriter) update(ctx context.Context, localId string, change func(entity.Vault) entity.Vault) (entity.Vault, error) {
 	settings, err := v.findVaultSettings.FindSettings(ctx)
 	if err != nil {
 		return entity.Vault{}, err
@@ -27,14 +33,14 @@ func (v vaultWriter) write(ctx context.Context, vault entity.Vault, scope entity
 			return entity.Vault{}, err
 		}
 	}
-	current, err := v.findVault.Find(ctx, vault.LocalID)
+	current, err := v.findVault.Find(ctx, localId)
 	if err != nil {
 		return entity.Vault{}, err
 	}
 	if err := usecase.CheckVaultWritable(*current, *settings); err != nil {
 		return entity.Vault{}, err
 	}
-	updated := current.WithSecrets(scope, secrets).Unlocked()
+	updated := change(*current).Unlocked()
 	if err := v.saveVault.Save(ctx, updated); err != nil {
 		return entity.Vault{}, err
 	}

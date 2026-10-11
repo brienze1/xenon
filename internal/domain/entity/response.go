@@ -3,13 +3,16 @@ package entity
 import (
 	"bytes"
 	"mime"
+	"net/http"
 	"strings"
 	"unicode/utf8"
 )
 
 const (
-	InlineBodyLimit = 1 << 20
-	MemoryBodyLimit = 5 << 20
+	headerWwwAuthenticate = "WWW-Authenticate"
+	digestScheme          = "digest "
+	InlineBodyLimit       = 1 << 20
+	MemoryBodyLimit       = 5 << 20
 )
 
 var textualMediaTypes = []string{"json", "xml", "javascript", "x-www-form-urlencoded", "graphql", "yaml"}
@@ -47,6 +50,19 @@ func NewResponse(statusCode int, statusText, proto string, headers []KeyValue, b
 
 func NewFailedResponse(sendError SendError, timings Timings) Response {
 	return Response{Error: &sendError, Headers: []KeyValue{}, Body: []byte{}, Timings: timings}
+}
+
+// DigestChallenge is the response's "WWW-Authenticate: Digest" challenge when it is a 401 or 403.
+func (r Response) DigestChallenge() (string, bool) {
+	if r.StatusCode != http.StatusUnauthorized && r.StatusCode != http.StatusForbidden {
+		return "", false
+	}
+	for _, header := range r.Headers {
+		if header.HasKey(headerWwwAuthenticate) && strings.HasPrefix(strings.ToLower(strings.TrimSpace(header.Value)), digestScheme) {
+			return header.Value, true
+		}
+	}
+	return "", false
 }
 
 func (r Response) IsOk() bool {

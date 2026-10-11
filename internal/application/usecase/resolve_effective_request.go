@@ -6,11 +6,13 @@ import (
 )
 
 func ResolveEffectiveRequest(request entity.Request, ancestors []entity.Collection, workspaceRoot string) entity.EffectiveRequest {
+	auth, owner := effectiveAuth(request, ancestors)
 	return entity.EffectiveRequest{
 		Method:              request.NormalizedMethod(),
 		URL:                 sendUrl(request),
 		Headers:             effectiveHeaders(request, ancestors),
-		Auth:                effectiveAuth(request, ancestors),
+		Auth:                auth,
+		AuthOwner:           owner,
 		Body:                request.Body.ResolveFiles(workspaceRoot),
 		Settings:            request.Settings,
 		DisabledAutoHeaders: append([]string{}, request.DisabledAutoHeaders...),
@@ -25,16 +27,16 @@ func sendUrl(request entity.Request) string {
 	return url.String()
 }
 
-func effectiveAuth(request entity.Request, ancestors []entity.Collection) entity.Auth {
+func effectiveAuth(request entity.Request, ancestors []entity.Collection) (entity.Auth, string) {
 	if !request.Auth.IsInherited() {
-		return request.Auth
+		return request.Auth, request.ID
 	}
 	for index := len(ancestors) - 1; index >= 0; index-- {
 		if !ancestors[index].Auth.IsInherited() {
-			return ancestors[index].Auth
+			return ancestors[index].Auth, ancestors[index].ID
 		}
 	}
-	return entity.Auth{Type: authtype.None}
+	return entity.Auth{Type: authtype.None}, ""
 }
 
 func effectiveHeaders(request entity.Request, ancestors []entity.Collection) []entity.KeyValue {
