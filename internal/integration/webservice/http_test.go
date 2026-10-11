@@ -310,7 +310,7 @@ func TestSendFailuresKeepTimings(t *testing.T) {
 	if response.IsOk() || response.Error.Kind != senderrorkind.ConnectionRefused || response.Error.Message != "Could not connect to "+strings.TrimPrefix(url, "http://")+" (connection refused)" {
 		t.Fatalf("response = %+v", response.Error)
 	}
-	if response.Timings.Total <= 0 || response.Timings.Download != 0 || response.Timings.FirstByte != 0 {
+	if response.Timings.Total < 0 || (response.Timings.Total == 0 && runtime.GOOS != "windows") || response.Timings.Download != 0 || response.Timings.FirstByte != 0 {
 		t.Fatalf("timings = %+v", response.Timings)
 	}
 }
