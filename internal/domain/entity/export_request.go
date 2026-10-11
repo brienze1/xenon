@@ -6,6 +6,7 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/exportformat"
 	"github.com/brienze1/xenon/internal/domain/enums/exportitemkind"
+	"github.com/brienze1/xenon/internal/domain/enums/exportshape"
 )
 
 const minExportPassphraseLength = 8
@@ -42,8 +43,21 @@ func (e ExportRequest) IsPostman() bool {
 	return e.Format == exportformat.Postman
 }
 
-func (e ExportRequest) IsWorkspace() bool {
-	return e.ItemKind == exportitemkind.Workspace
+func (e ExportRequest) IsArchive() bool {
+	return e.Shape == exportshape.Zip
+}
+
+func (e ExportRequest) ExportedScopes(scopes []ExportScope) []ExportScope {
+	if e.IsPostman() || e.ItemKind == exportitemkind.Workspace || e.ItemKind == exportitemkind.Collection {
+		return scopes
+	}
+	exported := make([]ExportScope, 0, len(scopes))
+	for _, scope := range scopes {
+		if !scope.Ref.IsCollection() {
+			exported = append(exported, scope)
+		}
+	}
+	return exported
 }
 
 func (e ExportRequest) LogValue() any {

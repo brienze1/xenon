@@ -56,3 +56,26 @@ func TestPassphraseRoundTrip(t *testing.T) {
 		t.Fatal("an empty passphrase must be rejected")
 	}
 }
+
+func TestArmoredPassphraseRoundTrip(t *testing.T) {
+	armored, err := EncryptArmoredWithPassphrase([]byte("s3cr3t"), "correct horse", 10)
+	if err != nil || !bytes.HasPrefix(armored, []byte("-----BEGIN AGE ENCRYPTED FILE-----\n")) || bytes.Contains(armored, []byte("s3cr3t")) {
+		t.Fatalf("EncryptArmoredWithPassphrase() = %q, %v", armored, err)
+	}
+	plaintext, err := DecryptArmoredWithPassphrase(append([]byte("  \n"), armored...), "correct horse")
+	if err != nil || string(plaintext) != "s3cr3t" {
+		t.Fatalf("DecryptArmoredWithPassphrase() = %q, %v", plaintext, err)
+	}
+	if _, err := DecryptArmoredWithPassphrase(armored, "wrong horse"); err == nil {
+		t.Fatal("a wrong passphrase must not decrypt")
+	}
+	if _, err := DecryptArmoredWithPassphrase([]byte("not armored"), "correct horse"); err == nil {
+		t.Fatal("garbage must not decrypt")
+	}
+	if _, err := EncryptArmoredWithPassphrase([]byte("x"), "", 10); err == nil {
+		t.Fatal("an empty passphrase must be rejected")
+	}
+	if _, err := DecryptArmoredWithPassphrase(armored, ""); err == nil {
+		t.Fatal("an empty passphrase must be rejected")
+	}
+}

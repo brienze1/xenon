@@ -9,7 +9,3 @@ func RejectInvalidExportCombination() error {
 func RejectInvalidExportPassphrase() error {
 	return errs.BadRequestError("the passphrase must have at least 8 characters and both entries must match", "EXP-01400")
 }
-
-func RejectUnavailableExportFormat() error {
-	return errs.BadRequestError("Xenon YAML export is not available yet; export as Postman", "EXP-03400")
-}

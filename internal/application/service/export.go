@@ -17,6 +17,12 @@ const (
 	postmanExportPickerTitle = "Export as Postman"
 )
 
+type exportDocuments struct {
+	entries []entity.ExportEntry
+	names   []string
+	summary entity.ExportSummary
+}
+
 type export struct {
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry
 	pickPath              usecase.PickPath
@@ -25,6 +31,7 @@ type export struct {
 	publishExportProgress usecase.PublishExportProgress
 	items                 exportItems
 	postman               postmanExport
+	xenon                 xenonExport
 }
 
 func NewExportService(
@@ -37,6 +44,10 @@ func NewExportService(
 	loadWorkspace usecase.LoadWorkspace,
 	findLocalVariables usecase.FindLocalVariables,
 	writePostmanExport usecase.WritePostmanExport,
+	writeXenonExport usecase.WriteXenonExport,
+	encryptExportSecrets usecase.EncryptExportSecrets,
+	findVault usecase.FindVault,
+	findVaultSettings usecase.FindVaultSettings,
 	saveExportFile usecase.SaveExportFile,
 	pickPath usecase.PickPath,
 	showInFolder usecase.ShowInFolder,
@@ -59,6 +70,13 @@ func NewExportService(
 		publishExportProgress: publishExportProgress,
 		items:                 items,
 		postman:               postmanExport{writePostmanExport: writePostmanExport, items: items},
+		xenon: xenonExport{
+			writeXenonExport:     writeXenonExport,
+			encryptExportSecrets: encryptExportSecrets,
+			findVault:            findVault,
+			findVaultSettings:    findVaultSettings,
+			items:                items,
+		},
 	}
 }
 
@@ -108,14 +126,11 @@ func (e *export) Export(ctx context.Context, request entity.ExportRequest) (*ent
 	if !request.HasValidPassphrase() {
 		return nil, usecase.RejectInvalidExportPassphrase()
 	}
-	if !request.IsPostman() {
-		return nil, usecase.RejectUnavailableExportFormat()
-	}
 	workspace, err := e.findWorkspaceRegistry.FindWorkspace(ctx, request.LocalID)
 	if err != nil {
 		return nil, err
 	}
-	documents, err := e.postman.documents(ctx, workspace.Path, request)
+	documents, err := e.documents(ctx, workspace.Path, request)
 	if err != nil {
 		return nil, err
 	}
@@ -139,13 +154,20 @@ func (e *export) ShowInFolder(ctx context.Context, path string) error {
 	return nil
 }
 
+func (e *export) documents(ctx context.Context, root string, request entity.ExportRequest) (*exportDocuments, error) {
+	if request.IsPostman() {
+		return e.postman.documents(ctx, root, request)
+	}
+	return e.xenon.documents(ctx, root, request)
+}
+
 func (e *export) save(ctx context.Context, request entity.ExportRequest, entries []entity.ExportEntry) error {
 	total := len(entries)
 	if err := e.publishExportProgress.Progress(ctx, entity.ExportProgress{Done: 0, Total: total}); err != nil {
 		return err
 	}
 	var err error
-	if request.IsWorkspace() {
+	if request.IsArchive() {
 		err = e.saveExportFile.SaveArchive(ctx, request.TargetPath, entries)
 	} else {
 		err = e.saveExportFile.SaveFile(ctx, request.TargetPath, entries[0].Data)

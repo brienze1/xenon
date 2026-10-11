@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"filippo.io/age"
+	"filippo.io/age/armor"
 )
 
 const maxScryptWorkFactor = 22
@@ -32,7 +33,7 @@ func DecryptWithIdentity(ciphertext []byte, identity string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return decrypt(ciphertext, parsed)
+	return decrypt(bytes.NewReader(ciphertext), parsed)
 }
 
 // EncryptWithPassphrase derives the key with scrypt at work factor 2^logN.
@@ -51,26 +52,57 @@ func DecryptWithPassphrase(ciphertext []byte, passphrase string) ([]byte, error)
 		return nil, err
 	}
 	identity.SetMaxWorkFactor(maxScryptWorkFactor)
-	return decrypt(ciphertext, identity)
+	return decrypt(bytes.NewReader(ciphertext), identity)
 }
 
-func encrypt(plaintext []byte, recipient age.Recipient) ([]byte, error) {
-	var output bytes.Buffer
-	writer, err := age.Encrypt(&output, recipient)
+func DecryptArmoredWithPassphrase(armored []byte, passphrase string) ([]byte, error) {
+	identity, err := age.NewScryptIdentity(passphrase)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := writer.Write(plaintext); err != nil {
+	identity.SetMaxWorkFactor(maxScryptWorkFactor)
+	return decrypt(armor.NewReader(bytes.NewReader(bytes.TrimSpace(armored))), identity)
+}
+
+// EncryptArmoredWithPassphrase is EncryptWithPassphrase with ASCII-armored output.
+func EncryptArmoredWithPassphrase(plaintext []byte, passphrase string, logN int) ([]byte, error) {
+	recipient, err := age.NewScryptRecipient(passphrase)
+	if err != nil {
 		return nil, err
 	}
-	if err := writer.Close(); err != nil {
+	recipient.SetWorkFactor(logN)
+	var output bytes.Buffer
+	armored := armor.NewWriter(&output)
+	if err := encryptTo(armored, plaintext, recipient); err != nil {
+		return nil, err
+	}
+	if err := armored.Close(); err != nil {
 		return nil, err
 	}
 	return output.Bytes(), nil
 }
 
-func decrypt(ciphertext []byte, identity age.Identity) ([]byte, error) {
-	reader, err := age.Decrypt(bytes.NewReader(ciphertext), identity)
+func encrypt(plaintext []byte, recipient age.Recipient) ([]byte, error) {
+	var output bytes.Buffer
+	if err := encryptTo(&output, plaintext, recipient); err != nil {
+		return nil, err
+	}
+	return output.Bytes(), nil
+}
+
+func encryptTo(output io.Writer, plaintext []byte, recipient age.Recipient) error {
+	writer, err := age.Encrypt(output, recipient)
+	if err != nil {
+		return err
+	}
+	if _, err := writer.Write(plaintext); err != nil {
+		return err
+	}
+	return writer.Close()
+}
+
+func decrypt(ciphertext io.Reader, identity age.Identity) ([]byte, error) {
+	reader, err := age.Decrypt(ciphertext, identity)
 	if err != nil {
 		return nil, err
 	}

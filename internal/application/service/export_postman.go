@@ -23,18 +23,12 @@ type postmanExport struct {
 	items              exportItems
 }
 
-type postmanDocuments struct {
-	entries []entity.ExportEntry
-	names   []string
-	summary entity.ExportSummary
-}
-
-func (p postmanExport) documents(ctx context.Context, root string, request entity.ExportRequest) (*postmanDocuments, error) {
+func (p postmanExport) documents(ctx context.Context, root string, request entity.ExportRequest) (*exportDocuments, error) {
 	local, err := p.items.local(ctx, request.LocalID)
 	if err != nil {
 		return nil, err
 	}
-	documents := &postmanDocuments{summary: entity.NewExportSummary(request.TargetPath, exportsecrets.NamesOnly)}
+	documents := &exportDocuments{summary: entity.NewExportSummary(request.TargetPath, exportsecrets.NamesOnly)}
 	switch request.ItemKind {
 	case exportitemkind.Workspace:
 		err = p.workspace(ctx, root, request, *local, documents)
@@ -51,7 +45,7 @@ func (p postmanExport) documents(ctx context.Context, root string, request entit
 	return documents, nil
 }
 
-func (p postmanExport) item(ctx context.Context, root string, request entity.ExportRequest, local entity.LocalVariables, documents *postmanDocuments) error {
+func (p postmanExport) item(ctx context.Context, root string, request entity.ExportRequest, local entity.LocalVariables, documents *exportDocuments) error {
 	node, ancestors, err := p.items.item(ctx, root, request.ItemID)
 	if err != nil {
 		return err
@@ -59,7 +53,7 @@ func (p postmanExport) item(ctx context.Context, root string, request entity.Exp
 	return p.collection(ctx, node, ancestors, request, local, documents)
 }
 
-func (p postmanExport) collection(ctx context.Context, node entity.ExportNode, ancestors []entity.Collection, request entity.ExportRequest, local entity.LocalVariables, documents *postmanDocuments) error {
+func (p postmanExport) collection(ctx context.Context, node entity.ExportNode, ancestors []entity.Collection, request entity.ExportRequest, local entity.LocalVariables, documents *exportDocuments) error {
 	exported := usecase.EffectiveExportRoot(node, ancestors)
 	if request.CurrentValuesAsInitial {
 		scope := exported.Container.ScopeRef()
@@ -78,7 +72,7 @@ func (p postmanExport) collection(ctx context.Context, node entity.ExportNode, a
 	return nil
 }
 
-func (p postmanExport) environmentById(ctx context.Context, root string, request entity.ExportRequest, local entity.LocalVariables, documents *postmanDocuments) error {
+func (p postmanExport) environmentById(ctx context.Context, root string, request entity.ExportRequest, local entity.LocalVariables, documents *exportDocuments) error {
 	environment, err := p.items.findEnvironment.Find(ctx, root, request.ItemID)
 	if err != nil {
 		return err
@@ -86,7 +80,7 @@ func (p postmanExport) environmentById(ctx context.Context, root string, request
 	return p.environment(ctx, *environment, request, local, documents)
 }
 
-func (p postmanExport) environment(ctx context.Context, environment entity.Environment, request entity.ExportRequest, local entity.LocalVariables, documents *postmanDocuments) error {
+func (p postmanExport) environment(ctx context.Context, environment entity.Environment, request entity.ExportRequest, local entity.LocalVariables, documents *exportDocuments) error {
 	if request.CurrentValuesAsInitial {
 		environment = environment.WithVariables(usecase.ApplyCurrentValuesAsInitial(environment.Variables, local.CurrentValues(environment.ScopeRef())))
 	}
@@ -100,7 +94,7 @@ func (p postmanExport) environment(ctx context.Context, environment entity.Envir
 	return nil
 }
 
-func (p postmanExport) globals(ctx context.Context, root string, request entity.ExportRequest, local entity.LocalVariables, documents *postmanDocuments) error {
+func (p postmanExport) globals(ctx context.Context, root string, request entity.ExportRequest, local entity.LocalVariables, documents *exportDocuments) error {
 	workspace, err := p.items.loadWorkspace.Load(ctx, root)
 	if err != nil {
 		return err
@@ -117,7 +111,7 @@ func (p postmanExport) globals(ctx context.Context, root string, request entity.
 	return nil
 }
 
-func (p postmanExport) workspace(ctx context.Context, root string, request entity.ExportRequest, local entity.LocalVariables, documents *postmanDocuments) error {
+func (p postmanExport) workspace(ctx context.Context, root string, request entity.ExportRequest, local entity.LocalVariables, documents *exportDocuments) error {
 	collections, err := p.items.collections(ctx, root)
 	if err != nil {
 		return err
@@ -142,7 +136,7 @@ func (p postmanExport) workspace(ctx context.Context, root string, request entit
 	return p.globals(ctx, root, request, local, documents)
 }
 
-func (d *postmanDocuments) add(folder, name, suffix string, data []byte) {
+func (d *exportDocuments) add(folder, name, suffix string, data []byte) {
 	base := usecase.DeriveFileName(name, itemkind.Folder, d.names)
 	d.names = append(d.names, base)
 	d.entries = append(d.entries, entity.NewExportEntry(folder+base+suffix, data))

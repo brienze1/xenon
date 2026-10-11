@@ -30,3 +30,7 @@ func variablesField(models []VariableRow) yamlnode.Field {
 	}
 	return yamlnode.List("variables", nodes)
 }
+
+func VariablesField(rows []entity.VariableRow) yamlnode.Field {
+	return variablesField(newVariableRows(rows))
+}

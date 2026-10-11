@@ -64,9 +64,12 @@ func TestExportRequestPassphrase(t *testing.T) {
 			t.Errorf("%+v: valid = %v", tc.request, got)
 		}
 	}
-	request := ExportRequest{Format: exportformat.Postman, ItemKind: exportitemkind.Workspace, Passphrase: "secret-pass"}
-	if !request.IsPostman() || !request.IsWorkspace() {
-		t.Error("expected a Postman workspace export")
+	request := ExportRequest{Format: exportformat.Postman, ItemKind: exportitemkind.Workspace, Shape: exportshape.Zip, Passphrase: "secret-pass"}
+	if !request.IsPostman() || !request.IsArchive() {
+		t.Error("expected a Postman workspace zip export")
+	}
+	if (ExportRequest{Shape: exportshape.Bundle}).IsArchive() {
+		t.Error("a bundle is not an archive")
 	}
 	if logged, _ := request.LogValue().(map[string]any); logged["passphrase"] != nil || len(logged) != 8 {
 		t.Errorf("log value = %v", logged)
@@ -220,5 +223,111 @@ func TestVariableRowWithCurrentAsInitial(t *testing.T) {
 		if got := tc.row.WithCurrentAsInitial(current).InitialValue; got != tc.want {
 			t.Errorf("%s = %q, want %q", tc.row.Key, got, tc.want)
 		}
+	}
+}
+
+func TestExportRequestExportedScopes(t *testing.T) {
+	scopes := []ExportScope{
+		NewExportScope(NewEnvironmentScopeRef("env"), nil),
+		NewExportScope(NewCollectionScopeRef("col"), nil),
+		NewExportScope(NewGlobalsScopeRef(), nil),
+	}
+	cases := []struct {
+		request ExportRequest
+		want    int
+	}{
+		{ExportRequest{Format: exportformat.Postman, ItemKind: exportitemkind.Folder}, 3},
+		{ExportRequest{Format: exportformat.XenonYaml, ItemKind: exportitemkind.Workspace}, 3},
+		{ExportRequest{Format: exportformat.XenonYaml, ItemKind: exportitemkind.Collection}, 3},
+		{ExportRequest{Format: exportformat.XenonYaml, ItemKind: exportitemkind.Folder}, 2},
+		{ExportRequest{Format: exportformat.XenonYaml, ItemKind: exportitemkind.Request}, 2},
+	}
+	for _, tc := range cases {
+		exported := tc.request.ExportedScopes(scopes)
+		if len(exported) != tc.want {
+			t.Errorf("%s/%s: %d scopes, want %d", tc.request.Format, tc.request.ItemKind, len(exported), tc.want)
+		}
+		for _, scope := range exported {
+			if tc.want == 2 && scope.Ref.IsCollection() {
+				t.Errorf("%s/%s kept the collection scope", tc.request.Format, tc.request.ItemKind)
+			}
+		}
+	}
+}
+
+func TestExportScopeCurrentValuesAsInitial(t *testing.T) {
+	scope := NewExportScope(NewEnvironmentScopeRef("env"), []VariableRow{
+		NewVariableRow("url", "https://a"),
+		{Key: "token", Secret: true, Enabled: true},
+	})
+	local := NewLocalVariables().WithCurrentValues(scope.Ref, map[string]string{"token": "current-secret"})
+	if rows, changed := scope.CurrentValuesAsInitial(local); changed || rows[0].InitialValue != "https://a" || rows[1].InitialValue != "" {
+		t.Errorf("unchanged rows = %+v, changed = %v", rows, changed)
+	}
+	local = local.WithCurrentValues(scope.Ref, map[string]string{"token": "current-secret", "url": "http://localhost"})
+	rows, changed := scope.CurrentValuesAsInitial(local)
+	if !changed || rows[0].InitialValue != "http://localhost" || rows[1].InitialValue != "" || len(rows) != 2 {
+		t.Errorf("changed rows = %+v, changed = %v", rows, changed)
+	}
+}
+
+func TestExportScopeSecretValues(t *testing.T) {
+	scope := NewExportScope(NewEnvironmentScopeRef("env"), []VariableRow{
+		NewVariableRow("url", "https://a"),
+		{Key: "token", Secret: true},
+		{Key: "unset", Secret: true},
+	})
+	vault := NewVault("local", "", "", map[string]map[string]string{"env:env": {"token": "t-1", "url": "not-secret", "unset": ""}}).Unlocked()
+	if values := scope.SecretValues(vault); !reflect.DeepEqual(values, map[string]string{"token": "t-1"}) {
+		t.Errorf("secret values = %v", values)
+	}
+	if values := scope.SecretValues(NewUnopenedVault("local")); len(values) != 0 {
+		t.Errorf("an unreadable vault gave %v", values)
+	}
+}
+
+func TestSecretBundle(t *testing.T) {
+	bundle := NewSecretBundle(map[string]map[string]string{"env:a": {"k": "v"}, "collection:b": {}, "globals": {"g": "1"}})
+	if bundle.IsEmpty() || len(bundle.Scopes) != 2 {
+		t.Fatalf("bundle = %+v", bundle.Scopes)
+	}
+	if got := bundle.For(NewEnvironmentScopeRef("a")); !reflect.DeepEqual(got, map[string]string{"k": "v"}) {
+		t.Errorf("For(env:a) = %v", got)
+	}
+	if got := bundle.For(NewCollectionScopeRef("b")); len(got) != 0 {
+		t.Errorf("For(collection:b) = %v", got)
+	}
+	if !NewSecretBundle(nil).IsEmpty() {
+		t.Error("a bundle without scopes is empty")
+	}
+	logged, _ := bundle.LogValue().(map[string]any)
+	if counts, _ := logged["scopes"].(map[string]int); counts["env:a"] != 1 || counts["globals"] != 1 || len(counts) != 2 {
+		t.Errorf("log value = %v", logged)
+	}
+}
+
+func TestXenonExport(t *testing.T) {
+	request := ExportRequest{ItemKind: exportitemkind.Environment, ItemID: "env", Shape: exportshape.File, CurrentValuesAsInitial: true}
+	export := NewXenonExport(request)
+	if export.Kind != exportitemkind.Environment || export.ItemID != "env" || !export.CurrentValuesAsInitial || export.IsArchive() || export.HasVariables() || export.HasSecrets() {
+		t.Fatalf("export = %+v", export)
+	}
+	rows := []VariableRow{NewVariableRow("url", "http://localhost")}
+	changed := export.WithVariables(NewEnvironmentScopeRef("env"), rows).WithSecrets("armored").WithNode(NewRequestExportNode(NewRequest("r", "R"), "R"))
+	if found, ok := changed.VariablesFor(NewEnvironmentScopeRef("env")); !ok || !reflect.DeepEqual(found, rows) || !changed.HasVariables() {
+		t.Errorf("variables = %v, %v", found, ok)
+	}
+	if _, ok := changed.VariablesFor(NewGlobalsScopeRef()); ok {
+		t.Error("globals have no variables")
+	}
+	if export.HasVariables() || !changed.HasSecrets() || changed.Node == nil || changed.Node.Name() != "R" {
+		t.Errorf("changed = %+v, original = %+v", changed, export)
+	}
+	logged, _ := changed.LogValue().(map[string]any)
+	if logged["hasSecrets"] != true || logged["secrets"] != nil {
+		t.Errorf("log value = %v", logged)
+	}
+	if !(XenonExport{Shape: exportshape.Zip}).IsArchive() {
+		t.Error("a zip is an archive")
 	}
 }
