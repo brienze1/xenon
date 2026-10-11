@@ -8,6 +8,7 @@ import (
 
 	"github.com/cucumber/godog"
 	gossh "golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 
 	"github.com/brienze1/xenon/test/integration/mock"
 )
@@ -18,7 +19,7 @@ func (t *testUtils) registerGivenGitSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^a teammate changes "([^"]*)" on the remote "([^"]*)" to$`, t.aTeammateChangesOnTheRemoteTo)
 	ctx.Given(`^the "([^"]*)" variable is set to the (http|ssh) url of the remote "([^"]*)"$`, t.theVariableIsSetToTheUrlOfTheRemote)
 	ctx.Given(`^the "([^"]*)" variable is set to the git (http|ssh) server host$`, t.theVariableIsSetToTheGitServerHost)
-	ctx.Given(`^the "([^"]*)" variable is set to the git ssh server host key( fingerprint)?$`, t.theVariableIsSetToTheGitSshServerHostKey)
+	ctx.Given(`^the "([^"]*)" variable is set to the git ssh server (known hosts line|host key fingerprint)$`, t.theVariableIsSetToTheGitSshServerHostKey)
 	ctx.Given(`^the git http server requires the username "([^"]*)" and the token "([^"]*)"$`, t.theGitHttpServerRequiresTheUsernameAndTheToken)
 	ctx.Given(`^the git http server requires any username and the token "([^"]*)"$`, t.theGitHttpServerRequiresAnyUsernameAndTheToken)
 	ctx.Given(`^the git http server answers the remote "([^"]*)" with status (\d+) and the body "([^"]*)"$`, t.theGitHttpServerAnswersTheRemoteWithStatusAndTheBody)
@@ -52,20 +53,20 @@ func (t *testUtils) theVariableIsSetToTheUrlOfTheRemote(variable, protocol, name
 
 func (t *testUtils) theVariableIsSetToTheGitServerHost(variable, protocol string) error {
 	if protocol == "ssh" {
-		t.vars[variable] = t.git.SshHost()
+		t.vars[variable] = knownhosts.Normalize(t.git.SshHost())
 		return nil
 	}
 	t.vars[variable] = t.git.HttpHost()
 	return nil
 }
 
-func (t *testUtils) theVariableIsSetToTheGitSshServerHostKey(variable, fingerprint string) error {
+func (t *testUtils) theVariableIsSetToTheGitSshServerHostKey(variable, what string) error {
 	key := t.git.SshHostKey()
-	if fingerprint != "" {
+	if what == "host key fingerprint" {
 		t.vars[variable] = gossh.FingerprintSHA256(key)
 		return nil
 	}
-	t.vars[variable] = strings.TrimSpace(string(gossh.MarshalAuthorizedKey(key)))
+	t.vars[variable] = knownhosts.Line([]string{t.git.SshHost()}, key)
 	return nil
 }
 
