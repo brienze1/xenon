@@ -191,6 +191,39 @@ Feature: Secrets are masked in the console
     And the response should contain the field "2.summary" equal to "GET {{api}}/check?session=•••••"
     And the response should contain the field "2.masked" equal to "true"
 
+  @set_in_same_script
+  Scenario: A secret value is masked in the logs of the same script right after the script sets it
+    Given the 1 "GET" request to "/me" returns status 200 with the following response
+      """
+      {"session":"s3ss-from-login"}
+      """
+    And the workspace file "acme/collections/billing/create.yaml" contains
+      """
+      xenon: 1
+      kind: request
+      id: {{create}}
+      name: Create
+      method: GET
+      url: "{{base_url}}/me"
+      scripts:
+        postResponse: |
+          console.log("before", pm.response.json().session)
+          pm.environment.set("session", pm.response.json().session)
+          console.log("after", pm.environment.get("session"))
+      """
+    When I call "RequestService.Send" with
+      """
+      { "local_id": "{{Acme.local_id}}", "tab_id": "tab-1", "request": { "id": "{{create}}", "name": "Create", "method": "GET", "url": "{{base_url}}/me" } }
+      """
+    Then the call should succeed
+    When I call "ConsoleService.List" with
+      """
+      { "limit": 100, "filter": "logs" }
+      """
+    Then the response should contain the field "0.summary" equal to "before s3ss-from-login"
+    And the response should contain the field "1.summary" equal to "after •••••"
+    And the response should contain the field "1.masked" equal to "true"
+
   @set_mid_run_next_send
   Scenario: A secret set during one send is masked in the console of the next send
     Given the 1 "GET" request to "/me" returns status 200 with the following response
