@@ -60,6 +60,7 @@ export interface ImportPreview {
   items: ImportPreviewItem[]
   warnings: ImportWarning[]
   pmUsages: PmUsage[]
+  encryptedSecrets: boolean
 }
 
 export interface ImportPlanItem {
@@ -70,12 +71,17 @@ export interface ImportPlanItem {
   /** A new name for the imported item; absent or empty keeps the detected one. */
   name?: string
   resolution: ClashResolution | null
+  /** An empty or new folder for a workspace export imported as a new workspace. */
+  targetFolder?: string
 }
 
 export interface ImportPlan {
   sourceId: string
   items: ImportPlanItem[]
   applyToAll: ClashResolution | null
+  /** Opens the export's encrypted secrets; never stored or logged. */
+  passphrase?: string
+  skipSecrets?: boolean
 }
 
 export interface ImportClash {
@@ -170,6 +176,7 @@ export function toImportPreview(dto: ImportPreviewDto): ImportPreview {
     })),
     warnings: (dto.warnings ?? []).map(toWarning),
     pmUsages: (dto.pm_usages ?? []).map(toPmUsage),
+    encryptedSecrets: dto.encrypted_secrets ?? false,
   }
 }
 
@@ -177,11 +184,14 @@ export function toImportPlanDto(plan: ImportPlan): ImportPlanDto {
   return {
     source_id: plan.sourceId,
     apply_to_all: plan.applyToAll ?? '',
+    passphrase: plan.passphrase ?? '',
+    skip_secrets: plan.skipSecrets ?? false,
     items: plan.items.map((item) => ({
       key: item.key,
       include: item.include,
       target_local_id: item.targetLocalId,
       target_parent_id: item.targetParentId,
+      target_folder: item.targetFolder ?? '',
       name: item.name ?? '',
       resolution: item.resolution ?? '',
     })),

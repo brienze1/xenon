@@ -25,6 +25,7 @@ const preview: ImportPreview = {
   ],
   warnings: [],
   pmUsages: [],
+  encryptedSecrets: false,
 }
 
 function node(id: string, kind: TreeNode['kind'], name: string, children: TreeNode[] = []): TreeNode {

@@ -27,6 +27,7 @@ const preview: ImportPreview = {
   items: [{ key: '0', kind: 'collection', name: 'Acme API', counts, warningsCount: 17 }],
   warnings: [],
   pmUsages: [],
+  encryptedSecrets: false,
 }
 const result: ImportResult = {
   items: [{ key: '0', status: 'imported', localId: 'A', id: 'C', name: 'Acme API' }],

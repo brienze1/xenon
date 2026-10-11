@@ -199,7 +199,7 @@ describe('bootstrap', () => {
 
   it('opens the import dialog from the menu and from dropped files only when a workspace is active', async () => {
     vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
-    vi.mocked(importService.detectImport).mockResolvedValue({ sourceId: 'S', kind: 'postman_collection', version: '2.1', items: [], warnings: [], pmUsages: [] })
+    vi.mocked(importService.detectImport).mockResolvedValue({ sourceId: 'S', kind: 'postman_collection', version: '2.1', items: [], warnings: [], pmUsages: [], encryptedSecrets: false })
     const cleanup = await started()
     handlers.importRequested?.()
     handlers.filesDropped?.(['/x.json'])

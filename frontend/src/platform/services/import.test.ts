@@ -43,6 +43,7 @@ describe('import service', () => {
       items: [{ key: '0', kind: 'collection', name: 'Acme API', counts, warnings_count: 17 }],
       warnings: [warningDto, { ...warningDto, severity: 'info' }],
       pm_usages: [usageDto, { api: 'pm.require', occurrences: null }],
+      encrypted_secrets: true,
     } as never)
     const preview = await detectImport({ paths: ['/a.json'] })
     expect(ImportService.Detect).toHaveBeenCalledWith({ paths: ['/a.json'], text: '' })
@@ -59,9 +60,10 @@ describe('import service', () => {
         { api: 'pm.cookies.jar', occurrences: [{ itemId: 'R2', localId: 'A', path: 'Acme API/Raw', phase: 'preRequest', line: 2 }] },
         { api: 'pm.require', occurrences: [] },
       ],
+      encryptedSecrets: true,
     })
     vi.mocked(ImportService.Detect).mockResolvedValue({ source_id: 'T', kind: 'curl', version: '', items: null, warnings: null, pm_usages: null } as never)
-    await expect(detectImport({ text: 'curl https://x' })).resolves.toMatchObject({ items: [], warnings: [], pmUsages: [] })
+    await expect(detectImport({ text: 'curl https://x' })).resolves.toMatchObject({ items: [], warnings: [], pmUsages: [], encryptedSecrets: false })
     expect(ImportService.Detect).toHaveBeenLastCalledWith({ paths: [], text: 'curl https://x' })
   })
 
@@ -89,14 +91,30 @@ describe('import service', () => {
     expect(ImportService.Clashes).toHaveBeenCalledWith({
       source_id: 'S',
       apply_to_all: 'keep_both',
-      items: [{ key: '0', include: true, target_local_id: 'A', target_parent_id: '', name: '', resolution: 'skip' }],
+      passphrase: '',
+      skip_secrets: false,
+      items: [{ key: '0', include: true, target_local_id: 'A', target_parent_id: '', target_folder: '', name: '', resolution: 'skip' }],
     })
     vi.mocked(ImportService.Clashes).mockResolvedValue({ clashes: null } as never)
     await expect(findImportClashes({ ...plan, items: [{ ...plan.items[0]!, name: 'Invite user' }] })).resolves.toEqual([])
     expect(ImportService.Clashes).toHaveBeenLastCalledWith({
       source_id: 'S',
       apply_to_all: '',
-      items: [{ key: '0', include: true, target_local_id: 'A', target_parent_id: '', name: 'Invite user', resolution: '' }],
+      passphrase: '',
+      skip_secrets: false,
+      items: [{ key: '0', include: true, target_local_id: 'A', target_parent_id: '', target_folder: '', name: 'Invite user', resolution: '' }],
+    })
+  })
+
+  it('sends the passphrase, skip secrets and the workspace target folder', async () => {
+    vi.mocked(ImportService.Clashes).mockResolvedValue({ clashes: [] } as never)
+    await findImportClashes({ ...plan, passphrase: 'correct horse', skipSecrets: true, items: [{ ...plan.items[0]!, targetLocalId: '', targetFolder: '/new' }] })
+    expect(ImportService.Clashes).toHaveBeenCalledWith({
+      source_id: 'S',
+      apply_to_all: '',
+      passphrase: 'correct horse',
+      skip_secrets: true,
+      items: [{ key: '0', include: true, target_local_id: '', target_parent_id: '', target_folder: '/new', name: '', resolution: '' }],
     })
   })
 
@@ -117,7 +135,9 @@ describe('import service', () => {
     expect(ImportService.Import).toHaveBeenCalledWith({
       source_id: 'S',
       apply_to_all: '',
-      items: [{ key: '0', include: true, target_local_id: 'A', target_parent_id: '', name: '', resolution: '' }],
+      passphrase: '',
+      skip_secrets: false,
+      items: [{ key: '0', include: true, target_local_id: 'A', target_parent_id: '', target_folder: '', name: '', resolution: '' }],
     })
     await expect(run.result).resolves.toEqual({
       items: [

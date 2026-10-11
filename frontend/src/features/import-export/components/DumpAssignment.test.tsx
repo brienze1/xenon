@@ -54,6 +54,7 @@ const preview: ImportPreview = {
     },
   ],
   pmUsages: [],
+  encryptedSecrets: false,
 }
 const initech = { localId: 'I', name: 'Initech', path: '/w/initech', missing: false }
 
