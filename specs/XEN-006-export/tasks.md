@@ -161,3 +161,6 @@ US4 → Polish.
   bindings); the passphrase / target-folder UI is T020.
 - Mutation: gremlins unit mode over the T013–T017 diff (BDD-only service/infra/entrypoint/
   publisher files excluded) kills 180/180 covered mutants.
+- CI: the XEN-004 parity case `pm-test-async-done` reordered its async tests once on a loaded
+  macOS runner (timers of 1/5/10 ms on separate Go timers); its delays are now 1/60/120 ms, with
+  the oracle expectation unchanged.
