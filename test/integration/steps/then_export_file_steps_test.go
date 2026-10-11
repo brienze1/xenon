@@ -34,6 +34,8 @@ func (t *testUtils) registerThenExportFileSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the file "([^"]*)" should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theFileShouldContainTheFieldEqualTo)
 	ctx.Then(`^the file "([^"]*)" should contain the field "([^"]*)" equal to$`, t.theFileShouldContainTheFieldEqualToTheText)
 	ctx.Then(`^the file "([^"]*)" should contain the field "([^"]*)" array length equal to (\d+)$`, t.theFileShouldContainTheFieldArrayLengthEqualTo)
+	ctx.Then(`^the file "([^"]*)" should contain the field "([^"]*)" matching "([^"]*)"$`, t.theFileShouldContainTheFieldMatching)
+	ctx.Then(`^the file "([^"]*)" should contain the field "([^"]*)" with the items "([^"]*)"$`, t.theFileShouldContainTheFieldWithTheItems)
 	ctx.Then(`^the file "([^"]*)" should not contain the field "([^"]*)"$`, t.theFileShouldNotContainTheField)
 	ctx.Then(`^the file "([^"]*)" should equal the Postman resource file "([^"]*)" after normalisation$`, t.theFileShouldEqualThePostmanResourceFileAfterNormalisation)
 	ctx.Then(`^the file "([^"]*)" should be a valid Postman v2\.1 collection$`, t.theFileShouldBeAValidPostmanCollection)
@@ -95,6 +97,22 @@ func (t *testUtils) theFileShouldContainTheFieldArrayLengthEqualTo(path, field s
 		return err
 	}
 	return expectLength(value, length, fmt.Sprintf("field %q of %s", field, path))
+}
+
+func (t *testUtils) theFileShouldContainTheFieldMatching(path, field, pattern string) error {
+	value, err := yamlFileField(t.tempPath(path), field, path)
+	if err != nil {
+		return err
+	}
+	return expectMatch(stringify(value), pattern, field)
+}
+
+func (t *testUtils) theFileShouldContainTheFieldWithTheItems(path, field, items string) error {
+	value, err := yamlFileField(t.tempPath(path), field, path)
+	if err != nil {
+		return err
+	}
+	return expectItems(value, t.substitute(items), field)
 }
 
 func (t *testUtils) theFileShouldNotContainTheField(path, field string) error {

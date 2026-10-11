@@ -1,0 +1,13 @@
+xenon: 1
+kind: request
+id: 01JX0000000000000000000025
+name: Signed
+method: GET
+url: "{{base_url}}/signed"
+auth:
+  type: awsv4
+  awsv4:
+    accessKey: AKIDEXAMPLE
+    secretKey: "{{aws_secret}}"
+    region: us-east-1
+    service: execute-api

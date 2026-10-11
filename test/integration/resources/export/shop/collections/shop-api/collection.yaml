@@ -1,0 +1,34 @@
+xenon: 1
+kind: collection
+id: 01JX0000000000000000000001
+name: Shop API
+description: Every request feature Xenon has, created in Xenon.
+order:
+  - products
+  - orders
+  - ping.yaml
+auth:
+  type: bearer
+  bearer:
+    token: "{{token}}"
+headers:
+  - key: X-Tenant
+    value: shop
+scripts:
+  preRequest: |-
+    pm.request.headers.add({ key: "X-From-Collection", value: "yes" });
+  postResponse: |-
+    pm.test("status is 200", function () {
+        pm.response.to.have.status(200);
+    });
+variables:
+  - key: token
+    value: t-123
+  - key: page_size
+    value: "20"
+    description: Default page
+  - key: legacy
+    value: x
+    enabled: false
+  - key: api_secret
+    secret: true

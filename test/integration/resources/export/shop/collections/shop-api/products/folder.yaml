@@ -1,0 +1,12 @@
+xenon: 1
+kind: folder
+id: 01JX0000000000000000000002
+name: Products
+description: Catalogue endpoints
+order:
+  - list-products.yaml
+  - get-product.yaml
+  - create-product.yaml
+scripts:
+  preRequest: |-
+    pm.request.headers.add({ key: "X-From-Folder", value: "products" });

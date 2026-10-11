@@ -2,3 +2,4 @@
 internal/integration/webservice/sandbox/assets/** -text
 test/integration/resources/scripts/corpus/** -text
 test/integration/resources/snippets/** -text
+test/integration/resources/export/** -text

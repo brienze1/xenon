@@ -1,0 +1,13 @@
+xenon: 1
+kind: request
+id: 01JX0000000000000000000023
+name: GraphQL
+method: POST
+url: "{{base_url}}/graphql"
+body:
+  mode: graphql
+  graphql:
+    query: "query { order(id: 7) { id total } }"
+    variables: '{"verbose":true}'
+auth:
+  type: inherit
