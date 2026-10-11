@@ -143,6 +143,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	test.registerThenResponseSteps(ctx)
 	test.registerThenFileSteps(ctx)
 	test.registerThenExportFileSteps(ctx)
+	test.registerThenFileCompareSteps(ctx)
 	test.registerFileManagerSteps(ctx)
 	test.registerGivenResourceSteps(ctx)
 	test.registerWhenNewmanSteps(ctx)
