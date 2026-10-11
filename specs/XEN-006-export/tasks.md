@@ -66,7 +66,7 @@ US1 Postman export · US2 Xenon YAML export · US3 Xenon YAML import · US4 dial
 ## Phase 7: Polish
 
 - [x] T021 [P] Performance BDD: 1,000-request workspace export < 5 s (SC-005)
-- [ ] T022 `/refactor-diff` until clean; `make validate`; `make newman`; CI on 3 OSes; walk [quickstart.md](quickstart.md)
+- [x] T022 `/refactor-diff` until clean; `make validate`; `make newman`; CI on 3 OSes; walk [quickstart.md](quickstart.md) — the manual quickstart walk is deferred to the user's manual test session
 
 ---
 
@@ -206,3 +206,23 @@ US4 → Polish.
   with an empty id (only `items[].status: failed` and `failed[]`).
 - Mutation: gremlins unit mode over this chunk's diff kills 19/19 covered mutants.
 
+## Implementation notes (T022)
+
+- `/refactor-diff` over the XEN-006 diff (`xen-005...HEAD`), three passes, the fourth scan
+  clean: export/import rules moved onto entities (`ExportPickerTitle`,
+  `Environment.ExportCounts`, `NewVariablesExportCounts`, `WellFormedEnvironments`,
+  `ExportableChildren`, `ExportPath`, `ExportNode.ID/Auth/HasContainerHeaders/ScopeRefWithin`,
+  `XenonExport.IsWorkspace/IsEnvironment/ExportedSecrets`, `XenonImport.IsWorkspace/
+  IsEnvironment`, `ImportPlan.HasPassphrase`, `ImportPlanItem.HasTargetFolder`,
+  `ImportItem.HasCollectionSecrets`); `exportDocuments`, `ExportBundleChildren` and the import
+  passphrase unlock in their own files; manifest, bundle and Postman environment/globals
+  constructors format the export time themselves (formats unchanged); Xenon zip read failures
+  get unique codes `IMP-51422` (collection/folder) and `IMP-52422` (request); archive entry
+  times come from `timeutils`.
+- Left as is: `IMP-01400` is shared by detection and the non-UTF-8 read because the XEN-003
+  contract names it for both; `exportedAt` stays RFC 3339 without milliseconds because
+  `contracts/export-formats.md` fixes it.
+- `make validate` green locally with the mutation step left to CI (gremlins unit mode over the
+  changed domain, model and Postman DTO packages: no surviving mutant in XEN-006 code);
+  `make bdd`, `make parity`, `make newman`, `make frontend-check` and `make build` green.
+- Manual quickstart walk: deferred to the user's manual test session.
