@@ -431,3 +431,29 @@ Feature: Import a Postman collection (v2.1)
       """
     Then the response should contain the field "status_code" equal to "200"
     And the 1 "POST" request to "/upload" should have the form file "f" named "secret.txt" with content "top secret"
+
+  @auth @oauth2_token @xen_005
+  Scenario: A literal OAuth 2.0 access token moves to the vault; a variable reference stays in the file
+    Given the keychain is available
+    When I call "ImportService.Detect" with
+      """
+      { "paths": ["{{resources}}/import/postman/oauth2-token.json"] }
+      """
+    And I save the response field "source_id" as "token_source"
+    And I save the response field "items.0.key" as "token_item"
+    And I call "ImportService.Import" with
+      """
+      { "source_id": "{{token_source}}", "items": [ { "key": "{{token_item}}", "include": true, "target_local_id": "{{Acme.local_id}}" } ] }
+      """
+    Then the call should succeed
+    And I save the response field "items.0.id" as "token_collection"
+    And no file under the workspace folder should contain "imported-t0ken-value"
+    And no file under the app data folder should contain "imported-t0ken-value"
+    And the workspace file "acme/collections/token-api/collection.yaml" should contain the field "auth.oauth2.clientId" equal to "xenon"
+    And the workspace file "acme/collections/token-api/collection.yaml" should not contain the field "auth.oauth2.accessToken"
+    And the workspace file "acme/collections/token-api/me.yaml" should contain the field "auth.oauth2.accessToken" equal to "{{token_var}}"
+    When I call "OAuthService.Reveal" with
+      """
+      { "local_id": "{{Acme.local_id}}", "owner_id": "{{token_collection}}", "which": "access" }
+      """
+    Then the response should contain the field "value" equal to "imported-t0ken-value"
