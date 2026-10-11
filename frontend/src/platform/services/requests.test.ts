@@ -115,7 +115,7 @@ describe('request service', () => {
   it('sends and keeps the cancellable call', async () => {
     const cancel = vi.fn()
     vi.mocked(RequestService.Send).mockReturnValue(Object.assign(Promise.resolve(sendResult), { cancel }) as never)
-    const pending = requests.sendRequest('ws', 'tab', emptyDraft(), { confirmedEnvironmentId: '', missingSecrets: false })
+    const pending = requests.sendRequest('ws', 'tab', emptyDraft(), { confirmedEnvironmentId: '', missingSecrets: false, expiredToken: false })
     await expect(pending.result).resolves.toMatchObject({ statusCode: 200, inlineBody: 'hi' })
     pending.cancel()
     expect(cancel).toHaveBeenCalled()
@@ -125,16 +125,17 @@ describe('request service', () => {
       request: toRequestDto(emptyDraft()),
       acknowledge_missing_secrets: false,
       confirmed_environment_id: '',
+      send_with_expired_token: false,
     })
-    requests.sendRequest('ws', 'tab', emptyDraft(), { confirmedEnvironmentId: 'env-1', missingSecrets: true })
+    requests.sendRequest('ws', 'tab', emptyDraft(), { confirmedEnvironmentId: 'env-1', missingSecrets: true, expiredToken: true })
     expect(RequestService.Send).toHaveBeenLastCalledWith(
-      expect.objectContaining({ acknowledge_missing_secrets: true, confirmed_environment_id: 'env-1' }),
+      expect.objectContaining({ acknowledge_missing_secrets: true, confirmed_environment_id: 'env-1', send_with_expired_token: true }),
     )
   })
 
   it('maps send failures to AppError', async () => {
     vi.mocked(RequestService.Send).mockReturnValue(Object.assign(Promise.reject(failure('SND-00400')), { cancel: vi.fn() }) as never)
-    await expect(requests.sendRequest('ws', 'tab', emptyDraft(), { confirmedEnvironmentId: '', missingSecrets: false }).result).rejects.toMatchObject({ code: 'SND-00400' })
+    await expect(requests.sendRequest('ws', 'tab', emptyDraft(), { confirmedEnvironmentId: '', missingSecrets: false, expiredToken: false }).result).rejects.toMatchObject({ code: 'SND-00400' })
   })
 
   it('returns the last result or null when the tab has none', async () => {
@@ -177,5 +178,8 @@ describe('request service', () => {
     expect(requests.confirmationOf(refused)).toEqual({ environmentId: '01P', name: 'prod', color: 'red' })
     expect(requests.confirmationOf(new AppError('SND-05409', 'no details'))).toEqual({ environmentId: '', name: '', color: '' })
     expect(requests.confirmationOf(new AppError('SND-06409', 'secrets'))).toBeNull()
+    expect(requests.expiredTokenOwnerOf(new AppError('SND-07409', 'expired', [{ attribute: 'owner_id', messages: ['c1'] }]))).toBe('c1')
+    expect(requests.expiredTokenOwnerOf(new AppError('SND-07409', 'no details'))).toBe('')
+    expect(requests.expiredTokenOwnerOf(new AppError('SND-05409', 'confirm'))).toBeNull()
   })
 })

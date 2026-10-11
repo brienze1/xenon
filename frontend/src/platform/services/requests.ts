@@ -53,6 +53,16 @@ export function confirmationOf(error: AppError): SendConfirmation | null {
   return { environmentId: first('environment_id'), name: first('name'), color: first('color') }
 }
 
+export const EXPIRED_TOKEN = 'SND-07409'
+
+/** The auth owner whose OAuth 2.0 token expired and could not be refreshed (`SND-07409`), or `null` for any other error. */
+export function expiredTokenOwnerOf(error: AppError): string | null {
+  if (error.code !== EXPIRED_TOKEN) {
+    return null
+  }
+  return error.details.find((detail) => detail.attribute === 'owner_id')?.messages[0] ?? ''
+}
+
 export interface PendingSend {
   result: Promise<SendResult>
   cancel: () => void
@@ -143,6 +153,7 @@ export function sendRequest(localId: string, tabId: string, draft: RequestDraft,
     request: toRequestDto(draft),
     acknowledge_missing_secrets: acknowledgement.missingSecrets,
     confirmed_environment_id: acknowledgement.confirmedEnvironmentId,
+    send_with_expired_token: acknowledgement.expiredToken,
   })
   return {
     result: call(async () => toSendResult(required(await pending))),

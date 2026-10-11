@@ -113,7 +113,7 @@ describe('tree service', () => {
       local_id: 'ws',
       id: 'c1',
       description: 'docs',
-      auth: settings.auth,
+      auth: expect.objectContaining(settings.auth),
       headers: [{ key: 'X-Tenant', value: 'acme', description: '', enabled: true }],
       scripts: { pre_request: '', post_response: '', disabled: [] },
     })

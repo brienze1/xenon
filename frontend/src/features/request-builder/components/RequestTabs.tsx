@@ -3,7 +3,6 @@ import { formatNumber } from '@/shared/lib/number-format'
 import { Tabs } from '@/shared/ui/tabs/Tabs'
 import type { RequestBuilderMode, SubTab } from '@/features/request-builder/model'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
-import { AuthPanel } from './AuthPanel'
 import { BodyPanel } from './BodyPanel'
 import { HeadersPanel } from './HeadersPanel'
 import { ParamsPanel } from './ParamsPanel'
@@ -15,6 +14,8 @@ interface RequestTabsProps {
   tabId: string
   mode?: RequestBuilderMode
   scripts?: ReactNode
+  /** The Authorization tab's editor, composed by the app. */
+  auth?: ReactNode
 }
 
 const PARAMS_TAB = <Tabs.Tab value="params">Params</Tabs.Tab>
@@ -27,7 +28,7 @@ const SCRIPTS_TAB = <Tabs.Tab value="scripts">Scripts</Tabs.Tab>
 
 const SETTINGS_TAB = <Tabs.Tab value="settings">Settings</Tabs.Tab>
 
-export function RequestTabs({ tabId, mode = 'request', scripts }: RequestTabsProps) {
+export function RequestTabs({ tabId, mode = 'request', scripts, auth }: RequestTabsProps) {
   const stored = useRequestBuilderStore((state) => state.tabs[tabId]?.subTab ?? 'params')
   const full = mode === 'request'
   const subTab = !full && (stored === 'scripts' || stored === 'settings') ? 'params' : stored
@@ -48,7 +49,7 @@ export function RequestTabs({ tabId, mode = 'request', scripts }: RequestTabsPro
         <ParamsPanel tabId={tabId} />
       </Tabs.Panel>
       <Tabs.Panel value="auth" className={styles.panel}>
-        <AuthPanel tabId={tabId} />
+        {auth}
       </Tabs.Panel>
       <Tabs.Panel value="headers" className={styles.panel}>
         <HeadersPanel tabId={tabId} />

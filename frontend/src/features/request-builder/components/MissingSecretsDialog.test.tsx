@@ -3,9 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/platform/services/requests', async (importOriginal) => {
-  const { confirmationOf, missingSecretsOf } = await importOriginal<typeof import('@/platform/services/requests')>()
+  const { confirmationOf, expiredTokenOwnerOf, missingSecretsOf } = await importOriginal<typeof import('@/platform/services/requests')>()
   return {
     confirmationOf,
+    expiredTokenOwnerOf,
     missingSecretsOf,
     sendRequest: vi.fn(),
     autoHeaders: vi.fn(),
@@ -66,7 +67,7 @@ describe('MissingSecretsDialog', () => {
     expect(screen.queryByText('In a Locked Vault')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Unlock Vault' })).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Send Anyway' }))
-    expect(requests.sendRequest).toHaveBeenCalledWith('ws', TAB, expect.any(Object), { confirmedEnvironmentId: '', missingSecrets: true })
+    expect(requests.sendRequest).toHaveBeenCalledWith('ws', TAB, expect.any(Object), { confirmedEnvironmentId: '', missingSecrets: true, expiredToken: false })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 

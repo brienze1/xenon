@@ -20,6 +20,8 @@ export interface TabDraft {
   missingSecrets: MissingSecrets | null
   /** Set when Go refused a send because the active environment asks for a confirmation first. */
   confirmation: SendConfirmation | null
+  /** The auth owner whose OAuth 2.0 token expired and could not be refreshed; asks Get new token / Send anyway. */
+  expiredTokenOwner: string | null
   /** What the last send already acknowledged, kept so the next prompt adds to it. */
   acknowledgement: SendAcknowledgement
   /** The latest VariableService.Inspect answer for the draft (highlighting and Variables panel). */

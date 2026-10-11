@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { emptyAuth } from '@/platform/mappers/request'
 import { AppError } from '@/platform/errors'
 import type { ItemSettings, TreeNode } from '@/platform/mappers/tree'
 
@@ -193,7 +194,7 @@ describe('sidebar store', () => {
       kind: 'collection',
       name: 'Billing',
       description: '',
-      auth: { type: 'none', bearer: { token: '' }, basic: { username: '', password: '' }, unsupported: null },
+      auth: { ...emptyAuth(), type: 'none', bearer: { token: '' }, basic: { username: '', password: '' } },
       headers: [],
     }
     vi.mocked(tree.getItemSettings).mockResolvedValue(settings)

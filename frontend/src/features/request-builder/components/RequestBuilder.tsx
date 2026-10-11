@@ -8,6 +8,7 @@ import type { RequestBuilderMode } from '@/features/request-builder/model'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { ConfirmSendDialog } from './ConfirmSendDialog'
 import { CurlPasteNotice } from './CurlPasteNotice'
+import { ExpiredTokenDialog } from './ExpiredTokenDialog'
 import { MissingSecretsDialog } from './MissingSecretsDialog'
 import { RequestBar } from './RequestBar'
 import styles from './RequestBuilder.module.css'
@@ -26,10 +27,12 @@ interface RequestBuilderProps {
   onSave: () => void
   /** The Scripts tab's editor, composed by the app. */
   scripts?: ReactNode
+  /** The Authorization tab's editor, composed by the app. */
+  auth?: ReactNode
   mode?: RequestBuilderMode
 }
 
-export function RequestBuilder({ tabId, onSave, scripts, mode = 'request' }: RequestBuilderProps) {
+export function RequestBuilder({ tabId, onSave, scripts, auth, mode = 'request' }: RequestBuilderProps) {
   const error = useRequestBuilderStore((state) => state.tabs[tabId]?.error ?? null)
   const conflict = useRequestBuilderStore((state) => state.tabs[tabId]?.conflict === true)
   const save = useRequestBuilderStore((state) => state.save)
@@ -68,9 +71,10 @@ export function RequestBuilder({ tabId, onSave, scripts, mode = 'request' }: Req
           </Banner.Message>
         </Banner.Root>
       ) : null}
-      <RequestTabs tabId={tabId} mode={mode} scripts={scripts} />
+      <RequestTabs tabId={tabId} mode={mode} scripts={scripts} auth={auth} />
       <ConfirmSendDialog tabId={tabId} />
       <MissingSecretsDialog tabId={tabId} />
+      <ExpiredTokenDialog tabId={tabId} />
     </section>
   )
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Request as RequestDto } from '../../../bindings/github.com/brienze1/xenon/internal/integration/entrypoint/dto/models'
-import { cancelledResult, emptyDraft, noAcknowledgement, toRequestDraft, toRequestDto, toSendResult } from './request'
+import { cancelledResult, emptyAuth, emptyDraft, isLegacyGrant, noAcknowledgement, toAuth, toAuthDto, toRequestDraft, toRequestDto, toSendResult, usesBrowser } from './request'
 
 const dto: RequestDto = {
   scripts: { pre_request: 'pm.test()', post_response: '', disabled: ['postResponse', 'bogus'] },
@@ -24,7 +24,7 @@ const dto: RequestDto = {
     binary: { src: '/b.bin', src_state: 'ok' },
     graphql: { query: 'q', variables: '{}' },
   },
-  settings: { timeout_ms: 10, follow_redirects: false, verify_ssl: true, encode_url: null },
+  settings: { timeout_ms: 10, follow_redirects: false, verify_ssl: true, encode_url: null, disable_cookie_jar: false },
 }
 
 describe('request mapper', () => {
@@ -49,14 +49,15 @@ describe('request mapper', () => {
 
   it('round trips a draft to a DTO', () => {
     const back = toRequestDto(toRequestDraft(dto))
-    expect(back).toEqual({ ...dto, revision: '', scripts: { pre_request: 'pm.test()', post_response: '', disabled: ['postResponse'] }, inherit_scripts: false, headers: [{ key: 'Accept', value: '*/*', description: '', enabled: true }], settings: { ...dto.settings, encode_url: true } })
+    expect(back).toEqual({ ...dto, auth: { ...toAuthDto(emptyAuth()), type: 'bearer', bearer: { token: 't' }, basic: { username: 'u', password: 'p' } }, revision: '', scripts: { pre_request: 'pm.test()', post_response: '', disabled: ['postResponse'] }, inherit_scripts: false, headers: [{ key: 'Accept', value: '*/*', description: '', enabled: true }], settings: { ...dto.settings, encode_url: true } })
   })
 
   it('keeps unsupported auth details read-only and the file re-pick state', () => {
     const draft = toRequestDraft({ ...dto, auth: { ...dto.auth, type: 'unsupported', unsupported: { source: 'postman', type: 'hawk' } } })
     expect(draft.auth).toMatchObject({ type: 'unsupported', unsupported: { source: 'postman', type: 'hawk' } })
     expect(draft.body.binary).toEqual({ src: '/b.bin', srcState: 'ok' })
-    expect(toRequestDto(draft).auth).toEqual({ type: 'unsupported', bearer: { token: 't' }, basic: { username: 'u', password: 'p' } })
+    expect(toRequestDto(draft).auth).toMatchObject({ type: 'unsupported', bearer: { token: 't' }, basic: { username: 'u', password: 'p' } })
+    expect(toRequestDto(draft).auth).not.toHaveProperty('unsupported')
     expect(toRequestDraft(dto).auth.unsupported).toBeNull()
   })
 
@@ -82,7 +83,7 @@ describe('request mapper', () => {
       auth: { type: 'inherit' },
       body: { mode: 'none', raw: { language: 'json' }, formdata: [], urlencoded: [] },
     })
-    expect(emptyDraft().settings).toEqual({ timeoutMs: 0, followRedirects: true, verifySsl: true, encodeUrl: true })
+    expect(emptyDraft().settings).toEqual({ timeoutMs: 0, followRedirects: true, verifySsl: true, encodeUrl: true, disableCookieJar: false })
   })
 
   it('maps send results and failures', () => {
@@ -120,6 +121,71 @@ describe('request mapper', () => {
   })
 
   it('starts with nothing acknowledged', () => {
-    expect(noAcknowledgement()).toEqual({ confirmedEnvironmentId: '', missingSecrets: false })
+    expect(noAcknowledgement()).toEqual({ confirmedEnvironmentId: '', missingSecrets: false, expiredToken: false })
+  })
+
+  it('maps the API key, OAuth 2.0, AWS and Digest settings both ways', () => {
+    const full = {
+      type: 'oauth2',
+      bearer: { token: '' },
+      basic: { username: '', password: '' },
+      apikey: { key: 'X-Key', value: 'v', in: 'query' },
+      oauth2: {
+        grant_type: 'authorization_code_with_pkce',
+        token_name: 'n',
+        redirect_uri: 'http://127.0.0.1:1/cb',
+        auth_url: 'https://a',
+        access_token_url: 'https://t',
+        refresh_token_url: 'https://r',
+        client_id: 'c',
+        client_secret: '{{s}}',
+        username: 'u',
+        password: 'p',
+        scope: 'openid',
+        state: 'st',
+        challenge_algorithm: 'plain',
+        code_verifier: 'v',
+        client_authentication: 'body',
+        add_token_to: 'queryParams',
+        header_prefix: 'Token',
+        use_token: 'id_token',
+        audience: 'au',
+        resource: 're',
+        auto_refresh: false,
+        auth_request_params: [{ key: 'k', value: 'v', enabled: true, send_as: 'request_url' }],
+        token_request_params: [{ key: 'h', value: '1', enabled: false, send_as: 'request_header' }],
+        refresh_request_params: [{ key: 'b', value: '2', enabled: true, send_as: 'weird' }],
+      },
+      awsv4: { access_key: 'a', secret_key: 's', session_token: 't', region: 'r', service: 'v', add_auth_data_to_query: true },
+      digest: { username: 'u', password: 'p', algorithm: 'SHA-256-sess', qop: 'auth-int', realm: 'r', nonce: 'n', opaque: 'o', nonce_count: '1', client_nonce: 'c', disable_retry_request: true },
+    }
+    const auth = toAuth({ ...full, oauth2: { ...full.oauth2, uses_postman_callback: true, suggested_callback: 'http://127.0.0.1:53682/callback', legacy: false } })
+    expect(auth.apikey).toEqual({ key: 'X-Key', value: 'v', in: 'query' })
+    expect(auth.oauth2).toMatchObject({ grantType: 'authorization_code_with_pkce', challengeAlgorithm: 'plain', clientAuthentication: 'body', addTokenTo: 'queryParams', useToken: 'id_token', autoRefresh: false, usesPostmanCallback: true, suggestedCallback: 'http://127.0.0.1:53682/callback' })
+    expect(auth.oauth2.refreshRequestParams).toEqual([{ key: 'b', value: '2', enabled: true, sendAs: 'request_body' }])
+    expect(auth.awsv4).toEqual({ accessKey: 'a', secretKey: 's', sessionToken: 't', region: 'r', service: 'v', addAuthDataToQuery: true })
+    expect(auth.digest).toMatchObject({ algorithm: 'SHA-256-sess', qop: 'auth-int', nonceCount: '1', clientNonce: 'c', disableRetryRequest: true })
+    expect(toAuthDto(auth)).toEqual({ ...full, oauth2: { ...full.oauth2, refresh_request_params: [{ key: 'b', value: '2', enabled: true, send_as: 'request_body' }] } })
+    const odd = toAuth({
+      type: 'digest',
+      bearer: { token: '' },
+      basic: { username: '', password: '' },
+      apikey: { key: '', value: '', in: 'cookie' },
+      oauth2: { ...full.oauth2, grant_type: 'device', redirect_uri: '', challenge_algorithm: 'S512', client_authentication: 'x', add_token_to: 'x', use_token: 'x', auth_request_params: null, token_request_params: null, refresh_request_params: null },
+      awsv4: null,
+      digest: { ...full.digest, algorithm: 'SHA-1', qop: 'x' },
+    })
+    expect(odd.apikey.in).toBe('header')
+    expect(odd.oauth2).toMatchObject({ grantType: 'authorization_code', redirectUri: 'http://127.0.0.1:53682/callback', challengeAlgorithm: 'S256', clientAuthentication: 'header', addTokenTo: 'header', useToken: 'access_token', authRequestParams: [], usesPostmanCallback: false, suggestedCallback: '' })
+    expect(odd.awsv4).toEqual(emptyAuth().awsv4)
+    expect(odd.digest).toMatchObject({ algorithm: 'MD5', qop: '' })
+    expect(toAuth({ type: 'none', bearer: { token: '' }, basic: { username: '', password: '' } })).toEqual({ ...emptyAuth(), type: 'none' })
+  })
+
+  it('tells legacy and browser grants apart', () => {
+    expect(['implicit', 'password_credentials'].every((grant) => isLegacyGrant(grant as never))).toBe(true)
+    expect(isLegacyGrant('client_credentials')).toBe(false)
+    expect(usesBrowser('authorization_code') && usesBrowser('authorization_code_with_pkce') && usesBrowser('implicit')).toBe(true)
+    expect(usesBrowser('password_credentials') || usesBrowser('client_credentials')).toBe(false)
   })
 })

@@ -1,5 +1,7 @@
 import type {
   Auth as AuthDto,
+  AuthOAuth2 as AuthOAuth2Dto,
+  OAuth2Param as OAuth2ParamDto,
   AutoHeader as AutoHeaderDto,
   FormDataRow as FormDataRowDto,
   KeyValue as KeyValueDto,
@@ -61,11 +63,145 @@ export interface UnsupportedAuth {
   type: string
 }
 
+export type ApiKeyLocation = 'header' | 'query'
+
+export interface ApiKeyAuth {
+  key: string
+  value: string
+  in: ApiKeyLocation
+}
+
+export const OAUTH2_GRANTS = ['authorization_code', 'authorization_code_with_pkce', 'implicit', 'password_credentials', 'client_credentials'] as const
+export type OAuth2Grant = (typeof OAUTH2_GRANTS)[number]
+export type OAuth2ParamTarget = 'request_url' | 'request_body' | 'request_header'
+export type TokenUse = 'access_token' | 'id_token'
+
+/** A custom auth, token or refresh request parameter and where it is sent. */
+export interface OAuth2Param {
+  key: string
+  value: string
+  enabled: boolean
+  sendAs: OAuth2ParamTarget
+}
+
+/** OAuth 2.0 settings, with Postman's field meaning; tokens never live here (they are in the vault). */
+export interface OAuth2Auth {
+  grantType: OAuth2Grant
+  tokenName: string
+  redirectUri: string
+  authUrl: string
+  accessTokenUrl: string
+  refreshTokenUrl: string
+  clientId: string
+  clientSecret: string
+  username: string
+  password: string
+  scope: string
+  state: string
+  challengeAlgorithm: 'S256' | 'plain'
+  codeVerifier: string
+  clientAuthentication: 'header' | 'body'
+  addTokenTo: 'header' | 'queryParams'
+  headerPrefix: string
+  useToken: TokenUse
+  audience: string
+  resource: string
+  autoRefresh: boolean
+  authRequestParams: OAuth2Param[]
+  tokenRequestParams: OAuth2Param[]
+  refreshRequestParams: OAuth2Param[]
+  /** Read-only: Postman's web callback URL is in use; `suggestedCallback` is the loopback URL to register. */
+  usesPostmanCallback: boolean
+  suggestedCallback: string
+}
+
+export interface AwsV4Auth {
+  accessKey: string
+  secretKey: string
+  sessionToken: string
+  region: string
+  service: string
+  addAuthDataToQuery: boolean
+}
+
+export const DIGEST_ALGORITHMS = ['MD5', 'MD5-sess', 'SHA-256', 'SHA-256-sess', 'SHA-512-256', 'SHA-512-256-sess'] as const
+export type DigestAlgorithm = (typeof DIGEST_ALGORITHMS)[number]
+export type DigestQop = '' | 'auth' | 'auth-int'
+
+export interface DigestAuth {
+  username: string
+  password: string
+  algorithm: DigestAlgorithm
+  qop: DigestQop
+  realm: string
+  nonce: string
+  opaque: string
+  nonceCount: string
+  clientNonce: string
+  disableRetryRequest: boolean
+}
+
 export interface RequestAuth {
   type: AuthType
   bearer: { token: string }
   basic: { username: string; password: string }
+  apikey: ApiKeyAuth
+  oauth2: OAuth2Auth
+  awsv4: AwsV4Auth
+  digest: DigestAuth
   unsupported: UnsupportedAuth | null
+}
+
+export const DEFAULT_OAUTH2_CALLBACK = 'http://127.0.0.1:53682/callback'
+
+export function emptyAuth(): RequestAuth {
+  return {
+    type: 'inherit',
+    bearer: { token: '' },
+    basic: { username: '', password: '' },
+    apikey: { key: '', value: '', in: 'header' },
+    oauth2: {
+      grantType: 'authorization_code',
+      tokenName: '',
+      redirectUri: DEFAULT_OAUTH2_CALLBACK,
+      authUrl: '',
+      accessTokenUrl: '',
+      refreshTokenUrl: '',
+      clientId: '',
+      clientSecret: '',
+      username: '',
+      password: '',
+      scope: '',
+      state: '',
+      challengeAlgorithm: 'S256',
+      codeVerifier: '',
+      clientAuthentication: 'header',
+      addTokenTo: 'header',
+      headerPrefix: 'Bearer',
+      useToken: 'access_token',
+      audience: '',
+      resource: '',
+      autoRefresh: true,
+      authRequestParams: [],
+      tokenRequestParams: [],
+      refreshRequestParams: [],
+      usesPostmanCallback: false,
+      suggestedCallback: '',
+    },
+    awsv4: { accessKey: '', secretKey: '', sessionToken: '', region: '', service: '', addAuthDataToQuery: false },
+    digest: { username: '', password: '', algorithm: 'MD5', qop: '', realm: '', nonce: '', opaque: '', nonceCount: '', clientNonce: '', disableRetryRequest: false },
+    unsupported: null,
+  }
+}
+
+/** Whether a grant is kept for compatibility only (RFC 9700). */
+export function isLegacyGrant(grant: OAuth2Grant): boolean {
+  return grant === 'implicit' || grant === 'password_credentials'
+}
+
+/** Whether a grant signs in through the system browser. */
+export function usesBrowser(grant: OAuth2Grant): boolean {
+  return grant === 'authorization_code' || grant === 'authorization_code_with_pkce' || grant === 'implicit'
 }
 
 export interface RequestBody {
@@ -82,6 +218,7 @@ export interface RequestSettings {
   followRedirects: boolean
   verifySsl: boolean
   encodeUrl: boolean
+  disableCookieJar: boolean
 }
 
 export type ScriptPhase = 'preRequest' | 'postResponse'
@@ -190,7 +327,7 @@ export function emptyDraft(): RequestDraft {
     pathVariables: [],
     headers: [],
     disabledAutoHeaders: [],
-    auth: { type: 'inherit', bearer: { token: '' }, basic: { username: '', password: '' }, unsupported: null },
+    auth: emptyAuth(),
     body: {
       mode: 'none',
       raw: { language: 'json', content: '' },
@@ -199,7 +336,7 @@ export function emptyDraft(): RequestDraft {
       binary: { src: '', srcState: 'ok' },
       graphql: { query: '', variables: '' },
     },
-    settings: { timeoutMs: 0, followRedirects: true, verifySsl: true, encodeUrl: true },
+    settings: { timeoutMs: 0, followRedirects: true, verifySsl: true, encodeUrl: true, disableCookieJar: false },
     scripts: emptyScripts(),
     inheritScripts: true,
   }
@@ -271,11 +408,114 @@ export interface SavedRequest {
   revision: string
 }
 
+const GRANT_SET: ReadonlySet<string> = new Set(OAUTH2_GRANTS)
+const DIGEST_ALGORITHM_SET: ReadonlySet<string> = new Set(DIGEST_ALGORITHMS)
+const PARAM_TARGETS: ReadonlySet<string> = new Set<OAuth2ParamTarget>(['request_url', 'request_body', 'request_header'])
+
+function toOAuth2Params(dtos: OAuth2ParamDto[] | null | undefined, fallback: OAuth2ParamTarget): OAuth2Param[] {
+  return (dtos ?? []).map((dto) => ({ key: dto.key, value: dto.value, enabled: dto.enabled, sendAs: oneOf<OAuth2ParamTarget>(PARAM_TARGETS, dto.send_as, fallback) }))
+}
+
+function toOAuth2ParamDtos(params: OAuth2Param[]): OAuth2ParamDto[] {
+  return params.map((param) => ({ key: param.key, value: param.value, enabled: param.enabled, send_as: param.sendAs }))
+}
+
+function toOAuth2(dto: AuthOAuth2Dto | null | undefined): OAuth2Auth {
+  const defaults = emptyAuth().oauth2
+  if (!dto) {
+    return defaults
+  }
+  return {
+    grantType: oneOf<OAuth2Grant>(GRANT_SET, dto.grant_type, defaults.grantType),
+    tokenName: dto.token_name,
+    redirectUri: dto.redirect_uri || defaults.redirectUri,
+    authUrl: dto.auth_url,
+    accessTokenUrl: dto.access_token_url,
+    refreshTokenUrl: dto.refresh_token_url,
+    clientId: dto.client_id,
+    clientSecret: dto.client_secret,
+    username: dto.username,
+    password: dto.password,
+    scope: dto.scope,
+    state: dto.state,
+    challengeAlgorithm: dto.challenge_algorithm === 'plain' ? 'plain' : 'S256',
+    codeVerifier: dto.code_verifier,
+    clientAuthentication: dto.client_authentication === 'body' ? 'body' : 'header',
+    addTokenTo: dto.add_token_to === 'queryParams' ? 'queryParams' : 'header',
+    headerPrefix: dto.header_prefix,
+    useToken: dto.use_token === 'id_token' ? 'id_token' : 'access_token',
+    audience: dto.audience,
+    resource: dto.resource,
+    autoRefresh: dto.auto_refresh,
+    authRequestParams: toOAuth2Params(dto.auth_request_params, 'request_url'),
+    tokenRequestParams: toOAuth2Params(dto.token_request_params, 'request_body'),
+    refreshRequestParams: toOAuth2Params(dto.refresh_request_params, 'request_body'),
+    usesPostmanCallback: dto.uses_postman_callback ?? false,
+    suggestedCallback: dto.suggested_callback ?? '',
+  }
+}
+
+export function toOAuth2Dto(oauth2: OAuth2Auth): AuthOAuth2Dto {
+  return {
+    grant_type: oauth2.grantType,
+    token_name: oauth2.tokenName,
+    redirect_uri: oauth2.redirectUri,
+    auth_url: oauth2.authUrl,
+    access_token_url: oauth2.accessTokenUrl,
+    refresh_token_url: oauth2.refreshTokenUrl,
+    client_id: oauth2.clientId,
+    client_secret: oauth2.clientSecret,
+    username: oauth2.username,
+    password: oauth2.password,
+    scope: oauth2.scope,
+    state: oauth2.state,
+    challenge_algorithm: oauth2.challengeAlgorithm,
+    code_verifier: oauth2.codeVerifier,
+    client_authentication: oauth2.clientAuthentication,
+    add_token_to: oauth2.addTokenTo,
+    header_prefix: oauth2.headerPrefix,
+    use_token: oauth2.useToken,
+    audience: oauth2.audience,
+    resource: oauth2.resource,
+    auto_refresh: oauth2.autoRefresh,
+    auth_request_params: toOAuth2ParamDtos(oauth2.authRequestParams),
+    token_request_params: toOAuth2ParamDtos(oauth2.tokenRequestParams),
+    refresh_request_params: toOAuth2ParamDtos(oauth2.refreshRequestParams),
+  }
+}
+
 export function toAuth(dto: AuthDto): RequestAuth {
+  const defaults = emptyAuth()
   return {
     type: oneOf<AuthType>(AUTH_TYPE_SET, dto.type, 'inherit'),
     bearer: { token: dto.bearer.token },
     basic: { username: dto.basic.username, password: dto.basic.password },
+    apikey: dto.apikey ? { key: dto.apikey.key, value: dto.apikey.value, in: dto.apikey.in === 'query' ? 'query' : 'header' } : defaults.apikey,
+    oauth2: toOAuth2(dto.oauth2),
+    awsv4: dto.awsv4
+      ? {
+          accessKey: dto.awsv4.access_key,
+          secretKey: dto.awsv4.secret_key,
+          sessionToken: dto.awsv4.session_token,
+          region: dto.awsv4.region,
+          service: dto.awsv4.service,
+          addAuthDataToQuery: dto.awsv4.add_auth_data_to_query,
+        }
+      : defaults.awsv4,
+    digest: dto.digest
+      ? {
+          username: dto.digest.username,
+          password: dto.digest.password,
+          algorithm: oneOf<DigestAlgorithm>(DIGEST_ALGORITHM_SET, dto.digest.algorithm, 'MD5'),
+          qop: dto.digest.qop === 'auth' || dto.digest.qop === 'auth-int' ? dto.digest.qop : '',
+          realm: dto.digest.realm,
+          nonce: dto.digest.nonce,
+          opaque: dto.digest.opaque,
+          nonceCount: dto.digest.nonce_count,
+          clientNonce: dto.digest.client_nonce,
+          disableRetryRequest: dto.digest.disable_retry_request,
+        }
+      : defaults.digest,
     unsupported: dto.unsupported ? { source: dto.unsupported.source, type: dto.unsupported.type } : null,
   }
 }
@@ -285,6 +525,28 @@ export function toAuthDto(auth: RequestAuth): AuthDto {
     type: auth.type,
     bearer: { token: auth.bearer.token },
     basic: { username: auth.basic.username, password: auth.basic.password },
+    apikey: { key: auth.apikey.key, value: auth.apikey.value, in: auth.apikey.in },
+    oauth2: toOAuth2Dto(auth.oauth2),
+    awsv4: {
+      access_key: auth.awsv4.accessKey,
+      secret_key: auth.awsv4.secretKey,
+      session_token: auth.awsv4.sessionToken,
+      region: auth.awsv4.region,
+      service: auth.awsv4.service,
+      add_auth_data_to_query: auth.awsv4.addAuthDataToQuery,
+    },
+    digest: {
+      username: auth.digest.username,
+      password: auth.digest.password,
+      algorithm: auth.digest.algorithm,
+      qop: auth.digest.qop,
+      realm: auth.digest.realm,
+      nonce: auth.digest.nonce,
+      opaque: auth.digest.opaque,
+      nonce_count: auth.digest.nonceCount,
+      client_nonce: auth.digest.clientNonce,
+      disable_retry_request: auth.digest.disableRetryRequest,
+    },
   }
 }
 
@@ -318,6 +580,7 @@ export function toRequestDraft(dto: RequestDto): RequestDraft {
       followRedirects: dto.settings.follow_redirects ?? true,
       verifySsl: dto.settings.verify_ssl ?? true,
       encodeUrl: dto.settings.encode_url ?? true,
+      disableCookieJar: dto.settings.disable_cookie_jar ?? false,
     },
     scripts: toScriptSet(dto.scripts),
     inheritScripts: dto.inherit_scripts ?? true,
@@ -350,6 +613,7 @@ export function toRequestDto(draft: RequestDraft): RequestDto {
       follow_redirects: draft.settings.followRedirects,
       verify_ssl: draft.settings.verifySsl,
       encode_url: draft.settings.encodeUrl,
+      disable_cookie_jar: draft.settings.disableCookieJar,
     },
     scripts: toScriptsDto(draft.scripts),
     inherit_scripts: draft.inheritScripts,
@@ -417,8 +681,10 @@ export function cancelledResult(tabId: string): SendResult {
 export interface SendAcknowledgement {
   confirmedEnvironmentId: string
   missingSecrets: boolean
+  /** Send with an OAuth 2.0 token that expired and could not be refreshed ("Send anyway"). */
+  expiredToken: boolean
 }
 
 export function noAcknowledgement(): SendAcknowledgement {
-  return { confirmedEnvironmentId: '', missingSecrets: false }
+  return { confirmedEnvironmentId: '', missingSecrets: false, expiredToken: false }
 }

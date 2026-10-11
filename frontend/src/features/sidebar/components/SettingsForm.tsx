@@ -8,7 +8,6 @@ import { KeyValueTable, type KeyValueExamples } from '@/shared/ui/key-value-tabl
 import { Tabs } from '@/shared/ui/tabs/Tabs'
 import { addRow, patchRow, removeRow } from '@/shared/lib/rows'
 import { useSidebarStore } from '@/features/sidebar/store'
-import { AuthFields } from './AuthFields'
 import { SidebarErrorText } from './SidebarErrorText'
 import styles from './SettingsForm.module.css'
 
@@ -67,6 +66,14 @@ export interface ItemScriptsSlot {
   onInheritChange: (inheritScripts: boolean) => void
 }
 
+/** What the app's auth editor edits inside the settings form. */
+export interface ItemAuthSlot {
+  itemId: string
+  kind: ItemSettings['kind']
+  auth: ItemSettings['auth']
+  onChange: (auth: ItemSettings['auth']) => void
+}
+
 interface SettingsFormProps {
   itemId: string
   onClose: () => void
@@ -74,9 +81,11 @@ interface SettingsFormProps {
   collectionVariables?: (collectionId: string) => ReactNode
   /** Renders the scripts editor of a collection or folder; composed by the app. */
   scriptsEditor?: (slot: ItemScriptsSlot) => ReactNode
+  /** Renders the auth editor of a collection or folder; composed by the app. */
+  authEditor?: (slot: ItemAuthSlot) => ReactNode
 }
 
-export function SettingsForm({ itemId, onClose, collectionVariables, scriptsEditor }: SettingsFormProps) {
+export function SettingsForm({ itemId, onClose, collectionVariables, scriptsEditor, authEditor }: SettingsFormProps) {
   const loadSettings = useSidebarStore((state) => state.loadSettings)
   const saveSettings = useSidebarStore((state) => state.saveSettings)
   const formatBulk = useSidebarStore((state) => state.formatBulk)
@@ -201,7 +210,7 @@ export function SettingsForm({ itemId, onClose, collectionVariables, scriptsEdit
         />
       </label>
       {AUTH_HEADING}
-      <AuthFields kind={settings.kind} auth={settings.auth} onChange={(auth) => update({ auth })} />
+      {authEditor?.({ itemId: settings.id, kind: settings.kind, auth: settings.auth, onChange: (auth) => update({ auth }) })}
       {HEADERS_INTRO}
       <KeyValueTable
         examples={HEADER_EXAMPLES}

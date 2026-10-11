@@ -3,9 +3,10 @@ import { AppError } from '@/platform/errors'
 import { emptyDraft, type RequestDraft, type SendResult } from '@/platform/mappers/request'
 
 vi.mock('@/platform/services/requests', async (importOriginal) => {
-  const { confirmationOf, missingSecretsOf } = await importOriginal<typeof import('@/platform/services/requests')>()
+  const { confirmationOf, expiredTokenOwnerOf, missingSecretsOf } = await importOriginal<typeof import('@/platform/services/requests')>()
   return {
     confirmationOf,
+    expiredTokenOwnerOf,
     missingSecretsOf,
     applyUrl: vi.fn(),
     applyParams: vi.fn(),
@@ -273,7 +274,7 @@ describe('request builder store', () => {
     expect(state().tabs[tabId]!.pending).not.toBeNull()
     expect(useResponseViewerStore.getState().entries[tabId]?.sending).toBe(true)
     await sending
-    expect(requests.sendRequest).toHaveBeenCalledWith('ws', tabId, draft(tabId), { confirmedEnvironmentId: '', missingSecrets: false })
+    expect(requests.sendRequest).toHaveBeenCalledWith('ws', tabId, draft(tabId), { confirmedEnvironmentId: '', missingSecrets: false, expiredToken: false })
     expect(state().tabs[tabId]!.pending).toBeNull()
     expect(useResponseViewerStore.getState().entries[tabId]?.result?.statusCode).toBe(200)
   })
@@ -314,7 +315,7 @@ describe('request builder store', () => {
     await state().send(tabId)
     vi.mocked(requests.sendRequest).mockReturnValueOnce({ result: Promise.resolve({ ...okResult, tabId }), cancel: vi.fn() })
     await state().send(tabId, { missingSecrets: true })
-    expect(requests.sendRequest).toHaveBeenLastCalledWith('ws', tabId, draft(tabId), { confirmedEnvironmentId: '', missingSecrets: true })
+    expect(requests.sendRequest).toHaveBeenLastCalledWith('ws', tabId, draft(tabId), { confirmedEnvironmentId: '', missingSecrets: true, expiredToken: false })
     expect(state().tabs[tabId]!.missingSecrets).toBeNull()
   })
 
@@ -557,10 +558,10 @@ describe('request builder store - variables', () => {
     expect(useResponseViewerStore.getState().entries[tabId]?.sending).toBe(false)
     vi.mocked(requests.sendRequest).mockReturnValueOnce({ result: Promise.reject(secrets), cancel: vi.fn() })
     await state().send(tabId, { confirmedEnvironmentId: '01P' })
-    expect(requests.sendRequest).toHaveBeenLastCalledWith('ws', tabId, draft(tabId), { confirmedEnvironmentId: '01P', missingSecrets: false })
+    expect(requests.sendRequest).toHaveBeenLastCalledWith('ws', tabId, draft(tabId), { confirmedEnvironmentId: '01P', missingSecrets: false, expiredToken: false })
     expect(state().tabs[tabId]!.confirmation).toBeNull()
     expect(state().tabs[tabId]!.missingSecrets).toEqual({ missing: ['api_key'], locked: [] })
-    expect(state().tabs[tabId]!.acknowledgement).toEqual({ confirmedEnvironmentId: '01P', missingSecrets: false })
+    expect(state().tabs[tabId]!.acknowledgement).toEqual({ confirmedEnvironmentId: '01P', missingSecrets: false, expiredToken: false })
     state().dismissConfirmation(tabId)
     expect(state().tabs[tabId]!.confirmation).toBeNull()
   })

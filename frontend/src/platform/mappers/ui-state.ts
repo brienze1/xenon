@@ -41,8 +41,22 @@ export interface LayoutState {
   splitRatio: number
 }
 
+/** A tab closed recently, for "Reopen closed tab" (newest last, at most 20). */
+export interface ClosedTabState {
+  closedAt: string
+  tab: TabState
+}
+
+/** The options last used for one snippet language. */
+export interface SnippetOptionsState {
+  language: string
+  options: Record<string, string>
+}
+
 export interface UIState {
   tabs: TabState[]
+  closedTabs: ClosedTabState[]
+  snippetOptions: SnippetOptionsState[]
   activeTabId: string | null
   previewTabId: string | null
   sidebar: SidebarUIState
@@ -66,6 +80,8 @@ export function defaultLayout(): LayoutState {
 export function defaultUIState(): UIState {
   return {
     tabs: [],
+    closedTabs: [],
+    snippetOptions: [],
     activeTabId: null,
     previewTabId: null,
     sidebar: { expanded: [], selectedId: null, view: 'collections', search: '' },
@@ -109,6 +125,8 @@ export function toUIState(dto: UIStateDto | null): UIState {
   }
   return {
     tabs: (dto.tabs ?? []).map(toTabState),
+    closedTabs: (dto.closed_tabs ?? []).map((closed) => ({ closedAt: closed.closed_at, tab: toTabState(closed.tab) })),
+    snippetOptions: (dto.snippet_options ?? []).map((saved) => ({ language: saved.language, options: Object.fromEntries(Object.entries(saved.options ?? {}).filter((entry): entry is [string, string] => typeof entry[1] === 'string')) })),
     activeTabId: orNull(dto.active_tab_id),
     previewTabId: orNull(dto.preview_tab_id),
     sidebar: {
@@ -121,21 +139,27 @@ export function toUIState(dto: UIStateDto | null): UIState {
   }
 }
 
+function toTabDto(tab: TabState): TabDto {
+  return {
+    tab_id: tab.tabId,
+    kind: tab.kind ?? 'request',
+    request_id: tab.requestId ?? '',
+    example_id: tab.exampleId ?? '',
+    pinned: tab.pinned,
+    base_revision: tab.baseRevision ?? '',
+    ...(tab.draft ? { draft: toRequestDto(tab.draft) } : {}),
+  }
+}
+
 export function toUIStateDto(localId: string, state: UIState): UIStateDto {
   return {
     local_id: localId,
     version: 1,
     active_tab_id: state.activeTabId ?? '',
     preview_tab_id: state.previewTabId ?? '',
-    tabs: state.tabs.map((tab) => ({
-      tab_id: tab.tabId,
-      kind: tab.kind ?? 'request',
-      request_id: tab.requestId ?? '',
-      example_id: tab.exampleId ?? '',
-      pinned: tab.pinned,
-      base_revision: tab.baseRevision ?? '',
-      ...(tab.draft ? { draft: toRequestDto(tab.draft) } : {}),
-    })),
+    tabs: state.tabs.map(toTabDto),
+    closed_tabs: state.closedTabs.map((closed) => ({ closed_at: closed.closedAt, tab: toTabDto(closed.tab) })),
+    snippet_options: state.snippetOptions.map((saved) => ({ language: saved.language, options: saved.options })),
     sidebar: {
       expanded: state.sidebar.expanded,
       selected_id: state.sidebar.selectedId ?? '',

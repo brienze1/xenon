@@ -7,7 +7,7 @@ import { useWorkspacesStore } from '@/features/workspaces/store'
 import type { AppError } from '@/platform/errors'
 import type { RequestChangedOnDisk } from '@/platform/events'
 import { emptyDraft, type RequestDraft } from '@/platform/mappers/request'
-import type { TabState, UIState } from '@/platform/mappers/ui-state'
+import type { ClosedTabState, SnippetOptionsState, TabState, UIState } from '@/platform/mappers/ui-state'
 import { saveUIState } from '@/platform/services/ui-state'
 import { sameDraftContent } from './lib/draft'
 import { withoutNotice } from './lib/notices'
@@ -25,6 +25,9 @@ interface TabsState {
   closeError: AppError | null
   saveDialog: SaveDialogState | null
   notices: Record<string, TabNotice>
+  /** Kept as loaded so a save does not lose them; the closed-tab stack and snippet options are filled in later stages. */
+  closedTabs: ClosedTabState[]
+  snippetOptions: SnippetOptionsState[]
   hydrate: (localId: string, state: UIState) => void
   newTab: () => string
   openDraft: (draft: RequestDraft) => string
@@ -95,6 +98,8 @@ const initialState = {
   closeError: null as AppError | null,
   saveDialog: null as SaveDialogState | null,
   notices: {} as Record<string, TabNotice>,
+  closedTabs: [] as ClosedTabState[],
+  snippetOptions: [] as SnippetOptionsState[],
 }
 
 export const useTabsStore = create<TabsState>()((set, get) => {
@@ -162,6 +167,8 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         ),
         activeTabId: state.activeTabId,
         previewTabId: state.previewTabId,
+        closedTabs: state.closedTabs,
+        snippetOptions: state.snippetOptions,
       })
       useSidebarStore.getState().applyState({
         expanded: Object.fromEntries(state.sidebar.expanded.map((id) => [id, true])),
@@ -470,6 +477,8 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       const state = get()
       return {
         tabs: state.tabs.map(tabSnapshot),
+        closedTabs: state.closedTabs,
+        snippetOptions: state.snippetOptions,
         activeTabId: state.activeTabId,
         previewTabId: state.previewTabId,
         sidebar: sidebarSnapshot(),

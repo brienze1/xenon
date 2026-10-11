@@ -208,6 +208,8 @@ describe('examples store', () => {
     await act(async () => {
       useTabsStore.getState().hydrate('ws', {
         tabs: [{ tabId: 'tab-x', kind: 'example', requestId: 'r1', exampleId: 'e1', pinned: true, baseRevision: null, draft: null }],
+        closedTabs: [],
+        snippetOptions: [],
         activeTabId: 'tab-x',
         previewTabId: null,
         sidebar: { expanded: [], selectedId: null, view: 'collections', search: '' },

@@ -44,7 +44,7 @@ function toExampleRequestDraft(name: string, dto: ExampleRequestDto): RequestDra
     auto_headers: { disabled: [] },
     auth: dto.auth,
     body: dto.body,
-    settings: { timeout_ms: 0 },
+    settings: { timeout_ms: 0, disable_cookie_jar: false },
   })
 }
 

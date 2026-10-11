@@ -12,7 +12,7 @@ import { useExamplesStore } from '@/features/examples/store'
 import { SettingsButton } from '@/features/settings/components/SettingsButton'
 import { SettingsDialog } from '@/features/settings/components/SettingsDialog'
 import { SidebarPanel } from '@/features/sidebar/components/SidebarPanel'
-import type { ItemScriptsSlot } from '@/features/sidebar/components/SettingsForm'
+import type { ItemAuthSlot, ItemScriptsSlot } from '@/features/sidebar/components/SettingsForm'
 import { useTabsStore } from '@/features/tabs/store'
 import { MissingFolderNotice } from '@/features/workspaces/components/MissingFolderNotice'
 import { WelcomeScreen } from '@/features/workspaces/components/WelcomeScreen'
@@ -25,6 +25,7 @@ import styles from './App.module.css'
 import { bootstrap } from './bootstrap'
 import { type HotkeyHandlers } from './hotkeys'
 import { AppShell } from './layout/AppShell'
+import { ItemAuth } from './layout/ItemAuth'
 import { ItemScripts } from './layout/ItemScripts'
 import { ConsoleDrawer } from './layout/regions/ConsoleDrawer'
 import { Footer } from './layout/regions/Footer'
@@ -60,6 +61,10 @@ const TOP_BAR_END_WITH_ENVIRONMENTS = (
 
 function scriptsEditor(slot: ItemScriptsSlot) {
   return <ItemScripts slot={slot} />
+}
+
+function authEditor(slot: ItemAuthSlot) {
+  return <ItemAuth slot={slot} />
 }
 
 function collectionVariables(collectionId: string) {
@@ -149,6 +154,7 @@ export function App() {
               onOpenHistoryEntry={(request) => void tabs().openDraft(request)}
               collectionVariables={collectionVariables}
               scriptsEditor={scriptsEditor}
+              authEditor={authEditor}
             />
           </Sidebar>
           <MainArea>

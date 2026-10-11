@@ -22,6 +22,7 @@ import {
   applyUrl,
   autoHeaders,
   confirmationOf,
+  expiredTokenOwnerOf,
   formatBulk,
   getRequest,
   missingSecretsOf,
@@ -80,6 +81,7 @@ interface RequestBuilderState {
   send: (tabId: string, acknowledgement?: Partial<SendAcknowledgement>) => Promise<void>
   dismissMissingSecrets: (tabId: string) => void
   dismissConfirmation: (tabId: string) => void
+  dismissExpiredToken: (tabId: string) => void
   inspect: (tabId: string) => Promise<void>
   refreshInspections: () => void
   suggest: (tabId: string, prefix: string) => Promise<VariableSuggestion[]>
@@ -120,6 +122,7 @@ function newTab(): TabDraft {
     pending: null,
     missingSecrets: null,
     confirmation: null,
+    expiredTokenOwner: null,
     acknowledgement: noAcknowledgement(),
     inspection: null,
     selection: null,
@@ -451,7 +454,7 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
         responses.setFailure(tabId, toAppError(error))
         return
       }
-      patchTab(tabId, { pending, missingSecrets: null, confirmation: null, acknowledgement: acknowledged })
+      patchTab(tabId, { pending, missingSecrets: null, confirmation: null, expiredTokenOwner: null, acknowledgement: acknowledged })
       responses.startSending(tabId)
       try {
         responses.setResult(tabId, await pending.result)
@@ -459,7 +462,11 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
         const appError = toAppError(error)
         const missingSecrets = missingSecretsOf(appError)
         const confirmation = confirmationOf(appError)
-        if (confirmation) {
+        const expiredTokenOwner = expiredTokenOwnerOf(appError)
+        if (expiredTokenOwner !== null) {
+          responses.stopSending(tabId)
+          patchTab(tabId, { expiredTokenOwner })
+        } else if (confirmation) {
           responses.stopSending(tabId)
           patchTab(tabId, { confirmation })
         } else if (missingSecrets) {
@@ -478,6 +485,8 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
     dismissMissingSecrets: (tabId) => patchTab(tabId, { missingSecrets: null }),
 
     dismissConfirmation: (tabId) => patchTab(tabId, { confirmation: null }),
+
+    dismissExpiredToken: (tabId) => patchTab(tabId, { expiredTokenOwner: null }),
 
     inspect: async (tabId) => {
       const localId = useWorkspacesStore.getState().activeLocalId

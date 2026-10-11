@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { emptyAuth } from '@/platform/mappers/request'
 import type { ItemSettings } from '@/platform/mappers/tree'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { ItemSettingsDialog } from './ItemSettingsDialog'
@@ -11,7 +12,7 @@ const folder: ItemSettings = {
   kind: 'folder',
   name: 'Invoices',
   description: '',
-  auth: { type: 'inherit', bearer: { token: '' }, basic: { username: '', password: '' }, unsupported: null },
+  auth: { ...emptyAuth(), type: 'inherit', bearer: { token: '' }, basic: { username: '', password: '' } },
   headers: [],
   scripts: { preRequest: 'console.log(1)', postResponse: '', disabled: [] },
   inheritScripts: true,

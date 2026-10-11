@@ -3,9 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/platform/services/requests', async (importOriginal) => {
-  const { confirmationOf, missingSecretsOf } = await importOriginal<typeof import('@/platform/services/requests')>()
+  const { confirmationOf, expiredTokenOwnerOf, missingSecretsOf } = await importOriginal<typeof import('@/platform/services/requests')>()
   return {
     confirmationOf,
+    expiredTokenOwnerOf,
     missingSecretsOf,
     sendRequest: vi.fn(),
     autoHeaders: vi.fn(),
@@ -28,7 +29,7 @@ function askToConfirm(color: string, missingSecrets = false) {
       [TAB]: {
         ...state.tabs[TAB]!,
         confirmation: { environmentId: '01P', name: 'prod', color },
-        acknowledgement: { confirmedEnvironmentId: '', missingSecrets },
+        acknowledgement: { confirmedEnvironmentId: '', missingSecrets, expiredToken: false },
       },
     },
   }))
@@ -68,7 +69,7 @@ describe('ConfirmSendDialog', () => {
     vi.mocked(requests.sendRequest).mockReturnValue({ result: new Promise(() => undefined), cancel: vi.fn() })
     render(<ConfirmSendDialog tabId={TAB} />)
     await userEvent.click(screen.getByRole('button', { name: 'Send to prod' }))
-    expect(requests.sendRequest).toHaveBeenCalledWith('ws', TAB, expect.any(Object), { confirmedEnvironmentId: '01P', missingSecrets: true })
+    expect(requests.sendRequest).toHaveBeenCalledWith('ws', TAB, expect.any(Object), { confirmedEnvironmentId: '01P', missingSecrets: true, expiredToken: false })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })

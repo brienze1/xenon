@@ -3,6 +3,7 @@ import { ResponseViewer } from '@/features/response-viewer/components/ResponseVi
 import { LAYOUT_LIMITS } from '@/features/workspaces/lib/layout'
 import { SplitPane } from '@/shared/ui/split-pane/SplitPane'
 import { useShellLayout } from '@/app/layout/use-shell-layout'
+import { RequestAuth } from './RequestAuth'
 import { RequestScripts } from './RequestScripts'
 
 const DIVIDER = <SplitPane.Divider label="Resize request and response" />
@@ -26,7 +27,7 @@ export function RequestWorkspace({ tabId, onSave }: RequestWorkspaceProps) {
       onRatioChange={(splitRatio) => update({ splitRatio })}
     >
       <SplitPane.Pane>
-        <RequestBuilder tabId={tabId} onSave={onSave} scripts={<RequestScripts tabId={tabId} />} />
+        <RequestBuilder tabId={tabId} onSave={onSave} scripts={<RequestScripts tabId={tabId} />} auth={<RequestAuth tabId={tabId} />} />
       </SplitPane.Pane>
       {DIVIDER}
       <SplitPane.Pane>

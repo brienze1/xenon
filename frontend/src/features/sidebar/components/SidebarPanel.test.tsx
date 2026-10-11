@@ -2,8 +2,10 @@ import { act, render, screen, waitFor, within } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import userEvent from '@testing-library/user-event'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { emptyAuth } from '@/platform/mappers/request'
 import { AppError } from '@/platform/errors'
 import type { ItemSettings, TreeNode } from '@/platform/mappers/tree'
+import type { ItemAuthSlot } from './SettingsForm'
 
 vi.mock('@/platform/services/tree', () => ({
   getTree: vi.fn(),
@@ -52,7 +54,7 @@ const settings: ItemSettings = {
   kind: 'collection',
   name: 'Billing',
   description: '',
-  auth: { type: 'inherit', bearer: { token: '' }, basic: { username: '', password: '' }, unsupported: null },
+  auth: { ...emptyAuth(), type: 'inherit', bearer: { token: '' }, basic: { username: '', password: '' } },
   headers: [],
 }
 
@@ -68,6 +70,15 @@ afterAll(() => {
   }
 })
 
+function fakeAuthEditor(slot: ItemAuthSlot) {
+  return (
+    <label>
+      Token for {slot.kind} {slot.itemId} ({slot.auth.type})
+      <input value={slot.auth.bearer.token} onChange={(event) => slot.onChange({ ...slot.auth, type: 'bearer', bearer: { token: event.target.value } })} />
+    </label>
+  )
+}
+
 async function renderPanel(collectionVariables?: (collectionId: string) => ReactNode) {
   const actions = {
     onOpenRequest: vi.fn(),
@@ -79,7 +90,7 @@ async function renderPanel(collectionVariables?: (collectionId: string) => React
     onRenamed: vi.fn(),
     onOpenHistoryEntry: vi.fn(),
   }
-  render(<SidebarPanel {...actions} collectionVariables={collectionVariables} />)
+  render(<SidebarPanel {...actions} collectionVariables={collectionVariables} authEditor={fakeAuthEditor} />)
   await act(() => useSidebarStore.getState().load())
   return actions
 }
@@ -276,7 +287,7 @@ describe('SidebarPanel', () => {
     expect(tree.deleteItem).toHaveBeenCalledWith('ws', 'c1')
   })
 
-  it('edits collection auth and headers in the settings dialog', async () => {
+  it('edits collection auth through the composed editor and headers in the settings dialog', async () => {
     vi.mocked(tree.getItemSettings).mockResolvedValue(settings)
     vi.mocked(tree.saveItemSettings).mockResolvedValue(settings)
     vi.mocked(requests.formatBulk).mockResolvedValue('X-Tenant:acme')
@@ -285,9 +296,7 @@ describe('SidebarPanel', () => {
     await userEvent.pointer({ keys: '[MouseRight]', target: item('Billing') })
     await userEvent.click(screen.getByRole('menuitem', { name: 'Settings…' }))
     const dialog = await screen.findByRole('dialog', { name: 'Billing Settings' })
-    expect(dialog).toHaveTextContent('A collection has no parent')
-    await userEvent.selectOptions(within(dialog).getByRole('combobox', { name: 'Auth type' }), 'bearer')
-    await userEvent.type(within(dialog).getByRole('textbox', { name: 'Token' }), 'secret')
+    await userEvent.type(within(dialog).getByRole('textbox', { name: `Token for collection ${settings.id} (inherit)` }), 'secret')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Bulk Edit' }))
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save Settings' }))
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
@@ -296,17 +305,6 @@ describe('SidebarPanel', () => {
       auth: { ...settings.auth, type: 'bearer', bearer: { token: 'secret' } },
       headers: [{ id: 'h1', key: 'X-Tenant', value: 'acme', description: '', enabled: true }],
     })
-  })
-
-  it('shows an imported unsupported auth type read-only in the settings dialog', async () => {
-    vi.mocked(tree.getItemSettings).mockResolvedValue({ ...settings, auth: { ...settings.auth, type: 'unsupported', unsupported: { source: 'postman', type: 'ntlm' } } })
-    await renderPanel()
-    await userEvent.pointer({ keys: '[MouseRight]', target: item('Billing') })
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Settings…' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Billing Settings' })
-    expect(within(dialog).getByRole('combobox', { name: 'Auth type' })).toHaveValue('unsupported')
-    expect(within(dialog).getByRole('option', { name: 'API key' })).toBeDisabled()
-    expect(dialog).toHaveTextContent('Unsupported auth type (kept): ntlm. It is kept unchanged for export')
   })
 
   it('opens the Import dialog from the toolbar', async () => {

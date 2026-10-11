@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { useAuthStore } from '@/features/auth/store'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
@@ -48,6 +49,7 @@ interface WorkspacesState {
 
 function resetWorkspaceStores(): void {
   useEnvironmentsStore.getState().reset()
+  useAuthStore.getState().reset()
   useTabsStore.getState().reset()
   useRequestBuilderStore.getState().reset()
   useResponseViewerStore.getState().reset()

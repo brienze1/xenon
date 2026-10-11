@@ -5,9 +5,10 @@ import { AppError } from '@/platform/errors'
 import { emptyDraft, type RequestDraft, type SendResult } from '@/platform/mappers/request'
 
 vi.mock('@/platform/services/requests', async (importOriginal) => {
-  const { confirmationOf, isCurlRefusal, missingSecretsOf } = await importOriginal<typeof import('@/platform/services/requests')>()
+  const { confirmationOf, expiredTokenOwnerOf, isCurlRefusal, missingSecretsOf } = await importOriginal<typeof import('@/platform/services/requests')>()
   return {
     confirmationOf,
+    expiredTokenOwnerOf,
     isCurlRefusal,
     missingSecretsOf,
     applyUrl: vi.fn(),
@@ -198,7 +199,7 @@ describe('RequestBuilder', () => {
     vi.mocked(requests.sendRequest).mockReturnValue({ result: new Promise(() => undefined), cancel: vi.fn() })
     render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
     await user.type(screen.getByRole('textbox', { name: 'Request URL' }), 'https://api.test{Enter}')
-    expect(requests.sendRequest).toHaveBeenCalledWith('ws', tabId, expect.objectContaining({ url: 'https://api.test' }), { confirmedEnvironmentId: '', missingSecrets: false })
+    expect(requests.sendRequest).toHaveBeenCalledWith('ws', tabId, expect.objectContaining({ url: 'https://api.test' }), { confirmedEnvironmentId: '', missingSecrets: false, expiredToken: false })
   })
 
   it('replaces the request with a pasted cURL command as one change that can be undone', async () => {
@@ -285,23 +286,14 @@ describe('RequestBuilder', () => {
     expect(screen.getByRole('tab', { name: 'Headers (1)' })).toBeInTheDocument()
   })
 
-  it('offers inherit, none, bearer and basic auth, with later types disabled', async () => {
+  it('shows the auth editor the app composes in the Authorization tab', async () => {
     const user = userEvent.setup()
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} auth={<p>auth editor</p>} />)
     await user.click(screen.getByRole('tab', { name: 'Authorization' }))
-    const type = screen.getByRole('combobox', { name: 'Auth type' })
-    expect(screen.getByRole('option', { name: 'API key' })).toBeDisabled()
-    await user.selectOptions(type, 'bearer')
-    await user.type(screen.getByRole('textbox', { name: 'Token' }), 'abc')
-    await user.selectOptions(type, 'basic')
-    await user.type(screen.getByRole('textbox', { name: 'Username' }), 'user')
-    await user.type(screen.getByLabelText('Password'), 'pass')
-    await user.selectOptions(type, 'none')
-    expect(screen.getByText('This request does not use any authorization.')).toBeInTheDocument()
-    expect(useRequestBuilderStore.getState().tabs[tabId]!.draft.auth).toEqual({ type: 'none', bearer: { token: 'abc' }, basic: { username: 'user', password: 'pass' }, unsupported: null })
+    expect(screen.getByText('auth editor')).toBeInTheDocument()
   })
 
-  it('shows an imported unsupported auth type read-only and asks to pick imported files again', async () => {
+  it('asks to pick imported files again', async () => {
     const user = userEvent.setup()
     act(() => {
       useRequestBuilderStore.getState().updateAuth(tabId, { type: 'unsupported', unsupported: { source: 'postman', type: 'hawk' } })
@@ -311,10 +303,6 @@ describe('RequestBuilder', () => {
       })
     })
     render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
-    await user.click(screen.getByRole('tab', { name: 'Authorization' }))
-    expect(screen.getByRole('combobox', { name: 'Auth type' })).toHaveValue('unsupported')
-    expect(screen.getByRole('option', { name: 'Unsupported (kept)' })).toBeDisabled()
-    expect(screen.getByText(/Unsupported auth type \(kept\):/)).toHaveTextContent('Unsupported auth type (kept): hawk. It is kept unchanged for export')
     await user.click(screen.getByRole('tab', { name: 'Body' }))
     expect(screen.getByText('Imported from another machine — select the file again before sending')).toBeInTheDocument()
     vi.mocked(dialogs.pickFile).mockResolvedValue('/home/me/file.txt')
@@ -370,7 +358,7 @@ describe('RequestBuilder', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Automatically follow redirects' }))
     await user.click(screen.getByRole('checkbox', { name: 'Enable SSL certificate verification' }))
     await user.click(screen.getByRole('checkbox', { name: 'Encode URL automatically' }))
-    expect(useRequestBuilderStore.getState().tabs[tabId]!.draft.settings).toEqual({ timeoutMs: 5000, followRedirects: false, verifySsl: false, encodeUrl: false })
+    expect(useRequestBuilderStore.getState().tabs[tabId]!.draft.settings).toEqual({ timeoutMs: 5000, followRedirects: false, verifySsl: false, encodeUrl: false, disableCookieJar: false })
   })
 
   it('shows editing errors in a banner', () => {

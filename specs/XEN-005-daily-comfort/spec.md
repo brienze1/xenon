@@ -341,3 +341,8 @@ expected outputs and run them against a test server.
   Digest `nc`, "Close tabs to the left/right" added (PRD).
 - Implicit and password grants are supported for compatibility but labelled legacy (RFC 9700).
 - Shortcut remapping is a post-MVP nice-to-have (PRD).
+- SC-002 "applicable" SigV4 vectors are the 20 the AWS SDK signer reproduces for an HTTP client:
+  path normalisation, single encoding of raw UTF-8/space paths, header line folding, repeated
+  header names (Xenon sends one header per name), encoded-key query ordering and the
+  token-added-after-signing case are out (tasks.md Phase 3 notes). As in Postman's aws4,
+  `X-Amz-Content-Sha256` is sent for S3 only; the payload hash is always signed.
