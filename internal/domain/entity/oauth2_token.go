@@ -68,6 +68,14 @@ func (o OAuth2Token) Secrets() []string {
 	return secrets
 }
 
+func (o *OAuth2Token) HasValue() bool {
+	return o != nil && o.Value() != ""
+}
+
+func (o *OAuth2Token) IsSendable() bool {
+	return o.HasValue() && !o.IsMac()
+}
+
 func (o *OAuth2Token) SecretsOrNone() []string {
 	if o == nil {
 		return []string{}

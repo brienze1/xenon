@@ -595,3 +595,16 @@ func TestCookieMovedFrom(t *testing.T) {
 		t.Fatal("MovedFrom")
 	}
 }
+
+func TestOAuth2TokenHasValueAndIsSendable(t *testing.T) {
+	var missing *OAuth2Token
+	empty := &OAuth2Token{}
+	if missing.HasValue() || missing.IsSendable() || empty.HasValue() || empty.IsSendable() {
+		t.Fatal("a missing or empty token has no value")
+	}
+	bearer := &OAuth2Token{AccessToken: "a", TokenType: "Bearer"}
+	mac := &OAuth2Token{AccessToken: "a", TokenType: "MAC"}
+	if !bearer.HasValue() || !bearer.IsSendable() || !mac.HasValue() || mac.IsSendable() {
+		t.Fatal("a bearer token is sent, a mac token is not")
+	}
+}

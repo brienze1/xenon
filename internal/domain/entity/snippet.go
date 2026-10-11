@@ -114,7 +114,7 @@ func escapedSecretForms(secret string) []string {
 
 func OAuthSnippetNotices(token *OAuth2Token) []string {
 	switch {
-	case token == nil || token.Value() == "":
+	case !token.HasValue():
 		return []string{NoOAuthTokenNotice}
 	case token.IsMac():
 		return []string{MacTokenNotice}
