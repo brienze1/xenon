@@ -325,8 +325,8 @@ func (g *GitServers) serveHttp(w http.ResponseWriter, r *http.Request) {
 		g.refuseHttp(w, repository, status)
 		return
 	}
-	endpoint, err := transport.NewEndpoint("/" + repository + gitRepositorySuffix)
-	if err != nil || service == "" {
+	endpoint := &transport.Endpoint{Path: "/" + repository + gitRepositorySuffix}
+	if service == "" {
 		http.Error(w, "not a git endpoint", http.StatusNotFound)
 		return
 	}
@@ -480,11 +480,7 @@ func (g *GitServers) serveSsh(session gliderssh.Session) {
 		_ = session.Exit(1)
 		return
 	}
-	endpoint, err := transport.NewEndpoint("/" + strings.TrimPrefix(path.Clean(command[1]), "/"))
-	if err != nil {
-		_ = session.Exit(1)
-		return
-	}
+	endpoint := &transport.Endpoint{Path: "/" + strings.TrimPrefix(path.Clean(command[1]), "/")}
 	if err := g.serveSshCommand(session.Context(), session, command[0], endpoint); err != nil {
 		_, _ = io.WriteString(session.Stderr(), err.Error())
 		_ = session.Exit(1)
