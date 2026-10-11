@@ -278,6 +278,25 @@ Feature: Export a Xenon collection as a Postman collection v2.1
     And the save dialog should have been opened with the title "Export as Postman"
 
   @dialog
+  Scenario Outline: The save dialog suggests the extension of the chosen Xenon YAML shape (<shape>)
+    Given the save dialog will return "{{temp_root}}/chosen"
+    When I call "ExportService.PickTarget" with
+      """
+      { "suggested_file_name": "<suggested>", "format": "xenon_yaml", "shape": "<shape>" }
+      """
+    Then the call should succeed
+    And the save dialog should have suggested the name "<name>"
+    And the save dialog should have been opened with the title "Export as Xenon YAML"
+
+    Examples:
+      | suggested     | shape  | name          |
+      | shop-api.zip  | bundle | shop-api.yaml |
+      | shop-api.yaml | zip    | shop-api.zip  |
+      | shop-api.zip  | zip    | shop-api.zip  |
+      | local.yaml    | file   | local.yaml    |
+      | shop-api      | bundle | shop-api.yaml |
+
+  @dialog
   Scenario: The summary's Show in folder opens the file manager on the exported file
     When I call "ExportService.ShowInFolder" with
       """

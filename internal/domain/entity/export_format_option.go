@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"strings"
+
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/exportformat"
 	"github.com/brienze1/xenon/internal/domain/enums/exportitemkind"
@@ -59,6 +61,14 @@ func ExportFileName(baseName string, kind enums.ExportItemKind, format enums.Exp
 	default:
 		return baseName + postmanCollectionSuffix
 	}
+}
+
+func ExportFileNameForShape(name string, format enums.ExportFormat, shape enums.ExportShape) string {
+	if format != exportformat.XenonYaml || (shape != exportshape.Zip && shape != exportshape.Bundle) {
+		return name
+	}
+	base := strings.TrimSuffix(strings.TrimSuffix(name, xenonZipSuffix), xenonYamlSuffix)
+	return ExportFileName(base, exportitemkind.Unknown, format, shape)
 }
 
 func exportShapes(kind enums.ExportItemKind, format enums.ExportFormat) []enums.ExportShape {

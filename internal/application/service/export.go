@@ -101,19 +101,19 @@ func (e *export) Options(ctx context.Context, localId string, kind enums.ExportI
 	return &options, nil
 }
 
-func (e *export) PickTarget(ctx context.Context, suggestedFileName string, format enums.ExportFormat) (string, error) {
-	logger.Info(ctx, "Started", map[string]any{"suggestedFileName": suggestedFileName, "format": format})
+func (e *export) PickTarget(ctx context.Context, suggestedFileName string, format enums.ExportFormat, shape enums.ExportShape) (string, error) {
+	logger.Info(ctx, "Started", map[string]any{"suggestedFileName": suggestedFileName, "format": format, "shape": shape})
 
 	title := exportPickerTitle
 	if format == exportformat.Postman {
 		title = postmanExportPickerTitle
 	}
-	path, err := e.pickPath.PickSaveFile(ctx, title, suggestedFileName)
+	path, err := e.pickPath.PickSaveFile(ctx, title, entity.ExportFileNameForShape(suggestedFileName, format, shape))
 	if err != nil {
 		return "", err
 	}
 
-	logger.Info(ctx, "Finished", map[string]any{"suggestedFileName": suggestedFileName, "format": format, "path": path})
+	logger.Info(ctx, "Finished", map[string]any{"suggestedFileName": suggestedFileName, "format": format, "shape": shape, "path": path})
 	return path, nil
 }
 

@@ -3,6 +3,7 @@ package dto
 import (
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/exportformat"
+	"github.com/brienze1/xenon/internal/domain/enums/exportshape"
 )
 
 type PickExportTarget struct {
@@ -13,4 +14,8 @@ type PickExportTarget struct {
 
 func (p *PickExportTarget) ExportFormat() enums.ExportFormat {
 	return exportformat.GetExportFormat(p.Format)
+}
+
+func (p *PickExportTarget) ExportShape() enums.ExportShape {
+	return exportshape.GetExportShape(p.Shape)
 }

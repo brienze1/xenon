@@ -351,3 +351,24 @@ func TestExportProgressMilestones(t *testing.T) {
 		}
 	}
 }
+
+func TestExportFileNameForShape(t *testing.T) {
+	cases := []struct {
+		name     string
+		format   enums.ExportFormat
+		shape    enums.ExportShape
+		expected string
+	}{
+		{"shop-api.zip", exportformat.XenonYaml, exportshape.Bundle, "shop-api.yaml"},
+		{"shop-api.yaml", exportformat.XenonYaml, exportshape.Zip, "shop-api.zip"},
+		{"shop-api", exportformat.XenonYaml, exportshape.Bundle, "shop-api.yaml"},
+		{"local.yaml", exportformat.XenonYaml, exportshape.File, "local.yaml"},
+		{"local.yaml", exportformat.XenonYaml, exportshape.Unknown, "local.yaml"},
+		{"shop.postman_collection.json", exportformat.Postman, exportshape.Bundle, "shop.postman_collection.json"},
+	}
+	for _, c := range cases {
+		if got := ExportFileNameForShape(c.name, c.format, c.shape); got != c.expected {
+			t.Errorf("%s %s %s: got %q, expected %q", c.name, c.format, c.shape, got, c.expected)
+		}
+	}
+}

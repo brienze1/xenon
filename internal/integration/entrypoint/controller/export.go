@@ -65,7 +65,7 @@ func (e *export) PickTarget(bindingCtx context.Context, request dto.PickExportTa
 		return nil, err
 	}
 
-	path, err := e.exportService.PickTarget(ctx, request.SuggestedFileName, request.ExportFormat())
+	path, err := e.exportService.PickTarget(ctx, request.SuggestedFileName, request.ExportFormat(), request.ExportShape())
 	if err != nil {
 		return nil, err
 	}
