@@ -61,7 +61,7 @@ Feature: Scripts use the libraries and globals Postman's sandbox ships
     And the response should contain the field "script_errors" array length equal to 0
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "" array length equal to 1
     And the response should contain the field "0.summary" equal to "<result>"
@@ -116,7 +116,7 @@ Feature: Scripts use the libraries and globals Postman's sandbox ships
     And the response should contain the field "script_errors" array length equal to 0
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "<index>.summary" equal to "<result>"
 

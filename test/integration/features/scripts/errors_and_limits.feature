@@ -178,9 +178,10 @@ Feature: Script errors, limits and skipRequest
       """
       { "limit": 100 }
       """
-    Then the response should contain the field "" array length equal to 2
-    And the response should contain the field "0.kind" equal to "error"
-    And the response should contain the field "1.summary" equal to "request post"
+    Then the response should contain the field "" array length equal to 3
+    And the response should contain the field "0.kind" equal to "request"
+    And the response should contain the field "1.kind" equal to "error"
+    And the response should contain the field "2.summary" equal to "request post"
     When I call "HistoryService.List" with
       """
       { "local_id": "{{Acme.local_id}}" }

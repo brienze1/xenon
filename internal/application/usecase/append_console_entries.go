@@ -7,5 +7,5 @@ import (
 )
 
 type AppendConsoleEntries interface {
-	Append(ctx context.Context, entries []entity.ConsoleEntry)
+	Append(ctx context.Context, entries []entity.ConsoleEntry) []entity.ConsoleEntry
 }

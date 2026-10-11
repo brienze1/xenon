@@ -215,7 +215,7 @@ Feature: Console entries
     And the response should contain the field "1.kind" equal to "log"
     And the response should contain the field "1.level" equal to "log"
     And the response should contain the field "1.summary" equal to "plain 1"
-    And the response should contain the field "1.arguments" with the items "plain,1"
+    And the response should contain the field "1.arguments" with the items "plain, 1"
     And the response field "1.values" should not exist
     And the response should contain the field "2.level" equal to "info"
     And the response should contain the field "3.level" equal to "warn"
@@ -233,7 +233,7 @@ Feature: Console entries
     Then the call should succeed
     And the response should contain the field "values" array length equal to 1
     And the response should contain the field "values.0.id" equal to "inv-1"
-    And the response should contain the field "values.0.tags" with the items "a,b"
+    And the response should contain the field "values.0.tags" with the items "a, b"
 
   @errors
   Scenario: A script error and failed tests are error entries with the script and the error's location
@@ -249,7 +249,7 @@ Feature: Console entries
         postResponse: |
           pm.test("is 200", () => pm.response.to.have.status(200))
           pm.test("is created", () => pm.response.to.have.status(201))
-          null.missing
+          pm.response.json().nothing.missing
       """
     When I call "RequestService.Send" with
       """
@@ -267,9 +267,9 @@ Feature: Console entries
     And the response should contain the field "1.summary" equal to "is 200: expected response to have status code 200 but got 201"
     And the response should contain the field "1.script.label" equal to "Create · Post-response"
     And the response should contain the field "2.kind" equal to "error"
-    And the response should contain the field "2.summary" equal to "TypeError: Cannot read properties of null (reading 'missing')"
+    And the response should contain the field "2.summary" equal to "TypeError: Cannot read properties of undefined (reading 'missing')"
     And the response should contain the field "2.line" equal to "3"
-    And the response should contain the field "2.column" equal to "6"
+    And the response should contain the field "2.column" equal to "28"
     And the response should contain the field "2.script.owner_name" equal to "Create"
 
   @send_failure
@@ -439,11 +439,10 @@ Feature: Console entries
       { "local_id": "{{Acme.local_id}}", "tab_id": "tab-1", "request": { "id": "{{create}}", "name": "Create", "method": "POST", "url": "{{base_url}}/invoices" } }
       """
     Then the call should succeed
-    And the "console:entries" events should have 21 items in the field "entries" within 500 ms
-    And the event "console:entries" should have been emitted at most 3 times
-    And the 1 "console:entries" event should contain the field "entries.0.kind" equal to "request"
-    And the 1 "console:entries" event should contain the field "cleared" equal to "false"
-    And the last "console:entries" event should contain the field "entries.-1.summary" equal to "line 19"
+    And a "console:entries" event with the field "entries.-1.summary" equal to "line 19" should have been emitted within 500 ms
+    And a "console:entries" event with the field "entries.0.kind" equal to "request" should have been emitted within 500 ms
+    And the event "console:entries" should have been emitted at most 5 times
+    And the last "console:entries" event should contain the field "cleared" equal to "false"
 
   @clear
   Scenario: Clear empties the console and tells the UI
@@ -460,7 +459,7 @@ Feature: Console entries
       """
       { "local_id": "{{Acme.local_id}}", "tab_id": "tab-1", "request": { "id": "{{create}}", "name": "Create", "method": "POST", "url": "{{base_url}}/invoices" } }
       """
-    And the "console:entries" events should have 1 items in the field "entries" within 500 ms
+    And a "console:entries" event with the field "entries.0.kind" equal to "request" should have been emitted within 500 ms
     When I call "ConsoleService.Clear"
     Then the call should succeed
     And the last "console:entries" event should contain the field "cleared" equal to "true"
@@ -499,5 +498,5 @@ Feature: Console entries
       """
     Then the response should contain the field "" array length equal to 1
     And the response should contain the field "0.summary" equal to "after clear"
-    And a "console:entries" event with the field "cleared" equal to "true" should have been emitted within 500 ms
     And a "console:entries" event with the field "entries.0.summary" equal to "after clear" should have been emitted within 500 ms
+    And the last "console:entries" event should contain the field "entries.0.summary" equal to "after clear"

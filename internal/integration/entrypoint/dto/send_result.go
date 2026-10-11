@@ -10,15 +10,15 @@ type SendResult struct {
 	TabId        string            `json:"tab_id"`
 	SendId       string            `json:"send_id"`
 	Outcome      string            `json:"outcome"`
-	Tests        []TestResult      `json:"tests"`
-	TestSummary  TestSummary       `json:"test_summary"`
-	ScriptErrors []ScriptError     `json:"script_errors"`
 	StatusText   string            `json:"status_text"`
 	Proto        string            `json:"proto"`
 	ContentType  string            `json:"content_type"`
 	BodyUrl      string            `json:"body_url"`
+	Tests        []TestResult      `json:"tests"`
+	ScriptErrors []ScriptError     `json:"script_errors"`
 	Headers      []ResponseHeader  `json:"headers"`
 	Timings      SendResultTimings `json:"timings"`
+	TestSummary  TestSummary       `json:"test_summary"`
 	StatusCode   int               `json:"status_code"`
 	SizeBytes    int64             `json:"size_bytes"`
 	Ok           bool              `json:"ok"`

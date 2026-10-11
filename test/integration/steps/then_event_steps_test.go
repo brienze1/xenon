@@ -12,10 +12,9 @@ func (t *testUtils) registerThenEventSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the event "([^"]*)" should have been emitted (\d+) times$`, t.theEventShouldHaveBeenEmittedTimes)
 	ctx.Step(`^the "([^"]*)" events should have been emitted at most (\d+) ms apart$`, t.theEventsShouldHaveBeenEmittedAtMostApart)
 	ctx.Then(`^the (\d+) "([^"]*)" event should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theEventShouldContainTheFieldEqualTo)
-	ctx.Then(`^the event "([^"]*)" should have been emitted at most (\d+) times$`, t.theEventShouldHaveBeenEmittedAtMostTimes)
-	ctx.Step(`^the "([^"]*)" events should have (\d+) items in the field "([^"]*)" within (\d+) ms$`, t.theEventsShouldHaveItemsInTheFieldWithin)
-	ctx.Then(`^an? "([^"]*)" event with the field "([^"]*)" equal to "([^"]*)" should have been emitted within (\d+) ms$`, t.anEventWithTheFieldEqualToShouldHaveBeenEmittedWithin)
-	ctx.Then(`^the last "([^"]*)" event should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theLastEventShouldContainTheFieldEqualTo)
+	ctx.Step(`^the event "([^"]*)" should have been emitted at most (\d+) times$`, t.theEventShouldHaveBeenEmittedAtMostTimes)
+	ctx.Step(`^an? "([^"]*)" event with the field "([^"]*)" equal to "([^"]*)" should have been emitted within (\d+) ms$`, t.anEventWithTheFieldEqualToShouldHaveBeenEmittedWithin)
+	ctx.Step(`^the last "([^"]*)" event should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theLastEventShouldContainTheFieldEqualTo)
 }
 
 const eventPollInterval = 5 * time.Millisecond
@@ -48,29 +47,6 @@ func (t *testUtils) theEventsShouldHaveBeenEmittedAtMostApart(name string, milli
 func (t *testUtils) theEventShouldHaveBeenEmittedAtMostTimes(name string, times int) error {
 	if count := t.events.Count(name); count > times {
 		return fmt.Errorf("event %s: expected at most %d emissions, got %d", name, times, count)
-	}
-	return nil
-}
-
-func (t *testUtils) theEventsShouldHaveItemsInTheFieldWithin(name string, items int, path string, milliseconds int) error {
-	total := 0
-	err := waitFor(milliseconds, func() (bool, error) {
-		total = 0
-		for index := 1; index <= t.events.Count(name); index++ {
-			value, err := t.eventField(name, index, path)
-			if err != nil {
-				return false, err
-			}
-			list, _ := value.([]any)
-			total += len(list)
-		}
-		return total == items, nil
-	})
-	if err != nil {
-		return err
-	}
-	if total != items {
-		return fmt.Errorf("events %s: expected %d items in %s within %d ms, got %d", name, items, path, milliseconds, total)
 	}
 	return nil
 }

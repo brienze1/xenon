@@ -34,8 +34,11 @@ func GetSendRequestService() adapter.SendRequestService {
 				integration.GetRegistryPersistence(),
 				integration.GetScriptRunnerWebservice(),
 				integration.GetConsolePersistence(),
+				integration.GetConsolePersistence(),
+				integration.GetConsoleEntriesPublisher(),
 				integration.GetDynamicValuesWebservice(),
 				integration.GetHttpWebservice(),
+				integration.GetResponseBodyPersistence(),
 				integration.GetResponseBodyPersistence(),
 				integration.GetHistoryPersistence(),
 			)

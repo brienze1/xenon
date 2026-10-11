@@ -144,7 +144,7 @@ Feature: Scripts read and write every variable scope with Postman's methods
     Then the call should succeed
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "0.summary" equal to "dev true false acme"
     And the response should contain the field "1.summary" equal to "50 luis luis undefined"
@@ -226,7 +226,7 @@ Feature: Scripts read and write every variable scope with Postman's methods
     And the response should contain the field "value" equal to "script-secret-1"
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "0.summary" equal to "15"
 
@@ -279,7 +279,7 @@ Feature: Scripts read and write every variable scope with Postman's methods
     And the app data file "workspaces/{{Acme.local_id}}/variables.json" should contain the field "current.collection:{{billing}}.enabled" equal to "false"
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "0.summary" equal to "number 2 true"
 
@@ -319,7 +319,7 @@ Feature: Scripts read and write every variable scope with Postman's methods
     And the workspace file "acme/workspace.yaml" should contain the field "variables.0.key" equal to "user"
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "0.summary" equal to "globex ada"
     And the response should contain the field "1.summary" equal to "false undefined {}"
@@ -354,7 +354,7 @@ Feature: Scripts read and write every variable scope with Postman's methods
       """
     And I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "0.summary" equal to "undefined"
     And the response should contain the field "1.summary" equal to "first"
@@ -391,7 +391,7 @@ Feature: Scripts read and write every variable scope with Postman's methods
     And no file under the workspace folder should contain "t-9"
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "" array length equal to 2
     And the response should contain the field "0.level" equal to "warn"

@@ -32,28 +32,34 @@ func entryIDs(entries []ConsoleEntry) string {
 }
 
 func TestConsoleBufferKeepsTheNewestEntries(t *testing.T) {
-	buffer := NewConsoleBuffer().Appended([]ConsoleEntry{entryWithID("a"), entryWithID("b"), entryWithID("c")})
-	if got := entryIDs(buffer.After("", 10)); got != "a,b,c" {
-		t.Fatalf("all = %s", got)
+	buffer, dropped := NewConsoleBuffer().Appended([]ConsoleEntry{entryWithID("a"), entryWithID("b"), entryWithID("c")})
+	if got := entryIDs(buffer.Find(ConsoleQuery{Limit: 10})); got != "a,b,c" || len(dropped) != 0 {
+		t.Fatalf("all = %s, dropped = %d", got, len(dropped))
 	}
-	if got := entryIDs(buffer.After("a", 1)); got != "b" {
+	if got := entryIDs(buffer.Find(ConsoleQuery{AfterID: "a", Limit: 1})); got != "b" {
 		t.Errorf("after a, limit 1 = %s", got)
 	}
-	if got := entryIDs(buffer.After("c", 5)); got != "" {
+	if got := entryIDs(buffer.Find(ConsoleQuery{AfterID: "c", Limit: 5})); got != "" {
 		t.Errorf("after the newest = %s", got)
 	}
-	if got := entryIDs(buffer.After("gone", 2)); got != "a,b" {
+	if got := entryIDs(buffer.Find(ConsoleQuery{AfterID: "gone", Limit: 2})); got != "a,b" {
 		t.Errorf("unknown id starts from the oldest, got %s", got)
 	}
 	full := NewConsoleBuffer()
 	for index := 0; index < ConsoleCapacity; index++ {
-		full = full.Appended([]ConsoleEntry{entryWithID("old")})
+		full, _ = full.Appended([]ConsoleEntry{entryWithID("old")})
 	}
-	full = full.Appended([]ConsoleEntry{entryWithID("new")})
-	if len(full.Entries) != ConsoleCapacity || full.Entries[ConsoleCapacity-1].ID != "new" {
-		t.Errorf("capacity = %d, last = %s", len(full.Entries), full.Entries[len(full.Entries)-1].ID)
+	full, dropped = full.Appended([]ConsoleEntry{entryWithID("new"), entryWithID("newer")})
+	if len(full.Entries) != ConsoleCapacity || full.Entries[ConsoleCapacity-1].ID != "newer" || full.Entries[ConsoleCapacity-2].ID != "new" || len(dropped) != 2 || dropped[0].ID != "old" {
+		t.Errorf("capacity = %d, last = %s, dropped = %d", len(full.Entries), full.Entries[len(full.Entries)-1].ID, len(dropped))
 	}
-	listed := buffer.After("", 10)
+	if entry, found := buffer.Entry("b"); !found || entry.ID != "b" {
+		t.Errorf("Entry(b) = %+v %v", entry, found)
+	}
+	if _, found := buffer.Entry("gone"); found {
+		t.Errorf("Entry(gone) found")
+	}
+	listed := buffer.Find(ConsoleQuery{Limit: 10})
 	listed[0].ID = "changed"
 	if buffer.Entries[0].ID != "a" {
 		t.Errorf("After returns a copy")
@@ -64,7 +70,7 @@ func TestConsoleErrorEntryAndMasking(t *testing.T) {
 	at := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	scriptError := NewScriptError(scripterrorkind.Runtime, "Error: token s3cret", preRef()).At(2, 7)
 	entry := NewConsoleErrorEntry("01E", "01S", scriptError, at)
-	if entry.Kind != consoleentrykind.Error || entry.Level != consolelevel.Error || *entry.Script != preRef() || entry.Summary != "Error: token s3cret" || !reflect.DeepEqual(entry.Arguments, []string{"Error: token s3cret"}) || entry.ID != "01E" || entry.SendID != "01S" || !entry.CreatedAt.Equal(at) {
+	if entry.Kind != consoleentrykind.Error || entry.Level != consolelevel.Error || *entry.Script != preRef() || entry.Summary != "Error: token s3cret" || entry.Line != 2 || entry.Column != 7 || !reflect.DeepEqual(entry.Arguments, []string{"Error: token s3cret"}) || entry.ID != "01E" || entry.SendID != "01S" || !entry.CreatedAt.Equal(at) {
 		t.Fatalf("entry = %+v", entry)
 	}
 	mask := func(text string) (string, bool) {
@@ -75,11 +81,13 @@ func TestConsoleErrorEntryAndMasking(t *testing.T) {
 	if !masked.Masked || masked.Summary != "Error: token "+MaskedValue || masked.Arguments[0] != "Error: token "+MaskedValue || entry.Arguments[0] != "Error: token s3cret" {
 		t.Errorf("masked = %+v", masked)
 	}
-	onlyArgument := NewConsoleLogEntry("1", "s", consolelevel.Log, preRef(), "plain", []string{"plain", "s3cret"}, at).WithSecretsMasked(mask)
+	onlyArgument := NewConsoleLogEntry("1", "s", preRef(), NewScriptLog(consolelevel.Log, []string{"plain", "s3cret"}, nil), at)
+	onlyArgument.Summary = "plain"
+	onlyArgument = onlyArgument.WithSecretsMasked(mask)
 	if !onlyArgument.Masked || onlyArgument.Arguments[1] != MaskedValue {
 		t.Errorf("an argument with a secret marks the entry masked: %+v", onlyArgument)
 	}
-	clean := NewConsoleLogEntry("1", "s", consolelevel.Log, preRef(), "plain", []string{"plain"}, at).WithSecretsMasked(mask)
+	clean := NewConsoleLogEntry("1", "s", preRef(), NewScriptLog(consolelevel.Log, []string{"plain"}, nil), at).WithSecretsMasked(mask)
 	if clean.Masked {
 		t.Errorf("nothing to mask: %+v", clean)
 	}

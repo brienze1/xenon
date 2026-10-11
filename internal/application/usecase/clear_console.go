@@ -1,7 +1,11 @@
 package usecase
 
-import "context"
+import (
+	"context"
+
+	"github.com/brienze1/xenon/internal/domain/entity"
+)
 
 type ClearConsole interface {
-	Clear(ctx context.Context)
+	Clear(ctx context.Context) []entity.ConsoleEntry
 }

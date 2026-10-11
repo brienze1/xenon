@@ -15,4 +15,5 @@ func init() {
 	wails.RegisterEvent[dto.ImportProgress](dto.ImportProgressEvent)
 	wails.RegisterEvent[dto.ImportFilesDropped](dto.ImportFilesDroppedEvent)
 	wails.RegisterEvent[dto.ImportRequested](dto.ImportRequestedEvent)
+	wails.RegisterEvent[dto.ConsoleEntries](dto.ConsoleEntriesEvent)
 }

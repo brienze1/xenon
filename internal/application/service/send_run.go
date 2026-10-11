@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"slices"
 
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
@@ -22,9 +23,11 @@ const (
 type sendRun struct {
 	service    *sendRequest
 	scopes     *requestScopes
+	caller     *entity.ScriptRef
 	localId    string
 	root       string
 	appVersion string
+	sendId     string
 	secrets    []string
 	settings   entity.AppSettings
 	depth      int
@@ -48,13 +51,14 @@ func (r sendRun) runScripts(ctx context.Context, execution *entity.SendExecution
 	for _, script := range chain {
 		before, vaultBefore := execution.Scopes, cloneVault(execution.Vault)
 		cookies := r.cookies(execution)
-		base := entity.ScriptContext{Info: entity.NewScriptInfo(request.ID, request.Name, script.OwnerName, location), Cookies: cookies, ResponseCookies: cookies, Dynamic: r.dynamic(ctx), Console: r.console(ctx, execution.ID, script)}
-		run := r.service.runScript.Run(ctx, script, execution.ScriptContext(base), r, r.settings)
+		base := entity.ScriptContext{Info: entity.NewScriptInfo(request.ID, request.Name, script.OwnerName, location), Cookies: cookies, ResponseCookies: cookies, Dynamic: r.dynamic(ctx), Console: r.console(ctx, execution, script)}
+		run := r.service.runScript.Run(ctx, script, execution.ScriptContext(base), r.calledBy(script), r.settings)
+		mask := r.mask(r.secretsOf(execution))
 		execution.AddRun(run)
-		r.service.appendConsoleEntries.Append(ctx, r.consoleEntries(execution.ID, run))
+		r.service.console.append(ctx, r.runEntries(run, mask)...)
 		if err := r.service.scriptVariables.persist(ctx, r.localId, r.root, r.scopes.refs(), before, run.Scopes, vaultBefore, run.Vault); err != nil {
 			logger.Warn(ctx, err, "The variable changes of a script could not be saved", map[string]any{"script": script.Label()})
-			r.service.appendConsoleEntries.Append(ctx, []entity.ConsoleEntry{entity.NewConsoleErrorEntry(idutils.NewUlid(), execution.ID, entity.NewUnsavedVariablesError(script, err.Error()), timeutils.Now())})
+			r.service.console.append(ctx, entity.NewConsoleErrorEntry(idutils.NewUlid(), r.sendId, entity.NewUnsavedVariablesError(script, err.Error()), timeutils.Now()).WithSecretsMasked(mask))
 		}
 		if run.StopsSend() {
 			return
@@ -73,6 +77,7 @@ func (r sendRun) send(ctx context.Context, tabId string, request entity.Request,
 		}
 	}
 	execution.RecordResponse(effective, response)
+	r.service.console.append(ctx, r.requestEntry(effective, response, r.depth > 0).WithSecretsMasked(r.mask(r.secretsOf(execution))))
 	return nil
 }
 
@@ -93,25 +98,53 @@ func (r sendRun) dynamic(ctx context.Context) entity.DynamicValue {
 	}
 }
 
-func (r sendRun) console(ctx context.Context, sendId string, script entity.ScriptRef) entity.ScriptLogSink {
+func (r sendRun) console(ctx context.Context, execution *entity.SendExecution, script entity.ScriptRef) entity.ScriptLogSink {
 	return func(log entity.ScriptLog) {
 		if log.IsClear() {
+			r.service.console.clear(ctx)
 			return
 		}
-		entry := entity.NewConsoleLogEntry(idutils.NewUlid(), sendId, log.Level, script, log.Text(), log.Arguments, timeutils.Now()).WithSecretsMasked(r.mask)
-		r.service.appendConsoleEntries.Append(ctx, []entity.ConsoleEntry{entry})
+		entry := entity.NewConsoleLogEntry(idutils.NewUlid(), r.sendId, script, log, timeutils.Now())
+		r.service.console.append(ctx, entry.WithSecretsMasked(r.mask(r.secretsOf(execution))))
 	}
 }
 
-func (r sendRun) consoleEntries(sendId string, run entity.ScriptRun) []entity.ConsoleEntry {
-	if !run.HasFailed() {
-		return []entity.ConsoleEntry{}
+func (r sendRun) runEntries(run entity.ScriptRun, mask func(string) (string, bool)) []entity.ConsoleEntry {
+	entries := make([]entity.ConsoleEntry, 0, len(run.Tests)+1)
+	for _, test := range run.Tests {
+		if test.IsFailed() {
+			entries = append(entries, entity.NewConsoleTestFailureEntry(idutils.NewUlid(), r.sendId, test, timeutils.Now()).WithSecretsMasked(mask))
+		}
 	}
-	return []entity.ConsoleEntry{entity.NewConsoleErrorEntry(idutils.NewUlid(), sendId, *run.Error, timeutils.Now()).WithSecretsMasked(r.mask)}
+	if run.HasFailed() {
+		entries = append(entries, entity.NewConsoleErrorEntry(idutils.NewUlid(), r.sendId, *run.Error, timeutils.Now()).WithSecretsMasked(mask))
+	}
+	return entries
 }
 
-func (r sendRun) mask(text string) (string, bool) {
-	return usecase.MaskSecrets(text, r.secrets)
+func (r sendRun) requestEntry(request entity.EffectiveRequest, response entity.Response, nested bool) entity.ConsoleEntry {
+	script := r.caller
+	if !nested {
+		script = nil
+	}
+	return entity.NewConsoleRequestEntry(idutils.NewUlid(), r.sendId, script, nested, request, response, timeutils.Now())
+}
+
+// calledBy is this run as the requests of one script see it: what they send is logged under that script.
+func (r sendRun) calledBy(script entity.ScriptRef) sendRun {
+	r.caller = &script
+	return r
+}
+
+// secretsOf is every secret value known so far: the send's own and those its scripts set.
+func (r sendRun) secretsOf(execution *entity.SendExecution) []string {
+	return append(slices.Clone(r.secrets), r.variables(execution).SecretValues()...)
+}
+
+func (r sendRun) mask(secrets []string) func(string) (string, bool) {
+	return func(text string) (string, bool) {
+		return usecase.MaskSecrets(text, secrets)
+	}
 }
 
 // Send is pm.sendRequest: the request resolves with the scopes as the script left them, shares the main send's
@@ -129,7 +162,9 @@ func (r sendRun) Send(ctx context.Context, request entity.Request, scopes entity
 	resolved, _ := usecase.ResolveRequestVariables(request, nil, variables, r.dynamic(ctx))
 	effective := usecase.ResolveEffectiveRequest(resolved, nil, r.root)
 	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, r.appVersion))
-	sent := entity.NewSentNestedRequest(effective, r.service.sendHttpRequest.Send(ctx, effective).WithMaskedValues(r.secrets))
+	response := r.service.sendHttpRequest.Send(ctx, effective).WithMaskedValues(r.secrets)
+	sent := entity.NewSentNestedRequest(effective, response)
+	r.service.console.append(ctx, r.requestEntry(effective, response, true).WithSecretsMasked(r.mask(append(slices.Clone(r.secrets), variables.SecretValues()...))))
 
 	logger.Info(ctx, "Finished", map[string]any{"request": request, "result": sent})
 	return sent

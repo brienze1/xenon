@@ -16,13 +16,13 @@ type sendRequest struct {
 	findRequest           usecase.FindRequest
 	findAppSettings       usecase.FindAppSettings
 	runScript             usecase.RunScript
-	appendConsoleEntries  usecase.AppendConsoleEntries
 	sendHttpRequest       usecase.SendHttpRequest
 	saveResponse          usecase.SaveResponse
 	saveHistoryEntry      usecase.SaveHistoryEntry
 	generateDynamicValue  usecase.GenerateDynamicValue
 	variables             requestVariables
 	scriptVariables       scriptVariables
+	console               consoleLog
 }
 
 func NewSendRequestService(
@@ -45,9 +45,12 @@ func NewSendRequestService(
 	findAppSettings usecase.FindAppSettings,
 	runScript usecase.RunScript,
 	appendConsoleEntries usecase.AppendConsoleEntries,
+	clearConsole usecase.ClearConsole,
+	publishConsoleEntries usecase.PublishConsoleEntries,
 	generateDynamicValue usecase.GenerateDynamicValue,
 	sendHttpRequest usecase.SendHttpRequest,
 	saveResponse usecase.SaveResponse,
+	releaseResponse usecase.ReleaseResponse,
 	saveHistoryEntry usecase.SaveHistoryEntry,
 ) adapter.SendRequestService {
 	scopes := variableScopes{findEnvironment: findEnvironment, findTreeItem: findTreeItem, loadWorkspace: loadWorkspace}
@@ -56,7 +59,6 @@ func NewSendRequestService(
 		findRequest:           findRequest,
 		findAppSettings:       findAppSettings,
 		runScript:             runScript,
-		appendConsoleEntries:  appendConsoleEntries,
 		sendHttpRequest:       sendHttpRequest,
 		saveResponse:          saveResponse,
 		saveHistoryEntry:      saveHistoryEntry,
@@ -82,6 +84,13 @@ func NewSendRequestService(
 				publishVariableEvent: publishVariableEvent,
 			},
 			publishVariableEvent: publishVariableEvent,
+		},
+		console: consoleLog{
+			appendConsoleEntries:  appendConsoleEntries,
+			clearConsole:          clearConsole,
+			publishConsoleEntries: publishConsoleEntries,
+			saveResponse:          saveResponse,
+			releaseResponse:       releaseResponse,
 		},
 	}
 }
@@ -118,7 +127,7 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 	sentAt := timeutils.Now()
 	execution := entity.NewSendExecution(idutils.NewUlid())
 	execution.Start(request, scopes.scripts, scopes.vault)
-	run := sendRun{service: s, scopes: scopes, localId: localId, root: workspace.Path, appVersion: appVersion, secrets: secrets, settings: *settings}
+	run := sendRun{service: s, scopes: scopes, localId: localId, root: workspace.Path, appVersion: appVersion, sendId: execution.ID, secrets: secrets, settings: *settings}
 	if err := run.execute(ctx, tabId, request, scopes.ancestors, owners, &execution); err != nil {
 		return nil, err
 	}

@@ -123,7 +123,7 @@ Feature: pm.execution and pm.info control and describe the running send
     And the app data file "workspaces/{{Acme.local_id}}/variables.json" should contain the field "current.env:{{dev}}.token" equal to "t-1"
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "0.summary" equal to "collection pre Create"
     And the response should contain the field "1.summary" equal to "collection pre Fetch token"
@@ -159,7 +159,7 @@ Feature: pm.execution and pm.info control and describe the running send
     And the 1 "POST" request to "/token" should have the query "client" equal to "globex"
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "3.summary" equal to "acme acme"
 
@@ -198,7 +198,7 @@ Feature: pm.execution and pm.info control and describe the running send
     And the "POST" request to "/token" should have been received 0 times
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "1.summary" equal to "runRequest: no saved request with id 01JK7999999999999999999999"
     And the response should contain the field "3.summary" equal to "null"
@@ -263,7 +263,7 @@ Feature: pm.execution and pm.info control and describe the running send
     And the "POST" request to "/token" should have been received 0 times
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "0.summary" equal to "Billing / Invoices / Create Create prerequest 0 1 Create 01JK7000000000000000000004"
     And the response should contain the field "1.summary" equal to "Billing test"

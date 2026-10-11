@@ -133,10 +133,11 @@ func TestNestedRequest(t *testing.T) {
 
 func TestConsoleEntry(t *testing.T) {
 	at := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
-	arguments := []string{`"a"`}
-	entry := NewConsoleLogEntry("01E", "01S", consolelevel.Warn, preRef(), "hello", arguments, at)
-	arguments[0] = "changed"
-	want := ConsoleEntry{ID: "01E", SendID: "01S", Kind: consoleentrykind.Log, Level: consolelevel.Warn, Summary: "hello", Arguments: []string{`"a"`}, CreatedAt: at}
+	log := NewScriptLog(consolelevel.Warn, []string{"hello", `"a"`}, []any{"hello", "a"})
+	entry := NewConsoleLogEntry("01E", "01S", preRef(), log, at)
+	log.Arguments[0] = "changed"
+	log.Values[0] = "changed"
+	want := ConsoleEntry{ID: "01E", SendID: "01S", Kind: consoleentrykind.Log, Level: consolelevel.Warn, Summary: `hello "a"`, Arguments: []string{"hello", `"a"`}, Values: []any{"hello", "a"}, CreatedAt: at}
 	if entry.Script == nil || *entry.Script != preRef() {
 		t.Fatalf("script = %+v", entry.Script)
 	}

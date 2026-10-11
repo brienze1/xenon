@@ -12,15 +12,32 @@ func NewConsoleBuffer() ConsoleBuffer {
 	return ConsoleBuffer{Entries: []ConsoleEntry{}}
 }
 
-// Appended keeps the newest ConsoleCapacity entries.
-func (c ConsoleBuffer) Appended(entries []ConsoleEntry) ConsoleBuffer {
+// Appended keeps the newest ConsoleCapacity entries and hands back the ones it dropped.
+func (c ConsoleBuffer) Appended(entries []ConsoleEntry) (ConsoleBuffer, []ConsoleEntry) {
 	all := append(slices.Clone(c.Entries), entries...)
-	return ConsoleBuffer{Entries: all[max(0, len(all)-ConsoleCapacity):]}
+	cut := max(0, len(all)-ConsoleCapacity)
+	return ConsoleBuffer{Entries: all[cut:]}, all[:cut]
 }
 
-// After lists up to limit entries following the one with afterId, or from the oldest when that entry is not kept.
-func (c ConsoleBuffer) After(afterId string, limit int) []ConsoleEntry {
-	start := slices.IndexFunc(c.Entries, func(entry ConsoleEntry) bool { return entry.ID == afterId }) + 1
-	end := min(len(c.Entries), start+limit)
-	return slices.Clone(c.Entries[start:end])
+// Find lists up to query.Limit matching entries following the one with query.AfterID, or from the oldest when that entry is not kept.
+func (c ConsoleBuffer) Find(query ConsoleQuery) []ConsoleEntry {
+	start := slices.IndexFunc(c.Entries, func(entry ConsoleEntry) bool { return entry.ID == query.AfterID }) + 1
+	found := make([]ConsoleEntry, 0, min(query.Limit, len(c.Entries)-start))
+	for _, entry := range c.Entries[start:] {
+		if len(found) == query.Limit {
+			break
+		}
+		if query.Matches(entry) {
+			found = append(found, entry)
+		}
+	}
+	return found
+}
+
+func (c ConsoleBuffer) Entry(id string) (ConsoleEntry, bool) {
+	index := slices.IndexFunc(c.Entries, func(entry ConsoleEntry) bool { return entry.ID == id })
+	if index < 0 {
+		return ConsoleEntry{}, false
+	}
+	return c.Entries[index], true
 }

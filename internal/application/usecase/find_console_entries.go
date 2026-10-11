@@ -7,5 +7,5 @@ import (
 )
 
 type FindConsoleEntries interface {
-	FindEntries(ctx context.Context, afterId string, limit int) []entity.ConsoleEntry
+	FindEntries(ctx context.Context, query entity.ConsoleQuery) []entity.ConsoleEntry
 }

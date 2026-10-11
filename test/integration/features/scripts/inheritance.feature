@@ -86,7 +86,7 @@ Feature: "Inherit parent scripts" cuts the script chain
     And the response should contain the field "outcome" equal to "sent"
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "" array length equal to 4
     And the response should contain the field "0.summary" equal to "drafts pre"
@@ -126,7 +126,7 @@ Feature: "Inherit parent scripts" cuts the script chain
     Then the call should succeed
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "" array length equal to 2
     And the response should contain the field "0.summary" equal to "request pre"
@@ -172,7 +172,7 @@ Feature: "Inherit parent scripts" cuts the script chain
     Then the call should succeed
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "" array length equal to 4
     And the response should contain the field "0.summary" equal to "invoices pre"
@@ -205,7 +205,7 @@ Feature: "Inherit parent scripts" cuts the script chain
     Then the call should succeed
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "" array length equal to 4
     And the response should contain the field "0.summary" equal to "collection pre"

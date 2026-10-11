@@ -95,7 +95,7 @@ Feature: pm.sendRequest sends extra requests from a script
       """
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "0.summary" equal to "null 200 OK trace-1 t-1 number true"
     And the response should contain the field "1.summary" equal to "t-1"
@@ -140,7 +140,7 @@ Feature: pm.sendRequest sends extra requests from a script
     And the 1 "GET" request to "/invoices" should have the header "Authorization" equal to "Bearer t-get"
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "0.summary" equal to
       """
@@ -183,7 +183,7 @@ Feature: pm.sendRequest sends extra requests from a script
     And the "GET" request to "/a" should have been received 2 times
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "0.summary" equal to "3 201"
     And the response should contain the field "1.summary" equal to "late true 202"
@@ -210,7 +210,7 @@ Feature: pm.sendRequest sends extra requests from a script
     And the response should contain the field "outcome" equal to "sent"
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "0.summary" equal to "Error true"
 

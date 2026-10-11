@@ -105,7 +105,7 @@ Feature: Requests sent from scripts share the main send's preflight
     And the 1 "GET" request to "/invoices" should have the header "Authorization" equal to "Bearer t-1"
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "0.summary" equal to
       """
@@ -142,7 +142,7 @@ Feature: Requests sent from scripts share the main send's preflight
     And the "GET" request to "/token" should have been received 0 times
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "" array length equal to 0
 
@@ -169,7 +169,7 @@ Feature: Requests sent from scripts share the main send's preflight
     And the "GET" request to "/invoices" should have been received 1 times
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "" array length equal to 1
     And the response should contain the field "0.summary" equal to "The request uses secrets that have no value on this machine or are locked: api_key"

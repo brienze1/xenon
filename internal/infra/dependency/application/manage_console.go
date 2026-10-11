@@ -14,7 +14,15 @@ var manageConsoleInstance adapter.ManageConsoleService
 func GetManageConsoleService() adapter.ManageConsoleService {
 	if manageConsoleInstance == nil {
 		manageConsoleOnce.Do(func() {
-			manageConsoleInstance = service.NewManageConsoleService(integration.GetConsolePersistence(), integration.GetConsolePersistence())
+			manageConsoleInstance = service.NewManageConsoleService(
+				integration.GetConsolePersistence(),
+				integration.GetConsolePersistence(),
+				integration.GetConsolePersistence(),
+				integration.GetConsolePersistence(),
+				integration.GetConsoleEntriesPublisher(),
+				integration.GetResponseBodyPersistence(),
+				integration.GetResponseBodyPersistence(),
+			)
 		})
 	}
 	return manageConsoleInstance

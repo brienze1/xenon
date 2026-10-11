@@ -98,7 +98,7 @@ Feature: pm.vault uses the workspace secrets and pm.cookies the response cookies
     Then the call should fail with code "VLT-03404"
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "0.summary" equal to "true true null null"
 
@@ -126,7 +126,7 @@ Feature: pm.vault uses the workspace secrets and pm.cookies the response cookies
     And the response should contain the field "script_errors" array length equal to 0
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "0.summary" equal to
       """

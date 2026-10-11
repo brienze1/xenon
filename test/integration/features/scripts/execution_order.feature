@@ -92,7 +92,7 @@ Feature: Scripts run around every send in Postman's order
     When I save the response field "send_id" as "send"
     And I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the call should succeed
     And the response should contain the field "" array length equal to 8
@@ -141,7 +141,7 @@ Feature: Scripts run around every send in Postman's order
     Then the call should succeed
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "" array length equal to 10
     And the response should contain the field "3.level" equal to "info"
@@ -193,7 +193,7 @@ Feature: Scripts run around every send in Postman's order
     And the response should contain the field "outcome" equal to "sent"
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "" array length equal to 8
     And the response should contain the field "2.summary" equal to "undefined"
@@ -215,7 +215,7 @@ Feature: Scripts run around every send in Postman's order
     Then the call should succeed
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "" array length equal to 8
     And the response should contain the field "3.summary" equal to "undefined"
@@ -258,7 +258,7 @@ Feature: Scripts run around every send in Postman's order
     Then the call should succeed
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "" array length equal to 5
     And the response should contain the field "0.summary" equal to "collection pre"
@@ -279,7 +279,7 @@ Feature: Scripts run around every send in Postman's order
     And the response should contain the field "script_errors" array length equal to 0
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "" array length equal to 0
 
@@ -292,14 +292,14 @@ Feature: Scripts run around every send in Postman's order
     Then the call should succeed
     When I call "ConsoleService.List" with
       """
-      { "limit": 3 }
+      { "limit": 3, "filter": "logs" }
       """
     Then the response should contain the field "" array length equal to 3
     And the response should contain the field "2.summary" equal to "drafts pre"
     When I save the response field "2.id" as "third"
     And I call "ConsoleService.List" with
       """
-      { "after_id": "{{third}}", "limit": 100 }
+      { "after_id": "{{third}}", "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "" array length equal to 5
     And the response should contain the field "0.summary" equal to "request pre"

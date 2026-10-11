@@ -95,7 +95,7 @@ Feature: Old collections written with Postman's legacy API run unchanged
     And the response should contain the field "tests.2.error_message" equal to "expected false to be truthy"
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "0.level" equal to "warn"
     And the response should contain the field "0.summary" equal to
@@ -142,7 +142,7 @@ Feature: Old collections written with Postman's legacy API run unchanged
     And the app data file "workspaces/{{Acme.local_id}}/variables.json" should not contain "us"
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "7.summary" equal to "7 string us true us"
     And the response should contain the field "9.summary" equal to "false 7"
@@ -168,7 +168,7 @@ Feature: Old collections written with Postman's legacy API run unchanged
     Then the call should succeed
     When I call "ConsoleService.List" with
       """
-      { "limit": 100 }
+      { "limit": 100, "filter": "logs" }
       """
     Then the response should contain the field "" array length equal to 7
     And the response should contain the field "0.summary" equal to
