@@ -10,6 +10,9 @@ import type { ResponseEntry } from './model'
 
 interface ResponseViewerState {
   entries: Record<string, ResponseEntry>
+  /** Bumped by the Find in response shortcut; the shown response body opens its search when it changes. */
+  findTick: number
+  requestFind: () => void
   startSending: (tabId: string) => void
   /** Ends a send that Go refused before anything went out, keeping the previous response. */
   stopSending: (tabId: string) => void
@@ -29,6 +32,10 @@ export const useResponseViewerStore = create<ResponseViewerState>()((set, get) =
 
   return {
     entries: {},
+
+    findTick: 0,
+
+    requestFind: () => set((state) => ({ findTick: state.findTick + 1 })),
 
     startSending: (tabId) => patch(tabId, { sending: true, failure: null }),
 

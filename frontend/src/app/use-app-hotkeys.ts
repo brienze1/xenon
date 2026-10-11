@@ -1,19 +1,16 @@
-import { HOTKEY_BY_ACTION, type HotkeyAction, type HotkeyDefinition, type HotkeyHandlers } from '@/app/hotkeys'
-import { useHotkey } from '@/shared/hooks/use-hotkey'
+import { useMemo } from 'react'
+import { HOTKEYS, type HotkeyHandlers } from '@/app/hotkeys'
+import { useHotkeys, type HotkeyBinding, type HotkeyPlatform } from '@/shared/hooks/use-hotkey'
 
-function useAppHotkey(action: HotkeyAction, handlers: HotkeyHandlers) {
-  const handler = handlers[action]
-  const { combo } = HOTKEY_BY_ACTION.get(action) as HotkeyDefinition
-  useHotkey(combo, () => handler?.(), { enabled: handler !== undefined })
-}
-
-export function useAppHotkeys(handlers: HotkeyHandlers): void {
-  useAppHotkey('send', handlers)
-  useAppHotkey('save', handlers)
-  useAppHotkey('saveAs', handlers)
-  useAppHotkey('newTab', handlers)
-  useAppHotkey('closeTab', handlers)
-  useAppHotkey('environmentSwitcher', handlers)
-  useAppHotkey('import', handlers)
-  useAppHotkey('console', handlers)
+/** Binds the hotkey table to the handlers given; shortcuts without a handler stay with the webview. */
+export function useAppHotkeys(handlers: HotkeyHandlers, platform?: HotkeyPlatform): void {
+  const bindings = useMemo<HotkeyBinding[]>(
+    () =>
+      HOTKEYS.flatMap((hotkey) => {
+        const handler = handlers[hotkey.action]
+        return handler ? hotkey.combos.map((combo) => ({ combo, handler: () => handler() })) : []
+      }),
+    [handlers],
+  )
+  useHotkeys(bindings, { platform })
 }

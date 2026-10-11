@@ -1,5 +1,6 @@
-import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { SendResult } from '@/platform/mappers/request'
+import type { CodeEditorHandle } from '@/shared/ui/code-editor/CodeEditor'
 import { formatBytes } from '@/shared/lib/format-bytes'
 import { Button } from '@/shared/ui/button/Button'
 import { initialBodyView, languageFor, prettyBody, type BodyView } from '@/features/response-viewer/lib/body-view'
@@ -66,6 +67,9 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
   const bodyStatus = useResponseViewerStore((state) => state.entries[tabId]?.bodyStatus ?? 'idle')
   const loadBody = useResponseViewerStore((state) => state.loadBody)
   const saveBody = useResponseViewerStore((state) => state.saveBody)
+  const findTick = useResponseViewerStore((state) => state.findTick)
+  const editorRef = useRef<CodeEditorHandle>(null)
+  const mountedFindTick = useRef(findTick)
   const language = languageFor(result.contentType)
   const isBinary = result.isBinary
 
@@ -74,6 +78,12 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
       void loadBody(tabId)
     }
   }, [tabId, isBinary, bodyStatus, loadBody])
+
+  useEffect(() => {
+    if (findTick !== mountedFindTick.current) {
+      editorRef.current?.find()
+    }
+  }, [findTick])
 
   const shown = useMemo(() => (body !== null && view === 'pretty' ? prettyBody(body, language) : (body ?? '')), [body, view, language])
 
@@ -130,6 +140,7 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
       ) : (
         <Suspense fallback={LOADING_EDITOR}>
           <CodeEditor
+            ref={editorRef}
             key={view}
             label={view === 'pretty' ? 'Pretty response body' : 'Raw response body'}
             className={styles.editor}

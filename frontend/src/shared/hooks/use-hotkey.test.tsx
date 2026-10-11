@@ -1,7 +1,7 @@
 import { fireEvent, render, renderHook, screen } from '@testing-library/react'
 import { useRef } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { detectPlatform, formatHotkey, matchesHotkey, useHotkey } from './use-hotkey'
+import { detectPlatform, formatHotkey, matchesHotkey, useHotkey, useHotkeys } from './use-hotkey'
 
 function keydown(init: KeyboardEventInit): KeyboardEvent {
   return new KeyboardEvent('keydown', init)
@@ -26,12 +26,36 @@ describe('matchesHotkey', () => {
   })
 })
 
+describe('matchesHotkey with physical keys', () => {
+  it('matches event.code and falls back to key without one', () => {
+    expect(matchesHotkey(keydown({ key: 'z', code: 'KeyY', ctrlKey: true }), 'Mod+Y', 'other')).toBe(true)
+    expect(matchesHotkey(keydown({ key: 'y', code: 'KeyZ', ctrlKey: true }), 'Mod+Y', 'other')).toBe(false)
+    expect(matchesHotkey(keydown({ key: 'Enter', code: 'NumpadEnter', metaKey: true }), 'Mod+Enter', 'mac')).toBe(true)
+    expect(matchesHotkey(keydown({ key: '}', code: 'BracketRight', metaKey: true, shiftKey: true }), 'Mod+Shift+]', 'mac')).toBe(true)
+    expect(matchesHotkey(keydown({ key: ',', code: 'Comma', ctrlKey: true }), 'Mod+,', 'other')).toBe(true)
+    expect(matchesHotkey(keydown({ key: 'F2', code: 'F2' }), 'F2', 'other')).toBe(true)
+  })
+
+  it('treats Ctrl as Control on every OS', () => {
+    expect(matchesHotkey(keydown({ key: 'Tab', code: 'Tab', ctrlKey: true }), 'Ctrl+Tab', 'mac')).toBe(true)
+    expect(matchesHotkey(keydown({ key: 'Tab', code: 'Tab', metaKey: true }), 'Ctrl+Tab', 'mac')).toBe(false)
+    expect(matchesHotkey(keydown({ key: 'Tab', code: 'Tab', ctrlKey: true }), 'Ctrl+Tab', 'other')).toBe(true)
+    expect(matchesHotkey(keydown({ key: 'Tab', code: 'Tab', ctrlKey: true, metaKey: true }), 'Ctrl+Tab', 'other')).toBe(false)
+  })
+
+  it('never matches while AltGr is held', () => {
+    expect(matchesHotkey(keydown({ key: '@', code: 'KeyQ', ctrlKey: true, altKey: true, modifierAltGraph: true }), 'Mod+Alt+Q', 'other')).toBe(false)
+  })
+})
+
 describe('formatHotkey', () => {
   it('renders platform labels', () => {
     expect(formatHotkey('Mod+Shift+S', 'mac')).toBe('⌘⇧S')
     expect(formatHotkey('Mod+Alt+Enter', 'mac')).toBe('⌘⌥Enter')
     expect(formatHotkey('Mod+Shift+S', 'other')).toBe('Ctrl+Shift+S')
     expect(formatHotkey('Mod+Alt+enter', 'other')).toBe('Ctrl+Alt+Enter')
+    expect(formatHotkey('Ctrl+Shift+Tab', 'mac')).toBe('⌃⇧Tab')
+    expect(formatHotkey('Ctrl+Shift+Tab', 'other')).toBe('Ctrl+Shift+Tab')
   })
 })
 
@@ -111,6 +135,33 @@ describe('useHotkey', () => {
     const handler = vi.fn()
     renderHook(() => useHotkey('Mod+F', handler, { scope: { current: null }, platform: 'mac' }))
     fireEvent.keyDown(window, { key: 'f', metaKey: true })
+    expect(handler).not.toHaveBeenCalled()
+  })
+})
+
+describe('useHotkeys', () => {
+  it('registers a table of combos and follows handler changes without re-registering', () => {
+    const first = vi.fn()
+    const second = vi.fn()
+    const addListener = vi.spyOn(window, 'addEventListener')
+    const { rerender, unmount } = renderHook(({ handler }) => useHotkeys([{ combo: 'Mod+K', handler }, { combo: 'Ctrl+Tab', handler }], { platform: 'other' }), { initialProps: { handler: first } })
+    fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ctrlKey: true })
+    expect(first).toHaveBeenCalledOnce()
+    rerender({ handler: second })
+    fireEvent.keyDown(window, { key: 'Tab', code: 'Tab', ctrlKey: true })
+    expect(second).toHaveBeenCalledOnce()
+    expect(addListener.mock.calls.filter(([type]) => type === 'keydown')).toHaveLength(1)
+    unmount()
+    fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ctrlKey: true })
+    expect(first).toHaveBeenCalledOnce()
+    addListener.mockRestore()
+  })
+
+  it('registers nothing while disabled or empty', () => {
+    const handler = vi.fn()
+    renderHook(() => useHotkeys([{ combo: 'Mod+K', handler }], { platform: 'other', enabled: false }))
+    renderHook(() => useHotkeys([], { platform: 'other' }))
+    fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ctrlKey: true })
     expect(handler).not.toHaveBeenCalled()
   })
 })

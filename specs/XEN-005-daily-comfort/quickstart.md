@@ -21,3 +21,21 @@ make validate
    bar → characters typed, no shortcut.
 6. Code panel: four languages, include/mask secrets, copy; run the cURL snippet in a terminal →
    same response.
+
+## Webview accelerators (T026, walked per OS at the stage end, T032)
+`app/hotkeys.ts` calls `preventDefault` on every shortcut it owns, matched on `event.code` with
+AltGr ignored. Check on each OS that the webview does not take the key first:
+
+| Shortcut | macOS (WKWebView) | Windows (WebView2) | Linux (WebKitGTK) |
+|---|---|---|---|
+| Cmd/Ctrl+F (Find in response) | | | |
+| Cmd/Ctrl+L (Focus URL) | | | |
+| Cmd/Ctrl+K, Cmd/Ctrl+E, Cmd/Ctrl+D | | | |
+| Cmd/Ctrl+1…9, Cmd/Ctrl+Shift+]/[ | | | |
+| Ctrl+Tab / Ctrl+Shift+Tab | | | |
+| Cmd/Ctrl+W, Cmd/Ctrl+Alt+W, Cmd/Ctrl+Shift+T | | | |
+| Cmd/Ctrl+, and Cmd/Ctrl+\ | | | |
+| AltGr+Q (`@`), AltGr+7 (`{`) on German; AltGr+C (`ć`) on Polish in the URL bar | | | |
+
+Automated coverage: `frontend/src/app/hotkeys.test.ts` (every combo on macOS/Windows/Linux
+profiles, `event.code` matching, AltGr typing never firing a shortcut).

@@ -48,6 +48,9 @@ export const INSPECT_DELAY_MS = 120
 
 interface RequestBuilderState {
   tabs: Record<string, TabDraft>
+  /** Bumped by the Focus URL shortcut; the URL bar of the active request focuses itself when it changes. */
+  urlFocusTick: number
+  focusUrl: () => void
   ensureTab: (tabId: string) => void
   openSaved: (tabId: string, requestId: string) => Promise<boolean>
   loadDraft: (tabId: string, draft: RequestDraft, baseRevision: string | null, dirty: boolean) => void
@@ -203,6 +206,7 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
   }
 
   return {
+    urlFocusTick: 0,
     tabs: {},
 
     ensureTab: (tabId) => {
@@ -547,6 +551,8 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
     },
 
     cancel: (tabId) => tab(tabId).pending?.cancel(),
+
+    focusUrl: () => set((state) => ({ urlFocusTick: state.urlFocusTick + 1 })),
 
     reset: () => {
       clearTimers('')

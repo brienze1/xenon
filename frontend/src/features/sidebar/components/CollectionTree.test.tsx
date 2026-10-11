@@ -26,6 +26,9 @@ const actions = {
   onRenamed: vi.fn(),
 }
 
+// dnd-kit swallows clicks for 50 ms after a drag ends; the previous test's drag must not eat this one.
+const DND_CLICK_GUARD_MS = 60
+
 const offsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')
 
 beforeAll(() => {
@@ -103,7 +106,8 @@ describe('CollectionTree drag and drop', () => {
     expect(treeService.moveItem).not.toHaveBeenCalled()
   })
 
-  it('keeps a click on a row a click', () => {
+  it('keeps a click on a row a click', async () => {
+    await act(() => new Promise((resolve) => setTimeout(resolve, DND_CLICK_GUARD_MS)))
     render(<CollectionTree {...actions} />)
     fireEvent.click(row('r2'))
     expect(actions.onOpenRequest).toHaveBeenCalledWith('r2')

@@ -85,4 +85,31 @@ describe('ContextMenu', () => {
     await userEvent.keyboard('{Escape}')
     expect(trigger).toHaveFocus()
   })
+
+  it('keeps disabled items focusable but inert and draws separators', async () => {
+    const onSelect = vi.fn()
+    render(
+      <ContextMenu.Root>
+        <ContextMenu.Trigger>
+          <span>Tab</span>
+        </ContextMenu.Trigger>
+        <ContextMenu.Menu label="Tab actions">
+          <ContextMenu.Item disabled onSelect={onSelect}>
+            Reveal
+          </ContextMenu.Item>
+          <ContextMenu.Separator />
+          <ContextMenu.Item onSelect={vi.fn()}>Close</ContextMenu.Item>
+        </ContextMenu.Menu>
+      </ContextMenu.Root>,
+    )
+    fireEvent.contextMenu(screen.getByText('Tab'), { clientX: 1, clientY: 1 })
+    const reveal = screen.getByRole('menuitem', { name: 'Reveal' })
+    expect(reveal).toHaveAttribute('aria-disabled', 'true')
+    expect(reveal).toHaveFocus()
+    await userEvent.click(reveal)
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+    expect(screen.getByRole('separator')).toBeInTheDocument()
+  })
 })
+

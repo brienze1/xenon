@@ -174,6 +174,24 @@ describe('sidebar store', () => {
     expect(state().selectedId).toBe('r2')
   })
 
+  it('renames and duplicates the selected item for the Cmd/Ctrl+E and Cmd/Ctrl+D shortcuts', async () => {
+    useSidebarStore.setState({ tree: sample })
+    state().renameSelected()
+    expect(state().renamingId).toBeNull()
+    state().select('gone')
+    state().renameSelected()
+    await state().duplicateSelected()
+    expect(state().renamingId).toBeNull()
+    expect(tree.duplicateItem).not.toHaveBeenCalled()
+    state().select('r1')
+    state().renameSelected()
+    expect(state().renamingId).toBe('r1')
+    vi.mocked(tree.duplicateItem).mockResolvedValue(node('r2', 'request'))
+    await state().duplicateSelected()
+    expect(tree.duplicateItem).toHaveBeenCalledWith('ws', 'r1')
+    expect(state().selectedId).toBe('r2')
+  })
+
   it('deletes and returns the deleted request ids', async () => {
     vi.mocked(tree.deleteItem).mockResolvedValue(['r1'])
     state().select('c1')

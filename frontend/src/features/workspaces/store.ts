@@ -4,6 +4,8 @@ import { useCookiesStore } from '@/features/cookies/store'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
+import { useSearchStore } from '@/features/search/store'
+import { useSidePanelStore } from '@/features/side-panel/store'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { useTabsStore } from '@/features/tabs/store'
 import { toAppError, type AppError } from '@/platform/errors'
@@ -56,6 +58,8 @@ function resetWorkspaceStores(): void {
   useRequestBuilderStore.getState().reset()
   useResponseViewerStore.getState().reset()
   useSidebarStore.getState().reset()
+  useSearchStore.getState().reset()
+  useSidePanelStore.getState().reset()
 }
 
 export const useWorkspacesStore = create<WorkspacesState>()((set, get) => {

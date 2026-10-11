@@ -185,10 +185,12 @@ function Menu({ label, children }: MenuProps) {
 interface ItemProps {
   onSelect: () => void
   tone?: 'default' | 'danger'
+  /** A disabled item stays focusable (WAI-ARIA menus) but does nothing. */
+  disabled?: boolean
   children: ReactNode
 }
 
-function Item({ onSelect, tone = 'default', children }: ItemProps) {
+function Item({ onSelect, tone = 'default', disabled = false, children }: ItemProps) {
   const {
     actions: { close },
   } = useContextMenu()
@@ -196,8 +198,12 @@ function Item({ onSelect, tone = 'default', children }: ItemProps) {
     <button
       type="button"
       role="menuitem"
-      className={cn(styles.item, tone === 'danger' && styles.danger)}
+      aria-disabled={disabled ? true : undefined}
+      className={cn(styles.item, tone === 'danger' && styles.danger, disabled && styles.disabled)}
       onClick={() => {
+        if (disabled) {
+          return
+        }
         close()
         onSelect()
       }}
@@ -207,4 +213,8 @@ function Item({ onSelect, tone = 'default', children }: ItemProps) {
   )
 }
 
-export const ContextMenu = { Provider, Root, Trigger, Menu, Item }
+function Separator() {
+  return <div role="separator" className={styles.separator} />
+}
+
+export const ContextMenu = { Provider, Root, Trigger, Menu, Item, Separator }

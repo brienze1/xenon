@@ -5,7 +5,9 @@ import { withNextStep } from '@/shared/lib/next-step'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
+import type { ShortcutEntry } from '@/features/settings/model'
 import { useSettingsStore } from '@/features/settings/store'
+import { ShortcutsList } from './ShortcutsList'
 import styles from './SettingsDialog.module.css'
 
 const MS_PER_SECOND = 1000
@@ -18,22 +20,30 @@ function secondsOf(text: string): number | null {
   return text.trim() !== '' && Number.isInteger(seconds) && seconds >= MIN_SECONDS && seconds <= MAX_SECONDS ? seconds : null
 }
 
-export function SettingsDialog() {
+const NO_SHORTCUTS: readonly ShortcutEntry[] = []
+
+interface SettingsDialogProps {
+  /** The app's hotkey table, listed under Shortcuts. */
+  shortcuts?: readonly ShortcutEntry[]
+}
+
+export function SettingsDialog({ shortcuts = NO_SHORTCUTS }: SettingsDialogProps) {
   const open = useSettingsStore((state) => state.open)
   const loading = useSettingsStore((state) => state.loading)
   const close = useSettingsStore((state) => state.close)
   return (
     <Dialog.Root open={open} onOpenChange={(next) => (next ? undefined : close())}>
-      {open && !loading ? <SettingsForm onCancel={close} /> : null}
+      {open && !loading ? <SettingsForm onCancel={close} shortcuts={shortcuts} /> : null}
     </Dialog.Root>
   )
 }
 
 interface SettingsFormProps {
   onCancel: () => void
+  shortcuts: readonly ShortcutEntry[]
 }
 
-function SettingsForm({ onCancel }: SettingsFormProps) {
+function SettingsForm({ onCancel, shortcuts }: SettingsFormProps) {
   const settings = useSettingsStore((state) => state.settings)
   const loadError = useSettingsStore((state) => state.error)
   const save = useSettingsStore((state) => state.save)
@@ -103,6 +113,7 @@ function SettingsForm({ onCancel }: SettingsFormProps) {
             How long one pre-request or post-response script may run, including waiting for its timers and requests.
           </p>
         </fieldset>
+        {shortcuts.length > 0 ? <ShortcutsList shortcuts={shortcuts} /> : null}
         {loadError || saveError ? (
           <Banner.Root tone="error" className={styles.error}>
             <Banner.Message>{saveError ?? withNextStep(loadError?.description || loadError?.code || '', 'Close and open Settings again.')}</Banner.Message>

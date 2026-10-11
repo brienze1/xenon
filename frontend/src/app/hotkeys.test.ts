@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, type Mock } from 'vitest'
 import { formatHotkey, type HotkeyPlatform } from '@/shared/hooks/use-hotkey'
 import { HOTKEY_BY_ACTION, HOTKEYS, type HotkeyAction, type HotkeyHandlers } from './hotkeys'
 import { useAppHotkeys } from './use-app-hotkeys'
@@ -71,8 +71,10 @@ function pressFor(combo: string, platform: HotkeyPlatform, extra: KeyboardEventI
   })
 }
 
-function allHandlers(): Record<HotkeyAction, ReturnType<typeof vi.fn>> {
-  return Object.fromEntries(HOTKEYS.map((hotkey) => [hotkey.action, vi.fn()])) as Record<HotkeyAction, ReturnType<typeof vi.fn>>
+type HandlerMocks = Record<HotkeyAction, Mock<() => void>>
+
+function allHandlers(): HandlerMocks {
+  return Object.fromEntries(HOTKEYS.map((hotkey) => [hotkey.action, vi.fn<() => void>()])) as HandlerMocks
 }
 
 describe('hotkey table', () => {

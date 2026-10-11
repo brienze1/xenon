@@ -3,10 +3,12 @@ import { AppError, toAppError } from '../errors'
 import { toRequestDto, type RequestDraft } from '../mappers/request'
 import {
   toItemSettings,
+  toQuickSearchHit,
   toSaveItemSettingsDto,
   toTreeNode,
   toTreeSearch,
   type ItemSettings,
+  type QuickSearchHit,
   type TreeNode,
   type TreeSearchResult,
 } from '../mappers/tree'
@@ -34,6 +36,11 @@ export function getTree(localId: string): Promise<TreeNode[]> {
 
 export function searchTree(localId: string, query: string): Promise<TreeSearchResult> {
   return call(async () => toTreeSearch(required(await TreeService.Search({ local_id: localId, query }))))
+}
+
+/** Requests of the workspace ranked for quick search: name prefix, name, URL, then path. */
+export function quickSearch(localId: string, query: string, limit: number): Promise<QuickSearchHit[]> {
+  return call(async () => ((await TreeService.QuickSearch({ local_id: localId, query, limit })) ?? []).map(toQuickSearchHit))
 }
 
 export function createCollection(localId: string, name: string): Promise<TreeNode> {

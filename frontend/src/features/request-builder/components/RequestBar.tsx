@@ -1,8 +1,8 @@
-import { useCallback, useState, type KeyboardEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { STANDARD_METHODS } from '@/platform/mappers/request'
 import { Button } from '@/shared/ui/button/Button'
 import { Dropdown } from '@/shared/ui/dropdown/Dropdown'
-import { SingleLineEditor } from '@/shared/ui/single-line-editor/SingleLineEditor'
+import { SingleLineEditor, type SingleLineEditorHandle } from '@/shared/ui/single-line-editor/SingleLineEditor'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
 import { useVariableEditing } from '@/features/request-builder/hooks/use-variable-editing'
 import { isCurlCommand } from '@/features/request-builder/lib/curl'
@@ -29,6 +29,15 @@ export function RequestBar({ tabId, onSave, mode = 'request' }: RequestBarProps)
   const send = useRequestBuilderStore((state) => state.send)
   const cancel = useRequestBuilderStore((state) => state.cancel)
   const pasteCurl = useRequestBuilderStore((state) => state.pasteCurl)
+  const urlFocusTick = useRequestBuilderStore((state) => state.urlFocusTick)
+  const urlRef = useRef<SingleLineEditorHandle>(null)
+  const mountedFocusTick = useRef(urlFocusTick)
+
+  useEffect(() => {
+    if (urlFocusTick !== mountedFocusTick.current) {
+      urlRef.current?.focus()
+    }
+  }, [urlFocusTick])
   const [customMethod, setCustomMethod] = useState('')
   const { decorationsOf, completionSource, selectIn } = useVariableEditing(tabId)
   const onUrlChange = useCallback((value: string) => setUrl(tabId, value), [setUrl, tabId])
@@ -81,6 +90,7 @@ export function RequestBar({ tabId, onSave, mode = 'request' }: RequestBarProps)
         </Dropdown.Menu>
       </Dropdown.Root>
       <SingleLineEditor
+        ref={urlRef}
         label="Request URL"
         className={styles.url}
         placeholder="https://api.example.com/users…"

@@ -355,4 +355,76 @@ describe('TabNotice', () => {
     await userEvent.click(within(prompt).getByRole('button', { name: 'Don’t Save' }))
     expect(useTabsStore.getState().tabs.some((tab) => tab.id === other)).toBe(false)
   })
+
 })
+
+describe('TabContextMenu', () => {
+  beforeEach(() => {
+    resetWorkspaceStores()
+    vi.clearAllMocks()
+    vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: { ...emptyDraft(), id, name: `Request ${id}`, method: 'POST' }, revision: 'rev' }))
+    useWorkspacesStore.setState({ activeLocalId: 'ws' })
+    useTabsStore.getState().hydrate('ws', defaultUIState())
+  })
+
+  afterEach(() => resetWorkspaceStores())
+
+  it('offers the Postman tab menu on right click and runs each item', async () => {
+    await act(() => useTabsStore.getState().openPinned('A'))
+    await act(() => useTabsStore.getState().openPinned('B'))
+    renderStrip()
+    const [, first] = within(strip()).getAllByRole('tab')
+    fireEvent.contextMenu(first!, { clientX: 10, clientY: 10 })
+    const menu = screen.getByRole('menu', { name: 'Request A tab actions' })
+    expect(within(menu).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+      'New Request',
+      'Duplicate Tab',
+      'Close Tab',
+      'Force Close Tab',
+      'Close Other Tabs',
+      'Close All Tabs',
+      'Close Tabs to the Left',
+      'Close Tabs to the Right',
+      'Force Close All Tabs',
+      'Reveal in Sidebar',
+    ])
+    await userEvent.click(within(menu).getByRole('menuitem', { name: 'Duplicate Tab' }))
+    expect(within(strip()).getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['GETUntitled Request×', 'POSTRequest A×', 'POSTRequest A×', 'POSTRequest B×'])
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+
+    fireEvent.contextMenu(within(strip()).getAllByRole('tab')[2]!, { clientX: 10, clientY: 10 })
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Close Tabs to the Right' }))
+    expect(within(strip()).getAllByRole('tab')).toHaveLength(3)
+    fireEvent.contextMenu(within(strip()).getAllByRole('tab')[2]!, { clientX: 10, clientY: 10 })
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Close Tabs to the Left' }))
+    expect(within(strip()).getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['POSTRequest A×'])
+  })
+
+  it('disables the items that do not apply and asks before closing dirty tabs from the menu', async () => {
+    renderStrip()
+    const [only] = within(strip()).getAllByRole('tab')
+    fireEvent.contextMenu(only!, { clientX: 10, clientY: 10 })
+    expect(screen.getByRole('menuitem', { name: 'Close Other Tabs' })).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.getByRole('menuitem', { name: 'Close Tabs to the Left' })).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.getByRole('menuitem', { name: 'Close Tabs to the Right' })).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.getByRole('menuitem', { name: 'Reveal in Sidebar' })).toHaveAttribute('aria-disabled', 'true')
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Reveal in Sidebar' }))
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+    await userEvent.keyboard('{Escape}')
+    act(() => useRequestBuilderStore.getState().setUrl(useTabsStore.getState().activeTabId!, 'https://edited'))
+    fireEvent.contextMenu(within(strip()).getAllByRole('tab')[0]!, { clientX: 10, clientY: 10 })
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Close All Tabs' }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('force closes every tab from the menu without asking', async () => {
+    await act(() => useTabsStore.getState().openPinned('A'))
+    act(() => useRequestBuilderStore.getState().setUrl(useTabsStore.getState().activeTabId!, 'https://edited'))
+    renderStrip()
+    fireEvent.contextMenu(within(strip()).getAllByRole('tab')[1]!, { clientX: 10, clientY: 10 })
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Force Close All Tabs' }))
+    expect(within(strip()).queryAllByRole('tab')).toHaveLength(0)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+

@@ -5,6 +5,7 @@ export type HotkeyPlatform = 'mac' | 'other'
 interface ParsedCombo {
   key: string
   mod: boolean
+  ctrl: boolean
   shift: boolean
   alt: boolean
 }
@@ -30,30 +31,55 @@ function readCombo(combo: string): ParsedCombo {
   return {
     key: parts[parts.length - 1] ?? '',
     mod: parts.includes('mod'),
+    ctrl: parts.includes('ctrl'),
     shift: parts.includes('shift'),
     alt: parts.includes('alt'),
   }
 }
 
-/** With Alt the key may type another character (Option+C is ç on a Mac), so Alt combos match the physical key. */
+const KEY_CODES: Readonly<Record<string, string>> = {
+  enter: 'Enter',
+  tab: 'Tab',
+  escape: 'Escape',
+  '\\': 'Backslash',
+  ',': 'Comma',
+  '.': 'Period',
+  '/': 'Slash',
+  '[': 'BracketLeft',
+  ']': 'BracketRight',
+}
+
+function codeOf(key: string): string | undefined {
+  if (/^[a-z]$/.test(key)) {
+    return `Key${key.toUpperCase()}`
+  }
+  if (/^[0-9]$/.test(key)) {
+    return `Digit${key}`
+  }
+  return KEY_CODES[key]
+}
+
+/** Shortcuts match the physical key (`event.code`), so every layout presses the same keys; `key` is the fallback for events without a code. */
 function matchesKey(event: KeyboardEvent, parsed: ParsedCombo): boolean {
-  if (parsed.alt && /^[a-z0-9]$/.test(parsed.key)) {
-    return event.code === (/[a-z]/.test(parsed.key) ? `Key${parsed.key.toUpperCase()}` : `Digit${parsed.key}`)
+  const code = codeOf(parsed.key)
+  if (event.code && code) {
+    return event.code === code || (code === 'Enter' && event.code === 'NumpadEnter')
   }
   return event.key.toLowerCase() === parsed.key
 }
 
+/** AltGr (Ctrl+Alt on Windows) types characters on many layouts, so no shortcut fires while it is held. */
 export function matchesHotkey(event: KeyboardEvent, combo: string, platform: HotkeyPlatform): boolean {
   const parsed = parseCombo(combo)
-  const modPressed = platform === 'mac' ? event.metaKey : event.ctrlKey
-  const otherModPressed = platform === 'mac' ? event.ctrlKey : event.metaKey
   if (event.getModifierState?.('AltGraph')) {
     return false
   }
+  const meta = platform === 'mac' && parsed.mod
+  const ctrl = platform === 'mac' ? parsed.ctrl : parsed.mod || parsed.ctrl
   return (
     matchesKey(event, parsed) &&
-    modPressed === parsed.mod &&
-    !otherModPressed &&
+    event.metaKey === meta &&
+    event.ctrlKey === ctrl &&
     event.shiftKey === parsed.shift &&
     event.altKey === parsed.alt
   )
@@ -63,9 +89,9 @@ export function formatHotkey(combo: string, platform: HotkeyPlatform): string {
   const parsed = parseCombo(combo)
   const key = parsed.key.length === 1 ? parsed.key.toUpperCase() : parsed.key.charAt(0).toUpperCase() + parsed.key.slice(1)
   if (platform === 'mac') {
-    return `${parsed.mod ? '⌘' : ''}${parsed.alt ? '⌥' : ''}${parsed.shift ? '⇧' : ''}${key}`
+    return `${parsed.ctrl ? '⌃' : ''}${parsed.mod ? '⌘' : ''}${parsed.alt ? '⌥' : ''}${parsed.shift ? '⇧' : ''}${key}`
   }
-  return [parsed.mod ? 'Ctrl' : '', parsed.alt ? 'Alt' : '', parsed.shift ? 'Shift' : '', key].filter(Boolean).join('+')
+  return [parsed.mod || parsed.ctrl ? 'Ctrl' : '', parsed.alt ? 'Alt' : '', parsed.shift ? 'Shift' : '', key].filter(Boolean).join('+')
 }
 
 interface HotkeyOptions {
@@ -113,6 +139,42 @@ function register(target: EventTarget, registration: HotkeyRegistration): () => 
       target.removeEventListener('keydown', onKeyDown)
     }
   }
+}
+
+export interface HotkeyBinding {
+  combo: string
+  handler: (event: KeyboardEvent) => void
+}
+
+interface HotkeysOptions {
+  enabled?: boolean
+  platform?: HotkeyPlatform
+}
+
+/** Registers a table of window shortcuts at once; the bindings are re-registered only when their combos change. */
+export function useHotkeys(bindings: readonly HotkeyBinding[], options: HotkeysOptions = {}): void {
+  const { enabled = true, platform } = options
+  const bindingsRef = useRef(bindings)
+  const combos = bindings.map((binding) => binding.combo).join('\n')
+
+  useEffect(() => {
+    bindingsRef.current = bindings
+  }, [bindings])
+
+  useEffect(() => {
+    if (!enabled || combos === '') {
+      return
+    }
+    const resolved = platform ?? detectPlatform()
+    const unregister = combos.split('\n').map((combo, index) =>
+      register(window, { combo, platform: resolved, handler: { current: (event: KeyboardEvent) => bindingsRef.current[index]?.handler(event) } }),
+    )
+    return () => {
+      for (const undo of unregister) {
+        undo()
+      }
+    }
+  }, [combos, enabled, platform])
 }
 
 export function useHotkey(combo: string, handler: (event: KeyboardEvent) => void, options: HotkeyOptions = {}): void {

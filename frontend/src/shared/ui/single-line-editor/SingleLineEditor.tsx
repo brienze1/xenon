@@ -1,7 +1,7 @@
 import { history, historyKeymap, defaultKeymap } from '@codemirror/commands'
 import { Annotation, EditorState, Prec } from '@codemirror/state'
 import { EditorView, keymap, placeholder as placeholderExtension } from '@codemirror/view'
-import { useEffect, useRef } from 'react'
+import { useEffect, useImperativeHandle, useRef, type Ref } from 'react'
 import { cn } from '@/shared/lib/cn'
 import {
   completionExtension,
@@ -28,6 +28,11 @@ interface SingleLineEditorProps {
   /** Sees pasted text first; returning true means it was handled and nothing is inserted. */
   onPaste?: (text: string) => boolean
   className?: string
+  ref?: Ref<SingleLineEditorHandle>
+}
+
+export interface SingleLineEditorHandle {
+  focus: () => void
 }
 
 const NO_DECORATIONS: readonly EditorDecoration[] = []
@@ -73,6 +78,7 @@ export function SingleLineEditor({
   onSelectionChange,
   onPaste,
   className,
+  ref,
 }: SingleLineEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
@@ -134,6 +140,8 @@ export function SingleLineEditor({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the view is created once per label; value and decorations sync below
   }, [label, placeholder])
+
+  useImperativeHandle(ref, () => ({ focus: () => viewRef.current?.focus() }), [])
 
   useEffect(() => {
     const view = viewRef.current

@@ -1,5 +1,6 @@
 import type {
   ItemSettings as ItemSettingsDto,
+  QuickSearchHit as QuickSearchHitDto,
   TreeNode as TreeNodeDto,
   TreeSearch as TreeSearchDto,
 } from '../../../bindings/github.com/brienze1/xenon/internal/integration/entrypoint/dto/models'
@@ -59,6 +60,19 @@ export function toTreeNode(dto: TreeNodeDto): TreeNode {
     children: (dto.children ?? []).map(toTreeNode),
     examples: (dto.examples ?? []).map(({ id, name, code }) => ({ id, name, code })),
   }
+}
+
+/** A request found by quick search (Cmd/Ctrl+K), with the collection and folders above it. */
+export interface QuickSearchHit {
+  id: string
+  name: string
+  method: string
+  url: string
+  path: string
+}
+
+export function toQuickSearchHit(dto: QuickSearchHitDto): QuickSearchHit {
+  return { id: dto.id, name: dto.name, method: dto.method, url: dto.url, path: dto.path }
 }
 
 export function toTreeSearch(dto: TreeSearchDto): TreeSearchResult {

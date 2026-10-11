@@ -10,6 +10,8 @@ vi.mock('@/platform/services/variables', () => ({
   INVALID_NEW_VARIABLE_KEY: 'VAR-13400',
 }))
 
+vi.mock('@/platform/services/snippets', () => ({ listSnippetLanguages: vi.fn(async () => []), generateSnippet: vi.fn(), copySnippet: vi.fn() }))
+
 const { SidePanel } = await import('./SidePanel')
 
 describe('SidePanel', () => {
@@ -20,7 +22,9 @@ describe('SidePanel', () => {
     expect(screen.getByRole('region', { name: 'Variables' })).toBeVisible()
     await userEvent.click(screen.getByRole('tab', { name: 'Info' }))
     expect(onViewChange).toHaveBeenCalledWith('info')
-    rerender(<SidePanel tabId="tab-1" view="code" onViewChange={onViewChange} />)
+    rerender(<SidePanel tabId="tab-1" view="unknown" onViewChange={onViewChange} />)
     expect(screen.getByRole('tab', { name: 'Info' })).toHaveAttribute('aria-selected', 'true')
+    await userEvent.click(screen.getByRole('tab', { name: 'Code' }))
+    expect(onViewChange).toHaveBeenCalledWith('code')
   })
 })

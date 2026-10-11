@@ -6,6 +6,7 @@ import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { cn } from '@/shared/lib/cn'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
 import { useTabsStore } from '@/features/tabs/store'
+import { TabContextMenu } from './TabContextMenu'
 import styles from './TabItem.module.css'
 
 const MIDDLE_BUTTON = 1
@@ -72,28 +73,30 @@ export function TabItem({ tabId }: TabItemProps) {
   }
 
   return (
-    <div
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      role="tab"
-      aria-selected={active}
-      tabIndex={active ? 0 : -1}
-      inert={pointerDragging}
-      title={preview ? `${name} (preview)` : name}
-      className={cn(styles.tab, active && styles.active, preview && styles.preview, isDragging && styles.dragging)}
-      style={{ transform: transform ? `translate3d(${transform.x}px, 0, 0)` : undefined, transition }}
-      onClick={() => activate(tabId)}
-      onDoubleClick={() => pin(tabId)}
-      onAuxClick={onAuxClick}
-      onKeyDown={onKeyDown}
-    >
-      <MethodBadge method={method} className={styles.method} />
-      <span className={styles.name}>{name}</span>
-      {dirty ? DIRTY_DOT : null}
-      <button type="button" tabIndex={-1} aria-label={`Close ${name}`} className={styles.close} onClick={onClose} onPointerDown={(event) => event.stopPropagation()}>
-        {CLOSE_GLYPH}
-      </button>
-    </div>
+    <TabContextMenu tabId={tabId} name={name}>
+      <div
+        ref={setNodeRef}
+        {...attributes}
+        {...listeners}
+        role="tab"
+        aria-selected={active}
+        tabIndex={active ? 0 : -1}
+        inert={pointerDragging}
+        title={preview ? `${name} (preview)` : name}
+        className={cn(styles.tab, active && styles.active, preview && styles.preview, isDragging && styles.dragging)}
+        style={{ transform: transform ? `translate3d(${transform.x}px, 0, 0)` : undefined, transition }}
+        onClick={() => activate(tabId)}
+        onDoubleClick={() => pin(tabId)}
+        onAuxClick={onAuxClick}
+        onKeyDown={onKeyDown}
+      >
+        <MethodBadge method={method} className={styles.method} />
+        <span className={styles.name}>{name}</span>
+        {dirty ? DIRTY_DOT : null}
+        <button type="button" tabIndex={-1} aria-label={`Close ${name}`} className={styles.close} onClick={onClose} onPointerDown={(event) => event.stopPropagation()}>
+          {CLOSE_GLYPH}
+        </button>
+      </div>
+    </TabContextMenu>
   )
 }

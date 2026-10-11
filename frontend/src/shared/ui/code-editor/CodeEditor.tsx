@@ -1,6 +1,6 @@
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { defaultHighlightStyle, foldGutter, foldKeymap, syntaxHighlighting } from '@codemirror/language'
-import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'
+import { highlightSelectionMatches, openSearchPanel, searchKeymap } from '@codemirror/search'
 import { Compartment, EditorState } from '@codemirror/state'
 import { EditorView, drawSelection, keymap, lineNumbers } from '@codemirror/view'
 import { useEffect, useImperativeHandle, useRef, type Ref } from 'react'
@@ -22,6 +22,8 @@ import { loadLanguage, type CodeLanguage } from './languages'
 export interface CodeEditorHandle {
   /** Inserts text at the cursor (replacing the selection) and focuses the editor. */
   insert: (text: string) => void
+  /** Focuses the editor and opens its search panel. */
+  find: () => void
 }
 
 interface CodeEditorProps {
@@ -129,6 +131,13 @@ export function CodeEditor({
         const { from, to } = view.state.selection.main
         view.dispatch({ changes: { from, to, insert: text }, selection: { anchor: from + text.length } })
         view.focus()
+      },
+      find: () => {
+        const view = viewRef.current
+        if (view) {
+          view.focus()
+          openSearchPanel(view)
+        }
       },
     }),
     [],

@@ -27,3 +27,16 @@
 .danger {
   color: var(--neon-red);
 }
+
+.disabled,
+.disabled:hover,
+.disabled:focus-visible {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.separator {
+  height: 1px;
+  margin: var(--space-1) var(--space-2);
+  background: var(--color-border);
+}

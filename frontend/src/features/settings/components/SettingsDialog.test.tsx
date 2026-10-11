@@ -92,4 +92,12 @@ describe('SettingsDialog', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
+
+  it('lists the shortcuts it is given', async () => {
+    render(<SettingsDialog shortcuts={[{ label: 'Search requests', combos: ['Mod+K'] }]} />)
+    await act(() => useSettingsStore.getState().openSettings())
+    expect(screen.getByRole('heading', { name: 'Shortcuts' })).toBeInTheDocument()
+    expect(screen.getByRole('rowheader', { name: 'Search requests' })).toBeInTheDocument()
+  })
 })
+

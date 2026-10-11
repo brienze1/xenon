@@ -71,6 +71,10 @@ interface SidebarState {
   remove: (id: string) => Promise<Result<string[], AppError>>
   renameExample: (exampleId: string, name: string) => Promise<Result<boolean, AppError>>
   duplicateExample: (exampleId: string) => Promise<void>
+  /** Starts renaming the selected item (Cmd/Ctrl+E). */
+  renameSelected: () => void
+  /** Duplicates the selected item or example (Cmd/Ctrl+D). */
+  duplicateSelected: () => Promise<void>
   removeExample: (exampleId: string) => Promise<AppError | null>
   loadSettings: (id: string) => Promise<Result<ItemSettings | null, AppError>>
   saveSettings: (settings: ItemSettings) => Promise<AppError | null>
@@ -318,6 +322,25 @@ export const useSidebarStore = create<SidebarState>()((set, get) => {
       }
       endRename(exampleId)
       return { ok: true, value: renamed.value === true }
+    },
+
+    renameSelected: () => {
+      const { selectedId, tree } = get()
+      if (selectedId !== null && (findPath(tree, selectedId).length > 0 || findExampleRequest(tree, selectedId))) {
+        set({ renamingId: selectedId })
+      }
+    },
+
+    duplicateSelected: async () => {
+      const { selectedId, tree } = get()
+      if (selectedId === null) {
+        return
+      }
+      if (findPath(tree, selectedId).length > 0) {
+        await get().duplicate(selectedId)
+      } else if (findExampleRequest(tree, selectedId)) {
+        await get().duplicateExample(selectedId)
+      }
     },
 
     duplicateExample: async (exampleId) => {

@@ -65,7 +65,13 @@ export function bootstrap(): () => void {
       }
     }),
     useTabsStore.subscribe((state, previous) => {
-      if (state.tabs !== previous.tabs || state.activeTabId !== previous.activeTabId || state.previewTabId !== previous.previewTabId) {
+      if (
+        state.tabs !== previous.tabs ||
+        state.activeTabId !== previous.activeTabId ||
+        state.previewTabId !== previous.previewTabId ||
+        state.closedTabs !== previous.closedTabs ||
+        state.snippetOptions !== previous.snippetOptions
+      ) {
         persistTabs()
       }
     }),

@@ -9,11 +9,16 @@ import { PassphraseDialog } from '@/features/environments/components/PassphraseD
 import { VariableTable } from '@/features/environments/components/VariableTable'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
+import { useResponseViewerStore } from '@/features/response-viewer/store'
+import { QuickSearch } from '@/features/search/components/QuickSearch'
+import { useSearchStore } from '@/features/search/store'
 import { SidePanel } from '@/features/side-panel/components/SidePanel'
 import { useExamplesStore } from '@/features/examples/store'
 import { SettingsButton } from '@/features/settings/components/SettingsButton'
 import { SettingsDialog } from '@/features/settings/components/SettingsDialog'
+import { useSettingsStore } from '@/features/settings/store'
 import { SidebarPanel } from '@/features/sidebar/components/SidebarPanel'
+import { useSidebarStore } from '@/features/sidebar/store'
 import type { ItemAuthSlot, ItemScriptsSlot } from '@/features/sidebar/components/SettingsForm'
 import { useTabsStore } from '@/features/tabs/store'
 import { MissingFolderNotice } from '@/features/workspaces/components/MissingFolderNotice'
@@ -25,7 +30,7 @@ import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
 import { isActiveTabExample } from './active-tab'
 import styles from './App.module.css'
 import { bootstrap } from './bootstrap'
-import { type HotkeyHandlers } from './hotkeys'
+import { GO_TO_TAB_POSITIONS, HOTKEYS, type HotkeyHandlers } from './hotkeys'
 import { AppShell } from './layout/AppShell'
 import { ItemAuth } from './layout/ItemAuth'
 import { ItemScripts } from './layout/ItemScripts'
@@ -50,7 +55,9 @@ const PASSPHRASE_DIALOG = <PassphraseDialog />
 
 const IMPORT_DIALOG = <ImportDialog />
 
-const SETTINGS_DIALOG = <SettingsDialog />
+const SETTINGS_DIALOG = <SettingsDialog shortcuts={HOTKEYS} />
+
+const QUICK_SEARCH = <QuickSearch />
 
 const SETTINGS_BUTTON = <SettingsButton />
 
@@ -89,6 +96,21 @@ const NO_REQUEST_SELECTED = (
   </EmptyState.Root>
 )
 
+function openSettings() {
+  void useSettingsStore.getState().openSettings()
+}
+
+const NO_WORKSPACE_HOTKEYS: HotkeyHandlers = { settings: openSettings }
+
+function goToTabHandlers(): HotkeyHandlers {
+  return Object.fromEntries([...GO_TO_TAB_POSITIONS].map(([action, position]) => [action, () => useTabsStore.getState().activateIndex(position)]))
+}
+
+function toggleLayout(key: 'sidebarVisible' | 'consoleVisible') {
+  const workspaces = useWorkspacesStore.getState()
+  workspaces.setLayout({ [key]: !workspaces.layout[key] })
+}
+
 export function App() {
   const status = useWorkspacesStore((state) => state.status)
   const hasWorkspaces = useWorkspacesStore((state) => state.workspaces.length > 0)
@@ -119,14 +141,24 @@ export function App() {
             saveAs: () => useTabsStore.getState().saveAs(),
             newTab: () => void useTabsStore.getState().newTab(),
             closeTab: () => useTabsStore.getState().requestClose(),
+            forceCloseTab: () => useTabsStore.getState().forceClose(),
+            reopenClosedTab: () => void useTabsStore.getState().reopenClosed(),
+            nextTab: () => useTabsStore.getState().cycle(1),
+            previousTab: () => useTabsStore.getState().cycle(-1),
+            ...goToTabHandlers(),
+            lastTab: () => useTabsStore.getState().activateIndex(9),
+            focusUrl: () => useRequestBuilderStore.getState().focusUrl(),
+            searchRequests: () => useSearchStore.getState().openSearch(),
+            findInResponse: () => useResponseViewerStore.getState().requestFind(),
+            toggleSidebar: () => toggleLayout('sidebarVisible'),
+            console: () => toggleLayout('consoleVisible'),
+            renameSelected: () => useSidebarStore.getState().renameSelected(),
+            duplicateSelected: () => void useSidebarStore.getState().duplicateSelected(),
             environmentSwitcher: () => useEnvironmentsStore.getState().openSwitcher(),
             import: () => useImportStore.getState().open(),
-            console: () => {
-              const workspaces = useWorkspacesStore.getState()
-              workspaces.setLayout({ consoleVisible: !workspaces.layout.consoleVisible })
-            },
+            settings: openSettings,
           }
-        : {},
+        : NO_WORKSPACE_HOTKEYS,
     [hasActive, send],
   )
 
@@ -189,6 +221,7 @@ export function App() {
       {SETTINGS_DIALOG}
       {active ? IMPORT_DIALOG : null}
       {active ? COOKIES_DIALOG : null}
+      {active ? QUICK_SEARCH : null}
       <Footer>
         {active ? (
           <>

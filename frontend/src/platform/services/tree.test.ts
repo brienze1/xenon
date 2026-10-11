@@ -5,6 +5,7 @@ vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Erro
 vi.mock('../../../bindings/github.com/brienze1/xenon/internal/infra/server/binding/treeservice', () => ({
   GetTree: vi.fn(),
   Search: vi.fn(),
+  QuickSearch: vi.fn(),
   CreateCollection: vi.fn(),
   CreateFolder: vi.fn(),
   CreateRequest: vi.fn(),
@@ -127,4 +128,15 @@ describe('tree service', () => {
     vi.mocked(TreeService.Duplicate).mockResolvedValue(null as never)
     await expect(tree.duplicateItem('ws', 'r1')).rejects.toMatchObject({ code: 'UNK-00204' })
   })
+
+  it('runs a quick search and maps the hits', async () => {
+    vi.mocked(TreeService.QuickSearch).mockResolvedValue([{ id: 'r1', name: 'Ping', method: 'GET', url: 'https://x/ping', path: 'Billing / Health' }] as never)
+    await expect(tree.quickSearch('ws', 'pi', 20)).resolves.toEqual([{ id: 'r1', name: 'Ping', method: 'GET', url: 'https://x/ping', path: 'Billing / Health' }])
+    expect(TreeService.QuickSearch).toHaveBeenCalledWith({ local_id: 'ws', query: 'pi', limit: 20 })
+    vi.mocked(TreeService.QuickSearch).mockResolvedValue(null as never)
+    await expect(tree.quickSearch('ws', 'zz', 20)).resolves.toEqual([])
+    vi.mocked(TreeService.QuickSearch).mockRejectedValue(Object.assign(new Error('x'), { cause: { error: { code: 'TRE-40400', description: 'bad' } } }))
+    await expect(tree.quickSearch('', 'x', 20)).rejects.toMatchObject({ code: 'TRE-40400' })
+  })
 })
+
