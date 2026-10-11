@@ -154,33 +154,66 @@ US1 execution · US2 tests · US3 pm API & libraries · US4 console · US5 edito
 
 ## Phase 5: User Story 2 — Tests and Test Results (P1)
 
-- [ ] T023 [P] [US2] BDD `test/integration/features/tests/test_results.feature` and `async_tests.feature`: pass/fail with chai-postman messages for every helper in sandbox-api.md §2; skip; `done` async (pass and `done(err)`); `async () =>` rejection reported as script error; legacy `tests[]` collected; pre-request tests included; per-script labels and order; count
-- [ ] T024 [US2] Run → **red**; implement `pm_test.go` (runner semantics), `shims/chai_postman.js` (port of chai-postman 2.0.1 over shim objects), legacy `tests` collection → **green**
-- [ ] T025 [US2] UI `features/response-viewer/components/TestResultsTab.tsx` (count badge "n/m", filters All/Passed/Failed/Skipped, script label, error message) and `ScriptErrorPanel.tsx` (outcome + error in response area); RTL tests
+- [x] T023 [P] [US2] BDD `test/integration/features/tests/test_results.feature` and `async_tests.feature`: pass/fail with chai-postman messages for every helper in sandbox-api.md §2; skip; `done` async (pass and `done(err)`); `async () =>` rejection reported as script error; legacy `tests[]` collected; pre-request tests included; per-script labels and order; count
+- [x] T024 [US2] Run → **red**; implement `pm_test.go` (runner semantics), `shims/chai_postman.js` (port of chai-postman 2.0.1 over shim objects), legacy `tests` collection → **green**
+- [x] T025 [US2] UI `features/response-viewer/components/TestResultsTab.tsx` (count badge "n/m", filters All/Passed/Failed/Skipped, script label, error message) and `ScriptErrorPanel.tsx` (outcome + error in response area); RTL tests
 
 ---
 
 ## Phase 6: User Story 4 — Console (P1)
 
-- [ ] T026 [P] [US4] BDD `test/integration/features/console/console_entries.feature`, `console_masking.feature`, `console_filters.feature`: request entries (main + nested) with resolved request/response detail; log levels with objects; errors and test failures; ordering; secret masking in URL/headers/body/log text (SC-004); `List` pagination; `Clear` and `console.clear()`; ring buffer cap 5,000; bodies > 1 MB via `body_url`; a secret value set by a script mid-run is masked in later entries
-- [ ] T027 [US4] Run → **red**; implement `console.go` service + ring buffer + `console_entries.go` publisher (batched ≤ 50 ms) + controllers/bindings (bindings §3) → **green**
-- [ ] T028 [US4] UI `features/console/`: event-fed store, virtualized `ConsoleDrawer` (footer toggle + Cmd/Ctrl+Alt+C in `app/hotkeys.ts`), `ConsoleEntryRow`, `ConsoleEntryDetail` (request/response tabs, object tree), `ConsoleToolbar` (filter, search, clear); RTL tests
+- [x] T026 [P] [US4] BDD `test/integration/features/console/console_entries.feature`, `console_masking.feature`, `console_filters.feature`: request entries (main + nested) with resolved request/response detail; log levels with objects; errors and test failures; ordering; secret masking in URL/headers/body/log text (SC-004); `List` pagination; `Clear` and `console.clear()`; ring buffer cap 5,000; bodies > 1 MB via `body_url`; a secret value set by a script mid-run is masked in later entries
+- [x] T027 [US4] Run → **red**; implement `console.go` service + ring buffer + `console_entries.go` publisher (batched ≤ 50 ms) + controllers/bindings (bindings §3) → **green**
+- [x] T028 [US4] UI `features/console/`: event-fed store, virtualized `ConsoleDrawer` (footer toggle + Cmd/Ctrl+Alt+C in `app/hotkeys.ts`), `ConsoleEntryRow`, `ConsoleEntryDetail` (request/response tabs, object tree), `ConsoleToolbar` (filter, search, clear); RTL tests
 
 ---
 
 ## Phase 7: User Story 5 — Editor (P2)
 
-- [ ] T029 [P] [US5] BDD `test/integration/features/scripts/script_tools.feature`: `Check` reports syntax errors with line/column; `Reference` contains every member of sandbox-api.md §1–§3; `Snippets` returns Postman's standard set
-- [ ] T030 [US5] Run → **red**; implement `script_tools.go` (Reference generated at build time from shim/Go definitions into an embedded JSON) → **green**
-- [ ] T031 [US5] UI: `shared/ui/code-editor` JS mode with generic completion and lint-diagnostic props; `features/request-builder/components/ScriptsPanel.tsx` (pre/post editors, inherit toggle, snippets menu, variable-name completion in `pm.<scope>.get/set("…")` using XEN-002 `Suggest`); Scripts tab in `ItemSettingsDialog` for collections/folders; RTL tests
+- [x] T029 [P] [US5] BDD `test/integration/features/scripts/script_tools.feature`: `Check` reports syntax errors with line/column; `Reference` contains every member of sandbox-api.md §1–§3; `Snippets` returns Postman's standard set
+- [x] T030 [US5] Run → **red**; implement `script_tools.go` (Reference generated at build time from shim/Go definitions into an embedded JSON) → **green**
+- [x] T031 [US5] UI: `shared/ui/code-editor` JS mode with generic completion and lint-diagnostic props; `features/request-builder/components/ScriptsPanel.tsx` (pre/post editors, inherit toggle, snippets menu, variable-name completion in `pm.<scope>.get/set("…")` using XEN-002 `Suggest`); Scripts tab in `ItemSettingsDialog` for collections/folders; RTL tests
 
 ---
 
 ## Phase 8: Polish
 
-- [ ] T032 [P] Performance BDD `features/scripts/performance.feature`: four typical scripts add < 100 ms (SC-002); endless loop stopped within limit + 0.5 s while another binding call stays responsive (SC-003)
+- [x] T032 [P] Performance BDD `features/scripts/performance.feature`: four typical scripts add < 100 ms (SC-002); endless loop stopped within limit + 0.5 s while another binding call stays responsive (SC-003)
 - [ ] T033 Run Luis's imported collections (from XEN-003 T036) end to end; record results against the stage-3 pm-usage report in `docs/prd/pm-usage-report.md` (SC-006)
 - [ ] T034 `/refactor-diff` until clean; `make validate`, `make parity`, `make sandbox-assets` drift check; CI green on 3 OSes; walk [quickstart.md](quickstart.md)
+
+**Phases 5–8 notes (implemented)**:
+- US2: the runner and chai-postman landed with T022, so `test_results`/`async_tests` (42 scenarios,
+  messages taken from postman-sandbox 6.7.4) were red only on what the UI needs: `SendResult`
+  gains `test_summary {total, passed, failed, skipped}` and every `script` ref gains `label`
+  ("Billing · Post-response"). The tab title counts passed/total like Postman.
+- US4 console: request entries for the main send and for `pm.sendRequest`/`runRequest` (nested,
+  under the calling script, grouped by the main send id); failed tests are `test_failure`
+  entries; errors keep line/column. `List` adds optional `filter` (all/requests/logs/errors) and
+  `search`; `Get` returns the detail (request as sent, response headers/body, logged values);
+  bodies over 1 MB (or binary) go to the response store under `console:<id>` and are served by
+  the existing `/xenon/response/` route, released when dropped from the 5,000-entry ring or
+  cleared. Masking uses the send's secrets plus those scripts set during the run (masked in the
+  entries after the script that set them, and in nested requests at once). The publisher emits
+  `console:entries` at most every 50 ms or 100 entries; Clear and `console.clear()` emit
+  `{cleared: true}` and drop pending entries. Existing script features now list the console
+  with `filter: logs` because request entries sit between the logs.
+- US5: `ScriptService` (`Check`/`Reference`/`Snippets`). The reference is
+  `sandbox/reference/reference.json`, generated by `make script-reference` from
+  `reference/members.tsv` (path, signature, description) plus the live sandbox, which gives each
+  member's kind; a sandbox test fails on drift or on a listed member the shims lack. Syntax
+  errors past the script's end (unclosed blocks) point at its last character.
+- Requests carry `scripts` and `inherit_scripts`; a send runs the carried scripts (saved or not)
+  and falls back to the saved file when absent; Save and collection/folder `SaveSettings` write
+  carried scripts (files keep theirs when the payload has none) — `ScriptsEdited` on the entity.
+- UI: the scripts editor lives in `features/scripts` and is composed by the app into the
+  request's Scripts tab and a Scripts tab of collection/folder settings (render props, like
+  collection variables). Cmd/Ctrl+Alt+C toggles the console; Alt combos match `event.code`
+  (Option changes `event.key` on macOS) and AltGr typing never fires a shortcut.
+- T032 passes on the existing implementation (~33 ms for four typical scripts locally); new
+  generic steps start a binding call in the background and wait for it.
+- Known limit: a secret set and logged inside the same script is masked from the next entry
+  source on (later scripts, nested requests), not within that script's own logs.
 
 ---
 
