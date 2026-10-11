@@ -44,6 +44,7 @@ type testUtils struct {
 	workspaceRoot string
 	dataDir       string
 	routeResponse *httptest.ResponseRecorder
+	background    *backgroundCall
 	response      []byte
 	callError     []byte
 	elapsed       time.Duration

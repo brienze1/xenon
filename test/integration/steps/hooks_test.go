@@ -28,6 +28,7 @@ func (t *testUtils) before() error {
 	t.response = nil
 	t.callError = nil
 	t.routeResponse = nil
+	t.background = nil
 	t.written = map[string]string{}
 
 	tempRoot, err := os.MkdirTemp("", "xenon-bdd-")

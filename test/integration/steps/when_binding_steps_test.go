@@ -21,6 +21,47 @@ func (t *testUtils) registerWhenBindingSteps(ctx *godog.ScenarioContext) {
 	ctx.When(`^I call "(\w+)\.(\w+)" already cancelled with$`, t.iCallAlreadyCancelledWith)
 	ctx.Step(`^I save the response field "([^"]*)" as "([^"]*)"$`, t.iSaveTheResponseFieldAs)
 	ctx.Step(`^I save every "([^"]*)" found in the response as "([^"]*)"$`, t.iSaveEveryFoundInTheResponseAs)
+	ctx.When(`^I start calling "(\w+)\.(\w+)" in the background with$`, t.iStartCallingInTheBackgroundWith)
+	ctx.Then(`^the background call should finish within (\d+) ms$`, t.theBackgroundCallShouldFinishWithin)
+}
+
+type backgroundCall struct {
+	done    chan struct{}
+	started time.Time
+	result  callResult
+	err     error
+}
+
+func (t *testUtils) iStartCallingInTheBackgroundWith(service, method string, payload *godog.DocString) error {
+	invoke, err := t.prepareCall(context.Background(), service, method, payload.Content)
+	if err != nil {
+		return err
+	}
+	call := &backgroundCall{done: make(chan struct{}), started: time.Now()}
+	t.background = call
+	go func() {
+		call.result, call.err = invoke()
+		close(call.done)
+	}()
+	return nil
+}
+
+func (t *testUtils) theBackgroundCallShouldFinishWithin(milliseconds int) error {
+	call := t.background
+	if call == nil {
+		return fmt.Errorf("no call was started in the background")
+	}
+	limit := time.Duration(milliseconds) * time.Millisecond
+	select {
+	case <-call.done:
+	case <-time.After(time.Until(call.started.Add(limit))):
+		return fmt.Errorf("the background call did not finish within %s", limit)
+	}
+	t.response, t.callError, t.elapsed = call.result.response, call.result.callError, time.Since(call.started)
+	if t.elapsed > limit {
+		return fmt.Errorf("the background call took %s, expected at most %s", t.elapsed, limit)
+	}
+	return call.err
 }
 
 func (t *testUtils) iCallWith(service, method string, payload *godog.DocString) error {
@@ -97,37 +138,56 @@ func collectValues(data any, key string) []string {
 	return values
 }
 
+type callResult struct {
+	response  []byte
+	callError []byte
+	elapsed   time.Duration
+}
+
 func (t *testUtils) call(ctx context.Context, service, method, payload string) error {
 	t.response, t.callError = nil, nil
-	target, err := t.service(service)
+	invoke, err := t.prepareCall(ctx, service, method, payload)
 	if err != nil {
 		return err
 	}
+	result, err := invoke()
+	t.response, t.callError, t.elapsed = result.response, result.callError, result.elapsed
+	return err
+}
+
+func (t *testUtils) prepareCall(ctx context.Context, service, method, payload string) (func() (callResult, error), error) {
+	target, err := t.service(service)
+	if err != nil {
+		return nil, err
+	}
 	function := target.MethodByName(method)
 	if !function.IsValid() {
-		return fmt.Errorf("binding %s has no method %s", service, method)
+		return nil, fmt.Errorf("binding %s has no method %s", service, method)
 	}
 	arguments := []reflect.Value{reflect.ValueOf(ctx)}
 	if function.Type().NumIn() == 2 {
 		input := reflect.New(function.Type().In(1))
 		if payload != "" {
 			if err := json.Unmarshal([]byte(t.substituteJson(payload)), input.Interface()); err != nil {
-				return fmt.Errorf("invalid payload for %s.%s: %w", service, method, err)
+				return nil, fmt.Errorf("invalid payload for %s.%s: %w", service, method, err)
 			}
 		}
 		arguments = append(arguments, input.Elem())
 	}
-	started := time.Now()
-	results := function.Call(arguments)
-	t.elapsed = time.Since(started)
-	if failure, isError := results[len(results)-1].Interface().(error); isError && failure != nil {
-		t.callError = errorpayload.MarshalError(failure)
-		return nil
-	}
-	if len(results) == 2 {
-		t.response, err = json.Marshal(results[0].Interface())
-	}
-	return err
+	return func() (callResult, error) {
+		started := time.Now()
+		results := function.Call(arguments)
+		result := callResult{elapsed: time.Since(started)}
+		if failure, isError := results[len(results)-1].Interface().(error); isError && failure != nil {
+			result.callError = errorpayload.MarshalError(failure)
+			return result, nil
+		}
+		var err error
+		if len(results) == 2 {
+			result.response, err = json.Marshal(results[0].Interface())
+		}
+		return result, err
+	}, nil
 }
 
 func (t *testUtils) service(name string) (reflect.Value, error) {
