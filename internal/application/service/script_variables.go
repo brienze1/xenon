@@ -79,7 +79,7 @@ func (s scriptVariables) apply(ctx context.Context, localId, root string, ref en
 	if err := s.saveLocalVariables.Save(ctx, localId, local.WithCurrentValues(ref, edited.StoredCurrent())); err != nil {
 		return err
 	}
-	if len(edited.Rows) == len(original.Rows) {
+	if !edited.RowsDiffer(original) {
 		return nil
 	}
 	return s.rowStore.save(ctx, root, ref, edited.Rows)

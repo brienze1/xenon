@@ -91,6 +91,13 @@ func (s *SendExecution) RecordResponse(sent EffectiveRequest, response Response)
 	}
 }
 
+func (s *SendExecution) ScriptCookies() []ScriptCookie {
+	if s.Response == nil || s.SentRequest == nil {
+		return []ScriptCookie{}
+	}
+	return NewScriptCookies(s.Response.Headers, s.SentRequest.Host())
+}
+
 func (s *SendExecution) AddTests(tests []TestResult) {
 	for _, test := range tests {
 		test.Index = len(s.Tests)

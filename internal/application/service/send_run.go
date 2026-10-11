@@ -48,7 +48,7 @@ func (r sendRun) execute(ctx context.Context, tabId string, request entity.Reque
 func (r sendRun) runScripts(ctx context.Context, execution *entity.SendExecution, request entity.Request, location []string, chain []entity.ScriptRef) {
 	for _, script := range chain {
 		before, vaultBefore := execution.Scopes, cloneVault(execution.Vault)
-		cookies := r.cookies(execution)
+		cookies := execution.ScriptCookies()
 		base := entity.ScriptContext{Info: entity.NewScriptInfo(request.ID, request.Name, script.OwnerName, location), Cookies: cookies, ResponseCookies: cookies, Dynamic: r.dynamic(ctx), Console: r.console(ctx, execution, script)}
 		run := r.service.runScript.Run(ctx, script, execution.ScriptContext(base), r.calledBy(script), r.settings)
 		mask := r.mask(r.secretsOf(execution))
@@ -83,13 +83,6 @@ func (r sendRun) variables(execution *entity.SendExecution) entity.VariableConte
 	return execution.Variables(r.scopes.context).WithVault(execution.Vault)
 }
 
-func (r sendRun) cookies(execution *entity.SendExecution) []entity.ScriptCookie {
-	if execution.Response == nil || execution.SentRequest == nil {
-		return []entity.ScriptCookie{}
-	}
-	return entity.NewScriptCookies(execution.Response.Headers, execution.SentRequest.Host())
-}
-
 func (r sendRun) dynamic(ctx context.Context) entity.DynamicValue {
 	return func(name string) (string, bool) {
 		return r.service.generateDynamicValue.Generate(ctx, name)
@@ -103,7 +96,7 @@ func (r sendRun) console(ctx context.Context, execution *entity.SendExecution, s
 			return
 		}
 		secrets := r.secretsOf(execution)
-		if log.Scopes != nil {
+		if log.HasScopes() {
 			secrets = append(secrets, r.scopes.context.WithScriptScopes(*log.Scopes).SecretValues()...)
 		}
 		entry := entity.NewConsoleLogEntry(idutils.NewUlid(), r.sendId, script, log, timeutils.Now())

@@ -32,6 +32,10 @@ func (s ScriptLog) Text() string {
 	return strings.Join(s.Arguments, " ")
 }
 
+func (s ScriptLog) HasScopes() bool {
+	return s.Scopes != nil
+}
+
 func (s ScriptLog) IsClear() bool {
 	return s.Level == consolelevel.Clear
 }

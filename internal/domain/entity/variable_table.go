@@ -263,6 +263,10 @@ func (v VariableTable) SecretsDiffer(other VariableTable) bool {
 	return !maps.Equal(v.StoredSecrets(), other.Secrets)
 }
 
+func (v VariableTable) RowsDiffer(other VariableTable) bool {
+	return len(v.Rows) != len(other.Rows)
+}
+
 func (v VariableTable) LogValue() any {
 	return map[string]any{"scope": v.Scope.String(), "rows": len(v.Rows), "vault": v.Vault, "warnings": v.Warnings}
 }
