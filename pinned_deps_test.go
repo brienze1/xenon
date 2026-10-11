@@ -15,5 +15,4 @@ import (
 	_ "github.com/oklog/ulid/v2"
 	_ "github.com/zalando/go-keyring"
 	_ "go.yaml.in/yaml/v3"
-	_ "golang.org/x/net/publicsuffix"
 )

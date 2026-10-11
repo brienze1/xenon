@@ -30,6 +30,7 @@ func (e *execution) host() *goja.Object {
 		"base64":        e.base64,
 		"domainToASCII": e.domainToASCII,
 		"timeZone":      e.timeZone,
+		"cookieJar":     e.cookieJar,
 	}
 	for name, function := range functions {
 		_ = host.Set(name, function)

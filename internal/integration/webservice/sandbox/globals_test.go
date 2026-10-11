@@ -72,7 +72,7 @@ if (extra.length || missing.length) { throw new Error('extra=' + extra.join(',')
 	postResponse := script(text)
 	postResponse.Phase = scriptphase.PostResponse
 	response := entity.NewResponse(200, "OK", "HTTP/1.1", []entity.KeyValue{entity.NewKeyValue("Content-Type", "application/json")}, []byte("{}"), 2, entity.Timings{})
-	result := testRunner(time.Minute, memoryGrowthLimit).Run(context.Background(), postResponse, entity.ScriptContext{Response: &response}, nil, entity.DefaultAppSettings())
+	result := testRunner(time.Minute, memoryGrowthLimit).Run(context.Background(), postResponse, entity.ScriptContext{Response: &response}, nil, nil, entity.DefaultAppSettings())
 	if result.HasFailed() {
 		t.Fatalf("global object differs from the allowlist: %s", result.Error.Message)
 	}

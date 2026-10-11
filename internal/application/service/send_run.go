@@ -52,7 +52,7 @@ func (r sendRun) runScripts(ctx context.Context, execution *entity.SendExecution
 		before, vaultBefore := execution.Scopes, cloneVault(execution.Vault)
 		cookies := execution.ScriptCookies()
 		base := entity.ScriptContext{Info: entity.NewScriptInfo(request.ID, request.Name, script.OwnerName, location), Cookies: cookies, ResponseCookies: cookies, Dynamic: r.dynamic(ctx), Console: r.console(ctx, execution, script)}
-		run := r.service.runScript.Run(ctx, script, execution.ScriptContext(base), r.calledBy(script), r.settings)
+		run := r.service.runScript.Run(ctx, script, execution.ScriptContext(base), r.calledBy(script), r, r.settings)
 		mask := r.mask(r.secretsOf(execution))
 		execution.AddRun(run)
 		r.service.console.append(ctx, r.runEntries(run, mask)...)
@@ -68,8 +68,8 @@ func (r sendRun) runScripts(ctx context.Context, execution *entity.SendExecution
 
 func (r sendRun) send(ctx context.Context, tabId string, request entity.Request, ancestors []entity.Collection, execution *entity.SendExecution) error {
 	resolved, resolvedAncestors := usecase.ResolveRequestVariables(execution.Request, ancestors, r.variables(execution), r.dynamic(ctx))
-	effective := usecase.ResolveEffectiveRequest(resolved, resolvedAncestors, r.root)
-	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, r.appVersion)).WithAuthOwner(r.tabId)
+	effective := usecase.ResolveEffectiveRequest(resolved, resolvedAncestors, r.root).WithCookieJar(r.localId)
+	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, r.appVersion, r.service.cookies.header(ctx, r.localId, effective))).WithAuthOwner(r.tabId)
 	effective, err := r.authorize(ctx, effective)
 	if err != nil {
 		return err
@@ -226,8 +226,8 @@ func (r sendRun) Send(ctx context.Context, request entity.Request, scopes entity
 		return rejected
 	}
 	resolved, _ := usecase.ResolveRequestVariables(request, nil, variables, r.dynamic(ctx))
-	effective := usecase.ResolveEffectiveRequest(resolved, nil, r.root)
-	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, r.appVersion))
+	effective := usecase.ResolveEffectiveRequest(resolved, nil, r.root).WithCookieJar(r.localId)
+	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, r.appVersion, r.service.cookies.header(ctx, r.localId, effective)))
 	response := r.service.sendHttpRequest.Send(ctx, effective).WithMaskedValues(r.secrets)
 	sent := entity.NewSentNestedRequest(effective, response)
 	r.service.console.append(ctx, r.requestEntry(effective, response, true).WithSecretsMasked(r.mask(append(slices.Clone(r.secrets), variables.SecretValues()...))))

@@ -29,6 +29,7 @@ type execution struct {
 	loopTimers       loopTimers
 	ctx              context.Context
 	requests         usecase.SendScriptRequest
+	cookies          usecase.ScriptCookieJar
 	moduleRequire    goja.Value
 	keepAlive        goja.Value
 	vm               *goja.Runtime
@@ -68,7 +69,7 @@ func (l loopStopper) StopNoWait() {
 	l.loop.StopNoWait()
 }
 
-func (w *scriptRunnerWebservice) Run(ctx context.Context, script entity.ScriptRef, scope entity.ScriptContext, requests usecase.SendScriptRequest, settings entity.AppSettings) entity.ScriptRun {
+func (w *scriptRunnerWebservice) Run(ctx context.Context, script entity.ScriptRef, scope entity.ScriptContext, requests usecase.SendScriptRequest, cookies usecase.ScriptCookieJar, settings entity.AppSettings) entity.ScriptRun {
 	logger.Debug(ctx, "Started", map[string]any{"script": script.Label()})
 
 	run := entity.NewScriptRun(script, timeutils.Now())
@@ -78,13 +79,18 @@ func (w *scriptRunnerWebservice) Run(ctx context.Context, script entity.ScriptRe
 		logger.Debug(ctx, "Finished", map[string]any{"script": script.Label(), "status": run.Status})
 		return run
 	}
-	run = w.execute(ctx, program, run, scope, requests, w.limits(settings)).Finished(timeutils.Now())
+	run = w.execute(ctx, program, run, scope, scriptHost{requests: requests, cookies: cookies}, w.limits(settings)).Finished(timeutils.Now())
 
 	logger.Debug(ctx, "Finished", map[string]any{"script": script.Label(), "status": run.Status})
 	return run
 }
 
-func (w *scriptRunnerWebservice) execute(ctx context.Context, program *goja.Program, run entity.ScriptRun, scope entity.ScriptContext, requests usecase.SendScriptRequest, limits limits) entity.ScriptRun {
+type scriptHost struct {
+	requests usecase.SendScriptRequest
+	cookies  usecase.ScriptCookieJar
+}
+
+func (w *scriptRunnerWebservice) execute(ctx context.Context, program *goja.Program, run entity.ScriptRun, scope entity.ScriptContext, host scriptHost, limits limits) entity.ScriptRun {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	loop := eventloop.NewEventLoop(eventloop.EnableConsole(false))
@@ -98,7 +104,8 @@ func (w *scriptRunnerWebservice) execute(ctx context.Context, program *goja.Prog
 		noticed:     map[string]bool{},
 		script:      run.Script,
 		scope:       scope,
-		requests:    requests,
+		requests:    host.requests,
+		cookies:     host.cookies,
 		logs:        []entity.ScriptLog{},
 		notices:     []entity.ScriptLog{},
 		nested:      []entity.NestedRequest{},

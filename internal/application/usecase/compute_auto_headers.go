@@ -9,7 +9,7 @@ const (
 	userAgentPrefix  = "Xenon/"
 )
 
-func ComputeAutoHeaders(request entity.EffectiveRequest, appVersion string) []entity.AutoHeader {
+func ComputeAutoHeaders(request entity.EffectiveRequest, appVersion, cookies string) []entity.AutoHeader {
 	candidates := make([]entity.AutoHeader, 0)
 	if contentType := request.Body.ContentType(); contentType != "" {
 		candidates = append(candidates,
@@ -24,6 +24,9 @@ func ComputeAutoHeaders(request entity.EffectiveRequest, appVersion string) []en
 		entity.NewAutoHeader(entity.HeaderConnection, keepAlive))
 	if authorization, found := request.Auth.Header(); found {
 		candidates = append(candidates, entity.NewAutoHeader(entity.HeaderAuthorization, authorization))
+	}
+	if cookies != "" {
+		candidates = append(candidates, entity.NewComputedAutoHeader(entity.HeaderCookie, cookies))
 	}
 	headers := make([]entity.AutoHeader, 0, len(candidates))
 	for _, candidate := range candidates {

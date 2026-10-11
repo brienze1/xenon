@@ -2,7 +2,7 @@
   'use strict';
 
   const _ = sdk.util;
-  const { VariableScope, Request, Response, CookieList } = sdk;
+  const { VariableScope, Request, Response, Cookie, CookieList, Url } = sdk;
   const SCOPES = ['environment', 'collectionVariables', 'globals', 'local'];
 
   function revive (value) {
@@ -81,8 +81,110 @@
   const response = context.response ? new Response(context.response) : undefined;
   const cookies = new CookieList(null, context.cookies || []);
   cookies.jar = function () {
-    throw new Error('cookie jar not available yet');
+    return cookieJar();
   };
+
+  function cookieJar () {
+    const sanitize = (url) => {
+      if (Url.isUrl(url)) {
+        return url.toString(true);
+      }
+      return url && typeof url === 'string' ? new Url(url).toString(true) : null;
+    };
+    const call = (operation, url, argument) => JSON.parse(host.cookieJar(operation, url, argument === undefined ? '' : argument));
+    const dual = (run, callback, callbackRequired) => {
+      const pending = () => new Promise((resolve) => resolve(run()));
+      if (callback === undefined) {
+        return pending();
+      }
+      if (typeof callback !== 'function' && callbackRequired) {
+        throw new TypeError('callback needs to be a function');
+      }
+      pending().then((result) => {
+        if (typeof callback === 'function') {
+          callback(null, result);
+        }
+      }).catch((error) => {
+        if (typeof callback === 'function') {
+          callback(error instanceof Error ? error : new Error(error));
+        }
+      });
+    };
+    const required = (method, url) => {
+      const sanitized = sanitize(url);
+      if (!sanitized) {
+        throw new TypeError('CookieJar.' + method + '() requires a valid url');
+      }
+      return sanitized;
+    };
+    const named = (method, name) => {
+      if (typeof name !== 'string') {
+        throw new TypeError('CookieJar.' + method + '() requires cookie name to be a string');
+      }
+      return name;
+    };
+    return {
+      get (url, name, callback) {
+        return dual(() => {
+          const target = required('get', url);
+          const wanted = named('get', name);
+          const found = call('getAll', target).find((cookie) => cookie.name === wanted);
+          return found ? new Cookie(found).valueOf() : null;
+        }, callback, true);
+      },
+      getAll (url, options, callback) {
+        if (typeof options === 'function' && !callback) {
+          callback = options;
+          options = {};
+        }
+        if (options === undefined && !callback) {
+          options = {};
+        }
+        return dual(() => {
+          const target = required('getAll', url);
+          if (typeof options !== 'object') {
+            throw new TypeError('CookieJar.getAll() requires options to be an object');
+          }
+          const http = Object.hasOwn(options, 'http') ? Boolean(options.http) : true;
+          const found = call('getAll', target).filter((cookie) => http || !cookie.httpOnly);
+          return new CookieList(null, found.map((cookie) => new Cookie(cookie)));
+        }, callback, true);
+      },
+      set (url, name, value, callback) {
+        if (typeof value === 'function' && !callback) {
+          callback = value;
+          value = null;
+        }
+        return dual(() => {
+          const target = required('set', url);
+          let line;
+          if (name && value) {
+            line = Cookie.stringify({ name, value });
+          }
+          else if (typeof name === 'object' && name !== null) {
+            line = Cookie.stringify(new Cookie(name));
+          }
+          else if (typeof name === 'string') {
+            line = name;
+          }
+          else {
+            throw new TypeError('CookieJar.set() requires a valid set cookie arguments');
+          }
+          return new Cookie(call('set', target, line));
+        }, callback);
+      },
+      unset (url, name, callback) {
+        return dual(() => {
+          call('unset', required('unset', url), named('unset', name));
+        }, callback);
+      },
+      clear (url, callback) {
+        return dual(() => {
+          call('clear', required('clear', url));
+        }, callback);
+      }
+    };
+  }
 
   let chai;
   function loadChai () {

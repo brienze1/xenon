@@ -154,7 +154,7 @@ Feature: Scripts use the workspace jar through pm.cookies.jar() for allowlisted 
         "request": {
           "method": "GET",
           "url": "{{api}}/profile",
-          "scripts": { "pre_request": "const jar = pm.cookies.jar(); const url = pm.variables.replaceIn('{{api}}/profile');\njar.get(url, 'session', (error, value) => console.log(error.message, value));\njar.set('https://notexample.test', 'a', 'b', (error) => console.log(error.message));\ntry { await jar.clear(url) } catch (error) { console.log('rejected', error.message) }" }
+          "scripts": { "pre_request": "const jar = pm.cookies.jar(); const url = pm.variables.replaceIn('{{api}}/profile');\nawait new Promise((done) => jar.get(url, 'session', (error, value) => { console.log(error.message, value); done() }));\nawait new Promise((done) => jar.set('https://notexample.test', 'a', 'b', (error) => { console.log(error.message); done() }));\ntry { await jar.clear(url) } catch (error) { console.log('rejected', error.message) }" }
         }
       }
       """
@@ -192,7 +192,7 @@ Feature: Scripts use the workspace jar through pm.cookies.jar() for allowlisted 
         "request": {
           "method": "GET",
           "url": "{{api}}/profile",
-          "scripts": { "pre_request": "const jar = pm.cookies.jar();\ntry { jar.get('', 'a', () => {}) } catch (error) { console.log(error.name, error.message) }\ntry { jar.get('http://127.0.0.1', 1, () => {}) } catch (error) { console.log(error.message) }\ntry { jar.get('http://127.0.0.1', 'a', 'nope') } catch (error) { console.log(error.message) }\ntry { await jar.set('http://127.0.0.1', 1) } catch (error) { console.log(error.message) }\ntry { await jar.unset('http://127.0.0.1') } catch (error) { console.log(error.message) }\ntry { await jar.getAll('http://127.0.0.1', 'x') } catch (error) { console.log(error.message) }" }
+          "scripts": { "pre_request": "const jar = pm.cookies.jar();\ntry { await jar.get('', 'a') } catch (error) { console.log(error.name, error.message) }\ntry { await jar.get('http://127.0.0.1', 1) } catch (error) { console.log(error.message) }\ntry { jar.get('http://127.0.0.1', 'a', 'nope') } catch (error) { console.log(error.message) }\ntry { await jar.set('http://127.0.0.1', 1) } catch (error) { console.log(error.message) }\ntry { await jar.unset('http://127.0.0.1') } catch (error) { console.log(error.message) }\ntry { await jar.getAll('http://127.0.0.1', 'x') } catch (error) { console.log(error.message) }" }
         }
       }
       """

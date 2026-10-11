@@ -216,3 +216,11 @@ func contains(names []string, name string) bool {
 	}
 	return false
 }
+
+func (r RequestUrl) Hostname() string {
+	parsed, err := url.Parse(r.WithDefaultScheme().String())
+	if err != nil {
+		return ""
+	}
+	return parsed.Hostname()
+}

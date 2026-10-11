@@ -16,4 +16,5 @@ func init() {
 	wails.RegisterEvent[dto.ImportFilesDropped](dto.ImportFilesDroppedEvent)
 	wails.RegisterEvent[dto.ImportRequested](dto.ImportRequestedEvent)
 	wails.RegisterEvent[dto.ConsoleEntries](dto.ConsoleEntriesEvent)
+	wails.RegisterEvent[dto.CookiesChanged](dto.CookiesChangedEvent)
 }

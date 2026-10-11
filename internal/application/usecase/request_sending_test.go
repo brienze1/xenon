@@ -103,14 +103,14 @@ func TestResolveEffectiveRequestCopiesTheRest(t *testing.T) {
 
 func autoHeaders(request entity.EffectiveRequest) map[string]entity.AutoHeader {
 	result := map[string]entity.AutoHeader{}
-	for _, header := range ComputeAutoHeaders(request, "1.2.3") {
+	for _, header := range ComputeAutoHeaders(request, "1.2.3", "") {
 		result[header.Key] = header
 	}
 	return result
 }
 
 func TestComputeAutoHeadersWithoutBody(t *testing.T) {
-	got := ComputeAutoHeaders(entity.EffectiveRequest{URL: "https://api.test:8443/a"}, "1.2.3")
+	got := ComputeAutoHeaders(entity.EffectiveRequest{URL: "https://api.test:8443/a"}, "1.2.3", "")
 	want := []entity.AutoHeader{
 		entity.NewComputedAutoHeader("Host", "api.test:8443"),
 		entity.NewAutoHeader("User-Agent", "Xenon/1.2.3"),
@@ -153,7 +153,7 @@ func TestComputeAutoHeadersDisabledAndOverridden(t *testing.T) {
 		Auth:                bearer("abc"),
 		Headers:             []entity.KeyValue{entity.NewKeyValue("accept", "application/json"), entity.NewKeyValue("AUTHORIZATION", "Token x")},
 		DisabledAutoHeaders: []string{"user-agent"},
-	}, "1")
+	}, "1", "")
 	byKey := map[string]entity.AutoHeader{}
 	for _, header := range headers {
 		byKey[header.Key] = header

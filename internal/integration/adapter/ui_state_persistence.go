@@ -8,4 +8,6 @@ type UIStatePersistence interface {
 	usecase.DeleteUIState
 	usecase.FindDigestState
 	usecase.SaveDigestState
+	usecase.FindCookieAllowlist
+	usecase.SaveCookieAllowlist
 }

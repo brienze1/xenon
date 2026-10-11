@@ -14,6 +14,7 @@ type Client interface {
 }
 
 type Options struct {
+	Jar             http.CookieJar
 	Timeout         time.Duration
 	FollowRedirects bool
 	VerifySsl       bool
@@ -52,7 +53,7 @@ func HttpClient(options Options, logger loggerAdapter) Client {
 		TLSClientConfig:    &tls.Config{InsecureSkipVerify: !options.VerifySsl},
 		DisableCompression: true,
 	}
-	client := &http.Client{Transport: transport, Timeout: options.Timeout}
+	client := &http.Client{Transport: transport, Timeout: options.Timeout, Jar: options.Jar}
 	if !options.FollowRedirects {
 		client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	}

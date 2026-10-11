@@ -14,7 +14,7 @@ var httpWebserviceInstance adapter.HttpWebservice
 func GetHttpWebservice() adapter.HttpWebservice {
 	if httpWebserviceInstance == nil {
 		httpWebserviceOnce.Do(func() {
-			httpWebserviceInstance = webservice.NewHttpWebservice(external.GetHttpClientFactory())
+			httpWebserviceInstance = webservice.NewHttpWebservice(external.GetHttpClientFactory(), GetCookieJarWebservice())
 		})
 	}
 	return httpWebserviceInstance

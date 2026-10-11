@@ -7,5 +7,5 @@ import (
 )
 
 type RunScript interface {
-	Run(ctx context.Context, script entity.ScriptRef, scope entity.ScriptContext, requests SendScriptRequest, settings entity.AppSettings) entity.ScriptRun
+	Run(ctx context.Context, script entity.ScriptRef, scope entity.ScriptContext, requests SendScriptRequest, cookies ScriptCookieJar, settings entity.AppSettings) entity.ScriptRun
 }

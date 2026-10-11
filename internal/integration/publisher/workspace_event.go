@@ -43,3 +43,12 @@ func (w *workspaceEventPublisher) FolderMissing(ctx context.Context, localId str
 	logger.Debug(ctx, "Finished", map[string]any{"localId": localId})
 	return nil
 }
+
+func (w *workspaceEventPublisher) CookiesChanged(ctx context.Context, localId string) error {
+	logger.Debug(ctx, "Started", map[string]any{"localId": localId})
+
+	w.eventEmitter.Emit(dto.CookiesChangedEvent, dto.NewCookiesChanged(localId))
+
+	logger.Debug(ctx, "Finished", map[string]any{"localId": localId})
+	return nil
+}

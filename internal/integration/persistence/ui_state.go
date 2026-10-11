@@ -20,6 +20,7 @@ const (
 	workspacesDataDir = "workspaces"
 	uiStateFile       = "state.json"
 	digestStateKey    = "digest_state"
+	allowlistKey      = "cookie_allowlist"
 )
 
 type uiStatePersistence struct {
@@ -110,6 +111,37 @@ func (u *uiStatePersistence) SaveDigestState(ctx context.Context, localId, owner
 	}
 
 	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "owner": owner, "state": state})
+	return nil
+}
+
+func (u *uiStatePersistence) FindCookieAllowlist(ctx context.Context, localId string) (*entity.CookieAllowlist, error) {
+	logger.Debug(ctx, "Started", map[string]any{"localId": localId})
+
+	u.mu.Lock()
+	fields, err := readStateFields(localId)
+	u.mu.Unlock()
+	if err != nil {
+		return nil, err
+	}
+	domains := []string{}
+	_ = json.Unmarshal(fields[allowlistKey], &domains)
+	allowlist := entity.NewCookieAllowlist(domains)
+
+	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "result": allowlist})
+	return &allowlist, nil
+}
+
+func (u *uiStatePersistence) SaveCookieAllowlist(ctx context.Context, localId string, allowlist entity.CookieAllowlist) error {
+	logger.Debug(ctx, "Started", map[string]any{"localId": localId, "allowlist": allowlist})
+
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	data, _ := json.Marshal(allowlist.Domains)
+	if err := u.patch(localId, map[string]json.RawMessage{allowlistKey: data}, "UIS-10500", "UIS-11500"); err != nil {
+		return err
+	}
+
+	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "allowlist": allowlist})
 	return nil
 }
 

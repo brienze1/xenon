@@ -24,6 +24,7 @@ type Response struct {
 	StatusText  string
 	Proto       string
 	Headers     []KeyValue
+	Cookies     []Cookie
 	Body        []byte
 	Timings     Timings
 	StatusCode  int
@@ -133,4 +134,9 @@ func isTextualContentType(contentType string) bool {
 		}
 	}
 	return false
+}
+
+func (r Response) WithCookies(cookies []Cookie) Response {
+	r.Cookies = cookies
+	return r
 }

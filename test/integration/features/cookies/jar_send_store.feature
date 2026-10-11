@@ -61,7 +61,7 @@ Feature: The workspace cookie jar stores and sends cookies like a browser
       """
       { "local_id": "{{Acme.local_id}}", "tab_id": "tab-1", "request": { "method": "GET", "url": "{{api}}/admin/users" } }
       """
-    Then the 1 "GET" request to "/admin/users" should not have the header "Cookie"
+    Then the 1 "GET" request to "/admin/users" should have the header "Cookie" equal to "admin=yes; session=abc"
 
   @send @variables
   Scenario: The URL is resolved before the jar is asked for cookies

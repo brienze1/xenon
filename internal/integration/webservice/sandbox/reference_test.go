@@ -130,7 +130,7 @@ func probeKinds(t *testing.T, members []dto.ScriptMember) map[string]string {
 		},
 	}
 	probe := entity.ScriptRef{Phase: scriptphase.PostResponse, OwnerKind: scriptownerkind.Request, OwnerName: "Probe", Text: strings.Replace(referenceProbe, "%s", string(encoded), 1)}
-	result := testRunner(time.Minute, memoryGrowthLimit).Run(context.Background(), probe, scope, nil, entity.DefaultAppSettings())
+	result := testRunner(time.Minute, memoryGrowthLimit).Run(context.Background(), probe, scope, nil, nil, entity.DefaultAppSettings())
 	if result.HasFailed() || len(output) == 0 {
 		t.Fatalf("probe failed: %+v %v", result.Error, output)
 	}

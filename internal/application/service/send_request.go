@@ -24,7 +24,9 @@ type sendRequest struct {
 	answerDigest          usecase.AnswerDigestChallenge
 	findDigestState       usecase.FindDigestState
 	saveDigestState       usecase.SaveDigestState
+	findCookieAllowlist   usecase.FindCookieAllowlist
 	tokens                oauthTokens
+	cookies               cookieJar
 	variables             requestVariables
 	scriptVariables       scriptVariables
 	console               consoleLog
@@ -63,6 +65,11 @@ func NewSendRequestService(
 	answerDigest usecase.AnswerDigestChallenge,
 	findDigestState usecase.FindDigestState,
 	saveDigestState usecase.SaveDigestState,
+	manageCookieJar usecase.ManageCookieJar,
+	findCookies usecase.FindCookies,
+	saveCookies usecase.SaveCookies,
+	findCookieAllowlist usecase.FindCookieAllowlist,
+	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
 ) adapter.SendRequestService {
 	scopes := variableScopes{findEnvironment: findEnvironment, findTreeItem: findTreeItem, loadWorkspace: loadWorkspace}
 	vaults := vaultWriter{
@@ -86,7 +93,15 @@ func NewSendRequestService(
 		answerDigest:          answerDigest,
 		findDigestState:       findDigestState,
 		saveDigestState:       saveDigestState,
+		findCookieAllowlist:   findCookieAllowlist,
 		tokens:                oauthTokens{vaults: vaults, lockOAuthToken: lockOAuthToken, refreshOAuthToken: refreshOAuthToken},
+		cookies: cookieJar{
+			manageCookieJar:       manageCookieJar,
+			findCookies:           findCookies,
+			saveCookies:           saveCookies,
+			publishWorkspaceEvent: publishWorkspaceEvent,
+			vaults:                vaults,
+		},
 		variables: requestVariables{
 			findTreeItem:       findTreeItem,
 			loadWorkspace:      loadWorkspace,
@@ -143,6 +158,10 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 	if err != nil {
 		return nil, err
 	}
+	if err := s.cookies.load(ctx, localId); err != nil {
+		return nil, err
+	}
+	cookiesBefore := s.cookies.revision(ctx, localId)
 	secrets := append(scopes.context.SecretValues(), token.SecretsOrNone()...)
 	ctx = logger.WithRedactions(ctx, secrets...)
 	sentAt := timeutils.Now()
@@ -150,6 +169,9 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 	execution.Start(request, scopes.scripts, scopes.vault)
 	run := sendRun{service: s, scopes: scopes, token: token, localId: localId, tabId: tabId, root: workspace.Path, appVersion: appVersion, sendId: execution.ID, secrets: secrets, settings: *settings}
 	if err := run.execute(ctx, tabId, request, scopes.ancestors, owners, &execution); err != nil {
+		return nil, err
+	}
+	if err := s.cookies.settle(ctx, localId, cookiesBefore); err != nil {
 		return nil, err
 	}
 	if err := s.saveHistoryEntry.Save(ctx, localId, entity.NewHistoryEntry(idutils.NewUlid(), sentAt, request, execution)); err != nil {

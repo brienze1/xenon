@@ -1,6 +1,10 @@
 package dto
 
-import "github.com/brienze1/xenon/internal/domain/entity"
+import (
+	"time"
+
+	"github.com/brienze1/xenon/internal/domain/entity"
+)
 
 type ScriptSandboxCookie struct {
 	Name     string `json:"name"`
@@ -18,6 +22,22 @@ func NewScriptSandboxCookies(cookies []entity.ScriptCookie) []ScriptSandboxCooki
 	converted := make([]ScriptSandboxCookie, 0, len(cookies))
 	for _, cookie := range cookies {
 		converted = append(converted, ScriptSandboxCookie(cookie))
+	}
+	return converted
+}
+
+func NewScriptSandboxJarCookie(cookie entity.Cookie) ScriptSandboxCookie {
+	converted := ScriptSandboxCookie{Name: cookie.Name, Value: cookie.Value, Domain: cookie.Domain, Path: cookie.Path, Secure: cookie.Secure, HttpOnly: cookie.HttpOnly, HostOnly: cookie.HostOnly}
+	if !cookie.IsSession() {
+		converted.Expires = cookie.Expires.UTC().Format(time.RFC3339)
+	}
+	return converted
+}
+
+func NewScriptSandboxJarCookies(cookies []entity.Cookie) []ScriptSandboxCookie {
+	converted := make([]ScriptSandboxCookie, 0, len(cookies))
+	for _, cookie := range cookies {
+		converted = append(converted, NewScriptSandboxJarCookie(cookie))
 	}
 	return converted
 }

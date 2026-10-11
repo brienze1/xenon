@@ -13,14 +13,36 @@ type editRequest struct {
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry
 	findTreeItem          usecase.FindTreeItem
 	readCurlCommand       usecase.ReadCurlCommand
+	findCookies           usecase.FindCookies
+	manageCookieJar       usecase.ManageCookieJar
+	variables             requestVariables
 }
 
 func NewEditRequestService(
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry,
 	findTreeItem usecase.FindTreeItem,
 	readCurlCommand usecase.ReadCurlCommand,
+	loadWorkspace usecase.LoadWorkspace,
+	findEnvironment usecase.FindEnvironment,
+	findLocalVariables usecase.FindLocalVariables,
+	findVault usecase.FindVault,
+	manageCookieJar usecase.ManageCookieJar,
+	findCookies usecase.FindCookies,
 ) adapter.EditRequestService {
-	return &editRequest{findWorkspaceRegistry: findWorkspaceRegistry, findTreeItem: findTreeItem, readCurlCommand: readCurlCommand}
+	return &editRequest{
+		findWorkspaceRegistry: findWorkspaceRegistry,
+		findTreeItem:          findTreeItem,
+		readCurlCommand:       readCurlCommand,
+		findCookies:           findCookies,
+		manageCookieJar:       manageCookieJar,
+		variables: requestVariables{
+			findTreeItem:       findTreeItem,
+			loadWorkspace:      loadWorkspace,
+			findEnvironment:    findEnvironment,
+			findLocalVariables: findLocalVariables,
+			findVault:          findVault,
+		},
+	}
 }
 
 func (e *editRequest) ApplyUrl(ctx context.Context, request entity.Request) entity.Request {
@@ -86,9 +108,29 @@ func (e *editRequest) AutoHeaders(ctx context.Context, localId string, request e
 			return nil, err
 		}
 	}
-	effective := usecase.ResolveEffectiveRequest(request, ancestors, workspace.Path)
-	headers := usecase.ComputeAutoHeaders(effective, appVersion)
+	effective := usecase.ResolveEffectiveRequest(request, ancestors, workspace.Path).WithCookieJar(localId)
+	cookies, err := e.cookieHeader(ctx, localId, workspace.Path, ancestors, request, effective)
+	if err != nil {
+		return nil, err
+	}
+	headers := usecase.ComputeAutoHeaders(effective, appVersion, cookies)
 
 	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "request": request, "appVersion": appVersion, "result": entity.AutoHeaders(headers)})
 	return headers, nil
+}
+
+func (e *editRequest) cookieHeader(ctx context.Context, localId, root string, ancestors []entity.Collection, request entity.Request, effective entity.EffectiveRequest) (string, error) {
+	if !effective.UsesCookieJar() {
+		return "", nil
+	}
+	scopes, err := e.variables.loadChain(ctx, localId, root, ancestors)
+	if err != nil {
+		return "", err
+	}
+	jar := cookieJar{manageCookieJar: e.manageCookieJar, findCookies: e.findCookies}
+	if err := jar.load(ctx, localId); err != nil {
+		return "", err
+	}
+	request.URL = scopes.context.Resolve(request.URL, nil)
+	return jar.header(ctx, localId, usecase.ResolveEffectiveRequest(request, ancestors, root).WithCookieJar(localId)), nil
 }

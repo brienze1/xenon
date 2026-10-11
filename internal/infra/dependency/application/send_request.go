@@ -47,6 +47,11 @@ func GetSendRequestService() adapter.SendRequestService {
 				integration.GetDigestWebservice(),
 				integration.GetUIStatePersistence(),
 				integration.GetUIStatePersistence(),
+				integration.GetCookieJarWebservice(),
+				integration.GetVaultPersistence(),
+				integration.GetVaultPersistence(),
+				integration.GetUIStatePersistence(),
+				integration.GetWorkspaceEventPublisher(),
 			)
 		})
 	}

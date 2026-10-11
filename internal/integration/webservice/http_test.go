@@ -72,7 +72,7 @@ func (r *recordingServer) last(t *testing.T) capturedRequest {
 }
 
 func send(request entity.EffectiveRequest) entity.Response {
-	return NewHttpWebservice(httpClient.HttpClientFactory(logger.LoggerWrapper())).Send(context.Background(), request)
+	return NewHttpWebservice(httpClient.HttpClientFactory(logger.LoggerWrapper()), NewCookieJarWebservice()).Send(context.Background(), request)
 }
 
 func getRequest(url string) entity.EffectiveRequest {
@@ -98,7 +98,7 @@ func TestSendReturnsTheResponseWithTimings(t *testing.T) {
 		WroteRequest:         func(httptrace.WroteRequestInfo) { close(requestWritten) },
 		GotFirstResponseByte: func() { close(firstByteReceived) },
 	})
-	response := NewHttpWebservice(httpClient.HttpClientFactory(logger.LoggerWrapper())).Send(ctx, getRequest(url+"/a"))
+	response := NewHttpWebservice(httpClient.HttpClientFactory(logger.LoggerWrapper()), NewCookieJarWebservice()).Send(ctx, getRequest(url+"/a"))
 	if !response.IsOk() || response.StatusCode != http.StatusAccepted || response.StatusText != "Accepted" || response.Proto != "HTTP/1.1" {
 		t.Fatalf("response = %+v", response)
 	}
@@ -329,12 +329,12 @@ func TestSendTimeoutAndCancel(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
 	request.Settings.TimeoutMs = 0
-	if response := NewHttpWebservice(httpClient.HttpClientFactory(logger.LoggerWrapper())).Send(ctx, request); response.Error == nil || response.Error.Kind != senderrorkind.Timeout {
+	if response := NewHttpWebservice(httpClient.HttpClientFactory(logger.LoggerWrapper()), NewCookieJarWebservice()).Send(ctx, request); response.Error == nil || response.Error.Kind != senderrorkind.Timeout {
 		t.Fatalf("deadline = %+v", response.Error)
 	}
 	cancelled, cancelNow := context.WithCancel(context.Background())
 	time.AfterFunc(50*time.Millisecond, cancelNow)
-	if response := NewHttpWebservice(httpClient.HttpClientFactory(logger.LoggerWrapper())).Send(cancelled, request); response.Error == nil || response.Error.Kind != senderrorkind.Cancelled {
+	if response := NewHttpWebservice(httpClient.HttpClientFactory(logger.LoggerWrapper()), NewCookieJarWebservice()).Send(cancelled, request); response.Error == nil || response.Error.Kind != senderrorkind.Cancelled {
 		t.Fatalf("cancel = %+v", response.Error)
 	}
 }

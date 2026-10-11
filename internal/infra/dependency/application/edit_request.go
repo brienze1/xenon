@@ -18,6 +18,12 @@ func GetEditRequestService() adapter.EditRequestService {
 				integration.GetRegistryPersistence(),
 				integration.GetTreePersistence(),
 				integration.GetCurlWebservice(),
+				integration.GetWorkspacePersistence(),
+				integration.GetEnvironmentPersistence(),
+				integration.GetLocalVariablesPersistence(),
+				integration.GetVaultPersistence(),
+				integration.GetCookieJarWebservice(),
+				integration.GetVaultPersistence(),
 			)
 		})
 	}

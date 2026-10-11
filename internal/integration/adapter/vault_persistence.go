@@ -12,4 +12,6 @@ type VaultPersistence interface {
 	usecase.VerifyVaultPassphrase
 	usecase.UnlockVaults
 	usecase.LockOAuthToken
+	usecase.FindCookies
+	usecase.SaveCookies
 }

@@ -8,6 +8,7 @@ import (
 
 type EffectiveRequest struct {
 	AuthOwner           string
+	CookieJar           string
 	Method              string
 	URL                 string
 	Body                Body
@@ -105,6 +106,19 @@ func (e EffectiveRequest) WithQueryParam(name, value string) EffectiveRequest {
 func (e EffectiveRequest) WithURL(raw string) EffectiveRequest {
 	e.URL = raw
 	return e
+}
+
+func (e EffectiveRequest) WithCookieJar(localId string) EffectiveRequest {
+	e.CookieJar = localId
+	return e
+}
+
+func (e EffectiveRequest) UsesCookieJar() bool {
+	return e.CookieJar != "" && !e.Settings.DisableCookieJar
+}
+
+func (e EffectiveRequest) SendsJarCookies() bool {
+	return !e.IsAutoHeaderDisabled(HeaderCookie)
 }
 
 func (e EffectiveRequest) WithAuthOwner(owner string) EffectiveRequest {

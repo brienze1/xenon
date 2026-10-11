@@ -17,6 +17,7 @@ type SendResult struct {
 	Tests        []TestResult      `json:"tests"`
 	ScriptErrors []ScriptError     `json:"script_errors"`
 	Headers      []ResponseHeader  `json:"headers"`
+	CookiesSet   []Cookie          `json:"cookies_set"`
 	Timings      SendResultTimings `json:"timings"`
 	TestSummary  TestSummary       `json:"test_summary"`
 	StatusCode   int               `json:"status_code"`
@@ -31,6 +32,7 @@ func NewSendResult(tabId string, execution entity.SendExecution) SendResult {
 		SendId:       execution.ID,
 		Outcome:      execution.Outcome.String(),
 		Headers:      []ResponseHeader{},
+		CookiesSet:   []Cookie{},
 		Tests:        make([]TestResult, 0, len(execution.Tests)),
 		TestSummary:  NewTestSummary(execution.TestSummary()),
 		ScriptErrors: []ScriptError{},
@@ -67,6 +69,7 @@ func (s SendResult) withResponse(response entity.Response) SendResult {
 		StatusText:   response.StatusText,
 		Proto:        response.Proto,
 		Headers:      make([]ResponseHeader, 0, len(response.Headers)),
+		CookiesSet:   NewCookies(response.Cookies),
 		SizeBytes:    response.SizeBytes,
 		ContentType:  response.ContentType,
 		IsBinary:     response.Binary,

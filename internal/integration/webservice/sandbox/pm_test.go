@@ -66,7 +66,7 @@ func contextOf(request entity.Request, local map[string]any) entity.ScriptContex
 func runIn(t *testing.T, phase entity.ScriptRef, scope entity.ScriptContext, requests usecase.SendScriptRequest, text string) entity.ScriptRun {
 	t.Helper()
 	phase.Text = text
-	return testRunner(5*time.Second, memoryGrowthLimit).Run(context.Background(), phase, scope, requests, entity.DefaultAppSettings())
+	return testRunner(5*time.Second, memoryGrowthLimit).Run(context.Background(), phase, scope, requests, nil, entity.DefaultAppSettings())
 }
 
 func postScript() entity.ScriptRef {
@@ -270,8 +270,8 @@ await pm.vault.set("new", 5)
 await pm.vault.unset("old")
 await pm.vault.set("cleared", null)
 console.log(pm.cookies.get("session"), pm.cookies.one("SESSION").httpOnly, pm.cookies.one("session").toString(), pm.response.cookies.count())
-try { pm.cookies.jar() } catch (e) { console.log(e.message) }`))
-	if got := logTexts(run); got != "k1 null|s 1 true session=s%201; Path=/; HttpOnly 1|cookie jar not available yet" {
+try { await pm.cookies.jar().get("http://x.test", "a") } catch (e) { console.log(e.message) }`))
+	if got := logTexts(run); got != "k1 null|s 1 true session=s%201; Path=/; HttpOnly 1|pm.cookies.jar is not available in this run" {
 		t.Errorf("logs = %s", got)
 	}
 	if !reflect.DeepEqual(run.Vault, map[string]string{"key": "k1", "new": "5"}) {
@@ -377,7 +377,7 @@ func TestPmSendRequestFailures(t *testing.T) {
 		return entity.NewRejectedNestedRequest("late")
 	}}
 	start := time.Now()
-	timedOut := testRunner(100*time.Millisecond, memoryGrowthLimit).Run(context.Background(), script("pm.sendRequest('https://slow.test', () => console.log('never'))"), entity.ScriptContext{}, slow, entity.DefaultAppSettings())
+	timedOut := testRunner(100*time.Millisecond, memoryGrowthLimit).Run(context.Background(), script("pm.sendRequest('https://slow.test', () => console.log('never'))"), entity.ScriptContext{}, slow, nil, entity.DefaultAppSettings())
 	if timedOut.Error == nil || timedOut.Error.Kind != scripterrorkind.Timeout || len(timedOut.Logs) != 0 || time.Since(start) > 2*time.Second {
 		t.Errorf("timed out = %+v", timedOut)
 	}
@@ -445,7 +445,7 @@ func TestFailedScriptsKeepTheWrittenRequestAndTheirEffects(t *testing.T) {
 	if syntax.Error.Kind != scripterrorkind.Syntax || syntax.Request.URL != "https://api.test" || syntax.Scopes.Local.ValueMap()["k"] != "v" || syntax.Logs == nil {
 		t.Errorf("syntax = %+v", syntax)
 	}
-	timedOut := testRunner(100*time.Millisecond, memoryGrowthLimit).Run(context.Background(), script("pm.variables.set('t', 1); console.log('y'); while (true) {}"), contextOf(written, nil), nil, entity.DefaultAppSettings())
+	timedOut := testRunner(100*time.Millisecond, memoryGrowthLimit).Run(context.Background(), script("pm.variables.set('t', 1); console.log('y'); while (true) {}"), contextOf(written, nil), nil, nil, entity.DefaultAppSettings())
 	if timedOut.Error.Kind != scripterrorkind.Timeout || timedOut.Scopes.Local.ValueMap()["t"] != 1.0 || logTexts(timedOut) != "y" || timedOut.Request.URL != "https://api.test" {
 		t.Errorf("timed out = %+v", timedOut)
 	}

@@ -18,17 +18,20 @@ import (
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/senderrorkind"
 	"github.com/brienze1/xenon/internal/integration/adapter"
+	"github.com/brienze1/xenon/internal/integration/webservice/cookiejar"
 	"github.com/brienze1/xenon/internal/integration/webservice/dto"
 	httpClient "github.com/brienze1/xenon/pkg/http"
 	"github.com/brienze1/xenon/pkg/logger"
+	"github.com/brienze1/xenon/pkg/timeutils"
 )
 
 type httpWebservice struct {
 	newClient httpClient.ClientFactory
+	cookies   adapter.CookieJarWebservice
 }
 
-func NewHttpWebservice(newClient httpClient.ClientFactory) adapter.HttpWebservice {
-	return &httpWebservice{newClient: newClient}
+func NewHttpWebservice(newClient httpClient.ClientFactory, cookies adapter.CookieJarWebservice) adapter.HttpWebservice {
+	return &httpWebservice{newClient: newClient, cookies: cookies}
 }
 
 func (h *httpWebservice) Send(ctx context.Context, request entity.EffectiveRequest) entity.Response {
@@ -51,6 +54,7 @@ func (h *httpWebservice) Send(ctx context.Context, request entity.EffectiveReque
 	applyHeaders(httpRequest, request, &body)
 
 	client := h.newClient.Build(httpClient.Options{
+		Jar:             h.jar(request),
 		Timeout:         request.Settings.Timeout(),
 		FollowRedirects: request.Settings.FollowRedirects,
 		VerifySsl:       request.Settings.VerifySsl,
@@ -66,9 +70,27 @@ func (h *httpWebservice) Send(ctx context.Context, request entity.EffectiveReque
 		return failed(ctx, sendError(err, request, target), trace)
 	}
 	response := dto.NewHttpResponse(httpResponse, decode(httpResponse.Header.Get("Content-Encoding"), raw), int64(len(raw))).ToEntity(trace.finish())
+	response = response.WithCookies(responseCookies(httpResponse))
 
 	logger.Debug(ctx, "Finished", response)
 	return response
+}
+
+func (h *httpWebservice) jar(request entity.EffectiveRequest) http.CookieJar {
+	if !request.UsesCookieJar() {
+		return nil
+	}
+	return h.cookies.HttpJar(request.CookieJar, request.SendsJarCookies())
+}
+
+func responseCookies(response *http.Response) []entity.Cookie {
+	cookies := make([]entity.Cookie, 0)
+	for _, cookie := range response.Cookies() {
+		if entry, err := cookiejar.Parse(response.Request.URL, cookie, timeutils.Now()); err == nil {
+			cookies = append(cookies, dto.JarCookie(entry).ToEntity())
+		}
+	}
+	return cookies
 }
 
 func parseTarget(raw string) (*url.URL, *entity.SendError) {
