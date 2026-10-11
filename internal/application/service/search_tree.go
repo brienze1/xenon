@@ -50,3 +50,20 @@ func (s *searchTree) Search(ctx context.Context, localId, query string) (*entity
 	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "query": query, "result": result})
 	return &result, nil
 }
+
+func (s *searchTree) QuickSearch(ctx context.Context, localId, query string, limit int) ([]entity.QuickSearchHit, error) {
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "query": query, "limit": limit})
+
+	workspace, err := s.findWorkspaceRegistry.FindWorkspace(ctx, localId)
+	if err != nil {
+		return nil, err
+	}
+	tree, err := s.loadTree.Load(ctx, workspace.Path)
+	if err != nil {
+		return nil, err
+	}
+	result := usecase.RankQuickSearch(*tree, query, limit)
+
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "query": query, "limit": limit, "result": result})
+	return result, nil
+}

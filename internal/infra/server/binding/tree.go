@@ -29,6 +29,10 @@ func (t *TreeService) Search(ctx context.Context, request dto.SearchTree) (*dto.
 	return t.search.Search(ctx, request)
 }
 
+func (t *TreeService) QuickSearch(ctx context.Context, request dto.QuickSearch) (dto.QuickSearchHitList, error) {
+	return t.search.QuickSearch(ctx, request)
+}
+
 func (t *TreeService) CreateCollection(ctx context.Context, request dto.CreateCollection) (*dto.TreeNode, error) {
 	return t.manage.CreateCollection(ctx, request)
 }

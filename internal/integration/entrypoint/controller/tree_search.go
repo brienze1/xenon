@@ -74,3 +74,31 @@ func (t *treeSearch) Search(bindingCtx context.Context, request dto.SearchTree) 
 	logger.Info(ctx, "Finished", result)
 	return &result, nil
 }
+
+func (t *treeSearch) QuickSearch(bindingCtx context.Context, request dto.QuickSearch) (response dto.QuickSearchHitList, err error) {
+	ctx := logger.GetContext(bindingCtx)
+	logger.Info(ctx, "Started", request)
+
+	defer func(ctx context.Context, request any) {
+		if recovered := recover(); recovered != nil {
+			err = handlePanic(ctx, request, recovered)
+		}
+		if err != nil {
+			response, err = nil, t.errorHandler.Handle(ctx, err, request)
+		}
+	}(ctx, request)
+
+	err = validator.CustomValidator().Struct("TRE-40400", &request)
+	if err != nil {
+		return nil, err
+	}
+
+	hits, err := t.searchTreeService.QuickSearch(ctx, request.LocalId, request.Query, request.Limit)
+	if err != nil {
+		return nil, err
+	}
+	result := dto.NewQuickSearchHitList(hits)
+
+	logger.Info(ctx, "Finished", result)
+	return result, nil
+}
