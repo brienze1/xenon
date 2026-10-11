@@ -13,4 +13,5 @@ type TreeManageController interface {
 	Rename(ctx context.Context, request dto.RenameItem) (*dto.TreeNode, error)
 	Duplicate(ctx context.Context, request dto.TreeItemReference) (*dto.TreeNode, error)
 	Delete(ctx context.Context, request dto.TreeItemReference) (*dto.DeletedItems, error)
+	Move(ctx context.Context, request dto.MoveItem) (dto.TreeNodeList, error)
 }

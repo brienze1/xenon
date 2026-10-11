@@ -186,3 +186,31 @@ func (t *treeManage) Delete(bindingCtx context.Context, request dto.TreeItemRefe
 	logger.Info(ctx, "Finished", result)
 	return &result, nil
 }
+
+func (t *treeManage) Move(bindingCtx context.Context, request dto.MoveItem) (response dto.TreeNodeList, err error) {
+	ctx := logger.GetContext(bindingCtx)
+	logger.Info(ctx, "Started", request)
+
+	defer func(ctx context.Context, request any) {
+		if recovered := recover(); recovered != nil {
+			err = handlePanic(ctx, request, recovered)
+		}
+		if err != nil {
+			response, err = nil, t.errorHandler.Handle(ctx, err, request)
+		}
+	}(ctx, request)
+
+	err = validator.CustomValidator().Struct("TRE-14400", &request)
+	if err != nil {
+		return nil, err
+	}
+
+	tree, err := t.manageTreeItemService.Move(ctx, request.LocalId, request.Id, request.NewParentId, request.Index)
+	if err != nil {
+		return nil, err
+	}
+	result := dto.NewTreeNodeList(*tree)
+
+	logger.Info(ctx, "Finished", result)
+	return result, nil
+}

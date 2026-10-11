@@ -53,6 +53,10 @@ func (t *TreeService) Delete(ctx context.Context, request dto.TreeItemReference)
 	return t.manage.Delete(ctx, request)
 }
 
+func (t *TreeService) Move(ctx context.Context, request dto.MoveItem) (dto.TreeNodeList, error) {
+	return t.manage.Move(ctx, request)
+}
+
 func (t *TreeService) GetSettings(ctx context.Context, request dto.TreeItemReference) (*dto.ItemSettings, error) {
 	return t.settings.GetSettings(ctx, request)
 }

@@ -27,6 +27,10 @@ func (i IndexedItem) MovedTo(path string) IndexedItem {
 }
 
 func (i IndexedItem) IsInside(dir string) bool {
-	relative, err := filepath.Rel(dir, i.Path)
+	return isWithin(i.Path, dir)
+}
+
+func isWithin(path, dir string) bool {
+	relative, err := filepath.Rel(dir, path)
 	return err == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator))
 }

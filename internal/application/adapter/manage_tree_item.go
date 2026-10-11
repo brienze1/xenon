@@ -13,4 +13,5 @@ type ManageTreeItemService interface {
 	Rename(ctx context.Context, localId, id, name string) (*entity.TreeNode, error)
 	Duplicate(ctx context.Context, localId, id string) (*entity.TreeNode, error)
 	Delete(ctx context.Context, localId, id string) ([]string, error)
+	Move(ctx context.Context, localId, id, parentId string, index int) (*entity.Tree, error)
 }

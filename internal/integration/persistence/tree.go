@@ -218,6 +218,41 @@ func (t *treePersistence) Duplicate(ctx context.Context, root, id string, copied
 	return duplicate, nil
 }
 
+func (t *treePersistence) Move(ctx context.Context, root string, move entity.TreeMove) (*entity.Tree, error) {
+	logger.Debug(ctx, "Started", map[string]any{"root": root, "move": move})
+	t.index.Lock(ctx)
+	defer t.index.Unlock(ctx)
+
+	index, _, item, err := t.item(ctx, root, move.ID)
+	if err != nil {
+		return nil, err
+	}
+	_, _, targetDir, err := t.parent(ctx, root, move.TargetParentID)
+	if err != nil {
+		return nil, err
+	}
+	if !move.IsReorder() {
+		target := filepath.Join(targetDir, move.FileName)
+		if err := moveItem(item.Path, target); err != nil {
+			return nil, err
+		}
+		t.index.RecordMove(ctx, item.Path, target)
+		if err := t.writeOrder(ctx, root, index, move.SourceParentID, move.SourceOrder); err != nil {
+			return nil, err
+		}
+	}
+	if err := t.writeOrder(ctx, root, index, move.TargetParentID, move.TargetOrder); err != nil {
+		return nil, err
+	}
+	refreshed, err := t.index.Refresh(ctx, root)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Debug(ctx, "Finished", map[string]any{"root": root, "move": move, "items": refreshed.Size()})
+	return &refreshed.Tree, nil
+}
+
 func (t *treePersistence) SaveContainer(ctx context.Context, root string, container entity.Collection) (*entity.Collection, error) {
 	logger.Debug(ctx, "Started", map[string]any{"root": root, "id": container.ID})
 	t.index.Lock(ctx)

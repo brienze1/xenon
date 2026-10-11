@@ -8,6 +8,7 @@ type TreePersistence interface {
 	usecase.CreateTreeItem
 	usecase.RenameTreeItem
 	usecase.DuplicateTreeItem
+	usecase.MoveTreeItem
 	usecase.SaveTreeItem
 	usecase.DeleteTreeItem
 	usecase.InspectFileChange

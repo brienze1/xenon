@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"os"
+	"slices"
 	"sync"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
@@ -15,6 +16,7 @@ import (
 type workspaceIndexCache struct {
 	roots    map[string]*entity.TreeIndex
 	writes   map[string]entity.RecordedWrite
+	moves    []entity.RecordedMove
 	mu       sync.Mutex
 	writesMu sync.Mutex
 }
@@ -59,6 +61,27 @@ func (w *workspaceIndexCache) RecordWrite(ctx context.Context, path string, data
 	w.writesMu.Unlock()
 
 	logger.Debug(ctx, "Finished", map[string]any{"path": path})
+}
+
+func (w *workspaceIndexCache) IsOwnMove(ctx context.Context, path string) bool {
+	logger.Debug(ctx, "Started", map[string]any{"path": path})
+
+	w.writesMu.Lock()
+	ownMove := slices.ContainsFunc(w.moves, func(move entity.RecordedMove) bool { return move.Covers(path) })
+	w.writesMu.Unlock()
+
+	logger.Debug(ctx, "Finished", map[string]any{"path": path, "ownMove": ownMove})
+	return ownMove
+}
+
+func (w *workspaceIndexCache) RecordMove(ctx context.Context, source, target string) {
+	logger.Debug(ctx, "Started", map[string]any{"source": source, "target": target})
+
+	w.writesMu.Lock()
+	w.moves = append(slices.DeleteFunc(w.moves, func(move entity.RecordedMove) bool { return !move.IsRecent() }), entity.NewRecordedMove(source, target))
+	w.writesMu.Unlock()
+
+	logger.Debug(ctx, "Finished", map[string]any{"source": source, "target": target})
 }
 
 func (w *workspaceIndexCache) Cached(ctx context.Context, root string) (*entity.TreeIndex, bool) {

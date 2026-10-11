@@ -78,6 +78,10 @@ func (t TreeNode) IsContainer() bool {
 	return t.Kind == itemkind.Collection || t.Kind == itemkind.Folder
 }
 
+func (t TreeNode) IsCollection() bool {
+	return t.Kind == itemkind.Collection
+}
+
 func (t TreeNode) IsRequest() bool {
 	return t.Kind == itemkind.Request
 }
@@ -221,4 +225,38 @@ func NamedTreeNode(nodes []TreeNode, name string) (TreeNode, bool) {
 		}
 	}
 	return TreeNode{}, false
+}
+
+func (t TreeNode) Contains(id string) bool {
+	if t.ID == id {
+		return true
+	}
+	for _, child := range t.Children {
+		if child.IsItem() && child.Contains(id) {
+			return true
+		}
+	}
+	return false
+}
+
+func (t TreeNode) HoldsEntry(fileName string) bool {
+	for _, entry := range t.Entries {
+		if strings.EqualFold(entry, fileName) {
+			return true
+		}
+	}
+	return false
+}
+
+func (t TreeNode) OrderInserting(fileName string, index int) []string {
+	return insertAt(t.ChildOrder(), fileName, index)
+}
+
+func (t TreeNode) OrderMoving(fileName string, index int) []string {
+	return insertAt(t.OrderRemoving(fileName), fileName, index)
+}
+
+func insertAt(order []string, fileName string, index int) []string {
+	index = min(max(index, 0), len(order))
+	return slices.Insert(order, index, fileName)
 }

@@ -16,7 +16,7 @@ func (t *treePersistence) Inspect(ctx context.Context, root, path string) (*enti
 	t.index.Lock(ctx)
 	defer t.index.Unlock(ctx)
 
-	if data, err := os.ReadFile(path); err == nil && t.index.IsOwnWrite(ctx, path, data) {
+	if t.isOwnChange(ctx, path) {
 		logger.Debug(ctx, "Finished", map[string]any{"root": root, "path": path, "ownWrite": true})
 		return &entity.FileChange{OwnWrite: true}, nil
 	}
@@ -34,6 +34,14 @@ func (t *treePersistence) Inspect(ctx context.Context, root, path string) (*enti
 
 	logger.Debug(ctx, "Finished", map[string]any{"root": root, "path": path, "requests": len(change.Requests), "variableScopes": len(change.VariableScopes)})
 	return &change, nil
+}
+
+func (t *treePersistence) isOwnChange(ctx context.Context, path string) bool {
+	if t.index.IsOwnMove(ctx, path) {
+		return true
+	}
+	data, err := os.ReadFile(path)
+	return err == nil && t.index.IsOwnWrite(ctx, path, data)
 }
 
 func (t *treePersistence) requestsAt(ctx context.Context, root, path string) []string {

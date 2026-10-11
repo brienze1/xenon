@@ -18,6 +18,7 @@ type manageTreeItem struct {
 	renameTreeItem        usecase.RenameTreeItem
 	duplicateTreeItem     usecase.DuplicateTreeItem
 	deleteTreeItem        usecase.DeleteTreeItem
+	moveTreeItem          usecase.MoveTreeItem
 }
 
 func NewManageTreeItemService(
@@ -27,6 +28,7 @@ func NewManageTreeItemService(
 	renameTreeItem usecase.RenameTreeItem,
 	duplicateTreeItem usecase.DuplicateTreeItem,
 	deleteTreeItem usecase.DeleteTreeItem,
+	moveTreeItem usecase.MoveTreeItem,
 ) adapter.ManageTreeItemService {
 	return &manageTreeItem{
 		findWorkspaceRegistry: findWorkspaceRegistry,
@@ -35,6 +37,7 @@ func NewManageTreeItemService(
 		renameTreeItem:        renameTreeItem,
 		duplicateTreeItem:     duplicateTreeItem,
 		deleteTreeItem:        deleteTreeItem,
+		moveTreeItem:          moveTreeItem,
 	}
 }
 
@@ -162,6 +165,26 @@ func (m *manageTreeItem) Delete(ctx context.Context, localId, id string) ([]stri
 
 	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "id": id, "result": deleted})
 	return deleted, nil
+}
+
+func (m *manageTreeItem) Move(ctx context.Context, localId, id, parentId string, index int) (*entity.Tree, error) {
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id, "parentId": parentId, "index": index})
+
+	root, tree, err := m.load(ctx, localId)
+	if err != nil {
+		return nil, err
+	}
+	move, err := usecase.ResolveTreeMove(*tree, id, parentId, index)
+	if err != nil {
+		return nil, err
+	}
+	moved, err := m.moveTreeItem.Move(ctx, root, *move)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "id": id, "parentId": parentId, "index": index, "collections": len(moved.Collections())})
+	return moved, nil
 }
 
 func (m *manageTreeItem) load(ctx context.Context, localId string) (string, *entity.Tree, error) {
