@@ -6,9 +6,10 @@ Feature: Generated snippets reproduce the request when run
   A snippet run with its tool (curl through bash, node, go run, python with requests) from the
   workspace folder sends the same method, URL, headers and body as Xenon would (SC-006). CI
   installs the four runtimes on macOS, Windows and Linux; on a machine without one of them the
-  scenarios for that runtime are skipped outside CI. As in Postman's generators, a binary-file
-  body is a "<file contents here>" placeholder in fetch, Go and Python, and fetch reads form-data
-  files from a browser file input, so those combinations are not run.
+  scenarios for that runtime are skipped outside CI, and mutation runs switch the programs off
+  (XENON_SNIPPET_PROGRAMS=off; the golden snippets kill generator mutants). As in Postman's
+  generators, a binary-file body is a "<file contents here>" placeholder in fetch, Go and Python,
+  and fetch reads form-data files from a browser file input, so those combinations are not run.
 
   Background:
     Given the workspace "Acme" exists

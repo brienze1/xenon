@@ -13,7 +13,11 @@ import (
 	"github.com/cucumber/godog"
 )
 
-const programTimeout = 3 * time.Minute
+const (
+	programTimeout = 3 * time.Minute
+	programsSwitch = "XENON_SNIPPET_PROGRAMS"
+	programsOff    = "off"
+)
 
 var errRuntimeMissing = errors.New("runtime not installed")
 
@@ -38,6 +42,9 @@ func (t *testUtils) iRunTheResponseFieldWithInTheWorkspaceFolder(field, name, fo
 	value, err := t.responseField(field)
 	if err != nil {
 		return err
+	}
+	if os.Getenv(programsSwitch) == programsOff {
+		return godog.ErrSkip
 	}
 	tool, err := programTool(name)
 	if errors.Is(err, errRuntimeMissing) && os.Getenv("CI") == "" {

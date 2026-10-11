@@ -181,7 +181,7 @@ mutation-test: ensure-dist
 	fi; \
 	echo "Running mutation tests..."; \
 	set -o pipefail; \
-	gremlins unleash \
+	XENON_SNIPPET_PROGRAMS=off gremlins unleash \
 		--silent=false \
 		--integration=true \
 		--dry-run=false \
