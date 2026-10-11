@@ -300,3 +300,13 @@ func TestWithRedactionsMasksValuesInEveryLine(t *testing.T) {
 		t.Fatalf("a context without redactions must log as is: %s", output)
 	}
 }
+
+func TestNilRedactablePointersAreLoggedAsNull(t *testing.T) {
+	t.Setenv("LOG_LEVEL", "INFO")
+	buffer := capture(t)
+	var missing *secretRequest
+	Info(context.Background(), "Started", map[string]any{"draft": missing})
+	if output := buffer.String(); !strings.Contains(output, `"draft":null`) {
+		t.Errorf("expected a null draft in log: %s", output)
+	}
+}

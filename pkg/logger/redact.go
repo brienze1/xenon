@@ -26,6 +26,9 @@ func redact(metadata []any) []any {
 func redactValue(value any) any {
 	switch typed := value.(type) {
 	case Redactable:
+		if isNilPointer(typed) {
+			return nil
+		}
 		return typed.LogValue()
 	case map[string]any:
 		redacted := make(map[string]any, len(typed))
@@ -36,6 +39,11 @@ func redactValue(value any) any {
 	default:
 		return redactSlice(value)
 	}
+}
+
+func isNilPointer(value any) bool {
+	reflected := reflect.ValueOf(value)
+	return reflected.Kind() == reflect.Pointer && reflected.IsNil()
 }
 
 func redactSlice(value any) any {
