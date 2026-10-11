@@ -331,3 +331,23 @@ func TestXenonExport(t *testing.T) {
 		t.Error("a zip is an archive")
 	}
 }
+
+func TestExportProgressMilestones(t *testing.T) {
+	cases := []struct {
+		progress ExportProgress
+		expected bool
+	}{
+		{ExportProgress{Done: 50, Total: 201}, true},
+		{ExportProgress{Done: 200, Total: 1007}, true},
+		{ExportProgress{Done: 50, Total: 200}, false},
+		{ExportProgress{Done: 0, Total: 1007}, false},
+		{ExportProgress{Done: 51, Total: 1007}, false},
+		{ExportProgress{Done: 1000, Total: 1000}, false},
+		{ExportProgress{Done: 1000, Total: 1001}, true},
+	}
+	for _, c := range cases {
+		if got := c.progress.IsMilestone(); got != c.expected {
+			t.Errorf("%+v: IsMilestone() = %v, expected %v", c.progress, got, c.expected)
+		}
+	}
+}

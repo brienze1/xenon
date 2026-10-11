@@ -8,5 +8,5 @@ import (
 
 type SaveExportFile interface {
 	SaveFile(ctx context.Context, path string, data []byte) error
-	SaveArchive(ctx context.Context, path string, entries []entity.ExportEntry) error
+	SaveArchive(ctx context.Context, path string, entries []entity.ExportEntry, written func(done int)) error
 }

@@ -46,13 +46,13 @@ func (e *exportFilePersistence) SaveFile(ctx context.Context, target string, dat
 	return nil
 }
 
-func (e *exportFilePersistence) SaveArchive(ctx context.Context, target string, entries []entity.ExportEntry) error {
+func (e *exportFilePersistence) SaveArchive(ctx context.Context, target string, entries []entity.ExportEntry, written func(done int)) error {
 	logger.Debug(ctx, "Started", map[string]any{"path": target, "entries": len(entries)})
 
 	modified := time.Now()
 	err := fileutils.WriteStreamAtomic(target, exportedFileMode, func(writer io.Writer) error {
 		archive := zip.NewWriter(writer)
-		for _, entry := range entries {
+		for index, entry := range entries {
 			if err := ctx.Err(); err != nil {
 				_ = archive.Close()
 				return err
@@ -61,6 +61,7 @@ func (e *exportFilePersistence) SaveArchive(ctx context.Context, target string, 
 				_ = archive.Close()
 				return err
 			}
+			written(index + 1)
 		}
 		return archive.Close()
 	})

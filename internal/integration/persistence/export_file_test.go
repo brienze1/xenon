@@ -31,8 +31,12 @@ func TestSaveArchiveStreamsPortableEntries(t *testing.T) {
 		entity.NewExportEntry(`collections\café.json`, []byte("a")),
 		entity.NewExportEntry("globals.json", []byte("b")),
 	}
-	if err := NewExportFilePersistence().SaveArchive(context.Background(), target, entries); err != nil {
+	written := make([]int, 0)
+	if err := NewExportFilePersistence().SaveArchive(context.Background(), target, entries, func(done int) { written = append(written, done) }); err != nil {
 		t.Fatal(err)
+	}
+	if len(written) != 2 || written[0] != 1 || written[1] != 2 {
+		t.Errorf("written = %v", written)
 	}
 	reader, err := zip.OpenReader(target)
 	if err != nil {
@@ -64,7 +68,26 @@ func TestExportWritesLeaveNoFileWhenCancelled(t *testing.T) {
 	folder := t.TempDir()
 	persistence := NewExportFilePersistence()
 	expectCode(t, persistence.SaveFile(ctx, filepath.Join(folder, "out.json"), []byte("{}")), "EXP-05499")
-	expectCode(t, persistence.SaveArchive(ctx, filepath.Join(folder, "out.zip"), []entity.ExportEntry{entity.NewExportEntry("a.json", nil)}), "EXP-05499")
+	expectCode(t, persistence.SaveArchive(ctx, filepath.Join(folder, "out.zip"), []entity.ExportEntry{entity.NewExportEntry("a.json", nil)}, func(int) {}), "EXP-05499")
+	expectOnly(t, folder)
+}
+
+func TestSaveArchiveStopsWhenCancelledPartWay(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	folder := t.TempDir()
+	entries := []entity.ExportEntry{entity.NewExportEntry("a.json", nil), entity.NewExportEntry("b.json", nil), entity.NewExportEntry("c.json", nil)}
+	written := make([]int, 0)
+	err := NewExportFilePersistence().SaveArchive(ctx, filepath.Join(folder, "out.zip"), entries, func(done int) {
+		written = append(written, done)
+		if done == 1 {
+			cancel()
+		}
+	})
+	expectCode(t, err, "EXP-05499")
+	if len(written) != 1 {
+		t.Errorf("written = %v", written)
+	}
 	expectOnly(t, folder)
 }
 
@@ -72,7 +95,7 @@ func TestExportWritesReportFailures(t *testing.T) {
 	missing := filepath.Join(t.TempDir(), "missing")
 	persistence := NewExportFilePersistence()
 	expectCode(t, persistence.SaveFile(context.Background(), filepath.Join(missing, "out.json"), []byte("{}")), "EXP-02500")
-	expectCode(t, persistence.SaveArchive(context.Background(), filepath.Join(missing, "out.zip"), nil), "EXP-02500")
+	expectCode(t, persistence.SaveArchive(context.Background(), filepath.Join(missing, "out.zip"), nil, func(int) {}), "EXP-02500")
 }
 
 func expectOnly(t *testing.T, folder string, names ...string) {

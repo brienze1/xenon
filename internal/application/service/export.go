@@ -168,7 +168,9 @@ func (e *export) save(ctx context.Context, request entity.ExportRequest, entries
 	}
 	var err error
 	if request.IsArchive() {
-		err = e.saveExportFile.SaveArchive(ctx, request.TargetPath, entries)
+		err = e.saveExportFile.SaveArchive(ctx, request.TargetPath, entries, func(done int) {
+			e.publishMilestone(ctx, entity.ExportProgress{Done: done, Total: total})
+		})
 	} else {
 		err = e.saveExportFile.SaveFile(ctx, request.TargetPath, entries[0].Data)
 	}
@@ -176,4 +178,13 @@ func (e *export) save(ctx context.Context, request entity.ExportRequest, entries
 		return err
 	}
 	return e.publishExportProgress.Progress(ctx, entity.ExportProgress{Done: total, Total: total})
+}
+
+func (e *export) publishMilestone(ctx context.Context, progress entity.ExportProgress) {
+	if !progress.IsMilestone() {
+		return
+	}
+	if err := e.publishExportProgress.Progress(ctx, progress); err != nil {
+		logger.Error(ctx, err, "The export progress could not be announced", map[string]any{"progress": progress})
+	}
 }
