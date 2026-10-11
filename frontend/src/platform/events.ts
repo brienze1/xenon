@@ -1,4 +1,5 @@
 import { Events } from '@wailsio/runtime'
+import { toConsoleEntriesEvent, type ConsoleEntriesEvent } from './mappers/console'
 import { toVaultStatus, type VaultStatus } from './mappers/vault'
 
 export const WORKSPACE_TREE_CHANGED = 'workspace:tree-changed'
@@ -10,6 +11,7 @@ export const ACTIVE_ENVIRONMENT_REMOVED = 'active_environment_removed'
 export const IMPORT_PROGRESS = 'import:progress'
 export const IMPORT_FILES_DROPPED = 'import:files-dropped'
 export const IMPORT_REQUESTED = 'import:requested'
+export const CONSOLE_ENTRIES = 'console:entries'
 
 export interface WorkspaceTreeChanged {
   localId: string
@@ -93,5 +95,12 @@ export function onImportFilesDropped(callback: (paths: string[]) => void): Unsub
 export function onImportRequested(callback: () => void): Unsubscribe {
   return Events.On(IMPORT_REQUESTED, () => {
     callback()
+  })
+}
+
+/** New console entries, batched by Go at most every 50 ms; `cleared` means the console was emptied first. */
+export function onConsoleEntries(callback: (event: ConsoleEntriesEvent) => void): Unsubscribe {
+  return Events.On(CONSOLE_ENTRIES, (event) => {
+    callback(toConsoleEntriesEvent(event.data))
   })
 }

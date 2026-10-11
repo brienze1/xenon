@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defaultUIState } from '@/platform/mappers/ui-state'
 import type { ImportProgress, RequestChangedOnDisk, VariablesChanged } from '@/platform/events'
+import type { ConsoleEntriesEvent } from '@/platform/mappers/console'
 import type { VaultStatus } from '@/platform/mappers/vault'
 
 const unsubscribe = vi.fn()
@@ -13,9 +14,14 @@ const handlers: {
   importProgress?: (progress: ImportProgress) => void
   importRequested?: () => void
   filesDropped?: (paths: string[]) => void
+  consoleEntries?: (event: ConsoleEntriesEvent) => void
 } = {}
 
 vi.mock('@/platform/events', () => ({
+  onConsoleEntries: vi.fn((callback) => {
+    handlers.consoleEntries = callback
+    return unsubscribe
+  }),
   onWorkspaceFolderMissing: vi.fn((callback) => {
     handlers.folderMissing = callback
     return unsubscribe
@@ -90,6 +96,7 @@ const variables = await import('@/platform/services/variables')
 const environments = await import('@/platform/services/environments')
 const { useEnvironmentsStore } = await import('@/features/environments/store')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
+const { useConsoleStore } = await import('@/features/console/store')
 const { useSidebarStore } = await import('@/features/sidebar/store')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
 const { useTabsStore, PERSIST_DELAY_MS } = await import('@/features/tabs/store')
@@ -112,6 +119,23 @@ async function started() {
   const cleanup = bootstrap()
   await vi.waitFor(() => expect(useWorkspacesStore.getState().status).toBe('ready'))
   return cleanup
+}
+
+const consoleEntry = {
+  id: 'c1',
+  sendId: 's',
+  kind: 'log' as const,
+  level: 'log' as const,
+  summary: 'hi',
+  createdAt: '2026-01-01T00:00:00.000Z',
+  arguments: ['hi'],
+  masked: false,
+  scriptLabel: null,
+  line: null,
+  column: null,
+  request: null,
+  response: null,
+  values: null,
 }
 
 describe('bootstrap', () => {
@@ -158,8 +182,10 @@ describe('bootstrap', () => {
     const cleanup = await started()
     handlers.folderMissing?.({ localId: 'A' })
     expect(useWorkspacesStore.getState().workspaces[0]?.missing).toBe(true)
+    handlers.consoleEntries?.({ entries: [consoleEntry], cleared: false })
+    expect(useConsoleStore.getState().entries.map((entry) => entry.id)).toEqual(['c1'])
     cleanup()
-    expect(unsubscribe).toHaveBeenCalledTimes(8)
+    expect(unsubscribe).toHaveBeenCalledTimes(9)
   })
 
   it('opens the import dialog from the menu and from dropped files only when a workspace is active', async () => {

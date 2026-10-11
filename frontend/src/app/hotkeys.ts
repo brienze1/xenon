@@ -1,4 +1,4 @@
-export type HotkeyAction = 'send' | 'save' | 'saveAs' | 'newTab' | 'closeTab' | 'environmentSwitcher' | 'import'
+export type HotkeyAction = 'send' | 'save' | 'saveAs' | 'newTab' | 'closeTab' | 'environmentSwitcher' | 'import' | 'console'
 
 export interface HotkeyDefinition {
   action: HotkeyAction
@@ -14,6 +14,7 @@ export const HOTKEYS: readonly HotkeyDefinition[] = [
   { action: 'closeTab', combo: 'Mod+W', label: 'Close tab' },
   { action: 'environmentSwitcher', combo: 'Mod+Shift+E', label: 'Switch environment' },
   { action: 'import', combo: 'Mod+O', label: 'Import' },
+  { action: 'console', combo: 'Mod+Alt+C', label: 'Show or hide the console' },
 ]
 
 export const HOTKEY_BY_ACTION: ReadonlyMap<HotkeyAction, HotkeyDefinition> = new Map(

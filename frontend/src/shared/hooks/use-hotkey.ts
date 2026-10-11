@@ -35,12 +35,23 @@ function readCombo(combo: string): ParsedCombo {
   }
 }
 
+/** With Alt the key may type another character (Option+C is ç on a Mac), so Alt combos match the physical key. */
+function matchesKey(event: KeyboardEvent, parsed: ParsedCombo): boolean {
+  if (parsed.alt && /^[a-z0-9]$/.test(parsed.key)) {
+    return event.code === (/[a-z]/.test(parsed.key) ? `Key${parsed.key.toUpperCase()}` : `Digit${parsed.key}`)
+  }
+  return event.key.toLowerCase() === parsed.key
+}
+
 export function matchesHotkey(event: KeyboardEvent, combo: string, platform: HotkeyPlatform): boolean {
   const parsed = parseCombo(combo)
   const modPressed = platform === 'mac' ? event.metaKey : event.ctrlKey
   const otherModPressed = platform === 'mac' ? event.ctrlKey : event.metaKey
+  if (event.getModifierState?.('AltGraph')) {
+    return false
+  }
   return (
-    event.key.toLowerCase() === parsed.key &&
+    matchesKey(event, parsed) &&
     modPressed === parsed.mod &&
     !otherModPressed &&
     event.shiftKey === parsed.shift &&

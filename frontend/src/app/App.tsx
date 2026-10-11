@@ -104,6 +104,10 @@ export function App() {
             closeTab: () => useTabsStore.getState().requestClose(),
             environmentSwitcher: () => useEnvironmentsStore.getState().openSwitcher(),
             import: () => useImportStore.getState().open(),
+            console: () => {
+              const workspaces = useWorkspacesStore.getState()
+              workspaces.setLayout({ consoleVisible: !workspaces.layout.consoleVisible })
+            },
           }
         : {},
     [hasActive, send],

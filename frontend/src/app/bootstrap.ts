@@ -1,3 +1,4 @@
+import { useConsoleStore } from '@/features/console/store'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import { useImportStore } from '@/features/import-export/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
@@ -7,6 +8,7 @@ import { useSidebarStore } from '@/features/sidebar/store'
 import { useTabsStore } from '@/features/tabs/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import {
+  onConsoleEntries,
   onImportFilesDropped,
   onImportProgress,
   onImportRequested,
@@ -37,6 +39,7 @@ export function bootstrap(): () => void {
       }
     }),
     onImportProgress((progress) => useImportStore.getState().applyProgress(progress)),
+    onConsoleEntries((event) => useConsoleStore.getState().applyEvent(event)),
     onImportRequested(() => openImport()),
     onImportFilesDropped((paths) => {
       if (openImport()) {
