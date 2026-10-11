@@ -115,3 +115,10 @@ func MergeImportedVariables(existing, imported []VariableRow, resolution enums.C
 	}
 	return merged, kept
 }
+
+func (v VariableRow) WithCurrentAsInitial(current map[string]string) VariableRow {
+	if value := current[v.Key]; !v.Secret && value != "" {
+		v.InitialValue = value
+	}
+	return v
+}

@@ -7,6 +7,10 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums/digestalgorithm"
 	"github.com/brienze1/xenon/internal/domain/enums/digestqop"
 	"github.com/brienze1/xenon/internal/domain/enums/dropposition"
+	"github.com/brienze1/xenon/internal/domain/enums/exportformat"
+	"github.com/brienze1/xenon/internal/domain/enums/exportitemkind"
+	"github.com/brienze1/xenon/internal/domain/enums/exportsecrets"
+	"github.com/brienze1/xenon/internal/domain/enums/exportshape"
 	"github.com/brienze1/xenon/internal/domain/enums/oauth2grant"
 	"github.com/brienze1/xenon/internal/domain/enums/snippetlanguage"
 	"github.com/brienze1/xenon/internal/domain/enums/tokenplacement"
@@ -74,5 +78,36 @@ func TestStageFiveEnumsCompareIgnoringCase(t *testing.T) {
 	}
 	if dropposition.Before.Equals("after") || oauth2grant.Implicit.Equals("implicit2") {
 		t.Error("different values must not be equal")
+	}
+}
+
+func TestExportEnumsParseTheirValues(t *testing.T) {
+	cases := []struct {
+		got  string
+		want string
+	}{
+		{exportformat.GetExportFormat(" Postman ").String(), "postman"},
+		{exportformat.GetExportFormat("xenon_yaml").String(), "xenon_yaml"},
+		{exportformat.GetExportFormat("bruno").String(), "unknown"},
+		{exportshape.GetExportShape("ZIP").String(), "zip"},
+		{exportshape.GetExportShape("bundle").String(), "bundle"},
+		{exportshape.GetExportShape("file").String(), "file"},
+		{exportshape.GetExportShape("tar").String(), "unknown"},
+		{exportitemkind.GetExportItemKind("Workspace").String(), "workspace"},
+		{exportitemkind.GetExportItemKind("collection").String(), "collection"},
+		{exportitemkind.GetExportItemKind("folder").String(), "folder"},
+		{exportitemkind.GetExportItemKind("request").String(), "request"},
+		{exportitemkind.GetExportItemKind("environment").String(), "environment"},
+		{exportitemkind.GetExportItemKind("globals").String(), "globals"},
+		{exportitemkind.GetExportItemKind("example").String(), "unknown"},
+		{exportsecrets.NamesOnly.String(), "names_only"},
+	}
+	for _, c := range cases {
+		if c.got != c.want {
+			t.Errorf("got %q, want %q", c.got, c.want)
+		}
+	}
+	if !exportformat.Postman.Equals("POSTMAN") || !exportshape.Zip.Equals("Zip") || !exportitemkind.Globals.Equals("GLOBALS") || !exportsecrets.Omitted.Equals("OMITTED") {
+		t.Error("export enums compare ignoring case")
 	}
 }

@@ -17,5 +17,6 @@ const (
 	MergedIntoFolder       enums.WarningCode = "merged_into_folder"
 	WrappedInFolder        enums.WarningCode = "wrapped_in_folder"
 	VariableKept           enums.WarningCode = "variable_kept"
+	LiteralCredential      enums.WarningCode = "literal_credential"
 	Unknown                enums.WarningCode = "unknown"
 )

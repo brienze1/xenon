@@ -1,6 +1,9 @@
 package entity
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+)
 
 type TextField struct {
 	Name string
@@ -30,4 +33,17 @@ func keyValueFields(prefix string, rows []KeyValue) []TextField {
 		fields = append(fields, NewTextField(fieldName(prefix, position, "key"), row.Key), NewTextField(fieldName(prefix, position, "value"), row.Value))
 	}
 	return fields
+}
+
+func (t TextField) IsLiteral() bool {
+	return t.Text != "" && len(t.References()) == 0
+}
+
+func (t TextField) HasVaultReference() bool {
+	for _, reference := range t.References() {
+		if strings.HasPrefix(reference.Name, vaultReferencePrefix) {
+			return true
+		}
+	}
+	return false
 }

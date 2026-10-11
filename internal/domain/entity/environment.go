@@ -121,3 +121,7 @@ func NamedEnvironment(environments []Environment, name string) (Environment, boo
 	}
 	return Environment{}, false
 }
+
+func (e Environment) HasColor() bool {
+	return e.Color != envcolor.None && e.Color != ""
+}
