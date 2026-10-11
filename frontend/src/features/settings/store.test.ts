@@ -36,3 +36,20 @@ describe('settings store', () => {
     expect(useSettingsStore.getState()).toMatchObject({ open: false, settings: { scriptTimeoutMs: 30000 } })
   })
 })
+
+describe('git accounts store', () => {
+  it('updates an account identity and reloads, keeping failures', async () => {
+    const gitAccounts = await import('@/platform/services/git-accounts')
+    const { useGitAccountsStore } = await import('./store')
+    const updated = vi.spyOn(gitAccounts, 'updateGitAccount')
+    const listed = vi.spyOn(gitAccounts, 'listGitAccounts').mockResolvedValue([])
+    updated.mockResolvedValueOnce({} as never)
+    await expect(useGitAccountsStore.getState().update('a1', 'Work', 'Luis', 'l@x.test')).resolves.toBeNull()
+    expect(updated).toHaveBeenCalledWith('a1', 'Work', 'Luis', 'l@x.test')
+    expect(listed).toHaveBeenCalledTimes(1)
+    updated.mockRejectedValueOnce(new Error('boom'))
+    await expect(useGitAccountsStore.getState().update('a1', '', '', '')).resolves.toMatchObject({ description: 'boom' })
+    expect(listed).toHaveBeenCalledTimes(1)
+    vi.restoreAllMocks()
+  })
+})

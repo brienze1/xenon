@@ -4,8 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
 
 vi.mock('@/platform/services/settings', () => ({ SCRIPT_TIMEOUT_OUT_OF_RANGE: 'SCR-01400', getSettings: vi.fn(), saveSettings: vi.fn() }))
+vi.mock('@/platform/services/git-accounts', () => ({ GITHUB_SIGN_IN_NOT_CONFIGURED: 'ACC-01503', listGitAccounts: vi.fn(async () => []) }))
 
 const service = await import('@/platform/services/settings')
+const gitAccounts = await import('@/platform/services/git-accounts')
 const { useSettingsStore } = await import('@/features/settings/store')
 const { SettingsDialog } = await import('./SettingsDialog')
 const { SettingsButton } = await import('./SettingsButton')
@@ -23,6 +25,7 @@ describe('SettingsDialog', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     vi.mocked(service.getSettings).mockResolvedValue({ scriptTimeoutMs: 10000 })
+    vi.mocked(gitAccounts.listGitAccounts).mockResolvedValue([])
   })
 
   afterEach(() => {

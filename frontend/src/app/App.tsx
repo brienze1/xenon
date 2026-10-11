@@ -16,6 +16,7 @@ import { useSearchStore } from '@/features/search/store'
 import { SidePanel } from '@/features/side-panel/components/SidePanel'
 import { useExamplesStore } from '@/features/examples/store'
 import { SettingsButton } from '@/features/settings/components/SettingsButton'
+import { HostKeyPrompt } from '@/features/settings/components/HostKeyPrompt'
 import { SettingsDialog } from '@/features/settings/components/SettingsDialog'
 import { useSettingsStore } from '@/features/settings/store'
 import { SidebarPanel } from '@/features/sidebar/components/SidebarPanel'
@@ -59,6 +60,8 @@ const IMPORT_DIALOG = <ImportDialog />
 const EXPORT_DIALOG = <ExportDialog />
 
 const SETTINGS_DIALOG = <SettingsDialog shortcuts={HOTKEYS} />
+
+const HOST_KEY_PROMPT = <HostKeyPrompt />
 
 const QUICK_SEARCH = <QuickSearch />
 
@@ -222,6 +225,7 @@ export function App() {
       {active ? CONSOLE : null}
       {PASSPHRASE_DIALOG}
       {SETTINGS_DIALOG}
+      {HOST_KEY_PROMPT}
       {active ? IMPORT_DIALOG : null}
       {active ? EXPORT_DIALOG : null}
       {active ? COOKIES_DIALOG : null}

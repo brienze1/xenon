@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defaultUIState } from '@/platform/mappers/ui-state'
-import type { ExportProgress, ImportProgress, RequestChangedOnDisk, VariablesChanged } from '@/platform/events'
+import type { ExportProgress, HostKeyUnknown, ImportProgress, RequestChangedOnDisk, VariablesChanged } from '@/platform/events'
 import type { ConsoleEntriesEvent } from '@/platform/mappers/console'
 import type { VaultStatus } from '@/platform/mappers/vault'
 
@@ -18,6 +18,7 @@ const handlers: {
   cookiesChanged?: (localId: string) => void
   exportProgress?: (progress: ExportProgress) => void
   exportRequested?: () => void
+  hostKeyUnknown?: (prompt: HostKeyUnknown) => void
 } = {}
 
 vi.mock('@/platform/events', () => ({
@@ -27,6 +28,10 @@ vi.mock('@/platform/events', () => ({
   }),
   onCookiesChanged: vi.fn((callback) => {
     handlers.cookiesChanged = callback
+    return unsubscribe
+  }),
+  onGitHostKeyUnknown: vi.fn((callback) => {
+    handlers.hostKeyUnknown = callback
     return unsubscribe
   }),
   onWorkspaceFolderMissing: vi.fn((callback) => {
@@ -119,6 +124,7 @@ const { useEnvironmentsStore } = await import('@/features/environments/store')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
 const { useConsoleStore } = await import('@/features/console/store')
 const { useCookiesStore } = await import('@/features/cookies/store')
+const { useGitAccountsStore } = await import('@/features/settings/store')
 const { useSidebarStore } = await import('@/features/sidebar/store')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
 const { useTabsStore, PERSIST_DELAY_MS } = await import('@/features/tabs/store')
@@ -211,8 +217,12 @@ describe('bootstrap', () => {
     const jarChanged = vi.spyOn(useCookiesStore.getState(), 'jarChanged')
     handlers.cookiesChanged?.('A')
     expect(jarChanged).toHaveBeenCalledWith('A')
+    const prompt = { repository: 'ssh://git@h/r.git', host: 'h', fingerprint: 'SHA256:x', keyType: 'ssh-ed25519' }
+    handlers.hostKeyUnknown?.(prompt)
+    expect(useGitAccountsStore.getState().hostKeyPrompt).toEqual(prompt)
+    useGitAccountsStore.setState({ hostKeyPrompt: null })
     cleanup()
-    expect(unsubscribe).toHaveBeenCalledTimes(12)
+    expect(unsubscribe).toHaveBeenCalledTimes(13)
   })
 
   it('opens the import dialog from the menu and from dropped files only when a workspace is active', async () => {

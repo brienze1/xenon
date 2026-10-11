@@ -4,6 +4,7 @@ import { useEnvironmentsStore } from '@/features/environments/store'
 import { useExportStore } from '@/features/export/store'
 import { useImportStore } from '@/features/import-export/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
+import { useGitAccountsStore } from '@/features/settings/store'
 import type { ResponseEntry } from '@/features/response-viewer/model'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
@@ -12,6 +13,7 @@ import { useWorkspacesStore } from '@/features/workspaces/store'
 import {
   onConsoleEntries,
   onCookiesChanged,
+  onGitHostKeyUnknown,
   onExportProgress,
   onExportRequested,
   onImportFilesDropped,
@@ -46,6 +48,7 @@ export function bootstrap(): () => void {
     onImportProgress((progress) => useImportStore.getState().applyProgress(progress)),
     onConsoleEntries((event) => useConsoleStore.getState().applyEvent(event)),
     onCookiesChanged((localId) => useCookiesStore.getState().jarChanged(localId)),
+    onGitHostKeyUnknown((prompt) => useGitAccountsStore.getState().promptHostKey(prompt)),
     onImportRequested(() => openImport()),
     onExportProgress((progress) => useExportStore.getState().applyProgress(progress)),
     onExportRequested(() => void useExportStore.getState().openWorkspace()),

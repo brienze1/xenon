@@ -26,6 +26,13 @@ describe('platform events', () => {
     expect(callback).toHaveBeenCalledWith({ localId: 'L1' })
   })
 
+  it('maps git:host-key-unknown payloads', () => {
+    const callback = vi.fn()
+    expect(events.onGitHostKeyUnknown(callback)).toBe(unsubscribe)
+    handlers.get(events.GIT_HOST_KEY_UNKNOWN)?.({ data: { repository: 'ssh://git@h/r.git', host: 'h', fingerprint: 'SHA256:x', key_type: 'ssh-ed25519' } })
+    expect(callback).toHaveBeenCalledWith({ repository: 'ssh://git@h/r.git', host: 'h', fingerprint: 'SHA256:x', keyType: 'ssh-ed25519' })
+  })
+
   it('maps request:changed-on-disk payloads', () => {
     const callback = vi.fn()
     events.onRequestChangedOnDisk(callback)

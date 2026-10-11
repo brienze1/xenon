@@ -15,6 +15,7 @@ export const EXPORT_PROGRESS = 'export:progress'
 export const EXPORT_REQUESTED = 'export:requested'
 export const CONSOLE_ENTRIES = 'console:entries'
 export const COOKIES_CHANGED = 'cookies:changed'
+export const GIT_HOST_KEY_UNKNOWN = 'git:host-key-unknown'
 
 export interface WorkspaceTreeChanged {
   localId: string
@@ -49,7 +50,20 @@ export interface ExportProgress {
   total: number
 }
 
+export interface HostKeyUnknown {
+  repository: string
+  host: string
+  fingerprint: string
+  keyType: string
+}
+
 type Unsubscribe = () => void
+
+export function onGitHostKeyUnknown(callback: (event: HostKeyUnknown) => void): Unsubscribe {
+  return Events.On(GIT_HOST_KEY_UNKNOWN, (event) => {
+    callback({ repository: event.data.repository, host: event.data.host, fingerprint: event.data.fingerprint, keyType: event.data.key_type })
+  })
+}
 
 export function onWorkspaceTreeChanged(callback: (event: WorkspaceTreeChanged) => void): Unsubscribe {
   return Events.On(WORKSPACE_TREE_CHANGED, (event) => {

@@ -7,6 +7,7 @@ import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
 import type { ShortcutEntry } from '@/features/settings/model'
 import { useSettingsStore } from '@/features/settings/store'
+import { GitAccounts } from './GitAccounts'
 import { ShortcutsList } from './ShortcutsList'
 import styles from './SettingsDialog.module.css'
 
@@ -113,6 +114,7 @@ function SettingsForm({ onCancel, shortcuts }: SettingsFormProps) {
             How long one pre-request or post-response script may run, including waiting for its timers and requests.
           </p>
         </fieldset>
+        <GitAccounts />
         {shortcuts.length > 0 ? <ShortcutsList shortcuts={shortcuts} /> : null}
         {loadError || saveError ? (
           <Banner.Root tone="error" className={styles.error}>
