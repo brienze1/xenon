@@ -42,16 +42,16 @@ US1 Postman export · US2 Xenon YAML export · US3 Xenon YAML import · US4 dial
 
 ## Phase 4: User Story 2 — Xenon YAML export (P1)
 
-- [ ] T013 [P] [US2] BDD `test/integration/features/export/xenon_yaml_levels.feature`: workspace zip (excludes `.xenon/`, staging, temp files; no current values/tokens/cookies), collection/folder zip with manifest, bundle format (children order, nested folders), request/environment files
-- [ ] T014 [P] [US2] BDD `test/integration/features/export/xenon_secrets.feature` and `current_values.feature`: include secrets → armored age block (single files) or `xenon-secrets.age` (zips), passphrase rules `EXP-01400`, without option → no secret bytes; current values written as initial only in the export, workspace unchanged
-- [ ] T015 [US2] Run → **red**; implement `webservice/xenonyaml/writer.go`, `secrets.go` (age scrypt, logN from properties) → **green**
+- [x] T013 [P] [US2] BDD `test/integration/features/export/xenon_yaml_levels.feature`: workspace zip (excludes `.xenon/`, staging, temp files; no current values/tokens/cookies), collection/folder zip with manifest, bundle format (children order, nested folders), request/environment files
+- [x] T014 [P] [US2] BDD `test/integration/features/export/xenon_secrets.feature` and `current_values.feature`: include secrets → armored age block (single files) or `xenon-secrets.age` (zips), passphrase rules `EXP-01400`, without option → no secret bytes; current values written as initial only in the export, workspace unchanged
+- [x] T015 [US2] Run → **red**; implement `webservice/xenonyaml/writer.go`, `secrets.go` (age scrypt, logN from properties) → **green**
 
 ---
 
 ## Phase 5: User Story 3 — Xenon YAML import (P1)
 
-- [ ] T016 [P] [US3] BDD `test/integration/features/import/xenon_yaml_import.feature`: each kind detected; collection/folder/request/environment imported with new ids and clash handling; workspace zip/folder → new workspace in an empty target folder (ids kept); encrypted secrets with right passphrase → vault, wrong → `IMP-08401`, skip → missing; newer format version refused; Xenon YAML → import → export byte-identical (FR-015, SC-003)
-- [ ] T017 [US3] Run → **red**; implement `webservice/xenonyaml/reader.go` + secrets decryption + id remapping, ImportService passphrase/target-folder handling → **green**
+- [x] T016 [P] [US3] BDD `test/integration/features/import/xenon_yaml_import.feature`: each kind detected; collection/folder/request/environment imported with new ids and clash handling; workspace zip/folder → new workspace in an empty target folder (ids kept); encrypted secrets with right passphrase → vault, wrong → `IMP-08401`, skip → missing; newer format version refused; Xenon YAML → import → export byte-identical (FR-015, SC-003)
+- [x] T017 [US3] Run → **red**; implement `webservice/xenonyaml/reader.go` + secrets decryption + id remapping, ImportService passphrase/target-folder handling → **green**
 
 ---
 
@@ -122,3 +122,42 @@ US4 → Polish.
 - Mutation: `gremlins --diff` in unit mode over the XEN-006 code (BDD-only service/infra/entrypoint/
   publisher files excluded) kills 201/201 covered mutants. Locally the integration mode killed every
   mutant within seconds, including a deliberately equivalent one, so it was not used as a signal.
+
+## Implementation notes (T013–T017)
+
+- Placement deviation (plan: `webservice/xenonyaml/{writer,reader,secrets}.go`): Xenon YAML is the
+  workspace's own on-disk format, owned by `persistence/model`, so the writer, reader and secrets
+  codec live in `persistence/xenon_export.go` + `persistence/xenon_import.go` (adapter
+  `XenonExportPersistence`: `WriteXenonExport`, `EncryptExportSecrets`, `ReadXenonExport`,
+  `DecryptExportSecrets`) instead of duplicating every model in a webservice DTO package.
+  `pkg/agecrypt` gained `EncryptArmoredWithPassphrase` / `DecryptArmoredWithPassphrase`.
+- T013/T015 export: files are exported byte for byte from disk; only variable files whose rows
+  change with "current values as initial" are re-encoded (`variables:` patched, rest kept).
+  Every zip (workspace too) has `xenon-export.yaml` at its root next to one folder named after the
+  workspace/collection/folder directory; `xenon-secrets.age` sits beside the manifest. Left out of
+  zips: `.xenon/`, `.xenon-import-*/`, `*.xenon-tmp` and also `.git/` (local repository metadata).
+  A request export never carries collection secrets (its file has none); a folder export carries
+  no collection scope either (collection.yaml is not in it). Summary `secrets`: `included` only
+  when at least one value was encrypted, else `omitted`. The bundle is named after the item and
+  always has a `secrets:` key (`null` without secrets).
+- T016/T017 import: `Detect` reads a `xenon/kind/root` header from YAML files, from the manifest
+  of a zip or from a top-level `workspace.yaml`; kinds `xenon_workspace_zip`,
+  `xenon_workspace_folder`, `xenon_zip`, `xenon_bundle`, `xenon_request`, `xenon_environment`;
+  preview `encrypted_secrets`. Newer format → `IMP-42422`. A missing passphrase is `IMP-50401`
+  (distinct from the contract's wrong-passphrase `IMP-08401`) so the UI can tell "ask" from "retry";
+  `skip_secrets: true` imports them as missing. Decryption happens before anything is written.
+  New ids for every item, example and environment; the export id is kept on the item to find its
+  secrets (environment → XEN-003 vault path; collection → its new id when imported at the top
+  level; into a parent the values are not kept). A folder export imported into a parent stays a
+  folder (no Postman-style merge/wrap); at the top level it becomes a collection.
+  Workspace imports take `items[].target_folder` (then `target_local_id` is not required): the
+  folder must be empty or new (`WKS-01409`, inside another workspace `WKS-02409`, none
+  `IMP-43400`); files are copied into a staging sibling then renamed, registered with ids kept,
+  and secrets written to the new workspace's vault. Byte identity (FR-015/SC-003) is asserted as
+  export → import → export → import → export with the last two exports equal apart from ULIDs,
+  since a hand-written first file need not be in Xenon's canonical encoding.
+- The detection refusal now reads "is not a Xenon, Postman, Bruno or cURL export".
+- Frontend: only the import mapper changed (new plan/preview fields from the regenerated
+  bindings); the passphrase / target-folder UI is T020.
+- Mutation: gremlins unit mode over the T013–T017 diff (BDD-only service/infra/entrypoint/
+  publisher files excluded) kills 180/180 covered mutants.
