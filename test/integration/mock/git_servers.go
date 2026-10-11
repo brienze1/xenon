@@ -28,6 +28,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/format/pktline"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
+	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/server"
 	"github.com/go-git/go-git/v5/storage/filesystem"
@@ -302,9 +303,17 @@ func (g *GitServers) remotePath(name string) string {
 }
 
 func (g *GitServers) transport() transport.Transport {
+	return server.NewServer(g)
+}
+
+func (g *GitServers) Load(endpoint *transport.Endpoint) (storer.Storer, error) {
 	g.mu.Lock()
-	defer g.mu.Unlock()
-	return server.NewServer(server.NewFilesystemLoader(osfs.New(g.root)))
+	location := g.remotePath(strings.TrimSuffix(strings.TrimPrefix(endpoint.Path, "/"), gitRepositorySuffix))
+	g.mu.Unlock()
+	if _, err := os.Stat(filepath.Join(location, "config")); err != nil {
+		return nil, transport.ErrRepositoryNotFound
+	}
+	return filesystem.NewStorage(osfs.New(location), cache.NewObjectLRUDefault()), nil
 }
 
 func (g *GitServers) serveHttp(w http.ResponseWriter, r *http.Request) {
