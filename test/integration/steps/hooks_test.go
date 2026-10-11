@@ -7,6 +7,7 @@ import (
 
 	"github.com/brienze1/xenon/internal/infra/dependency/binding"
 	"github.com/brienze1/xenon/internal/infra/dependency/consumer"
+	"github.com/brienze1/xenon/test/integration/mock"
 )
 
 const scryptLogN = "10"
@@ -26,6 +27,11 @@ func (t *testUtils) before() error {
 	t.browser.Reset()
 	t.digest.Reset()
 	t.fileManager.Reset()
+	t.sshAgent.Reset()
+	t.sshKeys = map[string]*mock.SshKey{}
+	if err := t.git.Reset(); err != nil {
+		return err
+	}
 	t.restarts = 0
 	t.environment = map[string]string{}
 	t.readOnly = nil

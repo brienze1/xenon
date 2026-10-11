@@ -41,6 +41,9 @@ type testUtils struct {
 	browser       *mock.BrowserOpener
 	digest        *mock.DigestServer
 	fileManager   *mock.FileManager
+	git           *mock.GitServers
+	sshAgent      *mock.SshAgent
+	sshKeys       map[string]*mock.SshKey
 	busyPorts     []net.Listener
 	vars          map[string]string
 	environment   map[string]string
@@ -99,6 +102,8 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 			browser:     mock.NewBrowserOpener(),
 			digest:      mock.NewDigestServer(),
 			fileManager: mock.NewFileManager(),
+			git:         mock.NewGitServers(),
+			sshAgent:    mock.NewSshAgent(),
 		}
 		if os.Getenv("LOG_LEVEL") == "" {
 			_ = os.Setenv("LOG_LEVEL", "off")
@@ -113,6 +118,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		external.SetRandomSource(suite.random)
 		external.SetBrowser(suite.browser)
 		external.SetFileManager(suite.fileManager)
+		external.SetSshAgent(suite.sshAgent)
 		external.SetHttpClientFactory(httpClient.HttpClientFactory(logger.LoggerWrapper()))
 		logger.SetOutput(suite.logs)
 	})
@@ -167,4 +173,6 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	test.registerThenOAuthSteps(ctx)
 	test.registerGivenDigestSteps(ctx)
 	test.registerThenDigestSteps(ctx)
+	test.registerGivenGitSteps(ctx)
+	test.registerThenGitSteps(ctx)
 }

@@ -83,3 +83,22 @@ func TestOAuthCallbackTimeoutDefaultAndOverride(t *testing.T) {
 		t.Fatalf("CallbackTimeout = %s, want 250ms", got)
 	}
 }
+
+func TestGitPropertiesDefaultAndOverride(t *testing.T) {
+	t.Setenv("XENON_GITHUB_CLIENT_ID", "")
+	t.Setenv("XENON_GITHUB_API_URL", "")
+	t.Setenv("XENON_GITHUB_LOGIN_URL", "")
+	t.Setenv("SSH_AUTH_SOCK", "")
+	defaults := Properties().Git
+	if defaults.GitHubClientID != gitHubClientID || defaults.GitHubApiURL != defaultGitHubApiURL || defaults.GitHubLoginURL != defaultGitHubLoginURL || defaults.SshAuthSock != "" {
+		t.Fatalf("unexpected defaults %+v", defaults)
+	}
+	t.Setenv("XENON_GITHUB_CLIENT_ID", "Iv1.test")
+	t.Setenv("XENON_GITHUB_API_URL", "http://127.0.0.1:1/api")
+	t.Setenv("XENON_GITHUB_LOGIN_URL", "http://127.0.0.1:1")
+	t.Setenv("SSH_AUTH_SOCK", "/tmp/agent.sock")
+	overridden := Properties().Git
+	if overridden.GitHubClientID != "Iv1.test" || overridden.GitHubApiURL != "http://127.0.0.1:1/api" || overridden.GitHubLoginURL != "http://127.0.0.1:1" || overridden.SshAuthSock != "/tmp/agent.sock" {
+		t.Fatalf("unexpected overrides %+v", overridden)
+	}
+}
