@@ -14,7 +14,7 @@ Event `export:progress { done, total }`.
 
 ## `ImportService` additions (XEN-003)
 - `Detect` recognises Xenon kinds; preview includes `encrypted_secrets`.
-- `Import` plan accepts `passphrase`; wrong passphrase → `IMP-08401` (UI offers retry or
-  `skip_secrets: true`).
-- Workspace zip/folder import requires `{ target_folder }` (empty or non-existent) → registered
-  as a new workspace.
+- `Import` plan accepts `passphrase`; wrong passphrase → `IMP-08401`, missing passphrase →
+  `IMP-50401` (UI offers retry or `skip_secrets: true`).
+- Workspace zip/folder import requires `items[].target_folder` (empty or non-existent; then
+  `target_local_id` is not needed) → registered as a new workspace.
