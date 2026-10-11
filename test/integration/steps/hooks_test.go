@@ -25,6 +25,7 @@ func (t *testUtils) before() error {
 	t.oauth.Reset()
 	t.browser.Reset()
 	t.digest.Reset()
+	t.fileManager.Reset()
 	t.restarts = 0
 	t.environment = map[string]string{}
 	t.readOnly = nil
@@ -101,5 +102,6 @@ func (t *testUtils) startApp() {
 		binding.GetOAuthService(),
 		binding.GetCookieService(),
 		binding.GetSnippetService(),
+		binding.GetExportService(),
 	}
 }

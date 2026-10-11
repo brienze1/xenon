@@ -2,6 +2,7 @@ package fileutils
 
 import (
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -138,4 +139,34 @@ func assertNoTemp(t *testing.T, path string) {
 	if _, err := os.Stat(TempPath(path)); !os.IsNotExist(err) {
 		t.Error("temp file was left behind")
 	}
+}
+
+func TestWriteStreamAtomicLeavesNothingWhenTheWriterFails(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "export.zip")
+	failure := errors.New("cancelled")
+	err := WriteStreamAtomic(path, 0o644, func(writer io.Writer) error {
+		if _, err := writer.Write([]byte("partial")); err != nil {
+			return err
+		}
+		return failure
+	})
+	if !errors.Is(err, failure) {
+		t.Fatalf("err = %v", err)
+	}
+	if _, statErr := os.Stat(path); !os.IsNotExist(statErr) {
+		t.Errorf("the target exists: %v", statErr)
+	}
+	assertNoTemp(t, path)
+}
+
+func TestWriteStreamAtomicWritesTheStream(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "export.json")
+	if err := WriteStreamAtomic(path, 0o600, func(writer io.Writer) error {
+		_, err := io.WriteString(writer, "streamed")
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	assertContent(t, path, "streamed")
+	assertNoTemp(t, path)
 }

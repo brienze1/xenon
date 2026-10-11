@@ -40,6 +40,7 @@ type testUtils struct {
 	oauth         *mock.OAuthProvider
 	browser       *mock.BrowserOpener
 	digest        *mock.DigestServer
+	fileManager   *mock.FileManager
 	busyPorts     []net.Listener
 	vars          map[string]string
 	environment   map[string]string
@@ -84,19 +85,20 @@ func TestFeatures(t *testing.T) {
 func InitializeScenario(ctx *godog.ScenarioContext) {
 	suiteOnce.Do(func() {
 		suite = &testUtils{
-			api:       mock.NewApiServer(),
-			time:      mock.NewTime(),
-			events:    mock.NewEventEmitter(),
-			dialog:    mock.NewDialog(),
-			trash:     mock.NewTrash(),
-			watcher:   mock.NewFileWatcher(),
-			keychain:  mock.NewKeychain(),
-			clipboard: mock.NewClipboard(),
-			logs:      mock.NewLogOutput(),
-			random:    mock.NewRandomSource(),
-			oauth:     mock.NewOAuthProvider(),
-			browser:   mock.NewBrowserOpener(),
-			digest:    mock.NewDigestServer(),
+			api:         mock.NewApiServer(),
+			time:        mock.NewTime(),
+			events:      mock.NewEventEmitter(),
+			dialog:      mock.NewDialog(),
+			trash:       mock.NewTrash(),
+			watcher:     mock.NewFileWatcher(),
+			keychain:    mock.NewKeychain(),
+			clipboard:   mock.NewClipboard(),
+			logs:        mock.NewLogOutput(),
+			random:      mock.NewRandomSource(),
+			oauth:       mock.NewOAuthProvider(),
+			browser:     mock.NewBrowserOpener(),
+			digest:      mock.NewDigestServer(),
+			fileManager: mock.NewFileManager(),
 		}
 		if os.Getenv("LOG_LEVEL") == "" {
 			_ = os.Setenv("LOG_LEVEL", "off")
@@ -110,6 +112,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		external.SetClipboard(suite.clipboard)
 		external.SetRandomSource(suite.random)
 		external.SetBrowser(suite.browser)
+		external.SetFileManager(suite.fileManager)
 		external.SetHttpClientFactory(httpClient.HttpClientFactory(logger.LoggerWrapper()))
 		logger.SetOutput(suite.logs)
 	})
@@ -140,6 +143,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	test.registerThenResponseSteps(ctx)
 	test.registerThenFileSteps(ctx)
 	test.registerThenExportFileSteps(ctx)
+	test.registerFileManagerSteps(ctx)
 	test.registerThenEventSteps(ctx)
 	test.registerThenApiSteps(ctx)
 	test.registerThenApiBodySteps(ctx)

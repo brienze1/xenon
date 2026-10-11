@@ -1,6 +1,7 @@
 package fileutils
 
 import (
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -18,12 +19,20 @@ var rename = os.Rename
 
 // WriteFileAtomic replaces path with data via a temp file in the same directory; an existing file keeps its permission bits.
 func WriteFileAtomic(path string, data []byte, perm fs.FileMode) error {
+	return WriteStreamAtomic(path, perm, func(writer io.Writer) error {
+		_, err := writer.Write(data)
+		return err
+	})
+}
+
+// WriteStreamAtomic is WriteFileAtomic for content produced by write; when write fails nothing is replaced and the temp file is removed.
+func WriteStreamAtomic(path string, perm fs.FileMode, write func(io.Writer) error) error {
 	mode := perm
 	if info, err := os.Stat(path); err == nil {
 		mode = info.Mode().Perm()
 	}
 	tempPath := TempPath(path)
-	if err := writeTemp(tempPath, data, mode); err != nil {
+	if err := writeTemp(tempPath, mode, write); err != nil {
 		_ = os.Remove(tempPath)
 		return err
 	}
@@ -39,7 +48,7 @@ func TempPath(path string) string {
 	return filepath.Join(filepath.Dir(path), "."+filepath.Base(path)+tempSuffix)
 }
 
-func writeTemp(tempPath string, data []byte, mode fs.FileMode) error {
+func writeTemp(tempPath string, mode fs.FileMode, write func(io.Writer) error) error {
 	file, err := os.OpenFile(tempPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
 	if err != nil {
 		return err
@@ -48,7 +57,7 @@ func writeTemp(tempPath string, data []byte, mode fs.FileMode) error {
 		_ = file.Close()
 		return err
 	}
-	if _, err := file.Write(data); err != nil {
+	if err := write(file); err != nil {
 		_ = file.Close()
 		return err
 	}
