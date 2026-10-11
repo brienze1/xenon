@@ -46,6 +46,7 @@ func EncryptWithPassphrase(plaintext []byte, passphrase string, logN int) ([]byt
 	return encrypt(plaintext, recipient)
 }
 
+// DecryptWithPassphrase refuses scrypt work factors above 2^22.
 func DecryptWithPassphrase(ciphertext []byte, passphrase string) ([]byte, error) {
 	identity, err := age.NewScryptIdentity(passphrase)
 	if err != nil {
@@ -55,6 +56,7 @@ func DecryptWithPassphrase(ciphertext []byte, passphrase string) ([]byte, error)
 	return decrypt(bytes.NewReader(ciphertext), identity)
 }
 
+// DecryptArmoredWithPassphrase is DecryptWithPassphrase for ASCII-armored input.
 func DecryptArmoredWithPassphrase(armored []byte, passphrase string) ([]byte, error) {
 	identity, err := age.NewScryptIdentity(passphrase)
 	if err != nil {
