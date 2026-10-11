@@ -5,16 +5,16 @@ import (
 	"encoding/json"
 )
 
-type Object struct {
+type object struct {
 	values map[string]any
 	keys   []string
 }
 
-func newObject() *Object {
-	return &Object{values: map[string]any{}}
+func newObject() *object {
+	return &object{values: map[string]any{}}
 }
 
-func (o *Object) set(key string, value any) *Object {
+func (o *object) set(key string, value any) *object {
 	if _, found := o.values[key]; !found {
 		o.keys = append(o.keys, key)
 	}
@@ -22,18 +22,18 @@ func (o *Object) set(key string, value any) *Object {
 	return o
 }
 
-func (o *Object) setIf(condition bool, key string, value any) *Object {
+func (o *object) setIf(condition bool, key string, value any) *object {
 	if condition {
 		o.set(key, value)
 	}
 	return o
 }
 
-func (o *Object) setPresent(key string, value any) *Object {
+func (o *object) setPresent(key string, value any) *object {
 	return o.setIf(value != nil, key, value)
 }
 
-func (o *Object) merged(passthrough map[string]any) *Object {
+func (o *object) merged(passthrough map[string]any) *object {
 	for _, key := range sortedKeys(passthrough) {
 		value := passthrough[key]
 		existing, found := o.values[key]
@@ -41,14 +41,14 @@ func (o *Object) merged(passthrough map[string]any) *Object {
 			o.set(key, value)
 			continue
 		}
-		if nested, isObject := existing.(*Object); isObject {
+		if nested, isObject := existing.(*object); isObject {
 			nested.merged(asMap(value))
 		}
 	}
 	return o
 }
 
-func (o *Object) MarshalJSON() ([]byte, error) {
+func (o *object) MarshalJSON() ([]byte, error) {
 	var buffer bytes.Buffer
 	buffer.WriteByte('{')
 	for index, key := range o.keys {

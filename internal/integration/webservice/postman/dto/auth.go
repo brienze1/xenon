@@ -148,7 +148,7 @@ func (a Auth) MarshalJSON() ([]byte, error) {
 	return auth.set(a.Type, a.Attributes).MarshalJSON()
 }
 
-func newAttribute(key string, value any, types map[string]any) *Object {
+func newAttribute(key string, value any, types map[string]any) *object {
 	attribute := newObject().set("key", key).set("value", value)
 	if attributeType, found := types[key]; found {
 		attribute.set("type", attributeType)

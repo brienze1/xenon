@@ -15,28 +15,28 @@ US1 Postman export · US2 Xenon YAML export · US3 Xenon YAML import · US4 dial
 
 ## Phase 1: Setup
 
-- [ ] T001 [P] Vendor the Postman collection v2.1.0 JSON schema into `test/integration/resources/postman-collection-v2.1.0.schema.json`; add `tools/newman/package.json` (pinned `newman`) and Makefile target `newman` (export corpus → run with Newman against ApiMock started by the BDD harness in a helper mode)
-- [ ] T002 [P] Test helper `test/integration/steps/normalise_postman_test.go` implementing export-formats §4 plus generic steps `the exported Postman file should equal "<fixture>" after normalisation`, `the exported file should validate against the Postman v2.1 schema`, `the export file "<path>" should not contain "<text>"`
+- [x] T001 [P] Vendor the Postman collection v2.1.0 JSON schema into `test/integration/resources/postman-collection-v2.1.0.schema.json`; add `tools/newman/package.json` (pinned `newman`) and Makefile target `newman` (export corpus → run with Newman against ApiMock started by the BDD harness in a helper mode)
+- [x] T002 [P] Test helper `test/integration/steps/normalise_postman_test.go` implementing export-formats §4 plus generic steps `the exported Postman file should equal "<fixture>" after normalisation`, `the exported file should validate against the Postman v2.1 schema`, `the export file "<path>" should not contain "<text>"`
 
 ---
 
 ## Phase 2: Foundational
 
-- [ ] T003 [P] Enums + entities `export_request.go`, `export_summary.go`, enums `export_format`, `export_shape`, `export_item_kind`
-- [ ] T004 `internal/integration/persistence/export_file.go` (temp file beside target, zip streaming with UTF-8/forward-slash names, atomic rename, cleanup on cancel/failure); service skeleton `internal/application/service/export.go` + controllers/bindings (`Options`, `PickTarget`, `Export`, `ShowInFolder`) + event `export:progress`
-- [ ] T005 [P] Pure use cases `effective_export_root.go`, `apply_current_values_as_initial.go`, `find_literal_credentials.go` with table tests
+- [x] T003 [P] Enums + entities `export_request.go`, `export_summary.go`, enums `export_format`, `export_shape`, `export_item_kind`
+- [x] T004 `internal/integration/persistence/export_file.go` (temp file beside target, zip streaming with UTF-8/forward-slash names, atomic rename, cleanup on cancel/failure); service skeleton `internal/application/service/export.go` + controllers/bindings (`Options`, `PickTarget`, `Export`, `ShowInFolder`) + event `export:progress`
+- [x] T005 [P] Pure use cases `effective_export_root.go`, `apply_current_values_as_initial.go`, `find_literal_credentials.go` with table tests
 
 ---
 
 ## Phase 3: User Story 1 — Postman export (P1) 🎯 MVP
 
-- [ ] T006 [P] [US1] BDD `test/integration/features/export/roundtrip_corpus.feature`: every stage-3 Postman fixture: import → export → equal after normalisation (SC-001); exports validate against the v2.1 schema
-- [ ] T007 [P] [US1] BDD `test/integration/features/export/postman_collection.feature` and `postman_folder_request.feature`: Xenon-created collection exports (all request features) valid; folder/request exports carry effective auth, scripts (respecting inherit toggles) and collection variables at the root
-- [ ] T008 [P] [US1] BDD `test/integration/features/export/postman_environment_globals.feature` and `postman_workspace_zip.feature`: secrets `type: secret` + empty value (0 secret bytes in output — SC-004); current-values option; globals JSON; zip layout
-- [ ] T009 [P] [US1] BDD `test/integration/features/export/postman_dropped_fields.feature`: every FR-005 item dropped and listed in the summary; unsupported auth restored (postman) / omitted with note (bruno); disabled scripts → `event.disabled`; disabled body restored; binary example body → empty + note; literal credential warning
-- [ ] T010 [US1] Run T006–T009 → **red**
-- [ ] T011 [US1] `webservice/postman/writer.go` + dto `New{X}` constructors (inverse mapping + passthrough merge per research R1), environment/globals writers, workspace zip; wire into `export.go` → **green**
-- [ ] T012 [US1] CI `make newman`: every Xenon-created corpus collection exported and run with Newman against ApiMock; requests received equal Xenon's sends (SC-002)
+- [x] T006 [P] [US1] BDD `test/integration/features/export/roundtrip_corpus.feature`: every stage-3 Postman fixture: import → export → equal after normalisation (SC-001); exports validate against the v2.1 schema
+- [x] T007 [P] [US1] BDD `test/integration/features/export/postman_collection.feature` and `postman_folder_request.feature`: Xenon-created collection exports (all request features) valid; folder/request exports carry effective auth, scripts (respecting inherit toggles) and collection variables at the root
+- [x] T008 [P] [US1] BDD `test/integration/features/export/postman_environment_globals.feature` and `postman_workspace_zip.feature`: secrets `type: secret` + empty value (0 secret bytes in output — SC-004); current-values option; globals JSON; zip layout
+- [x] T009 [P] [US1] BDD `test/integration/features/export/postman_dropped_fields.feature`: every FR-005 item dropped and listed in the summary; unsupported auth restored (postman) / omitted with note (bruno); disabled scripts → `event.disabled`; disabled body restored; binary example body → empty + note; literal credential warning
+- [x] T010 [US1] Run T006–T009 → **red**
+- [x] T011 [US1] `webservice/postman/writer.go` + dto `New{X}` constructors (inverse mapping + passthrough merge per research R1), environment/globals writers, workspace zip; wire into `export.go` → **green**
+- [x] T012 [US1] CI `make newman`: every Xenon-created corpus collection exported and run with Newman against ApiMock; requests received equal Xenon's sends (SC-002)
 
 ---
 
@@ -79,3 +79,46 @@ T001–T002; T003, T005; [P] BDD files per story; US4 UI alongside US2/US3 backe
 ## Implementation Strategy
 MVP = US1 (free Postman export with fidelity) → US2 + US3 (Xenon YAML out and in, secrets) →
 US4 → Polish.
+
+---
+
+## Implementation notes (T001–T012)
+
+- T001: schema vendored as published (draft-04). `tools/newman` pins newman 6.2.2 (6.2.3 was under two
+  weeks old). `make newman` = `npm ci` in tools/newman + the `@newman` BDD scenario with
+  `XENON_NEWMAN=on`; the harness itself is the "helper mode" (no separate server process).
+- T002: the normaliser lives in `steps/normalise_postman_test.go`; generic steps in
+  `then_export_file_steps_test.go` are path-generic (`the file "<path>" …` under the temp root, zip
+  aware) rather than "the exported Postman file". Schema validation uses
+  `github.com/santhosh-tekuri/jsonschema/v6` v6.0.2 (test-only dependency). Normaliser rules beyond
+  §4, all "defaults written by Postman vs absent": a string `request` is `{method: GET, url}`, methods
+  compared upper-cased, `options.raw.language: text`, auth attributes compared as a key set with
+  their `type` annotations and Postman's attribute defaults (apikey `in: header`, digest `MD5`, oauth2
+  `addTokenTo`/`client_authentication: header`, …) ignored, and literal OAuth `accessToken`/`tokenType`
+  (moved to the vault on import, never exported) left out.
+- T003: also `export_secrets` (summary secrets), `ExportScope`, `ExportNode`, `ExportEntry`,
+  `ExportProgress`, `ExportFormatOption`; `literal_credential` warning code.
+- T004: the service is `service/export.go` + `export_items.go` (loading) + `export_postman.go`
+  (documents); `Options` returns `suggested_file_name` (base) plus one per format; `PickTarget`
+  opens the native save dialog with the name the UI passes. Show in folder goes through a Wails file
+  manager adapter (`app.Env.OpenFileManager`) mocked in BDD. Streaming writes use the new
+  `fileutils.WriteStreamAtomic`. Xenon YAML export answers `EXP-03400` until US2 (T015).
+- T005: ancestor headers (Postman has no collection/folder headers) are copied onto every request
+  of the export and listed as changed; the drop scan is `FindPostmanDrops`.
+- T009/T011 deviations: Bruno-only auth is exported as `noauth` (spec edge case) rather than omitted
+  (contract table), so the request still sends without auth as in Xenon. Collection secret variables
+  are exported as empty `string` variables and listed in the summary, because the official v2.1.0
+  schema has no `secret` collection variable type (environments/globals keep `type: secret`). The
+  full stage-3 fixtures (`full-v2.1.json`, `full-v2.0.json`) use auth types newer than the v2.1.0
+  schema (`jwt`, `asap`), so their round trip is checked for equality only; every other export is
+  also schema-validated. Item ids: the passthrough id, else the Xenon id only for Xenon-created
+  trees (otherwise a Postman item without an id would gain one).
+- T011 fix outside the feature: leftover auth attributes in a typed sub-object (e.g. an OAuth 2.0
+  `accessToken: {{token_var}}` reference) were written to the YAML but not loaded back; the model
+  now loads them into `Auth.Attributes` so they survive into the export (SC-001).
+- T012: CI job `newman` runs on macOS, Windows and Linux. Newman matches Xenon on method, path,
+  query, body (form/JSON aware) and request/auth/script headers for the whole shop corpus; AWS v4
+  is compared by shape. With the url host/path split disabled the scenario fails, so it is sensitive.
+- Mutation: `gremlins --diff` in unit mode over the XEN-006 code (BDD-only service/infra/entrypoint/
+  publisher files excluded) kills 201/201 covered mutants. Locally the integration mode killed every
+  mutant within seconds, including a deliberately equivalent one, so it was not used as a signal.
