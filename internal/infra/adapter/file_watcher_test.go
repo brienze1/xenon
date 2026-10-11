@@ -5,7 +5,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"sync"
 	"testing"
 	"time"
 
@@ -26,8 +25,6 @@ type recordedChange struct {
 
 type changeRecorder struct {
 	changes chan recordedChange
-	mu      sync.Mutex
-	count   int
 }
 
 func newChangeRecorder() *changeRecorder {
@@ -35,16 +32,7 @@ func newChangeRecorder() *changeRecorder {
 }
 
 func (c *changeRecorder) record(path string, removed bool) {
-	c.mu.Lock()
-	c.count++
-	c.mu.Unlock()
 	c.changes <- recordedChange{path: path, removed: removed}
-}
-
-func (c *changeRecorder) total() int {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.count
 }
 
 func (c *changeRecorder) next(t *testing.T) recordedChange {
@@ -107,12 +95,45 @@ func TestWatcherReportsAWrittenFileOnceAfterABurst(t *testing.T) {
 
 func TestWatcherDebouncesForAtLeastTheDebounceWindow(t *testing.T) {
 	root, _, recorder := watchedRoot(t)
+	written := time.Now()
 	write(t, filepath.Join(root, "collections", "billing", "ping.yaml"), "name: ping")
-	time.Sleep(watchDebounce / 2)
-	if recorder.total() != 0 {
-		t.Fatal("a change was reported before the debounce window ended")
-	}
 	recorder.next(t)
+	if elapsed := time.Since(written); elapsed < watchDebounce {
+		t.Fatalf("a change was reported %s after the write, before the %s debounce window ended", elapsed, watchDebounce)
+	}
+}
+
+func TestWatcherDoesNotReportAnUnchangedFileTwice(t *testing.T) {
+	root, watcher, recorder := watchedRoot(t)
+	path := filepath.Join(root, "collections", "billing", "ping.yaml")
+	write(t, path, "name: ping")
+	recorder.next(t)
+	watcher.mu.Lock()
+	current := watcher.watcher
+	watcher.mu.Unlock()
+	watcher.schedule(current, path)
+	recorder.expectNone(t)
+	write(t, path, "name: pong")
+	if change := recorder.next(t); change.path != path || change.removed {
+		t.Fatalf("change = %+v, want %s not removed", change, path)
+	}
+}
+
+func TestWatcherReportsAFileRecreatedWithTheSameContent(t *testing.T) {
+	root, _, recorder := watchedRoot(t)
+	path := filepath.Join(root, "collections", "billing", "ping.yaml")
+	write(t, path, "name: ping")
+	recorder.next(t)
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+	if change := recorder.next(t); !change.removed {
+		t.Fatalf("change = %+v, want %s removed", change, path)
+	}
+	write(t, path, "name: ping")
+	if change := recorder.next(t); change.path != path || change.removed {
+		t.Fatalf("change = %+v, want %s not removed", change, path)
+	}
 }
 
 func TestWatcherReportsRemovals(t *testing.T) {

@@ -2,7 +2,9 @@ package adapter
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -26,13 +28,14 @@ const (
 type fsFileWatcher struct {
 	watcher  *fsnotify.Watcher
 	pending  map[string]*time.Timer
+	reported map[string][sha256.Size]byte
 	onChange func(path string, removed bool)
 	root     string
 	mu       sync.Mutex
 }
 
 func NewFileWatcher() adapter.FileWatcher {
-	return &fsFileWatcher{pending: map[string]*time.Timer{}}
+	return &fsFileWatcher{pending: map[string]*time.Timer{}, reported: map[string][sha256.Size]byte{}}
 }
 
 func (f *fsFileWatcher) Watch(_ context.Context, root string, onChange func(path string, removed bool)) error {
@@ -62,6 +65,7 @@ func (f *fsFileWatcher) Stop() error {
 		timer.Stop()
 		delete(f.pending, path)
 	}
+	clear(f.reported)
 	f.mu.Unlock()
 	if watcher == nil {
 		return nil
@@ -129,7 +133,26 @@ func (f *fsFileWatcher) fire(watcher *fsnotify.Watcher, path string) {
 		return
 	}
 	_, err := os.Lstat(path)
+	if !f.changedSinceReported(watcher, path) {
+		return
+	}
 	onChange(path, errors.Is(err, fs.ErrNotExist))
+}
+
+func (f *fsFileWatcher) changedSinceReported(watcher *fsnotify.Watcher, path string) bool {
+	digest, regular := regularFileDigest(path)
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.watcher != watcher {
+		return false
+	}
+	previous, seen := f.reported[path]
+	if !regular {
+		delete(f.reported, path)
+		return true
+	}
+	f.reported[path] = digest
+	return !seen || previous != digest
 }
 
 func (f *fsFileWatcher) addTree(watcher *fsnotify.Watcher, root string) error {
@@ -145,6 +168,23 @@ func (f *fsFileWatcher) addTree(watcher *fsnotify.Watcher, root string) error {
 		}
 		return watcher.Add(path)
 	})
+}
+
+func regularFileDigest(path string) ([sha256.Size]byte, bool) {
+	info, err := os.Lstat(path)
+	if err != nil || !info.Mode().IsRegular() {
+		return [sha256.Size]byte{}, false
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return [sha256.Size]byte{}, false
+	}
+	defer func() { _ = file.Close() }()
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return [sha256.Size]byte{}, false
+	}
+	return [sha256.Size]byte(hash.Sum(nil)), true
 }
 
 func isStagingPath(path string) bool {
