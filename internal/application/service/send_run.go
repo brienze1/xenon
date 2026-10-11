@@ -104,8 +104,12 @@ func (r sendRun) console(ctx context.Context, execution *entity.SendExecution, s
 			r.service.console.clear(ctx)
 			return
 		}
+		secrets := r.secretsOf(execution)
+		if log.Scopes != nil {
+			secrets = append(secrets, r.scopes.context.WithScriptScopes(*log.Scopes).SecretValues()...)
+		}
 		entry := entity.NewConsoleLogEntry(idutils.NewUlid(), r.sendId, script, log, timeutils.Now())
-		r.service.console.append(ctx, entry.WithSecretsMasked(r.mask(r.secretsOf(execution))))
+		r.service.console.append(ctx, entry.WithSecretsMasked(r.mask(secrets)))
 	}
 }
 

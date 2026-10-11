@@ -193,8 +193,8 @@ US1 execution · US2 tests · US3 pm API & libraries · US4 console · US5 edito
   `search`; `Get` returns the detail (request as sent, response headers/body, logged values);
   bodies over 1 MB (or binary) go to the response store under `console:<id>` and are served by
   the existing `/xenon/response/` route, released when dropped from the 5,000-entry ring or
-  cleared. Masking uses the send's secrets plus those scripts set during the run (masked in the
-  entries after the script that set them, and in nested requests at once). The publisher emits
+  cleared. Masking uses the send's secrets plus those scripts set during the run (masked from
+  the moment they are set, in the same script's logs and nested requests too). The publisher emits
   `console:entries` at most every 50 ms or 100 entries; Clear and `console.clear()` emit
   `{cleared: true}` and drop pending entries. Existing script features now list the console
   with `filter: logs` because request entries sit between the logs.
@@ -212,8 +212,8 @@ US1 execution · US2 tests · US3 pm API & libraries · US4 console · US5 edito
   (Option changes `event.key` on macOS) and AltGr typing never fires a shortcut.
 - T032 passes on the existing implementation (~33 ms for four typical scripts locally); new
   generic steps start a binding call in the background and wait for it.
-- Known limit: a secret set and logged inside the same script is masked from the next entry
-  source on (later scripts, nested requests), not within that script's own logs.
+- Each console call carries the script's variable scopes at that moment, so a value the script
+  just stored in a secret row is masked in its own following logs too.
 
 ---
 

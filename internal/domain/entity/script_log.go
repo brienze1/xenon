@@ -12,6 +12,7 @@ type ScriptLogSink func(log ScriptLog)
 
 // ScriptLog is one console call; Values keeps each argument as a JSON tree with special values tagged by "$type".
 type ScriptLog struct {
+	Scopes    *ScriptScopes
 	Level     enums.ConsoleLevel
 	Arguments []string
 	Values    []any
@@ -19,6 +20,12 @@ type ScriptLog struct {
 
 func NewScriptLog(level enums.ConsoleLevel, arguments []string, values []any) ScriptLog {
 	return ScriptLog{Level: level, Arguments: append([]string{}, arguments...), Values: append([]any{}, values...)}
+}
+
+// WithScopes records the variable scopes as the script had them when it logged.
+func (s ScriptLog) WithScopes(scopes ScriptScopes) ScriptLog {
+	s.Scopes = &scopes
+	return s
 }
 
 func (s ScriptLog) Text() string {

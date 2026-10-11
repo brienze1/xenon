@@ -235,3 +235,12 @@ func TestEditedScripts(t *testing.T) {
 		t.Errorf("edited settings replace the scripts: %+v", edited)
 	}
 }
+
+func TestScriptLogWithScopes(t *testing.T) {
+	log := NewScriptLog(consolelevel.Log, []string{"a"}, nil)
+	scopes := ScriptScopes{Environment: NewScriptScope("dev", []ScriptVariable{NewScriptVariable("k", "v")})}
+	withScopes := log.WithScopes(scopes)
+	if log.Scopes != nil || withScopes.Scopes == nil || withScopes.Scopes.Environment.Name != "dev" || withScopes.Text() != "a" {
+		t.Errorf("log = %+v", withScopes)
+	}
+}

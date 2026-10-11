@@ -337,6 +337,7 @@
 
   return {
     pm,
+    scopes: currentScopes,
     record (assertions) {
       assertions.forEach((assertion) => tests.push(assertion));
     },

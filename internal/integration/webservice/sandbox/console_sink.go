@@ -28,7 +28,7 @@ func (e *execution) log(call goja.FunctionCall) goja.Value {
 	}
 	log := entity.NewScriptLog(consolelevel.GetConsoleLevel(call.Argument(0).String()), texts, normalizedValues(values, e.script.Text))
 	e.logs = append(e.logs, log)
-	e.forward(log)
+	e.forward(e.withScopes(log))
 	return goja.Undefined()
 }
 
@@ -42,6 +42,22 @@ func (e *execution) notice(call goja.FunctionCall) goja.Value {
 	e.notices = append(e.notices, notice)
 	e.forward(notice)
 	return goja.Undefined()
+}
+
+// withScopes adds the variable scopes as the script has them at this call, so values it just made secret are masked.
+func (e *execution) withScopes(log entity.ScriptLog) entity.ScriptLog {
+	if e.pmInternal == nil {
+		return log
+	}
+	current, isFunction := goja.AssertFunction(e.pmInternal.Get("scopes"))
+	if !isFunction {
+		return log
+	}
+	scopes, err := current(e.pmInternal)
+	if err != nil {
+		return log
+	}
+	return log.WithScopes(e.currentScopes(scopes))
 }
 
 func (e *execution) forward(log entity.ScriptLog) {
