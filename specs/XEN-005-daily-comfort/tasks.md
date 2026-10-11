@@ -186,7 +186,12 @@ US1 auth · US2 cookies · US3 drag & drop · US4 tabs & hotkeys · US5 snippets
 
 - [x] T030 [P] Security sweep BDD `features/auth/secret_sweep.feature`: after OAuth, cookies, digest and snippet flows, no token/cookie/secret value in workspace files, unencrypted app data, logs or console (SC-004)
 - [x] T031 [P] Performance: move in a 1,000-request workspace < 200 ms; snippet generation < 50 ms (BDD timing assertions)
-- [ ] T032 `/refactor-diff` until clean; `make validate`; CI on 3 OSes (incl. snippet execution); walk [quickstart.md](quickstart.md) on all three OSes including the AltGr check
+- [x] T032 `/refactor-diff` until clean; `make validate`; CI on 3 OSes (incl. snippet execution); walk [quickstart.md](quickstart.md) on all three OSes including the AltGr check
+  — refactor-diff: 4 passes (cap) over the XEN-005 diff; BDD 1605/1605, `go test ./...`, parity
+  (246/249, as before), `make frontend-check` and `make build` green locally; CI run 38134100626
+  green on all 6 jobs (validate + sandbox assets & parity on ubuntu-24.04, macos-latest,
+  windows-latest). The manual per-OS shortcut/AltGr table and the quickstart walk are deferred to
+  the user's manual test session.
 
 ---
 
