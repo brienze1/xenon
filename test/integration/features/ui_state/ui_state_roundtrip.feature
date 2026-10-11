@@ -275,6 +275,58 @@ Feature: Remember tabs, drafts, sidebar and layout per workspace
       | info      |
       | variables |
 
+    @xen_005 @code_view
+    Examples:
+      | view |
+      | code |
+
+  @xen_005 @closed_tabs
+  Scenario: The closed-tab stack keeps the 20 most recently closed tabs with their drafts
+    When I call "UIStateService.Save" with
+      """
+      {
+        "local_id": "{{Acme.local_id}}",
+        "tabs": [],
+        "closed_tabs": [
+          { "closed_at": "2026-10-11T10:00:00Z", "tab": { "tab_id": "t1", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:01Z", "tab": { "tab_id": "t2", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:02Z", "tab": { "tab_id": "t3", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:03Z", "tab": { "tab_id": "t4", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:04Z", "tab": { "tab_id": "t5", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:05Z", "tab": { "tab_id": "t6", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:06Z", "tab": { "tab_id": "t7", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:07Z", "tab": { "tab_id": "t8", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:08Z", "tab": { "tab_id": "t9", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:09Z", "tab": { "tab_id": "t10", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:10Z", "tab": { "tab_id": "t11", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:11Z", "tab": { "tab_id": "t12", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:12Z", "tab": { "tab_id": "t13", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:13Z", "tab": { "tab_id": "t14", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:14Z", "tab": { "tab_id": "t15", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:15Z", "tab": { "tab_id": "t16", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:16Z", "tab": { "tab_id": "t17", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:17Z", "tab": { "tab_id": "t18", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:18Z", "tab": { "tab_id": "t19", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:19Z", "tab": { "tab_id": "t20", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:20Z", "tab": { "tab_id": "t21", "request_id": "", "pinned": true } },
+          { "closed_at": "2026-10-11T10:00:21Z", "tab": { "tab_id": "t22", "request_id": "01JA2Z5V3B6C7D8E9F0G1H2J3K", "pinned": true, "base_revision": "r1", "draft": { "name": "Edited", "method": "PUT", "url": "https://api.example.test/edited" } } }
+        ]
+      }
+      """
+    Then the call should succeed
+    When I call "UIStateService.Get" with
+      """
+      { "local_id": "{{Acme.local_id}}" }
+      """
+    Then the response should contain the field "closed_tabs" array length equal to 20
+    And the response should contain the field "closed_tabs.0.tab.tab_id" equal to "t3"
+    And the response should contain the field "closed_tabs.19.tab.tab_id" equal to "t22"
+    And the response should contain the field "closed_tabs.19.tab.draft.name" equal to "Edited"
+    And the response should contain the field "closed_tabs.19.tab.draft.method" equal to "PUT"
+    And the response should contain the field "closed_tabs.19.tab.base_revision" equal to "r1"
+    And the app data file "workspaces/{{Acme.local_id}}/state.json" should exist
+    And no file under the workspace folder should contain "api.example.test/edited"
+
   @examples @xen_003
   Scenario: An example tab keeps its kind and example id
     When I call "UIStateService.Save" with
