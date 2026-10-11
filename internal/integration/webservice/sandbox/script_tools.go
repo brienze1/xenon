@@ -18,6 +18,9 @@ import (
 const (
 	referenceFile = "reference/reference.json"
 	snippetsFile  = "reference/snippets.json"
+
+	scriptDataUnreadable = "the script editor data could not be read"
+	scriptDataInvalid    = "the script editor data is not valid"
 )
 
 //go:embed reference/reference.json reference/snippets.json
@@ -46,9 +49,13 @@ func (s *scriptToolsWebservice) Check(ctx context.Context, text string) []entity
 func (s *scriptToolsWebservice) FindReference(ctx context.Context) ([]entity.ScriptMember, error) {
 	logger.Debug(ctx, "Started")
 
+	data, err := fs.ReadFile(s.files, referenceFile)
+	if err != nil {
+		return nil, errs.InternalServerError(err, "SCR-06500", scriptDataUnreadable)
+	}
 	var reference dto.ScriptReference
-	if err := s.read(referenceFile, &reference, "SCR-06500", "SCR-07500"); err != nil {
-		return nil, err
+	if err := json.Unmarshal(data, &reference); err != nil {
+		return nil, errs.InternalServerError(err, "SCR-07500", scriptDataInvalid)
 	}
 	members := reference.ToEntity()
 
@@ -59,9 +66,13 @@ func (s *scriptToolsWebservice) FindReference(ctx context.Context) ([]entity.Scr
 func (s *scriptToolsWebservice) FindSnippets(ctx context.Context) ([]entity.ScriptSnippet, error) {
 	logger.Debug(ctx, "Started")
 
+	data, err := fs.ReadFile(s.files, snippetsFile)
+	if err != nil {
+		return nil, errs.InternalServerError(err, "SCR-08500", scriptDataUnreadable)
+	}
 	var stored []dto.ScriptSnippet
-	if err := s.read(snippetsFile, &stored, "SCR-08500", "SCR-09500"); err != nil {
-		return nil, err
+	if err := json.Unmarshal(data, &stored); err != nil {
+		return nil, errs.InternalServerError(err, "SCR-09500", scriptDataInvalid)
 	}
 	snippets := make([]entity.ScriptSnippet, 0, len(stored))
 	for _, snippet := range stored {
@@ -70,15 +81,4 @@ func (s *scriptToolsWebservice) FindSnippets(ctx context.Context) ([]entity.Scri
 
 	logger.Debug(ctx, "Finished", map[string]any{"snippets": len(snippets)})
 	return snippets, nil
-}
-
-func (s *scriptToolsWebservice) read(name string, target any, readCode, parseCode string) error {
-	data, err := fs.ReadFile(s.files, name)
-	if err != nil {
-		return errs.InternalServerError(err, readCode, "the script editor data could not be read")
-	}
-	if err := json.Unmarshal(data, target); err != nil {
-		return errs.InternalServerError(err, parseCode, "the script editor data is not valid")
-	}
-	return nil
 }

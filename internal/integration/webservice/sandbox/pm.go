@@ -46,7 +46,6 @@ func (e *execution) finishLegacy() {
 	}
 }
 
-// effects reads back what the script left in the shims; a script that never got its pm object leaves the context untouched.
 func (e *execution) effects() entity.ScriptEffects {
 	effects := entity.ScriptEffects{Request: e.scope.Request, Scopes: e.scope.Scopes, Vault: e.scope.Vault, Logs: e.logs, Notices: e.notices, Nested: e.nested, Tests: []entity.TestResult{}}
 	if e.pmInternal == nil {

@@ -8,7 +8,6 @@ const lodash3Module = "lodash3"
 
 var internalModules = map[string]bool{lodash3Module: true, "intl": true, "liquid-json": true, "http-reasons": true, "mime-format": true, "mime": true, "sugar": true, "sugar-methods": true}
 
-// virtualModules are require()-able names postman-sandbox serves without a library of their own.
 var virtualModules = map[string]func(e *execution) goja.Value{
 	"atob":               func(e *execution) goja.Value { return e.vm.Get("atob") },
 	"btoa":               func(e *execution) goja.Value { return e.vm.Get("btoa") },

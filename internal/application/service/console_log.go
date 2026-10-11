@@ -8,7 +8,6 @@ import (
 	"github.com/brienze1/xenon/pkg/logger"
 )
 
-// consoleLog keeps the session console: entries are stored, their large bodies kept for the body route, and the UI told.
 type consoleLog struct {
 	appendConsoleEntries  usecase.AppendConsoleEntries
 	clearConsole          usecase.ClearConsole

@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import type { ConsoleEntry, ConsoleHeader } from '@/platform/mappers/console'
-import { fetchResponseText } from '@/platform/services/response-body'
 import { useConsoleStore } from '@/features/console/store'
 import { Button } from '@/shared/ui/button/Button'
 import { IconButton } from '@/shared/ui/icon-button/IconButton'
@@ -8,7 +7,12 @@ import { Tabs } from '@/shared/ui/tabs/Tabs'
 import { ObjectTree } from './ObjectTree'
 import styles from './ConsoleEntryDetail.module.css'
 
-function Headers({ label, headers }: { label: string; headers: ConsoleHeader[] | null }) {
+interface HeadersProps {
+  label: string
+  headers: ConsoleHeader[] | null
+}
+
+function Headers({ label, headers }: HeadersProps) {
   if (!headers || headers.length === 0) {
     return <p className={styles.muted}>No headers.</p>
   }
@@ -24,7 +28,12 @@ function Headers({ label, headers }: { label: string; headers: ConsoleHeader[] |
   )
 }
 
-function Body({ label, body }: { label: string; body: string | null }) {
+interface BodyProps {
+  label: string
+  body: string | null
+}
+
+function Body({ label, body }: BodyProps) {
   return body ? (
     <pre aria-label={label} className={styles.body}>
       {body}
@@ -34,31 +43,32 @@ function Body({ label, body }: { label: string; body: string | null }) {
   )
 }
 
-function RoutedBody({ url }: { url: string }) {
-  const [state, setState] = useState<{ text: string | null; failure: string | null; loading: boolean }>({ text: null, failure: null, loading: false })
-  async function load() {
-    setState({ text: null, failure: null, loading: true })
-    try {
-      setState({ text: await fetchResponseText(url), failure: null, loading: false })
-    } catch (error) {
-      setState({ text: null, failure: error instanceof Error ? error.message : String(error), loading: false })
-    }
-  }
-  if (state.text !== null) {
-    return <Body label="Response body" body={state.text} />
+interface RoutedBodyProps {
+  url: string
+}
+
+function RoutedBody({ url }: RoutedBodyProps) {
+  const body = useConsoleStore((state) => state.routedBody)
+  const loadBody = useConsoleStore((state) => state.loadBody)
+  if (body.text !== null) {
+    return <Body label="Response body" body={body.text} />
   }
   return (
     <div className={styles.routed}>
       <p className={styles.muted}>The body is over 1 MB or binary, so it is not loaded until you ask.</p>
-      <Button size="sm" disabled={state.loading} onClick={() => void load()}>
-        {state.loading ? 'Loading…' : 'Load Body'}
+      <Button size="sm" disabled={body.loading} onClick={() => void loadBody(url)}>
+        {body.loading ? 'Loading…' : 'Load Body'}
       </Button>
-      {state.failure ? <p role="alert">{state.failure}</p> : null}
+      {body.failure ? <p role="alert">{body.failure.message}</p> : null}
     </div>
   )
 }
 
-function RequestDetail({ entry }: { entry: ConsoleEntry }) {
+interface EntryDetailProps {
+  entry: ConsoleEntry
+}
+
+function RequestDetail({ entry }: EntryDetailProps) {
   const [panel, setPanel] = useState('request')
   const response = entry.response
   return (
@@ -91,7 +101,7 @@ function RequestDetail({ entry }: { entry: ConsoleEntry }) {
   )
 }
 
-function LogDetail({ entry }: { entry: ConsoleEntry }) {
+function LogDetail({ entry }: EntryDetailProps) {
   const values = entry.values ?? entry.arguments
   return (
     <div className={styles.panel}>

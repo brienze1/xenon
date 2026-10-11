@@ -9,7 +9,11 @@ import styles from './ConsoleEntryRow.module.css'
 
 const KIND_LABELS: Record<ConsoleEntry['kind'], string> = { request: 'request', log: 'log', info: 'info', error: 'error', test_failure: 'test' }
 
-function RequestSummary({ entry }: { entry: ConsoleEntry }) {
+interface RequestSummaryProps {
+  entry: ConsoleEntry
+}
+
+function RequestSummary({ entry }: RequestSummaryProps) {
   const request = entry.request
   const response = entry.response
   if (!request) {

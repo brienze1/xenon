@@ -12,7 +12,6 @@ var (
 	forOfSubject    = regexp.MustCompile(`for\s*\(\s*(?:const|let|var)?\s*[^;()]*?\s+of\s+([A-Za-z_$][\w$.]*)\s*\)`)
 )
 
-// v8Message rewrites goja's wording of common TypeErrors into V8's, which Postman scripts and their tests compare against.
 func v8Message(text, script string) string {
 	if notIterable.MatchString(text) {
 		return iterableOf(script) + " is not iterable"

@@ -44,7 +44,6 @@ func (e *execution) notice(call goja.FunctionCall) goja.Value {
 	return goja.Undefined()
 }
 
-// withScopes adds the variable scopes as the script has them at this call, so values it just made secret are masked.
 func (e *execution) withScopes(log entity.ScriptLog) entity.ScriptLog {
 	if e.pmInternal == nil {
 		return log

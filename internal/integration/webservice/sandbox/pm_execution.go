@@ -16,7 +16,6 @@ type runRequestOptions struct {
 	Variables map[string]any `json:"variables"`
 }
 
-// skipRequest ends the script on the spot: the request is not sent and nothing after the call runs (postman-sandbox behaviour).
 func (e *execution) skipRequest(goja.FunctionCall) goja.Value {
 	e.skipped = true
 	e.vm.Interrupt(skipSignal)

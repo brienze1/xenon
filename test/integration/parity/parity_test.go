@@ -151,7 +151,6 @@ type outcome struct {
 	Skipped      bool                      `json:"skipped"`
 }
 
-// fixtureRequests answers pm.sendRequest and pm.execution.runRequest from the case's fixtures, as the oracle does.
 type fixtureRequests struct {
 	sent  []any
 	sends []corpusFixture

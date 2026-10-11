@@ -34,16 +34,16 @@ func TestNewScriptRequestShowsThePostmanShape(t *testing.T) {
 	form := entity.DefaultBody()
 	form.Mode = bodymode.FormData
 	form.FormData = []entity.FormDataRow{entity.NewFormDataRow("f", "v"), {Key: "off", Value: "x"}}
-	if got := newScriptBody(form); !reflect.DeepEqual(got, ScriptBody{Mode: "formdata", FormData: []ScriptKeyValue{{Key: "f", Value: "v"}, {Key: "off", Value: "x", Disabled: true}}}) {
+	if got := NewScriptBody(form); !reflect.DeepEqual(got, ScriptBody{Mode: "formdata", FormData: []ScriptKeyValue{{Key: "f", Value: "v"}, {Key: "off", Value: "x", Disabled: true}}}) {
 		t.Errorf("formdata = %+v", got)
 	}
 	encoded := entity.DefaultBody()
 	encoded.Mode = bodymode.UrlEncoded
 	encoded.UrlEncoded = []entity.KeyValue{entity.NewKeyValue("k", "v")}
-	if got := newScriptBody(encoded); !reflect.DeepEqual(got, ScriptBody{Mode: "urlencoded", UrlEncoded: []ScriptKeyValue{{Key: "k", Value: "v"}}}) {
+	if got := NewScriptBody(encoded); !reflect.DeepEqual(got, ScriptBody{Mode: "urlencoded", UrlEncoded: []ScriptKeyValue{{Key: "k", Value: "v"}}}) {
 		t.Errorf("urlencoded = %+v", got)
 	}
-	if got := newScriptBody(entity.Body{Mode: bodymode.GraphQl, GraphQl: entity.BodyGraphQl{Query: "{ a }", Variables: `{"v":1}`}}); !reflect.DeepEqual(got, ScriptBody{Mode: "graphql", GraphQl: &ScriptGraphQl{Query: "{ a }", Variables: `{"v":1}`}}) {
+	if got := NewScriptBody(entity.Body{Mode: bodymode.GraphQl, GraphQl: entity.BodyGraphQl{Query: "{ a }", Variables: `{"v":1}`}}); !reflect.DeepEqual(got, ScriptBody{Mode: "graphql", GraphQl: &ScriptGraphQl{Query: "{ a }", Variables: `{"v":1}`}}) {
 		t.Errorf("graphql = %+v", got)
 	}
 	if got := NewScriptRequest(entity.NewRequest("", "")); got.Body != nil || got.Auth != nil {

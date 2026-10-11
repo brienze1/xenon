@@ -69,6 +69,14 @@ func (r Request) ScriptOwners(ancestors []Collection) []ScriptOwner {
 	return append(owners, NewScriptOwner(scriptownerkind.Request, r.ID, r.Name, r.Scripts, r.InheritScripts))
 }
 
+func (r Request) Location(ancestors []Collection) []string {
+	location := make([]string, 0, len(ancestors)+1)
+	for _, ancestor := range ancestors {
+		location = append(location, ancestor.Name)
+	}
+	return append(location, r.Name)
+}
+
 func (r Request) HasValidName() bool {
 	return isValidItemName(r.Name)
 }

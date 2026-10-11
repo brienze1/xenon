@@ -55,7 +55,6 @@ func (v VariableLayer) sortedVariables() []ContextVariable {
 	return variables
 }
 
-// withScriptScope keeps the layer's unavailable secrets and takes every other value from the scope; a scope never loaded leaves the layer as it is.
 func (v VariableLayer) withScriptScope(scope ScriptScope) VariableLayer {
 	if scope.Values == nil {
 		return v

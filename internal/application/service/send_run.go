@@ -7,7 +7,6 @@ import (
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/scriptphase"
-	"github.com/brienze1/xenon/pkg/errs"
 	"github.com/brienze1/xenon/pkg/idutils"
 	"github.com/brienze1/xenon/pkg/logger"
 	"github.com/brienze1/xenon/pkg/timeutils"
@@ -19,7 +18,6 @@ const (
 	runRequestTooDeep  = "runRequest: requests run from scripts are nested too deep"
 )
 
-// sendRun is one send with everything its scripts reach: the scope values, the settings, and the requests they send or run.
 type sendRun struct {
 	service    *sendRequest
 	scopes     *requestScopes
@@ -34,7 +32,7 @@ type sendRun struct {
 }
 
 func (r sendRun) execute(ctx context.Context, tabId string, request entity.Request, ancestors []entity.Collection, owners []entity.ScriptOwner, execution *entity.SendExecution) error {
-	location := requestScopes{ancestors: ancestors}.location(request)
+	location := request.Location(ancestors)
 	r.runScripts(ctx, execution, request, location, usecase.CollectScriptChain(owners, scriptphase.PreRequest))
 	if execution.ShouldSend() {
 		if err := r.send(ctx, tabId, request, ancestors, execution); err != nil {
@@ -56,7 +54,7 @@ func (r sendRun) runScripts(ctx context.Context, execution *entity.SendExecution
 		mask := r.mask(r.secretsOf(execution))
 		execution.AddRun(run)
 		r.service.console.append(ctx, r.runEntries(run, mask)...)
-		if err := r.service.scriptVariables.persist(ctx, r.localId, r.root, r.scopes.refs(), before, run.Scopes, vaultBefore, run.Vault); err != nil {
+		if err := r.service.scriptVariables.persist(ctx, r.localId, r.root, entity.ScriptScopeRefs(r.scopes.environment, r.scopes.ancestors), before, run.Scopes, vaultBefore, run.Vault); err != nil {
 			logger.Warn(ctx, err, "The variable changes of a script could not be saved", map[string]any{"script": script.Label()})
 			r.service.console.append(ctx, entity.NewConsoleErrorEntry(idutils.NewUlid(), r.sendId, entity.NewUnsavedVariablesError(script, err.Error()), timeutils.Now()).WithSecretsMasked(mask))
 		}
@@ -134,13 +132,11 @@ func (r sendRun) requestEntry(request entity.EffectiveRequest, response entity.R
 	return entity.NewConsoleRequestEntry(idutils.NewUlid(), r.sendId, script, nested, request, response, timeutils.Now())
 }
 
-// calledBy is this run as the requests of one script see it: what they send is logged under that script.
 func (r sendRun) calledBy(script entity.ScriptRef) sendRun {
 	r.caller = &script
 	return r
 }
 
-// secretsOf is every secret value known so far: the send's own and those its scripts set.
 func (r sendRun) secretsOf(execution *entity.SendExecution) []string {
 	return append(slices.Clone(r.secrets), r.variables(execution).SecretValues()...)
 }
@@ -182,6 +178,9 @@ func (r sendRun) Run(ctx context.Context, requestId string, scopes entity.Script
 	if r.depth >= maxRunRequestDepth {
 		return entity.NewMissingRunNestedRequest(requestId, runRequestTooDeep)
 	}
+	if !entity.IsSavedRequestID(requestId) {
+		return entity.NewMissingRunNestedRequest(requestId, runRequestNotFound+requestId)
+	}
 	request, ancestors, err := r.savedRequest(ctx, requestId)
 	if err != nil {
 		logger.Info(ctx, "Finished", map[string]any{"requestId": requestId, "error": err.Error()})
@@ -201,9 +200,6 @@ func (r sendRun) Run(ctx context.Context, requestId string, scopes entity.Script
 }
 
 func (r sendRun) savedRequest(ctx context.Context, requestId string) (*entity.Request, []entity.Collection, error) {
-	if !entity.IsSavedRequestID(requestId) {
-		return nil, nil, errs.NotFoundError("not a saved request id", "SND-15404")
-	}
 	request, err := r.service.findRequest.Find(ctx, r.root, requestId)
 	if err != nil {
 		return nil, nil, err

@@ -16,7 +16,6 @@ const (
 	consoleBatchEntries = 100
 )
 
-// consoleEntriesPublisher batches entries into one console:entries event at most every 50 ms or every 100 entries.
 type consoleEntriesPublisher struct {
 	eventEmitter adapter.EventEmitter
 	timer        *time.Timer

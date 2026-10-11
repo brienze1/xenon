@@ -17,7 +17,7 @@ func NewScriptResponse(response entity.Response) ScriptResponse {
 	return ScriptResponse{
 		Code:         response.StatusCode,
 		Status:       response.StatusText,
-		Header:       newScriptKeyValues(response.Headers),
+		Header:       NewScriptKeyValues(response.Headers),
 		Body:         string(response.Body),
 		ResponseTime: response.Timings.Total.Milliseconds(),
 		ResponseSize: response.SizeBytes,

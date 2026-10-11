@@ -158,9 +158,8 @@ func (v VariableTable) WithCurrent(key, value string) VariableTable {
 	return v
 }
 
-// WithScriptChanges applies a script's writes: a known row gets the value as its current value (a secret row's value
-// goes to the vault), a new name becomes a row with an empty initial value, and unset drops a plain row's current value.
-// Secret changes (pm.vault) only touch secret rows.
+// WithScriptChanges sets known rows' current (or vault) values, adds new names with an empty initial value and unsets
+// plain current values; secret changes (pm.vault) only touch secret rows.
 func (v VariableTable) WithScriptChanges(set []KeyValue, unset []string, secret bool) VariableTable {
 	for _, change := range set {
 		row, found := v.row(change.Key)

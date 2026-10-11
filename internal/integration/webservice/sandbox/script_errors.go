@@ -50,7 +50,6 @@ func syntaxError(err error, script entity.ScriptRef) entity.ScriptError {
 	return entity.NewScriptError(scripterrorkind.Syntax, "SyntaxError: "+text, script).At(line, column)
 }
 
-// withinScript moves a position past the script's end (inside the wrapper) to just after its last character.
 func withinScript(text string, line, column int) (int, int) {
 	lines := strings.Split(text, "\n")
 	if line <= len(lines) {

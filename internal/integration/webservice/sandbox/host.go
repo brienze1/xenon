@@ -4,7 +4,6 @@ import (
 	"github.com/dop251/goja"
 )
 
-// host is the Go side of the shims: every capability a script reaches that is not plain JavaScript.
 func (e *execution) host() *goja.Object {
 	host := e.vm.NewObject()
 	functions := map[string]func(goja.FunctionCall) goja.Value{

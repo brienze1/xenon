@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import type { ScriptPhase, ScriptSet } from '@/platform/mappers/request'
-import type { ScriptSyntaxError } from '@/platform/mappers/scripts'
 import { memberCompletions, variableCompletions, variableNameQuery, type VariableOption } from '@/features/scripts/lib/completion'
+import { useSyntaxErrors } from '@/features/scripts/hooks/use-syntax-errors'
 import { useScriptsStore } from '@/features/scripts/store'
 import type { CodeEditorHandle } from '@/shared/ui/code-editor/CodeEditor'
 import type { CompletionSource } from '@/shared/ui/code-editor/editor-extensions'
@@ -12,14 +12,10 @@ import styles from './ScriptsEditor.module.css'
 
 const CodeEditor = lazy(() => import('@/shared/ui/code-editor/CodeEditor').then((module) => ({ default: module.CodeEditor })))
 
-export const CHECK_DELAY_MS = 300
-
 const PHASES: ReadonlyArray<{ phase: ScriptPhase; label: string }> = [
   { phase: 'preRequest', label: 'Pre-request' },
   { phase: 'postResponse', label: 'Post-response' },
 ]
-
-const NO_ERRORS: ScriptSyntaxError[] = []
 
 const EDITOR_HINT = (
   <p className={styles.hint}>
@@ -34,26 +30,6 @@ function textOf(scripts: ScriptSet, phase: ScriptPhase): string {
 
 function withText(scripts: ScriptSet, phase: ScriptPhase, text: string): ScriptSet {
   return phase === 'preRequest' ? { ...scripts, preRequest: text } : { ...scripts, postResponse: text }
-}
-
-function useSyntaxErrors(text: string): ScriptSyntaxError[] {
-  const check = useScriptsStore((state) => state.check)
-  const [checked, setChecked] = useState<{ text: string; errors: ScriptSyntaxError[] }>({ text: '', errors: NO_ERRORS })
-  useEffect(() => {
-    let active = true
-    const timer = window.setTimeout(() => {
-      void check(text).then((errors) => {
-        if (active) {
-          setChecked({ text, errors })
-        }
-      })
-    }, CHECK_DELAY_MS)
-    return () => {
-      active = false
-      window.clearTimeout(timer)
-    }
-  }, [check, text])
-  return checked.text === text ? checked.errors : NO_ERRORS
 }
 
 interface PhaseEditorProps {
