@@ -235,7 +235,7 @@ func (t *treeDraft) add(segments []string, blob plumbing.Hash) {
 }
 
 func (t *treeDraft) write(store storer.EncodedObjectStorer) (plumbing.Hash, error) {
-	entries := make([]object.TreeEntry, 0, len(t.files)+len(t.dirs))
+	entries := make([]object.TreeEntry, 0)
 	for name, blob := range t.files {
 		entries = append(entries, object.TreeEntry{Name: name, Mode: filemode.Regular, Hash: blob})
 	}

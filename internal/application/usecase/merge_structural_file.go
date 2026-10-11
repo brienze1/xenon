@@ -70,7 +70,7 @@ func (s *structuralMerger) rows(path string, base, mine, theirs *entity.Document
 	if !mineKeyed || !theirsKeyed || !baseKeyed {
 		return nil, false
 	}
-	items := make([]*entity.DocumentNode, 0, len(theirKeys)+len(mineKeys))
+	items := make([]*entity.DocumentNode, 0)
 	for _, key := range unionInOrder(theirKeys, mineKeys) {
 		if merged := s.value(path+"["+key+"]", baseRows[key], mineRows[key], theirRows[key]); merged != nil {
 			items = append(items, merged)
@@ -101,7 +101,7 @@ func mergeOrder(base, mine, theirs *entity.DocumentNode) (*entity.DocumentNode, 
 	}
 	inBase, inMine, inTheirs := toSet(baseItems), toSet(mineItems), toSet(theirItems)
 	seen := map[string]bool{}
-	items := make([]*entity.DocumentNode, 0, len(theirItems)+len(mineItems))
+	items := make([]*entity.DocumentNode, 0)
 	for _, item := range theirs.Items {
 		if !seen[item.Value] && (inMine[item.Value] || !inBase[item.Value]) {
 			seen[item.Value] = true
@@ -119,7 +119,7 @@ func mergeOrder(base, mine, theirs *entity.DocumentNode) (*entity.DocumentNode, 
 
 func unionInOrder(first, second []string) []string {
 	seen := map[string]bool{}
-	union := make([]string, 0, len(first)+len(second))
+	union := make([]string, 0)
 	for _, value := range append(append([]string{}, first...), second...) {
 		if !seen[value] {
 			seen[value] = true

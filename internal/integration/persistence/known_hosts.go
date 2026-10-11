@@ -84,10 +84,10 @@ func readKnownHosts() (string, error) {
 func parseKnownHosts(content string) []entity.HostKey {
 	keys := make([]entity.HostKey, 0)
 	rest := []byte(content)
-	for len(rest) > 0 {
+	for {
 		_, hosts, key, _, remaining, err := ssh.ParseKnownHosts(rest)
 		if err != nil {
-			break
+			return keys
 		}
 		rest = remaining
 		for _, host := range hosts {
@@ -99,7 +99,6 @@ func parseKnownHosts(content string) []entity.HostKey {
 			})
 		}
 	}
-	return keys
 }
 
 func knownHostsPath() string {

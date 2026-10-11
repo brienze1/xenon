@@ -8,11 +8,12 @@ Prefixes: `GIT` sync · `ACC` accounts.
 | `List()` | — | `GitAccount[]` (no secrets) | |
 | `StartGitHubSignIn()` | — | `{ user_code, verification_uri, expires_in, interval, session_id }` | opens browser to `verification_uri`; `ACC-01503` client id not configured |
 | `PollGitHubSignIn(req)` | `{ session_id }` | `{ status: pending\|done\|expired\|denied, account? }` | UI polls per interval (Go enforces slow_down) |
-| `AddToken(req)` | `{ host, username?, token, commit_name, commit_email }` | `GitAccount` | verified; `ACC-02401` invalid token |
-| `AddSSH(req)` | `{ mode: agent\|key_file\|generate, key_path?, passphrase?, host, commit_name, commit_email }` | `GitAccount` + `{ public_key? }` | |
+| `AddToken(req)` | `{ provider: github\|gitlab\|bitbucket\|azure_devops\|other, host, username?, token, repository?, display_name?, commit_name, commit_email }` | `GitAccount` | verified with a ref advertisement of `repository` (`ACC-02401` invalid token, `ACC-18400` repository on another host) or, for GitHub without a repository, the user API (`ACC-17401`); other hosts without a repository `ACC-03400`; vault locked `ACC-16409` |
+| `AddSSH(req)` | `{ mode: agent\|key_file\|generate, key_path?, passphrase?, host, commit_name, commit_email }` | `{ account: GitAccount, public_key }` | `ACC-10400` key file unreadable, `ACC-42400` wrong passphrase, `ACC-11400` no agent, `ACC-53400` agent without keys |
 | `UploadPublicKey(req)` | `{ ssh_account_id, github_account_id, title }` | — | GitHub API |
 | `Update(req)` / `Remove(req)` | `{ id, … }` | `GitAccount` / — | removal deletes keychain entries |
-| `ConfirmHostKey(req)` | `{ host, fingerprint, accept }` | — | answers a `git:host-key-unknown` event |
+| `TestConnection(req)` | `{ account_id, repository }` | `{ default_branch, branches }` | unknown host key `ACC-05409` (+ event), changed `ACC-06409` |
+| `ConfirmHostKey(req)` | `{ repository, fingerprint, accept }` | — | answers a `git:host-key-unknown` event; rescans and remembers only if the fingerprint still matches (`ACC-15400`) |
 
 ## 2. `SyncService`
 | Method | Input | Output | Notes |
@@ -37,4 +38,4 @@ branch / signature required.
 
 ## 3. Events
 `git:status-changed { local_id, status }`, `git:progress { local_id, phase, done, total }`,
-`git:host-key-unknown { host, fingerprint, key_type }`.
+`git:host-key-unknown { repository, host, fingerprint, key_type }`.
