@@ -35,6 +35,13 @@ describe('platform events', () => {
     expect(callback).toHaveBeenCalledWith({ localId: 'L1', requestId: 'R1', deleted: true, revision: 'abc' })
   })
 
+  it('maps cookies:changed payloads', () => {
+    const callback = vi.fn()
+    expect(events.onCookiesChanged(callback)).toBe(unsubscribe)
+    handlers.get(events.COOKIES_CHANGED)?.({ data: { local_id: 'L1' } })
+    expect(callback).toHaveBeenCalledWith('L1')
+  })
+
   it('maps workspace:folder-missing payloads', () => {
     const callback = vi.fn()
     events.onWorkspaceFolderMissing(callback)

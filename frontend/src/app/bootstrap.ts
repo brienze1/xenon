@@ -1,4 +1,5 @@
 import { useConsoleStore } from '@/features/console/store'
+import { useCookiesStore } from '@/features/cookies/store'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import { useImportStore } from '@/features/import-export/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
@@ -9,6 +10,7 @@ import { useTabsStore } from '@/features/tabs/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import {
   onConsoleEntries,
+  onCookiesChanged,
   onImportFilesDropped,
   onImportProgress,
   onImportRequested,
@@ -40,6 +42,7 @@ export function bootstrap(): () => void {
     }),
     onImportProgress((progress) => useImportStore.getState().applyProgress(progress)),
     onConsoleEntries((event) => useConsoleStore.getState().applyEvent(event)),
+    onCookiesChanged((localId) => useCookiesStore.getState().jarChanged(localId)),
     onImportRequested(() => openImport()),
     onImportFilesDropped((paths) => {
       if (openImport()) {

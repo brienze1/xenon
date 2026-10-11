@@ -12,6 +12,7 @@ export const IMPORT_PROGRESS = 'import:progress'
 export const IMPORT_FILES_DROPPED = 'import:files-dropped'
 export const IMPORT_REQUESTED = 'import:requested'
 export const CONSOLE_ENTRIES = 'console:entries'
+export const COOKIES_CHANGED = 'cookies:changed'
 
 export interface WorkspaceTreeChanged {
   localId: string
@@ -102,5 +103,12 @@ export function onImportRequested(callback: () => void): Unsubscribe {
 export function onConsoleEntries(callback: (event: ConsoleEntriesEvent) => void): Unsubscribe {
   return Events.On(CONSOLE_ENTRIES, (event) => {
     callback(toConsoleEntriesEvent(event.data))
+  })
+}
+
+/** The workspace's cookie jar changed (a send stored cookies, a script or the Cookies dialog edited them). */
+export function onCookiesChanged(callback: (localId: string) => void): Unsubscribe {
+  return Events.On(COOKIES_CHANGED, (event) => {
+    callback(event.data.local_id)
   })
 }

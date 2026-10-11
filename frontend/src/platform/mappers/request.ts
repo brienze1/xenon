@@ -13,6 +13,7 @@ import type {
   TestResult as TestResultDto,
 } from '../../../bindings/github.com/brienze1/xenon/internal/integration/entrypoint/dto/models'
 import { newRowId } from '@/shared/lib/rows'
+import { toCookie, type Cookie } from './cookie'
 
 export const STANDARD_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const
 export const AUTH_TYPES = ['inherit', 'none', 'bearer', 'basic', 'apikey', 'oauth2', 'awsv4', 'digest', 'unsupported'] as const
@@ -307,6 +308,8 @@ export interface SendResult {
   statusText: string
   proto: string
   headers: Array<{ key: string; value: string }>
+  /** The cookies the final response set (the response Cookies tab). */
+  cookiesSet: Cookie[]
   sizeBytes: number
   contentType: string
   isBinary: boolean
@@ -637,6 +640,7 @@ export function toSendResult(dto: SendResultDto): SendResult {
     statusText: dto.status_text,
     proto: dto.proto,
     headers: (dto.headers ?? []).map(({ key, value }) => ({ key, value })),
+    cookiesSet: (dto.cookies_set ?? []).map(toCookie),
     sizeBytes: dto.size_bytes,
     contentType: dto.content_type,
     isBinary: dto.is_binary,
@@ -667,6 +671,7 @@ export function cancelledResult(tabId: string): SendResult {
     statusText: '',
     proto: '',
     headers: [],
+    cookiesSet: [],
     sizeBytes: 0,
     contentType: '',
     isBinary: false,

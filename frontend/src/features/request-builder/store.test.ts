@@ -69,6 +69,7 @@ function draft(tabId: string): RequestDraft {
 }
 
 const okResult: SendResult = {
+  cookiesSet: [],
   tabId: 'tab',
   sendId: 's', outcome: 'sent', tests: [], testSummary: { total: 0, passed: 0, failed: 0, skipped: 0 }, scriptErrors: [],
   ok: true,

@@ -1,0 +1,163 @@
+.dialog {
+  width: min(640px, calc(100vw - var(--space-6) * 2));
+}
+
+.panel {
+  padding-top: var(--space-3);
+  min-height: 240px;
+}
+
+.jar,
+.allowlist,
+.cookies,
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.intro,
+.empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.addDomain {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.input,
+.raw {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.input:focus-visible,
+.raw:focus-visible {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 1px;
+}
+
+.raw {
+  resize: vertical;
+}
+
+.label {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+}
+
+.domains,
+.chips {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chips {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.domainRow,
+.chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.domain {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.domain:focus-visible,
+.chipName:focus-visible,
+.footerButton:focus-visible {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 1px;
+}
+
+.selected {
+  border-color: var(--neon-cyan);
+}
+
+.count {
+  color: var(--color-text-muted);
+  font-family: var(--font-ui);
+}
+
+.allowed {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.chip {
+  padding-left: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+}
+
+.chipName {
+  padding: var(--space-1) 0;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.editorActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.icon {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+.footerButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.footerButton:hover {
+  color: var(--color-text);
+}

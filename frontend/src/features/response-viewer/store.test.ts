@@ -12,6 +12,7 @@ const responseBody = await import('@/platform/services/response-body')
 const { useResponseViewerStore } = await import('./store')
 
 const result: SendResult = {
+  cookiesSet: [],
   tabId: 'tab',
   sendId: 's', outcome: 'sent', tests: [], testSummary: { total: 0, passed: 0, failed: 0, skipped: 0 }, scriptErrors: [],
   ok: true,

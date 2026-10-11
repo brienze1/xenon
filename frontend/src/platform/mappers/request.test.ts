@@ -100,6 +100,7 @@ describe('request mapper', () => {
       status_text: 'OK',
       proto: 'HTTP/1.1',
       headers: [{ key: 'A', value: '1' }],
+      cookies_set: [{ name: 'session', value: 'abc', domain: 'api.test', path: '/', expires: '', same_site: 'Lax', secure: true, http_only: true, host_only: true, raw: 'session=abc; Path=/' }],
       size_bytes: 2,
       content_type: 'text/plain',
       is_binary: false,
@@ -115,8 +116,9 @@ describe('request mapper', () => {
       scriptErrors: [{ kind: 'script_runtime', message: 'Error: x', line: 2, column: 3, scriptLabel: 'R · Post-response' }],
     })
     expect(ok).toMatchObject({ tabId: 't', inlineBody: 'hi', error: null, timings: { dnsMs: 1, totalMs: 15 }, headers: [{ key: 'A', value: '1' }] })
-    const failed = toSendResult({ ...ok, tab_id: 't', send_id: 's', outcome: 'unknown', tests: null, test_summary: { total: 0, passed: 0, failed: 0, skipped: 0 }, script_errors: null, ok: false, status_code: 0, status_text: '', proto: '', headers: null, size_bytes: 0, content_type: '', is_binary: false, body_url: '', timings, error: { kind: 'nope', message: 'm', hint: 'h' } })
-    expect(failed).toMatchObject({ outcome: 'sent', tests: [], scriptErrors: [], inlineBody: null, headers: [], error: { kind: 'other', message: 'm', hint: 'h' } })
+    expect(ok.cookiesSet).toEqual([{ name: 'session', value: 'abc', domain: 'api.test', path: '/', expires: null, sameSite: 'Lax', secure: true, httpOnly: true, hostOnly: true, raw: 'session=abc; Path=/' }])
+    const failed = toSendResult({ ...ok, tab_id: 't', send_id: 's', outcome: 'unknown', tests: null, test_summary: { total: 0, passed: 0, failed: 0, skipped: 0 }, script_errors: null, ok: false, status_code: 0, status_text: '', proto: '', headers: null, cookies_set: null, size_bytes: 0, content_type: '', is_binary: false, body_url: '', timings, error: { kind: 'nope', message: 'm', hint: 'h' } })
+    expect(failed).toMatchObject({ outcome: 'sent', tests: [], scriptErrors: [], inlineBody: null, headers: [], cookiesSet: [], error: { kind: 'other', message: 'm', hint: 'h' } })
     expect(cancelledResult('t')).toMatchObject({ ok: false, error: { kind: 'cancelled', message: 'Request cancelled' } })
   })
 

@@ -33,6 +33,7 @@ function result(overrides: Partial<SendResult> = {}): SendResult {
     statusText: 'Not Found',
     proto: 'HTTP/1.1',
     headers: [],
+    cookiesSet: [],
     sizeBytes: 2,
     contentType: 'application/json',
     isBinary: false,

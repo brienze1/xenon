@@ -1,5 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { ConsoleDrawer as ConsoleContent } from '@/features/console/components/ConsoleDrawer'
+import { CookiesButton } from '@/features/cookies/components/CookiesButton'
+import { CookiesDialog } from '@/features/cookies/components/CookiesDialog'
 import { EnvironmentSwitcher } from '@/features/environments/components/EnvironmentSwitcher'
 import { ImportDialog } from '@/features/import-export/components/ImportDialog'
 import { useImportStore } from '@/features/import-export/store'
@@ -51,6 +53,10 @@ const IMPORT_DIALOG = <ImportDialog />
 const SETTINGS_DIALOG = <SettingsDialog />
 
 const SETTINGS_BUTTON = <SettingsButton />
+
+const COOKIES_DIALOG = <CookiesDialog />
+
+const COOKIES_BUTTON = <CookiesButton />
 
 const TOP_BAR_END_WITH_ENVIRONMENTS = (
   <>
@@ -182,11 +188,15 @@ export function App() {
       {PASSPHRASE_DIALOG}
       {SETTINGS_DIALOG}
       {active ? IMPORT_DIALOG : null}
+      {active ? COOKIES_DIALOG : null}
       <Footer>
         {active ? (
-          <span className={styles.path} translate="no">
-            {active.path}
-          </span>
+          <>
+            <span className={styles.path} translate="no">
+              {active.path}
+            </span>
+            {COOKIES_BUTTON}
+          </>
         ) : null}
       </Footer>
     </AppShell>

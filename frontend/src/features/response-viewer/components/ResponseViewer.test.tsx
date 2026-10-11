@@ -14,6 +14,7 @@ const responseBody = await import('@/platform/services/response-body')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
 const { ResponseViewer } = await import('./ResponseViewer')
 const { ResponseHeaders } = await import('./ResponseHeaders')
+const { ResponseCookiesTab } = await import('./ResponseCookiesTab')
 const { useTabsStore } = await import('@/features/tabs/store')
 const { useExamplesStore } = await import('@/features/examples/store')
 
@@ -29,6 +30,10 @@ function result(overrides: Partial<SendResult> = {}): SendResult {
       { key: 'Content-Type', value: 'application/json' },
       { key: 'Set-Cookie', value: 'a=1' },
       { key: 'Set-Cookie', value: 'b=2' },
+    ],
+    cookiesSet: [
+      { name: 'a', value: '1', domain: 'api.test', path: '/', expires: null, sameSite: '', secure: false, httpOnly: true, hostOnly: true, raw: 'a=1; Path=/; HttpOnly' },
+      { name: 'b', value: '2', domain: 'api.test', path: '/v1', expires: '2037-10-21T07:28:00Z', sameSite: 'Lax', secure: true, httpOnly: false, hostOnly: false, raw: 'b=2' },
     ],
     sizeBytes: 9,
     contentType: 'application/json',
@@ -196,6 +201,20 @@ describe('ResponseViewer', () => {
     expect(within(table).getByText('b=2')).toBeInTheDocument()
   })
 
+  it('lists the cookies the response set in the Cookies tab', async () => {
+    const user = userEvent.setup()
+    render(<ResponseViewer tabId="tab" />)
+    show(result())
+    await user.click(screen.getByRole('tab', { name: 'Cookies (2)' }))
+    const table = screen.getByRole('table', { name: 'Response cookies' })
+    const [, first, second] = within(table).getAllByRole('row')
+    expect(first).toHaveTextContent(/^a1api\.test\/SessionYesNo$/)
+    const cells = within(second!).getAllByRole('cell').map((cell) => cell.textContent)
+    expect(cells.slice(0, 4)).toEqual(['b', '2', 'api.test', '/v1'])
+    expect(cells[4]).toMatch(/2037.*UTC$/)
+    expect(cells.slice(5)).toEqual(['No', 'Yes'])
+  })
+
   it.each([
     ['timeout', 'Timed out after 5000 ms', 'Increase the timeout in the request Settings (0 = no timeout)', 'Request Timed Out', ''],
     ['tls', 'Certificate not trusted', 'Turn off SSL certificate verification in Settings to send anyway', 'SSL/TLS Error', ''],
@@ -231,6 +250,14 @@ describe('ResponseHeaders', () => {
   it('says when the response has no headers', () => {
     render(<ResponseHeaders headers={[]} />)
     expect(screen.getByText('No headers')).toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+  })
+})
+
+describe('ResponseCookiesTab', () => {
+  it('says when the response set no cookies', () => {
+    render(<ResponseCookiesTab cookies={[]} />)
+    expect(screen.getByText('The response set no cookies')).toBeInTheDocument()
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
   })
 })

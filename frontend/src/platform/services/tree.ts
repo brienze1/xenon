@@ -71,6 +71,11 @@ export function deleteItem(localId: string, id: string): Promise<string[]> {
   return call(async () => required(await TreeService.Delete({ local_id: localId, id })).deleted_request_ids ?? [])
 }
 
+/** Moves the item to `index` among the new parent's other children ("" for collections) and returns the whole tree. */
+export function moveItem(localId: string, id: string, newParentId: string, index: number): Promise<TreeNode[]> {
+  return call(async () => ((await TreeService.Move({ local_id: localId, id, new_parent_id: newParentId, index })) ?? []).map(toTreeNode))
+}
+
 export function getItemSettings(localId: string, id: string): Promise<ItemSettings> {
   return call(async () => toItemSettings(required(await TreeService.GetSettings({ local_id: localId, id }))))
 }

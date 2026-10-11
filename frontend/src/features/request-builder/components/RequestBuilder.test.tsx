@@ -373,6 +373,7 @@ describe('RequestBuilder', () => {
 
 function emptyResult(tabId: string): SendResult {
   return {
+    cookiesSet: [],
     tabId,
     sendId: '',
     outcome: 'error',

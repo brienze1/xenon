@@ -9,6 +9,7 @@ import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { Tabs } from '@/shared/ui/tabs/Tabs'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { ResponseBody } from './ResponseBody'
+import { ResponseCookiesTab } from './ResponseCookiesTab'
 import { ResponseError } from './ResponseError'
 import { ResponseHeaders } from './ResponseHeaders'
 import { SaveAsExampleButton } from './SaveAsExampleButton'
@@ -97,11 +98,15 @@ export function ResponseViewer({ tabId }: ResponseViewerProps) {
           <Tabs.Root value={panel} onValueChange={setPanel} className={styles.tabs}>
             <Tabs.List label="Response">
               {BODY_TAB}
+              <Tabs.Tab value="cookies">Cookies ({formatNumber(result.cookiesSet.length, 0)})</Tabs.Tab>
               <Tabs.Tab value="headers">Headers ({formatNumber(result.headers.length, 0)})</Tabs.Tab>
               <Tabs.Tab value="tests">{testResultsTitle(result.testSummary)}</Tabs.Tab>
             </Tabs.List>
             <Tabs.Panel value="body" className={styles.panel}>
               <ResponseBody key={version} tabId={tabId} result={result} />
+            </Tabs.Panel>
+            <Tabs.Panel value="cookies" className={styles.panel}>
+              <ResponseCookiesTab cookies={result.cookiesSet} />
             </Tabs.Panel>
             <Tabs.Panel value="headers" className={styles.panel}>
               <ResponseHeaders headers={result.headers} />

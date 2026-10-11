@@ -15,11 +15,16 @@ const handlers: {
   importRequested?: () => void
   filesDropped?: (paths: string[]) => void
   consoleEntries?: (event: ConsoleEntriesEvent) => void
+  cookiesChanged?: (localId: string) => void
 } = {}
 
 vi.mock('@/platform/events', () => ({
   onConsoleEntries: vi.fn((callback) => {
     handlers.consoleEntries = callback
+    return unsubscribe
+  }),
+  onCookiesChanged: vi.fn((callback) => {
+    handlers.cookiesChanged = callback
     return unsubscribe
   }),
   onWorkspaceFolderMissing: vi.fn((callback) => {
@@ -97,6 +102,7 @@ const environments = await import('@/platform/services/environments')
 const { useEnvironmentsStore } = await import('@/features/environments/store')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
 const { useConsoleStore } = await import('@/features/console/store')
+const { useCookiesStore } = await import('@/features/cookies/store')
 const { useSidebarStore } = await import('@/features/sidebar/store')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
 const { useTabsStore, PERSIST_DELAY_MS } = await import('@/features/tabs/store')
@@ -184,8 +190,11 @@ describe('bootstrap', () => {
     expect(useWorkspacesStore.getState().workspaces[0]?.missing).toBe(true)
     handlers.consoleEntries?.({ entries: [consoleEntry], cleared: false })
     expect(useConsoleStore.getState().entries.map((entry) => entry.id)).toEqual(['c1'])
+    const jarChanged = vi.spyOn(useCookiesStore.getState(), 'jarChanged')
+    handlers.cookiesChanged?.('A')
+    expect(jarChanged).toHaveBeenCalledWith('A')
     cleanup()
-    expect(unsubscribe).toHaveBeenCalledTimes(9)
+    expect(unsubscribe).toHaveBeenCalledTimes(10)
   })
 
   it('opens the import dialog from the menu and from dropped files only when a workspace is active', async () => {
