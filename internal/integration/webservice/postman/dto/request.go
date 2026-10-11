@@ -20,6 +20,37 @@ type Request struct {
 	IsString bool           `json:"-"`
 }
 
+func NewRequest(request entity.Request, passthrough any) Request {
+	fields := asMap(passthrough)
+	return Request{
+		Method: request.MethodOrDefault(),
+		Header: NewHeaderList(request.Headers, fields["header"]),
+		Body:   NewBody(request.Body, fields["body"]),
+		Url:    NewUrl(request.URL, request.Params, request.PathVariables, asMap(fields["url"])),
+		Auth:   NewAuth(request.Auth, fields["auth"]),
+		Raw:    without(fields, requestKeys...),
+	}
+}
+
+func NewOriginalRequest(example entity.ExampleRequest, passthrough any) Request {
+	request := entity.NewRequest("", "")
+	request.Method, request.URL, request.Params, request.PathVariables = example.Method, example.URL, example.Params, example.PathVariables
+	request.Headers, request.Body, request.Auth = example.Headers, example.Body, example.Auth
+	return NewRequest(request, passthrough)
+}
+
+func (r Request) MarshalJSON() ([]byte, error) {
+	request := newObject().set("method", r.Method).set("header", r.Header)
+	if r.Body != nil {
+		request.set("body", r.Body)
+	}
+	request.set("url", r.Url)
+	if r.Auth != nil {
+		request.set("auth", r.Auth)
+	}
+	return request.merged(r.Raw).MarshalJSON()
+}
+
 func (r *Request) UnmarshalJSON(data []byte) error {
 	var raw string
 	if err := json.Unmarshal(data, &raw); err == nil {

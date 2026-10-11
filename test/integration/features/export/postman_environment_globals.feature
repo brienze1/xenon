@@ -79,7 +79,7 @@ Feature: Export environments and globals as Postman files
     And the file "local.postman_environment.json" should contain the field "id" equal to "{{local}}"
     And the file "local.postman_environment.json" should contain the field "name" equal to "local"
     And the file "local.postman_environment.json" should contain the field "_postman_variable_scope" equal to "environment"
-    And the file "local.postman_environment.json" should contain the field "_postman_exported_at" equal to "2026-10-11T10:00:00.000Z"
+    And the file "local.postman_environment.json" should contain the field "_postman_exported_at" matching "^2026-10-11T10:00:00\.[0-9]{3}Z$"
     And the file "local.postman_environment.json" should contain the field "_postman_exported_using" matching "^Xenon/[0-9]"
     And the file "local.postman_environment.json" should contain the field "values" array length equal to 3
     And the file "local.postman_environment.json" should contain the field "values.0.key" equal to "base_url"

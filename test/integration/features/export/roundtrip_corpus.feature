@@ -41,13 +41,39 @@ Feature: Postman collections and environments come back out of Xenon unchanged
 
     Examples:
       | fixture                                                     | expected                                                    |
-      | full-v2.1.json                                              | full-v2.1.json                                              |
-      | full-v2.0.json                                              | full-v2.1.json                                              |
       | oauth2-token.json                                           | oauth2-token.json                                           |
       | large-1000.json                                             | large-1000.json                                             |
       | dump/collection/11111111-aaaa-4000-8000-000000000001.json | dump/collection/11111111-aaaa-4000-8000-000000000001.json |
       | dump/collection/22222222-bbbb-4000-8000-000000000002.json | dump/collection/22222222-bbbb-4000-8000-000000000002.json |
       | dump/collection/33333333-cccc-4000-8000-000000000003.json | dump/collection/33333333-cccc-4000-8000-000000000003.json |
+
+  @collection
+  Scenario Outline: The full Postman collection <fixture> round-trips (it uses auth types newer than the v2.1.0 schema)
+    When I call "ImportService.Detect" with
+      """
+      { "paths": ["{{resources}}/import/postman/<fixture>"] }
+      """
+    And I save the response field "source_id" as "source"
+    And I call "ImportService.Import" with
+      """
+      { "source_id": "{{source}}", "items": [ { "key": "0", "include": true, "target_local_id": "{{Acme.local_id}}" } ] }
+      """
+    And I save the response field "items.0.id" as "collection"
+    And I call "ExportService.Export" with
+      """
+      {
+        "local_id": "{{Acme.local_id}}", "item_kind": "collection", "item_id": "{{collection}}",
+        "format": "postman", "shape": "file", "target_path": "{{temp_root}}/roundtrip.postman_collection.json"
+      }
+      """
+    Then the call should succeed
+    And the response should contain the field "dropped" array length equal to 0
+    And the file "roundtrip.postman_collection.json" should equal the Postman resource file "import/postman/full-v2.1.json" after normalisation
+
+    Examples:
+      | fixture        |
+      | full-v2.1.json |
+      | full-v2.0.json |
 
   @collection @tokens
   Scenario: A token typed into an OAuth 2.0 collection is not exported

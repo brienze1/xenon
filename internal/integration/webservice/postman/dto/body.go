@@ -129,3 +129,79 @@ func (b *Body) fileSrc() string {
 	}
 	return text(b.File.Src)
 }
+
+func NewBody(body entity.Body, passthrough any) *Body {
+	fields := asMap(passthrough)
+	if fields["disabled"] == true {
+		if body.HasContent() {
+			fields = map[string]any{}
+		} else {
+			return &Body{Raw: fields, Disabled: true}
+		}
+	}
+	exported := &Body{Raw: without(fields, "options", "urlencoded", "formdata", "file", "disabled")}
+	switch body.Mode {
+	case bodymode.Raw:
+		exported.Mode, exported.Content = postmanRaw, body.Raw.Content
+		exported.Raw["options"] = rawOptions(body.Raw.Language.String(), asMap(fields["options"]))
+	case bodymode.UrlEncoded:
+		exported.Mode = postmanUrlEncoded
+		for index, row := range body.UrlEncoded {
+			exported.UrlEncoded = append(exported.UrlEncoded, NewKeyValueRow(row, mapAt(asList(fields["urlencoded"]), index)))
+		}
+	case bodymode.FormData:
+		exported.Mode = postmanFormData
+		for index, row := range body.FormData {
+			exported.FormData = append(exported.FormData, NewFormDataRowOf(row, mapAt(asList(fields["formdata"]), index)))
+		}
+	case bodymode.Binary:
+		exported.Mode, exported.File = postmanFileMode, &BodyFile{Src: body.Binary.Src}
+		exported.Raw["file"] = without(asMap(fields["file"]), "src")
+	case bodymode.GraphQl:
+		exported.Mode, exported.GraphQl = postmanGraphQl, &BodyGraphQl{Query: body.GraphQl.Query, Variables: body.GraphQl.Variables}
+	default:
+		return nil
+	}
+	return exported
+}
+
+func (b Body) MarshalJSON() ([]byte, error) {
+	if b.Mode == "" {
+		return encodeJson(b.Raw)
+	}
+	body := newObject().set("mode", b.Mode)
+	switch b.Mode {
+	case postmanRaw:
+		body.set("raw", b.Content)
+	case postmanUrlEncoded:
+		body.set("urlencoded", nonNil(b.UrlEncoded))
+	case postmanFormData:
+		body.set("formdata", nonNil(b.FormData))
+	case postmanFileMode:
+		body.set("file", newObject().set("src", b.File.Src).merged(asMap(b.Raw["file"])))
+	case postmanGraphQl:
+		body.set("graphql", newObject().set("query", b.GraphQl.Query).set("variables", b.GraphQl.Variables))
+	}
+	options := asMap(b.Raw["options"])
+	body.setIf(len(options) > 0, "options", options)
+	return body.merged(without(b.Raw, "file", "options")).MarshalJSON()
+}
+
+func rawOptions(language string, passthrough map[string]any) map[string]any {
+	options := without(passthrough, postmanRaw)
+	raw := without(asMap(passthrough[postmanRaw]), postmanRawLanguage)
+	if language != rawlanguage.Text.String() {
+		raw[postmanRawLanguage] = language
+	}
+	if len(raw) > 0 {
+		options[postmanRaw] = raw
+	}
+	return options
+}
+
+func nonNil[T any](rows []T) []T {
+	if rows == nil {
+		return []T{}
+	}
+	return rows
+}

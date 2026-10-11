@@ -24,9 +24,9 @@ type postmanExport struct {
 }
 
 type postmanDocuments struct {
-	summary entity.ExportSummary
 	entries []entity.ExportEntry
 	names   []string
+	summary entity.ExportSummary
 }
 
 func (p postmanExport) documents(ctx context.Context, root string, request entity.ExportRequest) (*postmanDocuments, error) {
@@ -73,7 +73,8 @@ func (p postmanExport) collection(ctx context.Context, node entity.ExportNode, a
 		return err
 	}
 	documents.add(postmanCollectionsFolder, node.Name(), postmanCollectionSuffix, data)
-	documents.summary = documents.summary.With(exported.Counts(), usecase.FindPostmanDrops(node), usecase.FindLiteralCredentials(node))
+	drops := append(usecase.FindPostmanDrops(node), usecase.FindPostmanSecretVariableDrops(exported.Container.Variables, exported.Path)...)
+	documents.summary = documents.summary.With(exported.Counts(), drops, usecase.FindLiteralCredentials(node))
 	return nil
 }
 

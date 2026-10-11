@@ -7,7 +7,8 @@ Feature: Export a Xenon collection as a Postman collection v2.1
   schema accepts, with the same folders, requests and order, methods, urls (raw plus host, path,
   query and path variables), headers, bodies, auth, scripts, variables, descriptions and saved
   examples. Collection and folder headers have no Postman place and are copied onto every request
-  below them. Secret variables keep their name with type secret and an empty value. The export
+  below them. Secret collection variables keep only their name: collection v2.1 has no secret type, so they are
+  empty string variables and the summary says so. The export
   dialog asks Go for the formats and shapes of an item, opens the native save dialog and can show
   the written file in the OS file manager.
 
@@ -34,6 +35,7 @@ Feature: Export a Xenon collection as a Postman collection v2.1
     And the response should contain the field "counts.requests" equal to "9"
     And the response should contain the field "counts.examples" equal to "2"
     And the response should contain the field "counts.variables" equal to "4"
+    And the response field "dropped" should contain an item with "item_path" equal to "Shop API" and "field" equal to "variables.api_secret"
     And the 1 "export:progress" event should contain the field "done" equal to "0"
     And the last "export:progress" event should contain the field "done" equal to "1"
     And the last "export:progress" event should contain the field "total" equal to "1"
@@ -71,7 +73,7 @@ Feature: Export a Xenon collection as a Postman collection v2.1
     And the file "shop.postman_collection.json" should contain the field "variable.1.description" equal to "Default page"
     And the file "shop.postman_collection.json" should contain the field "variable.2.disabled" equal to "true"
     And the file "shop.postman_collection.json" should contain the field "variable.3.key" equal to "api_secret"
-    And the file "shop.postman_collection.json" should contain the field "variable.3.type" equal to "secret"
+    And the file "shop.postman_collection.json" should contain the field "variable.3.type" equal to "string"
     And the file "shop.postman_collection.json" should contain the field "variable.3.value" equal to ""
     And the file "shop.postman_collection.json" should not contain the field "headers"
 

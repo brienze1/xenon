@@ -60,3 +60,27 @@ func (f *FormDataRow) firstSrc() string {
 	}
 	return text(f.Src)
 }
+
+func NewFormDataRowOf(row entity.FormDataRow, passthrough map[string]any) FormDataRow {
+	formRow := FormDataRow{Key: row.Key, Type: row.Type.String(), Disabled: !row.Enabled, Description: newDescription(row.Description, passthrough["description"]), Raw: passthrough}
+	if !row.IsFile() {
+		formRow.Value = row.Value
+		return formRow
+	}
+	formRow.Src = row.Src.Src
+	if sources := asList(passthrough["src"]); len(sources) > 0 && text(sources[0]) == row.Src.Src {
+		formRow.Src = sources
+	}
+	return formRow
+}
+
+func (f FormDataRow) MarshalJSON() ([]byte, error) {
+	row := newObject().set("key", f.Key).set("type", f.Type)
+	if f.Type == formdatatype.File.String() {
+		row.set("src", f.Src)
+	} else {
+		row.set("value", f.Value)
+	}
+	row.setIf(f.Disabled, "disabled", true).setPresent("description", f.Description.Value())
+	return row.merged(f.Raw).MarshalJSON()
+}

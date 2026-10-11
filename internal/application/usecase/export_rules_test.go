@@ -283,3 +283,15 @@ func fields(drops []entity.ExportDrop) []string {
 	}
 	return result
 }
+
+func TestFindPostmanSecretVariableDrops(t *testing.T) {
+	secret := entity.NewVariableRow("token", "")
+	secret.Secret = true
+	got := fields(FindPostmanSecretVariableDrops([]entity.VariableRow{entity.NewVariableRow("base_url", "x"), secret}, "Billing"))
+	if !reflect.DeepEqual(got, []string{"Billing:variables.token"}) {
+		t.Errorf("drops = %v", got)
+	}
+	if len(FindPostmanSecretVariableDrops(nil, "Billing")) != 0 {
+		t.Error("no rows should give no drops")
+	}
+}

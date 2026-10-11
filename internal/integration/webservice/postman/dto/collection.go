@@ -50,3 +50,50 @@ func (c *Collection) Passthrough() map[string]any {
 	fields = withEntry(fields, "event", eventsPassthrough(c.Event))
 	return withEntry(fields, "auth", c.Auth.Passthrough())
 }
+
+func NewCollection(root entity.ExportNode) Collection {
+	container := root.Container
+	passthrough := map[string]any(container.Postman)
+	info, rest := asMap(passthrough["info"]), without(passthrough, collectionKeys...)
+	if container.IsFolder() {
+		info = map[string]any{"description": passthrough["description"]}
+		if id, found := passthrough["id"]; found {
+			info["_postman_id"] = id
+		}
+		rest = without(passthrough, append(itemKeys, "id", "variable")...)
+	}
+	id, found := info["_postman_id"]
+	if !found {
+		id = container.ID
+	}
+	variables := make([]KeyValue, 0, len(container.Variables))
+	for _, row := range container.Variables {
+		variables = append(variables, NewVariable(row))
+	}
+	return Collection{
+		Info:     NewInfo(container.Name, container.Description, id, info),
+		Items:    NewItems(root.Children, !hasPostmanFields(root)),
+		Auth:     NewAuth(container.Auth, passthrough["auth"]),
+		Event:    NewEvents(container.Scripts, root.InheritedScripts, passthrough["event"]),
+		Variable: variables,
+		Raw:      rest,
+	}
+}
+
+func (c Collection) MarshalJSON() ([]byte, error) {
+	collection := newObject().set("info", c.Info).set("item", nonNil(c.Items))
+	if c.Auth != nil {
+		collection.set("auth", c.Auth)
+	}
+	collection.setIf(len(c.Event) > 0, "event", c.Event).setIf(len(c.Variable) > 0, "variable", c.Variable)
+	return collection.merged(c.Raw).MarshalJSON()
+}
+
+func hasPostmanFields(root entity.ExportNode) bool {
+	for _, node := range root.Nodes() {
+		if !node.Container.Postman.IsEmpty() || (node.IsRequest() && !node.Request.Postman.IsEmpty()) {
+			return true
+		}
+	}
+	return false
+}

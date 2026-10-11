@@ -122,3 +122,112 @@ func variableNames(variables []KeyValue) string {
 	}
 	return strings.Join(names, ", ")
 }
+
+const (
+	followRedirectsKey    = "followRedirects"
+	strictSslKey          = "strictSSL"
+	disableUrlEncodingKey = "disableUrlEncoding"
+	disableCookiesKey     = "disableCookies"
+	disabledHeadersKey    = "disabledSystemHeaders"
+)
+
+func NewItem(node entity.ExportNode, xenonIds bool) Item {
+	if node.IsRequest() {
+		return newRequestItem(*node.Request, xenonIds)
+	}
+	container := node.Container
+	passthrough := map[string]any(container.Postman)
+	return Item{
+		Name:        container.Name,
+		Description: newDescription(container.Description, passthrough["description"]),
+		Items:       NewItems(node.Children, xenonIds),
+		Auth:        NewAuth(container.Auth, passthrough["auth"]),
+		Event:       NewEvents(container.Scripts, nil, passthrough["event"]),
+		Raw:         withEntryValue(without(passthrough, itemKeys...), "id", itemId(passthrough, container.ID, xenonIds)),
+	}
+}
+
+func NewItems(nodes []entity.ExportNode, xenonIds bool) []Item {
+	items := make([]Item, 0, len(nodes))
+	for _, node := range nodes {
+		items = append(items, NewItem(node, xenonIds))
+	}
+	return items
+}
+
+func newRequestItem(request entity.Request, xenonIds bool) Item {
+	passthrough := map[string]any(request.Postman)
+	exported := NewRequest(request, passthrough["request"])
+	responses := make([]Response, 0, len(request.Examples))
+	for _, example := range request.Examples {
+		responses = append(responses, NewResponse(example))
+	}
+	return Item{
+		Name:                    request.Name,
+		Description:             newDescription(request.Description, passthrough["description"]),
+		Request:                 &exported,
+		Response:                responses,
+		Event:                   NewEvents(request.Scripts, nil, passthrough["event"]),
+		ProtocolProfileBehavior: protocolProfileBehavior(request, asMap(passthrough["protocolProfileBehavior"])),
+		Raw:                     withEntryValue(without(passthrough, append(itemKeys, "protocolProfileBehavior")...), "id", itemId(passthrough, request.ID, xenonIds)),
+	}
+}
+
+func (i Item) MarshalJSON() ([]byte, error) {
+	item := newObject().set("name", i.Name)
+	if id, found := i.Raw["id"]; found {
+		item.set("id", id)
+	}
+	item.setPresent("description", i.Description.Value())
+	if len(i.Event) > 0 {
+		item.set("event", i.Event)
+	}
+	if i.Request == nil {
+		item.set("item", nonNil(i.Items))
+	} else {
+		item.set("request", i.Request).set("response", nonNil(i.Response))
+	}
+	if i.Auth != nil {
+		item.set("auth", i.Auth)
+	}
+	item.setIf(len(i.ProtocolProfileBehavior) > 0, "protocolProfileBehavior", i.ProtocolProfileBehavior)
+	return item.merged(i.Raw).MarshalJSON()
+}
+
+func protocolProfileBehavior(request entity.Request, passthrough map[string]any) map[string]any {
+	behavior := without(passthrough)
+	defaults := entity.DefaultRequestSettings()
+	settings := map[string]bool{
+		followRedirectsKey:    request.Settings.FollowRedirects,
+		strictSslKey:          request.Settings.VerifySsl,
+		disableUrlEncodingKey: !request.Settings.EncodeUrl,
+		disableCookiesKey:     request.Settings.DisableCookieJar,
+	}
+	fallbacks := map[string]bool{
+		followRedirectsKey:    defaults.FollowRedirects,
+		strictSslKey:          defaults.VerifySsl,
+		disableUrlEncodingKey: !defaults.EncodeUrl,
+		disableCookiesKey:     defaults.DisableCookieJar,
+	}
+	for key, value := range settings {
+		if _, fromPostman := passthrough[key]; fromPostman || value != fallbacks[key] {
+			behavior[key] = value
+		}
+	}
+	if len(request.DisabledAutoHeaders) > 0 {
+		headers := asMap(passthrough[disabledHeadersKey])
+		disabled := without(headers)
+		for _, name := range request.DisabledAutoHeaders {
+			disabled[strings.ToLower(name)] = true
+		}
+		behavior[disabledHeadersKey] = disabled
+	}
+	return behavior
+}
+
+func withEntryValue(fields map[string]any, key string, value any) map[string]any {
+	if value != nil {
+		fields[key] = value
+	}
+	return fields
+}

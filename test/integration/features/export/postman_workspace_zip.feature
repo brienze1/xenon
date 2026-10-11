@@ -17,7 +17,7 @@ Feature: Export the whole workspace as a zip of Postman files
       xenon: 1
       kind: collection
       id: 01JX0000000000000000000201
-      name: Shop API!
+      name: Shop-API
       """
     And the workspace file "acme/environments/local.yaml" contains
       """
@@ -63,7 +63,7 @@ Feature: Export the whole workspace as a zip of Postman files
     Then the file "unzipped/collections/shop-api.postman_collection.json" should be a valid Postman v2.1 collection
     And the file "unzipped/collections/shop-api.postman_collection.json" should contain the field "info.name" equal to "Shop API"
     And the file "unzipped/collections/shop-api-2.postman_collection.json" should be a valid Postman v2.1 collection
-    And the file "unzipped/collections/shop-api-2.postman_collection.json" should contain the field "info.name" equal to "Shop API!"
+    And the file "unzipped/collections/shop-api-2.postman_collection.json" should contain the field "info.name" equal to "Shop-API"
     And the file "unzipped/environments/local.postman_environment.json" should contain the field "values.1.type" equal to "secret"
     And the file "unzipped/environments/local.postman_environment.json" should contain the field "values.1.value" equal to ""
     And the file "unzipped/globals.postman_globals.json" should contain the field "_postman_variable_scope" equal to "globals"

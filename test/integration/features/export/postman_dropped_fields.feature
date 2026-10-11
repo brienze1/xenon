@@ -59,7 +59,8 @@ Feature: Xenon-only data is dropped from Postman exports and listed in the summa
     And the response field "dropped" should contain an item with "item_path" equal to "Shop API/Orders/Login" and "field" equal to "auth.oauth2.useToken, auth.oauth2.autoRefresh"
     And the response field "dropped" should contain an item with "item_path" equal to "Shop API/Orders/Login" and "field" equal to "bruno"
     And the response field "dropped" should contain an item with "item_path" equal to "Shop API/Orders/Login" and "field" equal to "url"
-    And the response should contain the field "dropped" array length equal to 8
+    And the response field "dropped" should contain an item with "item_path" equal to "Shop API" and "field" equal to "variables.api_secret"
+    And the response should contain the field "dropped" array length equal to 9
     And the file "shop.postman_collection.json" should contain the field "item.1.item.1.request.auth.type" equal to "oauth2"
     And the file "shop.postman_collection.json" should not contain "useToken"
     And the file "shop.postman_collection.json" should not contain "autoRefresh"

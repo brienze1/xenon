@@ -21,3 +21,11 @@ func (d *Description) UnmarshalJSON(data []byte) error {
 func (d Description) Passthrough() map[string]any {
 	return without(d.Raw, "content")
 }
+
+func newDescription(content string, passthrough any) Description {
+	return Description{Content: content, Raw: asMap(passthrough)}
+}
+
+func (d Description) Value() any {
+	return descriptionValue(d.Content, d.Raw)
+}

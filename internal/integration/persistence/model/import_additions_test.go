@@ -132,7 +132,7 @@ func TestTypedAuthSubObjectsKeepUnknownKeys(t *testing.T) {
 	}
 	read(t, got, &decoded)
 	roundTrip := decoded.Auth.ToEntity()
-	if roundTrip.ApiKey != auth.ApiKey || roundTrip.Attributes != nil {
+	if roundTrip.ApiKey != auth.ApiKey || !reflect.DeepEqual(roundTrip.Attributes, []entity.AuthAttribute{{Key: "legacy", Value: true}}) {
 		t.Fatalf("ToEntity() = %+v", roundTrip)
 	}
 	document, err := yamlnode.Parse([]byte(got))

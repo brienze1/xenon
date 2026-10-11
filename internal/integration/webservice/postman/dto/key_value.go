@@ -2,6 +2,7 @@ package dto
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
 )
@@ -12,6 +13,7 @@ type KeyValue struct {
 	Raw         map[string]any `json:"-"`
 	Key         any            `json:"key"`
 	Value       any            `json:"value"`
+	Type        string         `json:"type"`
 	Description Description    `json:"description"`
 	Disabled    bool           `json:"disabled"`
 }
@@ -69,4 +71,48 @@ func keyValuePassthrough(rows []KeyValue) []any {
 		result = append(result, rows[index].Passthrough())
 	}
 	return result
+}
+
+func NewKeyValueRow(row entity.KeyValue, passthrough map[string]any) KeyValue {
+	return KeyValue{Key: row.Key, Value: row.Value, Disabled: !row.Enabled, Description: newDescription(row.Description, passthrough["description"]), Raw: passthrough}
+}
+
+func NewPathVariableRow(variable entity.PathVariable, passthrough map[string]any) KeyValue {
+	return KeyValue{Key: variable.Key, Value: variable.Value, Description: newDescription(variable.Description, passthrough["description"]), Raw: passthrough}
+}
+
+func NewVariable(row entity.VariableRow) KeyValue {
+	passthrough := map[string]any(row.Postman)
+	variable := KeyValue{Key: row.Key, Value: row.InitialValue, Type: text(passthrough["type"]), Disabled: !row.Enabled, Description: newDescription(row.Description, passthrough["description"]), Raw: passthrough}
+	switch {
+	case row.Secret:
+		variable.Type, variable.Value = stringVariableType, ""
+	case variable.Type == secretVariableType:
+		variable.Type = stringVariableType
+	default:
+		variable.Value = typedValue(variable.Type, row.InitialValue)
+	}
+	return variable
+}
+
+func (k KeyValue) MarshalJSON() ([]byte, error) {
+	row := newObject().set("key", k.Key).set("value", k.Value).
+		setIf(k.Type != "", "type", k.Type).
+		setIf(k.Disabled, "disabled", true).
+		setPresent("description", k.Description.Value())
+	return row.merged(k.Raw).MarshalJSON()
+}
+
+func typedValue(variableType, value string) any {
+	switch variableType {
+	case numberVariableType:
+		if number, err := strconv.ParseFloat(value, 64); err == nil {
+			return number
+		}
+	case booleanVariableType:
+		if flag, err := strconv.ParseBool(value); err == nil {
+			return flag
+		}
+	}
+	return value
 }

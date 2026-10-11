@@ -38,3 +38,29 @@ func (h *HeaderList) Passthrough(fields map[string]any) map[string]any {
 	}
 	return withList(fields, "header", keyValuePassthrough(h.Rows))
 }
+
+func NewHeaderList(rows []entity.KeyValue, passthrough any) HeaderList {
+	if flag := asMap(passthrough); flag["raw"] == true {
+		headers := make([]KeyValue, 0, len(rows))
+		for _, row := range rows {
+			headers = append(headers, NewKeyValueRow(row, map[string]any{}))
+		}
+		return HeaderList{Rows: headers, IsRawString: true}
+	}
+	headers := make([]KeyValue, 0, len(rows))
+	for index, row := range rows {
+		headers = append(headers, NewKeyValueRow(row, mapAt(asList(passthrough), index)))
+	}
+	return HeaderList{Rows: headers}
+}
+
+func (h HeaderList) MarshalJSON() ([]byte, error) {
+	if !h.IsRawString {
+		return encodeJson(h.Rows)
+	}
+	lines := make([]string, 0, len(h.Rows))
+	for _, row := range h.Rows {
+		lines = append(lines, text(row.Key)+": "+text(row.Value))
+	}
+	return encodeJson(strings.Join(lines, "\n"))
+}

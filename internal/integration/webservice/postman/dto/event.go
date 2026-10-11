@@ -71,3 +71,37 @@ func eventsPassthrough(events []Event) map[string]any {
 	}
 	return metadata
 }
+
+const javaScriptType = "text/javascript"
+
+func NewEvents(own entity.Scripts, inherited []entity.Scripts, passthrough any) []Event {
+	metadata := asMap(passthrough)
+	events := make([]Event, 0, 2*len(inherited)+2)
+	for _, scripts := range inherited {
+		events = appendEvent(events, scripts, scriptphase.PreRequest, nil)
+		events = appendEvent(events, scripts, scriptphase.PostResponse, nil)
+	}
+	events = appendEvent(events, own, scriptphase.PreRequest, metadata[preRequestListen])
+	return appendEvent(events, own, scriptphase.PostResponse, metadata[testListen])
+}
+
+func appendEvent(events []Event, scripts entity.Scripts, phase enums.ScriptPhase, metadata any) []Event {
+	script := scripts.Text(phase)
+	if script == "" && metadata == nil {
+		return events
+	}
+	listen := preRequestListen
+	if phase == scriptphase.PostResponse {
+		listen = testListen
+	}
+	details := asMap(metadata)
+	if metadata == nil {
+		details = map[string]any{"type": javaScriptType}
+	}
+	return append(events, Event{Listen: listen, Disabled: scripts.IsDisabled(phase), Script: Script{Exec: scriptLines(script), Raw: details}})
+}
+
+func (e Event) MarshalJSON() ([]byte, error) {
+	event := newObject().set("listen", e.Listen).set("script", e.Script).setIf(e.Disabled, "disabled", true)
+	return event.MarshalJSON()
+}

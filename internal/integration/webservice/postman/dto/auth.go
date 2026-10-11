@@ -114,3 +114,44 @@ func attributeValue(attributes []any, key string) any {
 	}
 	return nil
 }
+
+func NewAuth(auth entity.Auth, passthrough any) *Auth {
+	switch {
+	case auth.IsInherited():
+		return nil
+	case auth.Type == authtype.None || auth.IsBrunoOnly():
+		return &Auth{Type: noAuth}
+	case auth.IsUnsupported():
+		return &Auth{Type: auth.Unsupported.Type, Attributes: asList(auth.Unsupported.Data), Raw: map[string]any{auth.Unsupported.Type: auth.Unsupported.Data}}
+	}
+	types := asMap(asMap(passthrough)[auth.Type.String()])
+	attributes := make([]any, 0)
+	for _, attribute := range typedAttributes(auth) {
+		if attribute.isExported(types) {
+			attributes = append(attributes, newAttribute(attribute.key, attribute.value, types))
+		}
+	}
+	for _, attribute := range auth.Attributes {
+		attributes = append(attributes, newAttribute(attribute.Key, attribute.Value, types))
+	}
+	return &Auth{Type: auth.Type.String(), Attributes: attributes}
+}
+
+func (a Auth) MarshalJSON() ([]byte, error) {
+	auth := newObject().set("type", a.Type)
+	if a.Type == noAuth {
+		return auth.MarshalJSON()
+	}
+	if data, unsupported := a.Raw[a.Type]; unsupported {
+		return auth.set(a.Type, data).MarshalJSON()
+	}
+	return auth.set(a.Type, a.Attributes).MarshalJSON()
+}
+
+func newAttribute(key string, value any, types map[string]any) *Object {
+	attribute := newObject().set("key", key).set("value", value)
+	if attributeType, found := types[key]; found {
+		attribute.set("type", attributeType)
+	}
+	return attribute
+}

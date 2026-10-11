@@ -28,6 +28,39 @@ type Response struct {
 	Code            int            `json:"code"`
 }
 
+func NewResponse(example entity.SavedExample) Response {
+	passthrough := map[string]any(example.Postman)
+	response := Response{
+		Name:   example.Name,
+		Status: example.Response.Status,
+		Code:   example.Response.Code,
+		Header: NewHeaderList(example.Response.Headers, passthrough["header"]),
+		Raw:    without(passthrough, responseKeys...),
+	}
+	original := NewOriginalRequest(example.Request, passthrough["originalRequest"])
+	response.OriginalRequest = &original
+	if !example.Response.IsBinary() {
+		response.Body = string(example.Response.Body)
+	}
+	return response
+}
+
+func (r Response) MarshalJSON() ([]byte, error) {
+	response := newObject()
+	if id, found := r.Raw["id"]; found {
+		response.set("id", id)
+	}
+	response.set("name", r.Name).set("originalRequest", r.OriginalRequest).set("status", r.Status).set("code", r.Code)
+	if language, found := r.Raw["_postman_previewlanguage"]; found {
+		response.set("_postman_previewlanguage", language)
+	}
+	response.set("header", r.Header)
+	if cookies, found := r.Raw["cookie"]; found {
+		response.set("cookie", cookies)
+	}
+	return response.set("body", text(r.Body)).merged(r.Raw).MarshalJSON()
+}
+
 func (r *Response) UnmarshalJSON(data []byte) error {
 	type plain Response
 	if err := json.Unmarshal(data, (*plain)(r)); err != nil {

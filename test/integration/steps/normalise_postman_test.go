@@ -9,13 +9,20 @@ import (
 )
 
 const (
-	postmanDefaultAttributeType = "string"
-	postmanDefaultRawLanguage   = "text"
-	postmanSecretType           = "secret"
-	postmanDiffLimit            = 25
+	postmanDefaultRawLanguage = "text"
+	postmanSecretType         = "secret"
+	postmanDiffLimit          = 25
 )
 
-var postmanUncomparedKeys = []string{"_exporter_id", "_postman_exported_at", "_postman_exported_using"}
+var (
+	postmanUncomparedKeys    = []string{"_exporter_id", "_postman_exported_at", "_postman_exported_using"}
+	postmanAttributeDefaults = map[string]map[string]any{
+		"apikey": {"in": "header"},
+		"awsv4":  {"addAuthDataToQuery": false},
+		"digest": {"algorithm": "MD5", "qop": "", "disableRetryRequest": false},
+		"oauth2": {"addTokenTo": "header", "client_authentication": "header", "grant_type": "authorization_code", "headerPrefix": "Bearer", "challengeAlgorithm": "S256"},
+	}
+)
 
 // normalisePostman applies the XEN-006 export-formats §4 rules so two Postman documents compare equal when Postman would treat them the same.
 func normalisePostman(value any) any {
@@ -236,11 +243,15 @@ func authAttributeSet(authType string, attributes any) any {
 			if !isMap {
 				return attributes
 			}
-			set[stringify(entry["key"])] = attributeComparison(entry)
+			if !isAttributeDefault(authType, entry) {
+				set[stringify(entry["key"])] = attributeComparison(entry)
+			}
 		}
 	case map[string]any:
 		for key, value := range typed {
-			set[key] = map[string]any{"value": value}
+			if !isAttributeDefault(authType, map[string]any{"key": key, "value": value}) {
+				set[key] = map[string]any{"value": value}
+			}
 		}
 	default:
 		return attributes
@@ -254,12 +265,16 @@ func authAttributeSet(authType string, attributes any) any {
 func attributeComparison(entry map[string]any) map[string]any {
 	comparison := map[string]any{}
 	for name, value := range entry {
-		if name == "key" || (name == "type" && value == postmanDefaultAttributeType) {
-			continue
+		if name != "key" && name != "type" {
+			comparison[name] = value
 		}
-		comparison[name] = value
 	}
 	return comparison
+}
+
+func isAttributeDefault(authType string, entry map[string]any) bool {
+	fallback, found := postmanAttributeDefaults[authType][stringify(entry["key"])]
+	return found && reflect.DeepEqual(entry["value"], fallback)
 }
 
 func withoutLiteralToken(set map[string]any) {

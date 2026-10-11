@@ -112,3 +112,29 @@ func queryOf(raw string) []KeyValue {
 	}
 	return rows
 }
+
+func NewUrl(raw string, params []entity.KeyValue, pathVariables []entity.PathVariable, passthrough map[string]any) Url {
+	query := make([]KeyValue, 0, len(params))
+	for index, param := range params {
+		query = append(query, NewKeyValueRow(param, mapAt(asList(passthrough["query"]), index)))
+	}
+	variables := make([]KeyValue, 0, len(pathVariables))
+	for index, variable := range pathVariables {
+		variables = append(variables, NewPathVariableRow(variable, mapAt(asList(passthrough["variable"]), index)))
+	}
+	return Url{Text: raw, Query: query, Variable: variables, Raw: without(passthrough, "query", "variable")}
+}
+
+func (u Url) MarshalJSON() ([]byte, error) {
+	url := newObject().set("raw", u.Text)
+	if u.Text != "" {
+		parts := NewUrlParts(u.Text)
+		url.setIf(parts.Protocol != "", "protocol", parts.Protocol).
+			setIf(len(parts.Host) > 0, "host", parts.Host).
+			setIf(parts.Port != "", "port", parts.Port).
+			setIf(parts.HasPath, "path", parts.Path).
+			setIf(parts.Hash != "", "hash", parts.Hash)
+	}
+	url.setIf(len(u.Query) > 0, "query", u.Query).setIf(len(u.Variable) > 0, "variable", u.Variable)
+	return url.merged(without(u.Raw, "protocol", "host", "port", "path", "hash")).MarshalJSON()
+}

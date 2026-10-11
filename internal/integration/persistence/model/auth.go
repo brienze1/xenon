@@ -77,6 +77,9 @@ func (a *Auth) ToEntity() entity.Auth {
 	if a.Unsupported != nil {
 		auth.Unsupported = a.Unsupported.ToEntity()
 	}
+	if len(a.Extra) > 0 {
+		auth.Attributes = authAttributesOf(a.Extra)
+	}
 	return auth
 }
 

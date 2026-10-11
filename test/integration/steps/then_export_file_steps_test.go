@@ -153,7 +153,7 @@ func (t *testUtils) theFileShouldBeAValidPostmanCollection(path string) error {
 		return fmt.Errorf("%s is not JSON: %w", path, err)
 	}
 	if err := schema.Validate(document); err != nil {
-		return fmt.Errorf("%s is not a valid Postman v2.1 collection: %w", path, err)
+		return fmt.Errorf("%s is not a valid Postman v2.1 collection: %#v", path, err)
 	}
 	return nil
 }

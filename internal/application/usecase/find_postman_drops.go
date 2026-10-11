@@ -15,6 +15,7 @@ const (
 	dropVaultReferences = "Xenon resolves {{vault:…}} from the workspace secrets; Postman looks them up in its own vault"
 	dropColor           = "Postman environments have no colour"
 	dropConfirm         = "Postman has no confirm-before-send"
+	dropSecretVariable  = "Postman collection v2.1 has no secret variables; it is exported as an empty string variable"
 )
 
 // FindPostmanDrops lists the Xenon-only data a Postman export of root loses; the root's own inherit-scripts toggle is honoured by the export and not listed.
@@ -40,6 +41,16 @@ func FindPostmanEnvironmentDrops(environment entity.Environment, path string) []
 	}
 	if !environment.Bruno.IsEmpty() {
 		drops = append(drops, entity.NewExportDrop(path, "bruno", dropBruno))
+	}
+	return drops
+}
+
+func FindPostmanSecretVariableDrops(rows []entity.VariableRow, path string) []entity.ExportDrop {
+	drops := make([]entity.ExportDrop, 0)
+	for _, row := range rows {
+		if row.Secret {
+			drops = append(drops, entity.NewExportDrop(path, "variables."+row.Key, dropSecretVariable))
+		}
 	}
 	return drops
 }
