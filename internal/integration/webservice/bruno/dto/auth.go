@@ -68,7 +68,7 @@ func (a Auth) ToEntity() entity.Auth {
 	case a.Mode == authtype.Basic.String():
 		return entity.Auth{Type: authtype.Basic, Basic: entity.AuthBasic{Username: a.value(basicUsernameKey), Password: a.value(basicPasswordKey)}}
 	case slices.Contains(mappedAuthTypes, a.Mode):
-		return entity.Auth{Type: authtype.GetAuthType(a.Mode), Attributes: a.attributes()}
+		return entity.NewAttributedAuth(authtype.GetAuthType(a.Mode), a.attributes())
 	default:
 		return entity.NewUnsupportedAuth(entity.AuthUnsupported{Origin: importorigin.Bruno, Type: a.Mode, Data: a.data()})
 	}

@@ -61,7 +61,7 @@ func TestAuth(t *testing.T) {
 	if (Auth{Type: authtype.Bearer}).IsInherited() {
 		t.Error("bearer is not inherited")
 	}
-	supported := map[string]bool{"inherit": true, "none": true, "bearer": true, "basic": true, "apikey": false, "oauth2": false, "awsv4": false, "digest": false}
+	supported := map[string]bool{"inherit": true, "none": true, "bearer": true, "basic": true, "apikey": true, "oauth2": true, "awsv4": true, "digest": true, "unsupported": false}
 	for raw, want := range supported {
 		if got := (Auth{Type: authtype.GetAuthType(raw)}).IsSupported(); got != want {
 			t.Errorf("IsSupported(%s) = %v, want %v", raw, got, want)

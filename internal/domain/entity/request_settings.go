@@ -6,10 +6,11 @@ import (
 )
 
 type RequestSettings struct {
-	TimeoutMs       int
-	FollowRedirects bool
-	VerifySsl       bool
-	EncodeUrl       bool
+	TimeoutMs        int
+	FollowRedirects  bool
+	VerifySsl        bool
+	EncodeUrl        bool
+	DisableCookieJar bool
 }
 
 func DefaultRequestSettings() RequestSettings {

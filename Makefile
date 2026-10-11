@@ -15,6 +15,7 @@ TAG ?= @all
 
 SANDBOX_ASSETS_DIR := internal/integration/webservice/sandbox/assets
 PARITY_EXPECTED_DIR := test/integration/resources/scripts/corpus/expected
+SNIPPET_EXPECTED_DIR := test/integration/resources/snippets/expected
 
 GO_FILES = $(shell find . -name '*.go' -not -path './frontend/*' -not -path './build/*' -not -path './tools/*' -not -path './.git/*')
 INTERNAL_PACKAGES = $(shell go list ./internal/... 2>/dev/null)
@@ -27,7 +28,7 @@ endif
 .PHONY: setup dev bindings build package ensure-dist sort-imports fix-struct-alignment vet \
 	check-dead-code dependency-check tests bdd validate-coverage mutation-test \
 	validate-mutation-coverage validate-test-efficacy frontend-check validate \
-	sandbox-assets parity-oracle parity-diff parity script-reference
+	sandbox-assets parity-oracle parity-diff parity script-reference snippet-golden
 
 setup:
 	@echo "Installing pinned tools..."
@@ -274,6 +275,16 @@ parity-diff:
 	TZ=UTC go test -tags parity -count=1 -v -run TestSandboxMatchesPostmanOracle ./test/integration/parity/... | grep -E -- "--- FAIL|differs|parity:|^(ok|FAIL)"; exit $${PIPESTATUS[0]}
 
 parity: parity-oracle parity-diff
+
+snippet-golden:
+	@echo "Generating the snippet golden corpus with postman-code-generators 2.1.1..."
+	cd tools/snippets && npm ci --no-audit --no-fund && node golden.mjs
+	@if [ -n "$$(git status --porcelain -- $(SNIPPET_EXPECTED_DIR))" ]; then \
+		git status --short -- $(SNIPPET_EXPECTED_DIR); \
+		echo "Snippet golden outputs changed - review and commit $(SNIPPET_EXPECTED_DIR)."; \
+		exit 1; \
+	fi
+	@echo "Snippet golden outputs match the committed corpus."
 
 script-reference:
 	@echo "Generating the script editor reference from reference/members.tsv and the sandbox shims..."

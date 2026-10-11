@@ -1,0 +1,2 @@
+curl --location --request DELETE "https://api.example.test/orders/7" ^
+--header "Authorization: Bearer access-1"

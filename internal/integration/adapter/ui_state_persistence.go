@@ -6,4 +6,6 @@ type UIStatePersistence interface {
 	usecase.FindUIState
 	usecase.SaveUIState
 	usecase.DeleteUIState
+	usecase.FindDigestState
+	usecase.SaveDigestState
 }

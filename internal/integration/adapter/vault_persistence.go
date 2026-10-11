@@ -11,4 +11,8 @@ type VaultPersistence interface {
 	usecase.SealVaultPassphrase
 	usecase.VerifyVaultPassphrase
 	usecase.UnlockVaults
+	usecase.FindOAuthToken
+	usecase.SaveOAuthToken
+	usecase.DeleteOAuthToken
+	usecase.LockOAuthToken
 }

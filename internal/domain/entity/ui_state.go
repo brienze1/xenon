@@ -6,18 +6,21 @@ type UIState struct {
 	ActiveTabID  string
 	PreviewTabID string
 	Tabs         []Tab
+	ClosedTabs   []ClosedTab
+	Snippets     []SnippetOptions
 	Sidebar      SidebarState
 	Layout       Layout
 	Version      int
 }
 
 func NewUIState() UIState {
-	return UIState{Version: uiStateVersion, Tabs: []Tab{}, Sidebar: NewSidebarState(), Layout: NewLayout()}
+	return UIState{Version: uiStateVersion, Tabs: []Tab{}, ClosedTabs: []ClosedTab{}, Snippets: []SnippetOptions{}, Sidebar: NewSidebarState(), Layout: NewLayout()}
 }
 
 func (u UIState) Normalized() UIState {
 	u.Version = uiStateVersion
 	u.Tabs = uniqueTabs(u.Tabs)
+	u.ClosedTabs = LatestClosedTabs(u.ClosedTabs)
 	if _, found := u.tab(u.ActiveTabID); !found {
 		u.ActiveTabID = u.firstTabID()
 	}
@@ -67,6 +70,7 @@ func (u UIState) LogValue() any {
 		"activeTabId":  u.ActiveTabID,
 		"previewTabId": u.PreviewTabID,
 		"tabs":         tabs,
+		"closedTabs":   len(u.ClosedTabs),
 		"sidebar":      u.Sidebar,
 		"layout":       u.Layout,
 		"version":      u.Version,

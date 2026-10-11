@@ -7,6 +7,7 @@ import (
 
 type VaultStorage struct {
 	Secrets           map[string]map[string]string
+	OAuth2Tokens      map[string]OAuth2Token
 	LocalID           string
 	Mode              enums.VaultMode
 	KeyFound          bool

@@ -1,0 +1,12 @@
+import requests
+
+url = "https://api.example.test/me"
+
+payload = {}
+headers = {
+  'Authorization': 'Basic YW5hOnMzY3JldA=='
+}
+
+response = requests.request("GET", url, headers=headers, data=payload)
+
+print(response.text)

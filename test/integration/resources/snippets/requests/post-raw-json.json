@@ -1,0 +1,1 @@
+{ "method": "POST", "url": "https://api.example.test/users", "header": [ { "key": "Content-Type", "value": "application/json" } ], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Ana\",\n  \"tags\": [\"a\", \"b\"]\n}", "options": { "raw": { "language": "json" } } } }

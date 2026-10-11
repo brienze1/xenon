@@ -13,15 +13,15 @@ import (
 type Collection struct {
 	Postman        SourceFields
 	Bruno          SourceFields
-	Auth           Auth
-	Scripts        Scripts
 	ID             string
 	Kind           enums.ItemKind
 	Name           string
 	Description    string
+	Scripts        Scripts
 	Order          []string
 	Headers        []KeyValue
 	Variables      []VariableRow
+	Auth           Auth
 	InheritScripts bool
 	ScriptsEdited  bool
 }

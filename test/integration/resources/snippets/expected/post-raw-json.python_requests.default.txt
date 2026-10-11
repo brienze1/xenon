@@ -1,0 +1,19 @@
+import requests
+import json
+
+url = "https://api.example.test/users"
+
+payload = json.dumps({
+  "name": "Ana",
+  "tags": [
+    "a",
+    "b"
+  ]
+})
+headers = {
+  'Content-Type': 'application/json'
+}
+
+response = requests.request("POST", url, headers=headers, data=payload)
+
+print(response.text)

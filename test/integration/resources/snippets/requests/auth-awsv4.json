@@ -1,0 +1,1 @@
+{ "method": "GET", "url": "https://abc123.execute-api.us-east-1.amazonaws.com/prod/items", "header": [ { "key": "X-Amz-Date", "value": "20150830T123600Z" }, { "key": "Authorization", "value": "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/execute-api/aws4_request, SignedHeaders=host;x-amz-date, Signature=0123456789abcdef" } ] }

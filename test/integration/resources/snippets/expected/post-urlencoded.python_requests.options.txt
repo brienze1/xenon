@@ -1,0 +1,10 @@
+import requests
+
+url = "https://api.example.test/login"
+
+payload = 'user=ana&pass=s3%20cret%26x'
+headers = {}
+
+response = requests.request("POST", url, headers=headers, data=payload, allow_redirects=False, timeout=5)
+
+print(response.text)

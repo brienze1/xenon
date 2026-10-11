@@ -1,8 +1,6 @@
 package model
 
 import (
-	"go.yaml.in/yaml/v3"
-
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/authtype"
 	"github.com/brienze1/xenon/pkg/yamlnode"
@@ -11,19 +9,17 @@ import (
 type Auth struct {
 	Bearer      *AuthBearer      `yaml:"bearer" json:"bearer,omitempty"`
 	Basic       *AuthBasic       `yaml:"basic" json:"basic,omitempty"`
+	ApiKey      *AuthApiKey      `yaml:"apikey" json:"apikey,omitempty"`
+	OAuth2      *AuthOAuth2      `yaml:"oauth2" json:"oauth2,omitempty"`
+	AwsV4       *AuthAwsV4       `yaml:"awsv4" json:"awsv4,omitempty"`
+	Digest      *AuthDigest      `yaml:"digest" json:"digest,omitempty"`
 	Unsupported *AuthUnsupported `yaml:"unsupported" json:"-"`
 	Type        string           `yaml:"type" json:"type"`
-	ApiKey      yaml.Node        `yaml:"apikey" json:"-"`
-	OAuth2      yaml.Node        `yaml:"oauth2" json:"-"`
-	AwsV4       yaml.Node        `yaml:"awsv4" json:"-"`
-	Digest      yaml.Node        `yaml:"digest" json:"-"`
+	Extra       []yamlnode.Field `yaml:"-" json:"-"`
 }
 
 func NewAuth(auth entity.Auth) Auth {
-	model := Auth{Type: auth.Type.String()}
-	if auth.HasAttributes() {
-		*model.attributeSlot(auth.Type.String()) = *authAttributesNode(auth.Attributes)
-	}
+	model := Auth{Type: auth.Type.String(), Extra: authExtraFields(auth.Attributes)}
 	if auth.HasBearer() {
 		bearer := NewAuthBearer(auth.Bearer)
 		model.Bearer = &bearer
@@ -31,6 +27,22 @@ func NewAuth(auth entity.Auth) Auth {
 	if auth.HasBasic() {
 		basic := NewAuthBasic(auth.Basic)
 		model.Basic = &basic
+	}
+	if auth.HasApiKey() {
+		apiKey := NewAuthApiKey(auth.ApiKey)
+		model.ApiKey = &apiKey
+	}
+	if auth.HasOAuth2() {
+		oauth2 := NewAuthOAuth2(auth.OAuth2)
+		model.OAuth2 = &oauth2
+	}
+	if auth.HasAwsV4() {
+		awsV4 := NewAuthAwsV4(auth.AwsV4)
+		model.AwsV4 = &awsV4
+	}
+	if auth.HasDigest() {
+		digest := NewAuthDigest(auth.Digest)
+		model.Digest = &digest
 	}
 	if !auth.Unsupported.IsEmpty() {
 		unsupported := NewAuthUnsupported(auth.Unsupported)
@@ -50,23 +62,22 @@ func (a *Auth) ToEntity() entity.Auth {
 	if a.Basic != nil {
 		auth.Basic = a.Basic.ToEntity()
 	}
+	if a.ApiKey != nil {
+		auth.ApiKey = a.ApiKey.ToEntity()
+	}
+	if a.OAuth2 != nil {
+		auth.OAuth2 = a.OAuth2.ToEntity()
+	}
+	if a.AwsV4 != nil {
+		auth.AwsV4 = a.AwsV4.ToEntity()
+	}
+	if a.Digest != nil {
+		auth.Digest = a.Digest.ToEntity()
+	}
 	if a.Unsupported != nil {
 		auth.Unsupported = a.Unsupported.ToEntity()
 	}
-	if slot := a.attributeSlot(auth.Type.String()); slot != nil {
-		auth.Attributes = authAttributesToEntity(slot)
-	}
 	return auth
-}
-
-func (a *Auth) attributeSlot(authType string) *yaml.Node {
-	slots := map[string]*yaml.Node{
-		authtype.ApiKey.String(): &a.ApiKey,
-		authtype.OAuth2.String(): &a.OAuth2,
-		authtype.AwsV4.String():  &a.AwsV4,
-		authtype.Digest.String(): &a.Digest,
-	}
-	return slots[authType]
 }
 
 func (a *Auth) Field() yamlnode.Field {
@@ -81,11 +92,27 @@ func (a *Auth) Field() yamlnode.Field {
 			yamlnode.String("password", a.Basic.Password),
 		))
 	}
-	if auth.HasAttributes() {
-		fields = append(fields, yamlnode.Reserved(auth.Type.String(), authAttributesNode(auth.Attributes)))
+	if a.ApiKey != nil {
+		fields = append(fields, a.subObject(authtype.ApiKey.String(), a.ApiKey.fields()))
+	}
+	if a.OAuth2 != nil {
+		fields = append(fields, a.subObject(authtype.OAuth2.String(), a.OAuth2.fields()))
+	}
+	if a.AwsV4 != nil {
+		fields = append(fields, a.subObject(authtype.AwsV4.String(), a.AwsV4.fields()))
+	}
+	if a.Digest != nil {
+		fields = append(fields, a.subObject(authtype.Digest.String(), a.Digest.fields()))
 	}
 	if a.Unsupported != nil {
 		fields = append(fields, yamlnode.Reserved("unsupported", a.Unsupported.Node()))
 	}
 	return yamlnode.Object("auth", fields...)
+}
+
+func (a *Auth) subObject(key string, fields []yamlnode.Field) yamlnode.Field {
+	if key == a.Type {
+		fields = append(fields, a.Extra...)
+	}
+	return yamlnode.Object(key, fields...)
 }

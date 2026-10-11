@@ -1,0 +1,1 @@
+curl -m 5 -X DELETE "https://api.example.test/orders/7" -H "Authorization: Bearer access-1"

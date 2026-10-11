@@ -95,6 +95,7 @@ settings:
   followRedirects: true
   verifySsl: true
   encodeUrl: true
+  disableCookieJar: false
 scripts:
   preRequest: ""
   postResponse: ""
@@ -129,7 +130,7 @@ func TestMinimalRequestGetsDefaults(t *testing.T) {
 	}
 	stored := NewRequest(request)
 	written := write(t, stored.Fields())
-	wantYaml := "xenon: 1\nkind: request\nid: 01R\nname: Ping\ndescription: \"\"\nmethod: GET\nurl: \"\"\nparams: []\npathVariables: []\nheaders: []\nautoHeaders:\n  disabled: []\nauth:\n  type: inherit\nbody:\n  mode: none\nsettings:\n  timeoutMs: 0\n  followRedirects: true\n  verifySsl: true\n  encodeUrl: true\nscripts:\n  preRequest: \"\"\n  postResponse: \"\"\ninheritScripts: true\npostman: {}\n"
+	wantYaml := "xenon: 1\nkind: request\nid: 01R\nname: Ping\ndescription: \"\"\nmethod: GET\nurl: \"\"\nparams: []\npathVariables: []\nheaders: []\nautoHeaders:\n  disabled: []\nauth:\n  type: inherit\nbody:\n  mode: none\nsettings:\n  timeoutMs: 0\n  followRedirects: true\n  verifySsl: true\n  encodeUrl: true\n  disableCookieJar: false\nscripts:\n  preRequest: \"\"\n  postResponse: \"\"\ninheritScripts: true\npostman: {}\n"
 	if written != wantYaml {
 		t.Fatalf("got:\n%s\nwant:\n%s", written, wantYaml)
 	}

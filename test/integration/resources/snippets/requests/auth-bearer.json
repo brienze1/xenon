@@ -1,0 +1,1 @@
+{ "method": "GET", "url": "https://api.example.test/me", "header": [ { "key": "Authorization", "value": "Bearer abc.def.ghi" } ] }

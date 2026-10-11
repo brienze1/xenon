@@ -1,0 +1,13 @@
+const myHeaders = new Headers();
+myHeaders.append("Authorization", "Bearer abc.def.ghi");
+
+const requestOptions = {
+  method: "GET",
+  headers: myHeaders,
+  redirect: "follow"
+};
+
+fetch("https://api.example.test/me", requestOptions)
+  .then((response) => response.text())
+  .then((result) => console.log(result))
+  .catch((error) => console.error(error));

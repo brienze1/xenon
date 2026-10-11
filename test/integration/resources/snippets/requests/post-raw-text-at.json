@@ -1,0 +1,1 @@
+{ "method": "POST", "url": "https://api.example.test/notes", "header": [ { "key": "Content-Type", "value": "text/plain" } ], "body": { "mode": "raw", "raw": "  @mention the team  " } }

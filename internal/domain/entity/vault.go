@@ -7,6 +7,7 @@ import (
 
 type Vault struct {
 	Secrets      map[string]map[string]string
+	OAuth2Tokens map[string]OAuth2Token
 	LocalID      string
 	Mode         enums.VaultMode
 	State        enums.VaultState
@@ -20,6 +21,7 @@ func NewVault(localId string, mode enums.VaultMode, state enums.VaultState, secr
 func NewVaultFromStorage(storage VaultStorage) Vault {
 	vault := NewVault(storage.LocalID, storage.Mode, storage.State(), storage.Secrets)
 	vault.KeyAvailable = storage.KeyAvailable
+	vault.OAuth2Tokens = copyTokens(storage.OAuth2Tokens)
 	return vault
 }
 
@@ -74,6 +76,34 @@ func (v Vault) WithoutScope(scope ScopeRef) Vault {
 
 func (v Vault) HasScope(scope ScopeRef) bool {
 	return len(v.SecretsFor(scope)) > 0
+}
+
+func (v Vault) TokenOf(owner string) (OAuth2Token, bool) {
+	if !v.IsReadable() {
+		return OAuth2Token{}, false
+	}
+	token, found := v.OAuth2Tokens[owner]
+	return token, found
+}
+
+func (v Vault) WithToken(token OAuth2Token) Vault {
+	v.OAuth2Tokens = copyTokens(v.OAuth2Tokens)
+	v.OAuth2Tokens[token.Owner] = token
+	return v
+}
+
+func (v Vault) WithoutToken(owner string) Vault {
+	v.OAuth2Tokens = copyTokens(v.OAuth2Tokens)
+	delete(v.OAuth2Tokens, owner)
+	return v
+}
+
+func copyTokens(tokens map[string]OAuth2Token) map[string]OAuth2Token {
+	copied := make(map[string]OAuth2Token, len(tokens))
+	for owner, token := range tokens {
+		copied[owner] = token
+	}
+	return copied
 }
 
 func (v Vault) LogValue() any {

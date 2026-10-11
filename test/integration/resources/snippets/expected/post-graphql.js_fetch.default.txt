@@ -1,0 +1,18 @@
+const myHeaders = new Headers();
+myHeaders.append("Content-Type", "application/json");
+
+const graphql = JSON.stringify({
+  query: "query User($id: ID!) { user(id: $id) { name } }",
+  variables: {"id":"42"}
+})
+const requestOptions = {
+  method: "POST",
+  headers: myHeaders,
+  body: graphql,
+  redirect: "follow"
+};
+
+fetch("https://api.example.test/graphql", requestOptions)
+  .then((response) => response.text())
+  .then((result) => console.log(result))
+  .catch((error) => console.error(error));

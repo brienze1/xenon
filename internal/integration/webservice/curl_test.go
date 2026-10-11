@@ -171,7 +171,7 @@ func TestReadCommandAppendsGetDataToTheUrl(t *testing.T) {
 
 func TestReadCommandMapsAuth(t *testing.T) {
 	digest := readCurl(t, `curl --digest -u 'a:b:c' u`).Request.Auth
-	if digest.Type != authtype.Digest || !reflect.DeepEqual(digest.Attributes, []entity.AuthAttribute{{Key: "username", Value: "a"}, {Key: "password", Value: "b:c"}}) {
+	if digest.Type != authtype.Digest || digest.Digest.Username != "a" || digest.Digest.Password != "b:c" || digest.Attributes != nil {
 		t.Errorf("digest = %+v", digest)
 	}
 	basic := readCurl(t, `curl --digest --basic -u a u`).Request.Auth

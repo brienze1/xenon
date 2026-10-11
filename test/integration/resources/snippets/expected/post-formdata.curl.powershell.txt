@@ -1,0 +1,3 @@
+curl --location 'https://api.example.test/upload' `
+--form 'note="hello"' `
+--form 'file=@"files/invoice.txt"'

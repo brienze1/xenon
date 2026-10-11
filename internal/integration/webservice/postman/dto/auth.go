@@ -50,7 +50,7 @@ func (a *Auth) ToEntity() entity.Auth {
 	case a.Type == authtype.Basic.String():
 		return entity.Auth{Type: authtype.Basic, Basic: entity.AuthBasic{Username: text(attributeValue(attributes, usernameKey)), Password: text(attributeValue(attributes, passwordKey))}}
 	case slices.Contains(reservedAuthTypes, a.Type):
-		return entity.Auth{Type: authtype.GetAuthType(a.Type), Attributes: authAttributes(attributes)}
+		return entity.NewAttributedAuth(authtype.GetAuthType(a.Type), authAttributes(attributes))
 	default:
 		return entity.NewUnsupportedAuth(entity.AuthUnsupported{Origin: importorigin.Postman, Type: a.Type, Data: attributes})
 	}

@@ -155,6 +155,7 @@ Feature: Create, rename, duplicate and delete sidebar items
         followRedirects: true
         verifySsl: true
         encodeUrl: true
+        disableCookieJar: false
       scripts:
         preRequest: ""
         postResponse: ""

@@ -169,7 +169,7 @@ func (c *Command) auth() entity.Auth {
 	}
 	username, password, _ := strings.Cut(*c.User, ":")
 	if c.Digest {
-		return entity.Auth{Type: authtype.Digest, Attributes: []entity.AuthAttribute{{Key: usernameAttribute, Value: username}, {Key: passwordAttribute, Value: password}}}
+		return entity.NewAttributedAuth(authtype.Digest, []entity.AuthAttribute{{Key: usernameAttribute, Value: username}, {Key: passwordAttribute, Value: password}})
 	}
 	return entity.Auth{Type: authtype.Basic, Basic: entity.AuthBasic{Username: username, Password: password}}
 }

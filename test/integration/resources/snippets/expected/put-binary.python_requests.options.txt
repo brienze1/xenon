@@ -1,0 +1,12 @@
+import requests
+
+url = "https://api.example.test/blob"
+
+payload = "<file contents here>"
+headers = {
+  'Content-Type': 'application/octet-stream'
+}
+
+response = requests.request("PUT", url, headers=headers, data=payload, allow_redirects=False, timeout=5)
+
+print(response.text)

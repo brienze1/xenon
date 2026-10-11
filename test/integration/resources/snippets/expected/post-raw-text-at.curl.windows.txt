@@ -1,0 +1,3 @@
+curl --location "https://api.example.test/notes" ^
+--header "Content-Type: text/plain" ^
+--data-raw "@mention the team"

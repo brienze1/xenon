@@ -1,0 +1,15 @@
+{
+  "name": "xenon-snippet-golden",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generates Xenon's code snippet golden corpus with postman-code-generators 2.1.1.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "golden": "node golden.mjs"
+  },
+  "dependencies": {
+    "postman-code-generators": "2.1.1",
+    "postman-collection": "5.3.1"
+  }
+}

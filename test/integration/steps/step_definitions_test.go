@@ -3,6 +3,7 @@ package steps
 import (
 	"context"
 	"flag"
+	"net"
 	"net/http/httptest"
 	"os"
 	"sync"
@@ -36,6 +37,10 @@ type testUtils struct {
 	clipboard     *mock.Clipboard
 	logs          *mock.LogOutput
 	random        *mock.RandomSource
+	oauth         *mock.OAuthProvider
+	browser       *mock.BrowserOpener
+	digest        *mock.DigestServer
+	busyPorts     []net.Listener
 	vars          map[string]string
 	environment   map[string]string
 	readOnly      []string
@@ -89,6 +94,9 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 			clipboard: mock.NewClipboard(),
 			logs:      mock.NewLogOutput(),
 			random:    mock.NewRandomSource(),
+			oauth:     mock.NewOAuthProvider(),
+			browser:   mock.NewBrowserOpener(),
+			digest:    mock.NewDigestServer(),
 		}
 		if os.Getenv("LOG_LEVEL") == "" {
 			_ = os.Setenv("LOG_LEVEL", "off")
@@ -101,6 +109,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		external.SetKeychain(suite.keychain)
 		external.SetClipboard(suite.clipboard)
 		external.SetRandomSource(suite.random)
+		external.SetBrowser(suite.browser)
 		external.SetHttpClientFactory(httpClient.HttpClientFactory(logger.LoggerWrapper()))
 		logger.SetOutput(suite.logs)
 	})
@@ -144,4 +153,8 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	test.registerGivenAppSteps(ctx)
 	test.registerGivenEnvSteps(ctx)
 	test.registerGivenLogSteps(ctx)
+	test.registerGivenOAuthSteps(ctx)
+	test.registerThenOAuthSteps(ctx)
+	test.registerGivenDigestSteps(ctx)
+	test.registerThenDigestSteps(ctx)
 }

@@ -1,0 +1,4 @@
+curl -m 5 "https://api.example.test/users" -H "Content-Type: application/json" -d "{
+  \"name\": \"Ana\",
+  \"tags\": [\"a\", \"b\"]
+}"

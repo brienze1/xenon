@@ -1,0 +1,6 @@
+curl --location 'https://api.example.test/users' `
+--header 'Content-Type: application/json' `
+--data '{
+  "name": "Ana",
+  "tags": ["a", "b"]
+}'

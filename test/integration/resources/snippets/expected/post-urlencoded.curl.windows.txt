@@ -1,0 +1,3 @@
+curl --location "https://api.example.test/login" ^
+--data-urlencode "user=ana" ^
+--data-urlencode "pass=s3 cret&x"

@@ -6,13 +6,14 @@ import (
 )
 
 type EffectiveRequest struct {
-	Auth                Auth
-	Body                Body
+	AuthOwner           string
 	Method              string
 	URL                 string
+	Body                Body
 	Headers             []KeyValue
 	AutoHeaders         []AutoHeader
 	DisabledAutoHeaders []string
+	Auth                Auth
 	Settings            RequestSettings
 }
 

@@ -1,0 +1,43 @@
+package main
+
+import (
+  "fmt"
+  "time"
+  "net/http"
+  "io"
+)
+
+func main() {
+
+  url := "https://api.example.test/digest"
+  method := "GET"
+
+  timeout := time.Duration(5 * time.Second)
+  client := &http.Client {
+    CheckRedirect: func(req *http.Request, via []*http.Request) error {
+      return http.ErrUseLastResponse
+    },
+    Timeout: timeout,
+  }
+  req, err := http.NewRequest(method, url, nil)
+
+  if err != nil {
+    fmt.Println(err)
+    return
+  }
+  req.Header.Add("Authorization", "Digest username=\"ana\", realm=\"xenon@test\", nonce=\"n1\", uri=\"/digest\", algorithm=MD5, response=\"6629fae49393a05397450978507c4ef1\", qop=auth, nc=00000001, cnonce=\"0a4f113b\"")
+
+  res, err := client.Do(req)
+  if err != nil {
+    fmt.Println(err)
+    return
+  }
+  defer res.Body.Close()
+
+  body, err := io.ReadAll(res.Body)
+  if err != nil {
+    fmt.Println(err)
+    return
+  }
+  fmt.Println(string(body))
+}

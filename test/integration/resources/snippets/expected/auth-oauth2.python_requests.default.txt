@@ -1,0 +1,12 @@
+import requests
+
+url = "https://api.example.test/orders/7"
+
+payload = {}
+headers = {
+  'Authorization': 'Bearer access-1'
+}
+
+response = requests.request("DELETE", url, headers=headers, data=payload)
+
+print(response.text)

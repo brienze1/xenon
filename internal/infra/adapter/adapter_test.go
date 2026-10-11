@@ -31,3 +31,20 @@ func TestPickFileAndSaveFileWithoutRunningApplicationFail(t *testing.T) {
 		}
 	}
 }
+
+func TestOpenUrlWithoutRunningApplicationFails(t *testing.T) {
+	if err := NewBrowser().OpenURL("https://example.test"); err == nil {
+		t.Fatal("OpenURL() without a running application must fail")
+	}
+}
+
+func TestLoopbackListensOnTheGivenAddress(t *testing.T) {
+	listener, err := NewLoopback().Listen("127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen() error = %v", err)
+	}
+	defer func() { _ = listener.Close() }()
+	if _, busy := NewLoopback().Listen(listener.Addr().String()); busy == nil {
+		t.Fatal("a second Listen() on a busy address must fail")
+	}
+}

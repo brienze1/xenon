@@ -88,7 +88,7 @@ func TestReadCollectionMapsBruRequestDetails(t *testing.T) {
 	if sparql.Body.Mode != bodymode.Raw || sparql.Body.Raw.Content != "SELECT 1" || sparql.Bruno["bodyMode"] != "sparql" {
 		t.Errorf("sparql body = %+v %v", sparql.Body, sparql.Bruno)
 	}
-	if sparql.Auth.Type != authtype.ApiKey || !reflect.DeepEqual(sparql.Auth.Attributes, []entity.AuthAttribute{{Key: "key", Value: "k"}, {Key: "value", Value: "v"}, {Key: "in", Value: "query"}}) {
+	if sparql.Auth.Type != authtype.ApiKey || sparql.Auth.ApiKey != (entity.ApiKeyAuth{Key: "k", Value: "v", In: entity.ApiKeyInQuery}) || sparql.Auth.Attributes != nil {
 		t.Errorf("apikey = %+v", sparql.Auth)
 	}
 	if sparql.Settings.EncodeUrl || !sparql.Settings.FollowRedirects || sparql.Settings.TimeoutMs != 0 {

@@ -182,6 +182,7 @@ Feature: Hand-edited and unusual workspace files
         followRedirects: true
         verifySsl: true
         encodeUrl: true
+        disableCookieJar: false
       scripts:
         preRequest: ""
         postResponse: ""

@@ -1,0 +1,13 @@
+import requests
+
+url = "https://api.example.test/upload"
+
+payload = {'note': 'hello'}
+files=[
+  ('file',('invoice.txt',open('files/invoice.txt','rb'),'text/plain'))
+]
+headers = {}
+
+response = requests.request("POST", url, headers=headers, data=payload, files=files)
+
+print(response.text)

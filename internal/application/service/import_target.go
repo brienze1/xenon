@@ -8,14 +8,14 @@ import (
 type importTarget struct {
 	collection   *entity.Collection
 	globals      *entity.Workspace
-	workspace    entity.RegisteredWorkspace
-	planned      entity.ImportPlanItem
 	parentPath   string
-	item         entity.ImportItem
+	planned      entity.ImportPlanItem
+	workspace    entity.RegisteredWorkspace
 	environments []entity.Environment
 	siblings     entity.TreeNode
 	tree         entity.Tree
 	placement    entity.ImportPlacement
+	item         entity.ImportItem
 }
 
 func (t importTarget) clashes() []entity.Clash {

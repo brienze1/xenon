@@ -79,3 +79,33 @@ func TestArchiveFactoryIsASingletonThatCanBeReplaced(t *testing.T) {
 		t.Fatal("SetArchive must replace the cached instance")
 	}
 }
+
+type fakeBrowser struct{ opened []string }
+
+func (f *fakeBrowser) OpenURL(url string) error {
+	f.opened = append(f.opened, url)
+	return nil
+}
+
+func TestBrowserFactoryIsASingletonThatCanBeReplaced(t *testing.T) {
+	first := GetBrowser()
+	if first == nil || GetBrowser() != first {
+		t.Fatal("GetBrowser must return one cached instance")
+	}
+	replacement := &fakeBrowser{}
+	SetBrowser(replacement)
+	if err := GetBrowser().OpenURL("https://example.test"); err != nil || len(replacement.opened) != 1 {
+		t.Fatal("SetBrowser must replace the cached instance")
+	}
+}
+
+func TestLoopbackFactoryIsASingletonThatCanBeReplaced(t *testing.T) {
+	first := GetLoopback()
+	if first == nil || GetLoopback() != first {
+		t.Fatal("GetLoopback must return one cached instance")
+	}
+	SetLoopback(first)
+	if GetLoopback() != first {
+		t.Fatal("SetLoopback must replace the cached instance")
+	}
+}

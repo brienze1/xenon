@@ -2,6 +2,8 @@ package steps
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/cucumber/godog"
 )
@@ -11,6 +13,7 @@ func (t *testUtils) registerThenApiSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the (\d+) "([^"]*)" request to "([^"]*)" should have the header "([^"]*)" equal to "([^"]*)"$`, t.theRequestShouldHaveTheHeaderEqualTo)
 	ctx.Then(`^the (\d+) "([^"]*)" request to "([^"]*)" should have the header "([^"]*)" matching "([^"]*)"$`, t.theRequestShouldHaveTheHeaderMatching)
 	ctx.Then(`^the (\d+) "([^"]*)" request to "([^"]*)" should not have the header "([^"]*)"$`, t.theRequestShouldNotHaveTheHeader)
+	ctx.Then(`^the (\d+) "([^"]*)" request to "([^"]*)" should have the header "([^"]*)" equal to the resource file "([^"]*)"$`, t.theRequestShouldHaveTheHeaderEqualToTheResourceFile)
 	ctx.Then(`^the (\d+) "([^"]*)" request to "([^"]*)" should have the query "([^"]*)" equal to "([^"]*)"$`, t.theRequestShouldHaveTheQueryEqualTo)
 	ctx.Then(`^the (\d+) "([^"]*)" request to "([^"]*)" should have the query "([^"]*)" matching "([^"]*)"$`, t.theRequestShouldHaveTheQueryMatching)
 	ctx.Then(`^the (\d+) "([^"]*)" request to "([^"]*)" should have the raw query "([^"]*)"$`, t.theRequestShouldHaveTheRawQuery)
@@ -97,4 +100,12 @@ func (t *testUtils) theRequestShouldHaveTheFormFileNamedWithContent(index int, m
 		return err
 	}
 	return expectEqual(string(data), t.substitute(content), "form file content")
+}
+
+func (t *testUtils) theRequestShouldHaveTheHeaderEqualToTheResourceFile(index int, method, path, key, resource string) error {
+	expected, err := os.ReadFile(resourcePath(resource))
+	if err != nil {
+		return err
+	}
+	return t.theRequestShouldHaveTheHeaderEqualTo(index, method, path, key, strings.TrimSpace(string(expected)))
 }

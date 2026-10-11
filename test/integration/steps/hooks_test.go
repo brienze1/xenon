@@ -22,6 +22,9 @@ func (t *testUtils) before() error {
 	t.clipboard.Reset()
 	t.logs.Reset()
 	t.random.Reset()
+	t.oauth.Reset()
+	t.browser.Reset()
+	t.digest.Reset()
 	t.restarts = 0
 	t.environment = map[string]string{}
 	t.readOnly = nil
@@ -64,6 +67,10 @@ func (t *testUtils) after() {
 	for _, path := range t.readOnly {
 		_ = os.Chmod(path, 0o755)
 	}
+	for _, listener := range t.busyPorts {
+		_ = listener.Close()
+	}
+	t.busyPorts = nil
 	for name, previous := range t.environment {
 		_ = os.Setenv(name, previous)
 	}

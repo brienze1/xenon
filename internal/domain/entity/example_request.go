@@ -7,13 +7,13 @@ import (
 )
 
 type ExampleRequest struct {
-	Auth          Auth
-	Body          Body
 	Method        string
 	URL           string
+	Body          Body
 	Params        []KeyValue
 	PathVariables []PathVariable
 	Headers       []KeyValue
+	Auth          Auth
 }
 
 func NewExampleRequest() ExampleRequest {

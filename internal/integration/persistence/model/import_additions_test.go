@@ -119,11 +119,11 @@ func TestUiSaveKeepsImportOnlyBlocks(t *testing.T) {
 	}
 }
 
-func TestReservedAuthAttributesFollowTheType(t *testing.T) {
-	auth := entity.Auth{Type: authtype.ApiKey, Attributes: []entity.AuthAttribute{{Key: "key", Value: "X-Key"}, {Key: "value", Value: "{{k}}"}, {Key: "in", Value: "header"}}}
+func TestTypedAuthSubObjectsKeepUnknownKeys(t *testing.T) {
+	auth := entity.NewAttributedAuth(authtype.ApiKey, []entity.AuthAttribute{{Key: "key", Value: "X-Key"}, {Key: "value", Value: "{{k}}"}, {Key: "in", Value: "header"}, {Key: "legacy", Value: true}})
 	stored := NewAuth(auth)
 	got := write(t, []yamlnode.Field{stored.Field()})
-	want := "auth:\n  type: apikey\n  apikey:\n    key: X-Key\n    value: '{{k}}'\n    in: header\n"
+	want := "auth:\n  type: apikey\n  apikey:\n    key: X-Key\n    value: '{{k}}'\n    in: header\n    legacy: true\n"
 	if got != want {
 		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
 	}
@@ -131,25 +131,26 @@ func TestReservedAuthAttributesFollowTheType(t *testing.T) {
 		Auth Auth `yaml:"auth"`
 	}
 	read(t, got, &decoded)
-	if roundTrip := decoded.Auth.ToEntity(); !reflect.DeepEqual(roundTrip, auth) {
+	roundTrip := decoded.Auth.ToEntity()
+	if roundTrip.ApiKey != auth.ApiKey || roundTrip.Attributes != nil {
 		t.Fatalf("ToEntity() = %+v", roundTrip)
 	}
-	for _, authType := range []string{"oauth2", "awsv4", "digest"} {
-		var other struct {
-			Auth Auth `yaml:"auth"`
-		}
-		read(t, "auth:\n  type: "+authType+"\n  "+authType+":\n    a: 1\n  apikey:\n    key: kept\n", &other)
-		attributes := other.Auth.ToEntity().Attributes
-		if len(attributes) != 1 || attributes[0].Key != "a" || attributes[0].Value != 1 {
-			t.Errorf("%s attributes = %+v", authType, attributes)
-		}
+	document, err := yamlnode.Parse([]byte(got))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
 	}
-	var broken struct {
+	saved := NewAuth(roundTrip)
+	yamlnode.Patch(yamlnode.Root(document), []yamlnode.Field{saved.Field()})
+	if again, _ := yamlnode.Encode(document); string(again) != got {
+		t.Fatalf("a save dropped unknown keys:\n%s", again)
+	}
+	var partial struct {
 		Auth Auth `yaml:"auth"`
 	}
-	read(t, "auth:\n  type: digest\n  digest: plain\n", &broken)
-	if attributes := broken.Auth.ToEntity().Attributes; attributes != nil {
-		t.Fatalf("a non-mapping sub-key has no attributes, got %+v", attributes)
+	read(t, "auth:\n  type: oauth2\n  oauth2:\n    clientId: xenon\n  digest:\n    username: ana\n", &partial)
+	partialAuth := partial.Auth.ToEntity()
+	if partialAuth.OAuth2.ClientID != "xenon" || partialAuth.OAuth2.HeaderPrefix != entity.DefaultHeaderPrefix || !partialAuth.OAuth2.AutoRefresh || partialAuth.Digest.Username != "ana" || partialAuth.Digest.Algorithm.String() != "MD5" || !partialAuth.AwsV4.IsBlank() {
+		t.Fatalf("partial auth = %+v", partialAuth)
 	}
 }
 

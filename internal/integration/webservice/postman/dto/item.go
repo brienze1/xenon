@@ -109,6 +109,9 @@ func settingsToEntity(behavior map[string]any) entity.RequestSettings {
 	if disabled, isBool := behavior["disableUrlEncoding"].(bool); isBool {
 		settings.EncodeUrl = !disabled
 	}
+	if disabled, isBool := behavior["disableCookies"].(bool); isBool {
+		settings.DisableCookieJar = disabled
+	}
 	return settings
 }
 

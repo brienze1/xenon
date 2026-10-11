@@ -1,0 +1,2 @@
+curl --location "https://api.example.test/me" ^
+--header "Authorization: Basic YW5hOnMzY3JldA=="
