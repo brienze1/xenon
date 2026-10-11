@@ -5,7 +5,10 @@ import type {
   KeyValue as KeyValueDto,
   PathVariable as PathVariableDto,
   Request as RequestDto,
+  ScriptError as ScriptErrorDto,
+  Scripts as ScriptsDto,
   SendResult as SendResultDto,
+  TestResult as TestResultDto,
 } from '../../../bindings/github.com/brienze1/xenon/internal/integration/entrypoint/dto/models'
 import { newRowId } from '@/shared/lib/rows'
 
@@ -81,6 +84,15 @@ export interface RequestSettings {
   encodeUrl: boolean
 }
 
+export type ScriptPhase = 'preRequest' | 'postResponse'
+
+/** A request's, folder's or collection's scripts; `disabled` lists the phases imported as disabled. */
+export interface ScriptSet {
+  preRequest: string
+  postResponse: string
+  disabled: ScriptPhase[]
+}
+
 export interface RequestDraft {
   id: string
   name: string
@@ -94,6 +106,8 @@ export interface RequestDraft {
   auth: RequestAuth
   body: RequestBody
   settings: RequestSettings
+  scripts: ScriptSet
+  inheritScripts: boolean
 }
 
 export interface AutoHeader {
@@ -117,8 +131,40 @@ export interface SendFailure {
   hint: string
 }
 
+export type TestStatus = 'passed' | 'failed' | 'skipped'
+
+export interface TestResult {
+  index: number
+  name: string
+  status: TestStatus
+  errorMessage: string
+  /** The script the test came from, e.g. "Billing · Post-response". */
+  scriptLabel: string
+  async: boolean
+}
+
+export interface TestSummary {
+  total: number
+  passed: number
+  failed: number
+  skipped: number
+}
+
+export interface ScriptFailure {
+  kind: string
+  message: string
+  line: number | null
+  column: number | null
+  scriptLabel: string
+}
+
 export interface SendResult {
   tabId: string
+  sendId: string
+  outcome: SendOutcome
+  tests: TestResult[]
+  testSummary: TestSummary
+  scriptErrors: ScriptFailure[]
   ok: boolean
   statusCode: number
   statusText: string
@@ -154,7 +200,46 @@ export function emptyDraft(): RequestDraft {
       graphql: { query: '', variables: '' },
     },
     settings: { timeoutMs: 0, followRedirects: true, verifySsl: true, encodeUrl: true },
+    scripts: emptyScripts(),
+    inheritScripts: true,
   }
+}
+
+export function emptyScripts(): ScriptSet {
+  return { preRequest: '', postResponse: '', disabled: [] }
+}
+
+const SCRIPT_PHASES: ReadonlySet<string> = new Set<ScriptPhase>(['preRequest', 'postResponse'])
+const TEST_STATUSES: ReadonlySet<string> = new Set<TestStatus>(['passed', 'failed', 'skipped'])
+
+export function toScriptSet(dto: ScriptsDto | null | undefined): ScriptSet {
+  if (!dto) {
+    return emptyScripts()
+  }
+  return {
+    preRequest: dto.pre_request,
+    postResponse: dto.post_response,
+    disabled: (dto.disabled ?? []).filter((phase): phase is ScriptPhase => SCRIPT_PHASES.has(phase)),
+  }
+}
+
+export function toScriptsDto(scripts: ScriptSet): ScriptsDto {
+  return { pre_request: scripts.preRequest, post_response: scripts.postResponse, disabled: [...scripts.disabled] }
+}
+
+function toTestResult(dto: TestResultDto): TestResult {
+  return {
+    index: dto.index,
+    name: dto.name,
+    status: oneOf<TestStatus>(TEST_STATUSES, dto.status, 'failed'),
+    errorMessage: dto.error_message ?? '',
+    scriptLabel: dto.script.label,
+    async: dto.async,
+  }
+}
+
+function toScriptFailure(dto: ScriptErrorDto): ScriptFailure {
+  return { kind: dto.kind, message: dto.message, line: dto.line ?? null, column: dto.column ?? null, scriptLabel: dto.script.label }
 }
 
 function oneOf<T extends string>(values: ReadonlySet<string>, value: string | undefined, fallback: T): T {
@@ -234,6 +319,8 @@ export function toRequestDraft(dto: RequestDto): RequestDraft {
       verifySsl: dto.settings.verify_ssl ?? true,
       encodeUrl: dto.settings.encode_url ?? true,
     },
+    scripts: toScriptSet(dto.scripts),
+    inheritScripts: dto.inherit_scripts ?? true,
   }
 }
 
@@ -264,6 +351,8 @@ export function toRequestDto(draft: RequestDraft): RequestDto {
       verify_ssl: draft.settings.verifySsl,
       encode_url: draft.settings.encodeUrl,
     },
+    scripts: toScriptsDto(draft.scripts),
+    inherit_scripts: draft.inheritScripts,
   }
 }
 
@@ -274,6 +363,11 @@ export function toAutoHeader(dto: AutoHeaderDto): AutoHeader {
 export function toSendResult(dto: SendResultDto): SendResult {
   return {
     tabId: dto.tab_id,
+    sendId: dto.send_id,
+    outcome: oneOf<SendOutcome>(SEND_OUTCOME_SET, dto.outcome, 'sent'),
+    tests: (dto.tests ?? []).map(toTestResult),
+    testSummary: { total: dto.test_summary.total, passed: dto.test_summary.passed, failed: dto.test_summary.failed, skipped: dto.test_summary.skipped },
+    scriptErrors: (dto.script_errors ?? []).map(toScriptFailure),
     ok: dto.ok,
     statusCode: dto.status_code,
     statusText: dto.status_text,
@@ -299,6 +393,11 @@ export function toSendResult(dto: SendResultDto): SendResult {
 export function cancelledResult(tabId: string): SendResult {
   return {
     tabId,
+    sendId: '',
+    outcome: 'cancelled',
+    tests: [],
+    testSummary: { total: 0, passed: 0, failed: 0, skipped: 0 },
+    scriptErrors: [],
     ok: false,
     statusCode: 0,
     statusText: '',

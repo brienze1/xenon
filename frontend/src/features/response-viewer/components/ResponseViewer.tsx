@@ -12,7 +12,10 @@ import { ResponseBody } from './ResponseBody'
 import { ResponseError } from './ResponseError'
 import { ResponseHeaders } from './ResponseHeaders'
 import { SaveAsExampleButton } from './SaveAsExampleButton'
+import { ScriptErrorPanel } from './ScriptErrorPanel'
 import { StatusLine } from './StatusLine'
+import { TestResultsTab } from './TestResultsTab'
+import { testResultsTitle } from '@/features/response-viewer/lib/tests'
 import styles from './ResponseViewer.module.css'
 
 const SEND_NEXT_STEP = 'Check the URL and your connection, then send the request again.'
@@ -77,6 +80,11 @@ export function ResponseViewer({ tabId }: ResponseViewerProps) {
         SENDING
       ) : result === null ? (
         EMPTY_RESPONSE
+      ) : result.outcome === 'stopped_by_script_error' || result.outcome === 'skipped_by_script' ? (
+        <>
+          <ScriptErrorPanel outcome={result.outcome} errors={result.scriptErrors} />
+          {result.tests.length > 0 ? <TestResultsTab tests={result.tests} summary={result.testSummary} /> : null}
+        </>
       ) : result.error ? (
         <ResponseError failure={result.error} />
       ) : (
@@ -85,16 +93,21 @@ export function ResponseViewer({ tabId }: ResponseViewerProps) {
             <StatusLine result={result} />
             <SaveAsExampleButton tabId={tabId} />
           </div>
+          {result.scriptErrors.length > 0 ? <ScriptErrorPanel outcome={result.outcome} errors={result.scriptErrors} /> : null}
           <Tabs.Root value={panel} onValueChange={setPanel} className={styles.tabs}>
             <Tabs.List label="Response">
               {BODY_TAB}
               <Tabs.Tab value="headers">Headers ({formatNumber(result.headers.length, 0)})</Tabs.Tab>
+              <Tabs.Tab value="tests">{testResultsTitle(result.testSummary)}</Tabs.Tab>
             </Tabs.List>
             <Tabs.Panel value="body" className={styles.panel}>
               <ResponseBody key={version} tabId={tabId} result={result} />
             </Tabs.Panel>
             <Tabs.Panel value="headers" className={styles.panel}>
               <ResponseHeaders headers={result.headers} />
+            </Tabs.Panel>
+            <Tabs.Panel value="tests" className={styles.panel}>
+              <TestResultsTab key={version} tests={result.tests} summary={result.testSummary} />
             </Tabs.Panel>
           </Tabs.Root>
         </>

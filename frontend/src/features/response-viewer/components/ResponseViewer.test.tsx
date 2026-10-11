@@ -20,6 +20,7 @@ const { useExamplesStore } = await import('@/features/examples/store')
 function result(overrides: Partial<SendResult> = {}): SendResult {
   return {
     tabId: 'tab',
+    sendId: 's', outcome: 'sent', tests: [], testSummary: { total: 0, passed: 0, failed: 0, skipped: 0 }, scriptErrors: [],
     ok: true,
     statusCode: 200,
     statusText: 'OK',

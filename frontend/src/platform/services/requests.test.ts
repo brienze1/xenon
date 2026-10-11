@@ -26,6 +26,11 @@ const { toRequestDto } = await import('../mappers/request')
 const timings = { dns_ms: 0, connect_ms: 0, tls_ms: 0, first_byte_ms: 0, download_ms: 0, total_ms: 3 }
 const sendResult = {
   tab_id: 'tab',
+  send_id: 's',
+  outcome: 'sent',
+  tests: [],
+  test_summary: { total: 0, passed: 0, failed: 0, skipped: 0 },
+  script_errors: [],
   ok: true,
   status_code: 200,
   status_text: 'OK',

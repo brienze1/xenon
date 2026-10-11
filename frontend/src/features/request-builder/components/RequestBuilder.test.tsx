@@ -2,7 +2,7 @@ import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
-import { emptyDraft, type RequestDraft } from '@/platform/mappers/request'
+import { emptyDraft, type RequestDraft, type SendResult } from '@/platform/mappers/request'
 
 vi.mock('@/platform/services/requests', async (importOriginal) => {
   const { confirmationOf, isCurlRefusal, missingSecretsOf } = await importOriginal<typeof import('@/platform/services/requests')>()
@@ -381,9 +381,14 @@ describe('RequestBuilder', () => {
   })
 })
 
-function emptyResult(tabId: string) {
+function emptyResult(tabId: string): SendResult {
   return {
     tabId,
+    sendId: '',
+    outcome: 'error',
+    tests: [],
+    testSummary: { total: 0, passed: 0, failed: 0, skipped: 0 },
+    scriptErrors: [],
     ok: false,
     statusCode: 0,
     statusText: '',

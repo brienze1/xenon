@@ -3,6 +3,8 @@ import type { Request as RequestDto } from '../../../bindings/github.com/brienze
 import { cancelledResult, emptyDraft, noAcknowledgement, toRequestDraft, toRequestDto, toSendResult } from './request'
 
 const dto: RequestDto = {
+  scripts: { pre_request: 'pm.test()', post_response: '', disabled: ['postResponse', 'bogus'] },
+  inherit_scripts: false,
   id: '01J',
   name: 'Create invoice',
   description: 'd',
@@ -47,7 +49,7 @@ describe('request mapper', () => {
 
   it('round trips a draft to a DTO', () => {
     const back = toRequestDto(toRequestDraft(dto))
-    expect(back).toEqual({ ...dto, revision: '', headers: [{ key: 'Accept', value: '*/*', description: '', enabled: true }], settings: { ...dto.settings, encode_url: true } })
+    expect(back).toEqual({ ...dto, revision: '', scripts: { pre_request: 'pm.test()', post_response: '', disabled: ['postResponse'] }, inherit_scripts: false, headers: [{ key: 'Accept', value: '*/*', description: '', enabled: true }], settings: { ...dto.settings, encode_url: true } })
   })
 
   it('keeps unsupported auth details read-only and the file re-pick state', () => {
@@ -89,8 +91,9 @@ describe('request mapper', () => {
       tab_id: 't',
       send_id: 's',
       outcome: 'sent',
-      tests: [],
-      script_errors: [],
+      tests: [{ index: 0, name: 'ok', status: 'passed', script: { owner_kind: 'request', owner_id: 'r', owner_name: 'R', phase: 'postResponse', label: 'R · Post-response' }, async: false }],
+      test_summary: { total: 1, passed: 1, failed: 0, skipped: 0 },
+      script_errors: [{ kind: 'script_runtime', message: 'Error: x', line: 2, column: 3, script: { owner_kind: 'request', owner_id: 'r', owner_name: 'R', phase: 'postResponse', label: 'R · Post-response' } }],
       ok: true,
       status_code: 200,
       status_text: 'OK',
@@ -103,9 +106,16 @@ describe('request mapper', () => {
       inline_body: 'hi',
       timings,
     })
+    expect(ok).toMatchObject({
+      sendId: 's',
+      outcome: 'sent',
+      tests: [{ index: 0, name: 'ok', status: 'passed', errorMessage: '', scriptLabel: 'R · Post-response', async: false }],
+      testSummary: { total: 1, passed: 1 },
+      scriptErrors: [{ kind: 'script_runtime', message: 'Error: x', line: 2, column: 3, scriptLabel: 'R · Post-response' }],
+    })
     expect(ok).toMatchObject({ tabId: 't', inlineBody: 'hi', error: null, timings: { dnsMs: 1, totalMs: 15 }, headers: [{ key: 'A', value: '1' }] })
-    const failed = toSendResult({ ...ok, tab_id: 't', send_id: 's', outcome: 'error', tests: null, script_errors: null, ok: false, status_code: 0, status_text: '', proto: '', headers: null, size_bytes: 0, content_type: '', is_binary: false, body_url: '', timings, error: { kind: 'nope', message: 'm', hint: 'h' } })
-    expect(failed).toMatchObject({ inlineBody: null, headers: [], error: { kind: 'other', message: 'm', hint: 'h' } })
+    const failed = toSendResult({ ...ok, tab_id: 't', send_id: 's', outcome: 'unknown', tests: null, test_summary: { total: 0, passed: 0, failed: 0, skipped: 0 }, script_errors: null, ok: false, status_code: 0, status_text: '', proto: '', headers: null, size_bytes: 0, content_type: '', is_binary: false, body_url: '', timings, error: { kind: 'nope', message: 'm', hint: 'h' } })
+    expect(failed).toMatchObject({ outcome: 'sent', tests: [], scriptErrors: [], inlineBody: null, headers: [], error: { kind: 'other', message: 'm', hint: 'h' } })
     expect(cancelledResult('t')).toMatchObject({ ok: false, error: { kind: 'cancelled', message: 'Request cancelled' } })
   })
 
