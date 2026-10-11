@@ -9,6 +9,7 @@ import (
 const (
 	Info      enums.RightPanelView = "info"
 	Variables enums.RightPanelView = "variables"
+	Code      enums.RightPanelView = "code"
 	Unknown   enums.RightPanelView = "unknown"
 )
 
@@ -18,6 +19,8 @@ func GetRightPanelView(s string) enums.RightPanelView {
 		return Info
 	case "variables":
 		return Variables
+	case "code":
+		return Code
 	default:
 		return Unknown
 	}
