@@ -169,3 +169,56 @@ func TestExportAuthAndVariableRules(t *testing.T) {
 		t.Error("HasColor")
 	}
 }
+
+func TestExportCountsAddEveryCount(t *testing.T) {
+	one := ExportCounts{Collections: 1, Folders: 2, Requests: 3, Examples: 4, Environments: 5, Variables: 6}
+	if got := one.Add(one); got != (ExportCounts{Collections: 2, Folders: 4, Requests: 6, Examples: 8, Environments: 10, Variables: 12}) {
+		t.Errorf("add = %+v", got)
+	}
+}
+
+func TestNewExportOptionsLooksAtEveryScope(t *testing.T) {
+	secret := NewVariableRow("token", "")
+	secret.Secret = true
+	plain := NewVariableRow("base", "https://x")
+	local := NewLocalVariables().
+		WithCurrentValues(NewEnvironmentScopeRef("e"), map[string]string{"base": "http://local", "token": "t"}).
+		WithCurrentValues(NewGlobalsScopeRef(), map[string]string{"token": "only-secret", "unknown": "x"})
+	cases := []struct {
+		scopes  []ExportScope
+		secrets bool
+		current bool
+	}{
+		{scopes: nil},
+		{scopes: []ExportScope{NewExportScope(NewGlobalsScopeRef(), []VariableRow{plain})}},
+		{scopes: []ExportScope{NewExportScope(NewGlobalsScopeRef(), []VariableRow{secret}), NewExportScope(NewEnvironmentScopeRef("e"), []VariableRow{plain})}, secrets: true, current: true},
+		{scopes: []ExportScope{NewExportScope(NewEnvironmentScopeRef("e"), []VariableRow{plain}), NewExportScope(NewGlobalsScopeRef(), []VariableRow{secret})}, secrets: true, current: true},
+		{scopes: []ExportScope{NewExportScope(NewEnvironmentScopeRef("e"), []VariableRow{secret})}, secrets: true},
+		{scopes: []ExportScope{NewExportScope(NewEnvironmentScopeRef("other"), []VariableRow{plain})}},
+	}
+	for index, tc := range cases {
+		options := NewExportOptions(exportitemkind.Environment, "dev", tc.scopes, local)
+		if options.HasSecrets != tc.secrets || options.HasCurrentValues != tc.current || options.SuggestedFileName != "dev" || len(options.Formats) != 2 {
+			t.Errorf("case %d: %+v", index, options)
+		}
+	}
+}
+
+func TestVariableRowWithCurrentAsInitial(t *testing.T) {
+	secret := NewVariableRow("token", "")
+	secret.Secret = true
+	cases := []struct {
+		row  VariableRow
+		want string
+	}{
+		{NewVariableRow("base", "https://x"), "http://local"},
+		{NewVariableRow("tenant", "acme"), "acme"},
+		{secret, ""},
+	}
+	current := map[string]string{"base": "http://local", "tenant": "", "token": "t"}
+	for _, tc := range cases {
+		if got := tc.row.WithCurrentAsInitial(current).InitialValue; got != tc.want {
+			t.Errorf("%s = %q, want %q", tc.row.Key, got, tc.want)
+		}
+	}
+}

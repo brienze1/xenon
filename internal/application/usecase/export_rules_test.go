@@ -295,3 +295,19 @@ func TestFindPostmanSecretVariableDrops(t *testing.T) {
 		t.Error("no rows should give no drops")
 	}
 }
+
+func TestFindPostmanDropsLooksAtEveryNode(t *testing.T) {
+	first := entity.NewRequest("a", "A")
+	second := entity.NewRequest("b", "B")
+	second.Settings.TimeoutMs = 10
+	folder := entity.NewFolder("f", "F")
+	folder.Headers = []entity.KeyValue{entity.NewKeyValue("X", "1")}
+	root := entity.NewContainerExportNode(entity.NewCollection("c", "C"), "C", []entity.ExportNode{
+		entity.NewRequestExportNode(first, "C/A"),
+		entity.NewRequestExportNode(second, "C/B"),
+		entity.NewContainerExportNode(folder, "C/F", []entity.ExportNode{}),
+	})
+	if got := fields(FindPostmanDrops(root)); !reflect.DeepEqual(got, []string{"C/B:settings.timeoutMs", "C/F:headers"}) {
+		t.Errorf("drops = %v", got)
+	}
+}

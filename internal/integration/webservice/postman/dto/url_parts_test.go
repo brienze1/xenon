@@ -20,6 +20,8 @@ func TestNewUrlPartsSplitsLikePostman(t *testing.T) {
 		{"http://[::1]/x", UrlParts{Protocol: "http", Host: []string{"[::1]"}, Path: []string{"x"}, HasPath: true}},
 		{"{{a.b}}:{{port}}/{{p.q}}#{{h}}", UrlParts{Host: []string{"{{a.b}}"}, Port: "{{port}}", Path: []string{"{{p.q}}"}, HasPath: true, Hash: "{{h}}"}},
 		{"localhost", UrlParts{Host: []string{"localhost"}}},
+		{"http://@h.com/x", UrlParts{Protocol: "http", Host: []string{"h", "com"}, Path: []string{"x"}, HasPath: true}},
+		{"http://:8080/x", UrlParts{Protocol: "http", Port: "8080", Path: []string{"x"}, HasPath: true}},
 		{"", UrlParts{}},
 	}
 	for _, tc := range cases {

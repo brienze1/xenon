@@ -56,7 +56,7 @@ func scriptOwners(node entity.ExportNode, ancestors []entity.Collection) []entit
 	if node.IsRequest() {
 		return node.Request.ScriptOwners(ancestors)
 	}
-	owners := make([]entity.ScriptOwner, 0, len(ancestors)+1)
+	owners := make([]entity.ScriptOwner, 0)
 	for _, ancestor := range ancestors {
 		owners = append(owners, ancestor.ScriptOwner())
 	}
@@ -98,7 +98,7 @@ func chainHeaders(chain []entity.Collection) []entity.KeyValue {
 }
 
 func withInheritedHeaders(own, inherited []entity.KeyValue) []entity.KeyValue {
-	headers := make([]entity.KeyValue, 0, len(inherited)+len(own))
+	headers := make([]entity.KeyValue, 0)
 	for _, header := range inherited {
 		if !overridesHeader(own, header) {
 			headers = append(headers, header)

@@ -43,10 +43,9 @@ func storedExtraFields(node *yaml.Node, authType string) []yamlnode.Field {
 	if !known || attributes == nil || attributes.Kind != yaml.MappingNode {
 		return fields
 	}
-	for index := 0; index+1 < len(attributes.Content); index += 2 {
-		key := attributes.Content[index].Value
-		if !hasYamlField(typed, key) {
-			fields = append(fields, yamlnode.Field{Key: key, Value: attributes.Content[index+1]})
+	for _, pair := range mappingPairs(attributes) {
+		if !hasYamlField(typed, pair[0].Value) {
+			fields = append(fields, yamlnode.Field{Key: pair[0].Value, Value: pair[1]})
 		}
 	}
 	return fields
@@ -67,9 +66,9 @@ func mappingValue(node *yaml.Node, key string) *yaml.Node {
 	if node.Kind != yaml.MappingNode {
 		return nil
 	}
-	for index := 0; index+1 < len(node.Content); index += 2 {
-		if node.Content[index].Value == key {
-			return node.Content[index+1]
+	for _, pair := range mappingPairs(node) {
+		if pair[0].Value == key {
+			return pair[1]
 		}
 	}
 	return nil
@@ -83,4 +82,12 @@ func hasYamlField(typed reflect.Type, key string) bool {
 		}
 	}
 	return false
+}
+
+func mappingPairs(node *yaml.Node) [][2]*yaml.Node {
+	pairs := make([][2]*yaml.Node, 0)
+	for index := range len(node.Content) / 2 {
+		pairs = append(pairs, [2]*yaml.Node{node.Content[2*index], node.Content[2*index+1]})
+	}
+	return pairs
 }

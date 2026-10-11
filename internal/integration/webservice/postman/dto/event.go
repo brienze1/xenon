@@ -76,7 +76,7 @@ const javaScriptType = "text/javascript"
 
 func NewEvents(own entity.Scripts, inherited []entity.Scripts, passthrough any) []Event {
 	metadata := asMap(passthrough)
-	events := make([]Event, 0, 2*len(inherited)+2)
+	events := make([]Event, 0)
 	for _, scripts := range inherited {
 		events = appendEvent(events, scripts, scriptphase.PreRequest, nil)
 		events = appendEvent(events, scripts, scriptphase.PostResponse, nil)

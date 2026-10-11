@@ -139,7 +139,7 @@ func NewBody(body entity.Body, passthrough any) *Body {
 			return &Body{Raw: fields, Disabled: true}
 		}
 	}
-	exported := &Body{Raw: without(fields, "options", "urlencoded", "formdata", "file", "disabled")}
+	exported := &Body{Raw: without(fields, "urlencoded", "formdata", "file", "disabled")}
 	switch body.Mode {
 	case bodymode.Raw:
 		exported.Mode, exported.Content = postmanRaw, body.Raw.Content

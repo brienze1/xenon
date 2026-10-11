@@ -6,7 +6,7 @@ Feature: Export the whole workspace as a zip of Postman files
   File → Export as Postman writes one zip holding a collection JSON per collection under
   collections/, an environment JSON per environment under environments/ and the workspace globals
   as globals.postman_globals.json. Entry names are portable (forward slashes, no absolute paths,
-  safe unique file names). No secret value is in the zip.
+  safe unique file names). Files Xenon cannot read are left out. No secret value is in the zip.
 
   Background:
     Given the workspace "Acme" exists
@@ -30,6 +30,12 @@ Feature: Export the whole workspace as a zip of Postman files
           value: https://local.acme.test
         - key: api_key
           secret: true
+      """
+    And the workspace file "acme/collections/shop-api/orders/broken.yaml" contains
+      """
+      xenon: 1
+      kind: request
+      name: [
       """
     And the workspace file "acme/environments/broken.yaml" contains
       """

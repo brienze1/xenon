@@ -172,3 +172,20 @@ Feature: Export a folder or a single request as a Postman collection
     And the file "get.postman_collection.json" should be a valid Postman v2.1 collection
     And the file "get.postman_collection.json" should not contain the field "auth"
     And the file "get.postman_collection.json" should contain the field "item.0.request.auth.type" equal to "apikey"
+
+  @dialog
+  Scenario Outline: The export dialog of a <kind> knows the collection's secrets
+    When I call "ExportService.Options" with
+      """
+      { "local_id": "{{Acme.local_id}}", "item_kind": "<kind>", "item_id": "{{<item>}}" }
+      """
+    Then the call should succeed
+    And the response should contain the field "suggested_file_name" equal to "<name>"
+    And the response should contain the field "has_secrets" equal to "true"
+    And the response should contain the field "formats.0.shapes" with the items "<shapes>"
+    And the response should contain the field "formats.1.suggested_file_name" equal to "<name>.postman_collection.json"
+
+    Examples:
+      | kind    | item     | name          | shapes      |
+      | folder  | products | products      | zip, bundle |
+      | request | list     | list-products | file        |
