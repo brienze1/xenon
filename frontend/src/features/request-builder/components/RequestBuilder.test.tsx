@@ -356,11 +356,13 @@ describe('RequestBuilder', () => {
     expect(useRequestBuilderStore.getState().tabs[tabId]!.draft.body.binary.src).toBe('/files/payload.bin')
   })
 
-  it('shows the scripts placeholder and edits the settings', async () => {
+  it('shows the scripts editor the app composes and edits the settings', async () => {
     const user = userEvent.setup()
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    const { rerender } = render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
     await user.click(screen.getByRole('tab', { name: 'Scripts' }))
-    expect(screen.getByText(/Scripts arrive in a later stage of/)).toHaveTextContent('Scripts arrive in a later stage of Xenon.')
+    expect(screen.getByText('Scripts can be edited in the request tab.')).toBeInTheDocument()
+    rerender(<RequestBuilder tabId={tabId} onSave={vi.fn()} scripts={<p>scripts editor</p>} />)
+    expect(screen.getByText('scripts editor')).toBeInTheDocument()
     await user.click(screen.getByRole('tab', { name: 'Settings' }))
     const timeout = screen.getByRole('spinbutton', { name: 'Request timeout in ms (0 = no timeout)' })
     await user.clear(timeout)

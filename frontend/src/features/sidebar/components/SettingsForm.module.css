@@ -46,3 +46,11 @@
 .panel {
   padding-top: var(--space-4);
 }
+
+.scriptsPanel {
+  display: flex;
+  flex-direction: column;
+  height: 420px;
+  min-height: 0;
+  padding-top: var(--space-3);
+}

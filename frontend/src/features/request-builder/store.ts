@@ -14,6 +14,7 @@ import {
   type RequestBody,
   type RequestDraft,
   type RequestSettings,
+  type ScriptSet,
   type SendAcknowledgement,
 } from '@/platform/mappers/request'
 import {
@@ -65,6 +66,8 @@ interface RequestBuilderState {
   updateAuth: (tabId: string, auth: Partial<RequestAuth>) => void
   updateBody: (tabId: string, body: Partial<RequestBody>) => void
   updateSettings: (tabId: string, settings: Partial<RequestSettings>) => void
+  updateScripts: (tabId: string, scripts: ScriptSet) => void
+  setInheritScripts: (tabId: string, inheritScripts: boolean) => void
   setSubTab: (tabId: string, subTab: SubTab) => void
   setBulkMode: (tabId: string, table: BulkTable, bulk: boolean) => Promise<void>
   setBulkText: (tabId: string, table: BulkTable, text: string) => void
@@ -344,6 +347,10 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
 
     updateSettings: (tabId, settings) =>
       patchDraft(tabId, (draft) => ({ ...draft, settings: { ...draft.settings, ...settings } })),
+
+    updateScripts: (tabId, scripts) => patchDraft(tabId, (draft) => ({ ...draft, scripts })),
+
+    setInheritScripts: (tabId, inheritScripts) => patchDraft(tabId, (draft) => ({ ...draft, inheritScripts })),
 
     setSubTab: (tabId, subTab) => patchTab(tabId, { subTab }),
 

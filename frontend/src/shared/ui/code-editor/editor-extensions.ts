@@ -1,5 +1,5 @@
 import { autocompletion, type CompletionContext, type CompletionResult } from '@codemirror/autocomplete'
-import { StateEffect, StateField, type Extension, type Range } from '@codemirror/state'
+import { StateEffect, StateField, type Extension, type Range, type Text } from '@codemirror/state'
 import { Decoration, EditorView, type DecorationSet } from '@codemirror/view'
 
 /** Visual tone of a decorated range; the meaning is decided by whoever passes the decorations. */
@@ -31,6 +31,32 @@ export interface EditorSelection {
   from: number
   to: number
   text: string
+}
+
+/** A problem to underline, at a 1-based line and column (lint or syntax errors). */
+export interface EditorDiagnostic {
+  line: number
+  column: number
+  message: string
+}
+
+/** Turns diagnostics into danger decorations covering the rest of the word (or the last character) at their position. */
+export function diagnosticDecorations(doc: Text, diagnostics: readonly EditorDiagnostic[]): EditorDecoration[] {
+  const decorations: EditorDecoration[] = []
+  for (const diagnostic of diagnostics) {
+    if (diagnostic.line < 1 || diagnostic.line > doc.lines) {
+      continue
+    }
+    const line = doc.line(diagnostic.line)
+    const start = Math.min(line.from + Math.max(diagnostic.column - 1, 0), line.to)
+    const word = /^[\w$]+/.exec(doc.sliceString(start, line.to))?.[0].length ?? 1
+    const to = Math.min(start + word, line.to)
+    const from = to > start ? start : Math.max(line.from, to - 1)
+    if (from < to) {
+      decorations.push({ from, to, tone: 'danger', tooltip: diagnostic.message })
+    }
+  }
+  return decorations
 }
 
 const replaceDecorations = StateEffect.define<readonly EditorDecoration[]>()

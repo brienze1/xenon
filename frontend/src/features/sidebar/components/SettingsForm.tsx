@@ -52,23 +52,31 @@ const SETTINGS_LOADING = (
   </>
 )
 
-type SettingsTab = 'general' | 'variables'
+type SettingsTab = 'general' | 'variables' | 'scripts'
 
-const SETTINGS_TABS = (
-  <Tabs.List label="Collection settings">
-    <Tabs.Tab value="general">General</Tabs.Tab>
-    <Tabs.Tab value="variables">Variables</Tabs.Tab>
-  </Tabs.List>
-)
+const GENERAL_TAB = <Tabs.Tab value="general">General</Tabs.Tab>
+const VARIABLES_TAB = <Tabs.Tab value="variables">Variables</Tabs.Tab>
+const SCRIPTS_TAB = <Tabs.Tab value="scripts">Scripts</Tabs.Tab>
+
+/** What the app's scripts editor edits inside the settings form. */
+export interface ItemScriptsSlot {
+  itemId: string
+  scripts: ItemSettings['scripts']
+  inheritScripts: boolean | null
+  onChange: (scripts: ItemSettings['scripts']) => void
+  onInheritChange: (inheritScripts: boolean) => void
+}
 
 interface SettingsFormProps {
   itemId: string
   onClose: () => void
   /** Renders the collection's variable editor; composed by the app so the sidebar stays unaware of it. */
   collectionVariables?: (collectionId: string) => ReactNode
+  /** Renders the scripts editor of a collection or folder; composed by the app. */
+  scriptsEditor?: (slot: ItemScriptsSlot) => ReactNode
 }
 
-export function SettingsForm({ itemId, onClose, collectionVariables }: SettingsFormProps) {
+export function SettingsForm({ itemId, onClose, collectionVariables, scriptsEditor }: SettingsFormProps) {
   const loadSettings = useSidebarStore((state) => state.loadSettings)
   const saveSettings = useSidebarStore((state) => state.saveSettings)
   const formatBulk = useSidebarStore((state) => state.formatBulk)
@@ -217,19 +225,41 @@ export function SettingsForm({ itemId, onClose, collectionVariables }: SettingsF
     </div>
   )
 
+  const variables = settings.kind === 'collection' && collectionVariables ? collectionVariables(settings.id) : null
+  const scripts = scriptsEditor
+    ? scriptsEditor({
+        itemId: settings.id,
+        scripts: settings.scripts,
+        inheritScripts: settings.inheritScripts,
+        onChange: (next) => update({ scripts: next }),
+        onInheritChange: (inheritScripts) => update({ inheritScripts }),
+      })
+    : null
+
   return (
     <>
       <Dialog.Title>{settings.name} Settings</Dialog.Title>
       <Dialog.Body>
-        {settings.kind === 'collection' && collectionVariables ? (
+        {variables || scripts ? (
           <Tabs.Root value={tab} onValueChange={(next) => setTab(next as SettingsTab)}>
-            {SETTINGS_TABS}
+            <Tabs.List label={`${settings.kind === 'collection' ? 'Collection' : 'Folder'} settings`}>
+              {GENERAL_TAB}
+              {variables ? VARIABLES_TAB : null}
+              {scripts ? SCRIPTS_TAB : null}
+            </Tabs.List>
             <Tabs.Panel value="general" className={styles.panel}>
               {general}
             </Tabs.Panel>
-            <Tabs.Panel value="variables" className={styles.panel}>
-              {collectionVariables(settings.id)}
-            </Tabs.Panel>
+            {variables ? (
+              <Tabs.Panel value="variables" className={styles.panel}>
+                {variables}
+              </Tabs.Panel>
+            ) : null}
+            {scripts ? (
+              <Tabs.Panel value="scripts" className={styles.scriptsPanel}>
+                {scripts}
+              </Tabs.Panel>
+            ) : null}
           </Tabs.Root>
         ) : (
           general

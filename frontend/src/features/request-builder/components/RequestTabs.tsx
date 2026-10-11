@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { formatNumber } from '@/shared/lib/number-format'
 import { Tabs } from '@/shared/ui/tabs/Tabs'
 import type { RequestBuilderMode, SubTab } from '@/features/request-builder/model'
@@ -13,13 +14,8 @@ import { SettingsPanel } from './SettingsPanel'
 interface RequestTabsProps {
   tabId: string
   mode?: RequestBuilderMode
+  scripts?: ReactNode
 }
-
-const SCRIPTS_PANEL = (
-  <Tabs.Panel value="scripts" className={styles.panel}>
-    <ScriptsPanel />
-  </Tabs.Panel>
-)
 
 const PARAMS_TAB = <Tabs.Tab value="params">Params</Tabs.Tab>
 
@@ -31,7 +27,7 @@ const SCRIPTS_TAB = <Tabs.Tab value="scripts">Scripts</Tabs.Tab>
 
 const SETTINGS_TAB = <Tabs.Tab value="settings">Settings</Tabs.Tab>
 
-export function RequestTabs({ tabId, mode = 'request' }: RequestTabsProps) {
+export function RequestTabs({ tabId, mode = 'request', scripts }: RequestTabsProps) {
   const stored = useRequestBuilderStore((state) => state.tabs[tabId]?.subTab ?? 'params')
   const full = mode === 'request'
   const subTab = !full && (stored === 'scripts' || stored === 'settings') ? 'params' : stored
@@ -60,7 +56,11 @@ export function RequestTabs({ tabId, mode = 'request' }: RequestTabsProps) {
       <Tabs.Panel value="body" className={styles.panel}>
         <BodyPanel tabId={tabId} />
       </Tabs.Panel>
-      {full ? SCRIPTS_PANEL : null}
+      {full ? (
+        <Tabs.Panel value="scripts" className={styles.panel}>
+          <ScriptsPanel>{scripts}</ScriptsPanel>
+        </Tabs.Panel>
+      ) : null}
       {full ? (
         <Tabs.Panel value="settings" className={styles.panel}>
           <SettingsPanel tabId={tabId} />

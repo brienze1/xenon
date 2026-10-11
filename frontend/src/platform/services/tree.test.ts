@@ -115,7 +115,10 @@ describe('tree service', () => {
       description: 'docs',
       auth: settings.auth,
       headers: [{ key: 'X-Tenant', value: 'acme', description: '', enabled: true }],
+      scripts: { pre_request: '', post_response: '', disabled: [] },
     })
+    await tree.saveItemSettings('ws', { ...loaded, kind: 'folder', inheritScripts: false })
+    expect(TreeService.SaveSettings).toHaveBeenLastCalledWith(expect.objectContaining({ inherit_scripts: false }))
   })
 
   it('turns failures and empty answers into app errors', async () => {

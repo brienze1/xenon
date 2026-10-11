@@ -3,7 +3,7 @@ import type {
   TreeNode as TreeNodeDto,
   TreeSearch as TreeSearchDto,
 } from '../../../bindings/github.com/brienze1/xenon/internal/integration/entrypoint/dto/models'
-import { toAuth, toAuthDto, toKeyValueDto, toKeyValueRow, type KeyValueRow, type RequestAuth } from './request'
+import { toAuth, toAuthDto, toKeyValueDto, toKeyValueRow, toScriptsDto, toScriptSet, type KeyValueRow, type RequestAuth, type ScriptSet } from './request'
 
 /** `example` nodes only exist in the sidebar's rows; the tree lists examples on their request. */
 export type TreeNodeKind = 'collection' | 'folder' | 'request' | 'example' | 'error'
@@ -40,6 +40,9 @@ export interface ItemSettings {
   description: string
   auth: RequestAuth
   headers: KeyValueRow[]
+  scripts: ScriptSet
+  /** Folders only: whether the collection's and outer folders' scripts run too; `null` for collections. */
+  inheritScripts: boolean | null
 }
 
 const NODE_KINDS: ReadonlySet<string> = new Set<TreeNodeKind>(['collection', 'folder', 'request', 'error'])
@@ -70,6 +73,8 @@ export function toItemSettings(dto: ItemSettingsDto): ItemSettings {
     description: dto.description,
     auth: toAuth(dto.auth),
     headers: (dto.headers ?? []).map(toKeyValueRow),
+    scripts: toScriptSet(dto.scripts),
+    inheritScripts: dto.kind === 'folder' ? (dto.inherit_scripts ?? true) : null,
   }
 }
 
@@ -80,5 +85,7 @@ export function toSaveItemSettingsDto(localId: string, settings: ItemSettings) {
     description: settings.description,
     auth: toAuthDto(settings.auth),
     headers: settings.headers.map(toKeyValueDto),
+    scripts: toScriptsDto(settings.scripts),
+    ...(settings.inheritScripts === null ? {} : { inherit_scripts: settings.inheritScripts }),
   }
 }

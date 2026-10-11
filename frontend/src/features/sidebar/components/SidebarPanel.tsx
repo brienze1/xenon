@@ -10,6 +10,7 @@ import { CollectionTree } from './CollectionTree'
 import { DeleteItemDialog } from './DeleteItemDialog'
 import { HistoryView } from './HistoryView'
 import { ItemSettingsDialog } from './ItemSettingsDialog'
+import type { ItemScriptsSlot } from './SettingsForm'
 import { SidebarErrorText } from './SidebarErrorText'
 import { SidebarToolbar } from './SidebarToolbar'
 import styles from './SidebarPanel.module.css'
@@ -27,6 +28,8 @@ interface SidebarPanelProps {
   onOpenHistoryEntry: (request: RequestDraft) => void
   /** Renders a collection's Variables tab in its settings dialog. */
   collectionVariables?: (collectionId: string) => ReactNode
+  /** Renders the scripts editor of a collection or folder's settings; composed by the app. */
+  scriptsEditor?: (slot: ItemScriptsSlot) => ReactNode
 }
 
 const SIDEBAR_VIEWS = (
@@ -48,6 +51,7 @@ export function SidebarPanel({
   onRenamed,
   onOpenHistoryEntry,
   collectionVariables,
+  scriptsEditor,
 }: SidebarPanelProps) {
   const view = useSidebarStore((state) => state.view)
   const setView = useSidebarStore((state) => state.setView)
@@ -116,7 +120,7 @@ export function SidebarPanel({
       <Tabs.Panel value="history" className={styles.view}>
         <HistoryView onOpenEntry={(id) => void openEntry(id)} />
       </Tabs.Panel>
-      <ItemSettingsDialog itemId={settingsId} onClose={() => setSettingsId(null)} collectionVariables={collectionVariables} />
+      <ItemSettingsDialog itemId={settingsId} onClose={() => setSettingsId(null)} collectionVariables={collectionVariables} scriptsEditor={scriptsEditor} />
       <DeleteItemDialog item={deleting} onCancel={() => setDeleting(null)} onConfirm={confirmDelete} />
     </Tabs.Root>
   )

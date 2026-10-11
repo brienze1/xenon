@@ -3,18 +3,26 @@ import { defaultHighlightStyle, foldGutter, foldKeymap, syntaxHighlighting } fro
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'
 import { Compartment, EditorState } from '@codemirror/state'
 import { EditorView, drawSelection, keymap, lineNumbers } from '@codemirror/view'
-import { useEffect, useRef } from 'react'
+import { useEffect, useImperativeHandle, useRef, type Ref } from 'react'
 import { cn } from '@/shared/lib/cn'
 import styles from './CodeEditor.module.css'
 import {
   completionExtension,
   decorationsEffect,
   decorationsExtension,
+  diagnosticDecorations,
   toneTheme,
   type CompletionSource,
   type EditorDecoration,
+  type EditorDiagnostic,
 } from './editor-extensions'
 import { loadLanguage, type CodeLanguage } from './languages'
+
+/** Imperative access for toolbars next to the editor (e.g. a snippets menu). */
+export interface CodeEditorHandle {
+  /** Inserts text at the cursor (replacing the selection) and focuses the editor. */
+  insert: (text: string) => void
+}
 
 interface CodeEditorProps {
   value: string
@@ -22,11 +30,15 @@ interface CodeEditorProps {
   label: string
   onChange?: (value: string) => void
   decorations?: readonly EditorDecoration[]
+  /** Problems underlined in the text and listed under the editor. */
+  diagnostics?: readonly EditorDiagnostic[]
   completionSource?: CompletionSource
   className?: string
+  ref?: Ref<CodeEditorHandle>
 }
 
 const NO_DECORATIONS: readonly EditorDecoration[] = []
+const NO_DIAGNOSTICS: readonly EditorDiagnostic[] = []
 
 const theme = EditorView.theme(
   {
@@ -45,8 +57,10 @@ export function CodeEditor({
   label,
   onChange,
   decorations = NO_DECORATIONS,
+  diagnostics = NO_DIAGNOSTICS,
   completionSource,
   className,
+  ref,
 }: CodeEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
@@ -104,9 +118,28 @@ export function CodeEditor({
     }
   }, [value])
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      insert: (text) => {
+        const view = viewRef.current
+        if (!view) {
+          return
+        }
+        const { from, to } = view.state.selection.main
+        view.dispatch({ changes: { from, to, insert: text }, selection: { anchor: from + text.length } })
+        view.focus()
+      },
+    }),
+    [],
+  )
+
   useEffect(() => {
-    viewRef.current?.dispatch({ effects: decorationsEffect(decorations) })
-  }, [decorations, value, readOnly, label])
+    const view = viewRef.current
+    if (view) {
+      view.dispatch({ effects: decorationsEffect([...decorations, ...diagnosticDecorations(view.state.doc, diagnostics)]) })
+    }
+  }, [decorations, diagnostics, value, readOnly, label])
 
   useEffect(() => {
     let active = true
@@ -122,5 +155,18 @@ export function CodeEditor({
     }
   }, [language, readOnly, label])
 
-  return <div ref={containerRef} className={cn(styles.root, className)} translate="no" />
+  return (
+    <div className={cn(styles.frame, className)}>
+      <div ref={containerRef} className={styles.root} translate="no" />
+      {diagnostics.length > 0 ? (
+        <ul aria-label={`${label} problems`} className={styles.diagnostics}>
+          {diagnostics.map((diagnostic, index) => (
+            <li key={index}>
+              Line {diagnostic.line}, column {diagnostic.column}: {diagnostic.message}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  )
 }

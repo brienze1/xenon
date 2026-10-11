@@ -47,6 +47,8 @@ const sample = [
 
 const settings: ItemSettings = {
   id: 'c1',
+  scripts: { preRequest: '', postResponse: '', disabled: [] },
+  inheritScripts: null,
   kind: 'collection',
   name: 'Billing',
   description: '',

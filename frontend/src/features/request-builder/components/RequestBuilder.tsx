@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useId, type ReactNode } from 'react'
 import { isCurlRefusal } from '@/platform/services/requests'
 import { withNextStep } from '@/shared/lib/next-step'
 import { Banner } from '@/shared/ui/banner/Banner'
@@ -24,10 +24,12 @@ const CONFLICT_MESSAGE = (
 interface RequestBuilderProps {
   tabId: string
   onSave: () => void
+  /** The Scripts tab's editor, composed by the app. */
+  scripts?: ReactNode
   mode?: RequestBuilderMode
 }
 
-export function RequestBuilder({ tabId, onSave, mode = 'request' }: RequestBuilderProps) {
+export function RequestBuilder({ tabId, onSave, scripts, mode = 'request' }: RequestBuilderProps) {
   const error = useRequestBuilderStore((state) => state.tabs[tabId]?.error ?? null)
   const conflict = useRequestBuilderStore((state) => state.tabs[tabId]?.conflict === true)
   const save = useRequestBuilderStore((state) => state.save)
@@ -66,7 +68,7 @@ export function RequestBuilder({ tabId, onSave, mode = 'request' }: RequestBuild
           </Banner.Message>
         </Banner.Root>
       ) : null}
-      <RequestTabs tabId={tabId} mode={mode} />
+      <RequestTabs tabId={tabId} mode={mode} scripts={scripts} />
       <ConfirmSendDialog tabId={tabId} />
       <MissingSecretsDialog tabId={tabId} />
     </section>
