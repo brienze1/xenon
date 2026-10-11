@@ -93,8 +93,8 @@ Feature: Detect the format of an import source
       | postman v1          | postman/v1.json        | IMP-01400  | Postman v1 collections are not supported; export the collection as v2.1        |
       | postman v3 folder   | postman/v3             | IMP-00415  | Postman v3 YAML is not supported yet; export the collection as v2.1 JSON       |
       | postman v3 file     | postman/v3/Get users.request.yaml | IMP-00415 | Postman v3 YAML is not supported yet; export the collection as v2.1 JSON |
-      | random JSON         | misc/random.json       | IMP-00415  | random.json is not a Postman, Bruno or cURL export                             |
-      | other YAML          | misc/notes.yaml        | IMP-00415  | notes.yaml is not a Postman, Bruno or cURL export                              |
+      | random JSON         | misc/random.json       | IMP-00415  | random.json is not a Xenon, Postman, Bruno or cURL export                           |
+      | other YAML          | misc/notes.yaml        | IMP-00415  | notes.yaml is not a Xenon, Postman, Bruno or cURL export                            |
       | malformed JSON      | misc/malformed.json    | IMP-01400  | malformed.json is not valid JSON                                              |
       | not UTF-8           | misc/latin1.json       | IMP-01400  | latin1.json is not UTF-8 text                                                 |
       | mixed bruno formats | bruno/mixed-collection | IMP-00415  | mixed-collection mixes Bruno .bru and YAML files                              |

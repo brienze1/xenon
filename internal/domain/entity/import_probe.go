@@ -20,6 +20,9 @@ const (
 	globalsScope       = "globals"
 	postmanV21         = "2.1"
 	postmanV20         = "2.0"
+	xenonBundleKind    = "bundle"
+	xenonExportKind    = "export"
+	LatestXenonFormat  = 1
 )
 
 var (
@@ -28,11 +31,14 @@ var (
 )
 
 type ImportProbe struct {
+	XenonKind   string
+	XenonRoot   string
 	Name        string
 	Text        string
 	Schema      string
 	Scope       string
 	Entries     []string
+	XenonFormat int
 	IsFolder    bool
 	IsPasted    bool
 	IsJson      bool
@@ -127,4 +133,20 @@ func isPostmanV3Name(name string) bool {
 
 func isHiddenEntry(entry string) bool {
 	return slices.ContainsFunc(strings.Split(entry, "/"), func(segment string) bool { return strings.HasPrefix(segment, ".") })
+}
+
+func (i ImportProbe) IsXenon() bool {
+	return i.XenonFormat > 0 && i.XenonKind != ""
+}
+
+func (i ImportProbe) IsNewerXenon() bool {
+	return i.XenonFormat > LatestXenonFormat
+}
+
+func (i ImportProbe) IsXenonBundle() bool {
+	return i.XenonKind == xenonBundleKind
+}
+
+func (i ImportProbe) IsXenonExport() bool {
+	return i.XenonKind == xenonExportKind
 }

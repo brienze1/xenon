@@ -164,3 +164,52 @@ func ensureGitignore(root string) error {
 	}
 	return nil
 }
+
+func (w *workspacePersistence) CopyFolder(ctx context.Context, source, target string) error {
+	logger.Debug(ctx, "Started", map[string]any{"source": source, "target": target})
+
+	staging := filepath.Join(filepath.Dir(target), "."+filepath.Base(target)+exportTempSuffix)
+	_ = os.RemoveAll(staging)
+	if err := copyWorkspaceFiles(source, staging); err != nil {
+		_ = os.RemoveAll(staging)
+		return errs.FileError(err, "WKS-33500")
+	}
+	if err := os.Remove(target); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		_ = os.RemoveAll(staging)
+		return errs.FileError(err, "WKS-34500")
+	}
+	if err := os.Rename(staging, target); err != nil {
+		_ = os.RemoveAll(staging)
+		return errs.FileError(err, "WKS-35500")
+	}
+
+	logger.Debug(ctx, "Finished", map[string]any{"source": source, "target": target})
+	return nil
+}
+
+func copyWorkspaceFiles(source, target string) error {
+	return filepath.WalkDir(source, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() && path != source && isLocalOnlyDir(entry.Name()) {
+			return filepath.SkipDir
+		}
+		relative, err := filepath.Rel(source, path)
+		if err != nil {
+			return err
+		}
+		destination := filepath.Join(target, relative)
+		if entry.IsDir() {
+			return os.MkdirAll(destination, workspaceDirMode)
+		}
+		if !entry.Type().IsRegular() || strings.HasSuffix(entry.Name(), exportTempSuffix) {
+			return nil
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(destination, data, workspaceFileMode)
+	})
+}

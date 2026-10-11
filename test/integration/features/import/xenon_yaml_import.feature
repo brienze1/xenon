@@ -7,8 +7,8 @@ Feature: Import Xenon YAML exports
   workspace in an empty or new folder, its files and ids kept), a collection or folder zip or
   bundle, a request file and an environment file (imported into an existing workspace with new ids
   and the XEN-003 clash handling). Encrypted secrets need the passphrase: the right one puts the
-  values in the target workspace's vault, a wrong or missing one is refused with IMP-08401 before
-  anything is written, and "import without secrets" leaves them missing. A file from a newer
+  values in the target workspace's vault, a missing one is refused with IMP-50401 and a wrong one
+  with IMP-08401 before anything is written, and "import without secrets" leaves them missing. A file from a newer
   format version is refused. Exporting what was imported gives the same bytes, ids aside.
 
   Background:
@@ -393,7 +393,7 @@ Feature: Import Xenon YAML exports
       """
       { "source_id": "{{source}}", "items": [ { "key": "0", "include": true, "target_local_id": "{{Beta.local_id}}" } ] }
       """
-    Then the call should fail with code "IMP-08401"
+    Then the call should fail with code "IMP-50401"
     When I call "ImportService.Import" with
       """
       { "source_id": "{{source}}", "passphrase": "wrong horse", "items": [ { "key": "0", "include": true, "target_local_id": "{{Beta.local_id}}" } ] }
@@ -587,12 +587,12 @@ Feature: Import Xenon YAML exports
       """
       {
         "local_id": "{{Acme.local_id}}", "item_kind": "<item_kind>", "item_id": "<item_id>",
-        "format": "xenon_yaml", "shape": "<shape>", "target_path": "{{temp_root}}/first/<file>"
+        "format": "xenon_yaml", "shape": "<shape>", "target_path": "{{temp_root}}/first-<file>"
       }
       """
     And I call "ImportService.Detect" with
       """
-      { "paths": ["{{temp_root}}/first/<file>"] }
+      { "paths": ["{{temp_root}}/first-<file>"] }
       """
     And I save the response field "source_id" as "first_source"
     And I call "ImportService.Import" with
@@ -604,12 +604,12 @@ Feature: Import Xenon YAML exports
       """
       {
         "local_id": "{{Beta.local_id}}", "item_kind": "<item_kind>", "item_id": "{{beta_item}}",
-        "format": "xenon_yaml", "shape": "<shape>", "target_path": "{{temp_root}}/second/<file>"
+        "format": "xenon_yaml", "shape": "<shape>", "target_path": "{{temp_root}}/second-<file>"
       }
       """
     And I call "ImportService.Detect" with
       """
-      { "paths": ["{{temp_root}}/second/<file>"] }
+      { "paths": ["{{temp_root}}/second-<file>"] }
       """
     And I save the response field "source_id" as "second_source"
     And I call "ImportService.Import" with
@@ -621,11 +621,11 @@ Feature: Import Xenon YAML exports
       """
       {
         "local_id": "{{Gamma.local_id}}", "item_kind": "<item_kind>", "item_id": "{{gamma_item}}",
-        "format": "xenon_yaml", "shape": "<shape>", "target_path": "{{temp_root}}/third/<file>"
+        "format": "xenon_yaml", "shape": "<shape>", "target_path": "{{temp_root}}/third-<file>"
       }
       """
     Then the call should succeed
-    And the file "third/<file>" should equal the file "second/<file>" apart from ids
+    And the file "third-<file>" should equal the file "second-<file>" apart from ids
 
     Examples:
       | item_kind   | item_id                    | shape  | file                | beta_parent                             | gamma_parent                             |

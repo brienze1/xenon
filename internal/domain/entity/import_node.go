@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/importitemkind"
 	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
 )
 
@@ -66,6 +67,48 @@ func (i ImportNode) AsFolder() ImportNode {
 	return i
 }
 
+func ImportItemKindOf(root ImportNode) enums.ImportItemKind {
+	switch {
+	case root.IsRequest():
+		return importitemkind.Request
+	case root.Container.IsFolder():
+		return importitemkind.Folder
+	default:
+		return importitemkind.Collection
+	}
+}
+
+func (i ImportNode) AsCollection() ImportNode {
+	if !i.IsRequest() {
+		i.Container.Kind = itemkind.Collection
+	}
+	return i
+}
+
+// Reidentified gives the node, its examples and its children new ids from newID.
+func (i ImportNode) Reidentified(newID func() string) ImportNode {
+	if i.IsRequest() {
+		request := i.Request.Identified(newID(), i.Request.Name)
+		examples := make([]SavedExample, 0, len(request.Examples))
+		for _, example := range request.Examples {
+			example.ID = newID()
+			examples = append(examples, example)
+		}
+		if request.Examples != nil {
+			request.Examples = examples
+		}
+		i.Request = &request
+		return i
+	}
+	i.Container.ID = newID()
+	children := make([]ImportNode, 0, len(i.Children))
+	for _, child := range i.Children {
+		children = append(children, child.Reidentified(newID))
+	}
+	i.Children = children
+	return i
+}
+
 func (i ImportNode) WithFileName(fileName string) ImportNode {
 	i.FileName = fileName
 	return i
@@ -116,6 +159,9 @@ func (i ImportNode) Scripts(parentPath string) []ScriptRef {
 
 func (i ImportNode) PlacedInto(parent Collection) ImportPlacement {
 	if i.IsRequest() {
+		return ImportPlacement{Parent: &parent, Nodes: []ImportNode{i}}
+	}
+	if i.Container.IsFolder() {
 		return ImportPlacement{Parent: &parent, Nodes: []ImportNode{i}}
 	}
 	if parent.HasOwnSettings() {

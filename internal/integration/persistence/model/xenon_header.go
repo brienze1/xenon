@@ -6,10 +6,11 @@ import (
 )
 
 type XenonHeader struct {
-	Kind  string `yaml:"kind"`
-	Id    string `yaml:"id"`
-	Root  string `yaml:"root"`
-	Xenon int    `yaml:"xenon"`
+	Kind    string `yaml:"kind"`
+	Secrets string `yaml:"secrets"`
+	Id      string `yaml:"id"`
+	Root    string `yaml:"root"`
+	Xenon   int    `yaml:"xenon"`
 }
 
 func (x *XenonHeader) VariablesScope() (entity.ScopeRef, bool) {
@@ -23,4 +24,11 @@ func (x *XenonHeader) VariablesScope() (entity.ScopeRef, bool) {
 	default:
 		return entity.ScopeRef{}, false
 	}
+}
+
+func (x *XenonHeader) Probed(probe entity.ImportProbe) entity.ImportProbe {
+	probe.XenonFormat = x.Xenon
+	probe.XenonKind = x.Kind
+	probe.XenonRoot = x.Root
+	return probe
 }

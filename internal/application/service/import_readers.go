@@ -17,6 +17,7 @@ type importReaders struct {
 	readPostmanDump        usecase.ReadPostmanDump
 	readBrunoCollection    usecase.ReadBrunoCollection
 	readCurlCommand        usecase.ReadCurlCommand
+	readXenonExport        usecase.ReadXenonExport
 }
 
 func (i importReaders) read(ctx context.Context, input entity.ImportInput, read *importRead) error {
@@ -31,6 +32,8 @@ func (i importReaders) read(ctx context.Context, input entity.ImportInput, read 
 		return i.dump(ctx, input, read)
 	case importkind.BrunoBru, importkind.BrunoYaml:
 		return i.bruno(ctx, input, read)
+	case importkind.XenonWorkspaceZip, importkind.XenonWorkspaceFolder, importkind.XenonBundle, importkind.XenonZip, importkind.XenonRequest, importkind.XenonEnvironment:
+		return i.xenon(ctx, input, read)
 	default:
 		return i.curl(ctx, input, read)
 	}
@@ -94,6 +97,25 @@ func (i importReaders) dump(ctx context.Context, input entity.ImportInput, read 
 		}
 	}
 	read.warnings = append(read.warnings, dump.SkippedWarnings()...)
+	return nil
+}
+
+func (i importReaders) xenon(ctx context.Context, input entity.ImportInput, read *importRead) error {
+	exported, err := i.readXenonExport.ReadXenonExport(ctx, input)
+	if err != nil {
+		return err
+	}
+	read.secrets = exported.Secrets
+	switch {
+	case exported.Workspace != nil:
+		read.items = append(read.items, entity.NewWorkspaceImportItem(read.nextKey(), *exported.Workspace))
+	case exported.Environment != nil:
+		environment := exported.Environment.Duplicated(idutils.NewUlid(), exported.Environment.Name)
+		item := entity.NewVariablesImportItem(read.nextKey(), importitemkind.Environment, entity.NewImportVariables(environment, nil))
+		read.items = append(read.items, item.FromSource(exported.Environment.ID))
+	default:
+		read.addSourcedTree(*exported.Root, exported.Root.Reidentified(idutils.NewUlid))
+	}
 	return nil
 }
 

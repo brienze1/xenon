@@ -18,6 +18,7 @@ type importWriter struct {
 	rollbackImportItem    usecase.RollbackImportItem
 	publishImportProgress usecase.PublishImportProgress
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent
+	workspaces            importWorkspaceWriter
 	variables             importVariablesWriter
 }
 
@@ -68,6 +69,9 @@ func (w importWriter) heartbeat(ctx context.Context, progress entity.ImportProgr
 }
 
 func (w importWriter) importOne(ctx context.Context, sourceId string, target importTarget, resolution enums.ClashResolution) entity.ImportOutcome {
+	if target.item.IsWorkspace() {
+		return w.workspaces.importOne(ctx, target)
+	}
 	if target.item.IsVariables() {
 		return w.variables.importOne(ctx, target, resolution)
 	}
@@ -90,6 +94,7 @@ func (w importWriter) importOne(ctx context.Context, sourceId string, target imp
 		return usecase.FailImportItem(target.item, target.workspace.LocalID, err)
 	}
 	w.keepTokens(ctx, target.workspace.LocalID, tokens)
+	w.keepCollectionSecrets(ctx, target)
 	return target.item.Completed(write, entity.ImportLocation{LocalID: target.workspace.LocalID, ParentPath: target.parentPath, CollectionPath: target.collectionPath()})
 }
 
@@ -102,5 +107,18 @@ func (w importWriter) keepTokens(ctx context.Context, localId string, tokens []e
 	})
 	if err != nil {
 		logger.Warn(ctx, err, "The imported OAuth 2.0 tokens could not be kept in the vault", map[string]any{"localId": localId, "tokens": len(tokens)})
+	}
+}
+
+func (w importWriter) keepCollectionSecrets(ctx context.Context, target importTarget) {
+	if len(target.item.CollectionSecrets) == 0 || target.placement.HasParent() {
+		return
+	}
+	scope := entity.NewCollectionScopeRef(target.item.Root.ID())
+	_, err := w.variables.vaults.update(ctx, target.workspace.LocalID, func(vault entity.Vault) entity.Vault {
+		return vault.WithSecrets(scope, target.item.CollectionSecrets)
+	})
+	if err != nil {
+		logger.Warn(ctx, err, "The imported collection secrets could not be kept in the vault", map[string]any{"localId": target.workspace.LocalID, "scope": scope.String()})
 	}
 }

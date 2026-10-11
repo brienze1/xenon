@@ -15,6 +15,8 @@ import (
 	"sync"
 	"unicode/utf8"
 
+	"go.yaml.in/yaml/v3"
+
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/infra/properties"
 	"github.com/brienze1/xenon/internal/integration/adapter"
@@ -32,6 +34,8 @@ const (
 )
 
 var (
+	xenonProbeFiles          = []string{exportManifestFile, workspaceFile}
+	yamlExtensions           = []string{".yml", ".yaml"}
 	utf8ByteOrderMark        = []byte{0xEF, 0xBB, 0xBF}
 	skippedImportDirs        = []string{"node_modules", ".git"}
 	importDocumentExtensions = []string{jsonExtension, ".bru", ".yml", ".yaml"}
@@ -171,6 +175,9 @@ func readImportFile(path, name string, size int64) (*entity.ImportInput, error) 
 		return nil, err
 	}
 	probe := probeDocument(name, data, strings.EqualFold(filepath.Ext(name), jsonExtension))
+	if slices.Contains(yamlExtensions, strings.ToLower(filepath.Ext(name))) {
+		probe = probeXenon(probe, data)
+	}
 	return &entity.ImportInput{Root: path, Probe: probe, Documents: []entity.ImportDocument{{Path: name, Data: data}}}, nil
 }
 
@@ -214,7 +221,13 @@ func readImportFolder(root, name string) (*entity.ImportInput, error) {
 	if err != nil {
 		return nil, errs.FileError(err, "IMP-21500")
 	}
-	input := entity.ImportInput{Root: root, Probe: entity.ImportProbe{Name: name, IsFolder: true, Entries: entries}, Documents: documents}
+	probe := entity.ImportProbe{Name: name, IsFolder: true, Entries: entries}
+	for _, marker := range xenonProbeFiles {
+		if index := slices.IndexFunc(documents, func(document entity.ImportDocument) bool { return document.Path == marker }); index >= 0 && !probe.IsXenon() {
+			probe = probeXenon(probe, documents[index].Data)
+		}
+	}
+	input := entity.ImportInput{Root: root, Probe: probe, Documents: documents}
 	return &input, nil
 }
 
@@ -229,6 +242,14 @@ func probeDocument(name string, data []byte, isJsonFile bool) entity.ImportProbe
 		return entity.ImportProbe{Name: name, IsMalformed: errors.As(err, &syntax)}
 	}
 	return document.ToEntity(name)
+}
+
+func probeXenon(probe entity.ImportProbe, data []byte) entity.ImportProbe {
+	var header model.XenonHeader
+	if err := yaml.Unmarshal(data, &header); err != nil {
+		return probe
+	}
+	return header.Probed(probe)
 }
 
 func looksLikeJson(data []byte) bool {

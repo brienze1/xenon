@@ -8,7 +8,7 @@ type ImportPlacement struct {
 }
 
 func NewTopLevelPlacement(root ImportNode) ImportPlacement {
-	return ImportPlacement{Nodes: []ImportNode{root}}
+	return ImportPlacement{Nodes: []ImportNode{root.AsCollection()}}
 }
 
 func (i ImportPlacement) HasParent() bool {

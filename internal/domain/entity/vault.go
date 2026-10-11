@@ -70,6 +70,13 @@ func (v Vault) WithSecrets(scope ScopeRef, values map[string]string) Vault {
 	return v
 }
 
+func (v Vault) WithBundle(bundle SecretBundle) Vault {
+	for scope, values := range bundle.Scopes {
+		v = v.WithSecrets(ParseScopeRef(scope), values)
+	}
+	return v
+}
+
 func (v Vault) WithoutScope(scope ScopeRef) Vault {
 	return v.WithSecrets(scope, nil)
 }

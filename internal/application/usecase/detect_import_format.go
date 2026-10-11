@@ -2,25 +2,31 @@ package usecase
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/importkind"
+	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
 	"github.com/brienze1/xenon/pkg/errs"
 )
 
 const (
-	unsupportedFormatMsg = " is not a Postman, Bruno or cURL export"
+	unsupportedFormatMsg = " is not a Xenon, Postman, Bruno or cURL export"
 	invalidJsonMsg       = " is not valid JSON"
 	mixedBrunoFormatsMsg = " mixes Bruno .bru and YAML files"
 	postmanV3Msg         = "Postman v3 YAML is not supported yet; export the collection as v2.1 JSON"
 	postmanV1Msg         = "Postman v1 collections are not supported; export the collection as v2.1"
+	newerXenonMsg        = " was written by a newer Xenon (format "
+	updateXenonMsg       = "); update Xenon to import it"
 )
 
 func DetectImportFormat(probe entity.ImportProbe) (enums.ImportKind, string, error) {
 	switch {
 	case probe.IsPastedCurl():
 		return importkind.Curl, "", nil
+	case probe.IsXenon():
+		return detectXenon(probe)
 	case probe.IsFolder:
 		return detectFolder(probe)
 	case probe.IsPostmanV3File():
@@ -46,6 +52,28 @@ func detectFolder(probe entity.ImportProbe) (enums.ImportKind, string, error) {
 		return importkind.BrunoYaml, "", nil
 	case probe.HasPostmanV3Entry():
 		return "", "", unsupportedImportError(postmanV3Msg)
+	default:
+		return "", "", unsupportedImportError(probe.Name + unsupportedFormatMsg)
+	}
+}
+
+func detectXenon(probe entity.ImportProbe) (enums.ImportKind, string, error) {
+	version := strconv.Itoa(probe.XenonFormat)
+	switch {
+	case probe.IsNewerXenon():
+		return "", "", errs.UnprocessableEntityError(probe.Name+newerXenonMsg+version+updateXenonMsg, "IMP-42422")
+	case probe.IsXenonExport() && itemkind.Workspace.Equals(probe.XenonRoot):
+		return importkind.XenonWorkspaceZip, version, nil
+	case probe.IsXenonExport():
+		return importkind.XenonZip, version, nil
+	case probe.IsXenonBundle():
+		return importkind.XenonBundle, version, nil
+	case itemkind.Workspace.Equals(probe.XenonKind) && probe.IsFolder:
+		return importkind.XenonWorkspaceFolder, version, nil
+	case itemkind.Request.Equals(probe.XenonKind) && !probe.IsFolder:
+		return importkind.XenonRequest, version, nil
+	case itemkind.Environment.Equals(probe.XenonKind) && !probe.IsFolder:
+		return importkind.XenonEnvironment, version, nil
 	default:
 		return "", "", unsupportedImportError(probe.Name + unsupportedFormatMsg)
 	}

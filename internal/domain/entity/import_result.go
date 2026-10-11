@@ -53,7 +53,9 @@ func (i ImportResult) workspacesWith(outcome ImportOutcome) []ImportWorkspaceRes
 func (i ImportResult) LocalIDs() []string {
 	ids := make([]string, 0, len(i.Workspaces))
 	for _, workspace := range i.Workspaces {
-		ids = append(ids, workspace.LocalID)
+		if workspace.LocalID != "" {
+			ids = append(ids, workspace.LocalID)
+		}
 	}
 	return ids
 }

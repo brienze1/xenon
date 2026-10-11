@@ -14,14 +14,15 @@ import (
 const importPickerTitle = "Choose files, folders or zips to import"
 
 type manageImport struct {
-	readImportSource    usecase.ReadImportSource
-	saveImportSource    usecase.SaveImportSource
-	findImportSource    usecase.FindImportSource
-	discardImportSource usecase.DiscardImportSource
-	pickPath            usecase.PickPath
-	readers             importReaders
-	targets             importTargets
-	writer              importWriter
+	decryptExportSecrets usecase.DecryptExportSecrets
+	readImportSource     usecase.ReadImportSource
+	saveImportSource     usecase.SaveImportSource
+	findImportSource     usecase.FindImportSource
+	discardImportSource  usecase.DiscardImportSource
+	pickPath             usecase.PickPath
+	readers              importReaders
+	targets              importTargets
+	writer               importWriter
 }
 
 func NewManageImportService(
@@ -34,12 +35,17 @@ func NewManageImportService(
 	readPostmanDump usecase.ReadPostmanDump,
 	readBrunoCollection usecase.ReadBrunoCollection,
 	readCurlCommand usecase.ReadCurlCommand,
+	readXenonExport usecase.ReadXenonExport,
+	decryptExportSecrets usecase.DecryptExportSecrets,
 	pickPath usecase.PickPath,
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry,
 	loadTree usecase.LoadTree,
 	findTreeItem usecase.FindTreeItem,
 	listEnvironments usecase.ListEnvironments,
 	loadWorkspace usecase.LoadWorkspace,
+	inspectWorkspaceFolder usecase.InspectWorkspaceFolder,
+	copyWorkspaceFolder usecase.CopyWorkspaceFolder,
+	saveWorkspaceRegistry usecase.SaveWorkspaceRegistry,
 	stageImportItem usecase.StageImportItem,
 	commitImportItem usecase.CommitImportItem,
 	rollbackImportItem usecase.RollbackImportItem,
@@ -57,25 +63,36 @@ func NewManageImportService(
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
 	publishVariableEvent usecase.PublishVariableEvent,
 ) adapter.ManageImportService {
+	vaults := vaultWriter{
+		findVault:            findVault,
+		saveVault:            saveVault,
+		findVaultSettings:    findVaultSettings,
+		saveVaultSettings:    saveVaultSettings,
+		probeKeychain:        probeKeychain,
+		publishVariableEvent: publishVariableEvent,
+	}
 	return &manageImport{
-		readImportSource:    readImportSource,
-		saveImportSource:    saveImportSource,
-		findImportSource:    findImportSource,
-		discardImportSource: discardImportSource,
-		pickPath:            pickPath,
+		decryptExportSecrets: decryptExportSecrets,
+		readImportSource:     readImportSource,
+		saveImportSource:     saveImportSource,
+		findImportSource:     findImportSource,
+		discardImportSource:  discardImportSource,
+		pickPath:             pickPath,
 		readers: importReaders{
 			readPostmanCollection:  readPostmanCollection,
 			readPostmanEnvironment: readPostmanEnvironment,
 			readPostmanDump:        readPostmanDump,
 			readBrunoCollection:    readBrunoCollection,
 			readCurlCommand:        readCurlCommand,
+			readXenonExport:        readXenonExport,
 		},
 		targets: importTargets{
-			findWorkspaceRegistry: findWorkspaceRegistry,
-			loadTree:              loadTree,
-			findTreeItem:          findTreeItem,
-			listEnvironments:      listEnvironments,
-			loadWorkspace:         loadWorkspace,
+			findWorkspaceRegistry:  findWorkspaceRegistry,
+			loadTree:               loadTree,
+			findTreeItem:           findTreeItem,
+			listEnvironments:       listEnvironments,
+			loadWorkspace:          loadWorkspace,
+			inspectWorkspaceFolder: inspectWorkspaceFolder,
 		},
 		writer: importWriter{
 			stageImportItem:       stageImportItem,
@@ -83,6 +100,13 @@ func NewManageImportService(
 			rollbackImportItem:    rollbackImportItem,
 			publishImportProgress: publishImportProgress,
 			publishWorkspaceEvent: publishWorkspaceEvent,
+			workspaces: importWorkspaceWriter{
+				copyWorkspaceFolder:   copyWorkspaceFolder,
+				findWorkspaceRegistry: findWorkspaceRegistry,
+				saveWorkspaceRegistry: saveWorkspaceRegistry,
+				loadWorkspace:         loadWorkspace,
+				vaults:                vaults,
+			},
 			variables: importVariablesWriter{
 				saveEnvironment:   saveEnvironment,
 				deleteEnvironment: deleteEnvironment,
@@ -93,14 +117,7 @@ func NewManageImportService(
 					findVault:          findVault,
 					saveVault:          saveVault,
 				},
-				vaults: vaultWriter{
-					findVault:            findVault,
-					saveVault:            saveVault,
-					findVaultSettings:    findVaultSettings,
-					saveVaultSettings:    saveVaultSettings,
-					probeKeychain:        probeKeychain,
-					publishVariableEvent: publishVariableEvent,
-				},
+				vaults:               vaults,
 				publishVariableEvent: publishVariableEvent,
 			},
 		},
@@ -164,7 +181,11 @@ func (m *manageImport) Clashes(ctx context.Context, plan entity.ImportPlan) ([]e
 func (m *manageImport) Import(ctx context.Context, plan entity.ImportPlan) (*entity.ImportResult, error) {
 	logger.Info(ctx, "Started", map[string]any{"plan": plan})
 
-	source, err := m.findImportSource.Find(ctx, plan.SourceID)
+	found, err := m.findImportSource.Find(ctx, plan.SourceID)
+	if err != nil {
+		return nil, err
+	}
+	source, err := m.unlocked(ctx, *found, plan)
 	if err != nil {
 		return nil, err
 	}
@@ -210,8 +231,23 @@ func (m *manageImport) detected(ctx context.Context, inputs []entity.ImportInput
 			return nil, err
 		}
 	}
-	source := entity.NewImportSource(idutils.NewUlid(), detected, tempDirs, timeutils.Now()).WithItems(read.items).WithSourceWarnings(read.warnings)
+	source := entity.NewImportSource(idutils.NewUlid(), detected, tempDirs, timeutils.Now()).WithItems(read.items).WithSourceWarnings(read.warnings).WithEncryptedSecrets(read.secrets)
 	return &source, nil
+}
+
+func (m *manageImport) unlocked(ctx context.Context, source entity.ImportSource, plan entity.ImportPlan) (*entity.ImportSource, error) {
+	if !plan.NeedsPassphrase(source) {
+		return &source, nil
+	}
+	if plan.Passphrase == "" {
+		return nil, usecase.RejectMissingImportPassphrase()
+	}
+	secrets, err := m.decryptExportSecrets.Decrypt(ctx, source.EncryptedSecrets, plan.Passphrase)
+	if err != nil {
+		return nil, err
+	}
+	unlocked := source.WithSecrets(*secrets)
+	return &unlocked, nil
 }
 
 func unresolvedClashes(plan entity.ImportPlan, targets []importTarget) []entity.Clash {

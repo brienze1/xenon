@@ -8,11 +8,12 @@ import (
 )
 
 type importTargets struct {
-	findWorkspaceRegistry usecase.FindWorkspaceRegistry
-	loadTree              usecase.LoadTree
-	findTreeItem          usecase.FindTreeItem
-	listEnvironments      usecase.ListEnvironments
-	loadWorkspace         usecase.LoadWorkspace
+	findWorkspaceRegistry  usecase.FindWorkspaceRegistry
+	loadTree               usecase.LoadTree
+	findTreeItem           usecase.FindTreeItem
+	listEnvironments       usecase.ListEnvironments
+	loadWorkspace          usecase.LoadWorkspace
+	inspectWorkspaceFolder usecase.InspectWorkspaceFolder
 }
 
 func (i importTargets) resolve(ctx context.Context, source entity.ImportSource, plan entity.ImportPlan) ([]importTarget, error) {
@@ -36,6 +37,9 @@ func (i importTargets) target(ctx context.Context, source entity.ImportSource, p
 		return nil, usecase.RejectTopLevelRequest()
 	}
 	item := resolved.Named(planned.Name)
+	if item.IsWorkspace() {
+		return i.workspaceTarget(ctx, item, planned)
+	}
 	workspace, err := i.findWorkspaceRegistry.FindWorkspace(ctx, planned.TargetLocalID)
 	if err != nil {
 		return nil, err
@@ -52,6 +56,24 @@ func (i importTargets) target(ctx context.Context, source entity.ImportSource, p
 		return &target, nil
 	}
 	return i.intoParent(ctx, target)
+}
+
+func (i importTargets) workspaceTarget(ctx context.Context, item entity.ImportItem, planned entity.ImportPlanItem) (*importTarget, error) {
+	if planned.TargetFolder == "" {
+		return nil, usecase.RejectMissingWorkspaceFolder()
+	}
+	registry, err := i.findWorkspaceRegistry.Find(ctx)
+	if err != nil {
+		return nil, err
+	}
+	folder, err := i.inspectWorkspaceFolder.Inspect(ctx, planned.TargetFolder)
+	if err != nil {
+		return nil, err
+	}
+	if err := usecase.ValidateNewWorkspaceFolder(*folder, *registry); err != nil {
+		return nil, err
+	}
+	return &importTarget{item: item, planned: planned}, nil
 }
 
 func (i importTargets) variablesTarget(ctx context.Context, workspace entity.RegisteredWorkspace, item entity.ImportItem, planned entity.ImportPlanItem) (*importTarget, error) {

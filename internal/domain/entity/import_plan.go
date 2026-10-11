@@ -6,9 +6,15 @@ import (
 )
 
 type ImportPlan struct {
-	SourceID   string
-	ApplyToAll enums.ClashResolution
-	Items      []ImportPlanItem
+	SourceID    string
+	Passphrase  string
+	ApplyToAll  enums.ClashResolution
+	Items       []ImportPlanItem
+	SkipSecrets bool
+}
+
+func (i ImportPlan) NeedsPassphrase(source ImportSource) bool {
+	return source.HasEncryptedSecrets() && !i.SkipSecrets
 }
 
 func (i ImportPlan) Included() []ImportPlanItem {
@@ -33,5 +39,5 @@ func (i ImportPlan) Resolves(item ImportPlanItem) bool {
 }
 
 func (i ImportPlan) LogValue() any {
-	return map[string]any{"sourceId": i.SourceID, "items": len(i.Items), "applyToAll": i.ApplyToAll}
+	return map[string]any{"sourceId": i.SourceID, "items": len(i.Items), "applyToAll": i.ApplyToAll, "skipSecrets": i.SkipSecrets}
 }

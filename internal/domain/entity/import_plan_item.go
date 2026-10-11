@@ -6,6 +6,7 @@ type ImportPlanItem struct {
 	Key            string
 	TargetLocalID  string
 	TargetParentID string
+	TargetFolder   string
 	Name           string
 	Resolution     enums.ClashResolution
 	Include        bool

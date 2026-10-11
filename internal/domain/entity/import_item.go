@@ -11,13 +11,16 @@ import (
 )
 
 type ImportItem struct {
-	Variables *ImportVariables
-	Key       string
-	Kind      enums.ImportItemKind
-	Name      string
-	Warnings  []ImportWarning
-	PmUsages  []PmUsage
-	Root      ImportNode
+	Variables         *ImportVariables
+	Workspace         *ImportWorkspace
+	CollectionSecrets map[string]string
+	SourceID          string
+	Key               string
+	Kind              enums.ImportItemKind
+	Name              string
+	Warnings          []ImportWarning
+	PmUsages          []PmUsage
+	Root              ImportNode
 }
 
 func NewImportItem(key string, kind enums.ImportItemKind, root ImportNode, warnings []ImportWarning) ImportItem {
@@ -27,6 +30,42 @@ func NewImportItem(key string, kind enums.ImportItemKind, root ImportNode, warni
 
 func NewVariablesImportItem(key string, kind enums.ImportItemKind, variables ImportVariables) ImportItem {
 	return ImportItem{Key: key, Kind: kind, Name: variables.Environment.Name, Variables: &variables, Warnings: []ImportWarning{}, PmUsages: []PmUsage{}}
+}
+
+func NewWorkspaceImportItem(key string, workspace ImportWorkspace) ImportItem {
+	return ImportItem{Key: key, Kind: importitemkind.Workspace, Name: workspace.Name, Workspace: &workspace, Warnings: []ImportWarning{}, PmUsages: []PmUsage{}}
+}
+
+func (i ImportItem) FromSource(id string) ImportItem {
+	i.SourceID = id
+	return i
+}
+
+func (i ImportItem) WithSecrets(bundle SecretBundle) ImportItem {
+	switch {
+	case i.IsWorkspace():
+		workspace := i.Workspace.WithSecrets(bundle)
+		i.Workspace = &workspace
+	case i.IsVariables():
+		variables := NewImportVariables(i.Variables.Environment, bundle.For(NewEnvironmentScopeRef(i.SourceID)))
+		i.Variables = &variables
+	default:
+		i.CollectionSecrets = bundle.For(NewCollectionScopeRef(i.SourceID))
+	}
+	return i
+}
+
+func (i ImportItem) IsWorkspace() bool {
+	return i.Workspace != nil
+}
+
+func (i ImportItem) CompletedWorkspace(localId, id string) ImportOutcome {
+	return ImportOutcome{
+		Item:     ImportItemResult{Status: importstatus.Imported, Key: i.Key, LocalID: localId, ID: id, Name: i.Name},
+		Warnings: []ImportWarning{},
+		PmUsages: []PmUsage{},
+		Created:  i.Workspace.Counts,
+	}
 }
 
 func (i ImportItem) Named(name string) ImportItem {
@@ -75,6 +114,9 @@ func (i ImportItem) WithPmUsages(usages []PmUsage) ImportItem {
 }
 
 func (i ImportItem) Counts() ImportCounts {
+	if i.IsWorkspace() {
+		return i.Workspace.Counts
+	}
 	if !i.IsVariables() {
 		return i.Root.Counts()
 	}
@@ -86,7 +128,7 @@ func (i ImportItem) Counts() ImportCounts {
 }
 
 func (i ImportItem) Scripts() []ScriptRef {
-	if i.IsVariables() {
+	if i.IsVariables() || i.IsWorkspace() {
 		return []ScriptRef{}
 	}
 	return i.Root.Scripts("")

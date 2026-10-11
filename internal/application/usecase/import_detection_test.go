@@ -27,6 +27,12 @@ func TestDetectImportFormatRecognisesEverySupportedSource(t *testing.T) {
 		"bruno":            {entity.ImportProbe{IsFolder: true, Entries: []string{"bruno.json", "a.bru"}}, importkind.BrunoBru, ""},
 		"opencollection":   {entity.ImportProbe{IsFolder: true, Entries: []string{"opencollection.yml"}}, importkind.BrunoYaml, ""},
 		"opencollection 2": {entity.ImportProbe{IsFolder: true, Entries: []string{"x/opencollection.yml", "opencollection.yaml"}}, importkind.BrunoYaml, ""},
+		"xenon ws zip":     {entity.ImportProbe{IsFolder: true, XenonFormat: 1, XenonKind: "export", XenonRoot: "workspace"}, importkind.XenonWorkspaceZip, "1"},
+		"xenon zip":        {entity.ImportProbe{IsFolder: true, XenonFormat: 1, XenonKind: "export", XenonRoot: "folder"}, importkind.XenonZip, "1"},
+		"xenon bundle":     {entity.ImportProbe{XenonFormat: 1, XenonKind: "bundle", XenonRoot: "collection"}, importkind.XenonBundle, "1"},
+		"xenon ws folder":  {entity.ImportProbe{IsFolder: true, XenonFormat: 1, XenonKind: "workspace"}, importkind.XenonWorkspaceFolder, "1"},
+		"xenon request":    {entity.ImportProbe{XenonFormat: 1, XenonKind: "request"}, importkind.XenonRequest, "1"},
+		"xenon env":        {entity.ImportProbe{XenonFormat: 1, XenonKind: "environment"}, importkind.XenonEnvironment, "1"},
 	}
 	for name, tc := range cases {
 		kind, version, err := DetectImportFormat(tc.probe)
@@ -42,15 +48,21 @@ func TestDetectImportFormatRefusesWithAReason(t *testing.T) {
 		code    string
 		message string
 	}{
-		"text":        {entity.ImportProbe{IsPasted: true, Name: "pasted text", Text: "curling"}, "IMP-00415", "pasted text is not a Postman, Bruno or cURL export"},
+		"text":        {entity.ImportProbe{IsPasted: true, Name: "pasted text", Text: "curling"}, "IMP-00415", "pasted text is not a Xenon, Postman, Bruno or cURL export"},
 		"v1 shape":    {entity.ImportProbe{Name: "v1.json", IsJson: true, HasV1Shape: true}, "IMP-01400", "Postman v1 collections are not supported; export the collection as v2.1"},
 		"v1 schema":   {entity.ImportProbe{Name: "v1.json", IsJson: true, Schema: "https://schema.getpostman.com/json/collection/v1.0.0/collection.json"}, "IMP-01400", "Postman v1 collections are not supported; export the collection as v2.1"},
 		"v3 file":     {entity.ImportProbe{Name: "Get.Request.yaml"}, "IMP-00415", "Postman v3 YAML is not supported yet; export the collection as v2.1 JSON"},
 		"v3 folder":   {entity.ImportProbe{Name: "v3", IsFolder: true, Entries: []string{".resources/definition.yaml", "users/Get.request.yaml"}}, "IMP-00415", "Postman v3 YAML is not supported yet; export the collection as v2.1 JSON"},
 		"malformed":   {entity.ImportProbe{Name: "a.json", IsMalformed: true}, "IMP-01400", "a.json is not valid JSON"},
-		"random json": {entity.ImportProbe{Name: "r.json", IsJson: true, Scope: "other"}, "IMP-00415", "r.json is not a Postman, Bruno or cURL export"},
-		"empty dir":   {entity.ImportProbe{Name: "empty", IsFolder: true, Entries: []string{"sub/archive.json", "sub/bruno.json"}}, "IMP-00415", "empty is not a Postman, Bruno or cURL export"},
+		"random json": {entity.ImportProbe{Name: "r.json", IsJson: true, Scope: "other"}, "IMP-00415", "r.json is not a Xenon, Postman, Bruno or cURL export"},
+		"empty dir":   {entity.ImportProbe{Name: "empty", IsFolder: true, Entries: []string{"sub/archive.json", "sub/bruno.json"}}, "IMP-00415", "empty is not a Xenon, Postman, Bruno or cURL export"},
 		"mixed":       {entity.ImportProbe{Name: "mixed", IsFolder: true, Entries: []string{"bruno.json", "opencollection.yml"}}, "IMP-00415", "mixed mixes Bruno .bru and YAML files"},
+		"newer":       {entity.ImportProbe{Name: "n.yaml", XenonFormat: 2, XenonKind: "request"}, "IMP-42422", "n.yaml was written by a newer Xenon (format 2); update Xenon to import it"},
+		"ws file":     {entity.ImportProbe{Name: "workspace.yaml", XenonFormat: 1, XenonKind: "workspace"}, "IMP-00415", "workspace.yaml is not a Xenon, Postman, Bruno or cURL export"},
+		"req folder":  {entity.ImportProbe{Name: "r", IsFolder: true, XenonFormat: 1, XenonKind: "request"}, "IMP-00415", "r is not a Xenon, Postman, Bruno or cURL export"},
+		"env folder":  {entity.ImportProbe{Name: "e", IsFolder: true, XenonFormat: 1, XenonKind: "environment"}, "IMP-00415", "e is not a Xenon, Postman, Bruno or cURL export"},
+		"no kind":     {entity.ImportProbe{Name: "k.yaml", XenonFormat: 1}, "IMP-00415", "k.yaml is not a Xenon, Postman, Bruno or cURL export"},
+		"no format":   {entity.ImportProbe{Name: "f.yaml", XenonKind: "request"}, "IMP-00415", "f.yaml is not a Xenon, Postman, Bruno or cURL export"},
 	}
 	for name, tc := range cases {
 		_, _, err := DetectImportFormat(tc.probe)

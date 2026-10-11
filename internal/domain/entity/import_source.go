@@ -9,13 +9,14 @@ import (
 const ImportSourceLifetime = 30 * time.Minute
 
 type ImportSource struct {
-	ExpiresAt      time.Time
-	ID             string
-	Kind           enums.ImportKind
-	Version        string
-	TempDirs       []string
-	Items          []ImportItem
-	SourceWarnings []ImportWarning
+	ExpiresAt        time.Time
+	EncryptedSecrets string
+	ID               string
+	Kind             enums.ImportKind
+	Version          string
+	TempDirs         []string
+	Items            []ImportItem
+	SourceWarnings   []ImportWarning
 }
 
 func NewImportSource(id string, inputs []ImportInput, tempDirs []string, now time.Time) ImportSource {
@@ -34,6 +35,24 @@ func (i ImportSource) WithItems(items []ImportItem) ImportSource {
 
 func (i ImportSource) WithSourceWarnings(warnings []ImportWarning) ImportSource {
 	i.SourceWarnings = append([]ImportWarning{}, warnings...)
+	return i
+}
+
+func (i ImportSource) WithEncryptedSecrets(armored string) ImportSource {
+	i.EncryptedSecrets = armored
+	return i
+}
+
+func (i ImportSource) HasEncryptedSecrets() bool {
+	return i.EncryptedSecrets != ""
+}
+
+func (i ImportSource) WithSecrets(bundle SecretBundle) ImportSource {
+	items := make([]ImportItem, 0, len(i.Items))
+	for _, item := range i.Items {
+		items = append(items, item.WithSecrets(bundle))
+	}
+	i.Items = items
 	return i
 }
 

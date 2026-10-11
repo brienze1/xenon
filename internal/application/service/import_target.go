@@ -19,6 +19,9 @@ type importTarget struct {
 }
 
 func (t importTarget) clashes() []entity.Clash {
+	if t.item.IsWorkspace() {
+		return []entity.Clash{}
+	}
 	if t.item.IsVariables() {
 		return t.variableClashes()
 	}
