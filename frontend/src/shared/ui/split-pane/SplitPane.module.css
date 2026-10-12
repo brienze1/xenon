@@ -28,19 +28,36 @@
 }
 
 .divider {
+  position: relative;
+  z-index: 2;
   flex: 0 0 auto;
   background: var(--color-border);
+  touch-action: none;
+  transition: background-color 80ms ease-out;
+}
+
+/* The visible divider is 1px; this invisible strip makes it a 12px grab area. */
+.divider::before {
+  position: absolute;
+  content: '';
 }
 
 .row > .divider {
   width: 1px;
   cursor: col-resize;
-  box-shadow: 0 0 0 2px transparent;
+}
+
+.row > .divider::before {
+  inset: 0 -6px;
 }
 
 .column > .divider {
   height: 1px;
   cursor: row-resize;
+}
+
+.column > .divider::before {
+  inset: -6px 0;
 }
 
 .divider:hover {
