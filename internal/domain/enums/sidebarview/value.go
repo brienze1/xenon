@@ -7,9 +7,10 @@ import (
 )
 
 const (
-	Collections enums.SidebarView = "collections"
-	History     enums.SidebarView = "history"
-	Unknown     enums.SidebarView = "unknown"
+	Collections  enums.SidebarView = "collections"
+	History      enums.SidebarView = "history"
+	Environments enums.SidebarView = "environments"
+	Unknown      enums.SidebarView = "unknown"
 )
 
 func GetSidebarView(s string) enums.SidebarView {
@@ -18,6 +19,8 @@ func GetSidebarView(s string) enums.SidebarView {
 		return Collections
 	case "history":
 		return History
+	case "environments":
+		return Environments
 	default:
 		return Unknown
 	}

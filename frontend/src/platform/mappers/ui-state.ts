@@ -5,10 +5,11 @@ import type {
 } from '../../../bindings/github.com/brienze1/xenon/internal/integration/entrypoint/dto/models'
 import { toRequestDraft, toRequestDto, type RequestDraft } from './request'
 
-export type SidebarView = 'collections' | 'history'
+export type SidebarView = 'collections' | 'history' | 'environments'
 export type SplitOrientation = 'stacked' | 'side-by-side'
 
-export type TabKind = 'request' | 'example'
+/** `environment` and `globals` tabs edit variables instead of a request. */
+export type TabKind = 'request' | 'example' | 'environment' | 'globals'
 
 export interface TabState {
   tabId: string
@@ -17,6 +18,8 @@ export interface TabState {
   requestId: string | null
   /** Set for example tabs only. */
   exampleId?: string | null
+  /** Set for environment tabs only. */
+  environmentId?: string | null
   pinned: boolean
   baseRevision: string | null
   draft: RequestDraft | null
@@ -93,12 +96,29 @@ function orNull(value: string): string | null {
   return value === '' ? null : value
 }
 
+const SIDEBAR_VIEWS: readonly SidebarView[] = ['collections', 'history', 'environments']
+
+function toSidebarView(view: string): SidebarView {
+  return SIDEBAR_VIEWS.find((known) => known === view) ?? 'collections'
+}
+
+function toTabKind(dto: TabDto): TabKind {
+  if (dto.kind === 'globals') {
+    return 'globals'
+  }
+  if (dto.kind === 'environment' && dto.environment_id) {
+    return 'environment'
+  }
+  return dto.kind === 'example' && dto.example_id ? 'example' : 'request'
+}
+
 function toTabState(dto: TabDto): TabState {
   return {
     tabId: dto.tab_id,
-    kind: dto.kind === 'example' && dto.example_id ? 'example' : 'request',
+    kind: toTabKind(dto),
     requestId: orNull(dto.request_id),
     exampleId: orNull(dto.example_id ?? ''),
+    environmentId: orNull(dto.environment_id ?? ''),
     pinned: dto.pinned,
     baseRevision: orNull(dto.base_revision),
     draft: dto.draft ? toRequestDraft(dto.draft) : null,
@@ -132,7 +152,7 @@ export function toUIState(dto: UIStateDto | null): UIState {
     sidebar: {
       expanded: dto.sidebar.expanded ?? [],
       selectedId: orNull(dto.sidebar.selected_id),
-      view: dto.sidebar.view === 'history' ? 'history' : 'collections',
+      view: toSidebarView(dto.sidebar.view),
       search: dto.sidebar.search,
     },
     layout: toLayout(dto.layout),
@@ -145,6 +165,7 @@ function toTabDto(tab: TabState): TabDto {
     kind: tab.kind ?? 'request',
     request_id: tab.requestId ?? '',
     example_id: tab.exampleId ?? '',
+    environment_id: tab.environmentId ?? '',
     pinned: tab.pinned,
     base_revision: tab.baseRevision ?? '',
     ...(tab.draft ? { draft: toRequestDto(tab.draft) } : {}),

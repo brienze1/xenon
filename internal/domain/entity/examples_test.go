@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/brienze1/xenon/internal/domain/enums/bodyencoding"
-	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
+	"github.com/brienze1/xenon/internal/domain/enums/tabkind"
 )
 
 func TestExampleResponseCodeMustBeAnHttpStatus(t *testing.T) {
@@ -102,8 +102,20 @@ func TestRequestExamplesAreEditedInPlace(t *testing.T) {
 }
 
 func TestTabKindFollowsTheExample(t *testing.T) {
-	if NewTabKind("") != itemkind.Request || NewTabKind("e1") != itemkind.Example {
+	if NewTabKind("", "", "") != tabkind.Request || NewTabKind("", "e1", "") != tabkind.Example {
 		t.Error("an example id makes an example tab")
+	}
+}
+
+func TestTabKindOfEnvironmentAndGlobalsTabs(t *testing.T) {
+	if NewTabKind(tabkind.Environment, "", "env1") != tabkind.Environment || NewTabKind(tabkind.Request, "", "env1") != tabkind.Environment {
+		t.Error("an environment id makes an environment tab")
+	}
+	if NewTabKind(tabkind.Globals, "", "") != tabkind.Globals {
+		t.Error("the globals kind makes a globals tab")
+	}
+	if NewTabKind(tabkind.Environment, "", "") != tabkind.Request {
+		t.Error("an environment tab without an environment id falls back to a request tab")
 	}
 }
 

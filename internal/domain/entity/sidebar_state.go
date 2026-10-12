@@ -17,7 +17,7 @@ func NewSidebarState() SidebarState {
 }
 
 func (s SidebarState) Normalized() SidebarState {
-	if s.View != sidebarview.History {
+	if s.View != sidebarview.History && s.View != sidebarview.Environments {
 		s.View = sidebarview.Collections
 	}
 	if s.Expanded == nil {

@@ -12,6 +12,7 @@ func TestGetSidebarView(t *testing.T) {
 	}{
 		{raw: "collections", want: Collections},
 		{raw: "history", want: History},
+		{raw: "environments", want: Environments},
 	}
 	for _, tc := range cases {
 		for _, raw := range []string{tc.raw, strings.ToUpper(tc.raw), " " + tc.raw + " "} {

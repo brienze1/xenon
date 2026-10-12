@@ -6,7 +6,7 @@ import (
 )
 
 type SidebarState struct {
-	View       string   `json:"view" validate:"omitempty,oneof=collections history"`
+	View       string   `json:"view" validate:"omitempty,oneof=collections history environments"`
 	SelectedId string   `json:"selected_id"`
 	Search     string   `json:"search"`
 	Expanded   []string `json:"expanded"`
