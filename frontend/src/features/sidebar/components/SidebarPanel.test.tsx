@@ -89,6 +89,8 @@ async function renderPanel(collectionVariables?: (collectionId: string) => React
     onRequestsDeleted: vi.fn(),
     onRenamed: vi.fn(),
     onOpenHistoryEntry: vi.fn(),
+    onOpenVariables: vi.fn(),
+    selectedVariables: null,
   }
   render(<SidebarPanel {...actions} collectionVariables={collectionVariables} authEditor={fakeAuthEditor} />)
   await act(() => useSidebarStore.getState().load())

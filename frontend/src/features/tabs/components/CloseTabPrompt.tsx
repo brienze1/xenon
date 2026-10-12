@@ -1,11 +1,13 @@
 import { SAVE_CONFLICT_CODE } from '@/platform/errors'
+import { useEnvironmentsStore } from '@/features/environments/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { withNextStep } from '@/shared/lib/next-step'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
-import { useTabsStore } from '@/features/tabs/store'
+import { useTabTitle } from '@/features/tabs/hooks/use-tab-title'
+import { environmentTabScope, useTabsStore } from '@/features/tabs/store'
 import styles from './CloseTabPrompt.module.css'
 
 const SAVE_CHANGES_TITLE = <Dialog.Title>Save Changes?</Dialog.Title>
@@ -17,14 +19,17 @@ export function CloseTabPrompt() {
   const tabId = useTabsStore((state) => state.closePrompt)
   const closeError = useTabsStore((state) => state.closeError)
   const resolveClose = useTabsStore((state) => state.resolveClose)
-  const name = useRequestBuilderStore((state) => (tabId ? state.tabs[tabId]?.draft.name : null) || 'Untitled Request')
-  const saving = useRequestBuilderStore((state) => (tabId ? state.tabs[tabId]?.saving === true : false))
+  const name = useTabTitle(tabId)
+  const scope = useTabsStore((state) => environmentTabScope(state.tabs.find((tab) => tab.id === tabId)))
+  const requestSaving = useRequestBuilderStore((state) => (tabId ? state.tabs[tabId]?.saving === true : false))
+  const variablesSaving = useEnvironmentsStore((state) => (scope === null ? false : state.drafts[scope]?.saving === true))
+  const saving = requestSaving || variablesSaving
 
   return (
     <Dialog.Root open={tabId !== null} onOpenChange={(open) => (open ? undefined : void resolveClose('cancel'))}>
       {SAVE_CHANGES_TITLE}
       <Dialog.Body>
-        “{name}” has unsaved changes. Do you want to save them before closing?
+        “<span translate="no">{name}</span>” has unsaved changes. Do you want to save them before closing?
         {closeError ? (
           <Banner.Root tone="error" className={styles.error}>
             <Banner.Message>

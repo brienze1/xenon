@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useEnvironmentsStore } from '@/features/environments/store'
+import { isScopeDirty, useEnvironmentsStore } from '@/features/environments/store'
 
 export interface DiscardGuard {
   /** Whether the "Discard unsaved variable changes?" confirmation is showing. */
@@ -15,7 +15,8 @@ export function useDiscardGuard(scopes: readonly string[]): DiscardGuard {
   const [pending, setPending] = useState<(() => void) | null>(null)
 
   function guard(proceed: () => void) {
-    const dirty = useEnvironmentsStore.getState().dirtyScopes.some((scope) => scopes.includes(scope))
+    const state = useEnvironmentsStore.getState()
+    const dirty = scopes.some((scope) => isScopeDirty(state, scope))
     if (dirty) {
       setPending(() => proceed)
       return

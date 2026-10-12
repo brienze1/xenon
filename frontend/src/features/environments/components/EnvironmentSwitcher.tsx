@@ -6,9 +6,7 @@ import { Button } from '@/shared/ui/button/Button'
 import { Dropdown } from '@/shared/ui/dropdown/Dropdown'
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { useEnvironmentsStore } from '@/features/environments/store'
-import { EnvironmentsManager } from './EnvironmentsManager'
 import styles from './EnvironmentSwitcher.module.css'
-import { GlobalsDialog } from './GlobalsDialog'
 import { QuickLook } from './QuickLook'
 
 export const NO_ENVIRONMENT_LABEL = 'No environment'
@@ -25,14 +23,14 @@ const BROKEN_NEXT_STEP = 'Fix or remove the file in the workspace folder.'
 
 const MENU_SEPARATOR = <hr className={styles.separator} />
 
-const EDITORS = (
-  <>
-    <EnvironmentsManager />
-    <GlobalsDialog />
-  </>
-)
+interface EnvironmentSwitcherProps {
+  /** Opens the globals in a main-area tab. */
+  onOpenGlobals: () => void
+  /** Shows the environments in the sidebar, where they are created, renamed and opened. */
+  onManage: () => void
+}
 
-export function EnvironmentSwitcher() {
+export function EnvironmentSwitcher({ onOpenGlobals, onManage }: EnvironmentSwitcherProps) {
   const { environments, activeId, switcherOpen, setActive, setSwitcherOpen } = useEnvironmentsStore(
     useShallow((state) => ({
       environments: state.environments,
@@ -44,7 +42,6 @@ export function EnvironmentSwitcher() {
   )
   const error = useEnvironmentsStore((state) => state.error)
   const clearError = useEnvironmentsStore((state) => state.clearError)
-  const openEditor = useEnvironmentsStore((state) => state.openEditor)
   const active = environments.find((environment) => environment.id === activeId)
   const activeName = active?.name ?? NO_ENVIRONMENT_LABEL
   const activeColor = active?.color ?? 'none'
@@ -90,8 +87,8 @@ export function EnvironmentSwitcher() {
             ),
           )}
           {MENU_SEPARATOR}
-          <Dropdown.Item onSelect={() => openEditor('globals')}>Globals</Dropdown.Item>
-          <Dropdown.Item onSelect={() => openEditor('manager')}>Manage Environments…</Dropdown.Item>
+          <Dropdown.Item onSelect={onOpenGlobals}>Globals</Dropdown.Item>
+          <Dropdown.Item onSelect={onManage}>Manage Environments…</Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown.Root>
       <QuickLook />
@@ -110,7 +107,6 @@ export function EnvironmentSwitcher() {
           </Banner.Actions>
         </Banner.Root>
       ) : null}
-      {EDITORS}
     </div>
   )
 }

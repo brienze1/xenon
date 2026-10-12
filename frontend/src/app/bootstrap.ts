@@ -74,6 +74,12 @@ export function bootstrap(): () => void {
       if (state.activeId !== previous.activeId) {
         useRequestBuilderStore.getState().refreshInspections()
       }
+      if (state.environments !== previous.environments && state.status === 'ready' && state.error === null) {
+        useTabsStore.getState().handleEnvironmentsChanged(state.environments.map((environment) => environment.id))
+      }
+      if (state.drafts !== previous.drafts) {
+        useTabsStore.getState().pinIfEdited()
+      }
     }),
     useRequestBuilderStore.subscribe((state, previous) => {
       if (state.tabs !== previous.tabs) {

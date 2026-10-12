@@ -22,6 +22,10 @@ vi.mock('@/platform/services/vault', () => ({
 const variables = await import('@/platform/services/variables')
 const vault = await import('@/platform/services/vault')
 const { useEnvironmentsStore } = await import('@/features/environments/store')
+
+function dirtyScopes(): string[] {
+  return Object.entries(useEnvironmentsStore.getState().drafts).flatMap(([scope, draft]) => (draft.dirty ? [scope] : []))
+}
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { VariableTable } = await import('./VariableTable')
 
@@ -159,25 +163,36 @@ describe('VariableTable', () => {
 
   it('flags its scope as having unsaved edits until they are saved or discarded', async () => {
     await renderTable([plain()])
-    expect(useEnvironmentsStore.getState().dirtyScopes).toEqual([])
+    expect(dirtyScopes()).toEqual([])
     await user.type(screen.getByRole('textbox', { name: 'Description of base_url' }), '!')
-    expect(useEnvironmentsStore.getState().dirtyScopes).toEqual([SCOPE])
+    expect(dirtyScopes()).toEqual([SCOPE])
     await user.click(screen.getByRole('button', { name: 'Discard Changes' }))
-    expect(useEnvironmentsStore.getState().dirtyScopes).toEqual([])
+    expect(dirtyScopes()).toEqual([])
     await user.type(screen.getByRole('textbox', { name: 'Description of base_url' }), '!')
     vi.mocked(variables.saveVariableTable).mockResolvedValue(tableOf([plain({ description: 'API root!' })]))
     await user.click(screen.getByRole('button', { name: 'Save Variables' }))
     expect(await screen.findByRole('textbox', { name: 'Description of base_url' })).toHaveValue('API root!')
-    expect(useEnvironmentsStore.getState().dirtyScopes).toEqual([])
+    expect(dirtyScopes()).toEqual([])
   })
 
   it('clears its unsaved-edits flag when it closes', async () => {
     vi.mocked(variables.getVariableTable).mockResolvedValue(tableOf([plain()]))
     const { unmount } = render(<VariableTable scope={SCOPE} label="dev variables" />)
     await user.type(await screen.findByRole('textbox', { name: 'Description of base_url' }), '!')
-    expect(useEnvironmentsStore.getState().dirtyScopes).toEqual([SCOPE])
+    expect(dirtyScopes()).toEqual([SCOPE])
     unmount()
-    expect(useEnvironmentsStore.getState().dirtyScopes).toEqual([])
+    expect(dirtyScopes()).toEqual([])
+  })
+
+  it('keeps unsaved edits through an unmount when they live as long as the workspace (environment tabs)', async () => {
+    vi.mocked(variables.getVariableTable).mockResolvedValue(tableOf([plain()]))
+    const { unmount } = render(<VariableTable scope={SCOPE} label="dev variables" draftLifetime="workspace" />)
+    await user.type(await screen.findByRole('textbox', { name: 'Description of base_url' }), '!')
+    unmount()
+    expect(dirtyScopes()).toEqual([SCOPE])
+    render(<VariableTable scope={SCOPE} label="dev variables" draftLifetime="workspace" />)
+    expect(await screen.findByRole('textbox', { name: 'Description of base_url' })).toHaveValue('API root!')
+    expect(screen.getByRole('button', { name: 'Discard Changes' })).toBeEnabled()
   })
 
   it('adds, renames and removes rows, then saves the whole table', async () => {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { ConsoleDrawer as ConsoleContent } from '@/features/console/components/ConsoleDrawer'
 import { CookiesButton } from '@/features/cookies/components/CookiesButton'
 import { CookiesDialog } from '@/features/cookies/components/CookiesDialog'
@@ -27,6 +28,7 @@ import { ConflictView } from '@/features/sync/components/ConflictView'
 import { LinkRepoDialog } from '@/features/sync/components/LinkRepoDialog'
 import { SyncPanel } from '@/features/sync/components/SyncPanel'
 import type { ItemAuthSlot, ItemScriptsSlot } from '@/features/sidebar/components/SettingsForm'
+import type { EnvironmentTabTarget, OpenMode } from '@/features/tabs/model'
 import { useTabsStore } from '@/features/tabs/store'
 import { MissingFolderNotice } from '@/features/workspaces/components/MissingFolderNotice'
 import { WelcomeScreen } from '@/features/workspaces/components/WelcomeScreen'
@@ -34,7 +36,7 @@ import { WorkspaceSwitcher } from '@/features/workspaces/components/WorkspaceSwi
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import { collectionScope } from '@/platform/mappers/variable'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
-import { isActiveTabExample } from './active-tab'
+import { activeEnvironmentTarget, isActiveTabRequest } from './active-tab'
 import styles from './App.module.css'
 import { bootstrap } from './bootstrap'
 import { GO_TO_TAB_POSITIONS, HOTKEYS, type HotkeyHandlers } from './hotkeys'
@@ -56,7 +58,24 @@ const WORKSPACE_SWITCHER = <WorkspaceSwitcher />
 
 const WELCOME_SCREEN = <WelcomeScreen />
 
-const ENVIRONMENT_SWITCHER = <EnvironmentSwitcher />
+function openEnvironmentTab(target: EnvironmentTabTarget, mode: OpenMode) {
+  useTabsStore.getState().openEnvironmentTab(target, mode)
+}
+
+function openGlobals() {
+  openEnvironmentTab({ kind: 'globals' }, 'pinned')
+}
+
+/** "Manage Environments…": the environments live in the sidebar's Environments view. */
+function manageEnvironments() {
+  useSidebarStore.getState().setView('environments')
+  const workspaces = useWorkspacesStore.getState()
+  if (!workspaces.layout.sidebarVisible) {
+    workspaces.setLayout({ sidebarVisible: true })
+  }
+}
+
+const ENVIRONMENT_SWITCHER = <EnvironmentSwitcher onOpenGlobals={openGlobals} onManage={manageEnvironments} />
 
 const PASSPHRASE_DIALOG = <PassphraseDialog />
 
@@ -145,6 +164,7 @@ export function App() {
   const hasActive = active !== undefined
 
   const activeTabId = useTabsStore((state) => state.activeTabId)
+  const selectedVariables = useTabsStore(useShallow(activeEnvironmentTarget))
   const tabs = useTabsStore.getState
   const send = useRequestBuilderStore((state) => state.send)
   const adoptRename = useRequestBuilderStore((state) => state.adoptRename)
@@ -154,7 +174,7 @@ export function App() {
         ? {
             send: () => {
               const openTabs = useTabsStore.getState()
-              if (openTabs.activeTabId && !isActiveTabExample(openTabs)) {
+              if (openTabs.activeTabId && isActiveTabRequest(openTabs)) {
                 void send(openTabs.activeTabId)
               }
             },
@@ -211,6 +231,8 @@ export function App() {
                 void useExamplesStore.getState().adoptRename(id)
               }}
               onOpenHistoryEntry={(request) => void tabs().openDraft(request)}
+              onOpenVariables={openEnvironmentTab}
+              selectedVariables={selectedVariables}
               collectionVariables={collectionVariables}
               scriptsEditor={scriptsEditor}
               authEditor={authEditor}
@@ -220,7 +242,7 @@ export function App() {
             <TabsArea key={active.localId} />
           </MainArea>
           <RightPanel>
-            {activeTabId ? (
+            {activeTabId && selectedVariables === null ? (
               <SidePanel
                 key={active.localId}
                 tabId={activeTabId}

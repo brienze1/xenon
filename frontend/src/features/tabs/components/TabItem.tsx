@@ -1,16 +1,19 @@
 import { useDndContext } from '@dnd-kit/core'
 import { useSortable } from '@dnd-kit/sortable'
 import type { KeyboardEvent, MouseEvent } from 'react'
+import { isScopeDirty, useEnvironmentsStore } from '@/features/environments/store'
 import { useExamplesStore } from '@/features/examples/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { cn } from '@/shared/lib/cn'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
-import { useTabsStore } from '@/features/tabs/store'
+import { useTabTitle } from '@/features/tabs/hooks/use-tab-title'
+import { environmentTabScope, useTabsStore } from '@/features/tabs/store'
 import { TabContextMenu } from './TabContextMenu'
 import styles from './TabItem.module.css'
 
 const MIDDLE_BUTTON = 1
-const UNTITLED = 'Untitled Request'
+
+const GLOBALS_BADGE = <span className={styles.kindBadge}>GLB</span>
 
 const DIRTY_DOT = <span className={styles.dirty} role="img" aria-label="Unsaved changes" />
 
@@ -26,11 +29,18 @@ export function TabItem({ tabId }: TabItemProps) {
   const activate = useTabsStore((state) => state.activate)
   const pin = useTabsStore((state) => state.pin)
   const requestClose = useTabsStore((state) => state.requestClose)
-  const name = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.name || UNTITLED)
+  const name = useTabTitle(tabId)
+  const kind = useTabsStore((state) => state.tabs.find((tab) => tab.id === tabId)?.kind)
+  const scope = useTabsStore((state) => environmentTabScope(state.tabs.find((tab) => tab.id === tabId)))
   const method = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.method ?? 'GET')
   const draftDirty = useRequestBuilderStore((state) => state.tabs[tabId]?.dirty === true)
   const responseDirty = useExamplesStore((state) => state.tabs[tabId]?.dirty === true)
-  const dirty = draftDirty || responseDirty
+  const variablesDirty = useEnvironmentsStore((state) => scope !== null && isScopeDirty(state, scope))
+  const environmentId = useTabsStore((state) => state.tabs.find((tab) => tab.id === tabId)?.environmentId ?? null)
+  const environmentColor = useEnvironmentsStore(
+    (state) => state.environments.find((environment) => environment.id === environmentId)?.color ?? 'none',
+  )
+  const dirty = draftDirty || responseDirty || variablesDirty
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({ id: tabId, attributes: { role: 'tab' } })
   // Only a pointer drag makes the moving tab inert: during a keyboard drag the tab must keep
   // focus so the arrow keys keep moving it and assistive tech keeps announcing it.
@@ -90,7 +100,15 @@ export function TabItem({ tabId }: TabItemProps) {
         onAuxClick={onAuxClick}
         onKeyDown={onKeyDown}
       >
-        <MethodBadge method={method} className={styles.method} />
+        {kind === 'globals' ? (
+          GLOBALS_BADGE
+        ) : kind === 'environment' ? (
+          <span className={styles.kindBadge} data-color={environmentColor}>
+            ENV
+          </span>
+        ) : (
+          <MethodBadge method={method} className={styles.method} />
+        )}
         <span className={styles.name}>{name}</span>
         {dirty ? DIRTY_DOT : null}
         <button type="button" tabIndex={-1} aria-label={`Close ${name}`} className={styles.close} onClick={onClose} onPointerDown={(event) => event.stopPropagation()}>

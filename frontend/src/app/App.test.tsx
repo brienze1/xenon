@@ -1,4 +1,5 @@
 import { act, render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defaultUIState } from '@/platform/mappers/ui-state'
 
@@ -12,8 +13,13 @@ vi.mock('@/platform/events', () => ({
   onRequestChangedOnDisk: vi.fn(() => () => undefined),
 }))
 vi.mock('@/platform/services/environments', () => ({
-  listEnvironments: vi.fn(async () => ({ environments: [], activeId: null })),
+  listEnvironments: vi.fn(async () => ({ environments: [{ id: 'e1', name: 'dev', color: 'cyan', confirmBeforeSend: false, error: null }], activeId: null })),
   setActiveEnvironment: vi.fn(async () => null),
+}))
+vi.mock('@/platform/services/variables', () => ({
+  CONFIRM_REVEAL_REQUIRED: 'VAR-01409',
+  getVariableTable: vi.fn(async (_localId: string, scope: string) => ({ scope, rows: [], warnings: [] })),
+  saveVariableTable: vi.fn(),
 }))
 vi.mock('@/platform/services/workspaces', () => ({
   listWorkspaces: vi.fn(),
@@ -188,6 +194,41 @@ describe('App', () => {
     press('\\', { code: 'Backslash' })
     expect(useWorkspacesStore.getState().layout.sidebarVisible).toBe(!visible)
     expect(first).toBeDefined()
+  })
+
+  it('opens the globals as a tab from the switcher and shows the environments in the sidebar for "Manage Environments…"', async () => {
+    await renderWorkspace()
+    await userEvent.click(screen.getByRole('button', { name: 'Environment: No environment' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Globals' }))
+    expect(openTabs()).toHaveLength(2)
+    expect(await screen.findByRole('table', { name: 'Global variables' })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'No request selected' })).toBeInTheDocument()
+    act(() => useWorkspacesStore.getState().setLayout({ sidebarVisible: false }))
+    await userEvent.click(screen.getByRole('button', { name: 'Environment: No environment' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Manage Environments…' }))
+    expect(useSidebarStore.getState().view).toBe('environments')
+    expect(useWorkspacesStore.getState().layout.sidebarVisible).toBe(true)
+    const environments = await screen.findByRole('list', { name: 'Environments' })
+    expect(within(environments).getByRole('button', { name: 'Globals' })).toHaveAttribute('aria-current', 'true')
+    await userEvent.click(within(environments).getByRole('button', { name: 'dev' }))
+    expect(await screen.findByRole('table', { name: 'dev variables' })).toBeInTheDocument()
+    expect(openTabs()).toHaveLength(3)
+    expect(within(environments).getByRole('button', { name: 'dev' })).toHaveAttribute('aria-current', 'true')
+  })
+
+  it('switches the sidebar view from the view menu with the keyboard', async () => {
+    await renderWorkspace()
+    const trigger = screen.getByRole('button', { name: 'Sidebar view: Collections' })
+    trigger.focus()
+    await userEvent.keyboard('{Enter}')
+    expect(screen.getAllByRole('menuitemradio').map((item) => item.textContent)).toEqual(['Collections', 'Environments', 'History'])
+    expect(screen.getByRole('menuitemradio', { name: 'Collections' })).toHaveAttribute('aria-checked', 'true')
+    await userEvent.keyboard('{ArrowDown}{Enter}')
+    expect(useSidebarStore.getState().view).toBe('environments')
+    expect(screen.getByRole('button', { name: 'Sidebar view: Environments' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'New Collection' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'New Environment' })).toBeInTheDocument()
   })
 })
 

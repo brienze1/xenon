@@ -438,6 +438,10 @@ Stages 4 (scripts) and the OAuth 2.0 part of 5 carry most of the risk. Everythin
 - [x] Stage 7: Xenon keeps **its own sparse clone per workspace** (never your dev checkouts); sign-in via **GitHub browser (device code)**, **personal access tokens** (any host) and **SSH keys**. Pull replays local commits on top of the remote (linear history). **To do (Luis):** register a GitHub OAuth App with device flow enabled and give its client id to the project.
 - [x] Keep workspace globals as a scope? **Yes** — scopes stay local → environment → collection → globals, and `pm.globals` works.
 
+**Decisions (Oct 12, 2026)**
+
+- [x] Where are environments managed? **User decision:** not as collections in the tree (unlike Postman) — the top-right switcher stays for picking the active environment, with its quick look. The sidebar views move from tabs to a **view menu (Collections / Environments / History)**, remembered per workspace; the **Environments view** lists the globals and every environment (colour, active marker) with New, Rename, Duplicate, Export… and Delete. Opening an environment or the globals shows it in a **main-area tab** (preview on single click, pinned on double click or edit; dirty dot; Save / Don’t Save / Cancel on close; restored after a restart) with its name, colour, "Confirm before send" and variables table. The floating Environments manager and Globals dialogs are gone; the switcher’s "Globals" opens the globals tab and "Manage Environments…" shows the Environments view.
+
 **Open questions**
 
 - [ ] Open-source Xenon once it replaces Postman, or keep it private? (Not needed for the MVP.)

@@ -1,18 +1,19 @@
-import { useState, type ReactNode } from 'react'
+import { Activity, useState, type ReactNode } from 'react'
 import type { RequestDraft } from '@/platform/mappers/request'
 import type { TreeNode } from '@/platform/mappers/tree'
-import type { SidebarView } from '@/platform/mappers/ui-state'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
-import { Tabs } from '@/shared/ui/tabs/Tabs'
+import type { OpenMode, VariablesItem } from '@/features/sidebar/model'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { CollectionTree } from './CollectionTree'
 import { DeleteItemDialog } from './DeleteItemDialog'
+import { EnvironmentsView } from './EnvironmentsView'
 import { HistoryView } from './HistoryView'
 import { ItemSettingsDialog } from './ItemSettingsDialog'
 import type { ItemAuthSlot, ItemScriptsSlot } from './SettingsForm'
 import { SidebarErrorText } from './SidebarErrorText'
 import { SidebarToolbar } from './SidebarToolbar'
+import { SidebarViewSelect } from './SidebarViewSelect'
 import styles from './SidebarPanel.module.css'
 
 const SIDEBAR_NEXT_STEP = 'Try again, or check that the workspace folder exists and is writable.'
@@ -26,6 +27,10 @@ interface SidebarPanelProps {
   onRequestsDeleted: (ids: string[]) => void
   onRenamed: (id: string) => void
   onOpenHistoryEntry: (request: RequestDraft) => void
+  /** Opens the globals or an environment in a main-area tab. */
+  onOpenVariables: (item: VariablesItem, mode: OpenMode) => void
+  /** The environments-view entry whose tab is active. */
+  selectedVariables: VariablesItem | null
   /** Renders a collection's Variables tab in its settings dialog. */
   collectionVariables?: (collectionId: string) => ReactNode
   /** Renders the scripts editor of a collection or folder's settings; composed by the app. */
@@ -34,14 +39,26 @@ interface SidebarPanelProps {
   authEditor?: (slot: ItemAuthSlot) => ReactNode
 }
 
-const SIDEBAR_VIEWS = (
-  <Tabs.List label="Sidebar view" className={styles.views}>
-    <Tabs.Tab value="collections">Collections</Tabs.Tab>
-    <Tabs.Tab value="history">History</Tabs.Tab>
-  </Tabs.List>
-)
+const SIDEBAR_VIEW_SELECT = <SidebarViewSelect />
 
 const SIDEBAR_TOOLBAR = <SidebarToolbar />
+
+interface SidebarSectionProps {
+  visible: boolean
+  label: string
+  children: ReactNode
+}
+
+/** One sidebar view; Activity keeps a hidden view's state (scroll, expanded rows) for an instant switch back. */
+function SidebarSection({ visible, label, children }: SidebarSectionProps) {
+  return (
+    <Activity mode={visible ? 'visible' : 'hidden'}>
+      <section aria-label={label} hidden={!visible} className={styles.view}>
+        {children}
+      </section>
+    </Activity>
+  )
+}
 
 export function SidebarPanel({
   onOpenRequest,
@@ -52,12 +69,13 @@ export function SidebarPanel({
   onRequestsDeleted,
   onRenamed,
   onOpenHistoryEntry,
+  onOpenVariables,
+  selectedVariables,
   collectionVariables,
   scriptsEditor,
   authEditor,
 }: SidebarPanelProps) {
   const view = useSidebarStore((state) => state.view)
-  const setView = useSidebarStore((state) => state.setView)
   const openHistoryEntry = useSidebarStore((state) => state.openHistoryEntry)
   const error = useSidebarStore((state) => state.error)
   const clearError = useSidebarStore((state) => state.clearError)
@@ -94,9 +112,9 @@ export function SidebarPanel({
   }
 
   return (
-    <Tabs.Root value={view} onValueChange={(next) => setView(next as SidebarView)} className={styles.panel}>
-      {SIDEBAR_VIEWS}
-      {SIDEBAR_TOOLBAR}
+    <div className={styles.panel}>
+      {SIDEBAR_VIEW_SELECT}
+      {view === 'environments' ? null : SIDEBAR_TOOLBAR}
       {error ? (
         <Banner.Root tone="error" className={styles.banner}>
           <Banner.Message>
@@ -109,7 +127,7 @@ export function SidebarPanel({
           </Banner.Actions>
         </Banner.Root>
       ) : null}
-      <Tabs.Panel value="collections" className={styles.view}>
+      <SidebarSection visible={view === 'collections'} label="Collections">
         <CollectionTree
           onOpenRequest={onOpenRequest}
           onPinRequest={onPinRequest}
@@ -119,12 +137,15 @@ export function SidebarPanel({
           onDelete={setDeleting}
           onRenamed={onRenamed}
         />
-      </Tabs.Panel>
-      <Tabs.Panel value="history" className={styles.view}>
+      </SidebarSection>
+      <SidebarSection visible={view === 'environments'} label="Environments">
+        <EnvironmentsView selected={selectedVariables} onOpen={onOpenVariables} />
+      </SidebarSection>
+      <SidebarSection visible={view === 'history'} label="History">
         <HistoryView onOpenEntry={(id) => void openEntry(id)} />
-      </Tabs.Panel>
+      </SidebarSection>
       <ItemSettingsDialog itemId={settingsId} onClose={() => setSettingsId(null)} collectionVariables={collectionVariables} scriptsEditor={scriptsEditor} authEditor={authEditor} />
       <DeleteItemDialog item={deleting} onCancel={() => setDeleting(null)} onConfirm={confirmDelete} />
-    </Tabs.Root>
+    </div>
   )
 }

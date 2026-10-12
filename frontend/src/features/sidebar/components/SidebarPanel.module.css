@@ -9,13 +9,14 @@
   margin: 0 var(--space-3) var(--space-3);
 }
 
-.views {
-  flex: none;
-  padding: 0 var(--space-2);
-}
-
 .view {
   display: flex;
+  flex: 1;
+  min-height: 0;
   flex-direction: column;
   overflow: hidden;
+}
+
+.view[hidden] {
+  display: none;
 }

@@ -3,7 +3,7 @@ import { useWorkspacesStore } from '@/features/workspaces/store'
 import { AppError, toAppError } from '@/platform/errors'
 import type { VariablesChanged } from '@/platform/events'
 import type { Environment, EnvironmentSummary } from '@/platform/mappers/environment'
-import { environmentScope, type VariableEdit, type VariableTable } from '@/platform/mappers/variable'
+import { environmentScope, type VariableEdit, type VariableRow, type VariableTable } from '@/platform/mappers/variable'
 import { emptyVaultStatus, type VaultStatus } from '@/platform/mappers/vault'
 import {
   createEnvironment,
@@ -16,6 +16,7 @@ import {
 } from '@/platform/services/environments'
 import {
   addVariable,
+  CONFIRM_REVEAL_REQUIRED,
   getVariableTable,
   persistVariables,
   resetVariables,
@@ -33,7 +34,8 @@ import {
   VAULT_LOCKED,
 } from '@/platform/services/vault'
 import type { Result } from '@/shared/types/result'
-import type { EnvironmentEditor, EnvironmentLook, EnvironmentsStatus, PassphrasePrompt, TableState } from './model'
+import { toDraftRows, toVariableEdits, typeSwitches, type DraftRow } from './lib/variable-draft'
+import type { EnvironmentLook, EnvironmentsStatus, PassphrasePrompt, TableState, VariableDraft } from './model'
 
 interface EnvironmentsState {
   environments: EnvironmentSummary[]
@@ -41,10 +43,9 @@ interface EnvironmentsState {
   status: EnvironmentsStatus
   error: AppError | null
   switcherOpen: boolean
-  editor: EnvironmentEditor | null
   tables: Record<string, TableState>
-  /** Scopes whose open table has unsaved edits, so closing an editor can warn before losing them. */
-  dirtyScopes: string[]
+  /** The edits of every loaded variable table, kept here so an environment tab keeps them while hidden. */
+  drafts: Record<string, VariableDraft>
   vault: VaultStatus
   passphrasePrompt: PassphrasePrompt | null
   dismissedPrompts: PassphrasePrompt[]
@@ -53,15 +54,19 @@ interface EnvironmentsState {
   openSwitcher: () => void
   setSwitcherOpen: (open: boolean) => void
   clearError: () => void
-  openEditor: (editor: EnvironmentEditor) => void
-  closeEditor: () => void
   createEnvironment: (name: string) => Promise<Result<Environment, AppError>>
   renameEnvironment: (id: string, name: string) => Promise<AppError | null>
   updateEnvironmentLook: (id: string, look: EnvironmentLook) => Promise<AppError | null>
   duplicateEnvironment: (id: string) => Promise<Result<Environment, AppError>>
   deleteEnvironment: (id: string) => Promise<AppError | null>
   loadTable: (scope: string) => Promise<void>
-  setTableDirty: (scope: string, dirty: boolean) => void
+  editDraft: (scope: string, change: (rows: DraftRow[]) => DraftRow[]) => void
+  /** Drops the unsaved edits of a table and shows its stored rows again. */
+  discardDraft: (scope: string) => void
+  /** Saves the edits of a table; `false` when a type switch must be confirmed first (`confirming`). */
+  saveDraft: (scope: string) => Promise<Result<boolean, AppError>>
+  confirmDraftSave: (scope: string) => Promise<Result<boolean, AppError>>
+  cancelDraftSave: (scope: string) => void
   saveTable: (scope: string, edits: VariableEdit[], confirmReveal: boolean) => Promise<AppError | null>
   resetValues: (scope: string, keys: string[]) => Promise<AppError | null>
   persistValues: (scope: string, keys: string[]) => Promise<AppError | null>
@@ -89,13 +94,21 @@ const INITIAL_STATE = {
   status: 'idle',
   error: null,
   switcherOpen: false,
-  editor: null,
   tables: {},
-  dirtyScopes: [],
+  drafts: {},
   passphrasePrompt: null,
 } satisfies Partial<EnvironmentsState>
 
 const EMPTY_TABLE: TableState = { rows: [], warnings: [], status: 'idle', error: null }
+
+function draftOf(rows: VariableRow[]): VariableDraft {
+  return { base: rows, rows: toDraftRows(rows), dirty: false, confirming: null, failure: null, saving: false }
+}
+
+/** Whether the variable table of `scope` has unsaved edits. */
+export function isScopeDirty(state: Pick<EnvironmentsState, 'drafts'>, scope: string): boolean {
+  return state.drafts[scope]?.dirty === true
+}
 
 function activeLocalId(): string | null {
   return useWorkspacesStore.getState().activeLocalId
@@ -147,6 +160,40 @@ export const useEnvironmentsStore = create<EnvironmentsState>()((set, get) => {
 
   function storeTable(table: VariableTable) {
     patchTable(table.scope, { rows: table.rows, warnings: table.warnings, status: 'ready', error: null })
+    if (!isScopeDirty(get(), table.scope)) {
+      set((state) => ({ drafts: { ...state.drafts, [table.scope]: draftOf(table.rows) } }))
+    }
+  }
+
+  function patchDraft(scope: string, patch: Partial<VariableDraft>) {
+    set((state) => {
+      const draft = state.drafts[scope]
+      return draft ? { drafts: { ...state.drafts, [scope]: { ...draft, ...patch } } } : state
+    })
+  }
+
+  function freshDraft(scope: string) {
+    set((state) => ({ drafts: { ...state.drafts, [scope]: draftOf(state.tables[scope]?.rows ?? []) } }))
+  }
+
+  async function commitDraft(scope: string, confirmReveal: boolean): Promise<Result<boolean, AppError>> {
+    const draft = get().drafts[scope]
+    if (!draft) {
+      return { ok: true, value: true }
+    }
+    const rows = draft.rows
+    patchDraft(scope, { saving: true, failure: null })
+    const error = await get().saveTable(scope, toVariableEdits(rows), confirmReveal)
+    if (error?.code === CONFIRM_REVEAL_REQUIRED) {
+      patchDraft(scope, { saving: false, confirming: { toSecret: [], toPlain: typeSwitches(rows).toPlain, reveal: true } })
+      return { ok: true, value: false }
+    }
+    if (error !== null) {
+      patchDraft(scope, { saving: false, failure: error })
+      return { ok: false, error }
+    }
+    freshDraft(scope)
+    return { ok: true, value: true }
   }
 
   async function tableAction(scope: string, operation: (localId: string) => Promise<VariableTable>): Promise<AppError | null> {
@@ -222,10 +269,6 @@ export const useEnvironmentsStore = create<EnvironmentsState>()((set, get) => {
 
     clearError: () => set({ error: null }),
 
-    openEditor: (editor) => set({ editor, switcherOpen: false }),
-
-    closeEditor: () => set({ editor: null }),
-
     createEnvironment: async (name) => {
       const created = await inWorkspace((localId) => createEnvironment(localId, name))
       if (created.ok) {
@@ -279,8 +322,10 @@ export const useEnvironmentsStore = create<EnvironmentsState>()((set, get) => {
       }
       set((state) => {
         const tables = { ...state.tables }
+        const drafts = { ...state.drafts }
         delete tables[environmentScope(id)]
-        return { activeId: deleted.value, tables }
+        delete drafts[environmentScope(id)]
+        return { activeId: deleted.value, tables, drafts }
       })
       await get().load()
       return null
@@ -298,13 +343,35 @@ export const useEnvironmentsStore = create<EnvironmentsState>()((set, get) => {
       }
     },
 
-    setTableDirty: (scope, dirty) =>
-      set((state) => {
-        if (state.dirtyScopes.includes(scope) === dirty) {
-          return state
-        }
-        return { dirtyScopes: dirty ? [...state.dirtyScopes, scope] : state.dirtyScopes.filter((other) => other !== scope) }
-      }),
+    editDraft: (scope, change) => {
+      const draft = get().drafts[scope]
+      if (draft) {
+        patchDraft(scope, { rows: change(draft.rows), dirty: true })
+      }
+    },
+
+    discardDraft: (scope) => {
+      if (get().drafts[scope]) {
+        freshDraft(scope)
+      }
+    },
+
+    saveDraft: async (scope) => {
+      const draft = get().drafts[scope]
+      if (!draft?.dirty) {
+        return { ok: true, value: true }
+      }
+      const switches = typeSwitches(draft.rows)
+      if (switches.toSecret.length > 0 || switches.toPlain.length > 0) {
+        patchDraft(scope, { confirming: switches, failure: null })
+        return { ok: true, value: false }
+      }
+      return commitDraft(scope, false)
+    },
+
+    confirmDraftSave: (scope) => commitDraft(scope, get().drafts[scope]?.confirming?.reveal ?? false),
+
+    cancelDraftSave: (scope) => patchDraft(scope, { confirming: null }),
 
     saveTable: (scope, edits, confirmReveal) => tableAction(scope, (localId) => saveVariableTable(localId, scope, edits, confirmReveal)),
 

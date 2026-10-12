@@ -1,13 +1,15 @@
 import { useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { environmentScope, GLOBALS_SCOPE } from '@/platform/mappers/variable'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { IconButton } from '@/shared/ui/icon-button/IconButton'
 import { useDiscardGuard } from '@/features/environments/hooks/use-discard-guard'
 import { useEnvironmentsStore } from '@/features/environments/store'
+import { environmentTabScope, useTabsStore } from '@/features/tabs/store'
 import { DiscardChangesConfirm } from './DiscardChangesConfirm'
 import styles from './QuickLook.module.css'
-import { VariableTable } from './VariableTable'
+import { VariableTable, type DraftLifetime } from './VariableTable'
 
 const EYE_GLYPH = (
   <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.icon}>
@@ -38,8 +40,11 @@ interface QuickLookContentProps {
 
 function QuickLookContent({ onClose }: QuickLookContentProps) {
   const active = useEnvironmentsStore((state) => state.environments.find((environment) => environment.id === state.activeId) ?? null)
+  const tabScopes = useTabsStore(useShallow((state) => state.tabs.flatMap((tab) => environmentTabScope(tab) ?? [])))
   const scopes = active ? [environmentScope(active.id), GLOBALS_SCOPE] : [GLOBALS_SCOPE]
-  const { confirming, guard, discard, keepEditing } = useDiscardGuard(scopes)
+  // A table also open in a tab keeps its edits for that tab, so closing the quick look does not drop them.
+  const { confirming, guard, discard, keepEditing } = useDiscardGuard(scopes.filter((scope) => !tabScopes.includes(scope)))
+  const lifetime = (scope: string): DraftLifetime => (tabScopes.includes(scope) ? 'workspace' : 'view')
   const close = () => guard(onClose)
 
   return (
@@ -59,11 +64,11 @@ function QuickLookContent({ onClose }: QuickLookContentProps) {
               'Environment'
             )}
           </h3>
-          {active ? <VariableTable scope={environmentScope(active.id)} label={`${active.name} variables`} /> : NO_ACTIVE_ENVIRONMENT}
+          {active ? <VariableTable scope={environmentScope(active.id)} label={`${active.name} variables`} draftLifetime={lifetime(environmentScope(active.id))} /> : NO_ACTIVE_ENVIRONMENT}
         </section>
         <section className={styles.section} aria-label="Global variables">
           <h3 className={styles.heading}>Globals</h3>
-          <VariableTable scope={GLOBALS_SCOPE} label="Global variables" />
+          <VariableTable scope={GLOBALS_SCOPE} label="Global variables" draftLifetime={lifetime(GLOBALS_SCOPE)} />
         </section>
       </Dialog.Body>
       <Dialog.Actions>

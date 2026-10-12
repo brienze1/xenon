@@ -1,67 +1,32 @@
-.dialog {
-  width: min(1120px, calc(100vw - var(--space-8)));
-}
-
-.layout {
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  gap: var(--space-5);
-  min-height: 320px;
-}
-
-.sidebar {
+.tab {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  min-width: 0;
+  gap: var(--space-4);
+  height: 100%;
+  padding: var(--space-4) var(--space-5);
+  overflow: auto;
 }
 
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: 0;
-  list-style: none;
-}
-
-.item {
+.header {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  width: 100%;
-  min-width: 0;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  text-align: left;
 }
 
-button.item:hover {
-  background: var(--color-surface-raised);
-}
-
-button.item:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-
-.item[aria-current='true'] {
-  background: var(--color-surface-raised);
-  color: var(--neon-cyan);
-}
-
-.itemName {
+.title {
   min-width: 0;
   overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .swatch {
   flex: none;
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
 }
@@ -86,26 +51,17 @@ button.item:focus-visible {
   background: var(--neon-red);
 }
 
-.broken {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-1);
-  color: var(--color-text-muted);
-}
-
-.brokenMark {
-  max-width: 100%;
-  overflow: hidden;
-  color: var(--neon-red);
+.activeMark {
+  flex: none;
+  color: var(--neon-cyan);
   font-size: var(--font-size-xs);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.create,
 .rename {
   display: flex;
+  flex: 1;
   gap: var(--space-2);
+  max-width: 360px;
 }
 
 .input {
@@ -125,25 +81,10 @@ button.item:focus-visible {
   box-shadow: var(--focus-ring);
 }
 
-.detail {
-  min-width: 0;
-}
-
-.detailBody {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
 .detailBar {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-}
-
-.rename {
-  flex: 1;
-  max-width: 360px;
 }
 
 .note {

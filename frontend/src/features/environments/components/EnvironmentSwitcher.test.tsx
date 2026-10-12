@@ -21,6 +21,8 @@ const { EnvironmentSwitcher } = await import('./EnvironmentSwitcher')
 const dev = { id: 'e1', name: 'dev', color: 'green', confirmBeforeSend: false, error: null } as const
 const hml = { id: 'e2', name: 'hml', color: 'yellow', confirmBeforeSend: false, error: null } as const
 const prod = { id: 'e3', name: 'prod', color: 'red', confirmBeforeSend: true, error: null } as const
+const onOpenGlobals = vi.fn()
+const onManage = vi.fn()
 const broken = { id: 'error:broken.yaml', name: 'broken.yaml', color: 'none', confirmBeforeSend: false, error: 'broken.yaml cannot be read' } as const
 
 describe('EnvironmentSwitcher', () => {
@@ -38,7 +40,7 @@ describe('EnvironmentSwitcher', () => {
 
   it('shows "No environment" until one is picked, then the active one', async () => {
     vi.mocked(services.setActiveEnvironment).mockResolvedValue('e2')
-    render(<EnvironmentSwitcher />)
+    render(<EnvironmentSwitcher onOpenGlobals={onOpenGlobals} onManage={onManage} />)
     await userEvent.click(screen.getByRole('button', { name: 'Environment: No environment' }))
     expect(screen.getByRole('menuitemradio', { name: 'No environment' })).toHaveAttribute('aria-checked', 'true')
     expect(screen.getAllByRole('menuitemradio').map((item) => item.textContent)).toEqual(['No environment', 'dev', 'hml', 'prod'])
@@ -51,7 +53,7 @@ describe('EnvironmentSwitcher', () => {
   it('goes back to "No environment"', async () => {
     useEnvironmentsStore.setState({ activeId: 'e1' })
     vi.mocked(services.setActiveEnvironment).mockResolvedValue(null)
-    render(<EnvironmentSwitcher />)
+    render(<EnvironmentSwitcher onOpenGlobals={onOpenGlobals} onManage={onManage} />)
     await userEvent.click(screen.getByRole('button', { name: 'Environment: dev' }))
     expect(screen.getByRole('menuitemradio', { name: 'dev' })).toHaveAttribute('aria-checked', 'true')
     await userEvent.click(screen.getByRole('menuitemradio', { name: 'No environment' }))
@@ -60,7 +62,7 @@ describe('EnvironmentSwitcher', () => {
   })
 
   it('lists a malformed environment with its error but does not let it be picked', async () => {
-    render(<EnvironmentSwitcher />)
+    render(<EnvironmentSwitcher onOpenGlobals={onOpenGlobals} onManage={onManage} />)
     await userEvent.click(screen.getByRole('button', { name: 'Environment: No environment' }))
     const item = screen.getByRole('menuitem', { name: /broken\.yaml/ })
     expect(item).toBeDisabled()
@@ -71,7 +73,7 @@ describe('EnvironmentSwitcher', () => {
 
   it('opens with keyboard focus when asked (Cmd/Ctrl+Shift+E) and picks by typing and Enter', async () => {
     vi.mocked(services.setActiveEnvironment).mockResolvedValue('e3')
-    render(<EnvironmentSwitcher />)
+    render(<EnvironmentSwitcher onOpenGlobals={onOpenGlobals} onManage={onManage} />)
     act(() => useEnvironmentsStore.getState().openSwitcher())
     expect(screen.getByRole('menu', { name: 'Environments' })).toBeInTheDocument()
     expect(screen.getByRole('menuitemradio', { name: 'No environment' })).toHaveFocus()
@@ -84,7 +86,7 @@ describe('EnvironmentSwitcher', () => {
 
   it('shows a failed switch and lets it be dismissed', async () => {
     vi.mocked(services.setActiveEnvironment).mockRejectedValue(new AppError('ENV-01404', 'the environment does not exist'))
-    render(<EnvironmentSwitcher />)
+    render(<EnvironmentSwitcher onOpenGlobals={onOpenGlobals} onManage={onManage} />)
     await userEvent.click(screen.getByRole('button', { name: 'Environment: No environment' }))
     await userEvent.click(screen.getByRole('menuitemradio', { name: 'dev' }))
     expect(screen.getByRole('alert')).toHaveTextContent(
@@ -94,33 +96,24 @@ describe('EnvironmentSwitcher', () => {
     expect(screen.queryByText(/Could not change the environment/)).not.toBeInTheDocument()
   })
 
-  it('opens the workspace globals from the menu', async () => {
-    vi.mocked(variables.getVariableTable).mockResolvedValue({ scope: 'globals', rows: [], warnings: [] })
-    render(<EnvironmentSwitcher />)
+  it('opens the globals tab and the sidebar environments from the menu', async () => {
+    render(<EnvironmentSwitcher onOpenGlobals={onOpenGlobals} onManage={onManage} />)
     await userEvent.click(screen.getByRole('button', { name: 'Environment: No environment' }))
     await userEvent.click(screen.getByRole('menuitem', { name: 'Globals' }))
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
-    expect(screen.getByRole('dialog', { name: 'Globals' })).toBeInTheDocument()
-    expect(await screen.findByRole('table', { name: 'Global variables' })).toBeInTheDocument()
-    expect(variables.getVariableTable).toHaveBeenCalledWith('A', 'globals')
-    await userEvent.keyboard('{Escape}')
+    expect(onOpenGlobals).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Environment: No environment' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Manage Environments…' }))
+    expect(onManage).toHaveBeenCalledTimes(1)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('opens the environments manager from the menu', async () => {
-    vi.mocked(variables.getVariableTable).mockResolvedValue({ scope: 'env:e1', rows: [], warnings: [] })
-    render(<EnvironmentSwitcher />)
-    await userEvent.click(screen.getByRole('button', { name: 'Environment: No environment' }))
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Manage Environments…' }))
-    expect(screen.getByRole('dialog', { name: 'Environments' })).toBeInTheDocument()
-    expect(await screen.findByRole('table', { name: 'dev variables' })).toBeInTheDocument()
-  })
-
   it('names the active environment on the trigger, none without one', async () => {
-    const { rerender } = render(<EnvironmentSwitcher />)
+    const { rerender } = render(<EnvironmentSwitcher onOpenGlobals={onOpenGlobals} onManage={onManage} />)
     expect(screen.getByRole('button', { name: 'Environment: No environment' })).toBeInTheDocument()
     act(() => useEnvironmentsStore.setState({ activeId: 'e3' }))
-    rerender(<EnvironmentSwitcher />)
+    rerender(<EnvironmentSwitcher onOpenGlobals={onOpenGlobals} onManage={onManage} />)
     expect(screen.getByRole('button', { name: 'Environment: prod' })).toBeInTheDocument()
     act(() => useEnvironmentsStore.setState({ activeId: 'e1' }))
     expect(screen.getByRole('button', { name: 'Environment: dev' })).toBeInTheDocument()
@@ -129,7 +122,7 @@ describe('EnvironmentSwitcher', () => {
   it('opens a quick look at the active environment and the globals', async () => {
     vi.mocked(variables.getVariableTable).mockImplementation(async (_localId, scope) => ({ scope, rows: [], warnings: [] }))
     useEnvironmentsStore.setState({ activeId: 'e3' })
-    render(<EnvironmentSwitcher />)
+    render(<EnvironmentSwitcher onOpenGlobals={onOpenGlobals} onManage={onManage} />)
     await userEvent.click(screen.getByRole('button', { name: 'Quick look at variables' }))
     const dialog = screen.getByRole('dialog', { name: 'Quick Look' })
     expect(within(dialog).getByRole('region', { name: 'Active environment variables' })).toHaveTextContent('prod')
@@ -142,7 +135,7 @@ describe('EnvironmentSwitcher', () => {
 
   it('tells that no environment is active in the quick look', async () => {
     vi.mocked(variables.getVariableTable).mockImplementation(async (_localId, scope) => ({ scope, rows: [], warnings: [] }))
-    render(<EnvironmentSwitcher />)
+    render(<EnvironmentSwitcher onOpenGlobals={onOpenGlobals} onManage={onManage} />)
     await userEvent.click(screen.getByRole('button', { name: 'Quick look at variables' }))
     expect(screen.getByText(/No environment is active/)).toBeInTheDocument()
   })

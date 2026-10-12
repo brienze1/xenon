@@ -335,6 +335,26 @@ describe('bootstrap', () => {
     cleanup()
   })
 
+  it('closes the tabs of deleted environments and pins an environment preview once its variables are edited', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
+    const cleanup = await started()
+    useWorkspacesStore.setState({ activeLocalId: 'A' })
+    useTabsStore.getState().hydrate('A', defaultUIState())
+    const dev = { id: 'e1', name: 'dev', color: 'none', confirmBeforeSend: false, error: null } as const
+    useEnvironmentsStore.setState({ environments: [dev], status: 'ready' })
+    useTabsStore.getState().openEnvironmentTab({ kind: 'environment', environmentId: 'e1' }, 'preview')
+    const tabId = useTabsStore.getState().activeTabId!
+    const draft = { base: [], rows: [], dirty: true, confirming: null, failure: null, saving: false }
+    useEnvironmentsStore.setState({ drafts: { 'env:e1': draft } })
+    expect(useTabsStore.getState().previewTabId).toBeNull()
+    useEnvironmentsStore.setState({ environments: [], status: 'loading' })
+    expect(useTabsStore.getState().tabs.some((tab) => tab.id === tabId)).toBe(true)
+    useEnvironmentsStore.setState({ environments: [], status: 'ready' })
+    expect(useTabsStore.getState().tabs.some((tab) => tab.id === tabId)).toBe(false)
+    useEnvironmentsStore.getState().reset()
+    cleanup()
+  })
+
   it('refreshes the shown history when a send finishes', async () => {
     vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
     vi.mocked(history.listHistory).mockResolvedValue([])

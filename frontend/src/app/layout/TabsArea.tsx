@@ -1,3 +1,5 @@
+import { EnvironmentTab } from '@/features/environments/components/EnvironmentTab'
+import { GlobalsTab } from '@/features/environments/components/GlobalsTab'
 import { VaultBrokenNotice } from '@/features/environments/components/VaultBrokenNotice'
 import { SaveAsExampleDialog } from '@/features/examples/components/SaveAsExampleDialog'
 import { CloseTabPrompt } from '@/features/tabs/components/CloseTabPrompt'
@@ -8,7 +10,7 @@ import { useTabsStore } from '@/features/tabs/store'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
 import { PanelPlusArt } from '@/shared/ui/empty-state/illustrations/PanelPlusArt'
 import { Button } from '@/shared/ui/button/Button'
-import { isActiveTabExample } from '@/app/active-tab'
+import { activeTabKind } from '@/app/active-tab'
 import { ExampleWorkspace } from './ExampleWorkspace'
 import { RequestWorkspace } from './RequestWorkspace'
 import styles from './TabsArea.module.css'
@@ -43,7 +45,8 @@ export function TabsArea() {
   const activeTabId = useTabsStore((state) => state.activeTabId)
   const save = useTabsStore((state) => state.save)
   const newTab = useTabsStore((state) => state.newTab)
-  const isExample = useTabsStore(isActiveTabExample)
+  const kind = useTabsStore(activeTabKind)
+  const environmentId = useTabsStore((state) => state.tabs.find((tab) => tab.id === state.activeTabId)?.environmentId ?? null)
 
   return (
     <div className={styles.area}>
@@ -53,7 +56,11 @@ export function TabsArea() {
         <>
           <TabNotice tabId={activeTabId} />
           <div className={styles.workspace}>
-            {isExample ? (
+            {kind === 'globals' ? (
+              <GlobalsTab key={activeTabId} />
+            ) : kind === 'environment' && environmentId ? (
+              <EnvironmentTab key={activeTabId} environmentId={environmentId} />
+            ) : kind === 'example' ? (
               <ExampleWorkspace key={activeTabId} tabId={activeTabId} onSave={() => void save(activeTabId)} />
             ) : (
               <RequestWorkspace key={activeTabId} tabId={activeTabId} onSave={() => void save(activeTabId)} />

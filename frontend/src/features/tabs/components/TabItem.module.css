@@ -87,3 +87,32 @@
   background: var(--color-surface-raised);
   color: var(--color-text);
 }
+
+.kindBadge {
+  flex: none;
+  min-width: 32px;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.kindBadge[data-color='green'] {
+  color: var(--neon-green);
+}
+
+.kindBadge[data-color='cyan'] {
+  color: var(--neon-cyan);
+}
+
+.kindBadge[data-color='magenta'] {
+  color: var(--neon-magenta);
+}
+
+.kindBadge[data-color='yellow'] {
+  color: var(--neon-yellow);
+}
+
+.kindBadge[data-color='red'] {
+  color: var(--neon-red);
+}

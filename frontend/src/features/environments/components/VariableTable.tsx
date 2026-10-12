@@ -1,23 +1,14 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import type { AppError } from '@/platform/errors'
-import { GIT_HISTORY_WARNING, type VariableRow } from '@/platform/mappers/variable'
-import { CONFIRM_REVEAL_REQUIRED } from '@/platform/services/variables'
+import { GIT_HISTORY_WARNING } from '@/platform/mappers/variable'
 import { patchRow, removeRow } from '@/shared/lib/rows'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { withNextStep } from '@/shared/lib/next-step'
+import type { Result } from '@/shared/types/result'
 import { useEnvironmentsStore } from '@/features/environments/store'
-import {
-  keyCounts,
-  keyProblems,
-  newDraftRow,
-  toDraftRows,
-  toVariableEdits,
-  typeSwitches,
-  type DraftRow,
-  type TypeSwitches,
-} from '@/features/environments/lib/variable-draft'
+import { keyCounts, keyProblems, newDraftRow, type DraftRow } from '@/features/environments/lib/variable-draft'
 import type { TableState } from '@/features/environments/model'
 import { TypeSwitchConfirm } from './TypeSwitchConfirm'
 import { VariableTableRow, type RowActions } from './VariableTableRow'
@@ -80,18 +71,29 @@ const LOADING = (
   </p>
 )
 
+/**
+ * How long unsaved edits live: `view` drops them when the table unmounts (dialogs guard before
+ * closing); `workspace` keeps them in the store until saved or discarded (environment tabs).
+ */
+export type DraftLifetime = 'view' | 'workspace'
+
 interface VariableTableProps {
   scope: string
   label: string
+  draftLifetime?: DraftLifetime
 }
 
-export function VariableTable({ scope, label }: VariableTableProps) {
+export function VariableTable({ scope, label, draftLifetime = 'view' }: VariableTableProps) {
   const table = useEnvironmentsStore((state) => state.tables[scope])
+  const hasDraft = useEnvironmentsStore((state) => state.drafts[scope] !== undefined)
   const loadTable = useEnvironmentsStore((state) => state.loadTable)
+  const discardDraft = useEnvironmentsStore((state) => state.discardDraft)
 
   useEffect(() => {
     void loadTable(scope)
   }, [scope, loadTable])
+
+  useEffect(() => (draftLifetime === 'view' ? () => discardDraft(scope) : undefined), [scope, draftLifetime, discardDraft])
 
   if (!table || (table.status !== 'ready' && table.rows.length === 0)) {
     return LOADING
@@ -110,7 +112,7 @@ export function VariableTable({ scope, label }: VariableTableProps) {
       </Banner.Root>
     )
   }
-  return <VariableTableEditor key={scope} scope={scope} label={label} table={table} />
+  return hasDraft ? <VariableTableEditor key={scope} scope={scope} label={label} table={table} /> : LOADING
 }
 
 interface ErrorTextProps {
@@ -122,16 +124,6 @@ function ErrorText({ error, nextStep }: ErrorTextProps) {
   return <NoTranslateText text={withNextStep(error.description || error.code, nextStep)} terms={[error.code]} />
 }
 
-interface DraftState {
-  base: VariableRow[]
-  rows: DraftRow[]
-  dirty: boolean
-}
-
-function draftOf(rows: VariableRow[]): DraftState {
-  return { base: rows, rows: toDraftRows(rows), dirty: false }
-}
-
 interface VariableTableEditorProps {
   scope: string
   label: string
@@ -139,34 +131,34 @@ interface VariableTableEditorProps {
 }
 
 function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) {
-  const saveTable = useEnvironmentsStore((state) => state.saveTable)
+  const draft = useEnvironmentsStore((state) => state.drafts[scope])
+  const editDraft = useEnvironmentsStore((state) => state.editDraft)
+  const discardDraft = useEnvironmentsStore((state) => state.discardDraft)
+  const saveDraft = useEnvironmentsStore((state) => state.saveDraft)
+  const confirmDraftSave = useEnvironmentsStore((state) => state.confirmDraftSave)
+  const cancelDraftSave = useEnvironmentsStore((state) => state.cancelDraftSave)
   const resetValues = useEnvironmentsStore((state) => state.resetValues)
   const persistValues = useEnvironmentsStore((state) => state.persistValues)
-  const setTableDirty = useEnvironmentsStore((state) => state.setTableDirty)
-  const [draft, setDraft] = useState(() => draftOf(table.rows))
-  const [confirming, setConfirming] = useState<TypeSwitches | null>(null)
   const [confirmingBulk, setConfirmingBulk] = useState<BulkAction | null>(null)
-  const [failure, setFailure] = useState<AppError | null>(null)
+  const [actionFailure, setActionFailure] = useState<AppError | null>(null)
   const [dismissedWarnings, setDismissedWarnings] = useState<string[] | null>(null)
-  const [busy, startAction] = useTransition()
+  const [pending, startAction] = useTransition()
   const tableRef = useRef<HTMLTableElement>(null)
 
-  if (table.rows !== draft.base && !draft.dirty) {
-    setDraft(draftOf(table.rows))
+  if (!draft) {
+    return LOADING
   }
 
-  // Unmounting drops the draft, so the scope no longer has unsaved edits to guard.
-  useEffect(() => () => setTableDirty(scope, false), [scope, setTableDirty])
-
+  const busy = pending || draft.saving
+  const confirming = draft.confirming
+  const failure = draft.failure ?? actionFailure
   const stale = draft.dirty && table.rows !== draft.base
   const hasOverrides = table.rows.some((row) => !row.secret && row.hasCurrentOverride)
   const showGitHistory = table.warnings.includes(GIT_HISTORY_WARNING) && dismissedWarnings !== table.warnings
   const counts = keyCounts(draft.rows)
 
-  // Every handler that changes draft.dirty also sets the store flag the discard guard reads.
   function edit(change: (rows: DraftRow[]) => DraftRow[]) {
-    setDraft((current) => ({ ...current, rows: change(current.rows), dirty: true }))
-    setTableDirty(scope, true)
+    editDraft(scope, change)
   }
 
   function focusFirstInvalidName() {
@@ -182,7 +174,7 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
 
   function run(operation: () => Promise<AppError | null>) {
     startAction(async () => {
-      setFailure(await operation())
+      setActionFailure(await operation())
     })
   }
 
@@ -192,41 +184,26 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
   }
 
   function discard() {
-    setConfirming(null)
-    setFailure(null)
-    setDraft(draftOf(table.rows))
-    setTableDirty(scope, false)
+    setActionFailure(null)
+    discardDraft(scope)
+  }
+
+  function afterSave(saved: Result<boolean, AppError>) {
+    if (!saved.ok) {
+      focusFirstInvalidName()
+    }
   }
 
   function requestSave() {
-    if (!draft.dirty) {
+    if (!draft?.dirty) {
       return
     }
-    const switches = typeSwitches(draft.rows)
-    if (switches.toSecret.length > 0 || switches.toPlain.length > 0) {
-      setConfirming(switches)
-      return
-    }
-    commit(false)
+    setActionFailure(null)
+    startAction(async () => afterSave(await saveDraft(scope)))
   }
 
-  function commit(confirmReveal: boolean) {
-    const rows = draft.rows
-    startAction(async () => {
-      const error = await saveTable(scope, toVariableEdits(rows), confirmReveal)
-      if (error?.code === CONFIRM_REVEAL_REQUIRED) {
-        setConfirming({ toSecret: [], toPlain: typeSwitches(rows).toPlain, reveal: true })
-        return
-      }
-      setFailure(error)
-      if (error === null) {
-        setConfirming(null)
-        setDraft((current) => ({ ...current, dirty: false }))
-        setTableDirty(scope, false)
-        return
-      }
-      focusFirstInvalidName()
-    })
+  function confirmSave() {
+    startAction(async () => afterSave(await confirmDraftSave(scope)))
   }
 
   return (
@@ -290,12 +267,7 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
         </table>
       </div>
       {confirming ? (
-        <TypeSwitchConfirm
-          switches={confirming}
-          busy={busy}
-          onCancel={() => setConfirming(null)}
-          onConfirm={() => commit(confirming.reveal)}
-        />
+        <TypeSwitchConfirm switches={confirming} busy={busy} onCancel={() => cancelDraftSave(scope)} onConfirm={confirmSave} />
       ) : null}
       {failure ? (
         <Banner.Root tone="error">

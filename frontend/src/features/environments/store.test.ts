@@ -34,7 +34,7 @@ vi.mock('@/platform/services/vault', () => ({
 const services = await import('@/platform/services/environments')
 const variables = await import('@/platform/services/variables')
 const vault = await import('@/platform/services/vault')
-const { useEnvironmentsStore } = await import('./store')
+const { isScopeDirty, useEnvironmentsStore } = await import('./store')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 
 const dev = { id: 'e1', name: 'dev', color: 'green', confirmBeforeSend: false, error: null } as const
@@ -194,23 +194,57 @@ describe('environments store', () => {
     expect(services.listEnvironments).not.toHaveBeenCalled()
   })
 
-  it('opens and closes the environment editors', () => {
-    store().openSwitcher()
-    store().openEditor('globals')
-    expect(store()).toMatchObject({ editor: 'globals', switcherOpen: false })
-    store().closeEditor()
-    expect(store().editor).toBeNull()
+  it('keeps a draft per loaded table and only marks it dirty on an edit', async () => {
+    vi.mocked(variables.getVariableTable).mockResolvedValue(table)
+    await store().loadTable('env:e1')
+    expect(store().drafts['env:e1']).toMatchObject({ dirty: false, base: table.rows })
+    expect(isScopeDirty(store(), 'env:e1')).toBe(false)
+    store().editDraft('env:e1', (rows) => rows.map((row) => ({ ...row, description: 'edited' })))
+    expect(isScopeDirty(store(), 'env:e1')).toBe(true)
+    store().discardDraft('env:e1')
+    expect(isScopeDirty(store(), 'env:e1')).toBe(false)
+    expect(store().drafts['env:e1']?.rows[0]?.description).toBe(table.rows[0]?.description)
+    store().editDraft('env:missing', (rows) => rows)
+    expect(store().drafts['env:missing']).toBeUndefined()
+    store().reset()
+    expect(store().drafts).toEqual({})
   })
 
-  it('tracks which tables have unsaved edits and forgets them on reset', () => {
-    store().setTableDirty('globals', true)
-    store().setTableDirty('env:e1', true)
-    store().setTableDirty('globals', true)
-    expect(store().dirtyScopes).toEqual(['globals', 'env:e1'])
-    store().setTableDirty('globals', false)
-    expect(store().dirtyScopes).toEqual(['env:e1'])
-    store().reset()
-    expect(store().dirtyScopes).toEqual([])
+  it('keeps a dirty draft when the table reloads, and refreshes a clean one', async () => {
+    vi.mocked(variables.getVariableTable).mockResolvedValue(table)
+    await store().loadTable('env:e1')
+    store().editDraft('env:e1', (rows) => rows.map((row) => ({ ...row, description: 'mine' })))
+    const changed = { ...table, rows: table.rows.map((row) => ({ ...row, initialValue: 'theirs' })) }
+    vi.mocked(variables.getVariableTable).mockResolvedValue(changed)
+    await store().loadTable('env:e1')
+    expect(store().drafts['env:e1']).toMatchObject({ dirty: true, base: table.rows })
+    store().discardDraft('env:e1')
+    expect(store().drafts['env:e1']?.base).toBe(store().tables['env:e1']?.rows)
+  })
+
+  it('saves a draft, or waits for a type switch to be confirmed', async () => {
+    vi.mocked(variables.getVariableTable).mockResolvedValue(table)
+    await store().loadTable('env:e1')
+    await expect(store().saveDraft('env:e1')).resolves.toEqual({ ok: true, value: true })
+    expect(variables.saveVariableTable).not.toHaveBeenCalled()
+    store().editDraft('env:e1', (rows) => rows.map((row) => ({ ...row, secret: !row.secret })))
+    await expect(store().saveDraft('env:e1')).resolves.toEqual({ ok: true, value: false })
+    expect(store().drafts['env:e1']?.confirming).not.toBeNull()
+    store().cancelDraftSave('env:e1')
+    expect(store().drafts['env:e1']?.confirming).toBeNull()
+    vi.mocked(variables.saveVariableTable).mockResolvedValue(table)
+    await store().saveDraft('env:e1')
+    await expect(store().confirmDraftSave('env:e1')).resolves.toEqual({ ok: true, value: true })
+    expect(isScopeDirty(store(), 'env:e1')).toBe(false)
+  })
+
+  it('reports a failed draft save on the draft', async () => {
+    vi.mocked(variables.getVariableTable).mockResolvedValue(table)
+    await store().loadTable('env:e1')
+    store().editDraft('env:e1', (rows) => rows.map((row) => ({ ...row, description: 'edited' })))
+    vi.mocked(variables.saveVariableTable).mockRejectedValue(new AppError('VAR-01400', 'bad name'))
+    await expect(store().saveDraft('env:e1')).resolves.toMatchObject({ ok: false })
+    expect(store().drafts['env:e1']).toMatchObject({ dirty: true, saving: false, failure: { code: 'VAR-01400' } })
   })
 
   it('loads, saves, resets and persists a variable table', async () => {

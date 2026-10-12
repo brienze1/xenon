@@ -13,8 +13,13 @@ vi.mock('@/platform/services/vault', () => ({
 
 const variables = await import('@/platform/services/variables')
 const { useEnvironmentsStore } = await import('@/features/environments/store')
+
+function dirtyScopes(): string[] {
+  return Object.entries(useEnvironmentsStore.getState().drafts).flatMap(([scope, draft]) => (draft.dirty ? [scope] : []))
+}
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { QuickLook } = await import('./QuickLook')
+const { useTabsStore } = await import('@/features/tabs/store')
 
 const dev = { id: 'e1', name: 'dev', color: 'green', confirmBeforeSend: false, error: null } as const
 
@@ -63,6 +68,18 @@ describe('QuickLook', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Close' }))
     await userEvent.click(screen.getByRole('button', { name: 'Discard' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(useEnvironmentsStore.getState().dirtyScopes).toEqual([])
+    expect(dirtyScopes()).toEqual([])
+  })
+
+  it('closes without asking and keeps the edits of a table that is also open in a tab', async () => {
+    useTabsStore.setState({ tabs: [{ id: 'env-tab', requestId: null, pinned: true, kind: 'environment', environmentId: 'e1' }] })
+    render(<QuickLook />)
+    await userEvent.click(screen.getByRole('button', { name: 'Quick look at variables' }))
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Description of base_url' }), '!')
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByText('Discard unsaved variable changes?')).not.toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(dirtyScopes()).toEqual(['env:e1'])
+    useTabsStore.getState().reset()
   })
 })
