@@ -29,6 +29,21 @@ const ERROR_MARK = (
   </span>
 )
 
+const PLUS_ICON = (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.actionIcon}>
+    <path d="M5 12h14" />
+    <path d="M12 5v14" />
+  </svg>
+)
+
+const MORE_ICON = (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.actionIcon}>
+    <circle cx="5" cy="12" r="1" />
+    <circle cx="12" cy="12" r="1" />
+    <circle cx="19" cy="12" r="1" />
+  </svg>
+)
+
 const DUPLICATE_ID_WARNING = <span className={styles.warning}>Duplicate ID</span>
 
 function exportNode(node: TreeNode) {
@@ -135,6 +150,25 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenEx
     }
   }
 
+  // The right-click menu has everything; the row's + button only the adds and its … button the rest.
+  const openItem = containerKind ? <ContextMenu.Item onSelect={() => onOpenItem(node.id, containerKind, 'pinned')}>Open</ContextMenu.Item> : null
+  const addItems = containerKind ? (
+    <>
+      <ContextMenu.Item onSelect={() => void createRequest(node.id)}>Add Request</ContextMenu.Item>
+      <ContextMenu.Item onSelect={() => void createFolder(node.id)}>Add Folder</ContextMenu.Item>
+    </>
+  ) : null
+  const restItems = (
+    <>
+      <ContextMenu.Item onSelect={() => startRename(node.id)}>Rename</ContextMenu.Item>
+      <ContextMenu.Item onSelect={() => void (isExample ? duplicateExample(node.id) : duplicate(node.id))}>Duplicate</ContextMenu.Item>
+      {isExample ? null : <ContextMenu.Item onSelect={() => exportNode(node)}>Export…</ContextMenu.Item>}
+      <ContextMenu.Item tone="danger" onSelect={() => onDelete(node)}>
+        Delete
+      </ContextMenu.Item>
+    </>
+  )
+
   return (
     <ContextMenu.Root>
       <ContextMenu.Trigger>
@@ -182,23 +216,34 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenEx
             <span className={styles.name}>{node.name}</span>
           )}
           {node.warning ? DUPLICATE_ID_WARNING : null}
+          {node.kind === 'error' || renaming ? null : (
+            <span className={styles.rowActions}>
+              {addItems ? (
+                <ContextMenu.Root>
+                  <ContextMenu.Button label={`Add to ${node.name}`} title="Add request or folder" className={styles.rowAction} tabIndex={-1}>
+                    {PLUS_ICON}
+                  </ContextMenu.Button>
+                  <ContextMenu.Menu label={`Add to ${node.name}`}>{addItems}</ContextMenu.Menu>
+                </ContextMenu.Root>
+              ) : null}
+              <ContextMenu.Root>
+                <ContextMenu.Button label={`More actions for ${node.name}`} title="More actions" className={styles.rowAction} tabIndex={-1}>
+                  {MORE_ICON}
+                </ContextMenu.Button>
+                <ContextMenu.Menu label={`More actions for ${node.name}`}>
+                  {openItem}
+                  {restItems}
+                </ContextMenu.Menu>
+              </ContextMenu.Root>
+            </span>
+          )}
         </div>
       </ContextMenu.Trigger>
       {node.kind === 'error' ? null : (
         <ContextMenu.Menu label={`${node.name} actions`}>
-          {containerKind ? (
-            <>
-              <ContextMenu.Item onSelect={() => onOpenItem(node.id, containerKind, 'pinned')}>Open</ContextMenu.Item>
-              <ContextMenu.Item onSelect={() => void createRequest(node.id)}>Add Request</ContextMenu.Item>
-              <ContextMenu.Item onSelect={() => void createFolder(node.id)}>Add Folder</ContextMenu.Item>
-            </>
-          ) : null}
-          <ContextMenu.Item onSelect={() => startRename(node.id)}>Rename</ContextMenu.Item>
-          <ContextMenu.Item onSelect={() => void (isExample ? duplicateExample(node.id) : duplicate(node.id))}>Duplicate</ContextMenu.Item>
-          {isExample ? null : <ContextMenu.Item onSelect={() => exportNode(node)}>Export…</ContextMenu.Item>}
-          <ContextMenu.Item tone="danger" onSelect={() => onDelete(node)}>
-            Delete
-          </ContextMenu.Item>
+          {openItem}
+          {addItems}
+          {restItems}
         </ContextMenu.Menu>
       )}
     </ContextMenu.Root>

@@ -113,6 +113,41 @@ function Trigger({ className, children }: TriggerProps) {
   )
 }
 
+interface ButtonProps {
+  /** The accessible name; the visible content is usually an icon. */
+  label: string
+  title?: string
+  className?: string
+  /** -1 keeps it out of the Tab order where a composite widget (a tree) owns keyboard focus. */
+  tabIndex?: number
+  children: ReactNode
+}
+
+/** Opens the same menu from a click, below the button: for actions that would otherwise need a right click. */
+function Button({ label, title, className, tabIndex, children }: ButtonProps) {
+  const { actions } = useContextMenu()
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-haspopup="menu"
+      title={title}
+      className={className}
+      tabIndex={tabIndex}
+      // Keeps the click away from what the button sits in (a row that opens, drags or toggles).
+      onPointerDown={(event) => event.stopPropagation()}
+      onDoubleClick={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.stopPropagation()
+        const rect = event.currentTarget.getBoundingClientRect()
+        actions.openAt({ x: rect.left, y: rect.bottom }, event.currentTarget)
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
 interface MenuProps {
   label: string
   children: ReactNode
@@ -217,4 +252,4 @@ function Separator() {
   return <div role="separator" className={styles.separator} />
 }
 
-export const ContextMenu = { Provider, Root, Trigger, Menu, Item, Separator }
+export const ContextMenu = { Provider, Root, Trigger, Button, Menu, Item, Separator }

@@ -163,4 +163,28 @@ describe('CollectionTree drag and drop', () => {
     expect(screen.queryByRole('menuitem', { name: 'Export…' })).not.toBeInTheDocument()
     useExportStore.getState().reset()
   })
+
+  it('adds from a + button on collection and folder rows and offers the rest from a … button on every row, without opening the row', async () => {
+    await act(() => new Promise((resolve) => setTimeout(resolve, DND_CLICK_GUARD_MS)))
+    render(<CollectionTree {...actions} />)
+    expect(within(row('r2')).queryByRole('button', { name: 'Add to Name r2' })).not.toBeInTheDocument()
+    fireEvent.click(within(row('f1')).getByRole('button', { name: 'Add to Name f1' }))
+    const add = screen.getByRole('menu', { name: 'Add to Name f1' })
+    expect(within(add).getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['Add Request', 'Add Folder'])
+    fireEvent.keyDown(add, { key: 'Escape' })
+    fireEvent.click(within(row('f1')).getByRole('button', { name: 'More actions for Name f1' }))
+    const more = screen.getByRole('menu', { name: 'More actions for Name f1' })
+    expect(within(more).getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['Open', 'Rename', 'Duplicate', 'Export…', 'Delete'])
+    fireEvent.keyDown(more, { key: 'Escape' })
+    fireEvent.click(within(row('r2')).getByRole('button', { name: 'More actions for Name r2' }))
+    expect(within(screen.getByRole('menu', { name: 'More actions for Name r2' })).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+      'Rename',
+      'Duplicate',
+      'Export…',
+      'Delete',
+    ])
+    expect(actions.onOpenItem).not.toHaveBeenCalled()
+    expect(actions.onOpenRequest).not.toHaveBeenCalled()
+    expect(useSidebarStore.getState().expanded.f1).toBeFalsy()
+  })
 })

@@ -111,5 +111,24 @@ describe('ContextMenu', () => {
     expect(screen.getByRole('menu')).toBeInTheDocument()
     expect(screen.getByRole('separator')).toBeInTheDocument()
   })
-})
 
+  it('opens below a menu button on click without clicking what it sits in', () => {
+    const onRowClick = vi.fn()
+    render(
+      <div onClick={onRowClick}>
+        <ContextMenu.Root>
+          <ContextMenu.Button label="More actions">…</ContextMenu.Button>
+          <ContextMenu.Menu label="More actions">
+            <ContextMenu.Item onSelect={vi.fn()}>Rename</ContextMenu.Item>
+          </ContextMenu.Menu>
+        </ContextMenu.Root>
+      </div>,
+    )
+    const button = screen.getByRole('button', { name: 'More actions' })
+    expect(button).toHaveAttribute('aria-haspopup', 'menu')
+    vi.spyOn(button, 'getBoundingClientRect').mockReturnValue(DOMRect.fromRect({ x: 30, y: 10, width: 20, height: 20 }))
+    fireEvent.click(button)
+    expect(screen.getByRole('menu', { name: 'More actions' })).toHaveStyle({ left: '30px', top: '30px' })
+    expect(onRowClick).not.toHaveBeenCalled()
+  })
+})
