@@ -10,5 +10,7 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: var(--space-4) 0;
+  /* Side gutter inside the scroll box so focus outlines are not clipped; the negative margin keeps content aligned with the tab strip. */
+  margin: 0 calc(-1 * var(--space-2));
+  padding: var(--space-4) var(--space-2);
 }
