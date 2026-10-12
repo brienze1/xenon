@@ -14,6 +14,15 @@ const HIDE_ICON = (
   </svg>
 )
 
+// Lucide "panel-right-open": the same outline with the arrow pointing back in.
+const SHOW_ICON = (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.icon}>
+    <rect width="18" height="18" x="3" y="3" rx="2" />
+    <path d="M15 3v18" />
+    <path d="m10 15-3-3 3-3" />
+  </svg>
+)
+
 interface RightPanelProps {
   children?: ReactNode
 }
@@ -24,7 +33,14 @@ export function RightPanel({ children }: RightPanelProps) {
     actions: { update },
   } = useShellLayout()
   if (!layout.rightPanelVisible) {
-    return null
+    // A thin rail keeps the toggle exactly where the hide button was, so the same spot reopens the panel.
+    return (
+      <div className={styles.rail}>
+        <IconButton label="Show side panel" className={styles.hide} onClick={() => update({ rightPanelVisible: true })}>
+          {SHOW_ICON}
+        </IconButton>
+      </div>
+    )
   }
   return (
     <aside aria-label="Side panel" className={styles.panel}>

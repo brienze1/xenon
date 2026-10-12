@@ -15,6 +15,13 @@
   padding: var(--space-4);
 }
 
+.rail {
+  position: relative;
+  grid-area: right;
+  /* Just wide enough for the button at the same offsets it has inside the open panel. */
+  width: calc(28px + 2 * var(--space-3));
+}
+
 /* Top right, level with the side panel's tab strip, which leaves that corner free. */
 .hide {
   position: absolute;

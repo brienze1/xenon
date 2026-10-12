@@ -87,10 +87,15 @@ describe('AppShell', () => {
     expect(sideBySide).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('hides the side panel from its own button and brings it back from the footer', async () => {
+  it('hides the side panel from its own button and reopens it from the same place or the footer', async () => {
     render(<StatefulShell />)
     const panel = screen.getByRole('complementary', { name: 'Side panel' })
     await userEvent.click(within(panel).getByRole('button', { name: 'Hide side panel' }))
+    expect(screen.queryByRole('complementary', { name: 'Side panel' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Show side panel' }))
+    expect(screen.getByRole('complementary', { name: 'Side panel' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Show side panel' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Side Panel' }))
     expect(screen.queryByRole('complementary', { name: 'Side panel' })).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Side Panel' }))
     expect(screen.getByRole('complementary', { name: 'Side panel' })).toBeInTheDocument()
