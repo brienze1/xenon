@@ -10,6 +10,7 @@ import { useMissingFile } from '@/features/request-builder/hooks/use-missing-fil
 import { useTableFields } from '@/features/request-builder/hooks/use-table-fields'
 import { useVariableEditing } from '@/features/request-builder/hooks/use-variable-editing'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
+import { beautifyJson } from '@/features/request-builder/lib/beautify-json'
 import styles from './BodyPanel.module.css'
 
 const CodeEditor = lazy(() => import('@/shared/ui/code-editor/CodeEditor').then((module) => ({ default: module.CodeEditor })))
@@ -164,6 +165,22 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
               </option>
             ))}
           </select>
+        ) : null}
+        {body.mode === 'raw' && body.raw.language === 'json' ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            className={styles.beautify}
+            disabled={beautifyJson(body.raw.content) === null}
+            onClick={() => {
+              const content = beautifyJson(body.raw.content)
+              if (content !== null && content !== body.raw.content) {
+                updateBody(tabId, { raw: { ...body.raw, content } })
+              }
+            }}
+          >
+            Beautify
+          </Button>
         ) : null}
       </div>
 

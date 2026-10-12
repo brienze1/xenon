@@ -312,6 +312,21 @@ describe('RequestBuilder', () => {
     expect(screen.getByText('Imported from another machine — select the file again before sending')).toBeInTheDocument()
   })
 
+  it('beautifies a JSON raw body and only offers it for JSON', async () => {
+    const user = userEvent.setup()
+    act(() => {
+      useRequestBuilderStore.getState().updateBody(tabId, { mode: 'raw', raw: { language: 'json', content: '{\n\n "test":"lkalala"}' } })
+    })
+    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    await user.click(screen.getByRole('tab', { name: 'Body' }))
+    await user.click(screen.getByRole('button', { name: 'Beautify' }))
+    expect(useRequestBuilderStore.getState().tabs[tabId]?.draft.body.raw.content).toBe('{\n  "test": "lkalala"\n}')
+    act(() => useRequestBuilderStore.getState().updateBody(tabId, { raw: { language: 'json', content: '{"broken": ' } }))
+    expect(screen.getByRole('button', { name: 'Beautify' })).toBeDisabled()
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Raw language' }), 'xml')
+    expect(screen.queryByRole('button', { name: 'Beautify' })).not.toBeInTheDocument()
+  })
+
   it('edits every body mode and marks a missing file', async () => {
     const user = userEvent.setup()
     vi.mocked(dialogs.pickFile).mockResolvedValue('/files/payload.bin')

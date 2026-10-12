@@ -62,6 +62,10 @@
   gap: var(--space-4);
 }
 
+.beautify {
+  margin-left: auto;
+}
+
 .modeGroup {
   display: flex;
   flex-wrap: wrap;
