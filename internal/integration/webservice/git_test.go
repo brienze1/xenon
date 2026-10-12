@@ -3,6 +3,7 @@ package webservice
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -53,6 +54,14 @@ func expectCode(t *testing.T, err error, code string) {
 	if !errors.As(err, &base) || base.Code() != code {
 		t.Fatalf("error = %v, want code %s", err, code)
 	}
+}
+
+func describeError(err error) string {
+	var base errs.BaseError
+	if errors.As(err, &base) {
+		return fmt.Sprintf("%s %s (cause: %v)", base.Code(), base.Description(), errors.Unwrap(err))
+	}
+	return err.Error()
 }
 
 func TestGitCloneCommitPushAndFetchOverHttp(t *testing.T) {
@@ -280,7 +289,7 @@ func TestGitOverSshWithKeyFileAgentAndHostKeys(t *testing.T) {
 	}
 	clone := filepath.Join(t.TempDir(), "clone")
 	if err := git.Clone(ctx, trusted, clone, entity.SyncSettings{Branch: "main", Subfolder: "api"}); err != nil {
-		t.Fatal(err)
+		t.Fatalf("Clone over ssh: %s", describeError(err))
 	}
 	_, err = git.List(ctx, entity.NewGitAccess(servers.SshURL("acme/backend"), account, "pass"))
 	expectCode(t, err, "GIT-26500")
