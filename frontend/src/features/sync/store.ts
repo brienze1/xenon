@@ -15,10 +15,17 @@ import {
   pushWorkspace,
   resolveConflict,
   saveSyncSettings,
+  unlinkRepository,
 } from '@/platform/services/sync'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 
-export type SyncOperation = 'status' | 'link' | 'commit' | 'push' | 'pull' | 'settings' | 'conflicts' | 'resolve' | 'finish' | 'cancel'
+export type SyncOperation = 'status' | 'link' | 'unlink' | 'commit' | 'push' | 'pull' | 'settings' | 'conflicts' | 'resolve' | 'finish' | 'cancel'
+
+export interface SyncSettingsChange {
+  accountId?: string
+  autoPull?: boolean
+  autoPush?: boolean
+}
 
 export const STATUS_REFRESH_MS = 5 * 60 * 1000
 
@@ -49,7 +56,9 @@ interface SyncStoreState {
   link: (input: Omit<LinkInput, 'localId'>) => Promise<AppError | null>
   /** Clones a repository as a new workspace and switches to it; returns the failure, if any. */
   cloneWorkspace: (input: CloneInput) => Promise<AppError | null>
-  saveSettings: (accountId: string) => Promise<void>
+  saveSettings: (change: SyncSettingsChange) => Promise<void>
+  /** Copies the workspace files to the folder, re-points the workspace there and deletes Xenon's clone. */
+  unlink: (targetFolder: string) => Promise<AppError | null>
   applyStatus: (localId: string, status: SyncStatus) => void
   applyProgress: (progress: GitProgress) => void
   openPanel: () => void
@@ -220,16 +229,26 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
       }
     },
 
-    saveSettings: async (accountId) => {
+    saveSettings: async (change) => {
       const settings = get().status?.settings
       if (!settings) {
         return
       }
+      const next = { ...settings, ...change }
       await run('settings', async (localId) => {
-        await saveSyncSettings(localId, accountId, settings.autoPull, settings.autoPush)
+        await saveSyncSettings(localId, next.accountId, next.autoPull, next.autoPush)
         apply(localId, await getSyncStatus(localId))
       })
     },
+
+    unlink: async (targetFolder) =>
+      run('unlink', async (localId) => {
+        await unlinkRepository(localId, targetFolder)
+        set({ changes: [], excluded: [], message: '', session: null })
+        await useWorkspacesStore.getState().load()
+        await useWorkspacesStore.getState().activate(localId)
+        apply(localId, await getSyncStatus(localId))
+      }),
 
     applyStatus: (localId, status) => apply(localId, status),
 

@@ -14,6 +14,8 @@ vi.mock('@/platform/services/sync', () => ({
   resolveConflict: vi.fn(),
   finishPull: vi.fn(),
   cancelPull: vi.fn(),
+  cloneAsWorkspace: vi.fn(),
+  unlinkRepository: vi.fn(),
 }))
 
 const service = await import('@/platform/services/sync')
@@ -188,13 +190,62 @@ describe('sync store', () => {
   })
 
   it('saves the account choice and rereads the status', async () => {
-    await useSyncStore.getState().saveSettings('a2')
+    await useSyncStore.getState().saveSettings({ accountId: 'a2' })
     expect(service.saveSyncSettings).not.toHaveBeenCalled()
     useSyncStore.setState({ status: syncStatus({ settings: { ...syncStatus().settings, accountId: '', autoPush: true } }) })
     vi.mocked(service.getSyncStatus).mockResolvedValue(syncStatus())
-    await useSyncStore.getState().saveSettings('a2')
+    await useSyncStore.getState().saveSettings({ accountId: 'a2' })
     expect(service.saveSyncSettings).toHaveBeenCalledWith('L', 'a2', false, true)
     expect(useSyncStore.getState().status?.settings.accountId).toBe('a1')
+  })
+
+  it('saves the automatic sync options and keeps the other settings', async () => {
+    useSyncStore.setState({ status: syncStatus() })
+    vi.mocked(service.getSyncStatus).mockResolvedValue(syncStatus())
+    await useSyncStore.getState().saveSettings({ autoPull: true })
+    expect(service.saveSyncSettings).toHaveBeenLastCalledWith('L', 'a1', true, false)
+    await useSyncStore.getState().saveSettings({ autoPush: true })
+    expect(service.saveSyncSettings).toHaveBeenLastCalledWith('L', 'a1', false, true)
+  })
+
+  it('unlinks into a folder, then reloads and reactivates the workspace', async () => {
+    const load = vi.spyOn(useWorkspacesStore.getState(), 'load').mockResolvedValue()
+    const activate = vi.spyOn(useWorkspacesStore.getState(), 'activate').mockResolvedValue()
+    useSyncStore.setState({ status: syncStatus(), changes: [pingChange], message: 'wip' })
+    vi.mocked(service.unlinkRepository).mockResolvedValue({ localId: 'L', name: 'Acme', path: '/plain', missing: false })
+    vi.mocked(service.getSyncStatus).mockResolvedValue(syncStatus({ state: 'not_linked' }))
+    await expect(useSyncStore.getState().unlink('/plain')).resolves.toBeNull()
+    expect(service.unlinkRepository).toHaveBeenCalledWith('L', '/plain')
+    expect(load).toHaveBeenCalled()
+    expect(activate).toHaveBeenCalledWith('L')
+    expect(useSyncStore.getState()).toMatchObject({ changes: [], message: '', status: { state: 'not_linked' } })
+    vi.mocked(service.unlinkRepository).mockRejectedValue(new AppError('GIT-43409', 'the folder is not empty'))
+    await expect(useSyncStore.getState().unlink('/busy')).resolves.toMatchObject({ code: 'GIT-43409' })
+    expect(useSyncStore.getState().error?.code).toBe('GIT-43409')
+    load.mockRestore()
+    activate.mockRestore()
+  })
+
+  it('clones one repository at a time and reports a failed clone', async () => {
+    const input = { repository: 'r', branch: '', subfolder: 'api', accountId: 'a1', clonePath: '', name: '' }
+    let finish: (summary: { localId: string; name: string; path: string; missing: boolean }) => void = () => undefined
+    vi.mocked(service.cloneAsWorkspace).mockImplementation(() => new Promise((resolve) => (finish = resolve)))
+    const load = vi.spyOn(useWorkspacesStore.getState(), 'load').mockResolvedValue()
+    const activate = vi.spyOn(useWorkspacesStore.getState(), 'activate').mockResolvedValue()
+    useSyncStore.getState().openClone()
+    const first = useSyncStore.getState().cloneWorkspace(input)
+    expect(useSyncStore.getState().cloning).toBe(true)
+    await expect(useSyncStore.getState().cloneWorkspace(input)).resolves.toBeNull()
+    finish({ localId: 'B', name: 'Backend', path: '/b', missing: false })
+    await expect(first).resolves.toBeNull()
+    expect(service.cloneAsWorkspace).toHaveBeenCalledTimes(1)
+    expect(activate).toHaveBeenCalledWith('B')
+    expect(useSyncStore.getState()).toMatchObject({ cloning: false, cloneOpen: false })
+    vi.mocked(service.cloneAsWorkspace).mockRejectedValue(new AppError('GIT-65409', 'the folder is not empty'))
+    await expect(useSyncStore.getState().cloneWorkspace(input)).resolves.toMatchObject({ code: 'GIT-65409' })
+    expect(useSyncStore.getState().cloning).toBe(false)
+    load.mockRestore()
+    activate.mockRestore()
   })
 
   it('does not list changes of a workspace without a repository and reports a failed listing', async () => {

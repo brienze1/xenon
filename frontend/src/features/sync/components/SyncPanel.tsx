@@ -8,7 +8,9 @@ import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { errorText, lastErrorText } from '@/features/sync/lib/error-text'
 import { statusLabel } from '@/features/sync/lib/status-label'
 import { AccountSelect } from './AccountSelect'
+import { AutoSyncOptions } from './AutoSyncOptions'
 import { ChangeList } from './ChangeList'
+import { UnlinkRepository } from './UnlinkRepository'
 import styles from './SyncPanel.module.css'
 
 const PHASE_LABELS: Record<string, string> = { fetch: 'Fetching…', merge: 'Merging…', write: 'Writing files…', push: 'Pushing…', clone: 'Cloning…' }
@@ -66,7 +68,8 @@ export function SyncPanel() {
             <p className={styles.state} aria-live="polite">
               {working ? (PHASE_LABELS[progress?.phase ?? ''] ?? 'Syncing…') : statusLabel(status)}
             </p>
-            <AccountSelect accounts={accounts} value={status.settings.accountId} disabled={working} onChange={(accountId) => void saveSettings(accountId)} />
+            <AccountSelect accounts={accounts} value={status.settings.accountId} disabled={working} onChange={(accountId) => void saveSettings({ accountId })} />
+            <AutoSyncOptions autoPull={status.settings.autoPull} autoPush={status.settings.autoPush} disabled={working} onChange={(change) => void saveSettings(change)} />
             {status.notice ? (
               <Banner.Root tone="warning">
                 <Banner.Message>{status.notice}</Banner.Message>
@@ -97,6 +100,7 @@ export function SyncPanel() {
               <textarea className={styles.message} name="commit-message" rows={3} value={message} disabled={working} onChange={(event) => setMessage(event.target.value)} />
             </label>
             <p className={styles.hint}>Xenon does not run Git hooks or sign commits.</p>
+            <UnlinkRepository clonePath={status.settings.clonePath} disabled={working} />
           </div>
         ) : (
           <div className={styles.content}>

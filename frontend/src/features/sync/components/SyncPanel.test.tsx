@@ -17,6 +17,7 @@ vi.mock('@/platform/services/sync', () => ({
   resolveConflict: vi.fn(),
   finishPull: vi.fn(),
   cancelPull: vi.fn(),
+  unlinkRepository: vi.fn(),
 }))
 vi.mock('@/platform/services/git-accounts', () => ({ listGitAccounts: vi.fn() }))
 vi.mock('@/platform/services/dialogs', () => ({ pickFolder: vi.fn() }))
@@ -105,6 +106,47 @@ describe('sync UI', () => {
     await userEvent.click(screen.getByRole('button', { name: /Git: Conflict/ }))
     expect(service.getSyncSession).toHaveBeenCalledTimes(2)
     expect(useSyncStore.getState().conflictsOpen).toBe(true)
+  })
+
+  it('turns the automatic pull and push on and off', async () => {
+    useSyncStore.setState({ status: syncStatus() })
+    useSyncStore.getState().openPanel()
+    vi.mocked(service.getSyncStatus).mockResolvedValue(syncStatus({ settings: { ...syncStatus().settings, autoPull: true } }))
+    render(<SyncPanel />)
+    const autoPull = screen.getByRole('checkbox', { name: /Pull when the workspace is opened/ })
+    const autoPush = screen.getByRole('checkbox', { name: /Push after each save/ })
+    expect(autoPull).not.toBeChecked()
+    expect(autoPush).not.toBeChecked()
+    await userEvent.click(autoPull)
+    expect(service.saveSyncSettings).toHaveBeenLastCalledWith('L', 'a1', true, false)
+    expect(await screen.findByRole('checkbox', { name: /Pull when the workspace is opened/ })).toBeChecked()
+    await userEvent.click(autoPush)
+    expect(service.saveSyncSettings).toHaveBeenLastCalledWith('L', 'a1', true, true)
+  })
+
+  it('unlinks the repository into a chosen folder after confirmation', async () => {
+    const load = vi.spyOn(useWorkspacesStore.getState(), 'load').mockResolvedValue()
+    const activate = vi.spyOn(useWorkspacesStore.getState(), 'activate').mockResolvedValue()
+    useSyncStore.setState({ status: syncStatus() })
+    useSyncStore.getState().openPanel()
+    render(<SyncPanel />)
+    vi.mocked(dialogs.pickFolder).mockResolvedValueOnce(null)
+    await userEvent.click(screen.getByRole('button', { name: 'Unlink Repository…' }))
+    expect(screen.queryByRole('button', { name: 'Unlink and Delete Clone' })).toBeNull()
+    vi.mocked(dialogs.pickFolder).mockResolvedValue('/w/acme-plain')
+    await userEvent.click(screen.getByRole('button', { name: 'Unlink Repository…' }))
+    expect(screen.getByText(/delete Xenon's clone at/)).toHaveTextContent(syncStatus().settings.clonePath)
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(service.unlinkRepository).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole('button', { name: 'Unlink Repository…' }))
+    vi.mocked(service.unlinkRepository).mockResolvedValue({ localId: 'L', name: 'Acme', path: '/w/acme-plain', missing: false })
+    vi.mocked(service.getSyncStatus).mockResolvedValue(syncStatus({ state: 'not_linked' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Unlink and Delete Clone' }))
+    expect(service.unlinkRepository).toHaveBeenCalledWith('L', '/w/acme-plain')
+    expect(activate).toHaveBeenCalledWith('L')
+    expect(await screen.findByText(/not linked to a Git repository/)).toBeInTheDocument()
+    load.mockRestore()
+    activate.mockRestore()
   })
 
   it('offers to link a workspace without a repository', async () => {

@@ -13,6 +13,8 @@ vi.mock('../../../bindings/github.com/brienze1/xenon/internal/infra/server/bindi
   Resolve: vi.fn(),
   FinishPull: vi.fn(),
   CancelPull: vi.fn(),
+  CloneAsWorkspace: vi.fn(),
+  Unlink: vi.fn(),
 }))
 
 const binding = await import('../../../bindings/github.com/brienze1/xenon/internal/infra/server/binding/syncservice')
@@ -111,6 +113,19 @@ describe('sync service', () => {
     await expect(service.pushWorkspace('L')).resolves.toEqual(status)
     await service.saveSyncSettings('L', 'a2', true, false)
     expect(binding.SaveSettings).toHaveBeenCalledWith({ local_id: 'L', account_id: 'a2', auto_pull: true, auto_push: false })
+  })
+
+  it('clones a repository as a workspace and unlinks one', async () => {
+    const summaryDto = { local_id: 'B', name: 'Backend', path: '/c/api', missing: false }
+    const summary = { localId: 'B', name: 'Backend', path: '/c/api', missing: false }
+    vi.mocked(binding.CloneAsWorkspace).mockResolvedValue(summaryDto as never)
+    vi.mocked(binding.Unlink).mockResolvedValue(summaryDto as never)
+    await expect(service.cloneAsWorkspace({ repository: 'r', branch: '', subfolder: 'api', accountId: 'a1', clonePath: '/c', name: 'Backend' })).resolves.toEqual(summary)
+    expect(binding.CloneAsWorkspace).toHaveBeenCalledWith({ repository: 'r', branch: '', subfolder: 'api', account_id: 'a1', clone_path: '/c', name: 'Backend' })
+    await expect(service.unlinkRepository('B', '/plain')).resolves.toEqual(summary)
+    expect(binding.Unlink).toHaveBeenCalledWith({ local_id: 'B', target_folder: '/plain' })
+    vi.mocked(binding.Unlink).mockResolvedValue(null as never)
+    await expect(service.unlinkRepository('B', '/plain')).rejects.toBeInstanceOf(AppError)
   })
 
   it('lists changes and pull results with conflicts', async () => {

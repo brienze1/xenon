@@ -74,6 +74,10 @@ export function cloneAsWorkspace(input: CloneInput): Promise<WorkspaceSummary> {
   )
 }
 
+export function unlinkRepository(localId: string, targetFolder: string): Promise<WorkspaceSummary> {
+  return call(async () => toWorkspaceSummary(required(await SyncService.Unlink({ local_id: localId, target_folder: targetFolder }))))
+}
+
 export function listChanges(localId: string): Promise<SyncChange[]> {
   return call(async () => ((await SyncService.Changes({ local_id: localId })) ?? []).map(toSyncChange))
 }
