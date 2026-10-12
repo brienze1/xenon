@@ -252,7 +252,7 @@ Feature: Sync errors with a next step, push retries and one operation at a time
       """
       { "local_id": "{{Acme.local_id}}" }
       """
-    And a "git:progress" event with the field "local_id" equal to "{{Acme.local_id}}" should have been emitted within 2000 ms
+    And a "git:progress" event with the field "phase" equal to "fetch" should have been emitted within 2000 ms
     And I call "SyncService.Push" with
       """
       { "local_id": "{{Acme.local_id}}" }
