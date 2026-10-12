@@ -11,6 +11,11 @@
   background: var(--color-bg);
 }
 
+/* The hidden side panel's show button floats over the tab strip's end; tabs keep clear of it. */
+.shell:has([data-side-panel-rail]) {
+  --tab-strip-end-inset: calc(28px + 2 * var(--space-3));
+}
+
 .skipLink {
   position: fixed;
   top: var(--space-3);

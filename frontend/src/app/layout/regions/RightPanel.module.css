@@ -18,8 +18,8 @@
 .rail {
   position: relative;
   grid-area: right;
-  /* Just wide enough for the button at the same offsets it has inside the open panel. */
-  width: calc(28px + 2 * var(--space-3));
+  /* No column of its own: the button floats over the end of the tab strip, where the open panel's hide button sits. */
+  width: 0;
 }
 
 /* Top right, level with the side panel's tab strip, which leaves that corner free. */

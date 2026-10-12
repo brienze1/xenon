@@ -42,9 +42,9 @@ export function RightPanel({ applies = true, children }: RightPanelProps) {
     return null
   }
   if (!layout.rightPanelVisible) {
-    // A thin rail keeps the toggle exactly where the hide button was, so the same spot reopens the panel.
+    // A zero-width rail floats the toggle over the tab strip's end, so the panel's corner reopens it without an empty column.
     return (
-      <div className={styles.rail}>
+      <div className={styles.rail} data-side-panel-rail="">
         <IconButton label="Show side panel" className={styles.hide} onClick={() => update({ rightPanelVisible: true })}>
           {SHOW_ICON}
         </IconButton>
