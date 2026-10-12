@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
-import { pingChange, syncStatus, usersChange } from './test-fixtures'
+import { fieldConflict, pingChange, requestConflict, syncSession, syncStatus, usersChange } from './test-fixtures'
 
 vi.mock('@/platform/services/sync', () => ({
   getSyncStatus: vi.fn(),
@@ -10,6 +10,10 @@ vi.mock('@/platform/services/sync', () => ({
   pushWorkspace: vi.fn(),
   pullWorkspace: vi.fn(),
   saveSyncSettings: vi.fn(),
+  getSyncSession: vi.fn(),
+  resolveConflict: vi.fn(),
+  finishPull: vi.fn(),
+  cancelPull: vi.fn(),
 }))
 
 const service = await import('@/platform/services/sync')
@@ -79,13 +83,89 @@ describe('sync store', () => {
     expect(useSyncStore.getState().progress).toBeNull()
   })
 
-  it('pulls and keeps the conflicting items', async () => {
-    vi.mocked(service.pullWorkspace).mockResolvedValue({
-      status: syncStatus({ state: 'conflict' }),
-      conflicts: [{ itemId: 'r1', itemName: 'Ping', itemKind: 'request', kind: 'both_modified', path: 'ping.yaml' }],
-    })
+  it('opens the conflict view when a pull finds conflicts and keeps the panel otherwise', async () => {
+    useSyncStore.getState().openPanel()
+    vi.mocked(service.pullWorkspace).mockResolvedValue({ status: syncStatus({ state: 'conflict' }), session: syncSession() })
     await useSyncStore.getState().pull()
-    expect(useSyncStore.getState()).toMatchObject({ status: { state: 'conflict' }, conflicts: [{ itemName: 'Ping' }], changes: [pingChange, usersChange] })
+    expect(useSyncStore.getState()).toMatchObject({
+      status: { state: 'conflict' },
+      session: { id: 's1' },
+      selectedConflictId: 'r1',
+      conflictsOpen: true,
+      panelOpen: false,
+      changes: [pingChange, usersChange],
+    })
+    vi.mocked(service.pullWorkspace).mockResolvedValue({ status: syncStatus(), session: null })
+    useSyncStore.setState({ panelOpen: true })
+    await useSyncStore.getState().pull()
+    expect(useSyncStore.getState()).toMatchObject({ session: null, selectedConflictId: null, conflictsOpen: false, panelOpen: true })
+  })
+
+  it('opens the session of a push whose replay conflicts', async () => {
+    vi.mocked(service.pushWorkspace).mockResolvedValue(syncStatus({ state: 'conflict' }))
+    vi.mocked(service.getSyncSession).mockResolvedValue(syncSession([fieldConflict, requestConflict()]))
+    await useSyncStore.getState().push()
+    expect(service.getSyncSession).toHaveBeenCalledWith('L')
+    expect(useSyncStore.getState()).toMatchObject({ conflictsOpen: true, selectedConflictId: 'c1' })
+    vi.mocked(service.pushWorkspace).mockResolvedValue(syncStatus())
+    await useSyncStore.getState().push()
+    expect(service.getSyncSession).toHaveBeenCalledTimes(1)
+  })
+
+  it('reopens the conflict view from the session, or the panel when there is none', async () => {
+    vi.mocked(service.getSyncSession).mockResolvedValue(syncSession([fieldConflict, requestConflict()]))
+    useSyncStore.setState({ selectedConflictId: 'r1' })
+    await useSyncStore.getState().openConflicts()
+    expect(useSyncStore.getState()).toMatchObject({ conflictsOpen: true, selectedConflictId: 'r1' })
+    useSyncStore.getState().closeConflicts()
+    expect(useSyncStore.getState()).toMatchObject({ conflictsOpen: false, session: { id: 's1' } })
+    vi.mocked(service.getSyncSession).mockResolvedValue(null)
+    await useSyncStore.getState().openConflicts()
+    expect(useSyncStore.getState()).toMatchObject({ conflictsOpen: false, session: null, panelOpen: true })
+  })
+
+  it('resolves conflicts in any order, then finishes back to the panel', async () => {
+    await useSyncStore.getState().resolve('r1', 'mine')
+    await useSyncStore.getState().finishPull()
+    await useSyncStore.getState().cancelPull()
+    expect(service.resolveConflict).not.toHaveBeenCalled()
+    useSyncStore.setState({ session: syncSession([fieldConflict, requestConflict()]), conflictsOpen: true })
+    useSyncStore.getState().selectConflict('r1')
+    vi.mocked(service.resolveConflict).mockResolvedValue(requestConflict({ resolution: 'both' }))
+    await useSyncStore.getState().resolve('r1', 'both')
+    expect(service.resolveConflict).toHaveBeenCalledWith('s1', 'r1', 'both', '')
+    vi.mocked(service.resolveConflict).mockResolvedValue({ ...fieldConflict, resolution: 'merged' })
+    await useSyncStore.getState().resolve('c1', 'theirs', 'description')
+    expect(service.resolveConflict).toHaveBeenLastCalledWith('s1', 'c1', 'theirs', 'description')
+    expect(useSyncStore.getState().session?.conflicts.map((conflict) => conflict.resolution)).toEqual(['merged', 'both'])
+    expect(useSyncStore.getState().selectedConflictId).toBe('r1')
+    vi.mocked(service.finishPull).mockResolvedValue(syncStatus({ state: 'ahead', ahead: 1 }))
+    await useSyncStore.getState().finishPull()
+    expect(service.finishPull).toHaveBeenCalledWith('s1')
+    expect(service.listChanges).toHaveBeenCalledWith('L')
+    expect(useSyncStore.getState()).toMatchObject({ session: null, conflictsOpen: false, panelOpen: true, status: { state: 'ahead' }, busy: null })
+  })
+
+  it('cancels the pull and keeps a failed resolution as the error', async () => {
+    useSyncStore.setState({ session: syncSession(), conflictsOpen: true })
+    vi.mocked(service.resolveConflict).mockRejectedValue(new AppError('GIT-16404', 'the pull is not open any more'))
+    await useSyncStore.getState().resolve('r1', 'mine')
+    expect(useSyncStore.getState()).toMatchObject({ error: { code: 'GIT-16404' }, session: { conflicts: [{ resolution: 'unresolved' }] } })
+    vi.mocked(service.cancelPull).mockResolvedValue(syncStatus({ state: 'diverged' }))
+    await useSyncStore.getState().cancelPull()
+    expect(service.cancelPull).toHaveBeenCalledWith('s1')
+    expect(useSyncStore.getState()).toMatchObject({ session: null, conflictsOpen: false, panelOpen: true, status: { state: 'diverged' }, error: null })
+  })
+
+  it('drops a resolution answered for a session that was replaced meanwhile', async () => {
+    useSyncStore.setState({ session: syncSession() })
+    let answer: (conflict: ReturnType<typeof requestConflict>) => void = () => undefined
+    vi.mocked(service.resolveConflict).mockReturnValue(new Promise((resolve) => (answer = resolve)))
+    const resolving = useSyncStore.getState().resolve('r1', 'mine')
+    useSyncStore.setState({ session: { ...syncSession(), id: 's2' } })
+    answer(requestConflict({ resolution: 'mine' }))
+    await resolving
+    expect(useSyncStore.getState().session).toMatchObject({ id: 's2', conflicts: [{ resolution: 'unresolved' }] })
   })
 
   it('links, reopens the moved workspace and shows the panel; a refusal stays with the dialog', async () => {

@@ -1,19 +1,23 @@
 import { create } from 'zustand'
 import { toAppError, type AppError } from '@/platform/errors'
 import type { GitProgress } from '@/platform/events'
-import type { LinkInput, SyncChange, SyncConflict, SyncStatus } from '@/platform/mappers/sync'
+import type { ChosenResolution, LinkInput, SyncChange, SyncSession, SyncStatus } from '@/platform/mappers/sync'
 import {
+  cancelPull,
   commitChanges,
+  finishPull,
+  getSyncSession,
   getSyncStatus,
   linkRepository,
   listChanges,
   pullWorkspace,
   pushWorkspace,
+  resolveConflict,
   saveSyncSettings,
 } from '@/platform/services/sync'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 
-export type SyncOperation = 'status' | 'link' | 'commit' | 'push' | 'pull' | 'settings'
+export type SyncOperation = 'status' | 'link' | 'commit' | 'push' | 'pull' | 'settings' | 'conflicts' | 'resolve' | 'finish' | 'cancel'
 
 export const STATUS_REFRESH_MS = 5 * 60 * 1000
 
@@ -23,12 +27,14 @@ interface SyncStoreState {
   changes: SyncChange[]
   excluded: string[]
   message: string
-  conflicts: SyncConflict[]
+  session: SyncSession | null
+  selectedConflictId: string | null
   busy: SyncOperation | null
   progress: GitProgress | null
   error: AppError | null
   panelOpen: boolean
   linkOpen: boolean
+  conflictsOpen: boolean
   reset: (localId: string | null) => void
   refresh: () => Promise<void>
   loadChanges: () => Promise<void>
@@ -45,6 +51,12 @@ interface SyncStoreState {
   closePanel: () => void
   openLink: () => void
   closeLink: () => void
+  openConflicts: () => Promise<void>
+  closeConflicts: () => void
+  selectConflict: (itemId: string) => void
+  resolve: (itemId: string, resolution: ChosenResolution, fieldPath?: string) => Promise<void>
+  finishPull: () => Promise<void>
+  cancelPull: () => Promise<void>
 }
 
 const EMPTY = {
@@ -52,7 +64,8 @@ const EMPTY = {
   changes: [],
   excluded: [],
   message: '',
-  conflicts: [],
+  session: null,
+  selectedConflictId: null,
   busy: null,
   progress: null,
   error: null,
@@ -87,6 +100,19 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
     }
   }
 
+  function showSession(localId: string, session: SyncSession | null): void {
+    if (get().localId !== localId) {
+      return
+    }
+    const selected = session?.conflicts.find((conflict) => conflict.itemId === get().selectedConflictId) ?? session?.conflicts[0]
+    set({ session, selectedConflictId: selected?.itemId ?? null, conflictsOpen: session !== null, panelOpen: session === null && get().panelOpen })
+  }
+
+  function closeSession(localId: string, status: SyncStatus): void {
+    apply(localId, status)
+    set({ session: null, selectedConflictId: null, conflictsOpen: false, panelOpen: true })
+  }
+
   async function reloadChanges(localId: string): Promise<void> {
     const changes = await listChanges(localId)
     if (get().localId === localId) {
@@ -99,8 +125,9 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
     ...EMPTY,
     panelOpen: false,
     linkOpen: false,
+    conflictsOpen: false,
 
-    reset: (localId) => set({ localId, ...EMPTY, panelOpen: false, linkOpen: false }),
+    reset: (localId) => set({ localId, ...EMPTY, panelOpen: false, linkOpen: false, conflictsOpen: false }),
 
     refresh: async () => {
       await run('status', async (localId) => apply(localId, await getSyncStatus(localId)))
@@ -139,14 +166,20 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
     },
 
     push: async () => {
-      await run('push', async (localId) => apply(localId, await pushWorkspace(localId)))
+      await run('push', async (localId) => {
+        const status = await pushWorkspace(localId)
+        apply(localId, status)
+        if (status.state === 'conflict') {
+          showSession(localId, await getSyncSession(localId))
+        }
+      })
     },
 
     pull: async () => {
       await run('pull', async (localId) => {
         const result = await pullWorkspace(localId)
         apply(localId, result.status)
-        set({ conflicts: result.conflicts })
+        showSession(localId, result.session)
         await reloadChanges(localId)
       })
     },
@@ -186,5 +219,52 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
     closePanel: () => set({ panelOpen: false }),
     openLink: () => set({ linkOpen: true, error: null }),
     closeLink: () => set({ linkOpen: false }),
+
+    openConflicts: async () => {
+      await run('conflicts', async (localId) => {
+        const session = await getSyncSession(localId)
+        showSession(localId, session)
+        if (session === null && get().localId === localId) {
+          set({ panelOpen: true })
+        }
+      })
+    },
+
+    closeConflicts: () => set({ conflictsOpen: false }),
+
+    selectConflict: (itemId) => set({ selectedConflictId: itemId }),
+
+    resolve: async (itemId, resolution, fieldPath = '') => {
+      const session = get().session
+      if (session === null) {
+        return
+      }
+      await run('resolve', async () => {
+        const resolved = await resolveConflict(session.id, itemId, resolution, fieldPath)
+        const current = get().session
+        if (current?.id === session.id) {
+          set({ session: { ...current, conflicts: current.conflicts.map((conflict) => (conflict.itemId === itemId ? resolved : conflict)) } })
+        }
+      })
+    },
+
+    finishPull: async () => {
+      const session = get().session
+      if (session === null) {
+        return
+      }
+      await run('finish', async (localId) => {
+        closeSession(localId, await finishPull(session.id))
+        await reloadChanges(localId)
+      })
+    },
+
+    cancelPull: async () => {
+      const session = get().session
+      if (session === null) {
+        return
+      }
+      await run('cancel', async (localId) => closeSession(localId, await cancelPull(session.id)))
+    },
   }
 })

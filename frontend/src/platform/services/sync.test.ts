@@ -9,11 +9,16 @@ vi.mock('../../../bindings/github.com/brienze1/xenon/internal/infra/server/bindi
   Push: vi.fn(),
   Pull: vi.fn(),
   SaveSettings: vi.fn(),
+  Session: vi.fn(),
+  Resolve: vi.fn(),
+  FinishPull: vi.fn(),
+  CancelPull: vi.fn(),
 }))
 
 const binding = await import('../../../bindings/github.com/brienze1/xenon/internal/infra/server/binding/syncservice')
 const service = await import('./sync')
 const { AppError } = await import('../errors')
+const { emptyDraft, toRequestDto } = await import('../mappers/request')
 
 const settingsDto = { repository: 'https://git.test/r.git', branch: 'main', subfolder: 'api', account_id: 'a1', clone_path: '/c', auto_pull: false, auto_push: true }
 const statusDto = { state: 'ahead', local_changes: 2, ahead: 1, behind: 0, settings: settingsDto }
@@ -26,6 +31,47 @@ const status = {
   lastError: null,
   notice: '',
   settings: { repository: 'https://git.test/r.git', branch: 'main', subfolder: 'api', accountId: 'a1', clonePath: '/c', autoPull: false, autoPush: true },
+}
+
+const draft = { ...emptyDraft(), id: 'r1', name: 'Users', method: 'PATCH', url: 'https://a.test/users' }
+const conflictDto = {
+  item_id: 'i1',
+  item_name: 'Users',
+  item_kind: 'request',
+  kind: 'both_modified',
+  resolution: 'unresolved',
+  path: 'u.yaml',
+  uncommitted: true,
+  mine: { text: 'method: PATCH', request: toRequestDto(draft) },
+  theirs: {
+    text: 'name: Dev',
+    environment: { id: 'e', name: 'Dev', description: '', color: 'none', confirm_before_send: false, variables: [{ key: 'token', value: '', description: '', secret: true, enabled: true }] },
+  },
+  fields: null,
+}
+const conflict = {
+  itemId: 'i1',
+  itemName: 'Users',
+  itemKind: 'request',
+  kind: 'both_modified',
+  resolution: 'unresolved',
+  path: 'u.yaml',
+  uncommitted: true,
+  base: null,
+  mine: { text: 'method: PATCH', request: draft, environment: null },
+  theirs: { text: 'name: Dev', request: null, environment: { name: 'Dev', color: 'none', variables: [{ key: 'token', value: '', description: '', secret: true, enabled: true }] } },
+  fields: [],
+}
+const fieldDto = {
+  item_id: 'c1',
+  item_name: 'API',
+  item_kind: 'collection',
+  kind: 'field',
+  resolution: 'unresolved',
+  path: 'collection.yaml',
+  uncommitted: false,
+  base: { text: 'description: d' },
+  fields: [{ path: 'description', mine: 'Mine', theirs: null, resolution: 'theirs' }],
 }
 
 describe('sync service', () => {
@@ -74,14 +120,30 @@ describe('sync service', () => {
     await expect(service.listChanges('L')).resolves.toEqual([])
     vi.mocked(binding.Pull).mockResolvedValue({
       status: { ...statusDto, state: 'conflict' },
-      session: { id: 's', conflicts: [{ item_id: 'i1', item_name: 'Users', item_kind: 'request', kind: 'both_modified', resolution: 'unresolved', path: 'u.yaml' }] },
+      session: { id: 's', local_id: 'L', conflicts: [conflictDto] },
     } as never)
-    await expect(service.pullWorkspace('L')).resolves.toEqual({
-      status: { ...status, state: 'conflict' },
-      conflicts: [{ itemId: 'i1', itemName: 'Users', itemKind: 'request', kind: 'both_modified', path: 'u.yaml' }],
-    })
+    await expect(service.pullWorkspace('L')).resolves.toEqual({ status: { ...status, state: 'conflict' }, session: { id: 's', localId: 'L', conflicts: [conflict] } })
     vi.mocked(binding.Pull).mockResolvedValue({ status: statusDto } as never)
-    await expect(service.pullWorkspace('L')).resolves.toEqual({ status, conflicts: [] })
+    await expect(service.pullWorkspace('L')).resolves.toEqual({ status, session: null })
+  })
+
+  it('reads the open session and resolves, finishes and cancels it', async () => {
+    vi.mocked(binding.Session).mockResolvedValue(null as never)
+    await expect(service.getSyncSession('L')).resolves.toBeNull()
+    vi.mocked(binding.Session).mockResolvedValue({ id: 's', local_id: 'L', conflicts: null } as never)
+    await expect(service.getSyncSession('L')).resolves.toEqual({ id: 's', localId: 'L', conflicts: [] })
+    expect(binding.Session).toHaveBeenCalledWith({ local_id: 'L' })
+    vi.mocked(binding.Resolve).mockResolvedValue({ ...fieldDto, resolution: 'merged' } as never)
+    await expect(service.resolveConflict('s', 'c1', 'theirs', 'description')).resolves.toMatchObject({ resolution: 'merged', fields: [{ path: 'description', mine: 'Mine', theirs: null }] })
+    expect(binding.Resolve).toHaveBeenCalledWith({ session_id: 's', item_id: 'c1', resolution: 'theirs', field_path: 'description' })
+    vi.mocked(binding.FinishPull).mockResolvedValue(statusDto as never)
+    await expect(service.finishPull('s')).resolves.toEqual(status)
+    expect(binding.FinishPull).toHaveBeenCalledWith({ session_id: 's' })
+    vi.mocked(binding.CancelPull).mockResolvedValue({ ...statusDto, state: 'diverged' } as never)
+    await expect(service.cancelPull('s')).resolves.toEqual({ ...status, state: 'diverged' })
+    expect(binding.CancelPull).toHaveBeenCalledWith({ session_id: 's' })
+    vi.mocked(binding.Resolve).mockRejectedValue({ cause: { error: { code: 'GIT-19400', description: 'no' } } })
+    await expect(service.resolveConflict('s', 'c1', 'both', '')).rejects.toMatchObject({ code: 'GIT-19400' })
   })
 
   it('turns failures and empty answers into AppErrors', async () => {

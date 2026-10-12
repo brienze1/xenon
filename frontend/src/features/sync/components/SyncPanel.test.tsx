@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
-import { pingChange, syncStatus, usersChange } from '@/features/sync/test-fixtures'
+import { pingChange, syncSession, syncStatus, usersChange } from '@/features/sync/test-fixtures'
 
 vi.mock('@/platform/services/sync', () => ({
   SUBFOLDER_HAS_WORKSPACE: 'GIT-01409',
@@ -13,6 +13,10 @@ vi.mock('@/platform/services/sync', () => ({
   pushWorkspace: vi.fn(),
   pullWorkspace: vi.fn(),
   saveSyncSettings: vi.fn(),
+  getSyncSession: vi.fn(),
+  resolveConflict: vi.fn(),
+  finishPull: vi.fn(),
+  cancelPull: vi.fn(),
 }))
 vi.mock('@/platform/services/git-accounts', () => ({ listGitAccounts: vi.fn() }))
 vi.mock('@/platform/services/dialogs', () => ({ pickFolder: vi.fn() }))
@@ -74,13 +78,11 @@ describe('sync UI', () => {
   it('shows errors with their next step, notices, conflicts and the missing account', async () => {
     useSyncStore.setState({
       status: syncStatus({ state: 'error', notice: 'The shared sync settings changed', settings: { ...syncStatus().settings, accountId: '' }, lastError: { code: 'GIT-07428', message: 'No account - choose one', nextStep: 'Choose a Git account.' } }),
-      conflicts: [{ itemId: 'r1', itemName: 'Ping', itemKind: 'request', kind: 'both_modified', path: 'ping.yaml' }],
     })
     useSyncStore.getState().openPanel()
     render(<SyncPanel />)
     expect(await screen.findByText('No account - choose one. Choose a Git account.')).toBeInTheDocument()
     expect(screen.getByText('The shared sync settings changed')).toBeInTheDocument()
-    expect(screen.getByText(/Ping changed on both sides/)).toBeInTheDocument()
     await screen.findByRole('option', { name: 'Work GitLab' })
     vi.mocked(service.getSyncStatus).mockResolvedValue(syncStatus())
     await userEvent.selectOptions(screen.getByLabelText('Account'), 'a1')
@@ -88,6 +90,21 @@ describe('sync UI', () => {
     vi.mocked(service.pullWorkspace).mockRejectedValue(new AppError('GIT-10503', 'the Git host could not be reached', [{ attribute: 'next_step', messages: ['Offline - check the connection and try again'] }]))
     await userEvent.click(screen.getByRole('button', { name: 'Pull' }))
     expect(await screen.findByText('the Git host could not be reached. Offline - check the connection and try again')).toBeInTheDocument()
+  })
+
+  it('offers to resolve the conflicts of the last pull, also from the footer', async () => {
+    useSyncStore.setState({ status: syncStatus({ state: 'conflict', ahead: 1, behind: 2 }) })
+    useSyncStore.getState().openPanel()
+    render(<SyncPanel />)
+    expect(screen.getByText(/found items changed on both sides/)).toBeInTheDocument()
+    vi.mocked(service.getSyncSession).mockResolvedValue(syncSession())
+    await userEvent.click(screen.getByRole('button', { name: 'Resolve conflicts…' }))
+    expect(useSyncStore.getState()).toMatchObject({ conflictsOpen: true, panelOpen: false })
+    useSyncStore.setState({ conflictsOpen: false })
+    render(<FooterSyncStatus />)
+    await userEvent.click(screen.getByRole('button', { name: /Git: Conflict/ }))
+    expect(service.getSyncSession).toHaveBeenCalledTimes(2)
+    expect(useSyncStore.getState().conflictsOpen).toBe(true)
   })
 
   it('offers to link a workspace without a repository', async () => {

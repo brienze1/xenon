@@ -1,9 +1,14 @@
 import type {
   SyncChangeItem as SyncChangeItemDto,
   SyncConflictItem as SyncConflictItemDto,
+  SyncEnvironmentVersion as SyncEnvironmentVersionDto,
+  SyncFieldConflict as SyncFieldConflictDto,
+  SyncItemVersion as SyncItemVersionDto,
   SyncPullResult as SyncPullResultDto,
+  SyncSession as SyncSessionDto,
   SyncStatus as SyncStatusDto,
 } from '../../../bindings/github.com/brienze1/xenon/internal/integration/entrypoint/dto/models'
+import { toRequestDraft, type RequestDraft } from './request'
 
 export type SyncState = 'up_to_date' | 'local_changes' | 'ahead' | 'behind' | 'diverged' | 'conflict' | 'error' | 'syncing' | 'not_linked'
 export type ChangeKind = 'added' | 'modified' | 'deleted' | 'renamed'
@@ -44,17 +49,62 @@ export interface SyncChange {
   paths: string[]
 }
 
+export type ConflictKind = 'both_modified' | 'delete_modify' | 'field'
+export type ConflictResolution = 'unresolved' | 'mine' | 'theirs' | 'both' | 'keep' | 'delete' | 'merged'
+export type ChosenResolution = Exclude<ConflictResolution, 'unresolved' | 'merged'>
+
+export interface SyncVariableVersion {
+  key: string
+  value: string
+  description: string
+  secret: boolean
+  enabled: boolean
+}
+
+export interface SyncEnvironmentVersion {
+  name: string
+  color: string
+  variables: SyncVariableVersion[]
+}
+
+/** One side of a conflict, rendered as the Xenon item when it parses, always with its file text. */
+export interface SyncItemVersion {
+  text: string
+  request: RequestDraft | null
+  environment: SyncEnvironmentVersion | null
+}
+
+/** A field changed differently on both sides; null values mean the side removed the field. */
+export interface SyncFieldConflict {
+  path: string
+  mine: string | null
+  theirs: string | null
+  resolution: ConflictResolution
+}
+
 export interface SyncConflict {
   itemId: string
   itemName: string
   itemKind: string
-  kind: string
+  kind: ConflictKind
+  resolution: ConflictResolution
   path: string
+  uncommitted: boolean
+  base: SyncItemVersion | null
+  mine: SyncItemVersion | null
+  theirs: SyncItemVersion | null
+  fields: SyncFieldConflict[]
+}
+
+export interface SyncSession {
+  id: string
+  localId: string
+  conflicts: SyncConflict[]
 }
 
 export interface PullResult {
   status: SyncStatus
-  conflicts: SyncConflict[]
+  session: SyncSession | null
 }
 
 export interface LinkInput {
@@ -93,10 +143,49 @@ export function toSyncChange(dto: SyncChangeItemDto): SyncChange {
   return { itemId: dto.item_id, itemName: dto.item_name, itemKind: dto.item_kind, change: dto.change as ChangeKind, paths: dto.paths ?? [] }
 }
 
-function toSyncConflict(dto: SyncConflictItemDto): SyncConflict {
-  return { itemId: dto.item_id, itemName: dto.item_name, itemKind: dto.item_kind, kind: dto.kind, path: dto.path }
+function toEnvironmentVersion(dto: SyncEnvironmentVersionDto): SyncEnvironmentVersion {
+  return {
+    name: dto.name,
+    color: dto.color,
+    variables: (dto.variables ?? []).map((row) => ({ key: row.key, value: row.value, description: row.description, secret: row.secret, enabled: row.enabled })),
+  }
+}
+
+function toItemVersion(dto: SyncItemVersionDto | null | undefined): SyncItemVersion | null {
+  if (!dto) {
+    return null
+  }
+  return {
+    text: dto.text,
+    request: dto.request ? toRequestDraft(dto.request) : null,
+    environment: dto.environment ? toEnvironmentVersion(dto.environment) : null,
+  }
+}
+
+function toFieldConflict(dto: SyncFieldConflictDto): SyncFieldConflict {
+  return { path: dto.path, mine: dto.mine, theirs: dto.theirs, resolution: dto.resolution as ConflictResolution }
+}
+
+export function toSyncConflict(dto: SyncConflictItemDto): SyncConflict {
+  return {
+    itemId: dto.item_id,
+    itemName: dto.item_name,
+    itemKind: dto.item_kind,
+    kind: dto.kind as ConflictKind,
+    resolution: dto.resolution as ConflictResolution,
+    path: dto.path,
+    uncommitted: dto.uncommitted,
+    base: toItemVersion(dto.base),
+    mine: toItemVersion(dto.mine),
+    theirs: toItemVersion(dto.theirs),
+    fields: (dto.fields ?? []).map(toFieldConflict),
+  }
+}
+
+export function toSyncSession(dto: SyncSessionDto): SyncSession {
+  return { id: dto.id, localId: dto.local_id, conflicts: (dto.conflicts ?? []).map(toSyncConflict) }
 }
 
 export function toPullResult(dto: SyncPullResultDto): PullResult {
-  return { status: toSyncStatus(dto.status), conflicts: (dto.session?.conflicts ?? []).map(toSyncConflict) }
+  return { status: toSyncStatus(dto.status), session: dto.session ? toSyncSession(dto.session) : null }
 }

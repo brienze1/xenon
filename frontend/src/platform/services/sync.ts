@@ -1,6 +1,19 @@
 import * as SyncService from '../../../bindings/github.com/brienze1/xenon/internal/infra/server/binding/syncservice'
 import { AppError, toAppError } from '../errors'
-import { toPullResult, toSyncChange, toSyncStatus, type LinkInput, type PullResult, type SyncChange, type SyncStatus } from '../mappers/sync'
+import {
+  toPullResult,
+  toSyncChange,
+  toSyncConflict,
+  toSyncSession,
+  toSyncStatus,
+  type ChosenResolution,
+  type LinkInput,
+  type PullResult,
+  type SyncChange,
+  type SyncConflict,
+  type SyncSession,
+  type SyncStatus,
+} from '../mappers/sync'
 
 export const SUBFOLDER_HAS_WORKSPACE = 'GIT-01409'
 export const SYNC_BUSY = 'GIT-05409'
@@ -60,4 +73,24 @@ export function pullWorkspace(localId: string): Promise<PullResult> {
 
 export function saveSyncSettings(localId: string, accountId: string, autoPull: boolean, autoPush: boolean): Promise<void> {
   return call(() => SyncService.SaveSettings({ local_id: localId, account_id: accountId, auto_pull: autoPull, auto_push: autoPush }))
+}
+
+/** The pull waiting for conflict resolution, or null when there is none. */
+export function getSyncSession(localId: string): Promise<SyncSession | null> {
+  return call(async () => {
+    const session = await SyncService.Session({ local_id: localId })
+    return session ? toSyncSession(session) : null
+  })
+}
+
+export function resolveConflict(sessionId: string, itemId: string, resolution: ChosenResolution, fieldPath: string): Promise<SyncConflict> {
+  return call(async () => toSyncConflict(required(await SyncService.Resolve({ session_id: sessionId, item_id: itemId, resolution, field_path: fieldPath }))))
+}
+
+export function finishPull(sessionId: string): Promise<SyncStatus> {
+  return call(async () => toSyncStatus(required(await SyncService.FinishPull({ session_id: sessionId }))))
+}
+
+export function cancelPull(sessionId: string): Promise<SyncStatus> {
+  return call(async () => toSyncStatus(required(await SyncService.CancelPull({ session_id: sessionId }))))
 }

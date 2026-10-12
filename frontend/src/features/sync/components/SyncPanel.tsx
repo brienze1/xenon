@@ -14,23 +14,23 @@ import styles from './SyncPanel.module.css'
 const PHASE_LABELS: Record<string, string> = { fetch: 'Fetching…', merge: 'Merging…', write: 'Writing files…', push: 'Pushing…', clone: 'Cloning…' }
 
 export function SyncPanel() {
-  const { open, status, changes, excluded, message, conflicts, busy, progress, error } = useSyncStore(
+  const { open, status, changes, excluded, message, busy, progress, error } = useSyncStore(
     useShallow((state) => ({
       open: state.panelOpen,
       status: state.status,
       changes: state.changes,
       excluded: state.excluded,
       message: state.message,
-      conflicts: state.conflicts,
       busy: state.busy,
       progress: state.progress,
       error: state.error,
     })),
   )
-  const { closePanel, openLink, toggle, setMessage, commit, push, pull, saveSettings } = useSyncStore(
+  const { closePanel, openLink, openConflicts, toggle, setMessage, commit, push, pull, saveSettings } = useSyncStore(
     useShallow((state) => ({
       closePanel: state.closePanel,
       openLink: state.openLink,
+      openConflicts: state.openConflicts,
       toggle: state.toggle,
       setMessage: state.setMessage,
       commit: state.commit,
@@ -81,11 +81,14 @@ export function SyncPanel() {
                 <Banner.Message>{lastErrorText(status.lastError)}</Banner.Message>
               </Banner.Root>
             ) : null}
-            {conflicts.length > 0 ? (
+            {status.state === 'conflict' ? (
               <Banner.Root tone="warning">
-                <Banner.Message>
-                  {conflicts.map((conflict) => conflict.itemName).join(', ')} changed on both sides. Nothing was changed by the pull - your work is as it was.
-                </Banner.Message>
+                <Banner.Message>The last pull found items changed on both sides. Nothing changes until you resolve them - your work is as it was.</Banner.Message>
+                <Banner.Actions>
+                  <Button size="sm" variant="accent" disabled={working} onClick={() => void openConflicts()}>
+                    Resolve conflicts…
+                  </Button>
+                </Banner.Actions>
               </Banner.Root>
             ) : null}
             <ChangeList changes={changes} excluded={excluded} disabled={working} onToggle={toggle} />

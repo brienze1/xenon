@@ -22,6 +22,7 @@ import { useSettingsStore } from '@/features/settings/store'
 import { SidebarPanel } from '@/features/sidebar/components/SidebarPanel'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { FooterSyncStatus } from '@/features/sync/components/FooterSyncStatus'
+import { ConflictView } from '@/features/sync/components/ConflictView'
 import { LinkRepoDialog } from '@/features/sync/components/LinkRepoDialog'
 import { SyncPanel } from '@/features/sync/components/SyncPanel'
 import type { ItemAuthSlot, ItemScriptsSlot } from '@/features/sidebar/components/SettingsForm'
@@ -79,6 +80,8 @@ const FOOTER_SYNC_STATUS = <FooterSyncStatus />
 const SYNC_PANEL = <SyncPanel />
 
 const LINK_REPO_DIALOG = <LinkRepoDialog />
+
+const CONFLICT_VIEW = <ConflictView />
 
 const TOP_BAR_END_WITH_ENVIRONMENTS = (
   <>
@@ -240,6 +243,7 @@ export function App() {
       {active ? COOKIES_DIALOG : null}
       {active ? SYNC_PANEL : null}
       {active ? LINK_REPO_DIALOG : null}
+      {active ? CONFLICT_VIEW : null}
       {active ? QUICK_SEARCH : null}
       <Footer>
         {active ? (
