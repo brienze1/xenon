@@ -264,3 +264,12 @@ func insertAt(order []string, fileName string, index int) []string {
 	index = min(max(index, 0), len(order))
 	return slices.Insert(order, index, fileName)
 }
+
+func (t TreeNode) ChildFolder(name string) (TreeNode, bool) {
+	for _, child := range t.Children {
+		if child.IsContainer() && child.HasName(name) {
+			return child, true
+		}
+	}
+	return TreeNode{}, false
+}

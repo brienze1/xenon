@@ -8,17 +8,19 @@ import (
 )
 
 type TreeService struct {
-	search   adapter.TreeSearchController
-	manage   adapter.TreeManageController
-	settings adapter.TreeSettingsController
+	search        adapter.TreeSearchController
+	manage        adapter.TreeManageController
+	settings      adapter.TreeSettingsController
+	documentation adapter.TreeDocumentationController
 }
 
 func NewTreeService(
 	search adapter.TreeSearchController,
 	manage adapter.TreeManageController,
 	settings adapter.TreeSettingsController,
+	documentation adapter.TreeDocumentationController,
 ) *TreeService {
-	return &TreeService{search: search, manage: manage, settings: settings}
+	return &TreeService{search: search, manage: manage, settings: settings, documentation: documentation}
 }
 
 func (t *TreeService) GetTree(ctx context.Context, request dto.GetTree) (dto.TreeNodeList, error) {
@@ -67,4 +69,20 @@ func (t *TreeService) GetSettings(ctx context.Context, request dto.TreeItemRefer
 
 func (t *TreeService) SaveSettings(ctx context.Context, request dto.SaveItemSettings) (*dto.ItemSettings, error) {
 	return t.settings.SaveSettings(ctx, request)
+}
+
+func (t *TreeService) GetDocumentation(ctx context.Context, request dto.TreeItemReference) (*dto.Documentation, error) {
+	return t.documentation.GetDocumentation(ctx, request)
+}
+
+func (t *TreeService) PreviewDocumentation(ctx context.Context, request dto.DocumentationInput) (*dto.Documentation, error) {
+	return t.documentation.PreviewDocumentation(ctx, request)
+}
+
+func (t *TreeService) PlanDocumentation(ctx context.Context, request dto.DocumentationInput) (*dto.DocumentationPlan, error) {
+	return t.documentation.PlanDocumentation(ctx, request)
+}
+
+func (t *TreeService) ApplyDocumentation(ctx context.Context, request dto.DocumentationInput) (*dto.DocumentationApplied, error) {
+	return t.documentation.ApplyDocumentation(ctx, request)
 }

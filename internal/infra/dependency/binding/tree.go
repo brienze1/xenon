@@ -17,6 +17,7 @@ func GetTreeService() *binding.TreeService {
 				controller.GetTreeSearchController(),
 				controller.GetTreeManageController(),
 				controller.GetTreeSettingsController(),
+				controller.GetTreeDocumentationController(),
 			)
 		})
 	}

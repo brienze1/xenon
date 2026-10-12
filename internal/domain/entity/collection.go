@@ -157,3 +157,8 @@ func isOverridden(header KeyValue, overriding []KeyValue) bool {
 		return other.IsActive() && other.HasKey(header.Key)
 	})
 }
+
+func (c Collection) Described(description string) Collection {
+	c.Description = description
+	return c
+}

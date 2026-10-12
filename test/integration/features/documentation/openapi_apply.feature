@@ -299,7 +299,7 @@ Feature: Edits to a collection's OpenAPI document are saved back onto its reques
       """
     Then the call should fail with code "DOC-03400"
     And the error should contain the field "error.error_details.0.messages.0" equal to "13"
-    And the error should contain the field "error.error_details.1.messages.0" equal to "21"
+    And the error should contain the field "error.error_details.1.messages.0" equal to "19"
     And the folder "workspaces/acme" should equal the folder "before"
 
   @preview
