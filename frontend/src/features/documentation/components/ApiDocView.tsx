@@ -181,19 +181,36 @@ function OperationView({ operation }: OperationViewProps) {
 interface TagSectionProps {
   group: OperationGroup
   tags: ApiTag[]
-  /** Inside an x-tagGroups section, a level below its heading. */
-  nested: boolean
+  /** The x-tagGroups section it sits in, whose heading already names it (or prefixes its sub-folders). */
+  section?: string
 }
 
-function TagSection({ group, tags, nested }: TagSectionProps) {
-  const title = group.tag || UNTAGGED_TITLE
+/** A folder's title inside its section: none for the section's own folder, the rest of the path for a sub-folder. */
+function titleWithin(tag: string, section: string | undefined): string | null {
+  if (section === undefined) {
+    return tag || UNTAGGED_TITLE
+  }
+  if (tag === section) {
+    return null
+  }
+  return tag.startsWith(`${section} / `) ? tag.slice(section.length + 3) : tag
+}
+
+function TagSection({ group, tags, section }: TagSectionProps) {
+  const title = titleWithin(group.tag, section)
   const description = tags.find((tag) => tag.name === group.tag)?.description ?? ''
-  const Heading = nested ? 'h5' : 'h4'
+  const nested = section !== undefined
   return (
-    <section aria-label={title} className={styles.group}>
-      <Heading className={nested ? styles.tagTitle : styles.groupTitle} translate="no">
-        {title}
-      </Heading>
+    <section aria-label={title === null ? undefined : group.tag || UNTAGGED_TITLE} className={title === null ? styles.ownGroup : styles.group}>
+      {title === null ? null : nested ? (
+        <h5 className={styles.tagTitle} translate="no">
+          {title}
+        </h5>
+      ) : (
+        <h4 className={styles.groupTitle} translate="no">
+          {title}
+        </h4>
+      )}
       <Markdown text={description} />
       {group.operations.map((operation, index) => (
         <OperationView key={operation.requestId || `${operation.method} ${operation.path} ${index}`} operation={operation} />
@@ -247,14 +264,14 @@ export function ApiDocView({ document, kind }: ApiDocViewProps) {
       {sections.length === 0 ? <p className={styles.muted}>This {kind} has no requests yet. Add operations in the YAML to create them.</p> : null}
       {sections.map((section) =>
         section.group === '' ? (
-          section.tags.map((group) => <TagSection key={`tag:${group.tag}`} group={group} tags={document.tags} nested={false} />)
+          section.tags.map((group) => <TagSection key={`tag:${group.tag}`} group={group} tags={document.tags} />)
         ) : (
           <section key={`group:${section.group}`} aria-label={section.group} className={styles.tagGroup}>
             <h4 className={styles.groupTitle} translate="no">
               {section.group}
             </h4>
             {section.tags.map((group) => (
-              <TagSection key={group.tag} group={group} tags={document.tags} nested />
+              <TagSection key={group.tag} group={group} tags={document.tags} section={section.group} />
             ))}
           </section>
         ),

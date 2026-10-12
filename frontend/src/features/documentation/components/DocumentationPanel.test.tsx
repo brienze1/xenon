@@ -150,6 +150,34 @@ describe('DocumentationPanel', () => {
     expect(within(requests).queryByText('/invoices')).not.toBeInTheDocument()
   })
 
+  it('puts a top-level folder\'s own requests under its section heading once, and names sub-folders within it', async () => {
+    const [invoice, ping] = generatedDocument.operations
+    vi.mocked(tree.getDocumentation).mockResolvedValue({
+      ...generated,
+      document: {
+        ...generatedDocument,
+        tags: [
+          { name: 'Ads', description: 'Everything about **ads**.' },
+          { name: 'Ads / CRUD', description: '' },
+        ],
+        tagGroups: [{ name: 'Ads', tags: ['Ads', 'Ads / CRUD'] }],
+        operations: [
+          { ...invoice!, tag: 'Ads', path: '/ads' },
+          { ...ping!, requestId: 'r3', tag: 'Ads / CRUD', path: '/ads/1' },
+        ],
+      },
+    })
+    render(<DocumentationPanel itemId="c1" kind="collection" />)
+    const doc = await screen.findByRole('article', { name: 'Billing API documentation' })
+    expect(within(doc).getAllByRole('heading', { name: 'Ads' })).toHaveLength(1)
+    const ads = within(doc).getByRole('region', { name: 'Ads' })
+    expect(ads).toHaveTextContent('/ads')
+    expect(await within(ads).findByText('ads')).toBeInTheDocument()
+    const crud = within(ads).getByRole('region', { name: 'Ads / CRUD' })
+    expect(within(crud).getByRole('heading', { name: 'CRUD', level: 5 })).toBeInTheDocument()
+    expect(crud).toHaveTextContent('/ads/1')
+  })
+
   it('speaks of the folder in a folder\'s documentation and its save plan', async () => {
     vi.mocked(tree.getDocumentation).mockResolvedValue({ ...generated, document: { ...generatedDocument, operations: [], tags: [], tagGroups: [] } })
     vi.mocked(tree.planDocumentation).mockResolvedValue({ ...plan, created: [{ ...plan.created[0]!, folder: '' }], deleted: [] })
