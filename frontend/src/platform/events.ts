@@ -14,6 +14,7 @@ export const IMPORT_FILES_DROPPED = 'import:files-dropped'
 export const IMPORT_REQUESTED = 'import:requested'
 export const EXPORT_PROGRESS = 'export:progress'
 export const EXPORT_REQUESTED = 'export:requested'
+export const VIEW_ZOOM_REQUESTED = 'view:zoom-requested'
 export const CONSOLE_ENTRIES = 'console:entries'
 export const COOKIES_CHANGED = 'cookies:changed'
 export const GIT_HOST_KEY_UNKNOWN = 'git:host-key-unknown'
@@ -158,6 +159,15 @@ export function onExportProgress(callback: (progress: ExportProgress) => void): 
 export function onExportRequested(callback: () => void): Unsubscribe {
   return Events.On(EXPORT_REQUESTED, () => {
     callback()
+  })
+}
+
+export type ZoomDirection = 'in' | 'out' | 'reset'
+
+/** The native View → Zoom In / Zoom Out / Actual Size menu items (macOS). */
+export function onViewZoomRequested(callback: (direction: ZoomDirection) => void): Unsubscribe {
+  return Events.On(VIEW_ZOOM_REQUESTED, (event) => {
+    callback(event.data.direction as ZoomDirection)
   })
 }
 

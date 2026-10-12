@@ -26,7 +26,19 @@ func (r *router) registerMenuRoutes(app *wails.App) {
 	file.AddSeparator()
 	file.AddRole(wails.CloseWindow)
 	menu.AddRole(wails.EditMenu)
-	menu.AddRole(wails.ViewMenu)
+	// The UI zooms itself (the layout grows to fit the window); the built-in zoom roles magnify the page and add scrollbars.
+	view := menu.AddSubmenu("View")
+	view.Add("Actual Size").SetAccelerator("CmdOrCtrl+0").OnClick(func(*wails.Context) {
+		app.Event.Emit(dto.ViewZoomRequestedEvent, dto.NewViewZoomRequested("reset"))
+	})
+	view.Add("Zoom In").SetAccelerator("CmdOrCtrl+plus").OnClick(func(*wails.Context) {
+		app.Event.Emit(dto.ViewZoomRequestedEvent, dto.NewViewZoomRequested("in"))
+	})
+	view.Add("Zoom Out").SetAccelerator("CmdOrCtrl+-").OnClick(func(*wails.Context) {
+		app.Event.Emit(dto.ViewZoomRequestedEvent, dto.NewViewZoomRequested("out"))
+	})
+	view.AddSeparator()
+	view.AddRole(wails.ToggleFullscreen)
 	menu.AddRole(wails.WindowMenu)
 	menu.AddRole(wails.HelpMenu)
 	app.Menu.Set(menu)
