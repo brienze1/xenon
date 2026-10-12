@@ -27,6 +27,7 @@
 .table {
   width: 100%;
   min-width: 760px;
+  border: 1px solid var(--color-border);
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -40,10 +41,24 @@
   text-transform: uppercase;
 }
 
+.table th,
+.table td {
+  border: 1px solid var(--color-border);
+}
+
+/* Rows read as one band whatever their height; the grid lines separate the columns, as in Postman. */
 .table td {
   padding: 0;
-  border-top: 1px solid var(--color-border);
   vertical-align: top;
+}
+
+.table tbody tr:hover,
+.table tbody tr:focus-within {
+  background: var(--color-surface);
+}
+
+.table th {
+  background: var(--color-surface);
 }
 
 /* The values get the room: enabled and type live in the name cell, as in Postman. */

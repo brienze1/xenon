@@ -6,12 +6,13 @@
   padding: 6px var(--space-3);
   overflow: hidden;
   border: 0;
-  background: var(--color-surface);
+  background: transparent;
   color: var(--color-text);
   font-family: var(--font-mono);
   font-size: var(--font-size-sm);
   line-height: 18px;
-  overflow-wrap: anywhere;
+  /* Breaks at / and - first; a word is split only when it cannot fit on a line of its own. */
+  overflow-wrap: break-word;
   resize: none;
 }
 
