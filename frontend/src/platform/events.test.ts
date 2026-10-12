@@ -33,6 +33,28 @@ describe('platform events', () => {
     expect(callback).toHaveBeenCalledWith({ repository: 'ssh://git@h/r.git', host: 'h', fingerprint: 'SHA256:x', keyType: 'ssh-ed25519' })
   })
 
+  it('maps git:status-changed and git:progress payloads', () => {
+    const status = vi.fn()
+    expect(events.onGitStatusChanged(status)).toBe(unsubscribe)
+    handlers.get(events.GIT_STATUS_CHANGED)?.({
+      data: {
+        local_id: 'L1',
+        status: {
+          state: 'behind',
+          local_changes: 0,
+          ahead: 0,
+          behind: 2,
+          settings: { repository: 'r', branch: 'main', subfolder: '', account_id: 'a', clone_path: '/c', auto_pull: false, auto_push: false },
+        },
+      },
+    })
+    expect(status).toHaveBeenCalledWith({ localId: 'L1', status: expect.objectContaining({ state: 'behind', behind: 2, lastError: null }) })
+    const progress = vi.fn()
+    events.onGitProgress(progress)
+    handlers.get(events.GIT_PROGRESS)?.({ data: { local_id: 'L1', phase: 'fetch', done: 0, total: 3 } })
+    expect(progress).toHaveBeenCalledWith({ localId: 'L1', phase: 'fetch', done: 0, total: 3 })
+  })
+
   it('maps request:changed-on-disk payloads', () => {
     const callback = vi.fn()
     events.onRequestChangedOnDisk(callback)

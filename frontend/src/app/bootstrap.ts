@@ -8,12 +8,15 @@ import { useGitAccountsStore } from '@/features/settings/store'
 import type { ResponseEntry } from '@/features/response-viewer/model'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
+import { STATUS_REFRESH_MS, useSyncStore } from '@/features/sync/store'
 import { useTabsStore } from '@/features/tabs/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import {
   onConsoleEntries,
   onCookiesChanged,
   onGitHostKeyUnknown,
+  onGitProgress,
+  onGitStatusChanged,
   onExportProgress,
   onExportRequested,
   onImportFilesDropped,
@@ -27,10 +30,14 @@ import {
 } from '@/platform/events'
 
 type ResponseEntries = Record<string, ResponseEntry>
+type BuilderTabs = ReturnType<typeof useRequestBuilderStore.getState>['tabs']
 
 export function bootstrap(): () => void {
   const flush = () => void useTabsStore.getState().flushPersist()
+  const refreshSync = () => void useSyncStore.getState().refresh()
   window.addEventListener('beforeunload', flush)
+  window.addEventListener('focus', refreshSync)
+  const syncTimer = window.setInterval(refreshSync, STATUS_REFRESH_MS)
   const unsubscribers = [
     onWorkspaceFolderMissing(({ localId }) => useWorkspacesStore.getState().markMissing(localId)),
     onWorkspaceTreeChanged(({ localId }) => {
@@ -49,6 +56,8 @@ export function bootstrap(): () => void {
     onConsoleEntries((event) => useConsoleStore.getState().applyEvent(event)),
     onCookiesChanged((localId) => useCookiesStore.getState().jarChanged(localId)),
     onGitHostKeyUnknown((prompt) => useGitAccountsStore.getState().promptHostKey(prompt)),
+    onGitStatusChanged(({ localId, status }) => useSyncStore.getState().applyStatus(localId, status)),
+    onGitProgress((progress) => useSyncStore.getState().applyProgress(progress)),
     onImportRequested(() => openImport()),
     onExportProgress((progress) => useExportStore.getState().applyProgress(progress)),
     onExportRequested(() => void useExportStore.getState().openWorkspace()),
@@ -70,6 +79,9 @@ export function bootstrap(): () => void {
       if (state.tabs !== previous.tabs) {
         useTabsStore.getState().pinIfEdited()
         persistTabs()
+        if (savedATab(state.tabs, previous.tabs)) {
+          refreshSync()
+        }
       }
     }),
     useTabsStore.subscribe((state, previous) => {
@@ -100,6 +112,10 @@ export function bootstrap(): () => void {
       if (state.activeLocalId !== previous.activeLocalId && state.activeLocalId !== null) {
         void useEnvironmentsStore.getState().loadVault()
       }
+      if (state.activeLocalId !== previous.activeLocalId) {
+        useSyncStore.getState().reset(state.activeLocalId)
+        refreshSync()
+      }
     }),
     useResponseViewerStore.subscribe((state, previous) => {
       if (state.entries !== previous.entries && finishedSending(state.entries, previous.entries)) {
@@ -107,6 +123,8 @@ export function bootstrap(): () => void {
       }
     }),
     () => window.removeEventListener('beforeunload', flush),
+    () => window.removeEventListener('focus', refreshSync),
+    () => window.clearInterval(syncTimer),
   ]
   void useEnvironmentsStore.getState().loadVault()
   void openLastWorkspace()
@@ -124,6 +142,14 @@ function openImport(): boolean {
   }
   useImportStore.getState().open()
   return true
+}
+
+/** A save clears the dirty flag and moves the tab to the revision it wrote. */
+function savedATab(tabs: BuilderTabs, previous: BuilderTabs): boolean {
+  return Object.entries(tabs).some(([tabId, tab]) => {
+    const before = previous[tabId]
+    return before !== undefined && before.dirty && !tab.dirty && before.baseRevision !== tab.baseRevision
+  })
 }
 
 function finishedSending(entries: ResponseEntries, previous: ResponseEntries): boolean {

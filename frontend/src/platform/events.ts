@@ -1,5 +1,6 @@
 import { Events } from '@wailsio/runtime'
 import { toConsoleEntriesEvent, type ConsoleEntriesEvent } from './mappers/console'
+import { toSyncStatus, type SyncStatus } from './mappers/sync'
 import { toVaultStatus, type VaultStatus } from './mappers/vault'
 
 export const WORKSPACE_TREE_CHANGED = 'workspace:tree-changed'
@@ -16,6 +17,8 @@ export const EXPORT_REQUESTED = 'export:requested'
 export const CONSOLE_ENTRIES = 'console:entries'
 export const COOKIES_CHANGED = 'cookies:changed'
 export const GIT_HOST_KEY_UNKNOWN = 'git:host-key-unknown'
+export const GIT_STATUS_CHANGED = 'git:status-changed'
+export const GIT_PROGRESS = 'git:progress'
 
 export interface WorkspaceTreeChanged {
   localId: string
@@ -57,7 +60,31 @@ export interface HostKeyUnknown {
   keyType: string
 }
 
+export interface GitStatusChanged {
+  localId: string
+  status: SyncStatus
+}
+
+export interface GitProgress {
+  localId: string
+  phase: string
+  done: number
+  total: number
+}
+
 type Unsubscribe = () => void
+
+export function onGitStatusChanged(callback: (event: GitStatusChanged) => void): Unsubscribe {
+  return Events.On(GIT_STATUS_CHANGED, (event) => {
+    callback({ localId: event.data.local_id, status: toSyncStatus(event.data.status) })
+  })
+}
+
+export function onGitProgress(callback: (event: GitProgress) => void): Unsubscribe {
+  return Events.On(GIT_PROGRESS, (event) => {
+    callback({ localId: event.data.local_id, phase: event.data.phase, done: event.data.done, total: event.data.total })
+  })
+}
 
 export function onGitHostKeyUnknown(callback: (event: HostKeyUnknown) => void): Unsubscribe {
   return Events.On(GIT_HOST_KEY_UNKNOWN, (event) => {

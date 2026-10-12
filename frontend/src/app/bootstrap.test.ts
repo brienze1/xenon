@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defaultUIState } from '@/platform/mappers/ui-state'
-import type { ExportProgress, HostKeyUnknown, ImportProgress, RequestChangedOnDisk, VariablesChanged } from '@/platform/events'
+import type { ExportProgress, GitProgress, GitStatusChanged, HostKeyUnknown, ImportProgress, RequestChangedOnDisk, VariablesChanged } from '@/platform/events'
+import type { SyncStatus } from '@/platform/mappers/sync'
 import type { ConsoleEntriesEvent } from '@/platform/mappers/console'
 import type { VaultStatus } from '@/platform/mappers/vault'
 
@@ -19,6 +20,8 @@ const handlers: {
   exportProgress?: (progress: ExportProgress) => void
   exportRequested?: () => void
   hostKeyUnknown?: (prompt: HostKeyUnknown) => void
+  gitStatusChanged?: (event: GitStatusChanged) => void
+  gitProgress?: (event: GitProgress) => void
 } = {}
 
 vi.mock('@/platform/events', () => ({
@@ -32,6 +35,14 @@ vi.mock('@/platform/events', () => ({
   }),
   onGitHostKeyUnknown: vi.fn((callback) => {
     handlers.hostKeyUnknown = callback
+    return unsubscribe
+  }),
+  onGitStatusChanged: vi.fn((callback) => {
+    handlers.gitStatusChanged = callback
+    return unsubscribe
+  }),
+  onGitProgress: vi.fn((callback) => {
+    handlers.gitProgress = callback
     return unsubscribe
   }),
   onWorkspaceFolderMissing: vi.fn((callback) => {
@@ -110,6 +121,7 @@ vi.mock('@/platform/services/requests', () => ({
   applyUrl: vi.fn(),
 }))
 vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn(), searchTree: vi.fn() }))
+vi.mock('@/platform/services/sync', () => ({ getSyncStatus: vi.fn(), listChanges: vi.fn(async () => []) }))
 vi.mock('@/platform/services/history', () => ({ listHistory: vi.fn(), getHistoryEntry: vi.fn(), clearHistory: vi.fn() }))
 
 const services = await import('@/platform/services/workspaces')
@@ -120,6 +132,8 @@ const history = await import('@/platform/services/history')
 const vault = await import('@/platform/services/vault')
 const variables = await import('@/platform/services/variables')
 const environments = await import('@/platform/services/environments')
+const sync = await import('@/platform/services/sync')
+const { useSyncStore } = await import('@/features/sync/store')
 const { useEnvironmentsStore } = await import('@/features/environments/store')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
 const { useConsoleStore } = await import('@/features/console/store')
@@ -144,6 +158,17 @@ function resetWorkspaceStores() {
 
 const acme = { localId: 'A', name: 'Acme', path: '/w/acme', missing: false }
 const lockedVault: VaultStatus = { mode: 'passphrase', needsPassphraseSetup: false, lockedLocalIds: ['A'], brokenLocalIds: [] }
+
+const syncStatus: SyncStatus = {
+  state: 'up_to_date',
+  localChanges: 0,
+  ahead: 0,
+  behind: 0,
+  lastSyncAt: null,
+  lastError: null,
+  notice: '',
+  settings: { repository: 'r', branch: 'main', subfolder: '', accountId: 'a', clonePath: '/c', autoPull: false, autoPush: false },
+}
 
 async function started() {
   const cleanup = bootstrap()
@@ -182,6 +207,9 @@ describe('bootstrap', () => {
     vi.mocked(history.listHistory).mockResolvedValue([])
     vi.mocked(vault.getVaultStatus).mockResolvedValue(lockedVault)
     vi.mocked(environments.listEnvironments).mockResolvedValue({ environments: [], activeId: null })
+    vi.mocked(sync.getSyncStatus).mockResolvedValue(syncStatus)
+    vi.mocked(sync.listChanges).mockResolvedValue([])
+    useSyncStore.getState().reset(null)
     useWorkspacesStore.setState({ workspaces: [], activeLocalId: null, missingLocalId: null, status: 'idle', error: null })
   })
 
@@ -222,7 +250,7 @@ describe('bootstrap', () => {
     expect(useGitAccountsStore.getState().hostKeyPrompt).toEqual(prompt)
     useGitAccountsStore.setState({ hostKeyPrompt: null })
     cleanup()
-    expect(unsubscribe).toHaveBeenCalledTimes(13)
+    expect(unsubscribe).toHaveBeenCalledTimes(15)
   })
 
   it('opens the import dialog from the menu and from dropped files only when a workspace is active', async () => {
@@ -368,5 +396,37 @@ describe('bootstrap', () => {
     expect(variables.getVariableTable).toHaveBeenCalledWith('A', 'globals')
     useEnvironmentsStore.getState().reset()
     cleanup()
+  })
+
+  it('follows the sync status of the active workspace: activation, events, focus, saves and every 5 minutes', async () => {
+    vi.useFakeTimers()
+    const { STATUS_REFRESH_MS } = await import('@/features/sync/store')
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
+    const cleanup = bootstrap()
+    await vi.advanceTimersByTimeAsync(0)
+    useWorkspacesStore.setState({ activeLocalId: 'A' })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(useSyncStore.getState().localId).toBe('A')
+    expect(sync.getSyncStatus).toHaveBeenCalledTimes(1)
+    handlers.gitStatusChanged?.({ localId: 'A', status: { ...syncStatus, state: 'behind', behind: 2 } })
+    expect(useSyncStore.getState().status?.behind).toBe(2)
+    handlers.gitStatusChanged?.({ localId: 'other', status: syncStatus })
+    expect(useSyncStore.getState().status?.state).toBe('behind')
+    window.dispatchEvent(new Event('focus'))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(sync.getSyncStatus).toHaveBeenCalledTimes(2)
+    await vi.advanceTimersByTimeAsync(STATUS_REFRESH_MS)
+    expect(sync.getSyncStatus).toHaveBeenCalledTimes(3)
+    useRequestBuilderStore.setState({ tabs: { t1: { ...useRequestBuilderStore.getState().tabs.t1!, dirty: true, baseRevision: 'r1' } } })
+    useRequestBuilderStore.setState({ tabs: { t1: { ...useRequestBuilderStore.getState().tabs.t1!, dirty: false, baseRevision: 'r2' } } })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(sync.getSyncStatus).toHaveBeenCalledTimes(4)
+    useSyncStore.setState({ busy: 'pull' })
+    handlers.gitProgress?.({ localId: 'A', phase: 'fetch', done: 0, total: 3 })
+    expect(useSyncStore.getState().progress?.phase).toBe('fetch')
+    useSyncStore.setState({ busy: null })
+    cleanup()
+    await vi.advanceTimersByTimeAsync(STATUS_REFRESH_MS)
+    expect(sync.getSyncStatus).toHaveBeenCalledTimes(4)
   })
 })

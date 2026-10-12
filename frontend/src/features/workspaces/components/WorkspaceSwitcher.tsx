@@ -4,6 +4,7 @@ import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Dropdown } from '@/shared/ui/dropdown/Dropdown'
 import { useExportStore } from '@/features/export/store'
+import { useSyncStore } from '@/features/sync/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import { WorkspaceErrorText } from './WorkspaceErrorText'
 import { CreateWorkspaceDialog } from './CreateWorkspaceDialog'
@@ -37,6 +38,7 @@ export function WorkspaceSwitcher() {
     })),
   )
   const openExport = useExportStore((state) => state.openWorkspace)
+  const openSync = useSyncStore((state) => state.openPanel)
   const error = useWorkspacesStore((state) => state.error)
   const clearError = useWorkspacesStore((state) => state.clearError)
   const [dialog, setDialog] = useState<SwitcherDialog>(null)
@@ -76,6 +78,7 @@ export function WorkspaceSwitcher() {
           <Dropdown.Item onSelect={() => show('create')}>New Workspace…</Dropdown.Item>
           <Dropdown.Item onSelect={() => void onOpen()}>Open Workspace…</Dropdown.Item>
           {current && current.localId === activeLocalId ? <Dropdown.Item onSelect={() => void openExport()}>Export Workspace…</Dropdown.Item> : null}
+          {current && current.localId === activeLocalId ? <Dropdown.Item onSelect={openSync}>Sync Settings…</Dropdown.Item> : null}
           {current ? <Dropdown.Item onSelect={() => show('rename')}>Rename Workspace…</Dropdown.Item> : null}
           {current ? <Dropdown.Item onSelect={() => show('remove')}>Remove Workspace…</Dropdown.Item> : null}
         </Dropdown.Menu>

@@ -95,6 +95,16 @@ describe('WorkspaceSwitcher', () => {
     expect(screen.queryByRole('menuitem', { name: 'Export Workspace…' })).not.toBeInTheDocument()
   })
 
+  it('opens the Sync panel of the active workspace', async () => {
+    const { useSyncStore } = await import('@/features/sync/store')
+    const openPanel = vi.spyOn(useSyncStore.getState(), 'openPanel').mockImplementation(() => undefined)
+    render(<WorkspaceSwitcher />)
+    await openMenu()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Sync Settings…' }))
+    expect(openPanel).toHaveBeenCalled()
+    openPanel.mockRestore()
+  })
+
   it('says when there is no workspace', () => {
     useWorkspacesStore.setState({ workspaces: [], activeLocalId: null })
     render(<WorkspaceSwitcher />)

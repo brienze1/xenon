@@ -1,0 +1,45 @@
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 20px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.status:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+.status:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-text-muted);
+}
+
+.ok {
+  background: var(--neon-green);
+}
+
+.pending {
+  background: var(--neon-cyan);
+}
+
+.attention {
+  background: var(--neon-red);
+  box-shadow: var(--glow-red);
+}
+
+.idle {
+  background: var(--color-border);
+}

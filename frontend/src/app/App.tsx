@@ -21,6 +21,9 @@ import { SettingsDialog } from '@/features/settings/components/SettingsDialog'
 import { useSettingsStore } from '@/features/settings/store'
 import { SidebarPanel } from '@/features/sidebar/components/SidebarPanel'
 import { useSidebarStore } from '@/features/sidebar/store'
+import { FooterSyncStatus } from '@/features/sync/components/FooterSyncStatus'
+import { LinkRepoDialog } from '@/features/sync/components/LinkRepoDialog'
+import { SyncPanel } from '@/features/sync/components/SyncPanel'
 import type { ItemAuthSlot, ItemScriptsSlot } from '@/features/sidebar/components/SettingsForm'
 import { useTabsStore } from '@/features/tabs/store'
 import { MissingFolderNotice } from '@/features/workspaces/components/MissingFolderNotice'
@@ -70,6 +73,12 @@ const SETTINGS_BUTTON = <SettingsButton />
 const COOKIES_DIALOG = <CookiesDialog />
 
 const COOKIES_BUTTON = <CookiesButton />
+
+const FOOTER_SYNC_STATUS = <FooterSyncStatus />
+
+const SYNC_PANEL = <SyncPanel />
+
+const LINK_REPO_DIALOG = <LinkRepoDialog />
 
 const TOP_BAR_END_WITH_ENVIRONMENTS = (
   <>
@@ -229,6 +238,8 @@ export function App() {
       {active ? IMPORT_DIALOG : null}
       {active ? EXPORT_DIALOG : null}
       {active ? COOKIES_DIALOG : null}
+      {active ? SYNC_PANEL : null}
+      {active ? LINK_REPO_DIALOG : null}
       {active ? QUICK_SEARCH : null}
       <Footer>
         {active ? (
@@ -236,6 +247,7 @@ export function App() {
             <span className={styles.path} translate="no">
               {active.path}
             </span>
+            {FOOTER_SYNC_STATUS}
             {COOKIES_BUTTON}
           </>
         ) : null}
