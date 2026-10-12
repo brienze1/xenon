@@ -27,6 +27,10 @@ func NewSyncCommit(linked LinkedWorkspace, parent, message string, tree map[stri
 	}
 }
 
+func (s SyncCommit) IsEmpty() bool {
+	return len(s.Files) == 0 && len(s.Blobs) == 0
+}
+
 func (s SyncCommit) LogValue() any {
 	return map[string]any{"branch": s.Branch, "subfolder": s.Subfolder, "parent": s.Parent, "files": len(s.Files), "blobs": len(s.Blobs)}
 }

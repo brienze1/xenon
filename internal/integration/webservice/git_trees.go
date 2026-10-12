@@ -206,7 +206,7 @@ func writeCommit(store storer.EncodedObjectStorer, commit entity.SyncCommit) (st
 		}
 		parents = append(parents, parent.Hash)
 	}
-	root, err := replaceSubtree(store, parentTree, splitSubfolder(commit.Subfolder), subtree, len(commit.Files)+len(commit.Blobs) == 0)
+	root, err := replaceSubtree(store, parentTree, splitSubfolder(commit.Subfolder), subtree, commit.IsEmpty())
 	if err != nil {
 		return "", err
 	}

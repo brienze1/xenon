@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 
 	"go.yaml.in/yaml/v3"
 
@@ -122,7 +121,7 @@ func sortedKeys(set map[string]bool) []string {
 }
 
 func removeEmptyParents(root, dir string) {
-	for filepath.Dir(dir) != root && strings.HasPrefix(dir, root+string(filepath.Separator)) {
+	for dir != root && filepath.Dir(dir) != root {
 		if err := os.Remove(dir); err != nil {
 			return
 		}
