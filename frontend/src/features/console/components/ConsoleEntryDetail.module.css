@@ -45,6 +45,8 @@
   gap: var(--space-3);
   min-height: 0;
   overflow: auto;
+  /* Its own gutter is wide enough for focus rings, so it does not take the shared one's negative margin. */
+  margin-inline: 0;
   padding: var(--space-3) var(--space-4);
 }
 

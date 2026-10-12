@@ -38,6 +38,10 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
+  /* A side gutter inside the scroll box so focus rings at the edges are not clipped; the negative margin keeps the
+     content aligned with the tab strip. */
+  margin-inline: calc(-1 * var(--space-2));
+  padding-inline: var(--space-2);
 }
 
 .panel[hidden] {
