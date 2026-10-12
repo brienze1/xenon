@@ -16,15 +16,16 @@ type LayoutPatch = Partial<LayoutState>
 interface ShellProps {
   layout: LayoutState
   onLayoutChange: (patch: LayoutPatch) => void
+  sidePanelApplies?: boolean
 }
 
-function Shell({ layout, onLayoutChange }: ShellProps) {
+function Shell({ layout, onLayoutChange, sidePanelApplies = true }: ShellProps) {
   return (
     <AppShell layout={layout} onLayoutChange={onLayoutChange}>
       <TopBar>switcher</TopBar>
       <Sidebar>tree</Sidebar>
       <MainArea>tabs</MainArea>
-      <RightPanel>info</RightPanel>
+      <RightPanel applies={sidePanelApplies}>info</RightPanel>
       <ConsoleDrawer>logs</ConsoleDrawer>
       <Footer>status</Footer>
     </AppShell>
@@ -37,9 +38,9 @@ function renderShell(overrides: LayoutPatch = {}) {
   return onLayoutChange
 }
 
-function StatefulShell() {
+function StatefulShell({ sidePanelApplies = true }: { sidePanelApplies?: boolean }) {
   const [layout, setLayout] = useState(defaultLayout())
-  return <Shell layout={layout} onLayoutChange={(patch) => setLayout((current) => ({ ...current, ...patch }))} />
+  return <Shell layout={layout} sidePanelApplies={sidePanelApplies} onLayoutChange={(patch) => setLayout((current) => ({ ...current, ...patch }))} />
 }
 
 describe('AppShell', () => {
@@ -99,6 +100,20 @@ describe('AppShell', () => {
     expect(screen.queryByRole('complementary', { name: 'Side panel' })).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Side Panel' }))
     expect(screen.getByRole('complementary', { name: 'Side panel' })).toBeInTheDocument()
+  })
+
+  it('steps aside for tabs without a side panel and comes back for requests, unless it was hidden by hand', async () => {
+    const { rerender } = render(<StatefulShell sidePanelApplies={false} />)
+    expect(screen.queryByRole('complementary', { name: 'Side panel' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Show side panel' })).not.toBeInTheDocument()
+    rerender(<StatefulShell sidePanelApplies />)
+    const panel = screen.getByRole('complementary', { name: 'Side panel' })
+    await userEvent.click(within(panel).getByRole('button', { name: 'Hide side panel' }))
+    rerender(<StatefulShell sidePanelApplies={false} />)
+    expect(screen.queryByRole('button', { name: 'Show side panel' })).not.toBeInTheDocument()
+    rerender(<StatefulShell sidePanelApplies />)
+    expect(screen.queryByRole('complementary', { name: 'Side panel' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Show side panel' })).toBeInTheDocument()
   })
 
   it('reports the side-by-side switch as a layout change', async () => {

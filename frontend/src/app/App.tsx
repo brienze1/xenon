@@ -33,7 +33,6 @@ import { MissingFolderNotice } from '@/features/workspaces/components/MissingFol
 import { WelcomeScreen } from '@/features/workspaces/components/WelcomeScreen'
 import { WorkspaceSwitcher } from '@/features/workspaces/components/WorkspaceSwitcher'
 import { useWorkspacesStore } from '@/features/workspaces/store'
-import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
 import { activeEnvironmentTarget, activeTabKind, isActiveTabRequest } from './active-tab'
 import styles from './App.module.css'
 import { bootstrap } from './bootstrap'
@@ -118,12 +117,6 @@ const CONSOLE = (
   </ConsoleDrawer>
 )
 
-const NO_REQUEST_SELECTED = (
-  <EmptyState.Root label="No request selected" size="compact">
-    <EmptyState.Description>Open a request to see its details here.</EmptyState.Description>
-  </EmptyState.Root>
-)
-
 function openSettings() {
   void useSettingsStore.getState().openSettings()
 }
@@ -154,6 +147,8 @@ export function App() {
   const activeTabId = useTabsStore((state) => state.activeTabId)
   const selectedVariables = useTabsStore(useShallow(activeEnvironmentTarget))
   const activeKind = useTabsStore(activeTabKind)
+  // Only requests and examples have side panel content; other tabs (environments, collections, folders) hide it.
+  const sidePanelTabId = activeTabId !== null && (activeKind === 'request' || activeKind === 'example') ? activeTabId : null
   const tabs = useTabsStore.getState
   const send = useRequestBuilderStore((state) => state.send)
   const adoptRename = useRequestBuilderStore((state) => state.adoptRename)
@@ -228,17 +223,10 @@ export function App() {
           <MainArea>
             <TabsArea key={active.localId} />
           </MainArea>
-          <RightPanel>
-            {activeTabId && (activeKind === 'request' || activeKind === 'example') ? (
-              <SidePanel
-                key={active.localId}
-                tabId={activeTabId}
-                view={layout.rightPanelView}
-                onViewChange={(rightPanelView) => setLayout({ rightPanelView })}
-              />
-            ) : (
-              NO_REQUEST_SELECTED
-            )}
+          <RightPanel applies={sidePanelTabId !== null}>
+            {sidePanelTabId !== null ? (
+              <SidePanel key={active.localId} tabId={sidePanelTabId} view={layout.rightPanelView} onViewChange={(rightPanelView) => setLayout({ rightPanelView })} />
+            ) : null}
           </RightPanel>
         </>
       ) : (

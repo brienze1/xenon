@@ -24,14 +24,23 @@ const SHOW_ICON = (
 )
 
 interface RightPanelProps {
+  /** Whether the active tab has anything to show here (requests do; environments, folders and collections do not). */
+  applies?: boolean
   children?: ReactNode
 }
 
-export function RightPanel({ children }: RightPanelProps) {
+/**
+ * The right panel. It steps aside entirely for tabs it has nothing for and comes back for the next request; hiding it
+ * by hand is remembered in the layout and wins until it is shown again.
+ */
+export function RightPanel({ applies = true, children }: RightPanelProps) {
   const {
     state: { layout },
     actions: { update },
   } = useShellLayout()
+  if (!applies) {
+    return null
+  }
   if (!layout.rightPanelVisible) {
     // A thin rail keeps the toggle exactly where the hide button was, so the same spot reopens the panel.
     return (
