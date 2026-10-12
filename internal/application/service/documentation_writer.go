@@ -28,6 +28,9 @@ func (d documentationWriter) write(ctx context.Context, root string, plan entity
 	}
 	written.Updated = make([]entity.Request, 0, len(plan.Updated))
 	for _, request := range plan.Updated {
+		if err := d.rename(ctx, root, request.ID, request.Name); err != nil {
+			return nil, err
+		}
 		saved, err := d.saveRequestExamples.SaveExamples(ctx, root, request)
 		if err != nil {
 			return nil, err
@@ -47,7 +50,7 @@ func (d documentationWriter) write(ctx context.Context, root string, plan entity
 			return nil, err
 		}
 	}
-	return &written, d.renameCollection(ctx, root, plan)
+	return &written, d.rename(ctx, root, plan.Collection.ID, plan.Collection.Name)
 }
 
 func (d documentationWriter) describeCollection(ctx context.Context, root string, plan entity.DocumentationPlan) error {
@@ -66,20 +69,21 @@ func (d documentationWriter) describeCollection(ctx context.Context, root string
 	return err
 }
 
-func (d documentationWriter) renameCollection(ctx context.Context, root string, plan entity.DocumentationPlan) error {
+// rename renames the item like the sidebar does (file or folder, parent order) when its name changed.
+func (d documentationWriter) rename(ctx context.Context, root, id, name string) error {
 	tree, err := d.loadTree.Load(ctx, root)
 	if err != nil {
 		return err
 	}
-	node, found := tree.Item(plan.Collection.ID)
-	if !found {
-		return errs.NotFoundError("the collection does not exist", "DOC-06404")
+	item, err := usecase.ResolveItem(*tree, id)
+	if err != nil {
+		return err
 	}
-	if node.Name == plan.Collection.Name {
+	if item.Name == name {
 		return nil
 	}
-	fileName := usecase.DeriveFileName(plan.Collection.Name, node.Kind, tree.SiblingEntries(node.ID))
-	_, err = d.renameTreeItem.Rename(ctx, root, node.ID, plan.Collection.Name, fileName)
+	fileName := usecase.DeriveFileName(name, item.Kind, tree.SiblingEntries(id))
+	_, err = d.renameTreeItem.Rename(ctx, root, id, entity.NormalizeItemName(name), fileName)
 	return err
 }
 
