@@ -1,6 +1,5 @@
 import { useState, useTransition } from 'react'
 import type { GitAccount, SshMode } from '@/platform/mappers/git-accounts'
-import { copyPublicKey } from '@/platform/services/git-accounts'
 import { withNextStep } from '@/shared/lib/next-step'
 import { Button } from '@/shared/ui/button/Button'
 import { useGitAccountsStore } from '@/features/settings/store'
@@ -98,6 +97,7 @@ function PublicKeyPanel({ account, publicKey, onClose }: PublicKeyPanelProps) {
   const accounts = useGitAccountsStore((state) => state.accounts)
   const gitHubAccounts = accounts.filter((candidate) => candidate.kind === 'github' || candidate.provider === 'github')
   const uploadKey = useGitAccountsStore((state) => state.uploadKey)
+  const copyKey = useGitAccountsStore((state) => state.copyKey)
   const [target, setTarget] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const chosen = target || gitHubAccounts[0]?.id || ''
@@ -112,7 +112,7 @@ function PublicKeyPanel({ account, publicKey, onClose }: PublicKeyPanelProps) {
       <p className={styles.hint}>Add this public key to your Git host:</p>
       <p className={styles.publicKey}>{publicKey}</p>
       <div className={styles.actions}>
-        <Button size="sm" onClick={() => void copyPublicKey(publicKey)}>
+        <Button size="sm" onClick={() => void copyKey(publicKey)}>
           Copy public key
         </Button>
         {gitHubAccounts.length > 0 ? (

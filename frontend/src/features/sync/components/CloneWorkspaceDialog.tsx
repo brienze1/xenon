@@ -1,8 +1,8 @@
 import { useEffect, useState, useTransition } from 'react'
 import type { AppError } from '@/platform/errors'
-import { pickFolder } from '@/platform/services/dialogs'
 import { useGitAccountsStore } from '@/features/settings/store'
 import { useSyncStore } from '@/features/sync/store'
+import { useWorkspacesStore } from '@/features/workspaces/store'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
@@ -14,6 +14,7 @@ export function CloneWorkspaceDialog() {
   const open = useSyncStore((state) => state.cloneOpen)
   const close = useSyncStore((state) => state.closeClone)
   const cloneWorkspace = useSyncStore((state) => state.cloneWorkspace)
+  const chooseFolder = useWorkspacesStore((state) => state.chooseFolder)
   const accounts = useGitAccountsStore((state) => state.accounts)
   const loadAccounts = useGitAccountsStore((state) => state.load)
   const [repository, setRepository] = useState('')
@@ -32,7 +33,7 @@ export function CloneWorkspaceDialog() {
   }, [open, loadAccounts])
 
   async function chooseLocation() {
-    const folder = await pickFolder('Choose where Xenon keeps the clone')
+    const folder = await chooseFolder('Choose where Xenon keeps the clone')
     if (folder) {
       setClonePath(folder)
     }

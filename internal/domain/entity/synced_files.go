@@ -43,8 +43,36 @@ func (s SyncedFiles) ChangesFrom(head map[string]string) []PathChange {
 	return changes
 }
 
+func (s SyncedFiles) Holds(path, hash string) bool {
+	return s[path] == hash
+}
+
 func (s SyncedFiles) Differs(head map[string]string, path string) bool {
 	return s[path] != head[path]
+}
+
+func (s SyncedFiles) LocateChanges(changes []PathChange, head map[string]string) ([]string, map[string]string) {
+	present, deleted := make([]string, 0, len(changes)), map[string]string{}
+	for _, change := range changes {
+		if change.IsDeletion() {
+			deleted[change.Path] = head[change.Path]
+			continue
+		}
+		present = append(present, change.Path)
+	}
+	return present, deleted
+}
+
+func (s SyncedFiles) LocatePlans(plans []PathPlan) ([]string, map[string]string) {
+	present, blobs := make([]string, 0, len(plans)), map[string]string{}
+	for _, plan := range plans {
+		if _, found := s[plan.Path]; found {
+			present = append(present, plan.Path)
+			continue
+		}
+		blobs[plan.Path] = plan.AnyVersion()
+	}
+	return present, blobs
 }
 
 func isLocalOnlyPath(path string) bool {

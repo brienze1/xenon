@@ -5,7 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/changetype"
+	"github.com/brienze1/xenon/internal/domain/enums/divergence"
 	"github.com/brienze1/xenon/internal/domain/enums/gitaccountkind"
 	"github.com/brienze1/xenon/internal/domain/enums/gitprovider"
 	"github.com/brienze1/xenon/internal/domain/enums/hostkeystatus"
@@ -299,5 +301,111 @@ func TestDocumentNodeListShapes(t *testing.T) {
 	}
 	if (StructuralMerge{}).HasConflicts() || !(StructuralMerge{ItemConflict: true}).HasConflicts() || !(StructuralMerge{FieldConflicts: []FieldConflict{{}}}).HasConflicts() {
 		t.Fatal("HasConflicts")
+	}
+}
+
+func TestBranchHeadsClassifyTheirDivergence(t *testing.T) {
+	cases := map[string]struct {
+		heads       BranchHeads
+		want        enums.Divergence
+		nothing     bool
+		fastForward bool
+		diverged    bool
+	}{
+		"same commit":            {BranchHeads{Local: "a", Remote: "a", Base: "a"}, divergence.UpToDate, true, false, false},
+		"both empty":             {BranchHeads{}, divergence.UpToDate, true, false, false},
+		"remote branch missing":  {BranchHeads{Local: "a"}, divergence.Ahead, true, false, false},
+		"remote is the base":     {BranchHeads{Local: "b", Remote: "a", Base: "a"}, divergence.Ahead, true, false, false},
+		"nothing local":          {BranchHeads{Remote: "a"}, divergence.FastForward, false, true, false},
+		"local is the base":      {BranchHeads{Local: "a", Remote: "b", Base: "a"}, divergence.FastForward, false, true, false},
+		"both moved":             {BranchHeads{Local: "b", Remote: "c", Base: "a"}, divergence.Diverged, false, false, true},
+		"unrelated without base": {BranchHeads{Local: "b", Remote: "c"}, divergence.Diverged, false, false, true},
+	}
+	for name, c := range cases {
+		if got := c.heads.Divergence(); got != c.want {
+			t.Errorf("%s: Divergence = %s, want %s", name, got, c.want)
+		}
+		if c.heads.HasNothingToPull() != c.nothing || c.heads.IsFastForward() != c.fastForward || c.heads.IsDiverged() != c.diverged {
+			t.Errorf("%s: predicates of %+v", name, c.heads)
+		}
+	}
+}
+
+func TestSyncedFilesLocateWhereEachPathIsRead(t *testing.T) {
+	worktree := SyncedFiles{"a.yaml": "1", "b.yaml": "2"}
+	present, deleted := worktree.LocateChanges([]PathChange{{Path: "a.yaml", Change: changetype.Modified}, {Path: "c.yaml", Change: changetype.Deleted}}, map[string]string{"c.yaml": "9"})
+	if !reflect.DeepEqual(present, []string{"a.yaml"}) || !reflect.DeepEqual(deleted, map[string]string{"c.yaml": "9"}) {
+		t.Fatalf("changes located as %v %v", present, deleted)
+	}
+	present, blobs := worktree.LocatePlans([]PathPlan{{Path: "b.yaml", Mine: "2"}, {Path: "d.yaml", Base: "4", Theirs: "5"}})
+	if !reflect.DeepEqual(present, []string{"b.yaml"}) || !reflect.DeepEqual(blobs, map[string]string{"d.yaml": "5"}) {
+		t.Fatalf("plans located as %v %v", present, blobs)
+	}
+}
+
+func TestSyncSessionNeedsAReplayCommitOnlyWhenTheResolvedTreeLeavesTheRemote(t *testing.T) {
+	remote := map[string]string{"a.yaml": "1"}
+	replay := SyncSession{Replay: true}
+	if !replay.ReplaysLocalCommits() || replay.NeedsReplayCommit(remote, map[string]string{"a.yaml": "1"}) || !replay.NeedsReplayCommit(map[string]string{"a.yaml": "2"}, remote) {
+		t.Fatalf("replaying session predicates")
+	}
+	if (SyncSession{}).ReplaysLocalCommits() || (SyncSession{}).NeedsReplayCommit(map[string]string{"a.yaml": "2"}, remote) {
+		t.Fatalf("fast-forward session predicates")
+	}
+	worktree := SyncedFiles{"a.yaml": "1"}
+	if !worktree.Holds("a.yaml", "1") || worktree.Holds("a.yaml", "2") || worktree.Holds("b.yaml", "1") {
+		t.Fatalf("worktree holds")
+	}
+}
+
+func TestItemIndexUsesTheIndexAndCombinesMoves(t *testing.T) {
+	index := ItemIndex{
+		"collections/billing/orders.yaml":         {ID: "r1", Name: "Orders", Kind: itemkind.Request},
+		"collections/billing/archive/orders.yaml": {ID: "r1", Name: "Orders", Kind: itemkind.Request},
+		"collections/billing/collection.yaml":     {ID: "c1", Name: "Billing", Kind: itemkind.Collection},
+		"collections/billing/ping.yaml":           {ID: "r2", Name: "Ping", Kind: itemkind.Request},
+	}
+	changes := []PathChange{
+		{Path: "collections/billing/archive/orders.yaml", Change: changetype.Added},
+		{Path: "collections/billing/collection.yaml", Change: changetype.Modified},
+		{Path: "collections/billing/orders.yaml", Change: changetype.Deleted},
+		{Path: "collections/billing/ping.yaml", Change: changetype.Added},
+		{Path: "collections/billing/ping.yaml", Change: changetype.Modified},
+		{Path: "environments/hml.yaml", Change: changetype.Deleted},
+		{Path: "workspace.yaml", Change: changetype.Modified},
+		{Path: "collections/sales/collection.yaml", Change: changetype.Added},
+		{Path: "collections/sales/leads/folder.yaml", Change: changetype.Added},
+		{Path: "collections/sales/leads/new-lead.yaml", Change: changetype.Added},
+	}
+	got := index.ChangeItems(changes)
+	want := []ChangeItem{
+		{ItemID: "r1", ItemName: "Orders", ItemKind: itemkind.Request, Change: changetype.Renamed, Paths: []string{"collections/billing/archive/orders.yaml", "collections/billing/orders.yaml"}},
+		{ItemID: "c1", ItemName: "Billing", ItemKind: itemkind.Collection, Change: changetype.Modified, Paths: []string{"collections/billing/collection.yaml"}},
+		{ItemID: "r2", ItemName: "Ping", ItemKind: itemkind.Request, Change: changetype.Modified, Paths: []string{"collections/billing/ping.yaml", "collections/billing/ping.yaml"}},
+		{ItemID: "environments/hml.yaml", ItemName: "hml", ItemKind: itemkind.Environment, Change: changetype.Deleted, Paths: []string{"environments/hml.yaml"}},
+		{ItemID: "workspace.yaml", ItemName: "workspace", ItemKind: itemkind.Workspace, Change: changetype.Modified, Paths: []string{"workspace.yaml"}},
+		{ItemID: "collections/sales/collection.yaml", ItemName: "sales", ItemKind: itemkind.Collection, Change: changetype.Added, Paths: []string{"collections/sales/collection.yaml"}},
+		{ItemID: "collections/sales/leads/folder.yaml", ItemName: "leads", ItemKind: itemkind.Folder, Change: changetype.Added, Paths: []string{"collections/sales/leads/folder.yaml"}},
+		{ItemID: "collections/sales/leads/new-lead.yaml", ItemName: "new-lead", ItemKind: itemkind.Request, Change: changetype.Added, Paths: []string{"collections/sales/leads/new-lead.yaml"}},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("ChangeItems =\n%+v\nwant\n%+v", got, want)
+	}
+}
+
+func TestItemIndexJoinsWorkspaceLevelFilesToTheWorkspace(t *testing.T) {
+	workspace := ItemRef{ID: "w1", Name: "Acme", Kind: itemkind.Workspace}
+	joined := ItemIndex{"workspace.yaml": workspace}.ChangeItems([]PathChange{
+		{Path: ".gitignore", Change: changetype.Added},
+		{Path: "workspace.yaml", Change: changetype.Added},
+	})
+	want := []ChangeItem{{ItemID: "w1", ItemName: "Acme", ItemKind: itemkind.Workspace, Change: changetype.Added, Paths: []string{".gitignore", "workspace.yaml"}}}
+	if !reflect.DeepEqual(joined, want) {
+		t.Fatalf("joined = %+v, want %+v", joined, want)
+	}
+	alone := ItemIndex{}.ChangeItems([]PathChange{{Path: ".gitignore", Change: changetype.Modified}})
+	want = []ChangeItem{{ItemID: ".gitignore", ItemName: ".gitignore", ItemKind: itemkind.Workspace, Change: changetype.Modified, Paths: []string{".gitignore"}}}
+	if !reflect.DeepEqual(alone, want) {
+		t.Fatalf("alone = %+v, want %+v", alone, want)
 	}
 }

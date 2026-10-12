@@ -5,9 +5,3 @@ type ConflictVersion struct {
 	Environment *Environment
 	Text        string
 }
-
-type ConflictVersions struct {
-	Base   *ConflictVersion
-	Mine   *ConflictVersion
-	Theirs *ConflictVersion
-}

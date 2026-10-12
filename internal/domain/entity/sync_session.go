@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"maps"
 	"time"
 
 	"github.com/brienze1/xenon/internal/domain/enums"
@@ -74,6 +75,14 @@ func (s SyncSession) IsResolved() bool {
 
 func (s SyncSession) StartedFrom(localHead string) bool {
 	return s.LocalHead == localHead
+}
+
+func (s SyncSession) ReplaysLocalCommits() bool {
+	return s.Replay
+}
+
+func (s SyncSession) NeedsReplayCommit(resolved, remote map[string]string) bool {
+	return s.Replay && !maps.Equal(resolved, remote)
 }
 
 func (s SyncSession) CommittedConflicts() []ConflictItem {

@@ -1,10 +1,10 @@
 import { useEffect, useState, useTransition } from 'react'
 import type { AppError } from '@/platform/errors'
 import type { LinkMode } from '@/platform/mappers/sync'
-import { pickFolder } from '@/platform/services/dialogs'
 import { SUBFOLDER_HAS_WORKSPACE } from '@/platform/services/sync'
 import { useGitAccountsStore } from '@/features/settings/store'
 import { useSyncStore } from '@/features/sync/store'
+import { useWorkspacesStore } from '@/features/workspaces/store'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
@@ -18,6 +18,7 @@ export function LinkRepoDialog() {
   const open = useSyncStore((state) => state.linkOpen)
   const close = useSyncStore((state) => state.closeLink)
   const link = useSyncStore((state) => state.link)
+  const chooseFolder = useWorkspacesStore((state) => state.chooseFolder)
   const accounts = useGitAccountsStore((state) => state.accounts)
   const loadAccounts = useGitAccountsStore((state) => state.load)
   const [repository, setRepository] = useState('')
@@ -37,7 +38,7 @@ export function LinkRepoDialog() {
   }, [open, loadAccounts])
 
   async function chooseLocation() {
-    const folder = await pickFolder('Choose where Xenon keeps its clone')
+    const folder = await chooseFolder('Choose where Xenon keeps its clone')
     if (folder) {
       setClonePath(folder)
     }

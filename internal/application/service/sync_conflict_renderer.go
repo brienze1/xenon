@@ -50,7 +50,7 @@ func (s syncConflictRenderer) version(ctx context.Context, linked entity.LinkedW
 }
 
 func (s syncConflictRenderer) content(ctx context.Context, linked entity.LinkedWorkspace, path, hash string, worktree entity.SyncedFiles) ([]byte, error) {
-	if worktree[path] != hash {
+	if !worktree.Holds(path, hash) {
 		return s.readTreeVersions.ReadBlob(ctx, linked.ClonePath(), hash)
 	}
 	files, err := s.readTreeVersions.ReadWorktreeFiles(ctx, linked.ClonePath(), linked.Subfolder(), []string{path})

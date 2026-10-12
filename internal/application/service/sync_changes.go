@@ -39,19 +39,12 @@ func (s syncChanges) snapshot(ctx context.Context, linked entity.LinkedWorkspace
 	}
 	worktree := entity.NewSyncedFiles(files)
 	pathChanges := worktree.ChangesFrom(head)
-	present, deleted := make([]string, 0, len(pathChanges)), map[string]string{}
-	for _, change := range pathChanges {
-		if change.IsDeletion() {
-			deleted[change.Path] = head[change.Path]
-			continue
-		}
-		present = append(present, change.Path)
-	}
+	present, deleted := worktree.LocateChanges(pathChanges, head)
 	refs, err := s.identify(ctx, linked, present, deleted)
 	if err != nil {
 		return nil, err
 	}
-	changes := entity.NewChangeSet(usecase.MapPathsToItems(pathChanges, refs))
+	changes := entity.NewChangeSet(refs.ChangeItems(pathChanges))
 	return &syncSnapshot{heads: *heads, head: head, worktree: worktree, changes: changes}, nil
 }
 
@@ -63,7 +56,7 @@ func (s syncChanges) tree(ctx context.Context, linked entity.LinkedWorkspace, co
 	return versions.Mine, nil
 }
 
-func (s syncChanges) identify(ctx context.Context, linked entity.LinkedWorkspace, present []string, blobs map[string]string) (map[string]entity.ItemRef, error) {
+func (s syncChanges) identify(ctx context.Context, linked entity.LinkedWorkspace, present []string, blobs map[string]string) (entity.ItemIndex, error) {
 	contents, err := s.readTreeVersions.ReadWorktreeFiles(ctx, linked.ClonePath(), linked.Subfolder(), present)
 	if err != nil {
 		return nil, err

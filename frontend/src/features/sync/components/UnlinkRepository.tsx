@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { pickFolder } from '@/platform/services/dialogs'
 import { useSyncStore } from '@/features/sync/store'
+import { useWorkspacesStore } from '@/features/workspaces/store'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 
@@ -11,10 +11,11 @@ interface UnlinkRepositoryProps {
 
 export function UnlinkRepository({ clonePath, disabled }: UnlinkRepositoryProps) {
   const unlink = useSyncStore((state) => state.unlink)
+  const chooseFolder = useWorkspacesStore((state) => state.chooseFolder)
   const [target, setTarget] = useState<string | null>(null)
 
   async function chooseTarget() {
-    const folder = await pickFolder('Choose an empty folder for the workspace files')
+    const folder = await chooseFolder('Choose an empty folder for the workspace files')
     if (folder) {
       setTarget(folder)
     }

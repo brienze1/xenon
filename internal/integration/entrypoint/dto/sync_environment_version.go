@@ -11,19 +11,10 @@ type SyncEnvironmentVersion struct {
 	ConfirmBeforeSend bool                  `json:"confirm_before_send"`
 }
 
-type SyncVariableVersion struct {
-	Key         string `json:"key"`
-	Value       string `json:"value"`
-	Description string `json:"description"`
-	Secret      bool   `json:"secret"`
-	Enabled     bool   `json:"enabled"`
-}
-
 func NewSyncEnvironmentVersion(environment entity.Environment) SyncEnvironmentVersion {
 	variables := make([]SyncVariableVersion, 0, len(environment.Variables))
 	for _, row := range environment.Variables {
-		stored := row.WithoutSecretValue()
-		variables = append(variables, SyncVariableVersion{Key: stored.Key, Value: stored.InitialValue, Description: stored.Description, Secret: stored.Secret, Enabled: stored.Enabled})
+		variables = append(variables, NewSyncVariableVersion(row))
 	}
 	return SyncEnvironmentVersion{
 		Id:                environment.ID,

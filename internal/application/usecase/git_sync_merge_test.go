@@ -7,9 +7,7 @@ import (
 
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums"
-	"github.com/brienze1/xenon/internal/domain/enums/changetype"
 	"github.com/brienze1/xenon/internal/domain/enums/conflictresolution"
-	"github.com/brienze1/xenon/internal/domain/enums/divergence"
 	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
 	"github.com/brienze1/xenon/internal/domain/enums/pathaction"
 )
@@ -46,27 +44,6 @@ func docRows(entries ...*entity.DocumentNode) *entity.DocumentNode {
 
 func docRow(key, value string) *entity.DocumentNode {
 	return doc("key", key, "value", value)
-}
-
-func TestClassifyDivergence(t *testing.T) {
-	cases := map[string]struct {
-		heads entity.BranchHeads
-		want  enums.Divergence
-	}{
-		"same commit":            {entity.BranchHeads{Local: "a", Remote: "a", Base: "a"}, divergence.UpToDate},
-		"both empty":             {entity.BranchHeads{}, divergence.UpToDate},
-		"remote branch missing":  {entity.BranchHeads{Local: "a"}, divergence.Ahead},
-		"remote is the base":     {entity.BranchHeads{Local: "b", Remote: "a", Base: "a"}, divergence.Ahead},
-		"nothing local":          {entity.BranchHeads{Remote: "a"}, divergence.FastForward},
-		"local is the base":      {entity.BranchHeads{Local: "a", Remote: "b", Base: "a"}, divergence.FastForward},
-		"both moved":             {entity.BranchHeads{Local: "b", Remote: "c", Base: "a"}, divergence.Diverged},
-		"unrelated without base": {entity.BranchHeads{Local: "b", Remote: "c"}, divergence.Diverged},
-	}
-	for name, c := range cases {
-		if got := ClassifyDivergence(c.heads); got != c.want {
-			t.Errorf("%s: ClassifyDivergence = %s, want %s", name, got, c.want)
-		}
-	}
 }
 
 func TestPlanThreeWayClassifiesEveryPathInOrder(t *testing.T) {
@@ -114,41 +91,6 @@ func TestSquashReplayMessage(t *testing.T) {
 		if got := SquashReplayMessage(c.messages); got != c.want {
 			t.Errorf("%s: SquashReplayMessage = %q, want %q", name, got, c.want)
 		}
-	}
-}
-
-func TestMapPathsToItemsUsesTheIndexAndCombinesMoves(t *testing.T) {
-	index := map[string]entity.ItemRef{
-		"collections/billing/orders.yaml":         {ID: "r1", Name: "Orders", Kind: itemkind.Request},
-		"collections/billing/archive/orders.yaml": {ID: "r1", Name: "Orders", Kind: itemkind.Request},
-		"collections/billing/collection.yaml":     {ID: "c1", Name: "Billing", Kind: itemkind.Collection},
-		"collections/billing/ping.yaml":           {ID: "r2", Name: "Ping", Kind: itemkind.Request},
-	}
-	changes := []entity.PathChange{
-		{Path: "collections/billing/archive/orders.yaml", Change: changetype.Added},
-		{Path: "collections/billing/collection.yaml", Change: changetype.Modified},
-		{Path: "collections/billing/orders.yaml", Change: changetype.Deleted},
-		{Path: "collections/billing/ping.yaml", Change: changetype.Added},
-		{Path: "collections/billing/ping.yaml", Change: changetype.Modified},
-		{Path: "environments/hml.yaml", Change: changetype.Deleted},
-		{Path: "workspace.yaml", Change: changetype.Modified},
-		{Path: "collections/sales/collection.yaml", Change: changetype.Added},
-		{Path: "collections/sales/leads/folder.yaml", Change: changetype.Added},
-		{Path: "collections/sales/leads/new-lead.yaml", Change: changetype.Added},
-	}
-	got := MapPathsToItems(changes, index)
-	want := []entity.ChangeItem{
-		{ItemID: "r1", ItemName: "Orders", ItemKind: itemkind.Request, Change: changetype.Renamed, Paths: []string{"collections/billing/archive/orders.yaml", "collections/billing/orders.yaml"}},
-		{ItemID: "c1", ItemName: "Billing", ItemKind: itemkind.Collection, Change: changetype.Modified, Paths: []string{"collections/billing/collection.yaml"}},
-		{ItemID: "r2", ItemName: "Ping", ItemKind: itemkind.Request, Change: changetype.Modified, Paths: []string{"collections/billing/ping.yaml", "collections/billing/ping.yaml"}},
-		{ItemID: "environments/hml.yaml", ItemName: "hml", ItemKind: itemkind.Environment, Change: changetype.Deleted, Paths: []string{"environments/hml.yaml"}},
-		{ItemID: "workspace.yaml", ItemName: "workspace", ItemKind: itemkind.Workspace, Change: changetype.Modified, Paths: []string{"workspace.yaml"}},
-		{ItemID: "collections/sales/collection.yaml", ItemName: "sales", ItemKind: itemkind.Collection, Change: changetype.Added, Paths: []string{"collections/sales/collection.yaml"}},
-		{ItemID: "collections/sales/leads/folder.yaml", ItemName: "leads", ItemKind: itemkind.Folder, Change: changetype.Added, Paths: []string{"collections/sales/leads/folder.yaml"}},
-		{ItemID: "collections/sales/leads/new-lead.yaml", ItemName: "new-lead", ItemKind: itemkind.Request, Change: changetype.Added, Paths: []string{"collections/sales/leads/new-lead.yaml"}},
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("MapPathsToItems =\n%+v\nwant\n%+v", got, want)
 	}
 }
 
@@ -265,22 +207,5 @@ func TestOrderMergeDeduplicates(t *testing.T) {
 	values, _ := merged.ScalarItems()
 	if !ok || strings.Join(values, ",") != "y,a,z,x" {
 		t.Fatalf("mergeOrder = %v, %v", values, ok)
-	}
-}
-
-func TestMapPathsToItemsJoinsWorkspaceLevelFilesToTheWorkspace(t *testing.T) {
-	workspace := entity.ItemRef{ID: "w1", Name: "Acme", Kind: itemkind.Workspace}
-	joined := MapPathsToItems([]entity.PathChange{
-		{Path: ".gitignore", Change: changetype.Added},
-		{Path: "workspace.yaml", Change: changetype.Added},
-	}, map[string]entity.ItemRef{"workspace.yaml": workspace})
-	want := []entity.ChangeItem{{ItemID: "w1", ItemName: "Acme", ItemKind: itemkind.Workspace, Change: changetype.Added, Paths: []string{".gitignore", "workspace.yaml"}}}
-	if !reflect.DeepEqual(joined, want) {
-		t.Fatalf("joined = %+v, want %+v", joined, want)
-	}
-	alone := MapPathsToItems([]entity.PathChange{{Path: ".gitignore", Change: changetype.Modified}}, map[string]entity.ItemRef{})
-	want = []entity.ChangeItem{{ItemID: ".gitignore", ItemName: ".gitignore", ItemKind: itemkind.Workspace, Change: changetype.Modified, Paths: []string{".gitignore"}}}
-	if !reflect.DeepEqual(alone, want) {
-		t.Fatalf("alone = %+v, want %+v", alone, want)
 	}
 }

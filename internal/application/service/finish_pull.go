@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"maps"
 
 	"github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/application/usecase"
@@ -119,7 +118,7 @@ func (f *finishPull) Finish(ctx context.Context, sessionId string) (*entity.Sync
 }
 
 func (f *finishPull) advance(ctx context.Context, author entity.LinkedWorkspace, session entity.SyncSession, resolved resolvedPull) error {
-	if !session.Replay || maps.Equal(resolved.tree, resolved.remote) {
+	if !session.NeedsReplayCommit(resolved.tree, resolved.remote) {
 		return f.moveBranch.MoveBranch(ctx, author.ClonePath(), author.Branch(), session.RemoteHead)
 	}
 	messages, err := f.listCommitMessages.ListMessages(ctx, author.ClonePath(), session.Base, session.LocalHead)

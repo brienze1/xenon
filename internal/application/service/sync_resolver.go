@@ -29,7 +29,7 @@ func (s syncResolver) resolve(ctx context.Context, linked entity.LinkedWorkspace
 		return nil, err
 	}
 	merged := remote
-	if session.Replay {
+	if session.ReplaysLocalCommits() {
 		target, err := s.merger.merge(ctx, linked, session.Heads(), session.FieldResolutions())
 		if err != nil {
 			return nil, err
@@ -50,7 +50,7 @@ func (s syncResolver) resolve(ctx context.Context, linked entity.LinkedWorkspace
 		if !conflict.KeepsBoth() {
 			continue
 		}
-		copyPath := usecase.TheirCopyPath(conflict, tree, snapshot.worktree)
+		copyPath := theirCopyPath(conflict, tree, snapshot.worktree)
 		hash, err := s.theirCopy(ctx, linked, conflict)
 		if err != nil {
 			return nil, err
@@ -61,13 +61,13 @@ func (s syncResolver) resolve(ctx context.Context, linked entity.LinkedWorkspace
 }
 
 func (s syncResolver) addCommittedCopy(ctx context.Context, linked entity.LinkedWorkspace, conflict entity.ConflictItem, tree map[string]string) error {
-	copyPath := usecase.TheirCopyPath(conflict, tree)
+	copyPath := theirCopyPath(conflict, tree)
 	hash, err := s.theirCopy(ctx, linked, conflict)
 	if err != nil {
 		return err
 	}
 	tree[copyPath] = hash
-	for _, parent := range usecase.OrderParents(conflict.Path) {
+	for _, parent := range conflict.OrderParents() {
 		if _, found := tree[parent]; !found {
 			continue
 		}
@@ -114,4 +114,8 @@ func (s syncResolver) store(ctx context.Context, linked entity.LinkedWorkspace, 
 		return "", err
 	}
 	return s.storeBlobs.StoreBlob(ctx, linked.ClonePath(), content)
+}
+
+func theirCopyPath(conflict entity.ConflictItem, files ...map[string]string) string {
+	return conflict.SiblingPath(usecase.DeriveFileName(conflict.CopyName(), conflict.ItemKind, conflict.SiblingNames(files...)))
 }

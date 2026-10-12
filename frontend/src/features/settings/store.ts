@@ -8,6 +8,7 @@ import {
   addSshAccount,
   addTokenAccount,
   confirmHostKey,
+  copyPublicKey,
   GITHUB_SIGN_IN_NOT_CONFIGURED,
   listGitAccounts,
   pollGitHubSignIn,
@@ -73,6 +74,7 @@ interface GitAccountsState {
   update: (id: string, displayName: string, commitName: string, commitEmail: string) => Promise<AppError | null>
   remove: (id: string) => Promise<AppError | null>
   uploadKey: (sshAccountId: string, gitHubAccountId: string, title: string) => Promise<AppError | null>
+  copyKey: (publicKey: string) => Promise<AppError | null>
   startSignIn: () => Promise<void>
   pollSignIn: () => Promise<void>
   resetSignIn: () => void
@@ -132,6 +134,7 @@ export const useGitAccountsStore = create<GitAccountsState>((set, get) => ({
     return failure
   },
   uploadKey: (sshAccountId, gitHubAccountId, title) => attempt(() => uploadPublicKey(sshAccountId, gitHubAccountId, title)),
+  copyKey: (publicKey) => attempt(() => copyPublicKey(publicKey)),
   startSignIn: async () => {
     set({ signIn: { ...IDLE_SIGN_IN, phase: 'starting' } })
     try {

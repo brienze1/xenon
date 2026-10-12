@@ -1,13 +1,18 @@
 package entity
 
 import (
+	"path"
+
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/conflictkind"
 	"github.com/brienze1/xenon/internal/domain/enums/conflictresolution"
 	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
 )
 
-const theirCopySuffix = " (theirs)"
+const (
+	theirCopySuffix   = " (theirs)"
+	repositoryRootDir = "."
+)
 
 type ConflictItem struct {
 	Versions    ConflictVersions
@@ -162,4 +167,33 @@ func isSideChoice(resolution enums.ConflictResolution) bool {
 func (c ConflictItem) WithFields(fields []FieldConflict) ConflictItem {
 	c.Fields = fields
 	return c
+}
+
+func (c ConflictItem) SiblingNames(files ...map[string]string) []string {
+	dir := path.Dir(c.Path)
+	siblings := make([]string, 0)
+	for _, set := range files {
+		for filePath := range set {
+			if path.Dir(filePath) == dir {
+				siblings = append(siblings, path.Base(filePath))
+			}
+		}
+	}
+	return siblings
+}
+
+func (c ConflictItem) SiblingPath(name string) string {
+	dir := path.Dir(c.Path)
+	if dir == repositoryRootDir {
+		return name
+	}
+	return dir + "/" + name
+}
+
+func (c ConflictItem) OrderParents() []string {
+	dir := path.Dir(c.Path)
+	if dir == repositoryRootDir {
+		return []string{}
+	}
+	return []string{dir + "/" + collectionFileName, dir + "/" + folderFileName}
 }

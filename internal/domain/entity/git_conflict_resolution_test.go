@@ -203,3 +203,12 @@ func TestDocumentIdentityAndOrderEntries(t *testing.T) {
 		t.Fatal("IsScalar")
 	}
 }
+
+func TestConflictOrderParentsAreTheFolderAndCollectionFiles(t *testing.T) {
+	if got := (ConflictItem{Path: "collections/api/users.yaml"}).OrderParents(); !reflect.DeepEqual(got, []string{"collections/api/collection.yaml", "collections/api/folder.yaml"}) {
+		t.Fatalf("parents %v", got)
+	}
+	if got := (ConflictItem{Path: "users.yaml"}).OrderParents(); len(got) != 0 {
+		t.Fatalf("root parents %v", got)
+	}
+}
