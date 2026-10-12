@@ -50,7 +50,9 @@ structural files: path, mine, theirs), Mine, Theirs, Base (rendered DTOs), Resol
 
 ### SyncSession (pull in progress with conflicts)
 `{ ID, LocalHead, RemoteHead, Base, MergedEntries, Conflicts[], StartedAt }` — in memory; Cancel
-discards; app quit discards (nothing was written).
+discards; app quit discards (nothing was written). Implemented as `{ ID, LocalID, LocalHead, RemoteHead,
+Base, Replay, Conflicts[], StartedAt }`: Finish recomputes the merged entries from the heads (the merge
+is deterministic) and refuses when the local branch moved since the pull.
 
 ## State machine (workspace sync)
 ```

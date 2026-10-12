@@ -55,6 +55,24 @@ branch / signature required.
 - `Changes` items: `{ item_id, item_name, item_kind, change, paths }`; workspace-level files
   (`.gitignore`) belong to the workspace item.
 
+### Implementation notes (T022)
+- `Pull` (and `Push` when its replay conflicts) keeps a session per workspace, in memory: `Status`
+  answers `state: conflict` while it is open; a new pull replaces it; a pull without conflicts drops it.
+- `Session { local_id }` → `{ id, local_id, conflicts }` or null (extra method, for reopening the view).
+- `ConflictItem` = `{ item_id, item_name, item_kind, kind, resolution, path, uncommitted, base?, mine?,
+  theirs?, fields: [{ path, mine?, theirs?, resolution }] }`; a version is `{ text, request?, environment? }`
+  (request = the `Request` DTO; environment = `{ id, name, description, color, confirm_before_send,
+  variables: [{ key, value, description, secret, enabled }] }`, secret values never included); absent
+  side = deleted there; a field value null = removed on that side.
+- `Resolve`: `resolution` mine|theirs|both|keep|delete (validation `GIT-29400`); `both` only for requests
+  and environments, keep/delete only for delete-vs-modify, `field_path` (mine|theirs) only for field
+  conflicts → otherwise `GIT-19400`; unknown item `GIT-35404`; closed or replaced session `GIT-16404`
+  (`GIT-38404` when it is replaced while resolving); a file whose fields are all resolved answers
+  `resolution: merged`.
+- `FinishPull`: unresolved `GIT-04409`; branch moved since the pull `GIT-28409` (session dropped, pull
+  again); returns the new `SyncStatus` (usually `ahead`, `up_to_date` when the result is the remote).
+  `CancelPull` returns the status as before the pull. Both are sync operations (`GIT-05409` while one runs).
+
 ## 3. Events
 `git:status-changed { local_id, status }`, `git:progress { local_id, phase, done, total }`,
 `git:host-key-unknown { repository, host, fingerprint, key_type }`.
