@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, useTransition } from 'react'
 import type { AppError } from '@/platform/errors'
 import { GIT_HISTORY_WARNING } from '@/platform/mappers/variable'
 import { patchRow, removeRow } from '@/shared/lib/rows'
@@ -56,14 +56,6 @@ const BULK_CONFIRM: Record<BulkAction, string> = {
   reset: 'Reset All Values',
   persist: 'Persist All Values',
 }
-
-const EMPTY_TABLE = (
-  <tr>
-    <td colSpan={7} className={styles.empty}>
-      No variables yet. Add one to use it as <code translate="no">{'{{name}}'}</code>.
-    </td>
-  </tr>
-)
 
 const LOADING = (
   <p role="status" className={styles.note}>
@@ -144,6 +136,17 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
   const [dismissedWarnings, setDismissedWarnings] = useState<string[] | null>(null)
   const [pending, startAction] = useTransition()
   const tableRef = useRef<HTMLTableElement>(null)
+  const pendingFocus = useRef<NewRowField | null>(null)
+
+  useLayoutEffect(() => {
+    const field = pendingFocus.current
+    if (!field) {
+      return
+    }
+    pendingFocus.current = null
+    const cells = tableRef.current?.querySelectorAll<HTMLInputElement>(`tbody input[name="${field}"]:not([data-new-row])`)
+    cells?.[cells.length - 1]?.focus()
+  })
 
   if (!draft) {
     return LOADING
@@ -159,6 +162,12 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
 
   function edit(change: (rows: DraftRow[]) => DraftRow[]) {
     editDraft(scope, change)
+  }
+
+  // Typing into the empty last row turns it into a variable; the caret follows into the same cell of the new row.
+  function addRow(field: NewRowField, value: string) {
+    edit((rows) => [...rows, { ...newDraftRow(), [field === 'key' ? 'key' : 'initialValue']: value }])
+    pendingFocus.current = field
   }
 
   function focusFirstInvalidName() {
@@ -209,9 +218,6 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
   return (
     <div className={styles.root}>
       <div className={styles.toolbar}>
-        <Button variant="ghost" size="sm" onClick={() => edit((rows) => [...rows, newDraftRow()])}>
-          Add Variable
-        </Button>
         <span className={styles.spacer} />
         <Button variant="ghost" size="sm" disabled={busy || draft.dirty || !hasOverrides} onClick={() => setConfirmingBulk('reset')}>
           Reset All
@@ -248,21 +254,18 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
         <table ref={tableRef} aria-label={label} className={styles.table}>
           {TABLE_HEAD}
           <tbody>
-            {draft.rows.length === 0 ? (
-              EMPTY_TABLE
-            ) : (
-              draft.rows.map((row, index) => (
-                <VariableTableRow
-                  key={row.id}
-                  scope={scope}
-                  row={row}
-                  index={index}
-                  problems={keyProblems(row, counts)}
-                  savedActionsDisabled={busy || draft.dirty}
-                  actions={actions}
-                />
-              ))
-            )}
+            {draft.rows.map((row, index) => (
+              <VariableTableRow
+                key={row.id}
+                scope={scope}
+                row={row}
+                index={index}
+                problems={keyProblems(row, counts)}
+                savedActionsDisabled={busy || draft.dirty}
+                actions={actions}
+              />
+            ))}
+            <NewVariableRow onAdd={addRow} />
           </tbody>
         </table>
       </div>
@@ -285,5 +288,47 @@ function VariableTableEditor({ scope, label, table }: VariableTableEditorProps) 
         </Button>
       </div>
     </div>
+  )
+}
+
+type NewRowField = 'key' | 'initial-value'
+
+interface NewVariableRowProps {
+  onAdd: (field: NewRowField, value: string) => void
+}
+
+/** The always-empty last row, as in Postman: nothing is added until something is typed into it. */
+function NewVariableRow({ onAdd }: NewVariableRowProps) {
+  return (
+    <tr className={styles.newRow}>
+      <td>
+        <input
+          name="key"
+          data-new-row=""
+          autoComplete="off"
+          aria-label="Add variable"
+          className={styles.newCell}
+          spellCheck={false}
+          translate="no"
+          placeholder="Add variable"
+          title="Add variable"
+          value=""
+          onChange={(event) => onAdd('key', event.target.value)}
+        />
+      </td>
+      <td>
+        <input
+          name="initial-value"
+          data-new-row=""
+          autoComplete="off"
+          aria-label="Initial value of a new variable"
+          className={styles.newCell}
+          spellCheck={false}
+          value=""
+          onChange={(event) => onAdd('initial-value', event.target.value)}
+        />
+      </td>
+      <td colSpan={5} />
+    </tr>
   )
 }

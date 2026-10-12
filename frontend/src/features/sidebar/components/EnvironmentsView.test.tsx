@@ -170,4 +170,22 @@ describe('EnvironmentsView', () => {
     renderView()
     expect(screen.getByText(/No environments yet/)).toBeInTheDocument()
   })
+
+  it('filters the list by name as the search is typed', async () => {
+    const list = renderView()
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search environments' }), 'HM')
+    expect(within(list).getAllByRole('button').map((item) => item.textContent)).toEqual(['hml'])
+    await userEvent.clear(screen.getByRole('searchbox', { name: 'Search environments' }))
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search environments' }), 'nothing')
+    expect(within(list).queryAllByRole('button')).toEqual([])
+    expect(screen.getByText('No environments match “nothing”.')).toBeInTheDocument()
+  })
+
+  it('opens the import dialog from the toolbar', async () => {
+    const { useImportStore } = await import('@/features/import-export/store')
+    renderView()
+    await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+    expect(useImportStore.getState().step).toBe('choose')
+    useImportStore.getState().close()
+  })
 })

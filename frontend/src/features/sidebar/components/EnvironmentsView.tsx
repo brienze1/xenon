@@ -11,6 +11,7 @@ import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { IconButton } from '@/shared/ui/icon-button/IconButton'
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { useEnvironmentsStore } from '@/features/environments/store'
+import { useImportStore } from '@/features/import-export/store'
 import { useExportStore } from '@/features/export/store'
 import type { OpenMode, VariablesItem } from '@/features/sidebar/model'
 import { RenameInput } from './RenameInput'
@@ -25,6 +26,8 @@ const BROKEN_NEXT_STEP = 'Fix or remove the file in the workspace folder.'
 
 const ADD_GLYPH = <span aria-hidden="true">+</span>
 
+const IMPORT_GLYPH = <span aria-hidden="true">⤓</span>
+
 const ACTIVE_MARK = <span className={styles.activeMark}>Active</span>
 
 const NO_ENVIRONMENTS = <p className={styles.note}>No environments yet. Create one to group variables such as a base URL per stage.</p>
@@ -33,6 +36,10 @@ const GLOBALS: VariablesItem = { kind: 'globals' }
 
 function environmentItem(id: string): VariablesItem {
   return { kind: 'environment', environmentId: id }
+}
+
+function matches(name: string, query: string): boolean {
+  return name.toLowerCase().includes(query.trim().toLowerCase())
 }
 
 function isSelected(selected: VariablesItem | null, item: VariablesItem): boolean {
@@ -61,6 +68,8 @@ export function EnvironmentsView({ selected, onOpen }: EnvironmentsViewProps) {
   const environments = useEnvironmentsStore((state) => state.environments)
   const status = useEnvironmentsStore((state) => state.status)
   const createEnvironment = useEnvironmentsStore((state) => state.createEnvironment)
+  const openImport = useImportStore((state) => state.open)
+  const [query, setQuery] = useState('')
   const [creating, setCreating] = useState(false)
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<EnvironmentSummary | null>(null)
@@ -80,12 +89,30 @@ export function EnvironmentsView({ selected, onOpen }: EnvironmentsViewProps) {
     return null
   }
 
+  const searching = query.trim() !== ''
+  const shown = searching ? environments.filter((environment) => matches(environment.name, query)) : environments
+  const showGlobals = !searching || matches('Globals', query)
+
   return (
     <div className={styles.view}>
       <div className={styles.toolbar}>
         <IconButton label="New Environment" className={styles.add} onClick={() => setCreating(true)}>
           {ADD_GLYPH}
         </IconButton>
+        <IconButton label="Import" className={styles.add} onClick={openImport}>
+          {IMPORT_GLYPH}
+        </IconButton>
+        <input
+          type="search"
+          name="environment-search"
+          aria-label="Search environments"
+          placeholder="Search environments…"
+          autoComplete="off"
+          className={styles.search}
+          spellCheck={false}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
       </div>
       {error ? (
         <Banner.Root tone="error" className={styles.banner}>
@@ -101,20 +128,22 @@ export function EnvironmentsView({ selected, onOpen }: EnvironmentsViewProps) {
       ) : null}
       <div className={styles.scroll}>
         <ul aria-label="Environments" className={styles.list}>
-          <li>
+          {showGlobals ? (
+            <li>
             <ItemButton item={GLOBALS} label="Globals" selected={isSelected(selected, GLOBALS)} onOpen={onOpen}>
               <span className={styles.globalsMark} aria-hidden="true">
                 ◎
               </span>
               <span className={styles.name}>Globals</span>
             </ItemButton>
-          </li>
+            </li>
+          ) : null}
           {creating ? (
             <li className={styles.editing}>
               <RenameInput name={NEW_ENVIRONMENT_NAME} onCommit={create} onCancel={() => setCreating(false)} />
             </li>
           ) : null}
-          {environments.map((environment) => (
+          {shown.map((environment) => (
             <li key={environment.id}>
               {environment.error !== null ? (
                 <BrokenItem environment={environment} />
@@ -134,6 +163,9 @@ export function EnvironmentsView({ selected, onOpen }: EnvironmentsViewProps) {
           ))}
         </ul>
         {status === 'ready' && environments.length === 0 && !creating ? NO_ENVIRONMENTS : null}
+        {searching && environments.length > 0 && shown.length === 0 && !showGlobals ? (
+          <p className={styles.note}>No environments match “{query.trim()}”.</p>
+        ) : null}
       </div>
       <DeleteEnvironmentDialog environment={deleting} onClose={() => setDeleting(null)} />
     </div>
