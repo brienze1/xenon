@@ -357,3 +357,91 @@ Feature: Remember tabs, drafts, sidebar and layout per workspace
     And the response should contain the field "tabs.1.request_id" equal to "01JB0000000000000000000004"
     And the response should contain the field "tabs.1.example_id" equal to "01JB0000000000000000000044"
     And the response should contain the field "preview_tab_id" equal to "tab-example"
+
+  @environment_tabs @xen_007
+  Scenario: Environment and globals tabs keep their kind and environment id
+    When I call "UIStateService.Save" with
+      """
+      {
+        "local_id": "{{Acme.local_id}}",
+        "tabs": [
+          { "tab_id": "tab-request", "request_id": "01JB0000000000000000000004", "pinned": true, "base_revision": "abc123" },
+          { "tab_id": "tab-env", "kind": "environment", "request_id": "", "environment_id": "01JB0000000000000000000077", "pinned": false },
+          { "tab_id": "tab-globals", "kind": "globals", "request_id": "", "pinned": true }
+        ],
+        "active_tab_id": "tab-env",
+        "preview_tab_id": "tab-env",
+        "closed_tabs": [
+          { "closed_at": "2026-10-12T10:00:00Z", "tab": { "tab_id": "tab-closed-env", "kind": "environment", "request_id": "", "environment_id": "01JB0000000000000000000078", "pinned": true } }
+        ],
+        "sidebar": { "expanded": [], "selected_id": "", "view": "environments", "search": "" }
+      }
+      """
+    Then the call should succeed
+    And the app data file "workspaces/{{Acme.local_id}}/state.json" should contain the field "tabs.1.kind" equal to "environment"
+    And the app data file "workspaces/{{Acme.local_id}}/state.json" should contain the field "tabs.1.environment_id" equal to "01JB0000000000000000000077"
+    When I call "UIStateService.Get" with
+      """
+      { "local_id": "{{Acme.local_id}}" }
+      """
+    Then the call should succeed
+    And the response should contain the field "tabs" array length equal to 3
+    And the response should contain the field "tabs.0.kind" equal to "request"
+    And the response should contain the field "tabs.0.environment_id" equal to ""
+    And the response should contain the field "tabs.1.kind" equal to "environment"
+    And the response should contain the field "tabs.1.environment_id" equal to "01JB0000000000000000000077"
+    And the response should contain the field "tabs.1.pinned" equal to "false"
+    And the response should contain the field "tabs.2.kind" equal to "globals"
+    And the response should contain the field "tabs.2.environment_id" equal to ""
+    And the response should contain the field "active_tab_id" equal to "tab-env"
+    And the response should contain the field "preview_tab_id" equal to "tab-env"
+    And the response should contain the field "closed_tabs.0.tab.kind" equal to "environment"
+    And the response should contain the field "closed_tabs.0.tab.environment_id" equal to "01JB0000000000000000000078"
+    And the response should contain the field "sidebar.view" equal to "environments"
+
+  @environment_tabs @xen_007
+  Scenario: A state file written before environment tabs existed still loads
+    Given the app data file "workspaces/{{Acme.local_id}}/state.json" contains
+      """
+      {
+        "version": 1,
+        "tabs": [
+          { "tab_id": "tab-old", "request_id": "01JB0000000000000000000004", "example_id": "", "base_revision": "abc123", "pinned": true },
+          { "tab_id": "tab-old-example", "request_id": "01JB0000000000000000000004", "example_id": "01JB0000000000000000000044", "base_revision": "", "pinned": true }
+        ],
+        "active_tab_id": "tab-old",
+        "preview_tab_id": "",
+        "sidebar": { "view": "history", "selected_id": "", "search": "", "expanded": [] },
+        "layout": { "sidebar_width": 280, "sidebar_visible": true, "right_panel_width": 320, "right_panel_visible": true, "right_panel_view": "info", "console_height": 200, "console_visible": false, "split": "stacked", "split_ratio": 0.5 }
+      }
+      """
+    When I call "UIStateService.Get" with
+      """
+      { "local_id": "{{Acme.local_id}}" }
+      """
+    Then the call should succeed
+    And the response should contain the field "tabs" array length equal to 2
+    And the response should contain the field "tabs.0.kind" equal to "request"
+    And the response should contain the field "tabs.0.environment_id" equal to ""
+    And the response should contain the field "tabs.1.kind" equal to "example"
+    And the response should contain the field "sidebar.view" equal to "history"
+
+  @environment_tabs @xen_007
+  Scenario: A kind that does not match its ids falls back to what the ids say
+    When I call "UIStateService.Save" with
+      """
+      {
+        "local_id": "{{Acme.local_id}}",
+        "tabs": [
+          { "tab_id": "tab-a", "kind": "environment", "request_id": "01JB0000000000000000000004", "pinned": true },
+          { "tab_id": "tab-b", "kind": "unheard-of", "request_id": "", "environment_id": "01JB0000000000000000000077", "pinned": true }
+        ]
+      }
+      """
+    Then the call should succeed
+    When I call "UIStateService.Get" with
+      """
+      { "local_id": "{{Acme.local_id}}" }
+      """
+    Then the response should contain the field "tabs.0.kind" equal to "request"
+    And the response should contain the field "tabs.1.kind" equal to "environment"
