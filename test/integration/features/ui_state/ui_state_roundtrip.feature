@@ -445,3 +445,97 @@ Feature: Remember tabs, drafts, sidebar and layout per workspace
       """
     Then the response should contain the field "tabs.0.kind" equal to "request"
     And the response should contain the field "tabs.1.kind" equal to "environment"
+
+  @item_tabs @xen_007
+  Scenario: Collection and folder tabs keep their kind and item id
+    When I call "UIStateService.Save" with
+      """
+      {
+        "local_id": "{{Acme.local_id}}",
+        "tabs": [
+          { "tab_id": "tab-request", "request_id": "01JB0000000000000000000004", "pinned": true, "base_revision": "abc123" },
+          { "tab_id": "tab-collection", "kind": "collection", "request_id": "", "item_id": "01JB0000000000000000000001", "pinned": false },
+          { "tab_id": "tab-folder", "kind": "folder", "request_id": "", "item_id": "01JB0000000000000000000002", "pinned": true }
+        ],
+        "active_tab_id": "tab-collection",
+        "preview_tab_id": "tab-collection",
+        "closed_tabs": [
+          { "closed_at": "2026-10-12T10:00:00Z", "tab": { "tab_id": "tab-closed-folder", "kind": "folder", "request_id": "", "item_id": "01JB0000000000000000000003", "pinned": true } }
+        ]
+      }
+      """
+    Then the call should succeed
+    And the app data file "workspaces/{{Acme.local_id}}/state.json" should contain the field "tabs.1.kind" equal to "collection"
+    And the app data file "workspaces/{{Acme.local_id}}/state.json" should contain the field "tabs.1.item_id" equal to "01JB0000000000000000000001"
+    And the app data file "workspaces/{{Acme.local_id}}/state.json" should contain the field "tabs.2.kind" equal to "folder"
+    When I call "UIStateService.Get" with
+      """
+      { "local_id": "{{Acme.local_id}}" }
+      """
+    Then the call should succeed
+    And the response should contain the field "tabs" array length equal to 3
+    And the response should contain the field "tabs.0.kind" equal to "request"
+    And the response should contain the field "tabs.0.item_id" equal to ""
+    And the response should contain the field "tabs.1.kind" equal to "collection"
+    And the response should contain the field "tabs.1.item_id" equal to "01JB0000000000000000000001"
+    And the response should contain the field "tabs.1.pinned" equal to "false"
+    And the response should contain the field "tabs.2.kind" equal to "folder"
+    And the response should contain the field "tabs.2.item_id" equal to "01JB0000000000000000000002"
+    And the response should contain the field "preview_tab_id" equal to "tab-collection"
+    And the response should contain the field "closed_tabs.0.tab.kind" equal to "folder"
+    And the response should contain the field "closed_tabs.0.tab.item_id" equal to "01JB0000000000000000000003"
+
+  @item_tabs @xen_007
+  Scenario: A state file written before collection and folder tabs existed still loads
+    Given the app data file "workspaces/{{Acme.local_id}}/state.json" contains
+      """
+      {
+        "version": 1,
+        "tabs": [
+          { "tab_id": "tab-old", "kind": "request", "request_id": "01JB0000000000000000000004", "example_id": "", "environment_id": "", "base_revision": "abc123", "pinned": true },
+          { "tab_id": "tab-env", "kind": "environment", "request_id": "", "environment_id": "01JB0000000000000000000077", "pinned": true },
+          { "tab_id": "tab-globals", "kind": "globals", "request_id": "", "pinned": false }
+        ],
+        "active_tab_id": "tab-old",
+        "preview_tab_id": "tab-globals",
+        "sidebar": { "view": "collections", "selected_id": "", "search": "", "expanded": [] },
+        "layout": { "sidebar_width": 280, "sidebar_visible": true, "right_panel_width": 320, "right_panel_visible": true, "right_panel_view": "info", "console_height": 200, "console_visible": false, "split": "stacked", "split_ratio": 0.5 }
+      }
+      """
+    When I call "UIStateService.Get" with
+      """
+      { "local_id": "{{Acme.local_id}}" }
+      """
+    Then the call should succeed
+    And the response should contain the field "tabs" array length equal to 3
+    And the response should contain the field "tabs.0.kind" equal to "request"
+    And the response should contain the field "tabs.0.item_id" equal to ""
+    And the response should contain the field "tabs.1.kind" equal to "environment"
+    And the response should contain the field "tabs.1.item_id" equal to ""
+    And the response should contain the field "tabs.2.kind" equal to "globals"
+    And the response should contain the field "preview_tab_id" equal to "tab-globals"
+
+  @item_tabs @xen_007
+  Scenario: A collection or folder kind without an item id falls back to what the ids say
+    When I call "UIStateService.Save" with
+      """
+      {
+        "local_id": "{{Acme.local_id}}",
+        "tabs": [
+          { "tab_id": "tab-a", "kind": "collection", "request_id": "01JB0000000000000000000004", "pinned": true },
+          { "tab_id": "tab-b", "kind": "folder", "request_id": "", "environment_id": "01JB0000000000000000000077", "pinned": true },
+          { "tab_id": "tab-c", "kind": "unheard-of", "request_id": "", "item_id": "01JB0000000000000000000001", "pinned": true },
+          { "tab_id": "tab-d", "kind": "folder", "request_id": "", "item_id": "01JB0000000000000000000002", "pinned": true }
+        ]
+      }
+      """
+    Then the call should succeed
+    When I call "UIStateService.Get" with
+      """
+      { "local_id": "{{Acme.local_id}}" }
+      """
+    Then the response should contain the field "tabs.0.kind" equal to "request"
+    And the response should contain the field "tabs.1.kind" equal to "environment"
+    And the response should contain the field "tabs.2.kind" equal to "collection"
+    And the response should contain the field "tabs.2.item_id" equal to "01JB0000000000000000000001"
+    And the response should contain the field "tabs.3.kind" equal to "folder"
