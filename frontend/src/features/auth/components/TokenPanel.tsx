@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import type { OAuth2Auth, TokenUse } from '@/platform/mappers/request'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
+import { CopyButton } from '@/shared/ui/copy-button/CopyButton'
 import { emptyTokenState, useAuthStore } from '@/features/auth/store'
 import styles from './TokenPanel.module.css'
 
@@ -89,9 +90,7 @@ export function TokenPanel({ ownerId, oauth2 }: TokenPanelProps) {
             <Button size="sm" variant="ghost" onClick={() => void toggleReveal(ownerId)}>
               {token.revealed === null ? 'Reveal' : 'Hide'}
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => void copy(ownerId)}>
-              {token.copied ? 'Copied' : 'Copy'}
-            </Button>
+            <CopyButton label="Copy token" onCopy={() => copy(ownerId)} />
             <Button size="sm" variant="secondary" disabled={!info.hasRefreshToken || token.busy} onClick={() => void refresh(ownerId, oauth2)}>
               Refresh
             </Button>

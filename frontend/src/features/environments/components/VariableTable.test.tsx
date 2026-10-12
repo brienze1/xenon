@@ -265,8 +265,12 @@ describe('VariableTable', () => {
   it('copies a secret through Go and shows a failure next to it', async () => {
     await renderTable([secret('api_key', 'set')])
     vi.mocked(vault.copySecret).mockResolvedValueOnce()
-    await user.click(screen.getByRole('button', { name: 'Copy api_key' }))
+    const copy = screen.getByRole('button', { name: 'Copy api_key' })
+    expect(copy.textContent).toBe('')
+    expect(copy.querySelector('svg')).not.toBeNull()
+    await user.click(copy)
     expect(vault.copySecret).toHaveBeenCalledWith('A', SCOPE, 'api_key')
+    expect(copy).toHaveAttribute('title', 'Copied')
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     vi.mocked(vault.revealSecret).mockRejectedValueOnce(new AppError('VLT-04409', 'the vault is locked'))
     await user.click(screen.getByRole('button', { name: 'Reveal api_key' }))

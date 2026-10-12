@@ -12,7 +12,6 @@ export interface TokenState {
   waiting: boolean
   busy: boolean
   revealed: string | null
-  copied: boolean
   error: AppError | null
 }
 
@@ -25,14 +24,15 @@ interface AuthState {
   use: (ownerId: string, which: TokenUse) => Promise<void>
   clear: (ownerId: string) => Promise<void>
   toggleReveal: (ownerId: string) => Promise<void>
-  copy: (ownerId: string) => Promise<void>
+  /** Copies the token in use through Go; resolves whether the clipboard took it. */
+  copy: (ownerId: string) => Promise<boolean>
   reset: () => void
 }
 
 const pending = new Map<string, PendingToken>()
 
 export function emptyTokenState(): TokenState {
-  return { info: null, waiting: false, busy: false, revealed: null, copied: false, error: null }
+  return { info: null, waiting: false, busy: false, revealed: null, error: null }
 }
 
 function partInUse(token: TokenState | undefined): TokenPart {
@@ -53,7 +53,7 @@ export const useAuthStore = create<AuthState>()((set, get) => {
     if (!localId) {
       return
     }
-    patch(ownerId, { busy: true, error: null, copied: false })
+    patch(ownerId, { busy: true, error: null })
     try {
       patch(ownerId, { ...(await action(localId)), busy: false })
     } catch (error) {
@@ -73,7 +73,7 @@ export const useAuthStore = create<AuthState>()((set, get) => {
       }
       const request = getNewToken(localId, ownerId, oauth2)
       pending.set(ownerId, request)
-      patch(ownerId, { waiting: true, error: null, revealed: null, copied: false })
+      patch(ownerId, { waiting: true, error: null, revealed: null })
       try {
         patch(ownerId, { info: await request.result, waiting: false })
       } catch (error) {
@@ -104,11 +104,15 @@ export const useAuthStore = create<AuthState>()((set, get) => {
       await run(ownerId, async (localId) => ({ revealed: await revealToken(localId, ownerId, partInUse(get().tokens[ownerId])) }))
     },
 
-    copy: (ownerId) =>
-      run(ownerId, async (localId) => {
+    copy: async (ownerId) => {
+      let copied = false
+      await run(ownerId, async (localId) => {
         await copyToken(localId, ownerId, partInUse(get().tokens[ownerId]))
-        return { copied: true }
-      }),
+        copied = true
+        return {}
+      })
+      return copied
+    },
 
     reset: () => {
       for (const request of pending.values()) {

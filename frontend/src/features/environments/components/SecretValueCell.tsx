@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { AppError } from '@/platform/errors'
 import type { SecretState } from '@/platform/mappers/variable'
 import { withNextStep } from '@/shared/lib/next-step'
+import { CopyButton } from '@/shared/ui/copy-button/CopyButton'
 import { IconButton } from '@/shared/ui/icon-button/IconButton'
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { useEnvironmentsStore } from '@/features/environments/store'
@@ -30,7 +31,6 @@ const BADGE_HINT: Partial<Record<SecretState, string>> = {
 const SECRET_NEXT_STEP = 'Unlock the vault if it is locked, then try again.'
 
 const EYE_GLYPH = <span aria-hidden="true">◉</span>
-const COPY_GLYPH = <span aria-hidden="true">⧉</span>
 
 interface SecretValueCellProps {
   scope: string
@@ -72,9 +72,11 @@ export function SecretValueCell({ scope, row, name, onChange }: SecretValueCellP
 
   async function copy() {
     if (storedKey === null) {
-      return
+      return false
     }
-    setFailure(await copySecret(scope, storedKey))
+    const copyFailure = await copySecret(scope, storedKey)
+    setFailure(copyFailure)
+    return copyFailure === null
   }
 
   return (
@@ -99,9 +101,7 @@ export function SecretValueCell({ scope, row, name, onChange }: SecretValueCellP
       <IconButton label={visible ? `Hide ${name}` : `Reveal ${name}`} aria-pressed={visible} disabled={!stored && !typed} onClick={() => void toggleReveal()}>
         {EYE_GLYPH}
       </IconButton>
-      <IconButton label={`Copy ${name}`} disabled={!stored || typed} onClick={() => void copy()}>
-        {COPY_GLYPH}
-      </IconButton>
+      <CopyButton label={`Copy ${name}`} disabled={!stored || typed} onCopy={copy} />
       {failure ? (
         <span role="alert" className={styles.error}>
           <NoTranslateText text={withNextStep(failure.description || failure.code, SECRET_NEXT_STEP)} terms={[failure.code]} />

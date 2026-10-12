@@ -1,8 +1,9 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import type { SendResult } from '@/platform/mappers/request'
 import type { CodeEditorHandle } from '@/shared/ui/code-editor/CodeEditor'
 import { formatBytes } from '@/shared/lib/format-bytes'
 import { Button } from '@/shared/ui/button/Button'
+import { CopyButton } from '@/shared/ui/copy-button/CopyButton'
 import { initialBodyView, languageFor, prettyBody, type BodyView } from '@/features/response-viewer/lib/body-view'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import styles from './ResponseBody.module.css'
@@ -22,23 +23,17 @@ const VIEWS: Array<{ view: BodyView; label: string }> = [
   { view: 'preview', label: 'Preview' },
 ]
 
-type CopyState = 'idle' | 'copied' | 'failed'
+const COPIED_MESSAGE = (
+  <>
+    <span translate="no">Xenon</span> copied the response body to the clipboard.
+  </>
+)
 
-const COPY_LABELS: Record<CopyState, string> = { idle: 'Copy Body', copied: 'Copied', failed: 'Copy Failed' }
-
-const COPY_ANNOUNCEMENTS: Record<CopyState, ReactNode> = {
-  idle: null,
-  copied: (
-    <>
-      <span translate="no">Xenon</span> copied the response body to the clipboard.
-    </>
-  ),
-  failed: (
-    <>
-      <span translate="no">Xenon</span> couldn’t copy to the clipboard. Select the body text and copy it manually.
-    </>
-  ),
-}
+const COPY_FAILED_MESSAGE = (
+  <>
+    <span translate="no">Xenon</span> couldn’t copy to the clipboard. Select the body text and copy it manually.
+  </>
+)
 
 const LOADING_BODY = (
   <p role="status" className={styles.note}>
@@ -62,7 +57,6 @@ const BODY_VIEW_LEGEND = <legend className="visually-hidden">Body view</legend>
 
 export function ResponseBody({ tabId, result }: ResponseBodyProps) {
   const [view, setView] = useState<BodyView>(() => initialBodyView(result.sizeBytes))
-  const [copy, setCopy] = useState<CopyState>('idle')
   const body = useResponseViewerStore((state) => state.entries[tabId]?.body ?? null)
   const bodyStatus = useResponseViewerStore((state) => state.entries[tabId]?.bodyStatus ?? 'idle')
   const loadBody = useResponseViewerStore((state) => state.loadBody)
@@ -89,14 +83,10 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
 
   async function copyBody() {
     if (body === null) {
-      return
+      return false
     }
-    try {
-      await navigator.clipboard.writeText(body)
-      setCopy('copied')
-    } catch {
-      setCopy('failed')
-    }
+    await navigator.clipboard.writeText(body)
+    return true
   }
 
   return (
@@ -118,12 +108,7 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
           ))}
         </fieldset>
         <div className={styles.actions}>
-          <Button size="sm" variant="ghost" disabled={body === null} onClick={() => void copyBody()}>
-            {COPY_LABELS[copy]}
-          </Button>
-          <span role="status" aria-live="polite" className="visually-hidden">
-            {COPY_ANNOUNCEMENTS[copy]}
-          </span>
+          <CopyButton label="Copy body" disabled={body === null} copiedMessage={COPIED_MESSAGE} failedMessage={COPY_FAILED_MESSAGE} onCopy={copyBody} />
           <Button size="sm" variant="ghost" onClick={() => void saveBody(tabId)}>
             Save to File
           </Button>

@@ -2,6 +2,7 @@ import { useState, useTransition } from 'react'
 import type { GitAccount, SshMode } from '@/platform/mappers/git-accounts'
 import { withNextStep } from '@/shared/lib/next-step'
 import { Button } from '@/shared/ui/button/Button'
+import { CopyButton } from '@/shared/ui/copy-button/CopyButton'
 import { useGitAccountsStore } from '@/features/settings/store'
 import { CommitIdentityFields } from './CommitIdentityFields'
 import styles from './GitAccounts.module.css'
@@ -112,9 +113,7 @@ function PublicKeyPanel({ account, publicKey, onClose }: PublicKeyPanelProps) {
       <p className={styles.hint}>Add this public key to your Git host:</p>
       <p className={styles.publicKey}>{publicKey}</p>
       <div className={styles.actions}>
-        <Button size="sm" onClick={() => void copyKey(publicKey)}>
-          Copy public key
-        </Button>
+        <CopyButton label="Copy public key" onCopy={async () => (await copyKey(publicKey)) === null} />
         {gitHubAccounts.length > 0 ? (
           <>
             <select className={styles.input} aria-label="GitHub account" value={chosen} onChange={(event) => setTarget(event.target.value)}>
