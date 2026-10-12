@@ -36,6 +36,25 @@ Errors carry `next_step` in `error_details`: `GIT-10503` offline, `GIT-11401` au
 `GIT-12403` org approval / SSO required, `GIT-13409` push rejected (other), `GIT-14403` protected
 branch / signature required.
 
+### Implementation notes (T019)
+- `SyncStatus` = `{ state, local_changes, ahead, behind, last_sync_at?, last_error?: { code, message,
+  next_step }, notice?, settings: { repository, branch, subfolder, account_id, clone_path, auto_pull,
+  auto_push } }`; `notice` reports a `workspace.yaml` `sync` section that differs from the linked one.
+- `Status` fetches; a remote failure (or a missing account, `GIT-07428` "No account - choose one")
+  comes back as `state: error` with `last_error`, not as a failed call; while another operation runs
+  it answers `state: syncing` instead of `GIT-05409`.
+- `Link`: `clone_path` optional (default `<app data>/repos/<local_id>`), validation `GIT-63400`
+  (incl. a subfolder escaping the repository), clone path not empty `GIT-65409`, overlapping a
+  workspace `GIT-66409`.
+- `Commit`: validation `GIT-00400`, none of the items changed `GIT-08400`; operations on a workspace
+  without a repository `GIT-09409`; Commit/Push/Pull without an account `GIT-07428`.
+- `Pull` with conflicts (US1): `{ status: conflict, session: { id, conflicts: [{ item_id, item_name,
+  item_kind, kind, resolution, path }] } }`, nothing written; `Push` behind the remote pulls,
+  replays and retries once (`GIT-21409` only if the retry is refused again), a conflicting replay
+  answers `state: conflict`.
+- `Changes` items: `{ item_id, item_name, item_kind, change, paths }`; workspace-level files
+  (`.gitignore`) belong to the workspace item.
+
 ## 3. Events
 `git:status-changed { local_id, status }`, `git:progress { local_id, phase, done, total }`,
 `git:host-key-unknown { repository, host, fingerprint, key_type }`.
