@@ -80,8 +80,8 @@ US1 link & daily sync · US2 conflicts · US3 accounts · US4 clone as workspace
 ## Phase 8: Polish
 
 - [x] T028 [P] Performance BDD: commit+push and conflict-free pull of 10 changed requests < 5 s against the local smart-HTTP server (SC-001) — done (`performance.feature`): Commit < 2 s + Push < 3 s, Pull < 5 s; locally ~7 ms and ~65 ms. Green on first run (it measures existing behaviour). New generic step: a teammate commits a workspace folder as a path on a remote.
-- [ ] T029 Run a real end-to-end session against GitHub (test repo) with device-flow sign-in, token and SSH on macOS, Windows and Linux (SC-005/006); record results in `specs/XEN-007-git-sync/quickstart.md` notes
-- [ ] T030 `/refactor-diff` until clean; `make validate`; CI on 3 OSes; walk [quickstart.md](quickstart.md)
+- [ ] T029 Run a real end-to-end session against GitHub (test repo) with device-flow sign-in, token and SSH on macOS, Windows and Linux (SC-005/006); record results in `specs/XEN-007-git-sync/quickstart.md` notes — left to the owner: it needs the owner's GitHub OAuth client id and a real GitHub session, so it runs in the owner's manual test session
+- [x] T030 `/refactor-diff` until clean; `make validate`; CI on 3 OSes; walk [quickstart.md](quickstart.md) — done: three `/refactor-diff` passes over the XEN-007 diff (divergence, path location, replay, copy-path and sign-in rules moved onto entities; one struct/interface per file; one structural merge use case; folder picking and key copy through store actions), `make validate` green locally with mutation gates left to CI, CI green on macOS, Windows and Linux. The manual quickstart walk is deferred to the owner's manual test session
 
 ---
 
