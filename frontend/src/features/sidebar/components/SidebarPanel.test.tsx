@@ -229,7 +229,7 @@ describe('SidebarPanel', () => {
     await act(() => vi.advanceTimersByTimeAsync(SEARCH_DELAY_MS))
     vi.useRealTimers()
     expect(tree.searchTree).toHaveBeenCalledWith('ws', 'inv')
-    expect(screen.getAllByRole('treeitem').map((row) => row.textContent)).toEqual(['▾Billing', '▾Invoices', 'POSTCreate invoice'])
+    expect(screen.getAllByRole('treeitem').map((row) => row.textContent)).toEqual(['Billing', 'Invoices', 'POSTCreate invoice'])
     vi.mocked(tree.searchTree).mockResolvedValue({ matchIds: [], ancestorIds: [] })
     await userEvent.type(screen.getByRole('searchbox', { name: 'Search requests' }), 'zzz')
     await waitFor(() => expect(screen.getByText('No requests match your search.')).toBeInTheDocument())

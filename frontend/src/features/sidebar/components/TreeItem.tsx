@@ -40,6 +40,13 @@ interface TreeItemProps extends TreeItemActions {
   focusable: boolean
 }
 
+// Points right when closed and down when open, like Postman; it rotates instead of swapping glyphs.
+const CHEVRON = (
+  <svg viewBox="0 0 16 16" className={styles.chevronIcon}>
+    <path d="M6 4l4 4-4 4" />
+  </svg>
+)
+
 export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenExample, onPinExample, onOpenSettings, onDelete, onRenamed }: TreeItemProps) {
   const { node, depth, expanded, code, requestId } = row
   const selected = useSidebarStore((state) => state.selectedId === node.id)
@@ -143,8 +150,8 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenEx
           onDoubleClick={pinItem}
           onKeyDown={onKeyDown}
         >
-          <span aria-hidden="true" className={styles.chevron} onClick={onChevronClick}>
-            {expandable ? (expanded ? '▾' : '▸') : ''}
+          <span aria-hidden="true" className={cn(styles.chevron, expanded && styles.open)} onClick={onChevronClick}>
+            {expandable ? CHEVRON : null}
           </span>
           {node.kind === 'request' ? <MethodBadge method={node.method ?? 'GET'} className={styles.method} /> : null}
           {isExample ? (

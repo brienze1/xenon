@@ -24,10 +24,34 @@
 }
 
 .chevron {
+  display: inline-flex;
   flex: none;
-  width: var(--space-3);
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
   color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
+}
+
+.chevronIcon {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+  transition: transform 120ms ease-out;
+}
+
+.open .chevronIcon {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevronIcon {
+    transition: none;
+  }
 }
 
 .method {
