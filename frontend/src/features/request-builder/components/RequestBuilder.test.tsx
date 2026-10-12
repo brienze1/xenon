@@ -132,7 +132,7 @@ describe('RequestBuilder', () => {
     await vi.waitFor(() => expect(variables.inspectVariables).toHaveBeenCalled())
     const undefinedVariable = await screen.findByText('{{id}}', { selector: '[data-card]' })
     expect(undefinedVariable).toHaveAttribute('aria-description', 'Unresolved variable — sent as written')
-    expect(screen.getByTitle('https://api — Globals')).toHaveTextContent('{{base_url}}')
+    expect(screen.getByText('{{base_url}}', { selector: '[data-card]' })).toHaveAttribute('aria-description', 'https://api — Globals')
     expect(await screen.findByTitle('Generated at send — Dynamic variable')).toHaveTextContent('{{page}}')
     await user.hover(undefinedVariable)
     expect(await screen.findByRole('region', { name: '{{id}} is not defined' })).toBeInTheDocument()

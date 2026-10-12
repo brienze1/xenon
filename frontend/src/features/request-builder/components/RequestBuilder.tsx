@@ -7,7 +7,6 @@ import { DecorationCardContext, type RenderDecorationCard } from '@/shared/ui/co
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import type { RequestBuilderMode } from '@/features/request-builder/model'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
-import { AddVariableCard } from './AddVariableCard'
 import { ConfirmSendDialog } from './ConfirmSendDialog'
 import { CurlPasteNotice } from './CurlPasteNotice'
 import { ExpiredTokenDialog } from './ExpiredTokenDialog'
@@ -15,6 +14,7 @@ import { MissingSecretsDialog } from './MissingSecretsDialog'
 import { RequestBar } from './RequestBar'
 import styles from './RequestBuilder.module.css'
 import { RequestTabs } from './RequestTabs'
+import { VariableCard } from './VariableCard'
 
 const SAVE_NEXT_STEP = 'Try again, or check that the request file and its folder are writable.'
 
@@ -41,7 +41,7 @@ export function RequestBuilder({ tabId, scripts, auth, breadcrumb, mode = 'reque
   const save = useRequestBuilderStore((state) => state.save)
   const openSaved = useRequestBuilderStore((state) => state.openSaved)
   const headingId = useId()
-  const renderCard = useCallback<RenderDecorationCard>((name, close) => <AddVariableCard tabId={tabId} name={name} close={close} />, [tabId])
+  const renderCard = useCallback<RenderDecorationCard>((name, close) => <VariableCard tabId={tabId} name={name} close={close} />, [tabId])
 
   function loadFromDisk() {
     const requestId = useRequestBuilderStore.getState().tabs[tabId]?.draft.id ?? ''

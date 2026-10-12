@@ -55,8 +55,8 @@ export function decorationsByField(inspection: VariableInspection | null, enviro
       to: reference.end,
       tone: referenceTone(reference),
       tooltip: referenceTooltip(reference, environmentName),
-      // An undefined variable opens a card to add it (AddVariableCard), keyed by its name.
-      ...(reference.status === 'unresolved' && reference.scope === 'none' ? { card: reference.name } : {}),
+      // Every variable but a dynamic one opens a card to edit or add it (VariableCard), keyed by its name.
+      ...(reference.status === 'dynamic' ? {} : { card: reference.name }),
     })
     byField.set(reference.field, decorations)
   }
