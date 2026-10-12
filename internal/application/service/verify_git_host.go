@@ -81,13 +81,14 @@ func (v *verifyGitHost) ConfirmHostKey(ctx context.Context, repository, fingerpr
 	if err != nil {
 		return err
 	}
-	switch {
-	case known.StatusOf(*presented) == hostkeystatus.Changed:
+	switch known.StatusOf(*presented) {
+	case hostkeystatus.Changed:
 		return usecase.RejectChangedHostKey(*presented)
-	case known.StatusOf(*presented) == hostkeystatus.Trusted:
-	case !presented.HasFingerprint(fingerprint):
-		return usecase.RejectHostKeyMismatch(*presented)
+	case hostkeystatus.Trusted:
 	default:
+		if !presented.HasFingerprint(fingerprint) {
+			return usecase.RejectHostKeyMismatch(*presented)
+		}
 		if err := v.trustHostKey.Trust(ctx, *presented); err != nil {
 			return err
 		}
