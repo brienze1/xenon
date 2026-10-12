@@ -14,3 +14,10 @@ export type VariablesItem = { kind: 'environment'; environmentId: string } | { k
 
 /** A single click previews an entry in a tab; a double click (or Open) pins the tab. */
 export type OpenMode = 'preview' | 'pinned'
+
+/** One step of a breadcrumb: a collection, folder, request or example on the way to an item. */
+export interface Crumb {
+  id: string
+  kind: 'collection' | 'folder' | 'request' | 'example'
+  name: string
+}

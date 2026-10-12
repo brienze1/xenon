@@ -1,6 +1,7 @@
 import { ExampleTab } from '@/features/examples/components/ExampleTab'
 import { RequestBuilder } from '@/features/request-builder/components/RequestBuilder'
 import { RequestAuth } from './RequestAuth'
+import { TabBreadcrumb } from './TabBreadcrumb'
 
 interface ExampleWorkspaceProps {
   tabId: string
@@ -8,5 +9,5 @@ interface ExampleWorkspaceProps {
 
 /** An example tab: the request editors in example mode above the example's response editor. */
 export function ExampleWorkspace({ tabId }: ExampleWorkspaceProps) {
-  return <ExampleTab tabId={tabId} requestEditor={<RequestBuilder tabId={tabId} mode="example" auth={<RequestAuth tabId={tabId} />} />} />
+  return <ExampleTab tabId={tabId} requestEditor={<RequestBuilder tabId={tabId} mode="example" breadcrumb={<TabBreadcrumb tabId={tabId} />} auth={<RequestAuth tabId={tabId} />} />} />
 }

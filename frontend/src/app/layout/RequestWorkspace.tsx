@@ -5,6 +5,7 @@ import { SplitPane } from '@/shared/ui/split-pane/SplitPane'
 import { useShellLayout } from '@/app/layout/use-shell-layout'
 import { RequestAuth } from './RequestAuth'
 import { RequestScripts } from './RequestScripts'
+import { TabBreadcrumb } from './TabBreadcrumb'
 
 const DIVIDER = <SplitPane.Divider label="Resize request and response" />
 
@@ -26,7 +27,10 @@ export function RequestWorkspace({ tabId }: RequestWorkspaceProps) {
       onRatioChange={(splitRatio) => update({ splitRatio })}
     >
       <SplitPane.Pane>
-        <RequestBuilder tabId={tabId} scripts={<RequestScripts tabId={tabId} />} auth={<RequestAuth tabId={tabId} />} />
+        <RequestBuilder
+          tabId={tabId}
+          breadcrumb={<TabBreadcrumb tabId={tabId} />}
+          scripts={<RequestScripts tabId={tabId} />} auth={<RequestAuth tabId={tabId} />} />
       </SplitPane.Pane>
       {DIVIDER}
       <SplitPane.Pane>

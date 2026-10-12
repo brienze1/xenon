@@ -28,10 +28,12 @@ interface RequestBuilderProps {
   scripts?: ReactNode
   /** The Authorization tab's editor, composed by the app. */
   auth?: ReactNode
+  /** Where the request lives, shown above the URL bar; composed by the app. */
+  breadcrumb?: ReactNode
   mode?: RequestBuilderMode
 }
 
-export function RequestBuilder({ tabId, scripts, auth, mode = 'request' }: RequestBuilderProps) {
+export function RequestBuilder({ tabId, scripts, auth, breadcrumb, mode = 'request' }: RequestBuilderProps) {
   const error = useRequestBuilderStore((state) => state.tabs[tabId]?.error ?? null)
   const conflict = useRequestBuilderStore((state) => state.tabs[tabId]?.conflict === true)
   const save = useRequestBuilderStore((state) => state.save)
@@ -48,6 +50,7 @@ export function RequestBuilder({ tabId, scripts, auth, mode = 'request' }: Reque
       <h2 id={headingId} className="visually-hidden">
         {mode === 'example' ? 'Example Request' : 'Request'}
       </h2>
+      {breadcrumb}
       <RequestBar tabId={tabId} mode={mode} />
       {mode === 'request' ? <CurlPasteNotice tabId={tabId} /> : null}
       {mode === 'request' && conflict ? (

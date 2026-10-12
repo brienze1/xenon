@@ -14,7 +14,6 @@ import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { QuickSearch } from '@/features/search/components/QuickSearch'
 import { useSearchStore } from '@/features/search/store'
 import { SidePanel } from '@/features/side-panel/components/SidePanel'
-import { useExamplesStore } from '@/features/examples/store'
 import { SettingsButton } from '@/features/settings/components/SettingsButton'
 import { HostKeyPrompt } from '@/features/settings/components/HostKeyPrompt'
 import { SettingsDialog } from '@/features/settings/components/SettingsDialog'
@@ -27,7 +26,6 @@ import { ConflictView } from '@/features/sync/components/ConflictView'
 import { LinkRepoDialog } from '@/features/sync/components/LinkRepoDialog'
 import { SyncPanel } from '@/features/sync/components/SyncPanel'
 import type { EnvironmentTabTarget, OpenMode } from '@/features/tabs/model'
-import type { ContainerKind } from '@/platform/mappers/tree'
 import { useTabsStore } from '@/features/tabs/store'
 import { MissingFolderNotice } from '@/features/workspaces/components/MissingFolderNotice'
 import { WelcomeScreen } from '@/features/workspaces/components/WelcomeScreen'
@@ -45,6 +43,7 @@ import { RightPanel } from './layout/regions/RightPanel'
 import { Sidebar } from './layout/regions/Sidebar'
 import { TopBar } from './layout/regions/TopBar'
 import { TabsArea } from './layout/TabsArea'
+import { adoptTreeRename, openItemTab } from './tree-actions'
 import { useAppHotkeys } from './use-app-hotkeys'
 
 let didInit = false
@@ -107,10 +106,6 @@ const TOP_BAR_END_WITH_ENVIRONMENTS = (
   </>
 )
 
-function openItemTab(itemId: string, kind: ContainerKind, mode: OpenMode) {
-  useTabsStore.getState().openItemTab({ kind, itemId }, mode)
-}
-
 const CONSOLE = (
   <ConsoleDrawer>
     <ConsoleContent />
@@ -151,7 +146,6 @@ export function App() {
   const sidePanelTabId = activeTabId !== null && (activeKind === 'request' || activeKind === 'example') ? activeTabId : null
   const tabs = useTabsStore.getState
   const send = useRequestBuilderStore((state) => state.send)
-  const adoptRename = useRequestBuilderStore((state) => state.adoptRename)
   const hotkeys = useMemo<HotkeyHandlers>(
     () =>
       hasActive
@@ -210,10 +204,7 @@ export function App() {
               onPinExample={(requestId, exampleId) => void tabs().openExamplePinned(requestId, exampleId)}
               onExampleDeleted={(exampleId) => tabs().handleExampleDeleted(exampleId)}
               onRequestsDeleted={(ids) => tabs().handleDeleted(ids)}
-              onRenamed={(id) => {
-                void adoptRename(id)
-                void useExamplesStore.getState().adoptRename(id)
-              }}
+              onRenamed={adoptTreeRename}
               onOpenHistoryEntry={(request) => void tabs().openDraft(request)}
               onOpenVariables={openEnvironmentTab}
               selectedVariables={selectedVariables}
