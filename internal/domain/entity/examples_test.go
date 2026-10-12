@@ -102,20 +102,32 @@ func TestRequestExamplesAreEditedInPlace(t *testing.T) {
 }
 
 func TestTabKindFollowsTheExample(t *testing.T) {
-	if NewTabKind("", "", "") != tabkind.Request || NewTabKind("", "e1", "") != tabkind.Example {
+	if NewTabKind("", "", "", "") != tabkind.Request || NewTabKind("", "e1", "", "") != tabkind.Example {
 		t.Error("an example id makes an example tab")
 	}
 }
 
 func TestTabKindOfEnvironmentAndGlobalsTabs(t *testing.T) {
-	if NewTabKind(tabkind.Environment, "", "env1") != tabkind.Environment || NewTabKind(tabkind.Request, "", "env1") != tabkind.Environment {
+	if NewTabKind(tabkind.Environment, "", "env1", "") != tabkind.Environment || NewTabKind(tabkind.Request, "", "env1", "") != tabkind.Environment {
 		t.Error("an environment id makes an environment tab")
 	}
-	if NewTabKind(tabkind.Globals, "", "") != tabkind.Globals {
+	if NewTabKind(tabkind.Globals, "", "", "") != tabkind.Globals {
 		t.Error("the globals kind makes a globals tab")
 	}
-	if NewTabKind(tabkind.Environment, "", "") != tabkind.Request {
+	if NewTabKind(tabkind.Environment, "", "", "") != tabkind.Request {
 		t.Error("an environment tab without an environment id falls back to a request tab")
+	}
+}
+
+func TestTabKindOfCollectionAndFolderTabs(t *testing.T) {
+	if NewTabKind(tabkind.Collection, "", "", "c1") != tabkind.Collection || NewTabKind(tabkind.Request, "", "", "c1") != tabkind.Collection {
+		t.Error("an item id makes a collection tab unless the kind says folder")
+	}
+	if NewTabKind(tabkind.Folder, "", "", "f1") != tabkind.Folder {
+		t.Error("the folder kind with an item id makes a folder tab")
+	}
+	if NewTabKind(tabkind.Folder, "", "", "") != tabkind.Request || NewTabKind(tabkind.Collection, "", "env1", "") != tabkind.Environment {
+		t.Error("a collection or folder kind without an item id falls back to what the ids say")
 	}
 }
 

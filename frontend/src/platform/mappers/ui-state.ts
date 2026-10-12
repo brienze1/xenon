@@ -8,8 +8,11 @@ import { toRequestDraft, toRequestDto, type RequestDraft } from './request'
 export type SidebarView = 'collections' | 'history' | 'environments'
 export type SplitOrientation = 'stacked' | 'side-by-side'
 
-/** `environment` and `globals` tabs edit variables instead of a request. */
-export type TabKind = 'request' | 'example' | 'environment' | 'globals'
+/**
+ * `environment` and `globals` tabs edit variables instead of a request; `collection` and `folder`
+ * tabs edit the settings that the requests below the item inherit.
+ */
+export type TabKind = 'request' | 'example' | 'environment' | 'globals' | 'collection' | 'folder'
 
 export interface TabState {
   tabId: string
@@ -20,6 +23,8 @@ export interface TabState {
   exampleId?: string | null
   /** Set for environment tabs only. */
   environmentId?: string | null
+  /** Set for collection and folder tabs only: the id of the collection or folder. */
+  itemId?: string | null
   pinned: boolean
   baseRevision: string | null
   draft: RequestDraft | null
@@ -109,6 +114,9 @@ function toTabKind(dto: TabDto): TabKind {
   if (dto.kind === 'environment' && dto.environment_id) {
     return 'environment'
   }
+  if ((dto.kind === 'collection' || dto.kind === 'folder') && dto.item_id) {
+    return dto.kind
+  }
   return dto.kind === 'example' && dto.example_id ? 'example' : 'request'
 }
 
@@ -119,6 +127,7 @@ function toTabState(dto: TabDto): TabState {
     requestId: orNull(dto.request_id),
     exampleId: orNull(dto.example_id ?? ''),
     environmentId: orNull(dto.environment_id ?? ''),
+    itemId: orNull(dto.item_id ?? ''),
     pinned: dto.pinned,
     baseRevision: orNull(dto.base_revision),
     draft: dto.draft ? toRequestDraft(dto.draft) : null,
@@ -166,6 +175,7 @@ function toTabDto(tab: TabState): TabDto {
     request_id: tab.requestId ?? '',
     example_id: tab.exampleId ?? '',
     environment_id: tab.environmentId ?? '',
+    item_id: tab.itemId ?? '',
     pinned: tab.pinned,
     base_revision: tab.baseRevision ?? '',
     ...(tab.draft ? { draft: toRequestDto(tab.draft) } : {}),

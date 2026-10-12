@@ -27,7 +27,7 @@ function dto(tabs: object[], view = 'collections') {
   } as unknown as Parameters<typeof toUIState>[0]
 }
 
-const TAB = { request_id: '', example_id: '', environment_id: '', base_revision: '', pinned: true }
+const TAB = { request_id: '', example_id: '', environment_id: '', item_id: '', base_revision: '', pinned: true }
 
 describe('ui-state mapper', () => {
   it('reads environment and globals tabs and the environments sidebar view', () => {
@@ -47,6 +47,28 @@ describe('ui-state mapper', () => {
       ['request', null],
     ])
     expect(state.sidebar.view).toBe('environments')
+  })
+
+  it('reads collection and folder tabs with their item id', () => {
+    const state = toUIState(
+      dto([
+        { ...TAB, tab_id: 'c', kind: 'collection', item_id: 'col1' },
+        { ...TAB, tab_id: 'f', kind: 'folder', item_id: 'fold1' },
+        { ...TAB, tab_id: 'bad', kind: 'folder' },
+        { ...TAB, tab_id: 'old', kind: 'request', request_id: 'r1', item_id: undefined },
+      ]),
+    )
+    expect(state.tabs.map((tab) => [tab.kind, tab.itemId])).toEqual([
+      ['collection', 'col1'],
+      ['folder', 'fold1'],
+      ['request', null],
+      ['request', null],
+    ])
+  })
+
+  it('writes the item id of a collection or folder tab', () => {
+    const state = { ...defaultUIState(), tabs: [{ tabId: 'f', kind: 'folder' as const, itemId: 'fold1', requestId: null, pinned: true, baseRevision: null, draft: null }] }
+    expect(toUIStateDto('ws', state).tabs?.[0]).toMatchObject({ kind: 'folder', item_id: 'fold1', request_id: '', environment_id: '' })
   })
 
   it('falls back to the collections view for an unknown view', () => {

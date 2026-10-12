@@ -11,6 +11,8 @@ const (
 	Example     enums.TabKind = "example"
 	Environment enums.TabKind = "environment"
 	Globals     enums.TabKind = "globals"
+	Collection  enums.TabKind = "collection"
+	Folder      enums.TabKind = "folder"
 	Unknown     enums.TabKind = "unknown"
 )
 
@@ -24,6 +26,10 @@ func GetTabKind(s string) enums.TabKind {
 		return Environment
 	case "globals":
 		return Globals
+	case "collection":
+		return Collection
+	case "folder":
+		return Folder
 	default:
 		return Unknown
 	}

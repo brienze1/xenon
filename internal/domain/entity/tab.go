@@ -12,16 +12,21 @@ type Tab struct {
 	RequestID     string
 	ExampleID     string
 	EnvironmentID string
+	ItemID        string
 	BaseRevision  string
 	Pinned        bool
 }
 
-func NewTabKind(kind enums.TabKind, exampleId, environmentId string) enums.TabKind {
+func NewTabKind(kind enums.TabKind, exampleId, environmentId, itemId string) enums.TabKind {
 	switch {
 	case kind == tabkind.Globals:
 		return tabkind.Globals
 	case environmentId != "":
 		return tabkind.Environment
+	case itemId != "" && kind == tabkind.Folder:
+		return tabkind.Folder
+	case itemId != "":
+		return tabkind.Collection
 	case exampleId != "":
 		return tabkind.Example
 	default:
@@ -38,7 +43,7 @@ func (t Tab) HasID(id string) bool {
 }
 
 func (t Tab) LogValue() any {
-	value := map[string]any{"tabId": t.TabID, "kind": t.Kind, "requestId": t.RequestID, "exampleId": t.ExampleID, "environmentId": t.EnvironmentID, "baseRevision": t.BaseRevision, "pinned": t.Pinned}
+	value := map[string]any{"tabId": t.TabID, "kind": t.Kind, "requestId": t.RequestID, "exampleId": t.ExampleID, "environmentId": t.EnvironmentID, "itemId": t.ItemID, "baseRevision": t.BaseRevision, "pinned": t.Pinned}
 	if t.Draft != nil {
 		value["draft"] = t.Draft.LogValue()
 	}
