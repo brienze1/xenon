@@ -15,19 +15,24 @@ type documentationSource struct {
 	readApiDocument  usecase.ReadApiDocument
 }
 
+// collection gathers what the collection or folder documents; its ancestors above it only lend their auth.
 func (d documentationSource) collection(ctx context.Context, root, id string) (*entity.DocumentedCollection, error) {
 	node, err := d.findTreeItem.FindNode(ctx, root, id)
 	if err != nil {
 		return nil, err
 	}
-	if !node.IsCollection() {
-		return nil, errs.BadRequestError("only collections have documentation", "DOC-05400")
+	if !node.IsContainer() {
+		return nil, errs.BadRequestError("only collections and folders have documentation", "DOC-05400")
 	}
 	collection, err := d.findTreeItem.FindContainer(ctx, root, id)
 	if err != nil {
 		return nil, err
 	}
-	documented := entity.NewDocumentedCollection(*collection)
+	inherited, err := d.findTreeItem.FindAncestors(ctx, root, id)
+	if err != nil {
+		return nil, err
+	}
+	documented := entity.NewDocumentedCollection(*collection, inherited)
 	return d.children(ctx, root, *node, []entity.Collection{*collection}, documented)
 }
 
@@ -55,7 +60,7 @@ func (d documentationSource) children(ctx context.Context, root string, node ent
 	return &documented, nil
 }
 
-// documentation writes the collection's OpenAPI text and reads it back, so the view shows exactly that text.
+// documentation writes the collection's or folder's OpenAPI text and reads it back, so the view shows exactly that text.
 func (d documentationSource) documentation(ctx context.Context, documented entity.DocumentedCollection) (*entity.ApiDocumentation, error) {
 	text, err := d.writeApiDocument.WriteDocument(ctx, documented.ApiDocument())
 	if err != nil {
@@ -72,7 +77,7 @@ func (d documentationSource) read(ctx context.Context, text string) (*entity.Api
 	return &entity.ApiDocumentation{Text: text, Document: *document}, nil
 }
 
-// plan compares the edited text with the document generated from the collection, both read the same way.
+// plan compares the edited text with the document generated from the collection or folder, both read the same way.
 func (d documentationSource) plan(ctx context.Context, root, id, text string, newID func() string) (*entity.DocumentationPlan, error) {
 	edited, err := d.read(ctx, text)
 	if err != nil {

@@ -1,5 +1,7 @@
 package entity
 
+import "slices"
+
 // DocumentedRequest is a request of a collection with the folders above it and the auth it really uses.
 type DocumentedRequest struct {
 	Folders []Collection
@@ -7,9 +9,11 @@ type DocumentedRequest struct {
 	Request Request
 }
 
-// NewDocumentedRequest takes the ancestors outermost first, the collection itself included.
-func NewDocumentedRequest(request Request, ancestors []Collection) DocumentedRequest {
-	return DocumentedRequest{Request: request, Auth: effectiveAuth(request.Auth, ancestors), Folders: foldersOf(ancestors)}
+// NewDocumentedRequest takes the ancestors outermost first, the documented collection or folder itself included,
+// and the containers above it, which only lend their auth.
+func NewDocumentedRequest(request Request, inherited, ancestors []Collection) DocumentedRequest {
+	chain := append(slices.Clone(inherited), ancestors...)
+	return DocumentedRequest{Request: request, Auth: effectiveAuth(request.Auth, chain), Folders: foldersOf(ancestors)}
 }
 
 func (d DocumentedRequest) Tag() string {

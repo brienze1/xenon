@@ -8,6 +8,7 @@ type ApiDocument struct {
 	Version         string
 	Servers         []string
 	Tags            []ApiTag
+	TagGroups       []ApiTagGroup
 	Operations      []ApiOperation
 	SecuritySchemes []ApiSecurityScheme
 }

@@ -20,7 +20,7 @@ type documentationWriter struct {
 	renameTreeItem      usecase.RenameTreeItem
 }
 
-// write saves every change of the plan, one atomic write per file: the collection, then the requests.
+// write saves every change of the plan, one atomic write per file: the collection or folder, then its requests.
 func (d documentationWriter) write(ctx context.Context, root string, plan entity.DocumentationPlan) (*entity.DocumentationPlan, error) {
 	written := plan
 	if err := d.describeCollection(ctx, root, plan); err != nil {
@@ -94,7 +94,7 @@ func (d documentationWriter) create(ctx context.Context, root, collectionID stri
 	}
 	parent, found := tree.Item(collectionID)
 	if !found {
-		return nil, errs.NotFoundError("the collection does not exist", "DOC-07404")
+		return nil, errs.NotFoundError("the collection or folder does not exist", "DOC-07404")
 	}
 	for _, name := range created.Folders {
 		if parent, err = d.folder(ctx, root, *parent, name); err != nil {

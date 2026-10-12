@@ -19,6 +19,7 @@ type Document struct {
 	OpenApi    string      `yaml:"openapi"`
 	Servers    []Server    `yaml:"servers,omitempty"`
 	Tags       []Tag       `yaml:"tags,omitempty"`
+	TagGroups  []TagGroup  `yaml:"x-tagGroups,omitempty"`
 	Paths      Paths       `yaml:"paths"`
 }
 
@@ -33,6 +34,9 @@ func NewDocument(document entity.ApiDocument) Document {
 	}
 	for _, tag := range document.Tags {
 		documented.Tags = append(documented.Tags, NewTag(tag))
+	}
+	for _, group := range document.TagGroups {
+		documented.TagGroups = append(documented.TagGroups, NewTagGroup(group))
 	}
 	if len(document.SecuritySchemes) > 0 {
 		documented.Components = &Components{}
@@ -67,6 +71,7 @@ func (d *Document) ToEntity() (entity.ApiDocument, error) {
 		Version:         d.Info.Version,
 		Servers:         []string{},
 		Tags:            []entity.ApiTag{},
+		TagGroups:       []entity.ApiTagGroup{},
 		Operations:      operations,
 		SecuritySchemes: []entity.ApiSecurityScheme{},
 	}
@@ -75,6 +80,9 @@ func (d *Document) ToEntity() (entity.ApiDocument, error) {
 	}
 	for index := range d.Tags {
 		document.Tags = append(document.Tags, d.Tags[index].ToEntity())
+	}
+	for index := range d.TagGroups {
+		document.TagGroups = append(document.TagGroups, d.TagGroups[index].ToEntity())
 	}
 	if d.Components != nil {
 		for index := range d.Components.SecuritySchemes {
@@ -90,6 +98,7 @@ func (d Document) MarshalYAML() (any, error) {
 		always("info", d.Info),
 		when(len(d.Servers) > 0, "servers", d.Servers),
 		when(len(d.Tags) > 0, "tags", d.Tags),
+		when(len(d.TagGroups) > 0, "x-tagGroups", d.TagGroups),
 		always("paths", d.Paths),
 		when(d.Components != nil, "components", d.Components),
 	)

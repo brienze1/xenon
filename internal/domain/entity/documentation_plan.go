@@ -2,7 +2,7 @@ package entity
 
 import "slices"
 
-// DocumentationPlan is what saving an edited OpenAPI document changes in its collection.
+// DocumentationPlan is what saving an edited OpenAPI document changes in its collection or folder.
 type DocumentationPlan struct {
 	Updated           []Request
 	Created           []CreatedRequest

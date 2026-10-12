@@ -1,6 +1,6 @@
 package entity
 
-// ApiDocumentation is a collection's OpenAPI document as text and as the view rendered from that text.
+// ApiDocumentation is a collection's or folder's OpenAPI document as text and as the view rendered from that text.
 type ApiDocumentation struct {
 	Text     string
 	Document ApiDocument

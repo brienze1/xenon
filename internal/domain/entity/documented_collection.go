@@ -4,24 +4,37 @@ import "slices"
 
 const documentVersion = "1.0.0"
 
-// DocumentedCollection gathers a collection's folders and requests, in tree order, to document them.
+// DocumentedCollection gathers a collection's or folder's sub-folders and requests, in tree order, to document them.
+// Collection is the documented collection or folder; Inherited holds the containers above it, outermost first.
 type DocumentedCollection struct {
 	Tags       []ApiTag
+	TagGroups  []ApiTagGroup
 	Requests   []DocumentedRequest
+	Inherited  []Collection
 	Collection Collection
 }
 
-func NewDocumentedCollection(collection Collection) DocumentedCollection {
-	return DocumentedCollection{Collection: collection, Tags: []ApiTag{}, Requests: []DocumentedRequest{}}
+func NewDocumentedCollection(collection Collection, inherited []Collection) DocumentedCollection {
+	return DocumentedCollection{
+		Collection: collection,
+		Inherited:  slices.Clone(inherited),
+		Tags:       []ApiTag{},
+		TagGroups:  []ApiTagGroup{},
+		Requests:   []DocumentedRequest{},
+	}
 }
 
+// WithFolder takes the ancestors from the documented collection or folder down to the folder itself.
 func (d DocumentedCollection) WithFolder(ancestors []Collection) DocumentedCollection {
-	d.Tags = append(slices.Clone(d.Tags), NewApiTag(foldersOf(ancestors)))
+	tag := NewApiTag(foldersOf(ancestors))
+	d.Tags = append(slices.Clone(d.Tags), tag)
+	d.TagGroups = WithTagGroup(d.TagGroups, foldersOf(ancestors), tag)
 	return d
 }
 
+// WithRequest takes the ancestors from the documented collection or folder down to the request's folder.
 func (d DocumentedCollection) WithRequest(request Request, ancestors []Collection) DocumentedCollection {
-	d.Requests = append(slices.Clone(d.Requests), NewDocumentedRequest(request, ancestors))
+	d.Requests = append(slices.Clone(d.Requests), NewDocumentedRequest(request, d.Inherited, ancestors))
 	return d
 }
 
@@ -33,7 +46,7 @@ func (d DocumentedCollection) Request(id string) (DocumentedRequest, bool) {
 	return d.Requests[index], true
 }
 
-// ApiDocument builds the OpenAPI view of the collection: one operation per request, grouped by path.
+// ApiDocument builds the OpenAPI view of the collection or folder: one operation per request, grouped by path.
 func (d DocumentedCollection) ApiDocument() ApiDocument {
 	document := ApiDocument{
 		Title:           d.Collection.Name,
@@ -41,6 +54,7 @@ func (d DocumentedCollection) ApiDocument() ApiDocument {
 		Version:         documentVersion,
 		Servers:         []string{},
 		Tags:            d.Tags,
+		TagGroups:       d.TagGroups,
 		Operations:      []ApiOperation{},
 		SecuritySchemes: []ApiSecurityScheme{},
 	}
