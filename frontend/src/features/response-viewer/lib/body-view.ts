@@ -4,7 +4,7 @@ import type { CodeLanguage } from '@/shared/ui/code-editor/languages'
 export { RAW_FIRST_BYTES, initialBodyView, isHtml, isImage, languageFor, prettyBody, type BodyView } from '@/shared/lib/body-format'
 
 export function suggestedFileName(contentType: string): string {
-  const extensions: Record<CodeLanguage, string> = { json: 'json', xml: 'xml', html: 'html', javascript: 'js', text: 'txt' }
+  const extensions: Record<CodeLanguage, string> = { json: 'json', xml: 'xml', html: 'html', javascript: 'js', yaml: 'yaml', text: 'txt' }
   if (isImage(contentType)) {
     return `response.${mediaType(contentType).slice('image/'.length).replace('svg+xml', 'svg')}`
   }

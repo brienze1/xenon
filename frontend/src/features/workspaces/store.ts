@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { useAuthStore } from '@/features/auth/store'
 import { useCookiesStore } from '@/features/cookies/store'
+import { useDocumentationStore } from '@/features/documentation/store'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import { useExportStore } from '@/features/export/store'
 import { useItemSettingsStore } from '@/features/item-settings/store'
@@ -64,6 +65,7 @@ function resetWorkspaceStores(): void {
   useSidePanelStore.getState().reset()
   useExportStore.getState().reset()
   useItemSettingsStore.getState().reset()
+  useDocumentationStore.getState().reset()
 }
 
 export const useWorkspacesStore = create<WorkspacesState>()((set, get) => {

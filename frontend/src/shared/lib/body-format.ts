@@ -28,6 +28,9 @@ export function languageFor(contentType: string): CodeLanguage {
   if (type.includes('javascript')) {
     return 'javascript'
   }
+  if (type.includes('yaml')) {
+    return 'yaml'
+  }
   return 'text'
 }
 

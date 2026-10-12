@@ -21,6 +21,7 @@ const requests = await import('@/platform/services/requests')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { useSidebarStore } = await import('@/features/sidebar/store')
 const { useItemSettingsStore } = await import('@/features/item-settings/store')
+const { useDocumentationStore } = await import('@/features/documentation/store')
 const { ItemTab } = await import('./ItemTab')
 
 function node(id: string, kind: TreeNode['kind'], name: string, children: TreeNode[] = []): TreeNode {
@@ -69,6 +70,10 @@ function collectionVariables(collectionId: string) {
   return <p>Variables of {collectionId}</p>
 }
 
+function documentation(collectionId: string) {
+  return <p>Documentation of {collectionId}</p>
+}
+
 function renderTab(settings: ItemSettings, onSave = vi.fn()) {
   vi.mocked(tree.getItemSettings).mockResolvedValue(settings)
   render(
@@ -79,6 +84,7 @@ function renderTab(settings: ItemSettings, onSave = vi.fn()) {
       authEditor={authEditor}
       scriptsEditor={scriptsEditor}
       collectionVariables={collectionVariables}
+      documentation={documentation}
     />,
   )
   return onSave
@@ -102,7 +108,7 @@ describe('ItemTab', () => {
     renderTab(collection)
     const tab = await screen.findByRole('region', { name: 'Billing collection' })
     expect(within(tab).getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true')
-    expect(within(tab).getAllByRole('tab').map((item) => item.textContent)).toEqual(['Overview', 'Authorization', 'Headers', 'Scripts', 'Variables'])
+    expect(within(tab).getAllByRole('tab').map((item) => item.textContent)).toEqual(['Overview', 'Authorization', 'Headers', 'Scripts', 'Variables', 'Documentation'])
     expect(within(tab).getByRole('textbox', { name: 'Name' })).toHaveValue('Billing')
     expect(await within(tab).findByText('billing', { selector: 'strong' })).toBeInTheDocument()
     expect(within(tab).getByRole('button', { name: 'Save' })).toBeDisabled()
@@ -206,5 +212,40 @@ describe('ItemTab', () => {
     vi.mocked(tree.saveItemSettings).mockRejectedValue(new AppError('TRE-05500', 'The folder is read-only'))
     await act(() => store().save('c1'))
     expect(screen.getByText(/The folder is read-only. Check that the workspace folder exists and is writable/)).toBeInTheDocument()
+  })
+
+  it('shows the documentation of collections only and enables Save while its YAML is edited', async () => {
+    renderTab(collection)
+    const tab = await screen.findByRole('region', { name: 'Billing collection' })
+    await userEvent.click(within(tab).getByRole('tab', { name: 'Documentation' }))
+    expect(within(tab).getByText('Documentation of c1')).toBeInTheDocument()
+    act(() =>
+      useDocumentationStore.setState({
+        entries: {
+          c1: {
+            status: 'ready',
+            loadError: null,
+            base: null,
+            draft: 'edited',
+            dirty: true,
+            view: 'yaml',
+            preview: null,
+            problem: null,
+            plan: null,
+            saving: false,
+            failure: null,
+            stale: false,
+          },
+        },
+      }),
+    )
+    expect(within(tab).getByRole('button', { name: 'Save' })).toBeEnabled()
+    act(() => useDocumentationStore.getState().reset())
+  })
+
+  it('has no documentation for folders', async () => {
+    renderTab(folder)
+    const tab = await screen.findByRole('region', { name: 'Invoices folder' })
+    expect(within(tab).queryByRole('tab', { name: 'Documentation' })).not.toBeInTheDocument()
   })
 })

@@ -1,5 +1,7 @@
 import { useConsoleStore } from '@/features/console/store'
 import { useCookiesStore } from '@/features/cookies/store'
+import type { DocumentationSaved } from '@/features/documentation/model'
+import { useDocumentationStore } from '@/features/documentation/store'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import { useExportStore } from '@/features/export/store'
 import { useImportStore } from '@/features/import-export/store'
@@ -31,6 +33,24 @@ import {
 } from '@/platform/events'
 
 type ResponseEntries = Record<string, ResponseEntry>
+
+/** Brings the sidebar, open request tabs and the collection tab up to date with a saved documentation edit. */
+function catchUpWithDocumentation(saved: DocumentationSaved): void {
+  if (saved.localId !== useWorkspacesStore.getState().activeLocalId) {
+    return
+  }
+  const tabs = useTabsStore.getState()
+  for (const request of saved.updated) {
+    void tabs.handleChangedOnDisk({ localId: saved.localId, requestId: request.id, deleted: false, revision: request.revision })
+  }
+  if (saved.deleted.length > 0) {
+    tabs.handleDeleted(saved.deleted.map((request) => request.id))
+  }
+  if (saved.collectionChanged) {
+    void useItemSettingsStore.getState().load(saved.collectionId)
+  }
+  void useSidebarStore.getState().load()
+}
 type BuilderTabs = ReturnType<typeof useRequestBuilderStore.getState>['tabs']
 
 export function bootstrap(): () => void {
@@ -46,7 +66,10 @@ export function bootstrap(): () => void {
         void useSidebarStore.getState().load()
       }
     }),
-    onRequestChangedOnDisk((event) => void useTabsStore.getState().handleChangedOnDisk(event)),
+    onRequestChangedOnDisk((event) => {
+      void useTabsStore.getState().handleChangedOnDisk(event)
+      void useDocumentationStore.getState().refreshAll()
+    }),
     onVariablesChanged((event) => {
       useEnvironmentsStore.getState().handleVariablesChanged(event)
       if (event.localId === useWorkspacesStore.getState().activeLocalId) {
@@ -87,6 +110,14 @@ export function bootstrap(): () => void {
         useTabsStore.getState().pinIfEdited()
       }
     }),
+    useDocumentationStore.subscribe((state, previous) => {
+      if (state.entries !== previous.entries) {
+        useTabsStore.getState().pinIfEdited()
+      }
+      if (state.saved !== previous.saved && state.saved !== null) {
+        catchUpWithDocumentation(state.saved)
+      }
+    }),
     useRequestBuilderStore.subscribe((state, previous) => {
       if (state.tabs !== previous.tabs) {
         useTabsStore.getState().pinIfEdited()
@@ -111,6 +142,7 @@ export function bootstrap(): () => void {
       if (state.tree !== previous.tree && state.status === 'ready') {
         useTabsStore.getState().handleTreeChanged(state.tree)
         void useItemSettingsStore.getState().refreshAll()
+        void useDocumentationStore.getState().refreshAll()
       }
       if (
         state.expanded !== previous.expanded ||

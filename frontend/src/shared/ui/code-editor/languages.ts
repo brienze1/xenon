@@ -1,6 +1,6 @@
 import type { Extension } from '@codemirror/state'
 
-export type CodeLanguage = 'json' | 'xml' | 'html' | 'javascript' | 'text'
+export type CodeLanguage = 'json' | 'xml' | 'html' | 'javascript' | 'yaml' | 'text'
 
 const PLAIN_TEXT: Extension = []
 
@@ -14,6 +14,8 @@ async function importLanguage(language: CodeLanguage): Promise<Extension> {
       return (await import('@codemirror/lang-html')).html()
     case 'javascript':
       return (await import('@codemirror/lang-javascript')).javascript()
+    case 'yaml':
+      return (await import('@codemirror/lang-yaml')).yaml()
     default:
       return PLAIN_TEXT
   }

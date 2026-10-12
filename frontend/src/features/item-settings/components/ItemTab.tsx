@@ -8,6 +8,7 @@ import { Button } from '@/shared/ui/button/Button'
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { Tabs } from '@/shared/ui/tabs/Tabs'
 import type { ItemAuthSlot, ItemScriptsSlot, ItemSection } from '@/features/item-settings/model'
+import { isDocumentationDirty, useDocumentationStore } from '@/features/documentation/store'
 import { isScopeDirty, useEnvironmentsStore } from '@/features/environments/store'
 import { isItemDirty, useItemSettingsStore } from '@/features/item-settings/store'
 import { ItemHeaders } from './ItemHeaders'
@@ -29,6 +30,7 @@ const AUTH_TAB = <Tabs.Tab value="auth">Authorization</Tabs.Tab>
 const HEADERS_TAB = <Tabs.Tab value="headers">Headers</Tabs.Tab>
 const SCRIPTS_TAB = <Tabs.Tab value="scripts">Scripts</Tabs.Tab>
 const VARIABLES_TAB = <Tabs.Tab value="variables">Variables</Tabs.Tab>
+const DOCUMENTATION_TAB = <Tabs.Tab value="documentation">Documentation</Tabs.Tab>
 
 const KIND_LABEL: Record<ContainerKind, string> = { collection: 'Collection', folder: 'Folder' }
 
@@ -52,6 +54,8 @@ interface ItemTabProps {
   scriptsEditor?: (slot: ItemScriptsSlot) => ReactNode
   /** Renders a collection's variables table; composed by the app. Folders have no variables. */
   collectionVariables?: (collectionId: string) => ReactNode
+  /** Renders a collection's OpenAPI documentation; composed by the app. Folders have none. */
+  documentation?: (collectionId: string) => ReactNode
 }
 
 /**
@@ -59,7 +63,7 @@ interface ItemTabProps {
  * description) and the defaults its requests inherit — authorization, headers, scripts and, for
  * a collection, variables.
  */
-export function ItemTab({ itemId, kind, onSave, authEditor, scriptsEditor, collectionVariables }: ItemTabProps) {
+export function ItemTab({ itemId, kind, onSave, authEditor, scriptsEditor, collectionVariables, documentation }: ItemTabProps) {
   const open = useItemSettingsStore((state) => state.open)
   const load = useItemSettingsStore((state) => state.load)
   const status = useItemSettingsStore((state) => state.items[itemId]?.status ?? 'loading')
@@ -97,6 +101,7 @@ export function ItemTab({ itemId, kind, onSave, authEditor, scriptsEditor, colle
       authEditor={authEditor}
       scriptsEditor={scriptsEditor}
       collectionVariables={collectionVariables}
+      documentation={documentation}
     />
   )
 }
@@ -105,13 +110,14 @@ interface ItemEditorProps extends Omit<ItemTabProps, 'itemId'> {
   settings: ItemSettings
 }
 
-function ItemEditor({ settings, kind, onSave, authEditor, scriptsEditor, collectionVariables }: ItemEditorProps) {
+function ItemEditor({ settings, kind, onSave, authEditor, scriptsEditor, collectionVariables, documentation }: ItemEditorProps) {
   const itemId = settings.id
   const section = useItemSettingsStore((state) => state.items[itemId]?.section ?? 'overview')
   const saving = useItemSettingsStore((state) => state.items[itemId]?.saving === true)
   const settingsDirty = useItemSettingsStore((state) => isItemDirty(state, itemId))
   const variablesDirty = useEnvironmentsStore((state) => kind === 'collection' && isScopeDirty(state, collectionScope(itemId)))
-  const dirty = settingsDirty || variablesDirty
+  const documentationDirty = useDocumentationStore((state) => kind === 'collection' && isDocumentationDirty(state, itemId))
+  const dirty = settingsDirty || variablesDirty || documentationDirty
   const stale = useItemSettingsStore((state) => state.items[itemId]?.stale === true)
   const failure = useItemSettingsStore((state) => state.items[itemId]?.failure ?? null)
   const edit = useItemSettingsStore((state) => state.edit)
@@ -119,7 +125,8 @@ function ItemEditor({ settings, kind, onSave, authEditor, scriptsEditor, collect
   const discard = useItemSettingsStore((state) => state.discard)
   const label = KIND_LABEL[kind]
   const variables = kind === 'collection' && collectionVariables ? collectionVariables(itemId) : null
-  const shown: ItemSection = section === 'variables' && variables === null ? 'overview' : section
+  const docs = kind === 'collection' && documentation ? documentation(itemId) : null
+  const shown: ItemSection = (section === 'variables' && variables === null) || (section === 'documentation' && docs === null) ? 'overview' : section
 
   return (
     <section className={styles.tab} aria-label={`${settings.name} ${label.toLowerCase()}`}>
@@ -161,6 +168,7 @@ function ItemEditor({ settings, kind, onSave, authEditor, scriptsEditor, collect
           {HEADERS_TAB}
           {SCRIPTS_TAB}
           {variables ? VARIABLES_TAB : null}
+          {docs ? DOCUMENTATION_TAB : null}
         </Tabs.List>
         <Tabs.Panel value="overview" className={styles.panel}>
           <ItemOverview settings={settings} label={label} />
@@ -186,6 +194,11 @@ function ItemEditor({ settings, kind, onSave, authEditor, scriptsEditor, collect
         {variables ? (
           <Tabs.Panel value="variables" className={styles.panel}>
             {variables}
+          </Tabs.Panel>
+        ) : null}
+        {docs ? (
+          <Tabs.Panel value="documentation" className={styles.documentationPanel}>
+            {docs}
           </Tabs.Panel>
         ) : null}
       </Tabs.Root>

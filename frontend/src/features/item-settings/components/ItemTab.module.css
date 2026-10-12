@@ -50,6 +50,14 @@
   padding-top: var(--space-4);
 }
 
+.documentationPanel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 360px;
+  padding-top: var(--space-3);
+}
+
 .scriptsPanel {
   display: flex;
   flex: 1;

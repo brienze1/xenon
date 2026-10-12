@@ -20,6 +20,8 @@ async function importLanguage(language: CodeLanguage): Promise<Language | null> 
       return (await import('@codemirror/lang-html')).htmlLanguage
     case 'javascript':
       return (await import('@codemirror/lang-javascript')).javascriptLanguage
+    case 'yaml':
+      return (await import('@codemirror/lang-yaml')).yamlLanguage
     default:
       return null
   }

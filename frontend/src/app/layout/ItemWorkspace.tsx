@@ -1,3 +1,4 @@
+import { DocumentationPanel } from '@/features/documentation/components/DocumentationPanel'
 import { VariableTable } from '@/features/environments/components/VariableTable'
 import { ItemTab } from '@/features/item-settings/components/ItemTab'
 import type { ItemAuthSlot, ItemScriptsSlot } from '@/features/item-settings/model'
@@ -18,13 +19,17 @@ function collectionVariables(collectionId: string) {
   return <VariableTable scope={collectionScope(collectionId)} label="Collection variables" draftLifetime="workspace" />
 }
 
+function documentation(collectionId: string) {
+  return <DocumentationPanel collectionId={collectionId} />
+}
+
 interface ItemWorkspaceProps {
   itemId: string
   kind: ContainerKind
   onSave: () => void
 }
 
-/** A collection or folder tab with the request editors it shares (auth, scripts, variables). */
+/** A collection or folder tab with the editors it shares with requests (auth, scripts, variables) and its documentation. */
 export function ItemWorkspace({ itemId, kind, onSave }: ItemWorkspaceProps) {
   return (
     <ItemTab
@@ -34,6 +39,7 @@ export function ItemWorkspace({ itemId, kind, onSave }: ItemWorkspaceProps) {
       authEditor={authEditor}
       scriptsEditor={scriptsEditor}
       collectionVariables={collectionVariables}
+      documentation={documentation}
     />
   )
 }

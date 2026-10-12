@@ -120,7 +120,7 @@ vi.mock('@/platform/services/requests', () => ({
   getRequest: vi.fn(),
   applyUrl: vi.fn(),
 }))
-vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn(), searchTree: vi.fn(), getItemSettings: vi.fn() }))
+vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn(), searchTree: vi.fn(), getItemSettings: vi.fn(), getDocumentation: vi.fn() }))
 vi.mock('@/platform/services/sync', () => ({ getSyncStatus: vi.fn(), listChanges: vi.fn(async () => []) }))
 vi.mock('@/platform/services/history', () => ({ listHistory: vi.fn(), getHistoryEntry: vi.fn(), clearHistory: vi.fn() }))
 
@@ -136,6 +136,7 @@ const sync = await import('@/platform/services/sync')
 const { useSyncStore } = await import('@/features/sync/store')
 const { useEnvironmentsStore } = await import('@/features/environments/store')
 const { useItemSettingsStore } = await import('@/features/item-settings/store')
+const { useDocumentationStore } = await import('@/features/documentation/store')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
 const { useConsoleStore } = await import('@/features/console/store')
 const { useCookiesStore } = await import('@/features/cookies/store')
@@ -376,6 +377,42 @@ describe('bootstrap', () => {
     expect(useTabsStore.getState().tabs.some((tab) => tab.id === tabId)).toBe(true)
     useSidebarStore.setState({ tree: [] })
     expect(useTabsStore.getState().tabs.some((tab) => tab.id === tabId)).toBe(false)
+    useItemSettingsStore.getState().reset()
+    cleanup()
+  })
+
+  it('catches the sidebar, request tabs and the collection settings up with a saved documentation edit', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
+    const cleanup = await started()
+    useWorkspacesStore.setState({ activeLocalId: 'A' })
+    useTabsStore.getState().hydrate('A', {
+      ...defaultUIState(),
+      tabs: [
+        { tabId: 't1', requestId: 'r1', pinned: true, baseRevision: null, draft: null },
+        { tabId: 't2', requestId: 'r2', pinned: true, baseRevision: null, draft: null },
+      ],
+      activeTabId: 't1',
+    })
+    vi.mocked(tree.getTree).mockResolvedValue([])
+    vi.mocked(tree.getItemSettings).mockResolvedValue({ id: 'c1' } as never)
+    vi.mocked(requests.getRequest).mockResolvedValue({ draft: { ...(await import('@/platform/mappers/request')).emptyDraft(), id: 'r1', name: 'Renamed' }, revision: 'rev-2' })
+    await useItemSettingsStore.getState().open('c1')
+    vi.mocked(tree.getItemSettings).mockClear()
+    const item = { folder: '', method: 'GET', path: '' }
+    useDocumentationStore.setState({
+      saved: {
+        localId: 'A',
+        collectionId: 'c1',
+        collectionChanged: true,
+        updated: [{ ...item, id: 'r1', name: 'Renamed', revision: 'rev-2' }],
+        created: [],
+        deleted: [{ ...item, id: 'r2', name: 'Gone', revision: '' }],
+      },
+    })
+    await vi.waitFor(() => expect(tree.getTree).toHaveBeenCalledWith('A'))
+    expect(tree.getItemSettings).toHaveBeenCalledWith('A', 'c1')
+    expect(useTabsStore.getState().tabs.map((tab) => tab.id)).toEqual(['t1'])
+    useDocumentationStore.getState().reset()
     useItemSettingsStore.getState().reset()
     cleanup()
   })

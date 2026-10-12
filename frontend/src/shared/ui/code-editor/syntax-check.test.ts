@@ -32,3 +32,13 @@ describe('findSyntaxErrors', () => {
     expect(await findSyntaxErrors('{{{ not checked', 'text')).toEqual([])
   })
 })
+
+describe('findSyntaxErrors in YAML', () => {
+  it('accepts documents with quoted variables', async () => {
+    expect(await findSyntaxErrors("openapi: 3.1.0\nservers:\n  - url: '{{baseUrl}}'\npaths: {}\n", 'yaml')).toEqual([])
+  })
+
+  it('points at an unclosed flow sequence', async () => {
+    expect(await findSyntaxErrors('info:\n  title: [unclosed\n', 'yaml')).toHaveLength(1)
+  })
+})

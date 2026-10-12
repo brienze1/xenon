@@ -24,7 +24,16 @@ vi.mock('@/platform/services/variables', () => ({
   saveVariableTable: vi.fn(),
 }))
 vi.mock('@/platform/services/vault', () => ({ PASSPHRASE_SETUP_REQUIRED: 'VLT-05409', VAULT_LOCKED: 'VLT-04409' }))
-vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn(), searchTree: vi.fn(), getItemSettings: vi.fn(), saveItemSettings: vi.fn() }))
+vi.mock('@/platform/services/tree', () => ({
+  getTree: vi.fn(),
+  searchTree: vi.fn(),
+  getItemSettings: vi.fn(),
+  saveItemSettings: vi.fn(),
+  getDocumentation: vi.fn(),
+  previewDocumentation: vi.fn(),
+  planDocumentation: vi.fn(),
+  applyDocumentation: vi.fn(),
+}))
 vi.mock('@/platform/services/history', () => ({ listHistory: vi.fn() }))
 
 const requests = await import('@/platform/services/requests')
@@ -34,6 +43,7 @@ const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
 const { useEnvironmentsStore } = await import('@/features/environments/store')
 const { useItemSettingsStore } = await import('@/features/item-settings/store')
+const { useDocumentationStore } = await import('@/features/documentation/store')
 const { useSidebarStore } = await import('@/features/sidebar/store')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
 const { useTabsStore } = await import('./store')
@@ -91,6 +101,7 @@ describe('collection and folder tabs', () => {
     vi.resetAllMocks()
     tabs().reset()
     items().reset()
+    useDocumentationStore.getState().reset()
     useRequestBuilderStore.getState().reset()
     useResponseViewerStore.getState().reset()
     useSidebarStore.getState().reset()
@@ -193,6 +204,30 @@ describe('collection and folder tabs', () => {
     tabs().saveAs()
     expect(tabs().saveDialog).toBeNull()
     expect(tabs().duplicateTab(tabs().activeTabId!)).toBeNull()
+  })
+
+  it('counts edited documentation as unsaved and asks to confirm its plan before closing the collection tab', async () => {
+    const plan = { name: 'Billing', collectionChanged: true, updated: [], created: [], deleted: [] }
+    vi.mocked(tree.getDocumentation).mockResolvedValue({ yaml: 'openapi: 3.1.0\n', document: { title: 'Billing', description: '', version: '1.0.0', servers: [], tags: [], operations: [], securitySchemes: [] } })
+    vi.mocked(tree.planDocumentation).mockResolvedValue(plan)
+    tabs().openItemTab({ kind: 'collection', itemId: 'c1' }, 'preview')
+    const tabId = tabs().activeTabId!
+    await items().open('c1')
+    const documentation = useDocumentationStore.getState()
+    await documentation.open('c1')
+    documentation.edit('c1', 'openapi: 3.1.0\ninfo:\n  title: Payments\n')
+    tabs().pinIfEdited()
+    expect(tabs().tabs.find((tab) => tab.id === tabId)?.pinned).toBe(true)
+    tabs().requestClose(tabId)
+    expect(tabs().closePrompt).toBe(tabId)
+    await tabs().resolveClose('save')
+    expect(tree.planDocumentation).toHaveBeenCalledWith('ws', 'c1', 'openapi: 3.1.0\ninfo:\n  title: Payments\n')
+    expect(useDocumentationStore.getState().entries.c1?.plan).toEqual(plan)
+    expect(items().items.c1?.section).toBe('documentation')
+    expect(tabs().tabs.some((tab) => tab.id === tabId)).toBe(true)
+    expect(tabs().activeTabId).toBe(tabId)
+    tabs().forceClose(tabId)
+    expect(useDocumentationStore.getState().entries.c1).toBeUndefined()
   })
 
   it('counts unsaved collection variables as unsaved changes of the collection tab', async () => {

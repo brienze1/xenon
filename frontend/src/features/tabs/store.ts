@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { isDocumentationDirty, useDocumentationStore } from '@/features/documentation/store'
 import { isScopeDirty, useEnvironmentsStore } from '@/features/environments/store'
 import { useExamplesStore } from '@/features/examples/store'
 import { isItemDirty, useItemSettingsStore } from '@/features/item-settings/store'
@@ -142,6 +143,15 @@ function items() {
   return useItemSettingsStore.getState()
 }
 
+function documentation() {
+  return useDocumentationStore.getState()
+}
+
+/** Whether the tab is a collection tab whose documentation YAML has unsaved edits. */
+function isDocumentationTabDirty(tab: TabMeta | undefined): boolean {
+  return tab?.kind === 'collection' && Boolean(tab.itemId) && isDocumentationDirty(documentation(), tab.itemId!)
+}
+
 function itemTabMeta(id: string, target: ItemTabTarget, pinned: boolean): TabMeta {
   return { id, requestId: null, pinned, kind: target.kind, exampleId: null, environmentId: null, itemId: target.itemId }
 }
@@ -174,7 +184,7 @@ function isDirty(tabId: string): boolean {
   }
   if (isItemTab(tab)) {
     const variables = collectionVariablesScope(tab)
-    return isItemDirty(items(), tab!.itemId!) || (variables !== null && isScopeDirty(environments(), variables))
+    return isItemDirty(items(), tab!.itemId!) || (variables !== null && isScopeDirty(environments(), variables)) || isDocumentationTabDirty(tab)
   }
   return (builder().tabs[tabId]?.dirty ?? false) || examples().isDirty(tabId)
 }
@@ -314,7 +324,10 @@ export const useTabsStore = create<TabsState>()((set, get) => {
     promptNext()
   }
 
-  /** Saves a collection or folder tab: its settings and, for a collection, its variables. */
+  /**
+   * Saves a collection or folder tab: its settings and, for a collection, its variables and documentation.
+   * Edited documentation first shows what it changes; the save is `false` until that is confirmed.
+   */
   async function saveItemTab(tab: TabMeta): Promise<Result<boolean, AppError>> {
     const itemId = tab.itemId!
     const settings = await items().save(itemId)
@@ -322,14 +335,21 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       return settings
     }
     const variables = collectionVariablesScope(tab)
-    if (variables === null || !isScopeDirty(environments(), variables)) {
+    if (variables !== null && isScopeDirty(environments(), variables)) {
+      const saved = await environments().saveDraft(variables)
+      if (!saved.ok || !saved.value) {
+        items().setSection(itemId, 'variables')
+        return saved
+      }
+    }
+    if (!isDocumentationTabDirty(tab)) {
       return settings
     }
-    const saved = await environments().saveDraft(variables)
-    if (!saved.ok || !saved.value) {
-      items().setSection(itemId, 'variables')
+    const documented = await documentation().save(itemId)
+    if (!documented.ok || !documented.value) {
+      items().setSection(itemId, 'documentation')
     }
-    return saved
+    return documented
   }
 
   async function saveItemAndClose(tab: TabMeta) {
@@ -368,6 +388,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       environments().discardDraft(variables)
     }
     items().drop(tab.itemId!)
+    documentation().drop(tab.itemId!)
   }
 
   function activeOr(tabId: string | undefined): string | null {
