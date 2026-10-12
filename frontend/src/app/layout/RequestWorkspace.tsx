@@ -10,10 +10,9 @@ const DIVIDER = <SplitPane.Divider label="Resize request and response" />
 
 interface RequestWorkspaceProps {
   tabId: string
-  onSave: () => void
 }
 
-export function RequestWorkspace({ tabId, onSave }: RequestWorkspaceProps) {
+export function RequestWorkspace({ tabId }: RequestWorkspaceProps) {
   const {
     state: { layout },
     actions: { update },
@@ -27,7 +26,7 @@ export function RequestWorkspace({ tabId, onSave }: RequestWorkspaceProps) {
       onRatioChange={(splitRatio) => update({ splitRatio })}
     >
       <SplitPane.Pane>
-        <RequestBuilder tabId={tabId} onSave={onSave} scripts={<RequestScripts tabId={tabId} />} auth={<RequestAuth tabId={tabId} />} />
+        <RequestBuilder tabId={tabId} scripts={<RequestScripts tabId={tabId} />} auth={<RequestAuth tabId={tabId} />} />
       </SplitPane.Pane>
       {DIVIDER}
       <SplitPane.Pane>

@@ -24,7 +24,6 @@ const CONFLICT_MESSAGE = (
 
 interface RequestBuilderProps {
   tabId: string
-  onSave: () => void
   /** The Scripts tab's editor, composed by the app. */
   scripts?: ReactNode
   /** The Authorization tab's editor, composed by the app. */
@@ -32,7 +31,7 @@ interface RequestBuilderProps {
   mode?: RequestBuilderMode
 }
 
-export function RequestBuilder({ tabId, onSave, scripts, auth, mode = 'request' }: RequestBuilderProps) {
+export function RequestBuilder({ tabId, scripts, auth, mode = 'request' }: RequestBuilderProps) {
   const error = useRequestBuilderStore((state) => state.tabs[tabId]?.error ?? null)
   const conflict = useRequestBuilderStore((state) => state.tabs[tabId]?.conflict === true)
   const save = useRequestBuilderStore((state) => state.save)
@@ -49,7 +48,7 @@ export function RequestBuilder({ tabId, onSave, scripts, auth, mode = 'request' 
       <h2 id={headingId} className="visually-hidden">
         {mode === 'example' ? 'Example Request' : 'Request'}
       </h2>
-      <RequestBar tabId={tabId} onSave={onSave} mode={mode} />
+      <RequestBar tabId={tabId} mode={mode} />
       {mode === 'request' ? <CurlPasteNotice tabId={tabId} /> : null}
       {mode === 'request' && conflict ? (
         <Banner.Root tone="warning" className={styles.banner}>

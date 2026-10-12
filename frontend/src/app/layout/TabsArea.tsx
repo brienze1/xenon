@@ -65,9 +65,9 @@ export function TabsArea() {
             ) : kind === 'environment' && environmentId ? (
               <EnvironmentTab key={activeTabId} environmentId={environmentId} />
             ) : kind === 'example' ? (
-              <ExampleWorkspace key={activeTabId} tabId={activeTabId} onSave={() => void save(activeTabId)} />
+              <ExampleWorkspace key={activeTabId} tabId={activeTabId} />
             ) : (
-              <RequestWorkspace key={activeTabId} tabId={activeTabId} onSave={() => void save(activeTabId)} />
+              <RequestWorkspace key={activeTabId} tabId={activeTabId} />
             )}
           </div>
         </>

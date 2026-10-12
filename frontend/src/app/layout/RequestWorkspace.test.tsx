@@ -12,7 +12,7 @@ function renderWorkspace(overrides: Partial<LayoutState>) {
   const onLayoutChange = vi.fn()
   render(
     <AppShell layout={{ ...defaultLayout(), ...overrides }} onLayoutChange={onLayoutChange}>
-      <RequestWorkspace tabId="t1" onSave={vi.fn()} />
+      <RequestWorkspace tabId="t1" />
     </AppShell>,
   )
   return onLayoutChange

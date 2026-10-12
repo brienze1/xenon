@@ -12,18 +12,15 @@ import styles from './RequestBar.module.css'
 
 interface RequestBarProps {
   tabId: string
-  onSave: () => void
   mode?: RequestBuilderMode
 }
 
 const CUSTOM_METHOD = /^[A-Za-z][A-Za-z0-9_-]{0,31}$/
 
-export function RequestBar({ tabId, onSave, mode = 'request' }: RequestBarProps) {
+export function RequestBar({ tabId, mode = 'request' }: RequestBarProps) {
   const method = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.method ?? 'GET')
   const url = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.url ?? '')
   const sending = useRequestBuilderStore((state) => state.tabs[tabId]?.pending != null)
-  const saved = useRequestBuilderStore((state) => (state.tabs[tabId]?.draft.id ?? '') !== '')
-  const saving = useRequestBuilderStore((state) => state.tabs[tabId]?.saving === true)
   const setMethod = useRequestBuilderStore((state) => state.setMethod)
   const setUrl = useRequestBuilderStore((state) => state.setUrl)
   const send = useRequestBuilderStore((state) => state.send)
@@ -111,9 +108,6 @@ export function RequestBar({ tabId, onSave, mode = 'request' }: RequestBarProps)
           Send
         </Button>
       )}
-      <Button variant="secondary" disabled={saving} title={saved || !sendable ? 'Save' : 'Save into a collection'} onClick={onSave}>
-        {saving ? 'Saving…' : 'Save'}
-      </Button>
     </div>
   )
 }

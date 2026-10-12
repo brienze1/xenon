@@ -98,7 +98,7 @@ describe('RequestBuilder', () => {
   })
 
   it('shows the sub-tabs in Postman order with Params first', () => {
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     const tabs = within(screen.getByRole('tablist', { name: 'Request' })).getAllByRole('tab')
     expect(tabs.map((tab) => tab.textContent)).toEqual(['Params', 'Authorization', 'Headers', 'Body', 'Scripts', 'Settings'])
     expect(screen.getByRole('tab', { name: 'Params' })).toHaveAttribute('aria-selected', 'true')
@@ -106,7 +106,7 @@ describe('RequestBuilder', () => {
 
   it('keeps the params table and the URL in sync both ways', async () => {
     const user = userEvent.setup()
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     await user.type(screen.getByRole('textbox', { name: 'Request URL' }), 'https://api.test/users?page=2&limit=10')
     const table = await screen.findByRole('table', { name: 'Query params' })
     await vi.waitFor(() =>
@@ -127,7 +127,7 @@ describe('RequestBuilder', () => {
       scopes: {},
     })
     const user = userEvent.setup()
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     await user.type(screen.getByRole('textbox', { name: 'Request URL' }), '{{{{base_url}}/{{{{id}}?p={{{{page}}')
     await vi.waitFor(() => expect(variables.inspectVariables).toHaveBeenCalled())
     expect(await screen.findByTitle('Unresolved variable — sent as written')).toHaveTextContent('{{id}}')
@@ -138,7 +138,7 @@ describe('RequestBuilder', () => {
   it('suggests variable names after {{ in the URL', async () => {
     vi.mocked(variables.suggestVariables).mockResolvedValue([{ name: 'base_url', scope: 'globals', description: '', secret: false, dynamic: false }])
     const user = userEvent.setup()
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     await user.type(screen.getByRole('textbox', { name: 'Request URL' }), '{{{{ba')
     expect(await screen.findByRole('option', { name: /base_url/ })).toHaveTextContent('Globals')
     expect(variables.suggestVariables).toHaveBeenLastCalledWith('ws', '', 'ba')
@@ -146,7 +146,7 @@ describe('RequestBuilder', () => {
 
   it('remembers a selection in the URL for "Move to secret variable"', async () => {
     const user = userEvent.setup()
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     const url = screen.getByRole('textbox', { name: 'Request URL' })
     await user.type(url, 'https://x')
     await user.keyboard('{Control>}a{/Control}')
@@ -157,7 +157,7 @@ describe('RequestBuilder', () => {
 
   it('lists path variables and stores their values', async () => {
     const user = userEvent.setup()
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     await user.type(screen.getByRole('textbox', { name: 'Request URL' }), 'https://api.test/users/:id')
     const value = await screen.findByRole('textbox', { name: 'Value of id' })
     await user.type(value, '42')
@@ -166,17 +166,15 @@ describe('RequestBuilder', () => {
 
   it('edits an example request without Send, scripts or settings', async () => {
     const user = userEvent.setup()
-    const onSave = vi.fn()
     useRequestBuilderStore.getState().setSubTab(tabId, 'settings')
-    render(<RequestBuilder tabId={tabId} onSave={onSave} mode="example" />)
+    render(<RequestBuilder tabId={tabId} mode="example" />)
     expect(screen.queryByRole('button', { name: 'Send' })).toBeNull()
     expect(screen.queryByRole('tab', { name: 'Scripts' })).toBeNull()
     expect(screen.queryByRole('tab', { name: 'Settings' })).toBeNull()
     expect(screen.getByRole('tab', { name: 'Params' })).toHaveAttribute('aria-selected', 'true')
     await user.type(screen.getByRole('textbox', { name: 'Request URL' }), 'https://x{Enter}')
     expect(requests.sendRequest).not.toHaveBeenCalled()
-    await user.click(screen.getByRole('button', { name: 'Save' }))
-    expect(onSave).toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
   })
 
   it('turns Send into Cancel while the request is in flight', async () => {
@@ -185,20 +183,19 @@ describe('RequestBuilder', () => {
     let reject: (error: unknown) => void = () => undefined
     vi.mocked(requests.sendRequest).mockReturnValue({ result: new Promise((_, fail) => (reject = fail)), cancel })
     cancel.mockImplementation(() => reject(new AppError('cancelled', 'You cancelled the request')))
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     await user.click(screen.getByRole('button', { name: 'Send' }))
     const cancelButton = await screen.findByRole('button', { name: 'Cancel Request' })
     await user.click(cancelButton)
     expect(cancel).toHaveBeenCalled()
     expect(await screen.findByRole('button', { name: 'Send' })).toBeInTheDocument()
     expect(useResponseViewerStore.getState().entries[tabId]?.result?.error?.kind).toBe('cancelled')
-    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled()
   })
 
   it('sends with Enter in the URL field', async () => {
     const user = userEvent.setup()
     vi.mocked(requests.sendRequest).mockReturnValue({ result: new Promise(() => undefined), cancel: vi.fn() })
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     await user.type(screen.getByRole('textbox', { name: 'Request URL' }), 'https://api.test{Enter}')
     expect(requests.sendRequest).toHaveBeenCalledWith('ws', tabId, expect.objectContaining({ url: 'https://api.test' }), { confirmedEnvironmentId: '', missingSecrets: false, expiredToken: false })
   })
@@ -214,7 +211,7 @@ describe('RequestBuilder', () => {
       notices: ['Ignored unknown option --frobnicate'],
     })
     const user = userEvent.setup()
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     const url = screen.getByRole('textbox', { name: 'Request URL' })
     await user.type(url, 'https://old.test')
     await user.click(url)
@@ -234,7 +231,7 @@ describe('RequestBuilder', () => {
 
   it('pastes text that is not a cURL command into the URL as it is', async () => {
     const user = userEvent.setup()
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     const url = screen.getByRole('textbox', { name: 'Request URL' })
     await user.click(url)
     await user.paste('https://api.test/curl me')
@@ -245,7 +242,7 @@ describe('RequestBuilder', () => {
   it('shows why a pasted cURL command could not be read', async () => {
     vi.mocked(requests.parseCurl).mockRejectedValue(new AppError('IMP-07400', 'Only HTTP and HTTPS URLs can be imported, not ftp://x'))
     const user = userEvent.setup()
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     await user.click(screen.getByRole('textbox', { name: 'Request URL' }))
     await user.paste('curl ftp://x')
     expect(await screen.findByRole('alert')).toHaveTextContent('Only HTTP and HTTPS URLs can be imported, not ftp://x. Check the cURL command and paste it again.')
@@ -253,7 +250,7 @@ describe('RequestBuilder', () => {
 
   it('picks standard and custom methods', async () => {
     const user = userEvent.setup()
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     await user.click(screen.getByRole('button', { name: 'Method GET' }))
     await user.click(screen.getByRole('menuitemradio', { name: 'POST' }))
     expect(screen.getByRole('button', { name: 'Method POST' })).toBeInTheDocument()
@@ -266,7 +263,7 @@ describe('RequestBuilder', () => {
 
   it('lists auto headers greyed with a switch each', async () => {
     const user = userEvent.setup()
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     await user.click(screen.getByRole('tab', { name: 'Headers' }))
     await act(() => useRequestBuilderStore.getState().refreshAutoHeaders(tabId))
     await user.click(screen.getByRole('button', { name: 'Show auto-generated headers' }))
@@ -278,7 +275,7 @@ describe('RequestBuilder', () => {
 
   it('hides the auto headers by default and says how many are hidden', async () => {
     const user = userEvent.setup()
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     await user.click(screen.getByRole('tab', { name: 'Headers' }))
     await act(() => useRequestBuilderStore.getState().refreshAutoHeaders(tabId))
     const toggle = screen.getByRole('button', { name: 'Show auto-generated headers' })
@@ -290,7 +287,7 @@ describe('RequestBuilder', () => {
 
   it('shows and hides the auto headers without changing what is sent, and remembers the choice', async () => {
     const user = userEvent.setup()
-    const view = render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    const view = render(<RequestBuilder tabId={tabId} />)
     await user.click(screen.getByRole('tab', { name: 'Headers' }))
     await act(() => useRequestBuilderStore.getState().refreshAutoHeaders(tabId))
     await user.click(screen.getByRole('button', { name: 'Show auto-generated headers' }))
@@ -303,7 +300,7 @@ describe('RequestBuilder', () => {
     expect(useRequestBuilderStore.getState().tabs[tabId]!.draft.disabledAutoHeaders).toEqual(['User-Agent'])
     await user.click(screen.getByRole('button', { name: 'Show auto-generated headers' }))
     view.unmount()
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     expect(screen.getByRole('table', { name: 'Auto-generated headers' })).toBeInTheDocument()
     expect(useRequestBuilderStore.getState().tabs[tabId]!.draft.disabledAutoHeaders).toEqual(['User-Agent'])
   })
@@ -312,7 +309,7 @@ describe('RequestBuilder', () => {
     const user = userEvent.setup()
     vi.mocked(requests.formatBulk).mockResolvedValue('')
     vi.mocked(requests.parseBulk).mockResolvedValue([{ id: 'x', key: 'X-Token', value: '{{token}}', description: '', enabled: true }])
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     await user.click(screen.getByRole('tab', { name: 'Headers' }))
     await user.click(screen.getByRole('button', { name: 'Bulk Edit' }))
     await user.type(await screen.findByRole('textbox', { name: 'Headers bulk edit' }), 'X-Token:{{{{token}}')
@@ -322,7 +319,7 @@ describe('RequestBuilder', () => {
 
   it('shows the auth editor the app composes in the Authorization tab', async () => {
     const user = userEvent.setup()
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} auth={<p>auth editor</p>} />)
+    render(<RequestBuilder tabId={tabId} auth={<p>auth editor</p>} />)
     await user.click(screen.getByRole('tab', { name: 'Authorization' }))
     expect(screen.getByText('auth editor')).toBeInTheDocument()
   })
@@ -336,7 +333,7 @@ describe('RequestBuilder', () => {
         formdata: [{ id: 'f', key: 'key', value: '', description: '', enabled: true, type: 'file', src: '/home/ana/.ssh/id_rsa', srcState: 'repick' }],
       })
     })
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     await user.click(screen.getByRole('tab', { name: 'Body' }))
     expect(screen.getByText('Imported from another machine — select the file again before sending')).toBeInTheDocument()
     vi.mocked(dialogs.pickFile).mockResolvedValue('/home/me/file.txt')
@@ -351,7 +348,7 @@ describe('RequestBuilder', () => {
     act(() => {
       useRequestBuilderStore.getState().updateBody(tabId, { mode: 'raw', raw: { language: 'json', content: '{\n  "ids": [\n    500947,\n  ]\n}' } })
     })
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     await user.click(screen.getByRole('tab', { name: 'Body' }))
     expect(await screen.findByRole('list', { name: 'Raw body problems' })).toHaveTextContent('Line 3, column 11: Trailing comma before "]"')
     act(() => useRequestBuilderStore.getState().updateBody(tabId, { raw: { language: 'json', content: '{"ids": [500947]}' } }))
@@ -363,7 +360,7 @@ describe('RequestBuilder', () => {
     act(() => {
       useRequestBuilderStore.getState().updateBody(tabId, { mode: 'raw', raw: { language: 'json', content: '{\n\n "test":"lkalala"}' } })
     })
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     await user.click(screen.getByRole('tab', { name: 'Body' }))
     await user.click(screen.getByRole('button', { name: 'Beautify' }))
     expect(useRequestBuilderStore.getState().tabs[tabId]?.draft.body.raw.content).toBe('{\n  "test": "lkalala"\n}')
@@ -380,7 +377,7 @@ describe('RequestBuilder', () => {
   it('edits every body mode and marks a missing file', async () => {
     const user = userEvent.setup()
     vi.mocked(dialogs.pickFile).mockResolvedValue('/files/payload.bin')
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     await user.click(screen.getByRole('tab', { name: 'Body' }))
     expect(screen.getByText('This request does not have a body.')).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Body type' })).toContainElement(screen.getByRole('radio', { name: 'Raw' }))
@@ -411,10 +408,10 @@ describe('RequestBuilder', () => {
 
   it('shows the scripts editor the app composes and edits the settings', async () => {
     const user = userEvent.setup()
-    const { rerender } = render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    const { rerender } = render(<RequestBuilder tabId={tabId} />)
     await user.click(screen.getByRole('tab', { name: 'Scripts' }))
     expect(screen.getByText('Scripts can be edited in the request tab.')).toBeInTheDocument()
-    rerender(<RequestBuilder tabId={tabId} onSave={vi.fn()} scripts={<p>scripts editor</p>} />)
+    rerender(<RequestBuilder tabId={tabId} scripts={<p>scripts editor</p>} />)
     expect(screen.getByText('scripts editor')).toBeInTheDocument()
     await user.click(screen.getByRole('tab', { name: 'Settings' }))
     const timeout = screen.getByRole('spinbutton', { name: 'Request timeout in ms (0 = no timeout)' })
@@ -430,7 +427,7 @@ describe('RequestBuilder', () => {
     useRequestBuilderStore.setState((state) => ({
       tabs: { ...state.tabs, [tabId]: { ...state.tabs[tabId]!, error: { code: 'REQ-03400', description: 'invalid request' } as never } },
     }))
-    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    render(<RequestBuilder tabId={tabId} />)
     expect(screen.getByRole('alert')).toHaveTextContent('invalid request')
     expect(emptyDraft().method).toBe('GET')
   })
@@ -474,52 +471,34 @@ describe('RequestBuilder saving', () => {
 
   afterEach(() => resetStores())
 
-  function saveTab(tabId: string) {
-    return () => void useRequestBuilderStore.getState().save(tabId)
-  }
-
-  it('hands the Save button to the caller and saves requests opened from the sidebar', async () => {
+  it('has no Save button next to Send: Mod+S saves requests opened from the sidebar', async () => {
     const tabId = 'tab-1'
-    const onSave = vi.fn(saveTab(tabId))
-    render(<RequestBuilder tabId={tabId} onSave={onSave} />)
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
-    expect(onSave).toHaveBeenCalledOnce()
-    expect(requests.saveRequest).not.toHaveBeenCalled()
+    render(<RequestBuilder tabId={tabId} />)
+    expect(screen.getByRole('button', { name: 'Send' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
     vi.mocked(requests.getRequest).mockResolvedValue({ draft: saved, revision: 'rev-1' })
     vi.mocked(requests.saveRequest).mockResolvedValue({ draft: saved, revision: 'rev-2' })
     await act(() => useRequestBuilderStore.getState().openSaved(tabId, 'r1'))
     expect(screen.getByRole('textbox', { name: 'Request URL' })).toHaveTextContent('https://x/ping')
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
+    await act(() => useRequestBuilderStore.getState().save(tabId))
     expect(requests.saveRequest).toHaveBeenCalledWith('ws', saved, 'rev-1', false)
-  })
-
-  it('shows the save in progress on the Save button', async () => {
-    const tabId = 'tab-1'
-    let finish: (value: { draft: RequestDraft; revision: string }) => void = () => undefined
-    vi.mocked(requests.getRequest).mockResolvedValue({ draft: saved, revision: 'rev-1' })
-    vi.mocked(requests.saveRequest).mockImplementation(() => new Promise((resolve) => (finish = resolve)))
-    render(<RequestBuilder tabId={tabId} onSave={saveTab(tabId)} />)
-    await act(() => useRequestBuilderStore.getState().openSaved(tabId, 'r1'))
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
-    expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled()
-    await act(async () => finish({ draft: saved, revision: 'rev-2' }))
-    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled()
   })
 
   it('asks whether to keep my version when the file changed on disk', async () => {
     const tabId = 'tab-1'
     vi.mocked(requests.getRequest).mockResolvedValue({ draft: saved, revision: 'rev-1' })
     vi.mocked(requests.saveRequest).mockRejectedValueOnce(new AppError('REQ-02409', 'changed'))
-    render(<RequestBuilder tabId={tabId} onSave={saveTab(tabId)} />)
+    render(<RequestBuilder tabId={tabId} />)
     await act(() => useRequestBuilderStore.getState().openSaved(tabId, 'r1'))
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await act(() => useRequestBuilderStore.getState().save(tabId))
     expect(screen.getByRole('status')).toHaveTextContent('changed on disk')
     vi.mocked(requests.saveRequest).mockResolvedValue({ draft: saved, revision: 'rev-2' })
     await userEvent.click(screen.getByRole('button', { name: 'Keep Your Version' }))
     expect(requests.saveRequest).toHaveBeenLastCalledWith('ws', saved, 'rev-1', true)
     expect(screen.queryByText(/changed on disk/)).not.toBeInTheDocument()
     vi.mocked(requests.saveRequest).mockRejectedValueOnce(new AppError('REQ-02409', 'changed'))
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await act(() => useRequestBuilderStore.getState().save(tabId))
     await userEvent.click(screen.getByRole('button', { name: 'Load from Disk' }))
     expect(requests.getRequest).toHaveBeenLastCalledWith('ws', 'r1')
   })
