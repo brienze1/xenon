@@ -1,4 +1,6 @@
 .root {
+  display: flex;
+  align-items: center;
   min-width: 0;
   overflow: hidden;
 }
@@ -8,7 +10,8 @@
 }
 
 .root :global(.cm-editor) {
-  height: 100%;
+  flex: 1;
+  min-width: 0;
 }
 
 .root :global(.cm-editor.cm-focused) {
