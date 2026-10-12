@@ -62,3 +62,13 @@
 .swatch[data-color='red'] {
   background: var(--neon-red);
 }
+
+.icon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.75;
+}

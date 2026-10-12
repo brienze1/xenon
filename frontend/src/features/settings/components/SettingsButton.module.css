@@ -4,5 +4,6 @@
   fill: none;
   stroke: currentcolor;
   stroke-linecap: round;
-  stroke-width: 1.4;
+  stroke-linejoin: round;
+  stroke-width: 1.75;
 }

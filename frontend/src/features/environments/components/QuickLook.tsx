@@ -9,7 +9,12 @@ import { DiscardChangesConfirm } from './DiscardChangesConfirm'
 import styles from './QuickLook.module.css'
 import { VariableTable } from './VariableTable'
 
-const EYE_GLYPH = <span aria-hidden="true">◉</span>
+const EYE_GLYPH = (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.icon}>
+    <path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+)
 
 const NO_ACTIVE_ENVIRONMENT = <p className={styles.note}>No environment is active. Pick one in the switcher to see its variables here.</p>
 

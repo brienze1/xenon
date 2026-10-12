@@ -8,4 +8,7 @@
 .panel {
   min-height: 0;
   overflow-y: auto;
+  /* Side gutter inside the scroll box so focus rings are not clipped; the negative margin keeps fields aligned with the tabs. */
+  margin: 0 calc(-1 * var(--space-2));
+  padding: 0 var(--space-2);
 }
