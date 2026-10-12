@@ -154,6 +154,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	test.registerGivenResourceSteps(ctx)
 	test.registerWhenNewmanSteps(ctx)
 	test.registerThenApiCompareSteps(ctx)
+	test.registerGivenEventSteps(ctx)
 	test.registerThenEventSteps(ctx)
 	test.registerThenApiSteps(ctx)
 	test.registerThenApiBodySteps(ctx)

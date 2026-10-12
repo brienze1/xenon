@@ -193,7 +193,7 @@ Feature: Uncommitted local work survives a pull
       """
       { "local_id": "{{Acme.local_id}}" }
       """
-    Then the response should contain the field "state" equal to "behind"
+    Then the response should contain the field "state" equal to "conflict"
     And the response should contain the field "behind" equal to "2"
     And the response should contain the field "local_changes" equal to "1"
 
@@ -233,6 +233,6 @@ Feature: Uncommitted local work survives a pull
       """
       { "local_id": "{{Acme.local_id}}" }
       """
-    Then the response should contain the field "state" equal to "behind"
+    Then the response should contain the field "state" equal to "conflict"
     And the response should contain the field "behind" equal to "2"
     And the response should contain the field "local_changes" equal to "1"

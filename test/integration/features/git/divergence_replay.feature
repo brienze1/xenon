@@ -8,7 +8,8 @@ Feature: Pull when both sides have commits
   with "Sync:" and whose body keeps every original message. Requests changed on one side only are
   taken from that side; collection, folder and workspace files changed on both sides merge field by
   field (order lists: theirs first, then my additions). The same request changed differently on
-  both sides is a conflict: Pull stops with the conflict status and changes nothing.
+  both sides is a conflict: Pull stops with the conflict status, changes nothing and keeps a sync
+  session open until the conflicts are resolved (conflicts_*.feature).
 
   Background:
     Given the keychain is available
@@ -259,6 +260,6 @@ Feature: Pull when both sides have commits
       """
       { "local_id": "{{Acme.local_id}}" }
       """
-    Then the response should contain the field "state" equal to "diverged"
+    Then the response should contain the field "state" equal to "conflict"
     And the response should contain the field "ahead" equal to "1"
     And the response should contain the field "behind" equal to "2"
