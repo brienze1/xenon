@@ -69,6 +69,23 @@ describe('VariableCard', () => {
     expect(variables.setCurrentValue).toHaveBeenCalledWith('ws', 'env:e1', 'creatorAdsUrl', 'https://ads.prd')
   })
 
+  it('keeps an edit when the card closes before Enter or blur', async () => {
+    inspect({ environment: 'env:e1' }, [usage({})])
+    vi.mocked(variables.setCurrentValue).mockResolvedValue({} as never)
+    const { unmount } = render(<VariableCard tabId={TAB} name="creatorAdsUrl" close={vi.fn()} />)
+    await userEvent.type(screen.getByRole('textbox', { name: 'Value of creatorAdsUrl' }), '/v2')
+    unmount()
+    expect(variables.setCurrentValue).toHaveBeenCalledTimes(1)
+    expect(variables.setCurrentValue).toHaveBeenCalledWith('ws', 'env:e1', 'creatorAdsUrl', 'https://ads.dev/v2')
+  })
+
+  it('does not save an untouched value when the card closes', () => {
+    inspect({ environment: 'env:e1' }, [usage({})])
+    const { unmount } = render(<VariableCard tabId={TAB} name="creatorAdsUrl" close={vi.fn()} />)
+    unmount()
+    expect(variables.setCurrentValue).not.toHaveBeenCalled()
+  })
+
   it('never shows a secret, and opens the request\'s variables in the side panel', async () => {
     inspect({ globals: 'globals' }, [usage({ scope: 'globals', secret: true, displayValue: '•••••' })])
     const close = vi.fn()

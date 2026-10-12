@@ -1,4 +1,4 @@
-import { useId, useState, useTransition, type KeyboardEvent } from 'react'
+import { useEffect, useId, useRef, useState, useTransition, type KeyboardEvent } from 'react'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
@@ -112,15 +112,38 @@ function DefinedVariable({ tabId, usage, close }: DefinedVariableProps) {
   const target = targetOf(usage.scope as EditableScope)
   const locked = usage.status === 'locked_secret'
 
+  // The value the variable has now: an edit equal to it needs no save. A secret's is never known here, so it starts empty.
+  const committed = useRef(shown)
+  const unsaved = useRef<{ table: string | undefined; draft: string }>({ table, draft })
+
+  useEffect(() => {
+    unsaved.current = { table, draft }
+  }, [table, draft])
+
+  // The card is removed when the pointer leaves or a press lands elsewhere, without a blur: keep what was typed.
+  useEffect(
+    () => () => {
+      const pending = unsaved.current
+      if (pending.table !== undefined && pending.draft !== committed.current && !(usage.secret && pending.draft === '')) {
+        void setCurrentValue(pending.table, usage.name, pending.draft).then((error) => (error === null ? inspect(tabId) : undefined))
+      }
+    },
+    [inspect, setCurrentValue, tabId, usage.name, usage.secret],
+  )
+
   function save() {
-    if (table === undefined || draft === shown || (usage.secret && draft === '')) {
+    if (table === undefined || draft === committed.current || (usage.secret && draft === '')) {
       return
     }
+    const value = draft
+    committed.current = value
     startSave(async () => {
-      const error = await setCurrentValue(table, usage.name, draft)
+      const error = await setCurrentValue(table, usage.name, value)
       setFailure(error)
       if (error === null) {
         await inspect(tabId)
+      } else {
+        committed.current = shown
       }
     })
   }
