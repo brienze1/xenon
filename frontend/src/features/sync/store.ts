@@ -1,9 +1,10 @@
 import { create } from 'zustand'
 import { toAppError, type AppError } from '@/platform/errors'
 import type { GitProgress } from '@/platform/events'
-import type { ChosenResolution, LinkInput, SyncChange, SyncSession, SyncStatus } from '@/platform/mappers/sync'
+import type { ChosenResolution, CloneInput, LinkInput, SyncChange, SyncSession, SyncStatus } from '@/platform/mappers/sync'
 import {
   cancelPull,
+  cloneAsWorkspace,
   commitChanges,
   finishPull,
   getSyncSession,
@@ -35,6 +36,8 @@ interface SyncStoreState {
   panelOpen: boolean
   linkOpen: boolean
   conflictsOpen: boolean
+  cloneOpen: boolean
+  cloning: boolean
   reset: (localId: string | null) => void
   refresh: () => Promise<void>
   loadChanges: () => Promise<void>
@@ -44,6 +47,8 @@ interface SyncStoreState {
   push: () => Promise<void>
   pull: () => Promise<void>
   link: (input: Omit<LinkInput, 'localId'>) => Promise<AppError | null>
+  /** Clones a repository as a new workspace and switches to it; returns the failure, if any. */
+  cloneWorkspace: (input: CloneInput) => Promise<AppError | null>
   saveSettings: (accountId: string) => Promise<void>
   applyStatus: (localId: string, status: SyncStatus) => void
   applyProgress: (progress: GitProgress) => void
@@ -51,6 +56,8 @@ interface SyncStoreState {
   closePanel: () => void
   openLink: () => void
   closeLink: () => void
+  openClone: () => void
+  closeClone: () => void
   openConflicts: () => Promise<void>
   closeConflicts: () => void
   selectConflict: (itemId: string) => void
@@ -126,6 +133,8 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
     panelOpen: false,
     linkOpen: false,
     conflictsOpen: false,
+    cloneOpen: false,
+    cloning: false,
 
     reset: (localId) => set({ localId, ...EMPTY, panelOpen: false, linkOpen: false, conflictsOpen: false }),
 
@@ -193,6 +202,24 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
         await reloadChanges(localId)
       }),
 
+    cloneWorkspace: async (input) => {
+      if (get().cloning) {
+        return null
+      }
+      set({ cloning: true })
+      try {
+        const summary = await cloneAsWorkspace(input)
+        set({ cloneOpen: false })
+        await useWorkspacesStore.getState().load()
+        await useWorkspacesStore.getState().activate(summary.localId)
+        return null
+      } catch (error) {
+        return toAppError(error)
+      } finally {
+        set({ cloning: false })
+      }
+    },
+
     saveSettings: async (accountId) => {
       const settings = get().status?.settings
       if (!settings) {
@@ -219,6 +246,8 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
     closePanel: () => set({ panelOpen: false }),
     openLink: () => set({ linkOpen: true, error: null }),
     closeLink: () => set({ linkOpen: false }),
+    openClone: () => set({ cloneOpen: true }),
+    closeClone: () => set({ cloneOpen: false }),
 
     openConflicts: async () => {
       await run('conflicts', async (localId) => {

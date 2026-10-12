@@ -105,6 +105,15 @@ describe('WorkspaceSwitcher', () => {
     openPanel.mockRestore()
   })
 
+  it('opens the clone dialog from "New Workspace from Git Repository…"', async () => {
+    const { useSyncStore } = await import('@/features/sync/store')
+    render(<WorkspaceSwitcher />)
+    await openMenu()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'New Workspace from Git Repository…' }))
+    expect(useSyncStore.getState().cloneOpen).toBe(true)
+    useSyncStore.getState().closeClone()
+  })
+
   it('says when there is no workspace', () => {
     useWorkspacesStore.setState({ workspaces: [], activeLocalId: null })
     render(<WorkspaceSwitcher />)

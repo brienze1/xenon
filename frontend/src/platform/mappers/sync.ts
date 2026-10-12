@@ -117,6 +117,16 @@ export interface LinkInput {
   mode: LinkMode | null
 }
 
+/** An empty branch means the remote's default branch; an empty name, the repository's name. */
+export interface CloneInput {
+  repository: string
+  branch: string
+  subfolder: string
+  accountId: string
+  clonePath: string
+  name: string
+}
+
 /** Accepts the binding DTO and the git:status-changed payload, which share one shape. */
 export function toSyncStatus(dto: SyncStatusDto): SyncStatus {
   return {

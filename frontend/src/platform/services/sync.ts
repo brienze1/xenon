@@ -7,6 +7,7 @@ import {
   toSyncSession,
   toSyncStatus,
   type ChosenResolution,
+  type CloneInput,
   type LinkInput,
   type PullResult,
   type SyncChange,
@@ -14,6 +15,7 @@ import {
   type SyncSession,
   type SyncStatus,
 } from '../mappers/sync'
+import { toWorkspaceSummary, type WorkspaceSummary } from '../mappers/workspace'
 
 export const SUBFOLDER_HAS_WORKSPACE = 'GIT-01409'
 export const SYNC_BUSY = 'GIT-05409'
@@ -49,6 +51,23 @@ export function linkRepository(input: LinkInput): Promise<SyncStatus> {
           account_id: input.accountId,
           clone_path: input.clonePath,
           mode: input.mode ?? '',
+        }),
+      ),
+    ),
+  )
+}
+
+export function cloneAsWorkspace(input: CloneInput): Promise<WorkspaceSummary> {
+  return call(async () =>
+    toWorkspaceSummary(
+      required(
+        await SyncService.CloneAsWorkspace({
+          repository: input.repository,
+          branch: input.branch,
+          subfolder: input.subfolder,
+          account_id: input.accountId,
+          clone_path: input.clonePath,
+          name: input.name,
         }),
       ),
     ),

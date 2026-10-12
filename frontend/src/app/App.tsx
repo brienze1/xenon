@@ -22,6 +22,7 @@ import { useSettingsStore } from '@/features/settings/store'
 import { SidebarPanel } from '@/features/sidebar/components/SidebarPanel'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { FooterSyncStatus } from '@/features/sync/components/FooterSyncStatus'
+import { CloneWorkspaceDialog } from '@/features/sync/components/CloneWorkspaceDialog'
 import { ConflictView } from '@/features/sync/components/ConflictView'
 import { LinkRepoDialog } from '@/features/sync/components/LinkRepoDialog'
 import { SyncPanel } from '@/features/sync/components/SyncPanel'
@@ -80,6 +81,8 @@ const FOOTER_SYNC_STATUS = <FooterSyncStatus />
 const SYNC_PANEL = <SyncPanel />
 
 const LINK_REPO_DIALOG = <LinkRepoDialog />
+
+const CLONE_WORKSPACE_DIALOG = <CloneWorkspaceDialog />
 
 const CONFLICT_VIEW = <ConflictView />
 
@@ -244,6 +247,7 @@ export function App() {
       {active ? SYNC_PANEL : null}
       {active ? LINK_REPO_DIALOG : null}
       {active ? CONFLICT_VIEW : null}
+      {CLONE_WORKSPACE_DIALOG}
       {active ? QUICK_SEARCH : null}
       <Footer>
         {active ? (
