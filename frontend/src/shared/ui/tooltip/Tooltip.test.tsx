@@ -22,4 +22,19 @@ describe('Tooltip', () => {
     await userEvent.tab()
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })
+
+  it('draws on the page body so a clipped pane cannot hide it, flipping below the anchor when there is no room above', async () => {
+    render(
+      <div style={{ overflow: 'hidden' }}>
+        <Tooltip content="Total 379 ms">
+          <button type="button">379 ms</button>
+        </Tooltip>
+      </div>,
+    )
+    await userEvent.hover(screen.getByRole('button'))
+    const tooltip = screen.getByRole('tooltip')
+    expect(tooltip.parentElement).toBe(document.body)
+    expect(tooltip.style.top).toBe('4px')
+    expect(tooltip.style.left).toBe('8px')
+  })
 })
