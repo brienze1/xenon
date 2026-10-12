@@ -25,6 +25,7 @@ type pullTarget struct {
 }
 
 type syncPull struct {
+	saveSyncSession    usecase.SaveSyncSession
 	fetchBranch        usecase.FetchBranch
 	listCommitMessages usecase.ListCommitMessages
 	writeSyncCommit    usecase.WriteSyncCommit
@@ -33,6 +34,7 @@ type syncPull struct {
 	changes            syncChanges
 	merger             syncMerger
 	writer             syncWorktreeWriter
+	renderer           syncConflictRenderer
 }
 
 func newSyncPull(
@@ -47,8 +49,11 @@ func newSyncPull(
 	moveBranch usecase.MoveBranch,
 	applySyncedFiles usecase.ApplySyncedFiles,
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
+	saveSyncSession usecase.SaveSyncSession,
+	renderSyncItem usecase.RenderSyncItem,
 ) syncPull {
 	return syncPull{
+		saveSyncSession:    saveSyncSession,
 		fetchBranch:        fetchBranch,
 		listCommitMessages: listCommitMessages,
 		writeSyncCommit:    writeSyncCommit,
@@ -57,6 +62,7 @@ func newSyncPull(
 		changes:            changes,
 		merger:             syncMerger{readTreeVersions: readTreeVersions, storeBlobs: storeBlobs, convertSyncDocument: convertSyncDocument},
 		writer:             syncWorktreeWriter{readTreeVersions: readTreeVersions, applySyncedFiles: applySyncedFiles, publishWorkspaceEvent: publishWorkspaceEvent},
+		renderer:           syncConflictRenderer{readTreeVersions: readTreeVersions, renderSyncItem: renderSyncItem},
 	}
 }
 
@@ -70,7 +76,7 @@ func (p syncPull) pull(ctx context.Context, linked entity.LinkedWorkspace) (*ent
 	}
 	state := usecase.ClassifyDivergence(*heads)
 	if state == divergence.UpToDate || state == divergence.Ahead {
-		return nil, nil
+		return nil, p.saveSyncSession.DiscardSession(ctx, linked.LocalID)
 	}
 	if err := p.publishGitEvent.Progress(ctx, linked.LocalID, phaseMerge, 1, pullPhases); err != nil {
 		return nil, err
@@ -84,9 +90,9 @@ func (p syncPull) pull(ctx context.Context, linked entity.LinkedWorkspace) (*ent
 		return nil, err
 	}
 	update := entity.NewWorktreeUpdate(snapshot.head, target.tree, snapshot.worktree)
-	conflicts := append(target.conflicts, update.ConflictPlans(snapshot.head, target.tree, snapshot.worktree)...)
-	if len(conflicts) > 0 {
-		return p.session(ctx, linked, *heads, snapshot.worktree, conflicts, target.fields)
+	if len(target.conflicts) > 0 || update.HasConflicts() {
+		uncommitted := update.ConflictPlans(snapshot.head, target.tree, snapshot.worktree)
+		return p.session(ctx, linked, *heads, state, snapshot.worktree, target, uncommitted)
 	}
 	if err := p.publishGitEvent.Progress(ctx, linked.LocalID, phaseWrite, 2, pullPhases); err != nil {
 		return nil, err
@@ -95,6 +101,9 @@ func (p syncPull) pull(ctx context.Context, linked entity.LinkedWorkspace) (*ent
 		return nil, err
 	}
 	if err := p.advance(ctx, linked, *heads, state, target.tree); err != nil {
+		return nil, err
+	}
+	if err := p.saveSyncSession.DiscardSession(ctx, linked.LocalID); err != nil {
 		return nil, err
 	}
 	return nil, p.publishGitEvent.Progress(ctx, linked.LocalID, phaseWrite, pullPhases, pullPhases)
@@ -108,7 +117,7 @@ func (p syncPull) target(ctx context.Context, linked entity.LinkedWorkspace, hea
 		}
 		return &pullTarget{tree: tree, conflicts: []entity.PathPlan{}, fields: map[string][]entity.FieldConflict{}}, nil
 	}
-	return p.merger.merge(ctx, linked, heads)
+	return p.merger.merge(ctx, linked, heads, nil)
 }
 
 func (p syncPull) advance(ctx context.Context, linked entity.LinkedWorkspace, heads entity.BranchHeads, state enums.Divergence, tree map[string]string) error {
@@ -124,7 +133,8 @@ func (p syncPull) advance(ctx context.Context, linked entity.LinkedWorkspace, he
 	return err
 }
 
-func (p syncPull) session(ctx context.Context, linked entity.LinkedWorkspace, heads entity.BranchHeads, worktree entity.SyncedFiles, plans []entity.PathPlan, fields map[string][]entity.FieldConflict) (*entity.SyncSession, error) {
+func (p syncPull) session(ctx context.Context, linked entity.LinkedWorkspace, heads entity.BranchHeads, state enums.Divergence, worktree entity.SyncedFiles, target *pullTarget, uncommitted []entity.PathPlan) (*entity.SyncSession, error) {
+	plans := append(append([]entity.PathPlan{}, target.conflicts...), uncommitted...)
 	present, blobs := make([]string, 0, len(plans)), map[string]string{}
 	for _, plan := range plans {
 		if _, found := worktree[plan.Path]; found {
@@ -137,10 +147,24 @@ func (p syncPull) session(ctx context.Context, linked entity.LinkedWorkspace, he
 	if err != nil {
 		return nil, err
 	}
-	conflicts := make([]entity.ConflictItem, 0, len(plans))
-	for _, plan := range plans {
-		conflicts = append(conflicts, entity.NewConflictItem(usecase.RefForPath(plan.Path, refs), plan, fields[plan.Path]))
+	found := make([]entity.ConflictItem, 0, len(plans))
+	for _, plan := range target.conflicts {
+		found = append(found, entity.NewConflictItem(usecase.RefForPath(plan.Path, refs), plan, target.fields[plan.Path]))
 	}
-	session := entity.NewSyncSession(idutils.NewUlid(), heads, conflicts, timeutils.Now())
+	for _, plan := range uncommitted {
+		found = append(found, entity.NewUncommittedConflictItem(usecase.RefForPath(plan.Path, refs), plan))
+	}
+	conflicts := make([]entity.ConflictItem, 0, len(found))
+	for _, conflict := range found {
+		rendered, err := p.renderer.render(ctx, linked, conflict, worktree)
+		if err != nil {
+			return nil, err
+		}
+		conflicts = append(conflicts, *rendered)
+	}
+	session := entity.NewSyncSession(idutils.NewUlid(), linked.LocalID, heads, state == divergence.Diverged, conflicts, timeutils.Now())
+	if err := p.saveSyncSession.SaveSession(ctx, session); err != nil {
+		return nil, err
+	}
 	return &session, nil
 }

@@ -38,14 +38,17 @@ func NewPullWorkspaceService(
 	applySyncedFiles usecase.ApplySyncedFiles,
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
 	loadWorkspace usecase.LoadWorkspace,
+	findSyncSession usecase.FindSyncSession,
+	saveSyncSession usecase.SaveSyncSession,
+	renderSyncItem usecase.RenderSyncItem,
 ) adapter.PullWorkspaceService {
 	changes := newSyncChanges(readBranchHeads, readTreeVersions, identifySyncItems)
 	return &pullWorkspace{
 		claimSyncOperation: claimSyncOperation,
 		workspaces:         newLinkedWorkspaces(findWorkspaceRegistry, findLocalSyncSettings, findGitAccounts, findGitCredential, findKnownHosts, scanHostKey, publishGitEvent),
 		puller: newSyncPull(changes, publishGitEvent, fetchBranch, readTreeVersions, storeBlobs, convertSyncDocument, listCommitMessages, writeSyncCommit,
-			moveBranch, applySyncedFiles, publishWorkspaceEvent),
-		status: syncStatusReader{changes: changes, loadWorkspace: loadWorkspace, publishGitEvent: publishGitEvent},
+			moveBranch, applySyncedFiles, publishWorkspaceEvent, saveSyncSession, renderSyncItem),
+		status: newSyncStatusReader(changes, loadWorkspace, publishGitEvent, findSyncSession),
 	}
 }
 
@@ -69,11 +72,7 @@ func (p *pullWorkspace) Pull(ctx context.Context, localId string) (*entity.PullR
 	if err != nil {
 		return nil, err
 	}
-	pulled := status.SyncedAt(timeutils.Now())
-	if session != nil {
-		pulled = pulled.InConflict()
-	}
-	published, err := p.status.publish(ctx, localId, pulled)
+	published, err := p.status.publish(ctx, localId, status.SyncedAt(timeutils.Now()))
 	if err != nil {
 		return nil, err
 	}

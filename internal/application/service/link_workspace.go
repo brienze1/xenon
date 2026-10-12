@@ -54,6 +54,7 @@ func NewLinkWorkspaceService(
 	loadWorkspace usecase.LoadWorkspace,
 	saveWorkspaceSync usecase.SaveWorkspaceSync,
 	watchWorkspace usecase.WatchWorkspace,
+	findSyncSession usecase.FindSyncSession,
 ) adapter.LinkWorkspaceService {
 	return &linkWorkspace{
 		claimSyncOperation:     claimSyncOperation,
@@ -69,7 +70,7 @@ func NewLinkWorkspaceService(
 		watchWorkspace:         watchWorkspace,
 		workspaces:             newLinkedWorkspaces(findWorkspaceRegistry, findLocalSyncSettings, findGitAccounts, findGitCredential, findKnownHosts, scanHostKey, publishGitEvent),
 		lfs:                    lfsDetector{readBranchHeads: readBranchHeads, readTreeVersions: readTreeVersions},
-		status:                 syncStatusReader{changes: newSyncChanges(readBranchHeads, readTreeVersions, identifySyncItems), loadWorkspace: loadWorkspace, publishGitEvent: publishGitEvent},
+		status:                 newSyncStatusReader(newSyncChanges(readBranchHeads, readTreeVersions, identifySyncItems), loadWorkspace, publishGitEvent, findSyncSession),
 	}
 }
 

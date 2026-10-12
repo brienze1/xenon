@@ -61,6 +61,7 @@ func TestStageSevenEnumsParseTheirValues(t *testing.T) {
 		{conflictresolution.GetConflictResolution(" BOTH ").String(), "both"},
 		{conflictresolution.GetConflictResolution(" KEEP ").String(), "keep"},
 		{conflictresolution.GetConflictResolution(" DELETE ").String(), "delete"},
+		{conflictresolution.GetConflictResolution(" MERGED ").String(), "merged"},
 		{conflictresolution.GetConflictResolution("not-a-value").String(), "unknown"},
 		{divergence.GetDivergence(" UP_TO_DATE ").String(), "up_to_date"},
 		{divergence.GetDivergence(" FAST_FORWARD ").String(), "fast_forward"},

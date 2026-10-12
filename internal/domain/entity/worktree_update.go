@@ -55,3 +55,31 @@ func unionOfPaths(first, second map[string]string) []string {
 	sort.Strings(paths)
 	return paths
 }
+
+// Resolved replaces whatever the update planned for path with the content a conflict resolution chose.
+func (w WorktreeUpdate) Resolved(path, desired string, worktree SyncedFiles) WorktreeUpdate {
+	resolved := WorktreeUpdate{Writes: map[string]string{}, Removals: withoutPath(w.Removals, path), Conflicts: withoutPath(w.Conflicts, path)}
+	for planned, hash := range w.Writes {
+		if planned != path {
+			resolved.Writes[planned] = hash
+		}
+	}
+	switch {
+	case worktree[path] == desired:
+	case desired == "":
+		resolved.Removals = append(resolved.Removals, path)
+	default:
+		resolved.Writes[path] = desired
+	}
+	return resolved
+}
+
+func withoutPath(paths []string, path string) []string {
+	kept := make([]string, 0, len(paths))
+	for _, candidate := range paths {
+		if candidate != path {
+			kept = append(kept, candidate)
+		}
+	}
+	return kept
+}

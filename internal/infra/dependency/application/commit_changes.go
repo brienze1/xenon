@@ -26,6 +26,7 @@ func GetCommitChangesService() adapter.CommitChangesService {
 				integration.GetGitWebservice(),
 				integration.GetWorkspacePersistence(),
 				integration.GetGitEventPublisher(),
+				integration.GetSyncSessionPersistence(),
 			)
 		})
 	}

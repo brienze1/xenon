@@ -8,13 +8,14 @@ import (
 )
 
 type SyncService struct {
-	link     adapter.SyncLinkController
-	manage   adapter.SyncManageController
-	transfer adapter.SyncTransferController
+	link      adapter.SyncLinkController
+	manage    adapter.SyncManageController
+	transfer  adapter.SyncTransferController
+	conflicts adapter.SyncConflictController
 }
 
-func NewSyncService(link adapter.SyncLinkController, manage adapter.SyncManageController, transfer adapter.SyncTransferController) *SyncService {
-	return &SyncService{link: link, manage: manage, transfer: transfer}
+func NewSyncService(link adapter.SyncLinkController, manage adapter.SyncManageController, transfer adapter.SyncTransferController, conflicts adapter.SyncConflictController) *SyncService {
+	return &SyncService{link: link, manage: manage, transfer: transfer, conflicts: conflicts}
 }
 
 func (s *SyncService) Status(ctx context.Context, request dto.SyncWorkspaceReference) (*dto.SyncStatus, error) {
@@ -43,4 +44,20 @@ func (s *SyncService) Pull(ctx context.Context, request dto.SyncWorkspaceReferen
 
 func (s *SyncService) Push(ctx context.Context, request dto.SyncWorkspaceReference) (*dto.SyncStatus, error) {
 	return s.transfer.Push(ctx, request)
+}
+
+func (s *SyncService) Session(ctx context.Context, request dto.SyncWorkspaceReference) (*dto.SyncSession, error) {
+	return s.conflicts.Session(ctx, request)
+}
+
+func (s *SyncService) Resolve(ctx context.Context, request dto.ResolveSyncConflict) (*dto.SyncConflictItem, error) {
+	return s.conflicts.Resolve(ctx, request)
+}
+
+func (s *SyncService) FinishPull(ctx context.Context, request dto.SyncSessionReference) (*dto.SyncStatus, error) {
+	return s.conflicts.FinishPull(ctx, request)
+}
+
+func (s *SyncService) CancelPull(ctx context.Context, request dto.SyncSessionReference) (*dto.SyncStatus, error) {
+	return s.conflicts.CancelPull(ctx, request)
 }

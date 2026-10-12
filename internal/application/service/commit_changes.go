@@ -30,13 +30,14 @@ func NewCommitChangesService(
 	writeSyncCommit usecase.WriteSyncCommit,
 	loadWorkspace usecase.LoadWorkspace,
 	publishGitEvent usecase.PublishGitEvent,
+	findSyncSession usecase.FindSyncSession,
 ) adapter.CommitChangesService {
 	return &commitChanges{
 		claimSyncOperation: claimSyncOperation,
 		storeBlobs:         storeBlobs,
 		writeSyncCommit:    writeSyncCommit,
 		workspaces:         linkedWorkspaces{findWorkspaceRegistry: findWorkspaceRegistry, findLocalSyncSettings: findLocalSyncSettings, findGitAccounts: findGitAccounts},
-		status:             syncStatusReader{changes: newSyncChanges(readBranchHeads, readTreeVersions, identifySyncItems), loadWorkspace: loadWorkspace, publishGitEvent: publishGitEvent},
+		status:             newSyncStatusReader(newSyncChanges(readBranchHeads, readTreeVersions, identifySyncItems), loadWorkspace, publishGitEvent, findSyncSession),
 	}
 }
 

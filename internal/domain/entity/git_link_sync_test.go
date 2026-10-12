@@ -267,7 +267,7 @@ func TestConflictItemsAndSessions(t *testing.T) {
 	}
 	at := time.Date(2026, 10, 11, 9, 0, 0, 0, time.UTC)
 	other := NewConflictItem(ItemRef{ID: "r2"}, PathPlan{Mine: "1", Theirs: "2"}, nil)
-	session := NewSyncSession("s1", BranchHeads{Local: "l", Remote: "r", Base: "b"}, []ConflictItem{both, other, both}, at)
+	session := NewSyncSession("s1", "w1", BranchHeads{Local: "l", Remote: "r", Base: "b"}, true, []ConflictItem{both, other, both}, at)
 	if session.ID != "s1" || session.LocalHead != "l" || session.RemoteHead != "r" || session.Base != "b" || !session.StartedAt.Equal(at) || len(session.Conflicts) != 2 {
 		t.Fatalf("session = %+v", session)
 	}

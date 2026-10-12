@@ -36,6 +36,9 @@ func GetPushWorkspaceService() adapter.PushWorkspaceService {
 				integration.GetWorkspaceEventPublisher(),
 				integration.GetWorkspacePersistence(),
 				integration.GetGitWebservice(),
+				integration.GetSyncSessionPersistence(),
+				integration.GetSyncSessionPersistence(),
+				integration.GetTreePersistence(),
 			)
 		})
 	}

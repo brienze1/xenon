@@ -13,7 +13,7 @@ var syncServiceInstance *binding.SyncService
 func GetSyncService() *binding.SyncService {
 	if syncServiceInstance == nil {
 		syncServiceOnce.Do(func() {
-			syncServiceInstance = binding.NewSyncService(controller.GetSyncLinkController(), controller.GetSyncManageController(), controller.GetSyncTransferController())
+			syncServiceInstance = binding.NewSyncService(controller.GetSyncLinkController(), controller.GetSyncManageController(), controller.GetSyncTransferController(), controller.GetSyncConflictController())
 		})
 	}
 	return syncServiceInstance

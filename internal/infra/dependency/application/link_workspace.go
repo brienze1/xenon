@@ -37,6 +37,7 @@ func GetLinkWorkspaceService() adapter.LinkWorkspaceService {
 				integration.GetWorkspacePersistence(),
 				integration.GetWorkspacePersistence(),
 				integration.GetWorkspaceWatcherWebservice(),
+				integration.GetSyncSessionPersistence(),
 			)
 		})
 	}

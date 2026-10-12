@@ -29,6 +29,7 @@ func GetManageSyncService() adapter.ManageSyncService {
 				integration.GetGitWebservice(),
 				integration.GetTreePersistence(),
 				integration.GetWorkspacePersistence(),
+				integration.GetSyncSessionPersistence(),
 			)
 		})
 	}

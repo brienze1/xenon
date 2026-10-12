@@ -121,3 +121,7 @@ func sameItems(items, others []*DocumentNode) bool {
 	}
 	return true
 }
+
+func (d *DocumentNode) IsScalar() bool {
+	return d != nil && d.Kind == nodekind.Scalar
+}

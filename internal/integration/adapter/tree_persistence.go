@@ -15,4 +15,5 @@ type TreePersistence interface {
 	usecase.ApplySyncedFiles
 	usecase.IdentifySyncItems
 	usecase.ConvertSyncDocument
+	usecase.RenderSyncItem
 }

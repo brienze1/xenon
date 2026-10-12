@@ -33,13 +33,14 @@ func NewManageSyncService(
 	readTreeVersions usecase.ReadTreeVersions,
 	identifySyncItems usecase.IdentifySyncItems,
 	loadWorkspace usecase.LoadWorkspace,
+	findSyncSession usecase.FindSyncSession,
 ) adapter.ManageSyncService {
 	return &manageSync{
 		claimSyncOperation:    claimSyncOperation,
 		fetchBranch:           fetchBranch,
 		saveLocalSyncSettings: saveLocalSyncSettings,
 		workspaces:            newLinkedWorkspaces(findWorkspaceRegistry, findLocalSyncSettings, findGitAccounts, findGitCredential, findKnownHosts, scanHostKey, publishGitEvent),
-		status:                syncStatusReader{changes: newSyncChanges(readBranchHeads, readTreeVersions, identifySyncItems), loadWorkspace: loadWorkspace, publishGitEvent: publishGitEvent},
+		status:                newSyncStatusReader(newSyncChanges(readBranchHeads, readTreeVersions, identifySyncItems), loadWorkspace, publishGitEvent, findSyncSession),
 	}
 }
 

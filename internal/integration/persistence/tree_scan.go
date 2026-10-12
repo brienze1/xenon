@@ -177,6 +177,10 @@ func readDocument(path string, kind enums.ItemKind, version *int, storedKind *st
 	if err != nil {
 		return name + " cannot be read: " + err.Error()
 	}
+	return decodeDocument(name, data, kind, version, storedKind, target)
+}
+
+func decodeDocument(name string, data []byte, kind enums.ItemKind, version *int, storedKind *string, target any) string {
 	document, err := yamlnode.Parse(data)
 	if err != nil {
 		return name + " cannot be read: " + err.Error()

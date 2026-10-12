@@ -11,6 +11,11 @@ type syncStatusReader struct {
 	changes         syncChanges
 	loadWorkspace   usecase.LoadWorkspace
 	publishGitEvent usecase.PublishGitEvent
+	findSyncSession usecase.FindSyncSession
+}
+
+func newSyncStatusReader(changes syncChanges, loadWorkspace usecase.LoadWorkspace, publishGitEvent usecase.PublishGitEvent, findSyncSession usecase.FindSyncSession) syncStatusReader {
+	return syncStatusReader{changes: changes, loadWorkspace: loadWorkspace, publishGitEvent: publishGitEvent, findSyncSession: findSyncSession}
 }
 
 func (s syncStatusReader) read(ctx context.Context, linked entity.LinkedWorkspace) (*entity.SyncStatus, error) {
@@ -23,6 +28,13 @@ func (s syncStatusReader) read(ctx context.Context, linked entity.LinkedWorkspac
 		return nil, err
 	}
 	status := entity.NewSyncStatus(linked.Settings, snapshot.heads, snapshot.changes.Count()).WithSharedSettings(workspace.Sync)
+	session, err := s.findSyncSession.FindWorkspaceSession(ctx, linked.LocalID)
+	if err != nil {
+		return nil, err
+	}
+	if session != nil {
+		status = status.InConflict()
+	}
 	return &status, nil
 }
 

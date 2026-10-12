@@ -43,6 +43,9 @@ func NewPushWorkspaceService(
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
 	loadWorkspace usecase.LoadWorkspace,
 	pushBranch usecase.PushBranch,
+	findSyncSession usecase.FindSyncSession,
+	saveSyncSession usecase.SaveSyncSession,
+	renderSyncItem usecase.RenderSyncItem,
 ) adapter.PushWorkspaceService {
 	changes := newSyncChanges(readBranchHeads, readTreeVersions, identifySyncItems)
 	return &pushWorkspace{
@@ -50,8 +53,8 @@ func NewPushWorkspaceService(
 		claimSyncOperation: claimSyncOperation,
 		workspaces:         newLinkedWorkspaces(findWorkspaceRegistry, findLocalSyncSettings, findGitAccounts, findGitCredential, findKnownHosts, scanHostKey, publishGitEvent),
 		puller: newSyncPull(changes, publishGitEvent, fetchBranch, readTreeVersions, storeBlobs, convertSyncDocument, listCommitMessages, writeSyncCommit,
-			moveBranch, applySyncedFiles, publishWorkspaceEvent),
-		status: syncStatusReader{changes: changes, loadWorkspace: loadWorkspace, publishGitEvent: publishGitEvent},
+			moveBranch, applySyncedFiles, publishWorkspaceEvent, saveSyncSession, renderSyncItem),
+		status: newSyncStatusReader(changes, loadWorkspace, publishGitEvent, findSyncSession),
 	}
 }
 

@@ -43,3 +43,28 @@ func RejectClonePathOverlap(clonePath string) error {
 func RejectEmptyCommit() error {
 	return errs.BadRequestError("none of the chosen items has changes to commit", "GIT-08400")
 }
+
+func RejectUnresolvedConflicts() error {
+	return errs.ConflictError("resolve every conflict before finishing the pull", "GIT-04409",
+		errs.ErrorDetails{Attribute: gitNextStepAttribute, Messages: []string{"Choose Keep mine, Keep theirs or Keep both for each remaining item"}})
+}
+
+func RejectConflictResolution(itemName, resolution, fieldPath string) error {
+	return errs.BadRequestError("\""+resolution+"\" does not resolve the conflict of "+itemName+describeField(fieldPath), "GIT-19400")
+}
+
+func RejectMissingConflict(itemId string) error {
+	return errs.NotFoundError("the pull has no conflict for the item "+itemId, "GIT-35404")
+}
+
+func RejectStaleSyncSession() error {
+	return errs.ConflictError("the branch changed since this pull; the conflicts no longer apply", "GIT-28409",
+		errs.ErrorDetails{Attribute: gitNextStepAttribute, Messages: []string{"Pull again to see the current conflicts"}})
+}
+
+func describeField(fieldPath string) string {
+	if fieldPath == "" {
+		return ""
+	}
+	return " (field \"" + fieldPath + "\")"
+}

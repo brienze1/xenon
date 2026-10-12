@@ -13,6 +13,7 @@ const (
 	Both       enums.ConflictResolution = "both"
 	Keep       enums.ConflictResolution = "keep"
 	Delete     enums.ConflictResolution = "delete"
+	Merged     enums.ConflictResolution = "merged"
 	Unknown    enums.ConflictResolution = "unknown"
 )
 
@@ -30,6 +31,8 @@ func GetConflictResolution(s string) enums.ConflictResolution {
 		return Keep
 	case "delete":
 		return Delete
+	case "merged":
+		return Merged
 	default:
 		return Unknown
 	}
