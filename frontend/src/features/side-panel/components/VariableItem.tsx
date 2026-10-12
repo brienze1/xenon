@@ -4,6 +4,7 @@ import type { AppError } from '@/platform/errors'
 import type { EditableScope, VariableUsage } from '@/platform/mappers/inspection'
 import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui/button/Button'
+import { CopyButton } from '@/shared/ui/copy-button/CopyButton'
 import { IconButton } from '@/shared/ui/icon-button/IconButton'
 import { addableScopes, isEditableScope, SCOPE_NAMES, STATUS_LABELS } from '@/features/side-panel/lib/variable-items'
 import { VariableErrorText } from './VariableErrorText'
@@ -17,7 +18,6 @@ interface VariableItemProps {
 }
 
 const EYE_GLYPH = <span aria-hidden="true">◉</span>
-const COPY_GLYPH = <span aria-hidden="true">⧉</span>
 
 const VALUE_NEXT_STEP = 'Check the value and try again.'
 
@@ -78,10 +78,13 @@ export function VariableItem({ variable, scopes, scopeLabel, onChanged }: Variab
     }
   }
 
-  async function copy() {
-    if (scopeRef !== undefined) {
-      setFailure(await copySecret(scopeRef, variable.name))
+  async function copy(): Promise<boolean> {
+    if (scopeRef === undefined) {
+      return false
     }
+    const failed = await copySecret(scopeRef, variable.name)
+    setFailure(failed)
+    return failed === null
   }
 
   const editable = scopeRef !== undefined && (variable.status === 'resolved' || variable.status === 'missing_secret')
@@ -141,9 +144,7 @@ export function VariableItem({ variable, scopes, scopeLabel, onChanged }: Variab
               <IconButton label={revealed === null ? `Reveal ${variable.name}` : `Hide ${variable.name}`} onClick={() => void toggleReveal()}>
                 {EYE_GLYPH}
               </IconButton>
-              <IconButton label={`Copy ${variable.name}`} onClick={() => void copy()}>
-                {COPY_GLYPH}
-              </IconButton>
+              <CopyButton label={`Copy ${variable.name}`} onCopy={copy} />
             </>
           ) : null}
           {draft !== null ? (
