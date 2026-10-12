@@ -11,8 +11,9 @@
 }
 
 .root :global(.cm-editor.cm-focused) {
-  outline: none;
-  box-shadow: inset 0 0 0 1px var(--neon-cyan);
+  /* An outline paints above the opaque line-number gutter; an inset shadow was hidden behind it. */
+  outline: 1px solid var(--neon-cyan);
+  outline-offset: -1px;
 }
 
 .frame {
