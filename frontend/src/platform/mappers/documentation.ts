@@ -80,12 +80,19 @@ export interface ApiTag {
   description: string
 }
 
+/** A section of folder tags (OpenAPI's x-tagGroups): a top-level folder with its own tag and its nested folders' tags. */
+export interface ApiTagGroup {
+  name: string
+  tags: string[]
+}
+
 export interface ApiDocument {
   title: string
   description: string
   version: string
   servers: string[]
   tags: ApiTag[]
+  tagGroups: ApiTagGroup[]
   operations: ApiOperation[]
   securitySchemes: ApiSecurityScheme[]
 }
@@ -104,7 +111,7 @@ export interface DocumentationItem {
   revision: string
 }
 
-/** What saving an edited document changes: the collection and the requests it updates, creates and deletes. */
+/** What saving an edited document changes: the collection or folder and the requests it updates, creates and deletes. */
 export interface DocumentationPlan {
   name: string
   collectionChanged: boolean
@@ -151,6 +158,7 @@ export function toApiDocument(dto: ApiDocumentDto): ApiDocument {
     version: dto.version,
     servers: dto.servers ?? [],
     tags: dto.tags ?? [],
+    tagGroups: (dto.tag_groups ?? []).map((group) => ({ name: group.name, tags: group.tags ?? [] })),
     operations: (dto.operations ?? []).map(toOperation),
     securitySchemes: (dto.security_schemes ?? []).map((scheme) => ({
       name: scheme.name,

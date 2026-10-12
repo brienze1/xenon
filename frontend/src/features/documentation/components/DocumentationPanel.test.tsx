@@ -32,7 +32,7 @@ describe('DocumentationPanel', () => {
 
   it('renders the documentation by folder and opens an operation to show its parameters and examples', async () => {
     const user = userEvent.setup()
-    render(<DocumentationPanel collectionId="c1" />)
+    render(<DocumentationPanel itemId="c1" kind="collection" />)
     const doc = await screen.findByRole('article', { name: 'Billing API documentation' })
     expect(within(doc).getByRole('heading', { name: /Billing/, level: 3 })).toBeInTheDocument()
     expect(within(doc).getByText('{{host}}')).toBeInTheDocument()
@@ -47,7 +47,7 @@ describe('DocumentationPanel', () => {
 
   it('switches between the preview and the YAML editor', async () => {
     const user = userEvent.setup()
-    render(<DocumentationPanel collectionId="c1" />)
+    render(<DocumentationPanel itemId="c1" kind="collection" />)
     await screen.findByRole('article')
     await user.click(screen.getByRole('button', { name: 'YAML' }))
     expect(screen.getByRole('button', { name: 'YAML' })).toHaveAttribute('aria-pressed', 'true')
@@ -60,7 +60,7 @@ describe('DocumentationPanel', () => {
 
   it('shows where the edited YAML cannot be read and marks it in the editor', async () => {
     const user = userEvent.setup()
-    render(<DocumentationPanel collectionId="c1" />)
+    render(<DocumentationPanel itemId="c1" kind="collection" />)
     await screen.findByRole('article')
     store().edit('c1', 'broken')
     useDocumentationStore.setState((state) => ({
@@ -87,7 +87,7 @@ describe('DocumentationPanel', () => {
     const user = userEvent.setup()
     vi.mocked(tree.planDocumentation).mockResolvedValue(plan)
     vi.mocked(tree.applyDocumentation).mockResolvedValue({ ...plan, documentation: { yaml: editedYaml, document: generatedDocument } })
-    render(<DocumentationPanel collectionId="c1" />)
+    render(<DocumentationPanel itemId="c1" kind="collection" />)
     await screen.findByRole('article')
     store().edit('c1', editedYaml)
     await store().save('c1')
@@ -108,7 +108,7 @@ describe('DocumentationPanel', () => {
   it('cancels a planned save without writing anything', async () => {
     const user = userEvent.setup()
     vi.mocked(tree.planDocumentation).mockResolvedValue({ ...plan, deleted: [] })
-    render(<DocumentationPanel collectionId="c1" />)
+    render(<DocumentationPanel itemId="c1" kind="collection" />)
     await screen.findByRole('article')
     store().edit('c1', editedYaml)
     await store().save('c1')
@@ -122,9 +122,44 @@ describe('DocumentationPanel', () => {
   it('offers to try again when the documentation cannot be generated', async () => {
     const user = userEvent.setup()
     vi.mocked(tree.getDocumentation).mockRejectedValueOnce(new AppError('DOC-05400', 'only collections have documentation'))
-    render(<DocumentationPanel collectionId="c1" />)
+    render(<DocumentationPanel itemId="c1" kind="collection" />)
     expect(await screen.findByRole('alert')).toHaveTextContent('only collections have documentation')
     await user.click(screen.getByRole('button', { name: 'Try Again' }))
     expect(await screen.findByRole('article')).toBeInTheDocument()
+  })
+
+  it('shows x-tagGroups as sections holding their folders, each folder with its description', async () => {
+    vi.mocked(tree.getDocumentation).mockResolvedValue({
+      ...generated,
+      document: {
+        ...generatedDocument,
+        tags: [{ name: 'Invoices', description: 'Everything about **invoices**.' }],
+        tagGroups: [{ name: 'Money', tags: ['Invoices'] }],
+      },
+    })
+    render(<DocumentationPanel itemId="c1" kind="collection" />)
+    const doc = await screen.findByRole('article', { name: 'Billing API documentation' })
+    const money = within(doc).getByRole('region', { name: 'Money' })
+    expect(within(money).getByRole('heading', { name: 'Money', level: 4 })).toBeInTheDocument()
+    const invoices = within(money).getByRole('region', { name: 'Invoices' })
+    expect(within(invoices).getByRole('heading', { name: 'Invoices', level: 5 })).toBeInTheDocument()
+    expect(within(invoices).getByText('/invoices')).toBeInTheDocument()
+    expect(await within(invoices).findByText('invoices')).toBeInTheDocument()
+    const requests = within(doc).getByRole('region', { name: 'Requests' })
+    expect(requests).toHaveTextContent('/ping')
+    expect(within(requests).queryByText('/invoices')).not.toBeInTheDocument()
+  })
+
+  it('speaks of the folder in a folder\'s documentation and its save plan', async () => {
+    vi.mocked(tree.getDocumentation).mockResolvedValue({ ...generated, document: { ...generatedDocument, operations: [], tags: [], tagGroups: [] } })
+    vi.mocked(tree.planDocumentation).mockResolvedValue({ ...plan, created: [{ ...plan.created[0]!, folder: '' }], deleted: [] })
+    render(<DocumentationPanel itemId="f1" kind="folder" />)
+    expect(await screen.findByText(/This folder has no requests yet/)).toBeInTheDocument()
+    expect(screen.getByText(/Built from the requests of this folder/)).toBeInTheDocument()
+    store().edit('f1', editedYaml)
+    await store().save('f1')
+    const dialog = await screen.findByRole('dialog', { name: 'Save Documentation Changes?' })
+    expect(dialog).toHaveTextContent('Archive invoicein the folder')
+    expect(dialog).toHaveTextContent('The folder’s name or description changes too.')
   })
 })

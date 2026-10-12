@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import type { AppError } from '@/platform/errors'
+import type { ContainerKind } from '@/platform/mappers/tree'
 import { withNextStep } from '@/shared/lib/next-step'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
@@ -21,14 +22,22 @@ const LOADING = (
   </p>
 )
 
-const STALE_MESSAGE = <Banner.Message>The collection changed on disk while you were editing its documentation.</Banner.Message>
+interface KindTextProps {
+  kind: ContainerKind
+}
 
-const HINT = (
-  <p className={styles.note}>
-    Built from the requests of this collection. Edit the YAML and save to change the requests too — names, descriptions, URLs,
-    parameters, headers, bodies and examples; operations without an x-xenon-id become new requests.
-  </p>
-)
+function StaleMessage({ kind }: KindTextProps) {
+  return <Banner.Message>The {kind} changed on disk while you were editing its documentation.</Banner.Message>
+}
+
+function Hint({ kind }: KindTextProps) {
+  return (
+    <p className={styles.note}>
+      Built from the requests of this {kind}. Edit the YAML and save to change the requests too — names, descriptions, URLs,
+      parameters, headers, bodies and examples; operations without an x-xenon-id become new requests in this {kind}.
+    </p>
+  )
+}
 
 interface ErrorTextProps {
   error: AppError
@@ -58,14 +67,16 @@ function ViewToggle({ view, onChange }: ViewToggleProps) {
 }
 
 interface DocumentationPanelProps {
-  collectionId: string
+  /** The documented collection or folder. */
+  itemId: string
+  kind: ContainerKind
 }
 
-/** A collection's OpenAPI documentation: rendered, or as YAML that saves back onto its requests. */
-export function DocumentationPanel({ collectionId }: DocumentationPanelProps) {
+/** A collection's or folder's OpenAPI documentation: rendered, or as YAML that saves back onto the requests it holds. */
+export function DocumentationPanel({ itemId, kind }: DocumentationPanelProps) {
   const open = useDocumentationStore((state) => state.open)
   const load = useDocumentationStore((state) => state.load)
-  const entry = useDocumentationStore((state) => state.entries[collectionId])
+  const entry = useDocumentationStore((state) => state.entries[itemId])
   const edit = useDocumentationStore((state) => state.edit)
   const setView = useDocumentationStore((state) => state.setView)
   const discard = useDocumentationStore((state) => state.discard)
@@ -80,12 +91,12 @@ export function DocumentationPanel({ collectionId }: DocumentationPanelProps) {
   }, [problem])
 
   useEffect(() => {
-    if (useDocumentationStore.getState().entries[collectionId]) {
-      void load(collectionId)
+    if (useDocumentationStore.getState().entries[itemId]) {
+      void load(itemId)
     } else {
-      void open(collectionId)
+      void open(itemId)
     }
-  }, [collectionId, open, load])
+  }, [itemId, open, load])
 
   if (!entry?.base) {
     if (entry?.status === 'ready' && entry.loadError) {
@@ -95,7 +106,7 @@ export function DocumentationPanel({ collectionId }: DocumentationPanelProps) {
             <ErrorText error={entry.loadError} nextStep={LOAD_NEXT_STEP} />
           </Banner.Message>
           <Banner.Actions>
-            <Button variant="secondary" size="sm" onClick={() => void load(collectionId)}>
+            <Button variant="secondary" size="sm" onClick={() => void load(itemId)}>
               Try Again
             </Button>
           </Banner.Actions>
@@ -110,23 +121,23 @@ export function DocumentationPanel({ collectionId }: DocumentationPanelProps) {
   return (
     <div className={styles.panel}>
       <div className={styles.toolbar}>
-        <ViewToggle view={entry.view} onChange={(view) => setView(collectionId, view)} />
+        <ViewToggle view={entry.view} onChange={(view) => setView(itemId, view)} />
         {entry.dirty ? (
-          <Button variant="ghost" size="sm" onClick={() => discard(collectionId)}>
+          <Button variant="ghost" size="sm" onClick={() => discard(itemId)}>
             Discard Changes
           </Button>
         ) : null}
       </div>
-      {HINT}
+      <Hint kind={kind} />
       {entry.stale ? (
         <Banner.Root tone="warning">
-          {STALE_MESSAGE}
+          <StaleMessage kind={kind} />
           <Banner.Actions>
-            <Button variant="secondary" size="sm" onClick={() => keepDraft(collectionId)}>
+            <Button variant="secondary" size="sm" onClick={() => keepDraft(itemId)}>
               Keep Your Version
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => discard(collectionId)}>
-              Load from Collection
+            <Button variant="ghost" size="sm" onClick={() => discard(itemId)}>
+              Load from {kind === 'folder' ? 'Folder' : 'Collection'}
             </Button>
           </Banner.Actions>
         </Banner.Root>
@@ -138,7 +149,7 @@ export function DocumentationPanel({ collectionId }: DocumentationPanelProps) {
           </Banner.Message>
           {entry.view === 'preview' ? (
             <Banner.Actions>
-              <Button variant="secondary" size="sm" onClick={() => setView(collectionId, 'yaml')}>
+              <Button variant="secondary" size="sm" onClick={() => setView(itemId, 'yaml')}>
                 Show YAML
               </Button>
             </Banner.Actions>
@@ -157,19 +168,20 @@ export function DocumentationPanel({ collectionId }: DocumentationPanelProps) {
           value={entry.draft}
           language="yaml"
           label="OpenAPI document"
-          onChange={(yaml) => edit(collectionId, yaml)}
+          onChange={(yaml) => edit(itemId, yaml)}
           diagnostics={diagnostics}
           className={styles.editor}
         />
       ) : (
-        <ApiDocView document={document} />
+        <ApiDocView document={document} kind={kind} />
       )}
       <SavePlanDialog
         plan={entry.plan}
+        kind={kind}
         saving={entry.saving}
         failure={entry.plan ? entry.failure : null}
-        onCancel={() => cancelPlan(collectionId)}
-        onConfirm={(confirmDeletions) => void confirm(collectionId, confirmDeletions)}
+        onCancel={() => cancelPlan(itemId)}
+        onConfirm={(confirmDeletions) => void confirm(itemId, confirmDeletions)}
       />
     </div>
   )

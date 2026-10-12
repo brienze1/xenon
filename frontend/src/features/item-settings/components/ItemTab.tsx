@@ -54,8 +54,8 @@ interface ItemTabProps {
   scriptsEditor?: (slot: ItemScriptsSlot) => ReactNode
   /** Renders a collection's variables table; composed by the app. Folders have no variables. */
   collectionVariables?: (collectionId: string) => ReactNode
-  /** Renders a collection's OpenAPI documentation; composed by the app. Folders have none. */
-  documentation?: (collectionId: string) => ReactNode
+  /** Renders the OpenAPI documentation of a collection or folder (what it holds); composed by the app. */
+  documentation?: (itemId: string, kind: ContainerKind) => ReactNode
 }
 
 /**
@@ -116,7 +116,7 @@ function ItemEditor({ settings, kind, onSave, authEditor, scriptsEditor, collect
   const saving = useItemSettingsStore((state) => state.items[itemId]?.saving === true)
   const settingsDirty = useItemSettingsStore((state) => isItemDirty(state, itemId))
   const variablesDirty = useEnvironmentsStore((state) => kind === 'collection' && isScopeDirty(state, collectionScope(itemId)))
-  const documentationDirty = useDocumentationStore((state) => kind === 'collection' && isDocumentationDirty(state, itemId))
+  const documentationDirty = useDocumentationStore((state) => isDocumentationDirty(state, itemId))
   const dirty = settingsDirty || variablesDirty || documentationDirty
   const stale = useItemSettingsStore((state) => state.items[itemId]?.stale === true)
   const failure = useItemSettingsStore((state) => state.items[itemId]?.failure ?? null)
@@ -125,7 +125,7 @@ function ItemEditor({ settings, kind, onSave, authEditor, scriptsEditor, collect
   const discard = useItemSettingsStore((state) => state.discard)
   const label = KIND_LABEL[kind]
   const variables = kind === 'collection' && collectionVariables ? collectionVariables(itemId) : null
-  const docs = kind === 'collection' && documentation ? documentation(itemId) : null
+  const docs = documentation ? documentation(itemId, kind) : null
   const shown: ItemSection = (section === 'variables' && variables === null) || (section === 'documentation' && docs === null) ? 'overview' : section
 
   return (

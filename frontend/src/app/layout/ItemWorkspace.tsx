@@ -19,8 +19,8 @@ function collectionVariables(collectionId: string) {
   return <VariableTable scope={collectionScope(collectionId)} label="Collection variables" draftLifetime="workspace" savedByTab />
 }
 
-function documentation(collectionId: string) {
-  return <DocumentationPanel collectionId={collectionId} />
+function documentation(itemId: string, kind: ContainerKind) {
+  return <DocumentationPanel itemId={itemId} kind={kind} />
 }
 
 interface ItemWorkspaceProps {

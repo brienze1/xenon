@@ -208,7 +208,7 @@ describe('collection and folder tabs', () => {
 
   it('counts edited documentation as unsaved and asks to confirm its plan before closing the collection tab', async () => {
     const plan = { name: 'Billing', collectionChanged: true, updated: [], created: [], deleted: [] }
-    vi.mocked(tree.getDocumentation).mockResolvedValue({ yaml: 'openapi: 3.1.0\n', document: { title: 'Billing', description: '', version: '1.0.0', servers: [], tags: [], operations: [], securitySchemes: [] } })
+    vi.mocked(tree.getDocumentation).mockResolvedValue({ yaml: 'openapi: 3.1.0\n', document: { title: 'Billing', description: '', version: '1.0.0', servers: [], tags: [], tagGroups: [], operations: [], securitySchemes: [] } })
     vi.mocked(tree.planDocumentation).mockResolvedValue(plan)
     tabs().openItemTab({ kind: 'collection', itemId: 'c1' }, 'preview')
     const tabId = tabs().activeTabId!
@@ -228,6 +228,24 @@ describe('collection and folder tabs', () => {
     expect(tabs().activeTabId).toBe(tabId)
     tabs().forceClose(tabId)
     expect(useDocumentationStore.getState().entries.c1).toBeUndefined()
+  })
+
+  it('counts edited folder documentation as unsaved and plans its save from the folder tab', async () => {
+    const plan = { name: 'Invoices', collectionChanged: false, updated: [], created: [], deleted: [] }
+    vi.mocked(tree.getDocumentation).mockResolvedValue({ yaml: 'openapi: 3.1.0\n', document: { title: 'Invoices', description: '', version: '1.0.0', servers: [], tags: [], tagGroups: [], operations: [], securitySchemes: [] } })
+    vi.mocked(tree.planDocumentation).mockResolvedValue({ ...plan, created: [{ id: 'n1', name: 'New', folder: '', method: 'GET', path: '/new', revision: '' }] })
+    tabs().openItemTab({ kind: 'folder', itemId: 'f1' }, 'pinned')
+    const tabId = tabs().activeTabId!
+    await items().open('f1')
+    const documentation = useDocumentationStore.getState()
+    await documentation.open('f1')
+    documentation.edit('f1', 'openapi: 3.1.0\ninfo:\n  title: Invoices\n')
+    tabs().requestClose(tabId)
+    expect(tabs().closePrompt).toBe(tabId)
+    await tabs().resolveClose('save')
+    expect(tree.planDocumentation).toHaveBeenCalledWith('ws', 'f1', 'openapi: 3.1.0\ninfo:\n  title: Invoices\n')
+    expect(items().items.f1?.section).toBe('documentation')
+    expect(tabs().tabs.some((tab) => tab.id === tabId)).toBe(true)
   })
 
   it('counts unsaved collection variables as unsaved changes of the collection tab', async () => {

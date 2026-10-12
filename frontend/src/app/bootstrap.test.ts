@@ -402,7 +402,7 @@ describe('bootstrap', () => {
     useDocumentationStore.setState({
       saved: {
         localId: 'A',
-        collectionId: 'c1',
+        itemId: 'c1',
         collectionChanged: true,
         updated: [{ ...item, id: 'r1', name: 'Renamed', revision: 'rev-2' }],
         created: [],

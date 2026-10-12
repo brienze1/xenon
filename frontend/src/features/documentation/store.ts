@@ -11,34 +11,34 @@ const NO_WORKSPACE = 'WKS-00000'
 export const PREVIEW_DELAY_MS = 300
 
 interface DocumentationState {
-  /** Every open collection's documentation, by collection id; kept while its tab is hidden. */
+  /** Every open collection's or folder's documentation, by item id; kept while its tab is hidden. */
   entries: Record<string, DocumentationEntry>
   /** What the last confirmed save wrote; the app refreshes the tree and open requests from it. */
   saved: DocumentationSaved | null
-  /** Starts tracking a collection (once) and generates its documentation. */
-  open: (collectionId: string) => Promise<void>
-  /** Generates the documentation again; unsaved YAML stays and is marked stale when the collection changed. */
-  load: (collectionId: string) => Promise<void>
-  /** Generates every open documentation again (after the collection or its requests changed). */
+  /** Starts tracking a collection or folder (once) and generates its documentation. */
+  open: (itemId: string) => Promise<void>
+  /** Generates the documentation again; unsaved YAML stays and is marked stale when the documented item changed. */
+  load: (itemId: string) => Promise<void>
+  /** Generates every open documentation again (after a collection, folder or request changed). */
   refreshAll: () => Promise<void>
-  edit: (collectionId: string, yaml: string) => void
-  setView: (collectionId: string, view: DocumentationView) => void
+  edit: (itemId: string, yaml: string) => void
+  setView: (itemId: string, view: DocumentationView) => void
   /** Plans the save; `false` while the plan waits for {@link confirm} (nothing is written yet). */
-  save: (collectionId: string) => Promise<Result<boolean, AppError>>
+  save: (itemId: string) => Promise<Result<boolean, AppError>>
   /** Writes the planned changes; deletions are only written when `confirmDeletions` is set. */
-  confirm: (collectionId: string, confirmDeletions: boolean) => Promise<Result<boolean, AppError>>
-  cancelPlan: (collectionId: string) => void
-  /** Keeps the edited YAML after the collection changed on disk. */
-  keepDraft: (collectionId: string) => void
-  /** Drops the edited YAML and shows the documentation generated from the collection. */
-  discard: (collectionId: string) => void
-  drop: (collectionId: string) => void
+  confirm: (itemId: string, confirmDeletions: boolean) => Promise<Result<boolean, AppError>>
+  cancelPlan: (itemId: string) => void
+  /** Keeps the edited YAML after the documented item changed on disk. */
+  keepDraft: (itemId: string) => void
+  /** Drops the edited YAML and shows the documentation generated from the collection or folder. */
+  discard: (itemId: string) => void
+  drop: (itemId: string) => void
   reset: () => void
 }
 
-/** Whether the collection's documentation has unsaved YAML edits. */
-export function isDocumentationDirty(state: Pick<DocumentationState, 'entries'>, collectionId: string): boolean {
-  return state.entries[collectionId]?.dirty === true
+/** Whether the collection's or folder's documentation has unsaved YAML edits. */
+export function isDocumentationDirty(state: Pick<DocumentationState, 'entries'>, itemId: string): boolean {
+  return state.entries[itemId]?.dirty === true
 }
 
 function activeLocalId(): string | null {
@@ -68,19 +68,19 @@ function cleanEntry(base: Documentation): Partial<DocumentationEntry> {
 
 const previewTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
-function cancelPreview(collectionId: string) {
-  clearTimeout(previewTimers.get(collectionId))
-  previewTimers.delete(collectionId)
+function cancelPreview(itemId: string) {
+  clearTimeout(previewTimers.get(itemId))
+  previewTimers.delete(itemId)
 }
 
 export const useDocumentationStore = create<DocumentationState>()((set, get) => {
-  function patch(collectionId: string, update: Partial<DocumentationEntry> | ((entry: DocumentationEntry) => Partial<DocumentationEntry>)) {
+  function patch(itemId: string, update: Partial<DocumentationEntry> | ((entry: DocumentationEntry) => Partial<DocumentationEntry>)) {
     set((state) => {
-      const entry = state.entries[collectionId]
+      const entry = state.entries[itemId]
       if (!entry) {
         return state
       }
-      return { entries: { ...state.entries, [collectionId]: { ...entry, ...(typeof update === 'function' ? update(entry) : update) } } }
+      return { entries: { ...state.entries, [itemId]: { ...entry, ...(typeof update === 'function' ? update(entry) : update) } } }
     })
   }
 
@@ -100,42 +100,42 @@ export const useDocumentationStore = create<DocumentationState>()((set, get) => 
     }
   }
 
-  async function readDraft(collectionId: string) {
-    const draft = get().entries[collectionId]?.draft
+  async function readDraft(itemId: string) {
+    const draft = get().entries[itemId]?.draft
     if (draft === undefined) {
       return
     }
-    const read = await inWorkspace((localId) => previewDocumentation(localId, collectionId, draft))
-    if (get().entries[collectionId]?.draft !== draft || (!read.ok && read.error.code === NO_WORKSPACE)) {
+    const read = await inWorkspace((localId) => previewDocumentation(localId, itemId, draft))
+    if (get().entries[itemId]?.draft !== draft || (!read.ok && read.error.code === NO_WORKSPACE)) {
       return
     }
-    patch(collectionId, read.ok ? { preview: read.value.document, problem: null } : { problem: read.error })
+    patch(itemId, read.ok ? { preview: read.value.document, problem: null } : { problem: read.error })
   }
 
   return {
     entries: {},
     saved: null,
 
-    open: async (collectionId) => {
-      if (get().entries[collectionId]) {
+    open: async (itemId) => {
+      if (get().entries[itemId]) {
         return
       }
-      set((state) => ({ entries: { ...state.entries, [collectionId]: loadingEntry() } }))
-      await get().load(collectionId)
+      set((state) => ({ entries: { ...state.entries, [itemId]: loadingEntry() } }))
+      await get().load(itemId)
     },
 
-    load: async (collectionId) => {
-      if (!get().entries[collectionId]) {
+    load: async (itemId) => {
+      if (!get().entries[itemId]) {
         return
       }
-      const loaded = await inWorkspace((localId) => getDocumentation(localId, collectionId))
+      const loaded = await inWorkspace((localId) => getDocumentation(localId, itemId))
       if (!loaded.ok) {
         if (loaded.error.code !== NO_WORKSPACE) {
-          patch(collectionId, { status: 'ready', loadError: loaded.error })
+          patch(itemId, { status: 'ready', loadError: loaded.error })
         }
         return
       }
-      patch(collectionId, (entry) => {
+      patch(itemId, (entry) => {
         if (!entry.dirty) {
           return cleanEntry(loaded.value)
         }
@@ -145,66 +145,66 @@ export const useDocumentationStore = create<DocumentationState>()((set, get) => 
     },
 
     refreshAll: async () => {
-      await Promise.all(Object.keys(get().entries).map((collectionId) => get().load(collectionId)))
+      await Promise.all(Object.keys(get().entries).map((itemId) => get().load(itemId)))
     },
 
-    edit: (collectionId, yaml) => {
-      const entry = get().entries[collectionId]
+    edit: (itemId, yaml) => {
+      const entry = get().entries[itemId]
       if (!entry || entry.draft === yaml) {
         return
       }
-      patch(collectionId, { draft: yaml, dirty: entry.base === null || entry.base.yaml !== yaml, failure: null })
-      cancelPreview(collectionId)
+      patch(itemId, { draft: yaml, dirty: entry.base === null || entry.base.yaml !== yaml, failure: null })
+      cancelPreview(itemId)
       previewTimers.set(
-        collectionId,
+        itemId,
         setTimeout(() => {
-          previewTimers.delete(collectionId)
-          void readDraft(collectionId)
+          previewTimers.delete(itemId)
+          void readDraft(itemId)
         }, PREVIEW_DELAY_MS),
       )
     },
 
-    setView: (collectionId, view) => patch(collectionId, { view }),
+    setView: (itemId, view) => patch(itemId, { view }),
 
-    save: async (collectionId) => {
-      const entry = get().entries[collectionId]
+    save: async (itemId) => {
+      const entry = get().entries[itemId]
       if (!entry?.dirty) {
         return { ok: true, value: true }
       }
-      patch(collectionId, { saving: true, failure: null })
+      patch(itemId, { saving: true, failure: null })
       const draft = entry.draft
-      const planned = await inWorkspace((localId) => planDocumentation(localId, collectionId, draft))
+      const planned = await inWorkspace((localId) => planDocumentation(localId, itemId, draft))
       if (!planned.ok) {
-        patch(collectionId, { saving: false, failure: planned.error, problem: planned.error.details.length > 0 ? planned.error : null })
+        patch(itemId, { saving: false, failure: planned.error, problem: planned.error.details.length > 0 ? planned.error : null })
         return { ok: false, error: planned.error }
       }
       if (isEmptyPlan(planned.value)) {
-        patch(collectionId, (current) => (current.base && current.draft === draft ? { ...cleanEntry(current.base), saving: false } : { saving: false }))
+        patch(itemId, (current) => (current.base && current.draft === draft ? { ...cleanEntry(current.base), saving: false } : { saving: false }))
         return { ok: true, value: true }
       }
-      patch(collectionId, { saving: false, plan: planned.value })
+      patch(itemId, { saving: false, plan: planned.value })
       return { ok: true, value: false }
     },
 
-    confirm: async (collectionId, confirmDeletions) => {
-      const entry = get().entries[collectionId]
+    confirm: async (itemId, confirmDeletions) => {
+      const entry = get().entries[itemId]
       if (!entry?.plan) {
         return { ok: true, value: false }
       }
-      patch(collectionId, { saving: true, failure: null })
+      patch(itemId, { saving: true, failure: null })
       const draft = entry.draft
       const localId = activeLocalId()
-      const applied = await inWorkspace((workspace) => applyDocumentation(workspace, collectionId, draft, confirmDeletions))
+      const applied = await inWorkspace((workspace) => applyDocumentation(workspace, itemId, draft, confirmDeletions))
       if (!applied.ok) {
-        patch(collectionId, { saving: false, failure: applied.error })
+        patch(itemId, { saving: false, failure: applied.error })
         return { ok: false, error: applied.error }
       }
-      const edited = get().entries[collectionId]?.draft !== draft
-      patch(collectionId, edited ? { saving: false, plan: null, base: applied.value.documentation } : { ...cleanEntry(applied.value.documentation), saving: false, plan: null })
+      const edited = get().entries[itemId]?.draft !== draft
+      patch(itemId, edited ? { saving: false, plan: null, base: applied.value.documentation } : { ...cleanEntry(applied.value.documentation), saving: false, plan: null })
       set({
         saved: {
           localId: localId ?? '',
-          collectionId,
+          itemId,
           collectionChanged: applied.value.collectionChanged,
           updated: applied.value.updated,
           created: applied.value.created,
@@ -214,30 +214,30 @@ export const useDocumentationStore = create<DocumentationState>()((set, get) => 
       return { ok: true, value: true }
     },
 
-    cancelPlan: (collectionId) => patch(collectionId, { plan: null }),
+    cancelPlan: (itemId) => patch(itemId, { plan: null }),
 
-    keepDraft: (collectionId) => patch(collectionId, { stale: false }),
+    keepDraft: (itemId) => patch(itemId, { stale: false }),
 
-    discard: (collectionId) => {
-      cancelPreview(collectionId)
-      patch(collectionId, (entry) => (entry.base ? { ...cleanEntry(entry.base), plan: null, failure: null } : { dirty: false }))
+    discard: (itemId) => {
+      cancelPreview(itemId)
+      patch(itemId, (entry) => (entry.base ? { ...cleanEntry(entry.base), plan: null, failure: null } : { dirty: false }))
     },
 
-    drop: (collectionId) => {
-      cancelPreview(collectionId)
+    drop: (itemId) => {
+      cancelPreview(itemId)
       set((state) => {
-        if (!state.entries[collectionId]) {
+        if (!state.entries[itemId]) {
           return state
         }
         const entries = { ...state.entries }
-        delete entries[collectionId]
+        delete entries[itemId]
         return { entries }
       })
     },
 
     reset: () => {
-      for (const collectionId of previewTimers.keys()) {
-        cancelPreview(collectionId)
+      for (const itemId of previewTimers.keys()) {
+        cancelPreview(itemId)
       }
       set({ entries: {}, saved: null })
     },

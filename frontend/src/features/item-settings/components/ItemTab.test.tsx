@@ -70,9 +70,28 @@ function collectionVariables(collectionId: string) {
   return <p>Variables of {collectionId}</p>
 }
 
-function documentation(collectionId: string) {
-  return <p>Documentation of {collectionId}</p>
+function documentation(itemId: string, kind: string) {
+  return (
+    <p>
+      Documentation of {kind} {itemId}
+    </p>
+  )
 }
+
+const EDITED = {
+  status: 'ready',
+  loadError: null,
+  base: null,
+  draft: 'edited',
+  dirty: true,
+  view: 'yaml',
+  preview: null,
+  problem: null,
+  plan: null,
+  saving: false,
+  failure: null,
+  stale: false,
+} as const
 
 function renderTab(settings: ItemSettings, onSave = vi.fn()) {
   vi.mocked(tree.getItemSettings).mockResolvedValue(settings)
@@ -214,11 +233,11 @@ describe('ItemTab', () => {
     expect(screen.getByText(/The folder is read-only. Check that the workspace folder exists and is writable/)).toBeInTheDocument()
   })
 
-  it('shows the documentation of collections only and enables Save while its YAML is edited', async () => {
+  it('shows the documentation of a collection and enables Save while its YAML is edited', async () => {
     renderTab(collection)
     const tab = await screen.findByRole('region', { name: 'Billing collection' })
     await userEvent.click(within(tab).getByRole('tab', { name: 'Documentation' }))
-    expect(within(tab).getByText('Documentation of c1')).toBeInTheDocument()
+    expect(within(tab).getByText('Documentation of collection c1')).toBeInTheDocument()
     act(() =>
       useDocumentationStore.setState({
         entries: {
@@ -243,9 +262,14 @@ describe('ItemTab', () => {
     act(() => useDocumentationStore.getState().reset())
   })
 
-  it('has no documentation for folders', async () => {
+  it('shows the documentation of a folder and enables Save while its YAML is edited', async () => {
     renderTab(folder)
     const tab = await screen.findByRole('region', { name: 'Invoices folder' })
-    expect(within(tab).queryByRole('tab', { name: 'Documentation' })).not.toBeInTheDocument()
+    await userEvent.click(within(tab).getByRole('tab', { name: 'Documentation' }))
+    expect(within(tab).getByText('Documentation of folder f1')).toBeInTheDocument()
+    expect(within(tab).getByRole('button', { name: 'Save' })).toBeDisabled()
+    act(() => useDocumentationStore.setState({ entries: { f1: { ...useDocumentationStore.getState().entries.f1!, ...EDITED } } }))
+    expect(within(tab).getByRole('button', { name: 'Save' })).toBeEnabled()
+    act(() => useDocumentationStore.getState().reset())
   })
 })

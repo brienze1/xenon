@@ -40,6 +40,22 @@
   gap: var(--space-3);
 }
 
+.tagGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.tagGroup > .group {
+  padding-left: var(--space-4);
+  border-left: 2px solid var(--color-border);
+}
+
+.tagTitle {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+}
+
 .groupTitle {
   padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--color-border);

@@ -1,6 +1,7 @@
 import { useId, useState } from 'react'
 import type { AppError } from '@/platform/errors'
 import type { DocumentationItem, DocumentationPlan } from '@/platform/mappers/documentation'
+import type { ContainerKind } from '@/platform/mappers/tree'
 import { withNextStep } from '@/shared/lib/next-step'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
@@ -15,10 +16,11 @@ const SAVE_NEXT_STEP = 'Check that the workspace folder exists and is writable, 
 interface PlanListProps {
   title: string
   items: DocumentationItem[]
-  withFolder?: boolean
+  /** Shows where each item is created, relative to the documented collection or folder. */
+  createdIn?: ContainerKind
 }
 
-function PlanList({ title, items, withFolder = false }: PlanListProps) {
+function PlanList({ title, items, createdIn }: PlanListProps) {
   if (items.length === 0) {
     return null
   }
@@ -30,7 +32,7 @@ function PlanList({ title, items, withFolder = false }: PlanListProps) {
           <li key={item.id || `${item.name}-${index}`} className={styles.item}>
             <MethodBadge method={item.method} />
             <span translate="no">{item.name}</span>
-            {withFolder ? <span className={styles.folder}>{item.folder ? `in ${item.folder}` : 'in the collection'}</span> : null}
+            {createdIn ? <span className={styles.folder}>{item.folder ? `in ${item.folder}` : `in the ${createdIn}`}</span> : null}
           </li>
         ))}
       </ul>
@@ -40,13 +42,14 @@ function PlanList({ title, items, withFolder = false }: PlanListProps) {
 
 interface PlanContentProps {
   plan: DocumentationPlan
+  kind: ContainerKind
   saving: boolean
   failure: AppError | null
   onCancel: () => void
   onConfirm: (confirmDeletions: boolean) => void
 }
 
-function PlanContent({ plan, saving, failure, onCancel, onConfirm }: PlanContentProps) {
+function PlanContent({ plan, kind, saving, failure, onCancel, onConfirm }: PlanContentProps) {
   const [deleteConfirmed, setDeleteConfirmed] = useState(false)
   const confirmId = useId()
   const deletions = plan.deleted.length
@@ -56,9 +59,9 @@ function PlanContent({ plan, saving, failure, onCancel, onConfirm }: PlanContent
       <Dialog.Title>Save Documentation Changes?</Dialog.Title>
       <Dialog.Body>
         <p className={styles.summary}>{planSummary(plan)}.</p>
-        {plan.collectionChanged ? <p>The collection’s name or description changes too.</p> : null}
+        {plan.collectionChanged ? <p>The {kind}’s name or description changes too.</p> : null}
         <PlanList title="Updated" items={plan.updated} />
-        <PlanList title="Created" items={plan.created} withFolder />
+        <PlanList title="Created" items={plan.created} createdIn={kind} />
         <PlanList title="Deleted" items={plan.deleted} />
         {deletions > 0 ? (
           <label htmlFor={confirmId} className={styles.confirm}>
@@ -88,6 +91,8 @@ function PlanContent({ plan, saving, failure, onCancel, onConfirm }: PlanContent
 
 interface SavePlanDialogProps {
   plan: DocumentationPlan | null
+  /** What is documented: a collection or a folder. */
+  kind: ContainerKind
   saving: boolean
   failure: AppError | null
   onCancel: () => void
@@ -95,10 +100,10 @@ interface SavePlanDialogProps {
 }
 
 /** Lists what saving the documentation changes and asks before writing it; deletions need an explicit tick. */
-export function SavePlanDialog({ plan, saving, failure, onCancel, onConfirm }: SavePlanDialogProps) {
+export function SavePlanDialog({ plan, kind, saving, failure, onCancel, onConfirm }: SavePlanDialogProps) {
   return (
     <Dialog.Root open={plan !== null} onOpenChange={(open) => (open ? undefined : onCancel())}>
-      {plan ? <PlanContent plan={plan} saving={saving} failure={failure} onCancel={onCancel} onConfirm={onConfirm} /> : null}
+      {plan ? <PlanContent plan={plan} kind={kind} saving={saving} failure={failure} onCancel={onCancel} onConfirm={onConfirm} /> : null}
     </Dialog.Root>
   )
 }

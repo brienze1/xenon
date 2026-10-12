@@ -34,7 +34,7 @@ import {
 
 type ResponseEntries = Record<string, ResponseEntry>
 
-/** Brings the sidebar, open request tabs and the collection tab up to date with a saved documentation edit. */
+/** Brings the sidebar, open request tabs and the collection or folder tab up to date with a saved documentation edit. */
 function catchUpWithDocumentation(saved: DocumentationSaved): void {
   if (saved.localId !== useWorkspacesStore.getState().activeLocalId) {
     return
@@ -47,7 +47,7 @@ function catchUpWithDocumentation(saved: DocumentationSaved): void {
     tabs.handleDeleted(saved.deleted.map((request) => request.id))
   }
   if (saved.collectionChanged) {
-    void useItemSettingsStore.getState().load(saved.collectionId)
+    void useItemSettingsStore.getState().load(saved.itemId)
   }
   void useSidebarStore.getState().load()
 }

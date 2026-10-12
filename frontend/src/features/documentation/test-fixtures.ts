@@ -6,6 +6,7 @@ export const generatedDocument: ApiDocument = {
   version: '1.0.0',
   servers: ['{{host}}'],
   tags: [{ name: 'Invoices', description: '' }],
+  tagGroups: [],
   operations: [
     {
       requestId: 'r1',

@@ -81,7 +81,7 @@ describe('documentation store', () => {
     await expect(store().confirm('c1', true)).resolves.toEqual({ ok: true, value: true })
     expect(tree.applyDocumentation).toHaveBeenCalledWith('ws', 'c1', editedYaml, true)
     expect(store().entries.c1).toMatchObject({ plan: null, dirty: false, draft: editedYaml })
-    expect(store().saved).toMatchObject({ localId: 'ws', collectionId: 'c1', collectionChanged: true, deleted: plan.deleted })
+    expect(store().saved).toMatchObject({ localId: 'ws', itemId: 'c1', collectionChanged: true, deleted: plan.deleted })
   })
 
   it('takes a save that changes nothing as saved without asking', async () => {

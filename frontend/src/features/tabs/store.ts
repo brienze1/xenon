@@ -147,9 +147,9 @@ function documentation() {
   return useDocumentationStore.getState()
 }
 
-/** Whether the tab is a collection tab whose documentation YAML has unsaved edits. */
+/** Whether the tab is a collection or folder tab whose documentation YAML has unsaved edits. */
 function isDocumentationTabDirty(tab: TabMeta | undefined): boolean {
-  return tab?.kind === 'collection' && Boolean(tab.itemId) && isDocumentationDirty(documentation(), tab.itemId!)
+  return isItemTab(tab) && Boolean(tab!.itemId) && isDocumentationDirty(documentation(), tab!.itemId!)
 }
 
 function itemTabMeta(id: string, target: ItemTabTarget, pinned: boolean): TabMeta {
@@ -325,7 +325,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
   }
 
   /**
-   * Saves a collection or folder tab: its settings and, for a collection, its variables and documentation.
+   * Saves a collection or folder tab: its settings, its documentation and, for a collection, its variables.
    * Edited documentation first shows what it changes; the save is `false` until that is confirmed.
    */
   async function saveItemTab(tab: TabMeta): Promise<Result<boolean, AppError>> {

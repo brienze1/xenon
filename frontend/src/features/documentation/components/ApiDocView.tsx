@@ -1,9 +1,10 @@
 import { lazy, Suspense, useState } from 'react'
-import type { ApiDocument, ApiOperation, ApiParameter, ApiSecurityScheme } from '@/platform/mappers/documentation'
+import type { ApiDocument, ApiOperation, ApiParameter, ApiSecurityScheme, ApiTag } from '@/platform/mappers/documentation'
+import type { ContainerKind } from '@/platform/mappers/tree'
 import { languageFor } from '@/shared/lib/body-format'
 import { CodeEditor } from '@/shared/ui/code-editor/CodeEditor'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
-import { groupOperations } from '@/features/documentation/lib/operation-groups'
+import { type OperationGroup, sectionOperations } from '@/features/documentation/lib/operation-groups'
 import styles from './ApiDocView.module.css'
 
 const MarkdownView = lazy(() => import('@/shared/ui/markdown/MarkdownView'))
@@ -177,13 +178,42 @@ function OperationView({ operation }: OperationViewProps) {
   )
 }
 
-interface ApiDocViewProps {
-  document: ApiDocument
+interface TagSectionProps {
+  group: OperationGroup
+  tags: ApiTag[]
+  /** Inside an x-tagGroups section, a level below its heading. */
+  nested: boolean
 }
 
-/** The OpenAPI document rendered offline with the app's colours: info, authentication, then operations by folder. */
-export function ApiDocView({ document }: ApiDocViewProps) {
-  const groups = groupOperations(document.operations)
+function TagSection({ group, tags, nested }: TagSectionProps) {
+  const title = group.tag || UNTAGGED_TITLE
+  const description = tags.find((tag) => tag.name === group.tag)?.description ?? ''
+  const Heading = nested ? 'h5' : 'h4'
+  return (
+    <section aria-label={title} className={styles.group}>
+      <Heading className={nested ? styles.tagTitle : styles.groupTitle} translate="no">
+        {title}
+      </Heading>
+      <Markdown text={description} />
+      {group.operations.map((operation, index) => (
+        <OperationView key={operation.requestId || `${operation.method} ${operation.path} ${index}`} operation={operation} />
+      ))}
+    </section>
+  )
+}
+
+interface ApiDocViewProps {
+  document: ApiDocument
+  /** What is documented, for the wording of the empty state. */
+  kind: ContainerKind
+}
+
+/**
+ * The OpenAPI document rendered offline with the app's colours: info, authentication, then operations by folder —
+ * sectioned by x-tagGroups when the document has them.
+ */
+export function ApiDocView({ document, kind }: ApiDocViewProps) {
+  const sections = sectionOperations(document.operations, document.tagGroups)
   return (
     <article className={styles.doc} aria-label={`${document.title} API documentation`}>
       <header className={styles.header}>
@@ -214,17 +244,21 @@ export function ApiDocView({ document }: ApiDocViewProps) {
           </ul>
         </section>
       ) : null}
-      {groups.length === 0 ? <p className={styles.muted}>This collection has no requests yet. Add operations in the YAML to create them.</p> : null}
-      {groups.map((group) => (
-        <section key={group.tag} aria-label={group.tag || UNTAGGED_TITLE} className={styles.group}>
-          <h4 className={styles.groupTitle} translate="no">
-            {group.tag || UNTAGGED_TITLE}
-          </h4>
-          {group.operations.map((operation, index) => (
-            <OperationView key={operation.requestId || `${operation.method} ${operation.path} ${index}`} operation={operation} />
-          ))}
-        </section>
-      ))}
+      {sections.length === 0 ? <p className={styles.muted}>This {kind} has no requests yet. Add operations in the YAML to create them.</p> : null}
+      {sections.map((section) =>
+        section.group === '' ? (
+          section.tags.map((group) => <TagSection key={`tag:${group.tag}`} group={group} tags={document.tags} nested={false} />)
+        ) : (
+          <section key={`group:${section.group}`} aria-label={section.group} className={styles.tagGroup}>
+            <h4 className={styles.groupTitle} translate="no">
+              {section.group}
+            </h4>
+            {section.tags.map((group) => (
+              <TagSection key={group.tag} group={group} tags={document.tags} nested />
+            ))}
+          </section>
+        ),
+      )}
     </article>
   )
 }

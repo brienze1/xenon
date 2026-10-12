@@ -6,11 +6,11 @@ export type DocumentationView = 'preview' | 'yaml'
 
 export type DocumentationStatus = 'loading' | 'ready'
 
-/** One collection's documentation: what Go generated, the YAML being edited and the save waiting for confirmation. */
+/** One collection's or folder's documentation: what Go generated, the YAML being edited and the save waiting for confirmation. */
 export interface DocumentationEntry {
   status: DocumentationStatus
   loadError: AppError | null
-  /** The document generated from the collection as last read. */
+  /** The document generated from the collection or folder as last read. */
   base: Documentation | null
   /** The YAML in the editor; the base YAML until edited. */
   draft: string
@@ -24,14 +24,15 @@ export interface DocumentationEntry {
   plan: DocumentationPlan | null
   saving: boolean
   failure: AppError | null
-  /** The collection changed on disk while the YAML had unsaved edits. */
+  /** The collection or folder changed on disk while the YAML had unsaved edits. */
   stale: boolean
 }
 
 /** What the last confirmed save wrote, for the other open views to catch up. */
 export interface DocumentationSaved {
   localId: string
-  collectionId: string
+  /** The documented collection or folder. */
+  itemId: string
   collectionChanged: boolean
   updated: DocumentationItem[]
   created: DocumentationItem[]
