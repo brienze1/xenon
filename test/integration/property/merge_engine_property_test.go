@@ -140,7 +140,7 @@ func checkFiles(base workspace, mine, theirs side) error {
 }
 
 func checkCollection(base workspace, mine, theirs side) error {
-	merged := usecase.MergeStructuralFile(itemkind.Collection, collectionDoc(base.fields, base.order, base.rows), collectionDoc(mine.fields, mine.order, mine.rows), collectionDoc(theirs.fields, theirs.order, theirs.rows))
+	merged := usecase.MergeStructuralFile(itemkind.Collection, collectionDoc(base.fields, base.order, base.rows), collectionDoc(mine.fields, mine.order, mine.rows), collectionDoc(theirs.fields, theirs.order, theirs.rows), nil)
 	expected := map[string]bool{}
 	for field, value := range base.fields {
 		if want, conflict := threeWay(value, true, mine.fields[field], true, theirs.fields[field], true); conflict {
@@ -167,7 +167,7 @@ func checkCollection(base workspace, mine, theirs side) error {
 }
 
 func checkEnvironment(base workspace, mine, theirs side) error {
-	merged := usecase.MergeStructuralFile(itemkind.Environment, environmentDoc(base.rows), environmentDoc(mine.rows), environmentDoc(theirs.rows))
+	merged := usecase.MergeStructuralFile(itemkind.Environment, environmentDoc(base.rows), environmentDoc(mine.rows), environmentDoc(theirs.rows), nil)
 	conflicts, err := checkRows(base.rows, mine, theirs, merged.Result.Field("variables"), "variables")
 	if len(conflicts) > 0 {
 		if !merged.ItemConflict || len(merged.FieldConflicts) != 0 {

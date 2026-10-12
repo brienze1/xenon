@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
-	"github.com/brienze1/xenon/internal/domain/enums/signinstatus"
 	"github.com/brienze1/xenon/internal/infra/properties"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/webservice/dto"
@@ -81,11 +80,13 @@ func (g *gitHubWebservice) Poll(ctx context.Context, sessionId string) (*entity.
 	now := timeutils.Now()
 	if session.IsExpired(now) {
 		g.forget(sessionId)
-		return &entity.GitHubSignIn{Status: signinstatus.Expired, Interval: session.IntervalSeconds()}, nil
+		expired := session.ExpiredSignIn()
+		return &expired, nil
 	}
 	if session.IsTooEarly(now) {
 		logger.Debug(ctx, "Finished", map[string]any{"sessionId": sessionId, "tooEarly": true})
-		return &entity.GitHubSignIn{Status: signinstatus.Pending, Interval: session.IntervalSeconds()}, nil
+		pending := session.PendingSignIn()
+		return &pending, nil
 	}
 	form := dto.NewGitHubTokenPollRequest(properties.Properties().Git.GitHubClientID, session.DeviceCode).Form()
 	status, body, err := g.send(ctx, http.MethodPost, properties.Properties().Git.GitHubLoginURL+"/login/oauth/access_token", gitHubForm, form, "")
@@ -93,7 +94,7 @@ func (g *gitHubWebservice) Poll(ctx context.Context, sessionId string) (*entity.
 		return nil, errs.ServiceUnavailableError(err, "ACC-46503", "GitHub could not be reached")
 	}
 	var answer dto.GitHubTokenPollResponse
-	if status != http.StatusOK || json.Unmarshal(body, &answer) != nil || answer.Status() == signinstatus.Unknown {
+	if status != http.StatusOK || json.Unmarshal(body, &answer) != nil || !answer.IsRecognised() {
 		return nil, errs.ServerError("GitHub answered the sign-in poll unexpectedly", "ACC-47502", http.StatusBadGateway)
 	}
 	session = session.Polled(now)
@@ -104,7 +105,7 @@ func (g *gitHubWebservice) Poll(ctx context.Context, sessionId string) (*entity.
 	g.mu.Lock()
 	g.sessions[sessionId] = session
 	g.mu.Unlock()
-	if signIn.Status != signinstatus.Pending {
+	if !signIn.IsPending() {
 		g.forget(sessionId)
 	}
 

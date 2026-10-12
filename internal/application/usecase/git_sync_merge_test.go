@@ -98,7 +98,7 @@ func TestMergeStructuralFileMergesNonOverlappingFields(t *testing.T) {
 	base := doc("name", "Billing", "description", "old", "order", docList("a.yaml", "b.yaml", "c.yaml"), "auth", doc("type", "bearer", "bearer", doc("token", "{{t}}")))
 	mine := doc("name", "Billing v2", "description", "old", "order", docList("a.yaml", "c.yaml", "mine.yaml"), "auth", doc("type", "bearer", "bearer", doc("token", "{{t}}")), "docs", "mine")
 	theirs := doc("name", "Billing", "description", "new", "order", docList("c.yaml", "b.yaml", "theirs.yaml", "a.yaml"), "auth", doc("type", "bearer", "bearer", doc("token", "{{t2}}")))
-	merged := MergeStructuralFile(itemkind.Collection, base, mine, theirs)
+	merged := MergeStructuralFile(itemkind.Collection, base, mine, theirs, nil)
 	if merged.HasConflicts() || len(merged.Notes) != 0 {
 		t.Fatalf("unexpected conflicts %+v", merged)
 	}
@@ -115,7 +115,7 @@ func TestMergeStructuralFileReportsFieldConflictsAndKeepsMinePlaceholder(t *test
 	base := doc("name", "Billing", "auth", doc("bearer", doc("token", "a")), "custom", "x", "variables", docRows(docRow("v1", "1")))
 	mine := doc("name", "Mine", "auth", doc("bearer", doc("token", "b")), "custom", "y", "variables", docRows(docRow("v1", "2")))
 	theirs := doc("name", "Theirs", "auth", doc("bearer", doc("token", "c")), "custom", "z", "variables", docRows(docRow("v1", "3")))
-	merged := MergeStructuralFile(itemkind.Folder, base, mine, theirs)
+	merged := MergeStructuralFile(itemkind.Folder, base, mine, theirs, nil)
 	paths := make([]string, 0)
 	for _, conflict := range merged.FieldConflicts {
 		paths = append(paths, conflict.Path)
@@ -141,7 +141,7 @@ func TestMergeStructuralFileMergesKeyedRowsAndDeletions(t *testing.T) {
 	base := doc("variables", docRows(docRow("keep", "1"), docRow("dropped-by-mine", "1"), docRow("dropped-by-theirs", "1"), docRow("changed", "1")), "description", "d")
 	mine := doc("variables", docRows(docRow("keep", "1"), docRow("dropped-by-theirs", "1"), docRow("changed", "1"), docRow("added-by-mine", "m")))
 	theirs := doc("variables", docRows(docRow("added-by-theirs", "t"), docRow("keep", "1"), docRow("dropped-by-mine", "1"), docRow("changed", "2")), "description", "d")
-	merged := MergeStructuralFile(itemkind.Environment, base, mine, theirs)
+	merged := MergeStructuralFile(itemkind.Environment, base, mine, theirs, nil)
 	if merged.HasConflicts() {
 		t.Fatalf("unexpected conflicts %+v", merged)
 	}
@@ -156,7 +156,7 @@ func TestMergeStructuralFileMakesEnvironmentRowConflictsItemConflicts(t *testing
 	base := doc("name", "hml", "variables", docRows(docRow("url", "a")))
 	mine := doc("name", "hml", "variables", docRows(docRow("url", "b")))
 	theirs := doc("name", "hml", "variables", docRows(docRow("url", "c")))
-	merged := MergeStructuralFile(itemkind.Environment, base, mine, theirs)
+	merged := MergeStructuralFile(itemkind.Environment, base, mine, theirs, nil)
 	if !merged.ItemConflict || len(merged.FieldConflicts) != 0 || !merged.HasConflicts() {
 		t.Fatalf("expected an item conflict, got %+v", merged)
 	}
@@ -178,7 +178,7 @@ func TestMergeStructuralFileFallsBackToConflictsForUnmergeableShapes(t *testing.
 		"rows against scalar values": {doc("variables", docRows(docRow("a", "1"))), doc("variables", docRows(docRow("a", "2"))), doc("variables", "none"), "variables"},
 	}
 	for name, c := range cases {
-		merged := MergeStructuralFile(itemkind.Collection, c.base, c.mine, c.theirs)
+		merged := MergeStructuralFile(itemkind.Collection, c.base, c.mine, c.theirs, nil)
 		if len(merged.FieldConflicts) != 1 || merged.FieldConflicts[0].Path != c.path {
 			t.Errorf("%s: conflicts %+v", name, merged.FieldConflicts)
 		}
@@ -188,7 +188,7 @@ func TestMergeStructuralFileFallsBackToConflictsForUnmergeableShapes(t *testing.
 func TestMergeStructuralFileMergesAddedFilesWithoutBase(t *testing.T) {
 	mine := doc("name", "N", "order", docList("a.yaml"), "variables", docRows(docRow("x", "1")))
 	theirs := doc("name", "N", "order", docList("b.yaml"), "variables", docRows(docRow("y", "1")))
-	merged := MergeStructuralFile(itemkind.Folder, nil, mine, theirs)
+	merged := MergeStructuralFile(itemkind.Folder, nil, mine, theirs, nil)
 	want := doc("name", "N", "order", docList("b.yaml", "a.yaml"), "variables", docRows(docRow("y", "1"), docRow("x", "1")))
 	if merged.HasConflicts() || !merged.Result.Equals(want) {
 		t.Fatalf("merge without base = %+v", merged)
@@ -196,7 +196,7 @@ func TestMergeStructuralFileMergesAddedFilesWithoutBase(t *testing.T) {
 }
 
 func TestMergeStructuralFileReportsRootConflicts(t *testing.T) {
-	merged := MergeStructuralFile(itemkind.Workspace, docScalar("a"), docScalar("b"), docScalar("c"))
+	merged := MergeStructuralFile(itemkind.Workspace, docScalar("a"), docScalar("b"), docScalar("c"), nil)
 	if len(merged.FieldConflicts) != 1 || merged.FieldConflicts[0].Path != "" || merged.Result.Value != "b" {
 		t.Fatalf("root conflict %+v", merged)
 	}

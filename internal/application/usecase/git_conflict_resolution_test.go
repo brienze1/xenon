@@ -11,12 +11,12 @@ import (
 	"github.com/brienze1/xenon/pkg/errs"
 )
 
-func TestMergeResolvedStructuralFileSettlesTheChosenSide(t *testing.T) {
+func TestMergeStructuralFileSettlesTheChosenSide(t *testing.T) {
 	base := doc("name", "Billing", "description", "d", "variables", docRows(docRow("v1", "1"), docRow("v2", "1")), "custom", "x")
 	mine := doc("name", "Mine", "description", "mine", "variables", docRows(docRow("v1", "2"), docRow("v2", "2")), "custom", "y")
 	theirs := doc("name", "Theirs", "description", "theirs", "variables", docRows(docRow("v1", "3")), "custom", "z")
 	resolutions := map[string]enums.ConflictResolution{"name": conflictresolution.Theirs, "description": conflictresolution.Mine, "variables[v1].value": conflictresolution.Theirs, "variables[v2]": conflictresolution.Theirs}
-	merged := MergeResolvedStructuralFile(itemkind.Collection, base, mine, theirs, resolutions)
+	merged := MergeStructuralFile(itemkind.Collection, base, mine, theirs, resolutions)
 	if merged.HasConflicts() {
 		t.Fatalf("every conflict was resolved: %+v", merged.FieldConflicts)
 	}
@@ -24,7 +24,7 @@ func TestMergeResolvedStructuralFileSettlesTheChosenSide(t *testing.T) {
 	if !merged.Result.Equals(want) {
 		t.Fatalf("result %+v", merged.Result)
 	}
-	partial := MergeResolvedStructuralFile(itemkind.Collection, base, mine, theirs, map[string]enums.ConflictResolution{"name": conflictresolution.Mine})
+	partial := MergeStructuralFile(itemkind.Collection, base, mine, theirs, map[string]enums.ConflictResolution{"name": conflictresolution.Mine})
 	paths := make([]string, 0)
 	for _, conflict := range partial.FieldConflicts {
 		paths = append(paths, conflict.Path)
@@ -32,10 +32,10 @@ func TestMergeResolvedStructuralFileSettlesTheChosenSide(t *testing.T) {
 	if !reflect.DeepEqual(paths, []string{"description", "variables[v1].value", "variables[v2]"}) || partial.Result.Field("name").Value != "Mine" {
 		t.Fatalf("unresolved paths %v", paths)
 	}
-	if MergeStructuralFile(itemkind.Collection, base, mine, theirs).Result.Field("name").Value != "Mine" {
+	if MergeStructuralFile(itemkind.Collection, base, mine, theirs, nil).Result.Field("name").Value != "Mine" {
 		t.Fatal("no resolutions keeps the mine placeholder")
 	}
-	environment := MergeResolvedStructuralFile(itemkind.Environment, base, mine, theirs, resolutions)
+	environment := MergeStructuralFile(itemkind.Environment, base, mine, theirs, resolutions)
 	if !environment.ItemConflict {
 		t.Fatal("environments stay item conflicts")
 	}

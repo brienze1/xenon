@@ -53,7 +53,7 @@ func (s syncMerger) mergeFile(ctx context.Context, linked entity.LinkedWorkspace
 		}
 		documents = append(documents, document)
 	}
-	result := usecase.MergeResolvedStructuralFile(plan.StructuralKind(), documents[0], documents[1], documents[2], resolutions)
+	result := usecase.MergeStructuralFile(plan.StructuralKind(), documents[0], documents[1], documents[2], resolutions)
 	return &result, nil
 }
 

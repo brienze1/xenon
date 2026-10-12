@@ -23,12 +23,8 @@ type structuralMerger struct {
 	isEnvironment bool
 }
 
-func MergeStructuralFile(kind enums.ItemKind, base, mine, theirs *entity.DocumentNode) entity.StructuralMerge {
-	return MergeResolvedStructuralFile(kind, base, mine, theirs, nil)
-}
-
-// MergeResolvedStructuralFile settles each field conflict named in resolutions with that side instead of reporting it.
-func MergeResolvedStructuralFile(kind enums.ItemKind, base, mine, theirs *entity.DocumentNode, resolutions map[string]enums.ConflictResolution) entity.StructuralMerge {
+// MergeStructuralFile settles each field conflict named in resolutions with that side instead of reporting it.
+func MergeStructuralFile(kind enums.ItemKind, base, mine, theirs *entity.DocumentNode, resolutions map[string]enums.ConflictResolution) entity.StructuralMerge {
 	merger := &structuralMerger{isEnvironment: kind == itemkind.Environment, resolutions: resolutions}
 	merger.merge.Result = merger.value("", base, mine, theirs)
 	return merger.merge

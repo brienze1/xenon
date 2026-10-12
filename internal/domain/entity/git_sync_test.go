@@ -409,3 +409,14 @@ func TestItemIndexJoinsWorkspaceLevelFilesToTheWorkspace(t *testing.T) {
 		t.Fatalf("alone = %+v, want %+v", alone, want)
 	}
 }
+
+func TestGitHubDeviceSessionAnswersExpiredAndPendingSignIns(t *testing.T) {
+	session := NewGitHubDeviceSession("s1", "dc", 900, 5, accountCreatedAt)
+	expired, pending := session.ExpiredSignIn(), session.PendingSignIn()
+	if expired.Status != signinstatus.Expired || expired.Interval != 5 || expired.IsPending() || expired.IsDone() {
+		t.Fatalf("expired = %+v", expired)
+	}
+	if pending.Status != signinstatus.Pending || pending.Interval != 5 || !pending.IsPending() {
+		t.Fatalf("pending = %+v", pending)
+	}
+}

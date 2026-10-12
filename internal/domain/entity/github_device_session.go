@@ -1,6 +1,10 @@
 package entity
 
-import "time"
+import (
+	"time"
+
+	"github.com/brienze1/xenon/internal/domain/enums/signinstatus"
+)
 
 const gitHubSlowDownStep = 5 * time.Second
 
@@ -46,4 +50,12 @@ func (g GitHubDeviceSession) IntervalSeconds() int {
 
 func (g GitHubDeviceSession) LogValue() any {
 	return map[string]any{"id": g.ID, "interval": g.Interval.String(), "expiresAt": g.ExpiresAt, "nextPollAt": g.NextPollAt}
+}
+
+func (g GitHubDeviceSession) ExpiredSignIn() GitHubSignIn {
+	return GitHubSignIn{Status: signinstatus.Expired, Interval: g.IntervalSeconds()}
+}
+
+func (g GitHubDeviceSession) PendingSignIn() GitHubSignIn {
+	return GitHubSignIn{Status: signinstatus.Pending, Interval: g.IntervalSeconds()}
 }

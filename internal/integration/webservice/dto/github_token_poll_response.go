@@ -38,6 +38,10 @@ func (g *GitHubTokenPollResponse) Status() enums.SignInStatus {
 	}
 }
 
+func (g *GitHubTokenPollResponse) IsRecognised() bool {
+	return g.Status() != signinstatus.Unknown
+}
+
 func (g *GitHubTokenPollResponse) ToEntity(session entity.GitHubDeviceSession) entity.GitHubSignIn {
 	return entity.GitHubSignIn{Status: g.Status(), Token: g.AccessToken, Interval: session.IntervalSeconds()}
 }

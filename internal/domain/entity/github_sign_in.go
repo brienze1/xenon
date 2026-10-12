@@ -15,6 +15,10 @@ func (g GitHubSignIn) IsDone() bool {
 	return g.Status == signinstatus.Done
 }
 
+func (g GitHubSignIn) IsPending() bool {
+	return g.Status == signinstatus.Pending
+}
+
 func (g GitHubSignIn) LogValue() any {
 	return map[string]any{"status": g.Status, "interval": g.Interval, "hasToken": g.Token != ""}
 }
