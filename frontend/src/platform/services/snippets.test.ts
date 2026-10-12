@@ -19,7 +19,7 @@ describe('snippet service', () => {
 
   it('lists the languages with their options as text', async () => {
     vi.mocked(SnippetService.Languages).mockResolvedValue([
-      { id: 'curl', label: 'cURL', options: [{ id: 'multiLine', label: 'Multiline', type: 'boolean', default: true }, { id: 'quoteType', label: 'Quote', type: 'enum', default: 'single', values: ['single', 'double'] }, { id: 'requestTimeoutInSeconds', label: 'Timeout', type: 'positiveInteger', default: 0 }] },
+      { id: 'curl', label: 'cURL', options: [{ id: 'multiLine', label: 'Multiline', description: 'Split across lines', type: 'boolean', default: true }, { id: 'quoteType', label: 'Quote', type: 'enum', default: 'single', values: ['single', 'double'] }, { id: 'requestTimeoutInSeconds', label: 'Timeout', type: 'positiveInteger', default: 0 }] },
       { id: 'go_native', label: 'Go', options: null },
     ] as never)
     await expect(snippets.listSnippetLanguages()).resolves.toEqual([
@@ -27,9 +27,9 @@ describe('snippet service', () => {
         id: 'curl',
         label: 'cURL',
         options: [
-          { id: 'multiLine', label: 'Multiline', type: 'boolean', defaultValue: 'true', values: [] },
-          { id: 'quoteType', label: 'Quote', type: 'enum', defaultValue: 'single', values: ['single', 'double'] },
-          { id: 'requestTimeoutInSeconds', label: 'Timeout', type: 'positiveInteger', defaultValue: '0', values: [] },
+          { id: 'multiLine', label: 'Multiline', description: 'Split across lines', type: 'boolean', defaultValue: 'true', values: [] },
+          { id: 'quoteType', label: 'Quote', description: '', type: 'enum', defaultValue: 'single', values: ['single', 'double'] },
+          { id: 'requestTimeoutInSeconds', label: 'Timeout', description: '', type: 'positiveInteger', defaultValue: '0', values: [] },
         ],
       },
       { id: 'go_native', label: 'Go', options: [] },

@@ -1,25 +1,26 @@
-import { lazy, Suspense, useEffect, useId, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useId, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import type { SnippetOption } from '@/platform/mappers/snippet'
 import { Banner } from '@/shared/ui/banner/Banner'
-import { Button } from '@/shared/ui/button/Button'
+import { CopyButton } from '@/shared/ui/copy-button/CopyButton'
+import { IconButton } from '@/shared/ui/icon-button/IconButton'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
-import { currentSnippetLanguage, editorLanguageOf, optionValue, rememberedOptions } from '@/features/side-panel/lib/snippet-options'
+import { currentSnippetLanguage, editorLanguageOf, rememberedOptions } from '@/features/side-panel/lib/snippet-options'
 import { useSidePanelStore } from '@/features/side-panel/store'
 import { useTabsStore } from '@/features/tabs/store'
+import { SnippetSettingsDialog } from './SnippetSettingsDialog'
 import styles from './CodePanel.module.css'
 
 const CodeEditor = lazy(() => import('@/shared/ui/code-editor/CodeEditor').then((module) => ({ default: module.CodeEditor })))
 
 export const SNIPPET_DELAY_MS = 150
 
-type CopyState = 'idle' | 'copied' | 'failed'
-
-const COPY_ANNOUNCEMENTS: Record<CopyState, ReactNode> = {
-  idle: null,
-  copied: 'The snippet is on the clipboard.',
-  failed: 'The snippet could not be copied.',
-}
+const GEAR = (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.icon}>
+    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+)
 
 const LOADING_EDITOR = (
   <p role="status" className={styles.note}>
@@ -46,11 +47,11 @@ export function CodePanel({ tabId }: CodePanelProps) {
   const saved = useTabsStore((state) => state.snippetOptions)
   const setSnippetOptions = useTabsStore((state) => state.setSnippetOptions)
   const draft = useRequestBuilderStore((state) => state.tabs[tabId]?.draft)
-  const [copyState, setCopyState] = useState<CopyState>('idle')
   const language = currentSnippetLanguage(saved, languages)
   const options = rememberedOptions(saved, language)
   const spec = languages.find((candidate) => candidate.id === language)
   const languageId = useId()
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   useEffect(() => {
     void loadLanguages()
@@ -63,11 +64,6 @@ export function CodePanel({ tabId }: CodePanelProps) {
     const timer = setTimeout(() => void generate(tabId, { language, options }), SNIPPET_DELAY_MS)
     return () => clearTimeout(timer)
   }, [tabId, draft, language, options, includeSecrets, generate])
-
-  async function copyText() {
-    const failure = await copy(tabId, { language, options })
-    setCopyState(failure ? 'failed' : 'copied')
-  }
 
   function setOption(option: SnippetOption, value: string) {
     setSnippetOptions(language, { ...options, [option.id]: value })
@@ -92,25 +88,25 @@ export function CodePanel({ tabId }: CodePanelProps) {
             </option>
           ))}
         </select>
-        <Button size="sm" variant="ghost" disabled={snippet === null} onClick={() => void copyText()}>
-          {copyState === 'copied' ? 'Copied' : 'Copy'}
-        </Button>
-        <span role="status" aria-live="polite" className="visually-hidden">
-          {COPY_ANNOUNCEMENTS[copyState]}
-        </span>
+        <div className={styles.actions}>
+        {spec && spec.options.length > 0 ? (
+          <IconButton label="Snippet settings" onClick={() => setSettingsOpen(true)}>
+            {GEAR}
+          </IconButton>
+        ) : null}
+        <CopyButton
+          label="Copy snippet"
+          disabled={snippet === null}
+          copiedMessage="The snippet is on the clipboard."
+          failedMessage="The snippet could not be copied."
+          onCopy={async () => (await copy(tabId, { language, options })) === null}
+        />
+        </div>
       </div>
       <label className={styles.check}>
         <input type="checkbox" name="include-secrets" checked={includeSecrets} onChange={(event) => setIncludeSecrets(event.target.checked)} />
         Include Secrets
       </label>
-      {spec && spec.options.length > 0 ? (
-        <details className={styles.options}>
-          <summary className={styles.summary}>Options</summary>
-          {spec.options.map((option) => (
-            <SnippetOptionField key={option.id} option={option} value={optionValue(options, option.id, option.defaultValue)} onChange={(value) => setOption(option, value)} />
-          ))}
-        </details>
-      ) : null}
       {snippet && snippet.notices.length > 0 ? (
         <Banner.Root tone="warning">
           {snippet.notices.map((notice) => (
@@ -132,53 +128,7 @@ export function CodePanel({ tabId }: CodePanelProps) {
           {status === 'loading' ? 'Generating…' : 'Open a request to see it as code.'}
         </p>
       )}
+      {settingsOpen && spec ? <SnippetSettingsDialog language={spec} options={options} onChange={setOption} onClose={() => setSettingsOpen(false)} /> : null}
     </div>
-  )
-}
-
-interface SnippetOptionFieldProps {
-  option: SnippetOption
-  value: string
-  onChange: (value: string) => void
-}
-
-function SnippetOptionField({ option, value, onChange }: SnippetOptionFieldProps) {
-  if (option.type === 'boolean') {
-    return (
-      <label className={styles.check}>
-        <input type="checkbox" name={option.id} checked={value === 'true'} onChange={(event) => onChange(String(event.target.checked))} />
-        {option.label}
-      </label>
-    )
-  }
-  if (option.type === 'enum') {
-    return (
-      <label className={styles.field}>
-        {option.label}
-        <select name={option.id} className={styles.select} value={value} onChange={(event) => onChange(event.target.value)}>
-          {option.values.map((choice) => (
-            <option key={choice} value={choice}>
-              {choice}
-            </option>
-          ))}
-        </select>
-      </label>
-    )
-  }
-  return (
-    <label className={styles.field}>
-      {option.label}
-      <input
-        type="number"
-        name={option.id}
-        min={0}
-        step={1}
-        inputMode="numeric"
-        autoComplete="off"
-        className={styles.number}
-        value={value}
-        onChange={(event) => onChange(event.target.value === '' ? '0' : event.target.value)}
-      />
-    </label>
   )
 }

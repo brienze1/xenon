@@ -10,6 +10,8 @@ export type SnippetOptionType = 'boolean' | 'positiveInteger' | 'enum'
 export interface SnippetOption {
   id: string
   label: string
+  /** Postman's explanation of the option, shown under its label. */
+  description: string
   type: SnippetOptionType
   defaultValue: string
   values: string[]
@@ -31,7 +33,7 @@ function toOptionType(type: string): SnippetOptionType {
 }
 
 function toSnippetOption(dto: SnippetOptionDto): SnippetOption {
-  return { id: dto.id, label: dto.label, type: toOptionType(dto.type), defaultValue: String(dto.default ?? ''), values: dto.values ?? [] }
+  return { id: dto.id, label: dto.label, description: dto.description ?? '', type: toOptionType(dto.type), defaultValue: String(dto.default ?? ''), values: dto.values ?? [] }
 }
 
 export function toSnippetLanguage(dto: SnippetLanguageDto): SnippetLanguage {

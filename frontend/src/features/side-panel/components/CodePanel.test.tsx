@@ -24,9 +24,9 @@ const LANGUAGES = [
     id: 'curl',
     label: 'cURL',
     options: [
-      { id: 'multiLine', label: 'Generate multiline snippet', type: 'boolean' as const, defaultValue: 'true', values: [] },
-      { id: 'quoteType', label: 'Quote type', type: 'enum' as const, defaultValue: 'single', values: ['single', 'double'] },
-      { id: 'requestTimeoutInSeconds', label: 'Set request timeout (in seconds)', type: 'positiveInteger' as const, defaultValue: '0', values: [] },
+      { id: 'multiLine', label: 'Generate multiline snippet', description: 'Split cURL command across multiple lines', type: 'boolean' as const, defaultValue: 'true', values: [] },
+      { id: 'quoteType', label: 'Quote type', description: 'Quote to use', type: 'enum' as const, defaultValue: 'single', values: ['single', 'double'] },
+      { id: 'requestTimeoutInSeconds', label: 'Set request timeout (in seconds)', description: 'Use 0 for infinity', type: 'positiveInteger' as const, defaultValue: '0', values: [] },
     ],
   },
   { id: 'python_requests', label: 'Python - Requests', options: [] },
@@ -69,9 +69,14 @@ describe('CodePanel', () => {
   it('switches language and remembers the options per language', async () => {
     render(<CodePanel tabId={tabId} />)
     await screen.findByRole('textbox', { name: 'cURL snippet' })
-    await userEvent.click(screen.getByText('Options'))
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Generate multiline snippet' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Snippet settings' }))
+    const dialog = screen.getByRole('dialog', { name: 'Settings for cURL' })
+    expect(dialog).toHaveTextContent('Split cURL command across multiple lines')
+    expect(screen.getByRole('switch', { name: 'Generate multiline snippet' })).toBeChecked()
+    await userEvent.click(screen.getByRole('switch', { name: 'Generate multiline snippet' }))
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Quote type' }), 'double')
+    await userEvent.click(screen.getByRole('button', { name: 'Done' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     await waitFor(() => expect(lastInput().options).toEqual({ multiLine: 'false', quoteType: 'double' }))
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Language' }), 'python_requests')
     await waitFor(() => expect(screen.getByRole('textbox', { name: 'Python - Requests snippet' })).toHaveTextContent('python_requests: https://api.test/users'))
@@ -86,7 +91,7 @@ describe('CodePanel', () => {
   it('sets a numeric option', async () => {
     render(<CodePanel tabId={tabId} />)
     await screen.findByRole('textbox', { name: 'cURL snippet' })
-    await userEvent.click(screen.getByText('Options'))
+    await userEvent.click(screen.getByRole('button', { name: 'Snippet settings' }))
     const timeout = screen.getByRole('spinbutton', { name: 'Set request timeout (in seconds)' })
     await userEvent.clear(timeout)
     await userEvent.type(timeout, '5')
@@ -98,9 +103,9 @@ describe('CodePanel', () => {
     await screen.findByRole('textbox', { name: 'cURL snippet' })
     await userEvent.click(screen.getByRole('checkbox', { name: 'Include Secrets' }))
     await waitFor(() => expect(lastInput().includeSecrets).toBe(true))
-    await userEvent.click(screen.getByRole('button', { name: 'Copy' }))
+    expect(screen.queryByRole('button', { name: 'Copy' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Copy snippet' }))
     expect(snippets.copySnippet).toHaveBeenCalledWith(expect.objectContaining({ language: 'curl', includeSecrets: true, tabId }))
-    expect(screen.getByRole('button', { name: 'Copied' })).toBeInTheDocument()
     expect(screen.getByText('The snippet is on the clipboard.')).toBeInTheDocument()
   })
 
@@ -109,7 +114,7 @@ describe('CodePanel', () => {
     render(<CodePanel tabId={tabId} />)
     expect(await screen.findByText('No OAuth 2.0 access token yet: get one in the Authorization tab.')).toBeInTheDocument()
     vi.mocked(snippets.copySnippet).mockRejectedValue({ cause: { error: { code: 'SNP-01400', description: 'bad' } } })
-    await userEvent.click(screen.getByRole('button', { name: 'Copy' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Copy snippet' }))
     expect(screen.getByText('The snippet could not be copied.')).toBeInTheDocument()
     vi.mocked(snippets.generateSnippet).mockRejectedValue({ cause: { error: { code: 'WKS-07404', description: 'The workspace is gone' } } })
     act(() => useRequestBuilderStore.getState().setUrl(tabId, 'https://other'))
