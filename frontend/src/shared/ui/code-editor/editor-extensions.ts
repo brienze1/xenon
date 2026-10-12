@@ -10,6 +10,8 @@ export interface EditorDecoration {
   to: number
   tone: EditorTone
   tooltip: string
+  /** Opens a hover card (see DecorationCardContext) instead of the plain tooltip. */
+  card?: string
 }
 
 export interface EditorCompletionOption {
@@ -68,7 +70,10 @@ function toDecorationSet(decorations: readonly EditorDecoration[], length: numbe
       ranges.push(
         Decoration.mark({
           class: `cm-tone-${decoration.tone}`,
-          attributes: { title: decoration.tooltip, 'data-tone': decoration.tone },
+          attributes:
+            decoration.card === undefined
+              ? { title: decoration.tooltip, 'data-tone': decoration.tone }
+              : { 'aria-description': decoration.tooltip, 'data-card': decoration.card, 'data-tone': decoration.tone },
         }).range(decoration.from, decoration.to),
       )
     }

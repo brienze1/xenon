@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { DecorationCardContext } from '@/shared/ui/code-editor/decoration-card-context'
 import type { CompletionSource, EditorDecoration } from '@/shared/ui/code-editor/editor-extensions'
 import { SingleLineEditor } from './SingleLineEditor'
 
@@ -72,5 +73,35 @@ describe('SingleLineEditor', () => {
     await userEvent.click(screen.getByRole('textbox', { name: 'Value' }))
     await userEvent.keyboard('{Control>}a{/Control}')
     expect(onSelectionChange).toHaveBeenLastCalledWith({ from: 0, to: 10, text: 'Bearer abc' })
+  })
+
+  it('opens the card of a decoration on hover, keeps it while focused inside, and closes it on Escape', async () => {
+    const decorations: EditorDecoration[] = [{ from: 0, to: 6, tone: 'danger', tooltip: 'Unresolved', card: 'no' }]
+    const renderCard = (card: string, close: () => void) => (
+      <div>
+        <input aria-label={`Card for ${card}`} />
+        <button type="button" onClick={close}>
+          Done
+        </button>
+      </div>
+    )
+    render(
+      <DecorationCardContext value={renderCard}>
+        <SingleLineEditor value="{{no}}/x" label="Value" onChange={vi.fn()} decorations={decorations} />
+      </DecorationCardContext>,
+    )
+    const marked = await screen.findByText('{{no}}')
+    expect(marked).not.toHaveAttribute('title')
+    await userEvent.hover(marked)
+    const input = await screen.findByRole('textbox', { name: 'Card for no' })
+    await userEvent.click(input)
+    await userEvent.unhover(marked)
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    expect(input).toBeInTheDocument()
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('textbox', { name: 'Card for no' })).not.toBeInTheDocument()
+    await userEvent.hover(marked)
+    await userEvent.click(await screen.findByRole('button', { name: 'Done' }))
+    expect(screen.queryByRole('button', { name: 'Done' })).not.toBeInTheDocument()
   })
 })

@@ -5,6 +5,7 @@ import { Compartment, EditorState } from '@codemirror/state'
 import { EditorView, drawSelection, keymap, lineNumbers } from '@codemirror/view'
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from 'react'
 import { cn } from '@/shared/lib/cn'
+import { DecorationCards } from './DecorationCards'
 import styles from './CodeEditor.module.css'
 import { findSyntaxErrors } from './syntax-check'
 import { syntaxColors } from './syntax-highlight'
@@ -178,6 +179,7 @@ export function CodeEditor({
   return (
     <div className={cn(styles.frame, className)}>
       <div ref={containerRef} className={styles.root} translate="no" />
+      <DecorationCards host={containerRef} />
       {problems.length > 0 ? (
         <ul aria-label={`${label} problems`} className={styles.diagnostics}>
           {problems.map((diagnostic, index) => (

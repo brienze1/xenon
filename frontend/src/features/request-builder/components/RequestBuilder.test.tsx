@@ -130,9 +130,12 @@ describe('RequestBuilder', () => {
     render(<RequestBuilder tabId={tabId} />)
     await user.type(screen.getByRole('textbox', { name: 'Request URL' }), '{{{{base_url}}/{{{{id}}?p={{{{page}}')
     await vi.waitFor(() => expect(variables.inspectVariables).toHaveBeenCalled())
-    expect(await screen.findByTitle('Unresolved variable — sent as written')).toHaveTextContent('{{id}}')
+    const undefinedVariable = await screen.findByText('{{id}}', { selector: '[data-card]' })
+    expect(undefinedVariable).toHaveAttribute('aria-description', 'Unresolved variable — sent as written')
     expect(screen.getByTitle('https://api — Globals')).toHaveTextContent('{{base_url}}')
     expect(await screen.findByTitle('Generated at send — Dynamic variable')).toHaveTextContent('{{page}}')
+    await user.hover(undefinedVariable)
+    expect(await screen.findByRole('region', { name: '{{id}} is not defined' })).toBeInTheDocument()
   })
 
   it('suggests variable names after {{ in the URL', async () => {

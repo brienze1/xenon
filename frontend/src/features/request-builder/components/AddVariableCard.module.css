@@ -1,0 +1,104 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.heading {
+  overflow: hidden;
+  font-family: var(--font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.muted {
+  color: var(--color-text-muted);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-xs);
+}
+
+.value {
+  height: 30px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.value:focus-visible,
+.target:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.targets {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.target {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.target:hover:not(:disabled) {
+  background: var(--color-selection);
+}
+
+.target:disabled {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.environment,
+.collection,
+.globals {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.environment {
+  color: var(--neon-green);
+}
+
+.collection {
+  color: var(--neon-yellow);
+}
+
+.globals {
+  color: var(--neon-cyan);
+}
+
+.target:disabled > .environment,
+.target:disabled > .collection,
+.target:disabled > .globals {
+  opacity: 0.5;
+}
+
+.error {
+  color: var(--neon-red);
+  font-size: var(--font-size-xs);
+}

@@ -3,6 +3,7 @@ import { Annotation, EditorState, Prec } from '@codemirror/state'
 import { EditorView, keymap, placeholder as placeholderExtension } from '@codemirror/view'
 import { useEffect, useImperativeHandle, useRef, type Ref } from 'react'
 import { cn } from '@/shared/lib/cn'
+import { DecorationCards } from '@/shared/ui/code-editor/DecorationCards'
 import {
   completionExtension,
   decorationsEffect,
@@ -154,5 +155,10 @@ export function SingleLineEditor({
     viewRef.current?.dispatch({ effects: decorationsEffect(decorations) })
   }, [decorations, value])
 
-  return <div ref={containerRef} className={cn(styles.root, className)} />
+  return (
+    <>
+      <div ref={containerRef} className={cn(styles.root, className)} />
+      <DecorationCards host={containerRef} />
+    </>
+  )
 }

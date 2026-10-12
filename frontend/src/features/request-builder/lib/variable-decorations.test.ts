@@ -43,7 +43,7 @@ describe('variable decorations', () => {
     const byField = decorationsByField(inspection, 'dev')
     expect(byField.get('url')).toEqual([
       { from: 0, to: 12, tone: 'success', tooltip: 'https://dev — Environment: dev' },
-      { from: 13, to: 22, tone: 'danger', tooltip: 'Unresolved variable — sent as written' },
+      { from: 13, to: 22, tone: 'danger', tooltip: 'Unresolved variable — sent as written', card: 'user_id' },
     ])
     expect(byField.get('headers.0.value')).toHaveLength(1)
     expect(decorationsByField(null, null).size).toBe(0)
