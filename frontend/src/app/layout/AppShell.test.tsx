@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
@@ -85,6 +85,15 @@ describe('AppShell', () => {
     expect(sideBySide).toHaveAttribute('aria-pressed', 'false')
     await userEvent.click(sideBySide)
     expect(sideBySide).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('hides the side panel from its own button and brings it back from the footer', async () => {
+    render(<StatefulShell />)
+    const panel = screen.getByRole('complementary', { name: 'Side panel' })
+    await userEvent.click(within(panel).getByRole('button', { name: 'Hide side panel' }))
+    expect(screen.queryByRole('complementary', { name: 'Side panel' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Side Panel' }))
+    expect(screen.getByRole('complementary', { name: 'Side panel' })).toBeInTheDocument()
   })
 
   it('reports the side-by-side switch as a layout change', async () => {
