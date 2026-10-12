@@ -323,3 +323,64 @@ rename_case: |
         summary: PING
         x-xenon-id: 01JK8000000000000000000012
         security: []
+tag_groups: |
+  openapi: 3.1.0
+  info:
+    title: Billing
+    description: Invoices and payments.
+    version: 1.0.0
+  servers:
+    - url: '{{host}}'
+  tags:
+    - name: Invoices
+  x-tagGroups:
+    - name: Money
+      tags:
+        - Invoices
+  paths:
+    /invoices:
+      get:
+        tags:
+          - Invoices
+        summary: List invoices
+        x-xenon-id: 01JK8000000000000000000010
+        parameters:
+          - name: status
+            in: query
+            description: Invoice status
+            schema:
+              type: string
+            example: open
+          - name: X-Tenant
+            in: header
+            schema:
+              type: string
+            example: acme
+        security: []
+      post:
+        tags:
+          - Invoices
+        summary: Create invoice
+        x-xenon-id: 01JK8000000000000000000011
+        requestBody:
+          content:
+            application/json:
+              example:
+                amount: 1000
+        responses:
+          "201":
+            description: Created
+            content:
+              application/json:
+                examples:
+                  Created:
+                    x-xenon-id: 01JK8000000000000000000020
+                    value:
+                      id: 42
+        security:
+          - bearerAuth: []
+    /ping:
+      get:
+        summary: Ping
+        x-xenon-id: 01JK8000000000000000000012
+        security: []

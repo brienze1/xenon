@@ -351,3 +351,24 @@ Feature: Edits to a collection's OpenAPI document are saved back onto its reques
     And the response should contain the field "document.operations.2.tag" equal to "Invoices / Archive"
     And the response should contain the field "document.operations.2.parameters.0.example" equal to "7"
     And the folder "workspaces/acme" should equal the folder "before"
+
+  @tag_groups
+  Scenario: Edited x-tagGroups are shown in the preview and change no request when saved
+    When I call "TreeService.PreviewDocumentation" with resource fields
+      """
+      { "local_id": "{{Acme.local_id}}", "id": "{{billing}}", "yaml": {{resource:documentation/billing-edits.yaml#tag_groups}} }
+      """
+    Then the call should succeed
+    And the response should contain the field "document.tag_groups" array length equal to 1
+    And the response should contain the field "document.tag_groups.0.name" equal to "Money"
+    And the response should contain the field "document.tag_groups.0.tags" with the items "Invoices"
+    When I call "TreeService.PlanDocumentation" with resource fields
+      """
+      { "local_id": "{{Acme.local_id}}", "id": "{{billing}}", "yaml": {{resource:documentation/billing-edits.yaml#tag_groups}} }
+      """
+    Then the call should succeed
+    And the response should contain the field "collection_changed" equal to "false"
+    And the response should contain the field "updated" array length equal to 0
+    And the response should contain the field "created" array length equal to 0
+    And the response should contain the field "deleted" array length equal to 0
+    And the folder "workspaces/acme" should equal the folder "before"

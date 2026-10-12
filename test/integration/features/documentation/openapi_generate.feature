@@ -10,7 +10,8 @@ Feature: A collection is documented as an OpenAPI 3.1 document
   values) becomes a security scheme. "{{variables}}" stay as written, the server is the common
   start of the request URLs, and every operation carries "x-xenon-id" so edits map back onto its
   request. A second request with the same method and path is listed under "x-xenon-variants" of
-  the first. Secrets never appear: nothing is resolved, and auth values are never written.
+  the first. Top-level folders group their own tag and every nested folder's tag under
+  "x-tagGroups", the way Redoc shows sections. Secrets never appear: nothing is resolved, and auth values are never written.
 
   Background:
     Given the workspace "Acme" exists
@@ -325,11 +326,28 @@ Feature: A collection is documented as an OpenAPI 3.1 document
     And the response should contain the field "document.security_schemes.1.name" equal to "apiKeyAuth"
     And the response should contain the field "document.security_schemes.1.type" equal to "apiKey"
 
-  @folders
-  Scenario: Folders have no documentation of their own
+  @tag_groups
+  Scenario: Every folder is a tag named by its path, grouped under its top-level folder in x-tagGroups
     When I call "TreeService.GetDocumentation" with
       """
-      { "local_id": "{{Acme.local_id}}", "id": "{{products}}" }
+      { "local_id": "{{Acme.local_id}}", "id": "{{shop}}" }
+      """
+    Then the call should succeed
+    And the response should contain the field "document.tags" array length equal to 3
+    And the response should contain the field "document.tags.0.name" equal to "Products"
+    And the response should contain the field "document.tags.1.name" equal to "Products / Admin"
+    And the response should contain the field "document.tags.2.name" equal to "Auth"
+    And the response should contain the field "document.tag_groups" array length equal to 2
+    And the response should contain the field "document.tag_groups.0.name" equal to "Products"
+    And the response should contain the field "document.tag_groups.0.tags" with the items "Products, Products / Admin"
+    And the response should contain the field "document.tag_groups.1.name" equal to "Auth"
+    And the response should contain the field "document.tag_groups.1.tags" with the items "Auth"
+
+  @folders
+  Scenario: Requests have no documentation of their own
+    When I call "TreeService.GetDocumentation" with
+      """
+      { "local_id": "{{Acme.local_id}}", "id": "{{get}}" }
       """
     Then the call should fail with code "DOC-05400"
 

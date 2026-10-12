@@ -1,0 +1,43 @@
+openapi: 3.1.0
+info:
+  title: Products
+  description: The product catalog.
+  version: 1.0.0
+servers:
+  - url: '{{baseUrl}}'
+tags:
+  - name: Admin
+    description: Back-office calls.
+  - name: Admin / Audit
+x-tagGroups:
+  - name: Admin
+    tags:
+      - Admin
+      - Admin / Audit
+paths:
+  /products:
+    get:
+      summary: List products
+      x-xenon-id: 01JKF000000000000000000010
+      security:
+        - bearerAuth: []
+    post:
+      tags:
+        - Admin
+      summary: Create product
+      x-xenon-id: 01JKF000000000000000000011
+      security:
+        - bearerAuth: []
+  /audit:
+    get:
+      tags:
+        - Admin / Audit
+      summary: Audit log
+      x-xenon-id: 01JKF000000000000000000012
+      security:
+        - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer

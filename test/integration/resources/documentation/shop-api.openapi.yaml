@@ -9,6 +9,14 @@ tags:
   - name: Products
   - name: Products / Admin
   - name: Auth
+x-tagGroups:
+  - name: Products
+    tags:
+      - Products
+      - Products / Admin
+  - name: Auth
+    tags:
+      - Auth
 paths:
   /products:
     get:
