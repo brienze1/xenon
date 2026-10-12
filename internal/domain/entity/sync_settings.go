@@ -5,7 +5,11 @@ import (
 	"strings"
 )
 
-const parentSegment = ".."
+const (
+	parentSegment        = ".."
+	repositorySuffix     = ".git"
+	repositorySeparators = "/:\\"
+)
 
 type SyncSettings struct {
 	Repository string
@@ -23,6 +27,23 @@ func (s SyncSettings) IsEmpty() bool {
 
 func (s SyncSettings) Differs(other SyncSettings) bool {
 	return s != other
+}
+
+func (s SyncSettings) HasBranch() bool {
+	return s.Branch != ""
+}
+
+func (s SyncSettings) OnBranch(branch string) SyncSettings {
+	s.Branch = branch
+	return s
+}
+
+func (s SyncSettings) WorkspaceNameOr(name string) string {
+	if trimmed := strings.TrimSpace(name); trimmed != "" {
+		return trimmed
+	}
+	repository := strings.TrimSuffix(strings.TrimRight(s.Repository, repositorySeparators), repositorySuffix)
+	return repository[strings.LastIndexAny(repository, repositorySeparators)+1:]
 }
 
 func HasSafeSubfolder(subfolder string) bool {

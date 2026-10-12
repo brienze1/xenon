@@ -11,12 +11,13 @@ import (
 )
 
 type syncLink struct {
-	errorHandler         adapter.ErrorHandler
-	linkWorkspaceService appAdapter.LinkWorkspaceService
+	errorHandler          adapter.ErrorHandler
+	linkWorkspaceService  appAdapter.LinkWorkspaceService
+	cloneWorkspaceService appAdapter.CloneWorkspaceService
 }
 
-func NewSyncLink(errorHandler adapter.ErrorHandler, linkWorkspaceService appAdapter.LinkWorkspaceService) adapter.SyncLinkController {
-	return &syncLink{errorHandler: errorHandler, linkWorkspaceService: linkWorkspaceService}
+func NewSyncLink(errorHandler adapter.ErrorHandler, linkWorkspaceService appAdapter.LinkWorkspaceService, cloneWorkspaceService appAdapter.CloneWorkspaceService) adapter.SyncLinkController {
+	return &syncLink{errorHandler: errorHandler, linkWorkspaceService: linkWorkspaceService, cloneWorkspaceService: cloneWorkspaceService}
 }
 
 func (s *syncLink) Link(bindingCtx context.Context, request dto.LinkRepository) (response *dto.SyncStatus, err error) {
@@ -42,6 +43,34 @@ func (s *syncLink) Link(bindingCtx context.Context, request dto.LinkRepository) 
 		return nil, err
 	}
 	result := dto.NewSyncStatus(*status)
+
+	logger.Info(ctx, "Finished", result)
+	return &result, nil
+}
+
+func (s *syncLink) CloneAsWorkspace(bindingCtx context.Context, request dto.CloneWorkspace) (response *dto.WorkspaceSummary, err error) {
+	ctx := logger.GetContext(bindingCtx)
+	logger.Info(ctx, "Started", request)
+
+	defer func(ctx context.Context, request any) {
+		if recovered := recover(); recovered != nil {
+			err = handlePanic(ctx, request, recovered)
+		}
+		if err != nil {
+			response, err = nil, s.errorHandler.Handle(ctx, err, request)
+		}
+	}(ctx, request)
+
+	err = validator.CustomValidator().Struct("GIT-39400", &request)
+	if err != nil {
+		return nil, err
+	}
+
+	registered, err := s.cloneWorkspaceService.Clone(ctx, request.ToEntity(), request.AccountID, request.ClonePath, request.Name)
+	if err != nil {
+		return nil, err
+	}
+	result := dto.NewWorkspaceSummary(*registered)
 
 	logger.Info(ctx, "Finished", result)
 	return &result, nil

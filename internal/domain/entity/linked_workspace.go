@@ -18,6 +18,11 @@ func (l LinkedWorkspace) WithAccess(account GitAccount, access GitAccess) Linked
 	return l
 }
 
+func (l LinkedWorkspace) WithSettings(settings LocalSyncSettings) LinkedWorkspace {
+	l.Settings = settings
+	return l
+}
+
 func (l LinkedWorkspace) ClonePath() string {
 	return l.Settings.ClonePath
 }

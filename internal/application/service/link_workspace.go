@@ -12,22 +12,18 @@ import (
 	"github.com/brienze1/xenon/pkg/timeutils"
 )
 
-const phaseClone = "clone"
-
 type linkWorkspace struct {
 	claimSyncOperation     usecase.ClaimSyncOperation
 	locateClone            usecase.LocateClone
 	saveWorkspaceRegistry  usecase.SaveWorkspaceRegistry
 	inspectWorkspaceFolder usecase.InspectWorkspaceFolder
-	cloneRepository        usecase.CloneRepository
 	copyWorkspaceFolder    usecase.CopyWorkspaceFolder
-	removeWorkspaceFolder  usecase.RemoveWorkspaceFolder
 	clearWorkspaceFolder   usecase.ClearWorkspaceFolder
 	saveWorkspaceSync      usecase.SaveWorkspaceSync
 	saveLocalSyncSettings  usecase.SaveLocalSyncSettings
 	watchWorkspace         usecase.WatchWorkspace
 	workspaces             linkedWorkspaces
-	lfs                    lfsDetector
+	cloner                 syncCloner
 	status                 syncStatusReader
 }
 
@@ -61,16 +57,18 @@ func NewLinkWorkspaceService(
 		locateClone:            locateClone,
 		saveWorkspaceRegistry:  saveWorkspaceRegistry,
 		inspectWorkspaceFolder: inspectWorkspaceFolder,
-		cloneRepository:        cloneRepository,
 		copyWorkspaceFolder:    copyWorkspaceFolder,
-		removeWorkspaceFolder:  removeWorkspaceFolder,
 		clearWorkspaceFolder:   clearWorkspaceFolder,
 		saveWorkspaceSync:      saveWorkspaceSync,
 		saveLocalSyncSettings:  saveLocalSyncSettings,
 		watchWorkspace:         watchWorkspace,
 		workspaces:             newLinkedWorkspaces(findWorkspaceRegistry, findLocalSyncSettings, findGitAccounts, findGitCredential, findKnownHosts, scanHostKey, publishGitEvent),
-		lfs:                    lfsDetector{readBranchHeads: readBranchHeads, readTreeVersions: readTreeVersions},
-		status:                 newSyncStatusReader(newSyncChanges(readBranchHeads, readTreeVersions, identifySyncItems), loadWorkspace, publishGitEvent, findSyncSession),
+		cloner: syncCloner{
+			findWorkspaceRegistry: findWorkspaceRegistry, inspectWorkspaceFolder: inspectWorkspaceFolder, cloneRepository: cloneRepository,
+			removeWorkspaceFolder: removeWorkspaceFolder, publishGitEvent: publishGitEvent,
+			lfs: lfsDetector{readBranchHeads: readBranchHeads, readTreeVersions: readTreeVersions},
+		},
+		status: newSyncStatusReader(newSyncChanges(readBranchHeads, readTreeVersions, identifySyncItems), loadWorkspace, publishGitEvent, findSyncSession),
 	}
 }
 
@@ -89,7 +87,7 @@ func (l *linkWorkspace) Link(ctx context.Context, localId string, shared entity.
 	if clonePath == "" {
 		clonePath = l.locateClone.DefaultClonePath(ctx, localId)
 	}
-	if err := l.checkClonePath(ctx, clonePath); err != nil {
+	if err := l.cloner.checkClonePath(ctx, clonePath); err != nil {
 		return nil, err
 	}
 	linked := entity.NewLinkedWorkspace(localId, "", entity.NewLocalSyncSettings(shared, accountId, clonePath))
@@ -97,15 +95,12 @@ func (l *linkWorkspace) Link(ctx context.Context, localId string, shared entity.
 	if err != nil {
 		return nil, err
 	}
-	if err := l.workspaces.access.publishGitEvent.Progress(ctx, localId, phaseClone, 0, 1); err != nil {
+	if err := l.cloner.clone(ctx, *connected); err != nil {
 		return nil, err
-	}
-	if err := l.cloneRepository.Clone(ctx, connected.Access, clonePath, shared); err != nil {
-		return nil, l.discard(ctx, clonePath, err)
 	}
 	root := connected.Settings.WorkspacePath()
 	if err := l.place(ctx, *connected, registered.Path, root, mode); err != nil {
-		return nil, l.discard(ctx, clonePath, err)
+		return nil, l.cloner.discard(ctx, clonePath, err)
 	}
 	status, err := l.repoint(ctx, entity.NewLinkedWorkspace(localId, root, connected.Settings))
 	if err != nil {
@@ -116,32 +111,7 @@ func (l *linkWorkspace) Link(ctx context.Context, localId string, shared entity.
 	return status, nil
 }
 
-func (l *linkWorkspace) checkClonePath(ctx context.Context, clonePath string) error {
-	registry, err := l.workspaces.findWorkspaceRegistry.Find(ctx)
-	if err != nil {
-		return err
-	}
-	if registry.OverlapsAny(clonePath) {
-		return usecase.RejectClonePathOverlap(clonePath)
-	}
-	folder, err := l.inspectWorkspaceFolder.Inspect(ctx, clonePath)
-	if err != nil {
-		return err
-	}
-	if !folder.IsEmptyOrAbsent() {
-		return usecase.RejectClonePathInUse(clonePath)
-	}
-	return nil
-}
-
 func (l *linkWorkspace) place(ctx context.Context, linked entity.LinkedWorkspace, source, root string, mode enums.LinkMode) error {
-	usesLfs, err := l.lfs.detect(ctx, linked)
-	if err != nil {
-		return err
-	}
-	if usesLfs {
-		return usecase.RejectLargeFileStorage(linked.Subfolder())
-	}
 	folder, err := l.inspectWorkspaceFolder.Inspect(ctx, root)
 	if err != nil {
 		return err
@@ -192,11 +162,4 @@ func (l *linkWorkspace) repoint(ctx context.Context, linked entity.LinkedWorkspa
 		return nil, err
 	}
 	return l.status.publish(ctx, linked.LocalID, status.SyncedAt(timeutils.Now()))
-}
-
-func (l *linkWorkspace) discard(ctx context.Context, clonePath string, cause error) error {
-	if err := l.removeWorkspaceFolder.RemoveFolder(ctx, clonePath); err != nil {
-		return err
-	}
-	return cause
 }
