@@ -10,7 +10,12 @@
   display: flex;
   min-width: 0;
   overflow-x: auto;
-  scrollbar-width: thin;
+  /* Tabs still scroll sideways (trackpad, wheel, keyboard focus) but without a visible scrollbar. */
+  scrollbar-width: none;
+}
+
+.list::-webkit-scrollbar {
+  display: none;
 }
 
 .add {

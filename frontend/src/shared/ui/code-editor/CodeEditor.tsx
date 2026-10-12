@@ -1,11 +1,13 @@
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
-import { defaultHighlightStyle, foldGutter, foldKeymap, syntaxHighlighting } from '@codemirror/language'
+import { foldGutter, foldKeymap } from '@codemirror/language'
 import { highlightSelectionMatches, openSearchPanel, searchKeymap } from '@codemirror/search'
 import { Compartment, EditorState } from '@codemirror/state'
 import { EditorView, drawSelection, keymap, lineNumbers } from '@codemirror/view'
 import { useEffect, useImperativeHandle, useRef, type Ref } from 'react'
 import { cn } from '@/shared/lib/cn'
 import styles from './CodeEditor.module.css'
+import { syntaxColors } from './syntax-highlight'
+import { wrapIndent } from './wrap-indent'
 import {
   completionExtension,
   decorationsEffect,
@@ -87,7 +89,10 @@ export function CodeEditor({
           history(),
           drawSelection(),
           highlightSelectionMatches(),
-          syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+          syntaxColors,
+          // Long lines wrap like Postman: no sideways scrolling, and a wrapped line keeps a single line number.
+          EditorView.lineWrapping,
+          wrapIndent,
           keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, ...foldKeymap]),
           languageRef.current.of([]),
           decorationsExtension(),

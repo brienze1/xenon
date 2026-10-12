@@ -1,4 +1,5 @@
 import type { CodeLanguage } from '@/shared/ui/code-editor/languages'
+import { beautify } from './beautify'
 
 /** Bodies larger than this open in Raw first (PRD: large bodies). */
 export const RAW_FIRST_BYTES = 5 * 1024 * 1024
@@ -30,15 +31,9 @@ export function languageFor(contentType: string): CodeLanguage {
   return 'text'
 }
 
+/** The Pretty view: the body re-indented with the same Beautify used for request bodies (big numbers and key order kept). */
 export function prettyBody(body: string, language: CodeLanguage): string {
-  if (language !== 'json') {
-    return body
-  }
-  try {
-    return JSON.stringify(JSON.parse(body), null, 2)
-  } catch {
-    return body
-  }
+  return beautify(body, language) ?? body
 }
 
 export function isImage(contentType: string): boolean {

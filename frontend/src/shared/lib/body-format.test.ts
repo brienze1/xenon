@@ -20,7 +20,9 @@ describe('body format', () => {
   it('pretty prints JSON only and keeps invalid JSON as it is', () => {
     expect(prettyBody('{"a":1}', 'json')).toBe('{\n  "a": 1\n}')
     expect(prettyBody('{"a":', 'json')).toBe('{"a":')
-    expect(prettyBody('<a/>', 'xml')).toBe('<a/>')
+    expect(prettyBody('<a><b>1</b></a>', 'xml')).toBe('<a>\n  <b>1</b>\n</a>')
+    expect(prettyBody('{"big":12345678901234567890}', 'json')).toBe('{\n  "big": 12345678901234567890\n}')
+    expect(prettyBody('plain  text', 'text')).toBe('plain  text')
   })
 
   it('recognises previewable content', () => {

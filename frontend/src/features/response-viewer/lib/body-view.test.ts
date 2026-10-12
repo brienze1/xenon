@@ -19,10 +19,11 @@ describe('body view helpers', () => {
     expect(languageFor(contentType)).toBe(language)
   })
 
-  it('pretty prints JSON and leaves everything else as received', () => {
+  it('pretty prints every language except plain text, and keeps broken JSON as received', () => {
     expect(prettyBody('{"a":[1]}', 'json')).toBe('{\n  "a": [\n    1\n  ]\n}')
     expect(prettyBody('{broken', 'json')).toBe('{broken')
-    expect(prettyBody('<a/>', 'xml')).toBe('<a/>')
+    expect(prettyBody('<a><b/></a>', 'xml')).toBe('<a>\n  <b />\n</a>')
+    expect(prettyBody('a  b', 'text')).toBe('a  b')
   })
 
   it('classifies previews', () => {

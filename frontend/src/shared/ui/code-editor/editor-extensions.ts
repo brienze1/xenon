@@ -135,10 +135,11 @@ export function selectionListener(onSelection: () => ((selection: EditorSelectio
 }
 
 export const toneTheme = EditorView.theme({
-  '.cm-tone-success': { color: 'var(--neon-green)' },
-  '.cm-tone-danger': { color: 'var(--neon-red)', textDecoration: 'underline wavy var(--neon-red)' },
-  '.cm-tone-accent': { color: 'var(--neon-magenta)' },
-  '.cm-tone-info': { color: 'var(--neon-cyan)' },
+  // `span` covers syntax colouring nested inside a decorated range, so a {{variable}} inside a string keeps its tone.
+  '.cm-tone-success, .cm-tone-success span': { color: 'var(--neon-green)' },
+  '.cm-tone-danger, .cm-tone-danger span': { color: 'var(--neon-red)', textDecoration: 'underline wavy var(--neon-red)' },
+  '.cm-tone-accent, .cm-tone-accent span': { color: 'var(--neon-magenta)' },
+  '.cm-tone-info, .cm-tone-info span': { color: 'var(--neon-cyan)' },
   '.cm-tooltip-autocomplete': {
     backgroundColor: 'var(--color-surface-raised)',
     border: '1px solid var(--color-border)',

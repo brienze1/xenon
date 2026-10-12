@@ -17,6 +17,17 @@
   --neon-yellow: #ffe53d;
   --neon-red: #ff3d5a;
 
+  /* Code and body syntax colours. Variables keep the neon tones (green resolved, red missing), so none of these reuse them. */
+  --syntax-key: #7fd4ff;
+  --syntax-string: #f5b97a;
+  --syntax-number: #c3a6ff;
+  --syntax-literal: #ff8fd8;
+  --syntax-punctuation: #9a9aab;
+  --syntax-comment: #6b6b7b;
+  --syntax-tag: #7fd4ff;
+  --syntax-attribute: #ffd98a;
+  --syntax-function: #8fb6ff;
+
   --method-get: var(--neon-green);
   --method-post: var(--neon-magenta);
   --method-put: var(--neon-cyan);

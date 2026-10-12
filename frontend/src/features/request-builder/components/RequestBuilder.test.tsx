@@ -312,7 +312,7 @@ describe('RequestBuilder', () => {
     expect(screen.getByText('Imported from another machine — select the file again before sending')).toBeInTheDocument()
   })
 
-  it('beautifies a JSON raw body and only offers it for JSON', async () => {
+  it('beautifies raw bodies in every language except plain text', async () => {
     const user = userEvent.setup()
     act(() => {
       useRequestBuilderStore.getState().updateBody(tabId, { mode: 'raw', raw: { language: 'json', content: '{\n\n "test":"lkalala"}' } })
@@ -324,6 +324,10 @@ describe('RequestBuilder', () => {
     act(() => useRequestBuilderStore.getState().updateBody(tabId, { raw: { language: 'json', content: '{"broken": ' } }))
     expect(screen.getByRole('button', { name: 'Beautify' })).toBeDisabled()
     await user.selectOptions(screen.getByRole('combobox', { name: 'Raw language' }), 'xml')
+    act(() => useRequestBuilderStore.getState().updateBody(tabId, { raw: { language: 'xml', content: '<a><b>1</b></a>' } }))
+    await user.click(screen.getByRole('button', { name: 'Beautify' }))
+    expect(useRequestBuilderStore.getState().tabs[tabId]?.draft.body.raw.content).toBe('<a>\n  <b>1</b>\n</a>')
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Raw language' }), 'text')
     expect(screen.queryByRole('button', { name: 'Beautify' })).not.toBeInTheDocument()
   })
 
