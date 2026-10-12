@@ -131,4 +131,34 @@ describe('ContextMenu', () => {
     expect(screen.getByRole('menu', { name: 'More actions' })).toHaveStyle({ left: '30px', top: '30px' })
     expect(onRowClick).not.toHaveBeenCalled()
   })
+
+  it('places the menu in page coordinates when the UI is zoomed', () => {
+    document.body.style.setProperty('zoom', '1.25')
+    render(<Example onRename={vi.fn()} onDelete={vi.fn()} />)
+    fireEvent.contextMenu(screen.getByText('Billing API'), { clientX: 50, clientY: 100 })
+    expect(screen.getByRole('menu', { name: 'Collection actions' })).toHaveStyle({ left: '40px', top: '80px' })
+    document.body.style.removeProperty('zoom')
+  })
+
+  it('closes an open menu when another menu button is pressed, and toggles its own', async () => {
+    render(
+      <>
+        {['Add', 'More'].map((name) => (
+          <ContextMenu.Root key={name}>
+            <ContextMenu.Button label={name}>{name}</ContextMenu.Button>
+            <ContextMenu.Menu label={`${name} menu`}>
+              <ContextMenu.Item onSelect={vi.fn()}>{`${name} item`}</ContextMenu.Item>
+            </ContextMenu.Menu>
+          </ContextMenu.Root>
+        ))}
+      </>,
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }))
+    expect(screen.getByRole('menu', { name: 'Add menu' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'More' }))
+    expect(screen.queryByRole('menu', { name: 'Add menu' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menu', { name: 'More menu' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'More' }))
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
 })

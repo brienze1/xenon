@@ -19,4 +19,15 @@ describe('ResizeHandle', () => {
     expect(onChange).toHaveBeenLastCalledWith(110)
     fireEvent.pointerUp(window)
   })
+
+  it('follows the pointer one to one when the UI is zoomed', () => {
+    document.body.style.setProperty('zoom', '1.25')
+    const onChange = vi.fn()
+    render(<ResizeHandle label="Resize" orientation="vertical" edge="end" value={100} min={50} max={300} onChange={onChange} />)
+    fireEvent.pointerDown(screen.getByRole('separator', { name: 'Resize' }), { clientX: 0, clientY: 0 })
+    fireEvent.pointerMove(window, { clientX: 50, clientY: 0 })
+    expect(onChange).toHaveBeenLastCalledWith(140)
+    fireEvent.pointerUp(window)
+    document.body.style.removeProperty('zoom')
+  })
 })

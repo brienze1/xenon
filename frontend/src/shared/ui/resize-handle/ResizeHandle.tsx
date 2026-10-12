@@ -1,5 +1,6 @@
 import { useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { cn } from '@/shared/lib/cn'
+import { toPagePixels } from '@/shared/lib/page-zoom'
 import { suspendTextSelection } from '@/shared/lib/text-selection'
 import styles from './ResizeHandle.module.css'
 
@@ -38,7 +39,7 @@ export function ResizeHandle({ label, orientation, edge, value, min, max, onChan
     const restoreSelection = suspendTextSelection()
     setDragging(true)
     function onPointerMove(move: PointerEvent) {
-      onChange(clamp(initial + (position(move) - origin) * growth, min, max))
+      onChange(clamp(initial + toPagePixels(position(move) - origin) * growth, min, max))
     }
     function onPointerUp() {
       restoreSelection()

@@ -1,6 +1,7 @@
 import { createContext, use, useEffect, useEffectEvent, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/shared/lib/cn'
+import { toPagePixels } from '@/shared/lib/page-zoom'
 import { moveFocus } from '@/shared/lib/roving-focus'
 import styles from './ContextMenu.module.css'
 
@@ -125,7 +126,7 @@ interface ButtonProps {
 
 /** Opens the same menu from a click, below the button: for actions that would otherwise need a right click. */
 function Button({ label, title, className, tabIndex, children }: ButtonProps) {
-  const { actions } = useContextMenu()
+  const { state, actions } = useContextMenu()
   return (
     <button
       type="button"
@@ -139,6 +140,10 @@ function Button({ label, title, className, tabIndex, children }: ButtonProps) {
       onDoubleClick={(event) => event.stopPropagation()}
       onClick={(event) => {
         event.stopPropagation()
+        if (state.menu) {
+          actions.close()
+          return
+        }
         const rect = event.currentTarget.getBoundingClientRect()
         actions.openAt({ x: rect.left, y: rect.bottom }, event.currentTarget)
       }}
@@ -172,14 +177,17 @@ function Menu({ label, children }: MenuProps) {
     if (node) {
       moveFocus(node, 'ArrowDown', '[role="menuitem"]')
     }
+    // Capture phase: a press on another menu's button (which stops its own bubbling) still closes this menu.
+    // A press on this menu's own button is left to the button, which toggles it.
     function onPointerDown(event: PointerEvent) {
-      if (!node?.contains(event.target as Node)) {
+      const target = event.target as Node
+      if (!node?.contains(target) && !(returnFocus?.getAttribute('aria-haspopup') === 'menu' && returnFocus.contains(target))) {
         dismiss()
       }
     }
-    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('pointerdown', onPointerDown, true)
     return () => {
-      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('pointerdown', onPointerDown, true)
       const active = document.activeElement
       if (!active || active === document.body || node?.contains(active)) {
         previous?.focus()
@@ -208,7 +216,7 @@ function Menu({ label, children }: MenuProps) {
       role="menu"
       aria-label={label}
       className={styles.menu}
-      style={{ left: menu.position.x, top: menu.position.y }}
+      style={{ left: toPagePixels(menu.position.x), top: toPagePixels(menu.position.y) }}
       onKeyDown={onKeyDown}
     >
       {children}

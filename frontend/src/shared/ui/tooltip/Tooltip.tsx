@@ -1,5 +1,6 @@
 import { cloneElement, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { toPagePixels } from '@/shared/lib/page-zoom'
 import styles from './Tooltip.module.css'
 
 interface DescribableProps {
@@ -15,13 +16,14 @@ const GAP_PX = 4
 const EDGE_PX = 8
 
 // Drawn on document.body with fixed coordinates so scrolling or clipped panes (overflow: hidden) never cut it off.
+// Measured in screen pixels and placed in page pixels, so it lands right under the UI zoom.
 // Prefers the space above the anchor, flips below when there is not enough room, and stays inside the window.
 function placement(anchor: DOMRect, tip: DOMRect): CSSProperties {
   const above = anchor.top - GAP_PX - tip.height
   const top = above >= EDGE_PX ? above : Math.min(anchor.bottom + GAP_PX, window.innerHeight - tip.height - EDGE_PX)
   const centred = anchor.left + anchor.width / 2 - tip.width / 2
   const left = Math.max(EDGE_PX, Math.min(centred, window.innerWidth - tip.width - EDGE_PX))
-  return { top, left }
+  return { top: toPagePixels(top), left: toPagePixels(left) }
 }
 
 export function Tooltip({ content, children }: TooltipProps) {
