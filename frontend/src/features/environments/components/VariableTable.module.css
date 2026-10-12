@@ -43,14 +43,16 @@
 .table td {
   padding: 0;
   border-top: 1px solid var(--color-border);
+  vertical-align: top;
 }
 
-.typeColumn {
-  width: 92px;
+/* The values get the room: enabled and type live in the name cell, as in Postman. */
+.nameColumn {
+  width: 26%;
 }
 
-.enabledColumn {
-  width: 76px;
+.descriptionColumn {
+  width: 18%;
 }
 
 .actionColumn {
@@ -81,4 +83,9 @@
 .note {
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
+}
+
+/* Lines up with the names, which sit after each row's enabled checkbox. */
+.newRow td:first-child .newCell {
+  padding-left: calc(var(--space-3) + 13px + var(--space-1) + var(--space-2));
 }

@@ -2,6 +2,7 @@ import { cn } from '@/shared/lib/cn'
 import { IconButton } from '@/shared/ui/icon-button/IconButton'
 import { displayedCurrent, inheritsCurrent, type DraftRow, type KeyProblem } from '@/features/environments/lib/variable-draft'
 import { SecretValueCell } from './SecretValueCell'
+import { WrapTextCell } from './WrapTextCell'
 import styles from './VariableTableRow.module.css'
 
 const PROBLEM_TEXT: Record<KeyProblem, string> = {
@@ -27,6 +28,14 @@ const NO_INITIAL = (
 const RESET_GLYPH = <span aria-hidden="true">↺</span>
 const PERSIST_GLYPH = <span aria-hidden="true">⤒</span>
 const REMOVE_GLYPH = <span aria-hidden="true">×</span>
+
+// Lucide "lock": the padlock Postman shows on its Secure toggle.
+const LOCK_ICON = (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.lock}>
+    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+)
 
 export interface RowActions {
   onChange: (id: string, patch: Partial<DraftRow>) => void
@@ -57,6 +66,14 @@ export function VariableTableRow({ scope, row, index, problems, savedActionsDisa
       <td>
         <div className={styles.keyCell}>
           <input
+            name="enabled"
+            type="checkbox"
+            aria-label={`Enable ${name}`}
+            className={styles.enabled}
+            checked={row.enabled}
+            onChange={(event) => change({ enabled: event.target.checked })}
+          />
+          <input
             name="key"
             autoComplete="off"
             aria-label={`Name of ${name}`}
@@ -74,21 +91,28 @@ export function VariableTableRow({ scope, row, index, problems, savedActionsDisa
               {PROBLEM_TEXT[problem]}
             </span>
           ))}
+          <button
+            type="button"
+            aria-label={`Secret ${name}`}
+            aria-pressed={row.secret}
+            title={row.secret ? 'Secret: kept only in the vault on this machine. Click to make it plain.' : 'Plain: shared in the workspace files. Click to make it secret.'}
+            className={styles.secretToggle}
+            onClick={() => change({ secret: !row.secret })}
+          >
+            {LOCK_ICON}
+            Secret
+          </button>
         </div>
       </td>
       <td>
         {row.secret ? (
           NO_INITIAL
         ) : (
-          <input
+          <WrapTextCell
             name="initial-value"
-            autoComplete="off"
-            aria-label={`Initial value of ${name}`}
-            className={styles.cell}
-            spellCheck={false}
-            title={row.initialValue}
+            label={`Initial value of ${name}`}
             value={row.initialValue}
-            onChange={(event) => change({ initialValue: event.target.value })}
+            onChange={(initialValue) => change({ initialValue })}
           />
         )}
       </td>
@@ -96,51 +120,22 @@ export function VariableTableRow({ scope, row, index, problems, savedActionsDisa
         {row.secret ? (
           <SecretValueCell scope={scope} row={row} name={name} onChange={(secretValue) => change({ secretValue })} />
         ) : (
-          <input
+          <WrapTextCell
             name="current-value"
-            autoComplete="off"
-            aria-label={`Current value of ${name}`}
-            aria-description={inherited ? 'Inherited from the initial value' : undefined}
-            className={cn(styles.cell, inherited && styles.inherited)}
-            spellCheck={false}
-            title={current}
+            label={`Current value of ${name}`}
+            description={inherited ? 'Inherited from the initial value' : undefined}
+            className={inherited ? styles.inherited : undefined}
             value={current}
-            onChange={(event) => change({ currentValue: event.target.value })}
+            onChange={(currentValue) => change({ currentValue })}
           />
         )}
       </td>
       <td>
-        <select
-          name="type"
-          aria-label={`Type of ${name}`}
-          className={styles.select}
-          value={row.secret ? 'secret' : 'plain'}
-          onChange={(event) => change({ secret: event.target.value === 'secret' })}
-        >
-          <option value="plain">Plain</option>
-          <option value="secret">Secret</option>
-        </select>
-      </td>
-      <td>
-        <div className={styles.check}>
-          <input
-            name="enabled"
-            type="checkbox"
-            aria-label={`Enable ${name}`}
-            checked={row.enabled}
-            onChange={(event) => change({ enabled: event.target.checked })}
-          />
-        </div>
-      </td>
-      <td>
-        <input
+        <WrapTextCell
           name="description"
-          autoComplete="off"
-          aria-label={`Description of ${name}`}
-          className={styles.cell}
-          title={row.description}
+          label={`Description of ${name}`}
           value={row.description}
-          onChange={(event) => change({ description: event.target.value })}
+          onChange={(description) => change({ description })}
         />
       </td>
       <td>

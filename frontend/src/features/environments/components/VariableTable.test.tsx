@@ -83,8 +83,6 @@ describe('VariableTable', () => {
       'Name',
       'Initial Value',
       'Current Value',
-      'Type',
-      'Enabled',
       'Description',
       'Actions',
     ])
@@ -94,14 +92,17 @@ describe('VariableTable', () => {
     const overridden = screen.getByRole('textbox', { name: 'Current value of user' })
     expect(overridden).toHaveValue('bob')
     expect(overridden).not.toHaveAccessibleDescription('Inherited from the initial value')
-    expect(screen.getByRole('combobox', { name: 'Type of user' })).toHaveValue('plain')
+    expect(screen.getByRole('button', { name: 'Secret user' })).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByRole('checkbox', { name: 'Enable user' })).toBeChecked()
   })
 
-  it('keeps long values whole on hover', async () => {
+  it('shows long values whole, wrapping over several lines', async () => {
     await renderTable([plain()])
-    expect(screen.getByRole('textbox', { name: 'Initial value of base_url' })).toHaveAttribute('title', LONG_URL)
-    expect(screen.getByRole('textbox', { name: 'Current value of base_url' })).toHaveAttribute('title', LONG_URL)
+    for (const label of ['Initial value of base_url', 'Current value of base_url']) {
+      const cell = screen.getByRole('textbox', { name: label })
+      expect(cell).toHaveValue(LONG_URL)
+      expect(cell.tagName).toBe('TEXTAREA')
+    }
   })
 
   it('flags duplicate names and names with surrounding spaces, also while editing', async () => {
@@ -303,7 +304,7 @@ describe('VariableTable', () => {
 
   it('warns about git history before making a row secret and after the save says so', async () => {
     await renderTable([plain({ key: 'password', initialValue: 'hunter2', currentValue: 'hunter2' })])
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Type of password' }), 'secret')
+    await user.click(screen.getByRole('button', { name: 'Secret password' }))
     await user.click(screen.getByRole('button', { name: 'Save Variables' }))
     expect(variables.saveVariableTable).not.toHaveBeenCalled()
     expect(screen.getByRole('status')).toHaveTextContent('may still be in git history')
@@ -320,7 +321,8 @@ describe('VariableTable', () => {
 
   it('asks before writing a secret into the workspace files', async () => {
     await renderTable([secret('token', 'set')])
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Type of token' }), 'plain')
+    expect(screen.getByRole('button', { name: 'Secret token' })).toHaveAttribute('aria-pressed', 'true')
+    await user.click(screen.getByRole('button', { name: 'Secret token' }))
     await user.click(screen.getByRole('button', { name: 'Save Variables' }))
     expect(screen.getByText(/will be written to the workspace files/)).toBeInTheDocument()
     vi.mocked(variables.saveVariableTable).mockResolvedValue(tableOf([plain({ key: 'token', initialValue: 'abc', currentValue: 'abc' })]))

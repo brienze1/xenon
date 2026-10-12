@@ -33,16 +33,14 @@ const LOAD_NEXT_STEP =
 const TABLE_HEAD = (
   <thead>
     <tr>
-      <th scope="col">Name</th>
+      <th scope="col" className={styles.nameColumn}>
+        Name
+      </th>
       <th scope="col">Initial Value</th>
       <th scope="col">Current Value</th>
-      <th scope="col" className={styles.typeColumn}>
-        Type
+      <th scope="col" className={styles.descriptionColumn}>
+        Description
       </th>
-      <th scope="col" className={styles.enabledColumn}>
-        Enabled
-      </th>
-      <th scope="col">Description</th>
       <th scope="col" className={styles.actionColumn}>
         <span className="visually-hidden">Actions</span>
       </th>
@@ -208,10 +206,18 @@ function VariableTableEditor({
       return;
     }
     pendingFocus.current = null;
-    const cells = tableRef.current?.querySelectorAll<HTMLInputElement>(
-      `tbody input[name="${field}"]:not([data-new-row])`,
+    const cells = tableRef.current?.querySelectorAll<HTMLElement>(
+      `tbody [name="${field}"]:not([data-new-row])`,
     );
-    cells?.[cells.length - 1]?.focus();
+    const cell = cells?.[cells.length - 1];
+    cell?.focus();
+    // Typing goes on after the first character, so the caret sits at the end (a textarea starts it at 0).
+    if (
+      cell instanceof HTMLTextAreaElement ||
+      cell instanceof HTMLInputElement
+    ) {
+      cell.setSelectionRange(cell.value.length, cell.value.length);
+    }
   });
 
   if (!draft) {
@@ -447,7 +453,7 @@ function NewVariableRow({ onAdd }: NewVariableRowProps) {
           onChange={(event) => onAdd("initial-value", event.target.value)}
         />
       </td>
-      <td colSpan={5} />
+      <td colSpan={3} />
     </tr>
   );
 }
