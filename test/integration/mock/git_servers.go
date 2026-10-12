@@ -9,7 +9,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"path"
 	"path/filepath"
@@ -30,6 +29,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/plumbing/transport"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/plumbing/transport/server"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	gossh "golang.org/x/crypto/ssh"
@@ -64,14 +64,18 @@ type gitHttpFailure struct {
 
 type GitServers struct {
 	hostKey     gossh.Signer
-	http        *httptest.Server
+	http        *http.Server
 	ssh         *gliderssh.Server
 	credentials *gitHttpCredentials
 	failures    map[string]gitHttpFailure
+	rejections  map[string]string
+	httpAddress string
 	sshAddress  string
 	root        string
 	sshKeys     []gossh.PublicKey
 	requests    []GitHttpRequest
+	delay       time.Duration
+	offline     bool
 	mu          sync.Mutex
 }
 
@@ -89,7 +93,9 @@ func NewGitServers() *GitServers {
 		if err != nil {
 			panic(err)
 		}
-		servers.http = httptest.NewServer(http.HandlerFunc(servers.serveHttp))
+		if err := servers.startHttp("127.0.0.1:0"); err != nil {
+			panic(err)
+		}
 		servers.startSsh()
 		if err := servers.Reset(); err != nil {
 			panic(err)
@@ -112,17 +118,64 @@ func (g *GitServers) Reset() error {
 	g.root = root
 	g.credentials = nil
 	g.failures = map[string]gitHttpFailure{}
+	g.rejections = map[string]string{}
+	g.delay = 0
+	if g.offline {
+		if err := g.startHttp(g.httpAddress); err != nil {
+			return err
+		}
+		g.offline = false
+	}
 	g.sshKeys = nil
 	g.requests = nil
 	return nil
 }
 
 func (g *GitServers) HttpURL(name string) string {
-	return g.http.URL + "/" + name + gitRepositorySuffix
+	return "http://" + g.httpAddress + "/" + name + gitRepositorySuffix
 }
 
 func (g *GitServers) HttpHost() string {
-	return strings.TrimPrefix(g.http.URL, "http://")
+	return g.httpAddress
+}
+
+func (g *GitServers) startHttp(address string) error {
+	var listener net.Listener
+	var err error
+	for attempt := 0; attempt < 50; attempt++ {
+		if listener, err = net.Listen("tcp", address); err == nil {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if err != nil {
+		return err
+	}
+	g.httpAddress = listener.Addr().String()
+	g.http = &http.Server{Handler: http.HandlerFunc(g.serveHttp), ReadHeaderTimeout: 10 * time.Second}
+	g.http.SetKeepAlivesEnabled(false)
+	server := g.http
+	go func() { _ = server.Serve(listener) }()
+	return nil
+}
+
+func (g *GitServers) GoOffline() error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.offline = true
+	return g.http.Close()
+}
+
+func (g *GitServers) Delay(delay time.Duration) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.delay = delay
+}
+
+func (g *GitServers) RejectPushes(name, message string) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.rejections[name] = message
 }
 
 func (g *GitServers) SshURL(name string) string {
@@ -187,6 +240,40 @@ func (g *GitServers) CommitFile(name, filePath, content, message string) error {
 	}
 	_, err = worktree.Commit(message, &git.CommitOptions{Author: &object.Signature{Name: gitTeammateName, Email: gitTeammateEmail, When: time.Now()}})
 	return err
+}
+
+func (g *GitServers) DeleteFile(name, filePath, message string) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	worktreeFs := memfs.New()
+	worktree, err := g.teammateWorktree(g.remotePath(name), worktreeFs)
+	if err != nil {
+		return err
+	}
+	if _, err := worktree.Remove(filePath); err != nil {
+		return err
+	}
+	_, err = worktree.Commit(message, &git.CommitOptions{Author: &object.Signature{Name: gitTeammateName, Email: gitTeammateEmail, When: time.Now()}})
+	return err
+}
+
+func (g *GitServers) CloneTo(name, target string) error {
+	g.mu.Lock()
+	credentials := g.credentials
+	g.mu.Unlock()
+	options := &git.CloneOptions{URL: g.HttpURL(name)}
+	if credentials != nil {
+		options.Auth = &githttp.BasicAuth{Username: credentials.cloneUsername(), Password: credentials.token}
+	}
+	_, err := git.PlainClone(target, false, options)
+	return err
+}
+
+func (c *gitHttpCredentials) cloneUsername() string {
+	if c.anyUsername {
+		return "developer"
+	}
+	return c.username
 }
 
 func (g *GitServers) ReadFile(name, branch, filePath string) (string, error) {
@@ -317,6 +404,10 @@ func (g *GitServers) Load(endpoint *transport.Endpoint) (storer.Storer, error) {
 }
 
 func (g *GitServers) serveHttp(w http.ResponseWriter, r *http.Request) {
+	g.mu.Lock()
+	delay := g.delay
+	g.mu.Unlock()
+	time.Sleep(delay)
 	repository, service := splitGitHttpPath(r)
 	username, token, _ := r.BasicAuth()
 	status := g.authorizeHttp(repository, username, token)
@@ -336,7 +427,7 @@ func (g *GitServers) serveHttp(w http.ResponseWriter, r *http.Request) {
 	case service == gitUploadPack:
 		g.uploadPack(w, r, endpoint)
 	default:
-		g.receivePack(w, r, endpoint)
+		g.receivePack(w, r, endpoint, repository)
 	}
 }
 
@@ -425,7 +516,7 @@ func (g *GitServers) uploadPack(w http.ResponseWriter, r *http.Request, endpoint
 	_ = response.Encode(w)
 }
 
-func (g *GitServers) receivePack(w http.ResponseWriter, r *http.Request, endpoint *transport.Endpoint) {
+func (g *GitServers) receivePack(w http.ResponseWriter, r *http.Request, endpoint *transport.Endpoint, repository string) {
 	session, err := g.transport().NewReceivePackSession(endpoint, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -440,13 +531,26 @@ func (g *GitServers) receivePack(w http.ResponseWriter, r *http.Request, endpoin
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	g.mu.Lock()
-	status, _ := session.ReceivePack(r.Context(), request)
-	g.mu.Unlock()
+	status := g.receive(r.Context(), session, request, repository)
 	w.Header().Set("Content-Type", "application/x-git-receive-pack-result")
 	if status != nil {
 		_ = status.Encode(w)
 	}
+}
+
+func (g *GitServers) receive(ctx context.Context, session transport.ReceivePackSession, request *packp.ReferenceUpdateRequest, repository string) *packp.ReportStatus {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if message, rejecting := g.rejections[repository]; rejecting {
+		status := packp.NewReportStatus()
+		status.UnpackStatus = "ok"
+		for _, command := range request.Commands {
+			status.CommandStatuses = append(status.CommandStatuses, &packp.CommandStatus{ReferenceName: command.Name, Status: message})
+		}
+		return status
+	}
+	status, _ := session.ReceivePack(ctx, request)
+	return status
 }
 
 func (g *GitServers) startSsh() {
@@ -529,9 +633,7 @@ func (g *GitServers) serveSshCommand(ctx context.Context, stream io.ReadWriter, 
 		if err := request.Decode(struct{ io.Reader }{stream}); err != nil {
 			return nil
 		}
-		g.mu.Lock()
-		status, _ := session.ReceivePack(ctx, request)
-		g.mu.Unlock()
+		status := g.receive(ctx, session, request, strings.TrimSuffix(strings.TrimPrefix(endpoint.Path, "/"), gitRepositorySuffix))
 		if status != nil {
 			return status.Encode(stream)
 		}

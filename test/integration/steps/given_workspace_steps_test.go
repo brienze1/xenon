@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -23,6 +24,29 @@ func (t *testUtils) registerGivenWorkspaceSteps(ctx *godog.ScenarioContext) {
 	ctx.Given(`^the workspace path "([^"]*)" is moved to "([^"]*)"$`, t.theWorkspacePathIsMovedTo)
 	ctx.Given(`^the workspace path "([^"]*)" is read-only$`, t.theWorkspacePathIsReadOnly)
 	ctx.Given(`^the workspace folder "([^"]*)" holds (\d+) generated requests across (\d+) collections$`, t.theWorkspaceFolderHoldsGeneratedRequests)
+	ctx.Given(`^the temp folder "([^"]*)" is copied to "([^"]*)"$`, t.theTempFolderIsCopiedTo)
+}
+
+func (t *testUtils) theTempFolderIsCopiedTo(source, target string) error {
+	root := t.tempPath(source)
+	destination := t.tempPath(target)
+	return filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		relative, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			return os.MkdirAll(filepath.Join(destination, relative), 0o755)
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(filepath.Join(destination, relative), content, 0o644)
+	})
 }
 
 func (t *testUtils) theWorkspaceExists(name string) error {

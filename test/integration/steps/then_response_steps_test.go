@@ -17,6 +17,7 @@ func (t *testUtils) registerThenResponseSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the last call should have taken less than (\d+) ms$`, t.theLastCallShouldHaveTakenLessThan)
 	ctx.Then(`^the call should fail with code "([^"]*)"$`, t.theCallShouldFailWithCode)
 	ctx.Then(`^the error should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theErrorShouldContainTheFieldEqualTo)
+	ctx.Then(`^the error should contain the field "([^"]*)" containing "([^"]*)"$`, t.theErrorShouldContainTheFieldContaining)
 	ctx.Then(`^the response should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theResponseShouldContainTheFieldEqualTo)
 	ctx.Then(`^the response should contain the field "([^"]*)" equal to$`, t.theResponseShouldContainTheFieldEqualToTheText)
 	ctx.Then(`^the response should contain the path field "([^"]*)" equal to "([^"]*)"$`, t.theResponseShouldContainThePathFieldEqualTo)
@@ -63,6 +64,20 @@ func (t *testUtils) theErrorShouldContainTheFieldEqualTo(path, expected string) 
 		return err
 	}
 	return expectEqual(stringify(actual), t.substitute(expected), path)
+}
+
+func (t *testUtils) theErrorShouldContainTheFieldContaining(path, expected string) error {
+	if t.callError == nil {
+		return fmt.Errorf("expected an error, got success %s", t.response)
+	}
+	actual, err := fieldOf(t.callError, path)
+	if err != nil {
+		return err
+	}
+	if !strings.Contains(stringify(actual), t.substitute(expected)) {
+		return fmt.Errorf("%s: expected it to contain %q, got %q", path, t.substitute(expected), stringify(actual))
+	}
+	return nil
 }
 
 func (t *testUtils) theResponseShouldContainTheFieldEqualTo(path, expected string) error {

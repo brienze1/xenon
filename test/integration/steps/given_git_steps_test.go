@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/cucumber/godog"
 	gossh "golang.org/x/crypto/ssh"
@@ -28,6 +29,33 @@ func (t *testUtils) registerGivenGitSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^the git ssh server authorizes the public key "([^"]*)"$`, t.theGitSshServerAuthorizesThePublicKey)
 	ctx.Given(`^the ssh agent holds the ssh key "([^"]*)"$`, t.theSshAgentHoldsTheSshKey)
 	ctx.Given(`^the ssh agent is running without keys$`, t.theSshAgentIsRunningWithoutKeys)
+	ctx.Step(`^a teammate deletes "([^"]*)" on the remote "([^"]*)"$`, t.aTeammateDeletesOnTheRemote)
+	ctx.Given(`^the remote "([^"]*)" is cloned to the temp path "([^"]*)"$`, t.theRemoteIsClonedToTheTempPath)
+	ctx.Given(`^the remote "([^"]*)" rejects pushes with "([^"]*)"$`, t.theRemoteRejectsPushesWith)
+	ctx.Given(`^the git http server delays its responses by (\d+) ms$`, t.theGitHttpServerDelaysItsResponsesBy)
+	ctx.Given(`^the git http server goes offline$`, t.theGitHttpServerGoesOffline)
+}
+
+func (t *testUtils) aTeammateDeletesOnTheRemote(path, name string) error {
+	return t.git.DeleteFile(t.substitute(name), t.substitute(path), "Delete "+path)
+}
+
+func (t *testUtils) theRemoteIsClonedToTheTempPath(name, path string) error {
+	return t.git.CloneTo(t.substitute(name), t.tempPath(path))
+}
+
+func (t *testUtils) theRemoteRejectsPushesWith(name, message string) error {
+	t.git.RejectPushes(t.substitute(name), t.substitute(message))
+	return nil
+}
+
+func (t *testUtils) theGitHttpServerDelaysItsResponsesBy(milliseconds int) error {
+	t.git.Delay(time.Duration(milliseconds) * time.Millisecond)
+	return nil
+}
+
+func (t *testUtils) theGitHttpServerGoesOffline() error {
+	return t.git.GoOffline()
 }
 
 func (t *testUtils) theRemoteExists(name string) error {
