@@ -312,6 +312,18 @@ describe('RequestBuilder', () => {
     expect(screen.getByText('Imported from another machine — select the file again before sending')).toBeInTheDocument()
   })
 
+  it('shows where a raw body breaks', async () => {
+    const user = userEvent.setup()
+    act(() => {
+      useRequestBuilderStore.getState().updateBody(tabId, { mode: 'raw', raw: { language: 'json', content: '{\n  "ids": [\n    500947,\n  ]\n}' } })
+    })
+    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    await user.click(screen.getByRole('tab', { name: 'Body' }))
+    expect(await screen.findByRole('list', { name: 'Raw body problems' })).toHaveTextContent('Line 3, column 11: Trailing comma before "]"')
+    act(() => useRequestBuilderStore.getState().updateBody(tabId, { raw: { language: 'json', content: '{"ids": [500947]}' } }))
+    await vi.waitFor(() => expect(screen.queryByRole('list', { name: 'Raw body problems' })).not.toBeInTheDocument())
+  })
+
   it('beautifies raw bodies in every language except plain text', async () => {
     const user = userEvent.setup()
     act(() => {

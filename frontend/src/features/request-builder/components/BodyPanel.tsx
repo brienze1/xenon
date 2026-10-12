@@ -191,6 +191,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
           <CodeEditor
             label="Raw body"
             className={styles.editor}
+            checkSyntax
             language={body.raw.language}
             value={body.raw.content}
             decorations={editing.decorationsOf('body.raw')}
@@ -352,6 +353,7 @@ export function BodyPanel({ tabId }: BodyPanelProps) {
             label="GraphQL variables"
             className={styles.editor}
             language="json"
+            checkSyntax
             value={body.graphql.variables}
             decorations={editing.decorationsOf('body.graphql.variables')}
             completionSource={editing.completionSource}

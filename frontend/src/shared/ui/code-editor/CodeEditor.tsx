@@ -3,9 +3,10 @@ import { foldGutter, foldKeymap } from '@codemirror/language'
 import { highlightSelectionMatches, openSearchPanel, searchKeymap } from '@codemirror/search'
 import { Compartment, EditorState } from '@codemirror/state'
 import { EditorView, drawSelection, keymap, lineNumbers } from '@codemirror/view'
-import { useEffect, useImperativeHandle, useRef, type Ref } from 'react'
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from 'react'
 import { cn } from '@/shared/lib/cn'
 import styles from './CodeEditor.module.css'
+import { findSyntaxErrors } from './syntax-check'
 import { syntaxColors } from './syntax-highlight'
 import { wrapIndent } from './wrap-indent'
 import {
@@ -36,6 +37,8 @@ interface CodeEditorProps {
   decorations?: readonly EditorDecoration[]
   /** Problems underlined in the text and listed under the editor. */
   diagnostics?: readonly EditorDiagnostic[]
+  /** Marks where the text stops being valid for its language (bodies), like Postman. */
+  checkSyntax?: boolean
   completionSource?: CompletionSource
   className?: string
   ref?: Ref<CodeEditorHandle>
@@ -62,6 +65,7 @@ export function CodeEditor({
   onChange,
   decorations = NO_DECORATIONS,
   diagnostics = NO_DIAGNOSTICS,
+  checkSyntax = false,
   completionSource,
   className,
   ref,
@@ -72,6 +76,8 @@ export function CodeEditor({
   const onChangeRef = useRef(onChange)
   const completionRef = useRef(completionSource)
   const readOnly = onChange === undefined
+  const syntaxErrors = useSyntaxErrors(checkSyntax ? value : '', language)
+  const problems = useMemo(() => (syntaxErrors.length > 0 ? [...diagnostics, ...syntaxErrors] : diagnostics), [diagnostics, syntaxErrors])
 
   useEffect(() => {
     onChangeRef.current = onChange
@@ -151,9 +157,9 @@ export function CodeEditor({
   useEffect(() => {
     const view = viewRef.current
     if (view) {
-      view.dispatch({ effects: decorationsEffect([...decorations, ...diagnosticDecorations(view.state.doc, diagnostics)]) })
+      view.dispatch({ effects: decorationsEffect([...decorations, ...diagnosticDecorations(view.state.doc, problems)]) })
     }
-  }, [decorations, diagnostics, value, readOnly, label])
+  }, [decorations, problems, value, readOnly, label])
 
   useEffect(() => {
     let active = true
@@ -172,9 +178,9 @@ export function CodeEditor({
   return (
     <div className={cn(styles.frame, className)}>
       <div ref={containerRef} className={styles.root} translate="no" />
-      {diagnostics.length > 0 ? (
+      {problems.length > 0 ? (
         <ul aria-label={`${label} problems`} className={styles.diagnostics}>
-          {diagnostics.map((diagnostic, index) => (
+          {problems.map((diagnostic, index) => (
             <li key={index}>
               Line {diagnostic.line}, column {diagnostic.column}: {diagnostic.message}
             </li>
@@ -183,4 +189,33 @@ export function CodeEditor({
       ) : null}
     </div>
   )
+}
+
+const SYNTAX_CHECK_DELAY_MS = 300
+
+// Re-checks shortly after typing stops; an answer for older text is never shown.
+function useSyntaxErrors(text: string, language: CodeLanguage): readonly EditorDiagnostic[] {
+  const [checked, setChecked] = useState<{ text: string; language: CodeLanguage; errors: readonly EditorDiagnostic[] }>({
+    text: '',
+    language,
+    errors: NO_DIAGNOSTICS,
+  })
+  useEffect(() => {
+    if (text === '') {
+      return undefined
+    }
+    let active = true
+    const timer = window.setTimeout(() => {
+      void findSyntaxErrors(text, language).then((errors) => {
+        if (active) {
+          setChecked({ text, language, errors })
+        }
+      })
+    }, SYNTAX_CHECK_DELAY_MS)
+    return () => {
+      active = false
+      window.clearTimeout(timer)
+    }
+  }, [text, language])
+  return checked.text === text && checked.language === language ? checked.errors : NO_DIAGNOSTICS
 }

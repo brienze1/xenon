@@ -139,6 +139,8 @@ export const toneTheme = EditorView.theme({
   '.cm-tone-success, .cm-tone-success span': { color: 'var(--neon-green)' },
   '.cm-tone-danger, .cm-tone-danger span': { color: 'var(--neon-red)', textDecoration: 'underline wavy var(--neon-red)' },
   '.cm-tone-accent, .cm-tone-accent span': { color: 'var(--neon-magenta)' },
+  // The whole line of a problem is tinted so a one-character mistake (a stray comma) is easy to spot.
+  '.cm-line:has(.cm-tone-danger)': { backgroundColor: 'rgb(255 61 90 / 10%)' },
   '.cm-tone-info, .cm-tone-info span': { color: 'var(--neon-cyan)' },
   '.cm-tooltip-autocomplete': {
     backgroundColor: 'var(--color-surface-raised)',
