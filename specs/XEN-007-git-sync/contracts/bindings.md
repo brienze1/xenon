@@ -73,6 +73,18 @@ branch / signature required.
   again); returns the new `SyncStatus` (usually `ahead`, `up_to_date` when the result is the remote).
   `CancelPull` returns the status as before the pull. Both are sync operations (`GIT-05409` while one runs).
 
+### Implementation notes (T025, T027)
+- `CloneAsWorkspace { repository, branch?, subfolder, account_id, clone_path?, name? }` → `WorkspaceSummary`
+  (registered and active); validation `GIT-39400`; empty branch = remote default (`main` when the remote
+  is empty); clone path checks `GIT-65409`/`GIT-66409`; LFS `GIT-02415` and missing branch `GIT-03404`
+  leave no clone behind.
+- `Unlink { local_id, target_folder }` → `WorkspaceSummary`; validation `GIT-40400`, not linked
+  `GIT-09409`, target not empty `GIT-43409`, target overlapping a workspace or the clone `GIT-44409`.
+- No `AutoPull`/`AutoPush` methods: `SaveSettings` stores the options; `WorkspaceService.Activate` and
+  saves (`RequestService.Save/SaveAs`, `EnvironmentService.Update`, `TreeService.SaveSettings`) trigger
+  the background pull (immediately) and push (3 s after the last save); results arrive as
+  `git:status-changed` (failures as `state: error` with `last_error`).
+
 ## 3. Events
 `git:status-changed { local_id, status }`, `git:progress { local_id, phase, done, total }`,
 `git:host-key-unknown { repository, host, fingerprint, key_type }`.

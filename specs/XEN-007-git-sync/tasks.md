@@ -65,21 +65,21 @@ US1 link & daily sync · US2 conflicts · US3 accounts · US4 clone as workspace
 
 ## Phase 6: User Story 4 — Clone as workspace (P2)
 
-- [ ] T024 [P] [US4] BDD `test/integration/features/git/link_and_clone.feature` additions: `CloneAsWorkspace` with existing workspace subfolder (opened, secrets missing) and empty subfolder (new workspace created); default branch from remote
-- [ ] T025 [US4] Run → **red**; implement `CloneAsWorkspace` → **green**; UI `CloneWorkspaceDialog` in the workspace switcher ("New workspace from Git repository"); RTL test
+- [x] T024 [P] [US4] BDD `test/integration/features/git/link_and_clone.feature` additions: `CloneAsWorkspace` with existing workspace subfolder (opened, secrets missing) and empty subfolder (new workspace created); default branch from remote — done (12 scenarios red on the missing binding; + refusals that leave nothing behind (LFS, missing branch), validation `GIT-39400`, clone path in use/overlap, unknown account). New generic step: the default branch of a remote is renamed.
+- [x] T025 [US4] Run → **red**; implement `CloneAsWorkspace` → **green**; UI `CloneWorkspaceDialog` in the workspace switcher ("New workspace from Git repository"); RTL test — done: `clone_workspace` service over a `syncCloner` helper shared with Link (clone path checks, clone + progress, LFS refusal, discard on failure). Empty branch → the remote's default branch (`main` for an empty remote); an empty or non-workspace subfolder becomes a new workspace named as given or after the repository (`acme/backend.git` → `backend`); the shared `sync` section is written when it differs. The new workspace is registered and made active; the UI then activates it (tree, watcher). Dialog mounted by the app shell, opened from the switcher via the sync store.
 
 ---
 
 ## Phase 7: User Story 5 — Auto pull/push, unlink (P3)
 
-- [ ] T026 [P] [US5] BDD `test/integration/features/git/auto_pull_push.feature` and `unlink.feature`: auto-pull on activation (conflict → status only, nothing changed), auto-push after 3 s debounce with "Update <names>" (time mock), failures surfaced; unlink copies files to target folder, re-points workspace, deletes clone after confirmation
-- [ ] T027 [US5] Run → **red**; implement auto triggers (activation hook, save debounce) and `Unlink` → **green**; UI toggles in Sync tab
+- [x] T026 [P] [US5] BDD `test/integration/features/git/auto_pull_push.feature` and `unlink.feature`: auto-pull on activation (conflict → status only, nothing changed), auto-push after 3 s debounce with "Update <names>" (time mock), failures surfaced; unlink copies files to target folder, re-points workspace, deletes clone after confirmation — done (14/17 red; the option defaults and the two "option off" scenarios were already green). The time mock gained `AfterFunc`/`Advance` (timers fire synchronously when time is advanced); new generic step `<n> seconds pass`.
+- [x] T027 [US5] Run → **red**; implement auto triggers (activation hook, save debounce) and `Unlink` → **green**; UI toggles in Sync tab — done. Deviations: (1) the triggers are entrypoint hooks: `WorkspaceService.Activate` → `AutoSync.Opened` (background pull), `RequestService.Save/SaveAs`, `EnvironmentService.Update` and `TreeService.SaveSettings` → `AutoSync.Saved`; tree structure edits (create/rename/move/delete) are not triggers but ride along with the next auto push, which commits every local change ("Update <names of the changed items>"); (2) jobs run through a `ScheduleSyncJob` use case (integration `sync_scheduler` over an external `Timers` boundary, real `time.AfterFunc`; BDD injects the time mock); a busy workspace retries in 3 s; results/failures are published as `git:status-changed` and never fail the save or activation; (3) `Unlink {local_id, target_folder}` (validation `GIT-40400`; target not empty `GIT-43409`; overlapping a workspace or the clone `GIT-44409`) copies the current files (local-only folders excluded), clears the local sync settings, drops an open sync session, re-points the registry/watcher and deletes the clone; `workspace.yaml` keeps its shared `sync` section; the confirmation is the UI's. No workspace settings dialog exists yet, so the toggles and "Unlink Repository…" live in the Sync panel.
 
 ---
 
 ## Phase 8: Polish
 
-- [ ] T028 [P] Performance BDD: commit+push and conflict-free pull of 10 changed requests < 5 s against the local smart-HTTP server (SC-001)
+- [x] T028 [P] Performance BDD: commit+push and conflict-free pull of 10 changed requests < 5 s against the local smart-HTTP server (SC-001) — done (`performance.feature`): Commit < 2 s + Push < 3 s, Pull < 5 s; locally ~7 ms and ~65 ms. Green on first run (it measures existing behaviour). New generic step: a teammate commits a workspace folder as a path on a remote.
 - [ ] T029 Run a real end-to-end session against GitHub (test repo) with device-flow sign-in, token and SSH on macOS, Windows and Linux (SC-005/006); record results in `specs/XEN-007-git-sync/quickstart.md` notes
 - [ ] T030 `/refactor-diff` until clean; `make validate`; CI on 3 OSes; walk [quickstart.md](quickstart.md)
 
