@@ -22,8 +22,11 @@ describe('snippet options', () => {
     expect(optionValue({}, 'longFormat', 'true')).toBe('true')
   })
 
-  it('highlights JavaScript and shows the other languages as text', () => {
+  it('highlights every snippet language and shows unknown ones as text', () => {
     expect(editorLanguageOf('js_fetch')).toBe('javascript')
-    expect(editorLanguageOf('curl')).toBe('text')
+    expect(editorLanguageOf('curl')).toBe('shell')
+    expect(editorLanguageOf('go_native')).toBe('go')
+    expect(editorLanguageOf('python_requests')).toBe('python')
+    expect(editorLanguageOf('something_new')).toBe('text')
   })
 })
