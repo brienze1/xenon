@@ -1,6 +1,7 @@
 import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { emptyAuth } from '@/platform/mappers/request'
 import { defaultUIState } from '@/platform/mappers/ui-state'
 
 vi.mock('./bootstrap', async (importOriginal) => ({
@@ -30,6 +31,11 @@ vi.mock('@/platform/services/workspaces', () => ({
   removeWorkspace: vi.fn(),
   locateWorkspace: vi.fn(),
 }))
+vi.mock('@/platform/services/tree', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/platform/services/tree')>()),
+  getItemSettings: vi.fn(),
+  saveItemSettings: vi.fn(),
+}))
 vi.mock('@/platform/services/dialogs', () => ({ pickFolder: vi.fn(), pickFile: vi.fn(), pickSaveFile: vi.fn() }))
 vi.mock('@/platform/services/ui-state', () => ({ getUIState: vi.fn(), saveUIState: vi.fn(async () => undefined) }))
 vi.mock('@/platform/services/requests', () => ({
@@ -49,6 +55,7 @@ vi.mock('@/platform/services/requests', () => ({
 
 const services = await import('@/platform/services/workspaces')
 const requests = await import('@/platform/services/requests')
+const tree = await import('@/platform/services/tree')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
 const { useTabsStore } = await import('@/features/tabs/store')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
@@ -229,6 +236,28 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Sidebar view: Environments' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'New Collection' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'New Environment' })).toBeInTheDocument()
+  })
+
+  it('opens a collection as a tab from the sidebar, saves it with Cmd/Ctrl+S and shows no request details', async () => {
+    const billing = { id: 'c1', kind: 'collection' as const, name: 'Billing', method: null, url: null, error: null, warning: null, children: [] }
+    const settings = { id: 'c1', kind: 'collection' as const, name: 'Billing', description: '', auth: { ...emptyAuth(), type: 'inherit' as const }, headers: [], scripts: { preRequest: '', postResponse: '', disabled: [] }, inheritScripts: null }
+    vi.mocked(tree.getItemSettings).mockResolvedValue(settings)
+    vi.mocked(tree.saveItemSettings).mockImplementation(async (_localId, saved) => saved)
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: 'A' })
+    vi.mocked(services.activateWorkspace).mockResolvedValue({ summary: acme, tree: [billing], uiState: defaultUIState() })
+    const offsetHeight = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(600)
+    await renderApp()
+    await userEvent.click(await screen.findByRole('treeitem', { name: /Billing/ }))
+    offsetHeight.mockRestore()
+    const tab = await screen.findByRole('region', { name: 'Billing collection' })
+    expect(openTabs()).toHaveLength(2)
+    expect(openTabs()[1]).toHaveAttribute('title', 'Billing (preview)')
+    expect(screen.getByRole('region', { name: 'No request selected' })).toBeInTheDocument()
+    await userEvent.type(within(tab).getByRole('textbox', { name: 'Description' }), 'Billing API')
+    expect(within(openTabs()[1]!).getByRole('img', { name: 'Unsaved changes' })).toBeInTheDocument()
+    press('s')
+    await vi.waitFor(() => expect(tree.saveItemSettings).toHaveBeenCalledWith('A', expect.objectContaining({ id: 'c1', description: 'Billing API' })))
+    await vi.waitFor(() => expect(within(openTabs()[1]!).queryByRole('img', { name: 'Unsaved changes' })).not.toBeInTheDocument())
   })
 })
 

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { ContextMenu } from '@/shared/ui/context-menu/ContextMenu'
-import { isEnvironmentTab, useTabsStore } from '@/features/tabs/store'
+import { isEnvironmentTab, isItemTab, useTabsStore } from '@/features/tabs/store'
 import styles from './TabContextMenu.module.css'
 
 interface TabContextMenuProps {
@@ -26,18 +26,18 @@ interface TabMenuProps {
 }
 
 function TabMenu({ tabId, name }: TabMenuProps) {
-  const { position, count, requestId, isExample, isVariables } = useTabsStore(
+  const { position, count, requestId, isExample, isVariables, isItem } = useTabsStore(
     useShallow((state) => {
       const index = state.tabs.findIndex((tab) => tab.id === tabId)
       const tab = state.tabs[index]
-      return { position: index, count: state.tabs.length, requestId: tab?.requestId ?? null, isExample: tab?.kind === 'example', isVariables: isEnvironmentTab(tab) }
+      return { position: index, count: state.tabs.length, requestId: tab?.requestId ?? null, isExample: tab?.kind === 'example', isVariables: isEnvironmentTab(tab), isItem: isItemTab(tab) }
     }),
   )
   const tabs = useTabsStore.getState
   return (
     <ContextMenu.Menu label={`${name} tab actions`}>
       <ContextMenu.Item onSelect={() => tabs().newTab()}>New Request</ContextMenu.Item>
-      <ContextMenu.Item disabled={isExample || isVariables} onSelect={() => tabs().duplicateTab(tabId)}>
+      <ContextMenu.Item disabled={isExample || isVariables || isItem} onSelect={() => tabs().duplicateTab(tabId)}>
         Duplicate Tab
       </ContextMenu.Item>
       <ContextMenu.Separator />
@@ -57,7 +57,7 @@ function TabMenu({ tabId, name }: TabMenuProps) {
         Force Close All Tabs
       </ContextMenu.Item>
       <ContextMenu.Separator />
-      <ContextMenu.Item disabled={requestId === null && !isVariables} onSelect={() => tabs().revealInSidebar(tabId)}>
+      <ContextMenu.Item disabled={requestId === null && !isVariables && !isItem} onSelect={() => tabs().revealInSidebar(tabId)}>
         Reveal in Sidebar
       </ContextMenu.Item>
     </ContextMenu.Menu>

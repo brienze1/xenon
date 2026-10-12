@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { emptyAuth } from '@/platform/mappers/request'
 import { AppError } from '@/platform/errors'
-import type { ItemSettings, TreeNode } from '@/platform/mappers/tree'
+import type { TreeNode } from '@/platform/mappers/tree'
 
 vi.mock('@/platform/services/tree', () => ({
   getTree: vi.fn(),
@@ -24,7 +23,6 @@ vi.mock('@/platform/services/environments', () => ({
 vi.mock('@/platform/services/workspaces', () => ({ listWorkspaces: vi.fn(), createWorkspace: vi.fn(), activateWorkspace: vi.fn() }))
 
 const tree = await import('@/platform/services/tree')
-const requests = await import('@/platform/services/requests')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { SEARCH_DELAY_MS, NEW_COLLECTION_NAME, NEW_FOLDER_NAME, NEW_REQUEST_NAME, selectLocation, useSidebarStore } = await import('./store')
 
@@ -202,41 +200,6 @@ describe('sidebar store', () => {
     const failed = await state().remove('c1')
     expect(failed.ok ? null : failed.error.code).toBe('TRE-02404')
     expect(state().selectedId).toBe('c1')
-    expect(state().error).toBeNull()
-  })
-
-  it('loads and saves item settings', async () => {
-    const settings: ItemSettings = {
-      id: 'c1',
-      scripts: { preRequest: '', postResponse: '', disabled: [] },
-      inheritScripts: null,
-      kind: 'collection',
-      name: 'Billing',
-      description: '',
-      auth: { ...emptyAuth(), type: 'none', bearer: { token: '' }, basic: { username: '', password: '' } },
-      headers: [],
-    }
-    vi.mocked(tree.getItemSettings).mockResolvedValue(settings)
-    vi.mocked(tree.saveItemSettings).mockResolvedValue(settings)
-    await expect(state().loadSettings('c1')).resolves.toEqual({ ok: true, value: settings })
-    await expect(state().saveSettings(settings)).resolves.toBeNull()
-    vi.mocked(tree.saveItemSettings).mockRejectedValue(new AppError('TRE-02404', 'gone'))
-    await expect(state().saveSettings(settings)).resolves.toMatchObject({ code: 'TRE-02404' })
-    vi.mocked(tree.getItemSettings).mockRejectedValue(new AppError('TRE-02404', 'gone'))
-    await expect(state().loadSettings('c1')).resolves.toMatchObject({ ok: false, error: { code: 'TRE-02404' } })
-    expect(state().error).toBeNull()
-  })
-
-  it('converts headers to and from bulk text, returning the error on failure', async () => {
-    const rows = [{ id: 'h1', key: 'X-Tenant', value: 'acme', description: '', enabled: true }]
-    vi.mocked(requests.formatBulk).mockResolvedValue('X-Tenant:acme')
-    vi.mocked(requests.parseBulk).mockResolvedValue(rows)
-    await expect(state().formatBulk(rows)).resolves.toEqual({ ok: true, value: 'X-Tenant:acme' })
-    expect(requests.formatBulk).toHaveBeenCalledWith(rows)
-    await expect(state().parseBulk('X-Tenant:acme')).resolves.toEqual({ ok: true, value: rows })
-    expect(requests.parseBulk).toHaveBeenCalledWith('X-Tenant:acme')
-    vi.mocked(requests.parseBulk).mockRejectedValue(new AppError('REQ-01400', 'bad bulk'))
-    await expect(state().parseBulk('nonsense')).resolves.toMatchObject({ ok: false, error: { code: 'REQ-01400' } })
     expect(state().error).toBeNull()
   })
 

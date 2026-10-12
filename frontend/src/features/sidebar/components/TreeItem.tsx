@@ -3,10 +3,11 @@ import type { CSSProperties, KeyboardEvent, MouseEvent } from 'react'
 import { cn } from '@/shared/lib/cn'
 import { ContextMenu } from '@/shared/ui/context-menu/ContextMenu'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
-import type { TreeNode } from '@/platform/mappers/tree'
+import type { ContainerKind, TreeNode } from '@/platform/mappers/tree'
 import { useExportStore } from '@/features/export/store'
 import { isDraggable } from '@/features/sidebar/lib/tree-drop'
-import { isContainer, isExpandable, type TreeRow } from '@/features/sidebar/lib/tree-rows'
+import { isExpandable, type TreeRow } from '@/features/sidebar/lib/tree-rows'
+import type { OpenMode } from '@/features/sidebar/model'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { RenameInput } from './RenameInput'
 import styles from './TreeItem.module.css'
@@ -16,7 +17,8 @@ export interface TreeItemActions {
   onPinRequest: (id: string) => void
   onOpenExample: (requestId: string, exampleId: string) => void
   onPinExample: (requestId: string, exampleId: string) => void
-  onOpenSettings: (id: string) => void
+  /** Opens a collection or folder in a main-area tab (a single click previews, a double click pins). */
+  onOpenItem: (id: string, kind: ContainerKind, mode: OpenMode) => void
   onDelete: (node: TreeNode) => void
   onRenamed: (id: string) => void
 }
@@ -47,7 +49,7 @@ const CHEVRON = (
   </svg>
 )
 
-export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenExample, onPinExample, onOpenSettings, onDelete, onRenamed }: TreeItemProps) {
+export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenExample, onPinExample, onOpenItem, onDelete, onRenamed }: TreeItemProps) {
   const { node, depth, expanded, code, requestId } = row
   const selected = useSidebarStore((state) => state.selectedId === node.id)
   const renaming = useSidebarStore((state) => state.renamingId === node.id)
@@ -65,14 +67,17 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenEx
   const dragging = useSidebarStore((state) => state.draggingId === node.id)
   const draggable = useDraggable({ id: node.id, disabled: renaming || !isDraggable(node) })
   const droppable = useDroppable({ id: node.id, disabled: node.kind === 'example' })
-  const container = isContainer(node)
   const expandable = isExpandable(node)
   const isExample = node.kind === 'example'
+  const containerKind: ContainerKind | null = node.kind === 'collection' || node.kind === 'folder' ? node.kind : null
 
   function activate() {
     select(node.id)
-    if (container) {
-      toggle(node.id)
+    if (containerKind) {
+      if (!expanded) {
+        toggle(node.id)
+      }
+      onOpenItem(node.id, containerKind, 'preview')
     } else if (node.kind === 'request') {
       onOpenRequest(node.id)
     } else if (isExample && requestId) {
@@ -81,17 +86,27 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenEx
   }
 
   function pinItem() {
-    if (node.kind === 'request') {
+    if (containerKind) {
+      onOpenItem(node.id, containerKind, 'pinned')
+    } else if (node.kind === 'request') {
       onPinRequest(node.id)
     } else if (isExample && requestId) {
       onPinExample(requestId, node.id)
     }
   }
 
+  // The chevron only expands and collapses; the rest of a collection or folder row opens its tab.
   function onChevronClick(event: MouseEvent<HTMLSpanElement>) {
-    if (expandable && !container) {
+    if (expandable) {
       event.stopPropagation()
+      select(node.id)
       toggle(node.id)
+    }
+  }
+
+  function onChevronDoubleClick(event: MouseEvent<HTMLSpanElement>) {
+    if (expandable) {
+      event.stopPropagation()
     }
   }
 
@@ -150,7 +165,7 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenEx
           onDoubleClick={pinItem}
           onKeyDown={onKeyDown}
         >
-          <span aria-hidden="true" className={cn(styles.chevron, expanded && styles.open)} onClick={onChevronClick}>
+          <span aria-hidden="true" className={cn(styles.chevron, expanded && styles.open)} onClick={onChevronClick} onDoubleClick={onChevronDoubleClick}>
             {expandable ? CHEVRON : null}
           </span>
           {node.kind === 'request' ? <MethodBadge method={node.method ?? 'GET'} className={styles.method} /> : null}
@@ -171,11 +186,11 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenEx
       </ContextMenu.Trigger>
       {node.kind === 'error' ? null : (
         <ContextMenu.Menu label={`${node.name} actions`}>
-          {container ? (
+          {containerKind ? (
             <>
+              <ContextMenu.Item onSelect={() => onOpenItem(node.id, containerKind, 'pinned')}>Open</ContextMenu.Item>
               <ContextMenu.Item onSelect={() => void createRequest(node.id)}>Add Request</ContextMenu.Item>
               <ContextMenu.Item onSelect={() => void createFolder(node.id)}>Add Folder</ContextMenu.Item>
-              <ContextMenu.Item onSelect={() => onOpenSettings(node.id)}>Settings…</ContextMenu.Item>
             </>
           ) : null}
           <ContextMenu.Item onSelect={() => startRename(node.id)}>Rename</ContextMenu.Item>

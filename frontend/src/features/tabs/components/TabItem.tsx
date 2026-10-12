@@ -3,7 +3,9 @@ import { useSortable } from '@dnd-kit/sortable'
 import type { KeyboardEvent, MouseEvent } from 'react'
 import { isScopeDirty, useEnvironmentsStore } from '@/features/environments/store'
 import { useExamplesStore } from '@/features/examples/store'
+import { isItemDirty, useItemSettingsStore } from '@/features/item-settings/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
+import { collectionScope } from '@/platform/mappers/variable'
 import { cn } from '@/shared/lib/cn'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
 import { useTabTitle } from '@/features/tabs/hooks/use-tab-title'
@@ -14,6 +16,18 @@ import styles from './TabItem.module.css'
 const MIDDLE_BUTTON = 1
 
 const GLOBALS_BADGE = <span className={styles.kindBadge}>GLB</span>
+
+const COLLECTION_ICON = (
+  <svg viewBox="0 0 16 16" className={styles.kindIcon} role="img" aria-label="Collection">
+    <path d="M2.5 4.5h11M3.5 2.5h9M2.5 6.5h11v7h-11z" />
+  </svg>
+)
+
+const FOLDER_ICON = (
+  <svg viewBox="0 0 16 16" className={styles.kindIcon} role="img" aria-label="Folder">
+    <path d="M2 4.5V12.5h12V5.5H7.5L6 3.5H2z" />
+  </svg>
+)
 
 const DIRTY_DOT = <span className={styles.dirty} role="img" aria-label="Unsaved changes" />
 
@@ -37,10 +51,13 @@ export function TabItem({ tabId }: TabItemProps) {
   const responseDirty = useExamplesStore((state) => state.tabs[tabId]?.dirty === true)
   const variablesDirty = useEnvironmentsStore((state) => scope !== null && isScopeDirty(state, scope))
   const environmentId = useTabsStore((state) => state.tabs.find((tab) => tab.id === tabId)?.environmentId ?? null)
+  const itemId = useTabsStore((state) => state.tabs.find((tab) => tab.id === tabId)?.itemId ?? null)
+  const settingsDirty = useItemSettingsStore((state) => itemId !== null && isItemDirty(state, itemId))
+  const collectionVariablesDirty = useEnvironmentsStore((state) => kind === 'collection' && itemId !== null && isScopeDirty(state, collectionScope(itemId)))
   const environmentColor = useEnvironmentsStore(
     (state) => state.environments.find((environment) => environment.id === environmentId)?.color ?? 'none',
   )
-  const dirty = draftDirty || responseDirty || variablesDirty
+  const dirty = draftDirty || responseDirty || variablesDirty || settingsDirty || collectionVariablesDirty
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({ id: tabId, attributes: { role: 'tab' } })
   // Only a pointer drag makes the moving tab inert: during a keyboard drag the tab must keep
   // focus so the arrow keys keep moving it and assistive tech keeps announcing it.
@@ -102,6 +119,10 @@ export function TabItem({ tabId }: TabItemProps) {
       >
         {kind === 'globals' ? (
           GLOBALS_BADGE
+        ) : kind === 'collection' ? (
+          COLLECTION_ICON
+        ) : kind === 'folder' ? (
+          FOLDER_ICON
         ) : kind === 'environment' ? (
           <span className={styles.kindBadge} data-color={environmentColor}>
             ENV

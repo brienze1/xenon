@@ -8,7 +8,7 @@ import { Button } from '@/shared/ui/button/Button'
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import styles from './InfoPanel.module.css'
 
-const MarkdownView = lazy(() => import('./MarkdownView'))
+const MarkdownView = lazy(() => import('@/shared/ui/markdown/MarkdownView'))
 
 const INFO_HEADING = <h2 className={styles.title}>Info</h2>
 

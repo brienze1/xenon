@@ -1,6 +1,6 @@
 import { Activity, useState, type ReactNode } from 'react'
 import type { RequestDraft } from '@/platform/mappers/request'
-import type { TreeNode } from '@/platform/mappers/tree'
+import type { ContainerKind, TreeNode } from '@/platform/mappers/tree'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import type { OpenMode, VariablesItem } from '@/features/sidebar/model'
@@ -9,8 +9,6 @@ import { CollectionTree } from './CollectionTree'
 import { DeleteItemDialog } from './DeleteItemDialog'
 import { EnvironmentsView } from './EnvironmentsView'
 import { HistoryView } from './HistoryView'
-import { ItemSettingsDialog } from './ItemSettingsDialog'
-import type { ItemAuthSlot, ItemScriptsSlot } from './SettingsForm'
 import { SidebarErrorText } from './SidebarErrorText'
 import { SidebarToolbar } from './SidebarToolbar'
 import { SidebarViewSelect } from './SidebarViewSelect'
@@ -31,12 +29,8 @@ interface SidebarPanelProps {
   onOpenVariables: (item: VariablesItem, mode: OpenMode) => void
   /** The environments-view entry whose tab is active. */
   selectedVariables: VariablesItem | null
-  /** Renders a collection's Variables tab in its settings dialog. */
-  collectionVariables?: (collectionId: string) => ReactNode
-  /** Renders the scripts editor of a collection or folder's settings; composed by the app. */
-  scriptsEditor?: (slot: ItemScriptsSlot) => ReactNode
-  /** Renders the auth editor of a collection or folder; composed by the app. */
-  authEditor?: (slot: ItemAuthSlot) => ReactNode
+  /** Opens a collection or folder (its overview and the defaults its requests inherit) in a main-area tab. */
+  onOpenItem: (id: string, kind: ContainerKind, mode: OpenMode) => void
 }
 
 const SIDEBAR_VIEW_SELECT = <SidebarViewSelect />
@@ -71,9 +65,7 @@ export function SidebarPanel({
   onOpenHistoryEntry,
   onOpenVariables,
   selectedVariables,
-  collectionVariables,
-  scriptsEditor,
-  authEditor,
+  onOpenItem,
 }: SidebarPanelProps) {
   const view = useSidebarStore((state) => state.view)
   const openHistoryEntry = useSidebarStore((state) => state.openHistoryEntry)
@@ -81,7 +73,6 @@ export function SidebarPanel({
   const clearError = useSidebarStore((state) => state.clearError)
   const remove = useSidebarStore((state) => state.remove)
   const removeExample = useSidebarStore((state) => state.removeExample)
-  const [settingsId, setSettingsId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<TreeNode | null>(null)
 
   async function confirmDelete(item: TreeNode) {
@@ -133,7 +124,7 @@ export function SidebarPanel({
           onPinRequest={onPinRequest}
           onOpenExample={onOpenExample}
           onPinExample={onPinExample}
-          onOpenSettings={setSettingsId}
+          onOpenItem={onOpenItem}
           onDelete={setDeleting}
           onRenamed={onRenamed}
         />
@@ -144,7 +135,6 @@ export function SidebarPanel({
       <SidebarSection visible={view === 'history'} label="History">
         <HistoryView onOpenEntry={(id) => void openEntry(id)} />
       </SidebarSection>
-      <ItemSettingsDialog itemId={settingsId} onClose={() => setSettingsId(null)} collectionVariables={collectionVariables} scriptsEditor={scriptsEditor} authEditor={authEditor} />
       <DeleteItemDialog item={deleting} onCancel={() => setDeleting(null)} onConfirm={confirmDelete} />
     </div>
   )

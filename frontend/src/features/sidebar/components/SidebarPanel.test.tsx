@@ -1,11 +1,8 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react'
-import type { ReactNode } from 'react'
 import userEvent from '@testing-library/user-event'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { emptyAuth } from '@/platform/mappers/request'
 import { AppError } from '@/platform/errors'
-import type { ItemSettings, TreeNode } from '@/platform/mappers/tree'
-import type { ItemAuthSlot } from './SettingsForm'
+import type { TreeNode } from '@/platform/mappers/tree'
 
 vi.mock('@/platform/services/tree', () => ({
   getTree: vi.fn(),
@@ -28,7 +25,6 @@ vi.mock('@/platform/services/environments', () => ({
 vi.mock('@/platform/services/workspaces', () => ({ listWorkspaces: vi.fn(), createWorkspace: vi.fn(), activateWorkspace: vi.fn() }))
 
 const tree = await import('@/platform/services/tree')
-const requests = await import('@/platform/services/requests')
 const examples = await import('@/platform/services/examples')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { SEARCH_DELAY_MS, useSidebarStore } = await import('@/features/sidebar/store')
@@ -47,17 +43,6 @@ const sample = [
   ]),
 ]
 
-const settings: ItemSettings = {
-  id: 'c1',
-  scripts: { preRequest: '', postResponse: '', disabled: [] },
-  inheritScripts: null,
-  kind: 'collection',
-  name: 'Billing',
-  description: '',
-  auth: { ...emptyAuth(), type: 'inherit', bearer: { token: '' }, basic: { username: '', password: '' } },
-  headers: [],
-}
-
 const offsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')
 
 beforeAll(() => {
@@ -70,16 +55,7 @@ afterAll(() => {
   }
 })
 
-function fakeAuthEditor(slot: ItemAuthSlot) {
-  return (
-    <label>
-      Token for {slot.kind} {slot.itemId} ({slot.auth.type})
-      <input value={slot.auth.bearer.token} onChange={(event) => slot.onChange({ ...slot.auth, type: 'bearer', bearer: { token: event.target.value } })} />
-    </label>
-  )
-}
-
-async function renderPanel(collectionVariables?: (collectionId: string) => ReactNode) {
+async function renderPanel() {
   const actions = {
     onOpenRequest: vi.fn(),
     onPinRequest: vi.fn(),
@@ -91,8 +67,9 @@ async function renderPanel(collectionVariables?: (collectionId: string) => React
     onOpenHistoryEntry: vi.fn(),
     onOpenVariables: vi.fn(),
     selectedVariables: null,
+    onOpenItem: vi.fn(),
   }
-  render(<SidebarPanel {...actions} collectionVariables={collectionVariables} authEditor={fakeAuthEditor} />)
+  render(<SidebarPanel {...actions} />)
   await act(() => useSidebarStore.getState().load())
   return actions
 }
@@ -289,63 +266,20 @@ describe('SidebarPanel', () => {
     expect(tree.deleteItem).toHaveBeenCalledWith('ws', 'c1')
   })
 
-  it('edits collection auth through the composed editor and headers in the settings dialog', async () => {
-    vi.mocked(tree.getItemSettings).mockResolvedValue(settings)
-    vi.mocked(tree.saveItemSettings).mockResolvedValue(settings)
-    vi.mocked(requests.formatBulk).mockResolvedValue('X-Tenant:acme')
-    vi.mocked(requests.parseBulk).mockResolvedValue([{ id: 'h1', key: 'X-Tenant', value: 'acme', description: '', enabled: true }])
-    await renderPanel()
-    await userEvent.pointer({ keys: '[MouseRight]', target: item('Billing') })
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Settings…' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Billing Settings' })
-    await userEvent.type(within(dialog).getByRole('textbox', { name: `Token for collection ${settings.id} (inherit)` }), 'secret')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Bulk Edit' }))
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Save Settings' }))
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-    expect(tree.saveItemSettings).toHaveBeenCalledWith('ws', {
-      ...settings,
-      auth: { ...settings.auth, type: 'bearer', bearer: { token: 'secret' } },
-      headers: [{ id: 'h1', key: 'X-Tenant', value: 'acme', description: '', enabled: true }],
-    })
+  it('opens a collection in a tab from a click and from its context menu', async () => {
+    const actions = await renderPanel()
+    await userEvent.click(item('Billing'))
+    expect(actions.onOpenItem).toHaveBeenLastCalledWith('c1', 'collection', 'preview')
+    await userEvent.pointer({ keys: '[MouseRight]', target: item('Invoices') })
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Open' }))
+    expect(actions.onOpenItem).toHaveBeenLastCalledWith('f1', 'folder', 'pinned')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('opens the Import dialog from the toolbar', async () => {
     await renderPanel()
     await userEvent.click(screen.getByRole('button', { name: 'Import' }))
     expect(useImportStore.getState().step).toBe('choose')
-  })
-
-  it('adds a Variables tab to collection settings only', async () => {
-    vi.mocked(tree.getItemSettings).mockResolvedValueOnce(settings)
-    await renderPanel((collectionId) => <p>Variables of {collectionId}</p>)
-    await userEvent.pointer({ keys: '[MouseRight]', target: item('Billing') })
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Settings…' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Billing Settings' })
-    expect(within(dialog).getByRole('tab', { name: 'General' })).toHaveAttribute('aria-selected', 'true')
-    expect(within(dialog).getByRole('tabpanel', { name: 'General' })).toHaveTextContent('Authorization')
-    await userEvent.click(within(dialog).getByRole('tab', { name: 'Variables' }))
-    expect(within(dialog).getByRole('tabpanel', { name: 'Variables' })).toHaveTextContent('Variables of c1')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
-    vi.mocked(tree.getItemSettings).mockResolvedValueOnce({ ...settings, id: 'f1', kind: 'folder', name: 'Invoices' })
-    await userEvent.pointer({ keys: '[MouseRight]', target: item('Billing') })
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Settings…' }))
-    const folder = await screen.findByRole('dialog', { name: 'Invoices Settings' })
-    expect(within(folder).queryByRole('tab')).not.toBeInTheDocument()
-    expect(within(folder).queryByText(/Variables of/)).not.toBeInTheDocument()
-  })
-
-  it('shows the settings save in progress', async () => {
-    let finish: () => void = () => undefined
-    vi.mocked(tree.getItemSettings).mockResolvedValue(settings)
-    vi.mocked(tree.saveItemSettings).mockImplementation(() => new Promise((resolve) => (finish = () => resolve(settings))))
-    await renderPanel()
-    await userEvent.pointer({ keys: '[MouseRight]', target: item('Billing') })
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Settings…' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Billing Settings' })
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Save Settings' }))
-    expect(within(dialog).getByRole('button', { name: 'Saving…' })).toBeDisabled()
-    await act(async () => finish())
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
 
   it('shows and dismisses errors', async () => {
@@ -386,35 +320,5 @@ describe('SidebarPanel', () => {
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('The folder is locked. Check that the file')
     expect(useSidebarStore.getState().error).toBeNull()
     expect(actions.onRequestsDeleted).not.toHaveBeenCalled()
-  })
-
-  it('shows a failed settings load with a way to try again', async () => {
-    vi.mocked(tree.getItemSettings).mockRejectedValueOnce(new AppError('TRE-02404', 'The item does not exist'))
-    vi.mocked(tree.getItemSettings).mockResolvedValueOnce(settings)
-    await renderPanel()
-    await userEvent.pointer({ keys: '[MouseRight]', target: item('Billing') })
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Settings…' }))
-    const failed = await screen.findByRole('dialog', { name: 'Settings' })
-    expect(within(failed).getByRole('alert')).toHaveTextContent('The item does not exist. Check that the workspace folder exists')
-    await userEvent.click(within(failed).getByRole('button', { name: 'Try Again' }))
-    expect(await screen.findByRole('dialog', { name: 'Billing Settings' })).toBeInTheDocument()
-    expect(tree.getItemSettings).toHaveBeenCalledTimes(2)
-  })
-
-  it('shows settings save and bulk failures inside the dialog', async () => {
-    vi.mocked(tree.getItemSettings).mockResolvedValue(settings)
-    vi.mocked(tree.saveItemSettings).mockRejectedValue(new AppError('TRE-05500', 'The folder is read-only'))
-    vi.mocked(requests.formatBulk).mockResolvedValue('X-Tenant:acme')
-    vi.mocked(requests.parseBulk).mockRejectedValue(new AppError('REQ-01400', 'Line 1 has no colon'))
-    await renderPanel()
-    await userEvent.pointer({ keys: '[MouseRight]', target: item('Billing') })
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Settings…' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Billing Settings' })
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Save Settings' }))
-    expect(await within(dialog).findByRole('alert')).toHaveTextContent('The folder is read-only. Check that the workspace folder exists and is writable')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Bulk Edit' }))
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Key-Value Edit' }))
-    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Line 1 has no colon. Check that each line reads key:value')
-    expect(useSidebarStore.getState().error).toBeNull()
   })
 })

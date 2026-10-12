@@ -31,6 +31,7 @@ const { useSidebarStore } = await import('@/features/sidebar/store')
 const { useTabsStore } = await import('@/features/tabs/store')
 const { useEnvironmentsStore } = await import('@/features/environments/store')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
+const { useItemSettingsStore } = await import('@/features/item-settings/store')
 const { TabStrip } = await import('./TabStrip')
 const { CloseTabPrompt } = await import('./CloseTabPrompt')
 const { SaveRequestDialog } = await import('./SaveRequestDialog')
@@ -181,6 +182,8 @@ describe('TabStrip', () => {
     fireEvent.pointerUp(document, { isPrimary: true, clientX: 60, clientY: 10 })
     await waitFor(() => expect(tabs[0]).not.toHaveAttribute('inert'))
     expect(document.documentElement).not.toHaveAttribute('data-dragging')
+    // dnd-kit swallows clicks for 50 ms after a drag ends; the next tests' clicks must not land in that window.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 60)))
   })
 
   it('keeps roving arrow navigation and Enter activation when no drag is in progress', async () => {
@@ -447,6 +450,32 @@ describe('TabContextMenu', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Don’t Save' }))
     expect(within(strip()).queryByRole('tab', { name: /staging/ })).not.toBeInTheDocument()
     useEnvironmentsStore.getState().reset()
+  })
+
+  it('shows collection and folder tabs with their icon, tree name, a dirty dot and the close prompt', async () => {
+    const folder = { id: 'f1', kind: 'folder' as const, name: 'Invoices', method: null, url: null, error: null, warning: null, children: [] }
+    useSidebarStore.setState({ tree: [{ id: 'c1', kind: 'collection', name: 'Billing', method: null, url: null, error: null, warning: null, children: [folder] }], status: 'ready' })
+    act(() => useTabsStore.getState().openItemTab({ kind: 'collection', itemId: 'c1' }, 'pinned'))
+    act(() => useTabsStore.getState().openItemTab({ kind: 'folder', itemId: 'f1' }, 'preview'))
+    renderStrip()
+    const collectionTab = within(strip()).getByRole('tab', { name: /Billing/ })
+    expect(within(collectionTab).getByRole('img', { name: 'Collection' })).toBeInTheDocument()
+    expect(within(strip()).getByRole('tab', { name: /Invoices/ })).toHaveAttribute('title', 'Invoices (preview)')
+    expect(within(collectionTab).queryByRole('img', { name: 'Unsaved changes' })).not.toBeInTheDocument()
+    const settings = { id: 'c1', kind: 'collection' as const, name: 'Billing', description: '', auth: { type: 'inherit' }, headers: [], scripts: { preRequest: '', postResponse: '', disabled: [] }, inheritScripts: null } as never
+    act(() =>
+      useItemSettingsStore.setState({
+        items: { c1: { status: 'ready', loadError: null, base: settings, draft: settings, bulkText: null, dirty: true, saving: false, failure: null, stale: false, section: 'overview' } },
+      }),
+    )
+    expect(within(collectionTab).getByRole('img', { name: 'Unsaved changes' })).toBeInTheDocument()
+    act(() => useSidebarStore.setState({ tree: [{ id: 'c1', kind: 'collection', name: 'Payments', method: null, url: null, error: null, warning: null, children: [folder] }] }))
+    expect(within(strip()).getByRole('tab', { name: /Payments/ })).toBeInTheDocument()
+    await userEvent.click(within(strip()).getByRole('button', { name: 'Close Payments' }))
+    expect(screen.getByRole('dialog', { name: 'Save Changes?' })).toHaveTextContent('“Payments” has unsaved changes.')
+    await userEvent.click(screen.getByRole('button', { name: 'Don’t Save' }))
+    expect(within(strip()).queryByRole('tab', { name: /Payments/ })).not.toBeInTheDocument()
+    expect(useItemSettingsStore.getState().items.c1).toBeUndefined()
   })
 })
 

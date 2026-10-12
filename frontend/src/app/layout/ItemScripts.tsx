@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import type { ItemScriptsSlot } from '@/features/sidebar/components/SettingsForm'
+import type { ItemScriptsSlot } from '@/features/item-settings/model'
 import { ScriptsEditor } from '@/features/scripts/components/ScriptsEditor'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import { suggestVariables } from '@/platform/services/variables'
@@ -8,7 +8,7 @@ interface ItemScriptsProps {
   slot: ItemScriptsSlot
 }
 
-/** The Scripts tab of collection and folder settings. */
+/** The Scripts tab of a collection or folder tab. */
 export function ItemScripts({ slot }: ItemScriptsProps) {
   const { itemId } = slot
   const suggest = useCallback(

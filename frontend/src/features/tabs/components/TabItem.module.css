@@ -88,6 +88,17 @@
   color: var(--color-text);
 }
 
+.kindIcon {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: var(--color-text-muted);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.4;
+}
+
 .kindBadge {
   flex: none;
   min-width: 32px;

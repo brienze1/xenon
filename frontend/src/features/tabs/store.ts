@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { isScopeDirty, useEnvironmentsStore } from '@/features/environments/store'
 import { useExamplesStore } from '@/features/examples/store'
+import { isItemDirty, useItemSettingsStore } from '@/features/item-settings/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
@@ -8,14 +9,17 @@ import { useWorkspacesStore } from '@/features/workspaces/store'
 import type { AppError } from '@/platform/errors'
 import type { RequestChangedOnDisk } from '@/platform/events'
 import { emptyDraft, type RequestDraft } from '@/platform/mappers/request'
+import type { TreeNode } from '@/platform/mappers/tree'
 import type { ClosedTabState, SnippetOptionsState, TabState, UIState } from '@/platform/mappers/ui-state'
-import { environmentScope, GLOBALS_SCOPE } from '@/platform/mappers/variable'
+import { collectionScope, environmentScope, GLOBALS_SCOPE } from '@/platform/mappers/variable'
+import type { Result } from '@/shared/types/result'
+import { containerOptions } from './lib/containers'
 import { saveUIState } from '@/platform/services/ui-state'
 import { sameDraftContent } from './lib/draft'
 import { withoutNotice } from './lib/notices'
 import { latestClosedTabs } from './lib/closed'
 import { moveTab, neighbourOf, positionAt, tabsAfter, tabsBefore, wrappedNeighbour } from './lib/order'
-import type { CloseChoice, EnvironmentTabTarget, OpenMode, SaveDialogState, TabMeta, TabNotice } from './model'
+import type { CloseChoice, EnvironmentTabTarget, ItemTabTarget, OpenMode, SaveDialogState, TabMeta, TabNotice } from './model'
 
 export const PERSIST_DELAY_MS = 300
 
@@ -49,6 +53,10 @@ interface TabsState {
   openEnvironmentTab: (target: EnvironmentTabTarget, mode: OpenMode) => void
   /** Closes the tabs of environments that no longer exist. */
   handleEnvironmentsChanged: (environmentIds: string[]) => void
+  /** Opens (or focuses) the tab editing a collection's or folder's settings. */
+  openItemTab: (target: ItemTabTarget, mode: OpenMode) => void
+  /** Follows the workspace tree: closes the tabs of collections and folders that no longer exist. */
+  handleTreeChanged: (tree: TreeNode[]) => void
   pin: (tabId: string) => void
   pinIfEdited: () => void
   reorder: (fromId: string, toId: string) => void
@@ -120,6 +128,29 @@ export function environmentTabScope(tab: TabMeta | undefined): string | null {
   return tab?.kind === 'environment' && tab.environmentId ? environmentScope(tab.environmentId) : null
 }
 
+/** Whether the tab edits a collection's or folder's settings. */
+export function isItemTab(tab: TabMeta | undefined): boolean {
+  return (tab?.kind === 'collection' || tab?.kind === 'folder') && Boolean(tab.itemId)
+}
+
+/** Whether the tab has no request draft (environment, globals, collection and folder tabs). */
+function isSettingsTab(tab: TabMeta | undefined): boolean {
+  return isEnvironmentTab(tab) || isItemTab(tab)
+}
+
+function items() {
+  return useItemSettingsStore.getState()
+}
+
+function itemTabMeta(id: string, target: ItemTabTarget, pinned: boolean): TabMeta {
+  return { id, requestId: null, pinned, kind: target.kind, exampleId: null, environmentId: null, itemId: target.itemId }
+}
+
+/** The collection variables shown in a collection tab; null for every other tab. */
+function collectionVariablesScope(tab: TabMeta | undefined): string | null {
+  return tab?.kind === 'collection' && tab.itemId ? collectionScope(tab.itemId) : null
+}
+
 function targetOf(tab: TabMeta): EnvironmentTabTarget | null {
   if (tab.kind === 'globals') {
     return { kind: 'globals' }
@@ -136,9 +167,14 @@ function environmentTabMeta(id: string, target: EnvironmentTabTarget, pinned: bo
 }
 
 function isDirty(tabId: string): boolean {
-  const scope = environmentTabScope(useTabsStore.getState().tabs.find((tab) => tab.id === tabId))
+  const tab = useTabsStore.getState().tabs.find((candidate) => candidate.id === tabId)
+  const scope = environmentTabScope(tab)
   if (scope !== null) {
     return isScopeDirty(environments(), scope)
+  }
+  if (isItemTab(tab)) {
+    const variables = collectionVariablesScope(tab)
+    return isItemDirty(items(), tab!.itemId!) || (variables !== null && isScopeDirty(environments(), variables))
   }
   return (builder().tabs[tabId]?.dirty ?? false) || examples().isDirty(tabId)
 }
@@ -153,6 +189,9 @@ function cancelPersist(): void {
 }
 
 function toTabMeta(tab: TabState): TabMeta {
+  if ((tab.kind === 'collection' || tab.kind === 'folder') && tab.itemId) {
+    return itemTabMeta(tab.tabId, { kind: tab.kind, itemId: tab.itemId }, tab.pinned)
+  }
   if (tab.kind === 'environment' || tab.kind === 'globals') {
     return { id: tab.tabId, requestId: null, pinned: tab.pinned, kind: tab.kind, exampleId: null, environmentId: tab.environmentId ?? null }
   }
@@ -201,7 +240,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
   }
 
   function addTab(meta: TabMeta, after?: string) {
-    if (!isEnvironmentTab(meta)) {
+    if (!isSettingsTab(meta)) {
       builder().ensureTab(meta.id)
     }
     set((state) => {
@@ -214,7 +253,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
 
   function remember(tab: TabMeta) {
     const snapshot = tabSnapshot(tab)
-    if (!isEnvironmentTab(tab) && snapshot.requestId === null && (snapshot.draft === null || isPristine(snapshot.draft))) {
+    if (!isSettingsTab(tab) && snapshot.requestId === null && (snapshot.draft === null || isPristine(snapshot.draft))) {
       return
     }
     set((state) => ({ closedTabs: latestClosedTabs([...state.closedTabs, { closedAt: new Date().toISOString(), tab: snapshot }]) }))
@@ -275,6 +314,62 @@ export const useTabsStore = create<TabsState>()((set, get) => {
     promptNext()
   }
 
+  /** Saves a collection or folder tab: its settings and, for a collection, its variables. */
+  async function saveItemTab(tab: TabMeta): Promise<Result<boolean, AppError>> {
+    const itemId = tab.itemId!
+    const settings = await items().save(itemId)
+    if (!settings.ok) {
+      return settings
+    }
+    const variables = collectionVariablesScope(tab)
+    if (variables === null || !isScopeDirty(environments(), variables)) {
+      return settings
+    }
+    const saved = await environments().saveDraft(variables)
+    if (!saved.ok || !saved.value) {
+      items().setSection(itemId, 'variables')
+    }
+    return saved
+  }
+
+  async function saveItemAndClose(tab: TabMeta) {
+    set({ closeError: null })
+    const saved = await saveItemTab(tab)
+    if (!saved.ok) {
+      set((state) => (state.closePrompt === tab.id ? { closeError: saved.error } : state))
+      return
+    }
+    if (!saved.value) {
+      set({ closePrompt: null, closeQueue: [] })
+      focus(tab.id)
+      return
+    }
+    set({ closePrompt: null })
+    get().closeTab(tab.id)
+    promptNext()
+  }
+
+  /** Clears what a preview tab showed before it is reused for something else. */
+  function releasePreview(preview: string) {
+    const replaced = tabById(preview)
+    if (isItemTab(replaced)) {
+      dropItem(replaced!)
+    } else if (!isEnvironmentTab(replaced)) {
+      builder().dropTab(preview)
+      examples().drop(preview)
+      void useResponseViewerStore.getState().release(preview)
+    }
+  }
+
+  /** Forgets the edits of a collection or folder tab (one tab per item). */
+  function dropItem(tab: TabMeta) {
+    const variables = collectionVariablesScope(tab)
+    if (variables !== null) {
+      environments().discardDraft(variables)
+    }
+    items().drop(tab.itemId!)
+  }
+
   function activeOr(tabId: string | undefined): string | null {
     return tabId ?? get().activeTabId
   }
@@ -290,6 +385,9 @@ export const useTabsStore = create<TabsState>()((set, get) => {
   }
 
   function tabSnapshot(tab: TabMeta): TabState {
+    if (isItemTab(tab)) {
+      return { tabId: tab.id, kind: tab.kind, requestId: null, itemId: tab.itemId ?? null, pinned: tab.pinned, baseRevision: null, draft: null }
+    }
     if (isEnvironmentTab(tab)) {
       return { tabId: tab.id, kind: tab.kind, requestId: null, environmentId: tab.environmentId ?? null, pinned: tab.pinned, baseRevision: null, draft: null }
     }
@@ -328,7 +426,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         view: state.sidebar.view,
       })
       for (const tab of state.tabs) {
-        if (tab.kind === 'environment' || tab.kind === 'globals') {
+        if (tab.kind === 'environment' || tab.kind === 'globals' || tab.kind === 'collection' || tab.kind === 'folder') {
           continue
         }
         if (tab.kind === 'example' && tab.requestId && tab.exampleId) {
@@ -375,7 +473,11 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       }
       const preview = get().previewTabId
       if (preview !== null && !isDirty(preview)) {
-        patchTab(preview, { requestId, kind: undefined, exampleId: undefined, environmentId: undefined })
+        const replaced = tabById(preview)
+        if (isItemTab(replaced)) {
+          dropItem(replaced!)
+        }
+        patchTab(preview, { requestId, kind: undefined, exampleId: undefined, environmentId: undefined, itemId: undefined })
         examples().drop(preview)
         set({ notices: withoutNotice(get().notices, preview) })
         focus(preview)
@@ -409,7 +511,11 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       }
       const preview = get().previewTabId
       if (preview !== null && !isDirty(preview)) {
-        patchTab(preview, { requestId, kind: 'example', exampleId, environmentId: undefined })
+        const replaced = tabById(preview)
+        if (isItemTab(replaced)) {
+          dropItem(replaced!)
+        }
+        patchTab(preview, { requestId, kind: 'example', exampleId, environmentId: undefined, itemId: undefined })
         set({ notices: withoutNotice(get().notices, preview) })
         focus(preview)
         void useResponseViewerStore.getState().release(preview)
@@ -445,13 +551,8 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       }
       const preview = get().previewTabId
       if (mode === 'preview' && preview !== null && !isDirty(preview)) {
-        const replaced = tabById(preview)
+        releasePreview(preview)
         patchTab(preview, environmentTabMeta(preview, target, false))
-        if (!isEnvironmentTab(replaced)) {
-          builder().dropTab(preview)
-          examples().drop(preview)
-          void useResponseViewerStore.getState().release(preview)
-        }
         set({ notices: withoutNotice(get().notices, preview) })
         focus(preview)
         return
@@ -468,6 +569,48 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       for (const tab of get().tabs) {
         if (tab.kind === 'environment' && (!tab.environmentId || !existing.has(tab.environmentId))) {
           get().closeTab(tab.id, false)
+        }
+      }
+    },
+
+    openItemTab: (target, mode) => {
+      const existing = get().tabs.find((tab) => isItemTab(tab) && tab.itemId === target.itemId)
+      if (existing) {
+        if (existing.kind !== target.kind) {
+          patchTab(existing.id, { kind: target.kind })
+        }
+        if (mode === 'pinned') {
+          get().pin(existing.id)
+        }
+        focus(existing.id)
+        return
+      }
+      const preview = get().previewTabId
+      if (mode === 'preview' && preview !== null && !isDirty(preview)) {
+        releasePreview(preview)
+        patchTab(preview, itemTabMeta(preview, target, false))
+        set({ notices: withoutNotice(get().notices, preview) })
+        focus(preview)
+        return
+      }
+      const id = newTabId()
+      addTab(itemTabMeta(id, target, mode === 'pinned'))
+      if (mode === 'preview') {
+        set({ previewTabId: id })
+      }
+    },
+
+    handleTreeChanged: (tree) => {
+      const containers = new Map(containerOptions(tree).map((container) => [container.id, container.kind]))
+      for (const tab of get().tabs) {
+        if (!isItemTab(tab)) {
+          continue
+        }
+        const kind = containers.get(tab.itemId!)
+        if (kind === undefined) {
+          get().closeTab(tab.id, false)
+        } else if (kind !== tab.kind) {
+          patchTab(tab.id, { kind })
         }
       }
     },
@@ -526,6 +669,10 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         await saveEnvironmentAndClose(tabId, scope)
         return
       }
+      if (isItemTab(tab)) {
+        await saveItemAndClose(tab!)
+        return
+      }
       if (!tab?.requestId) {
         set({ closePrompt: null, closeError: null, saveDialog: { tabId, mode: 'save', closeAfter: true } })
         return
@@ -559,6 +706,10 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       const scope = environmentTabScope(closing)
       if (scope !== null) {
         environments().discardDraft(scope)
+        return
+      }
+      if (isItemTab(closing)) {
+        dropItem(closing!)
         return
       }
       builder().dropTab(tabId)
@@ -598,13 +749,14 @@ export const useTabsStore = create<TabsState>()((set, get) => {
     revealInSidebar: (tabId) => {
       const tab = tabById(tabId)
       const sidebar = useSidebarStore.getState()
+      const treeId = isItemTab(tab) ? tab!.itemId! : tab?.requestId
       if (isEnvironmentTab(tab)) {
         sidebar.setView('environments')
-      } else if (tab?.requestId) {
+      } else if (treeId) {
         if (sidebar.view !== 'collections') {
           sidebar.setView('collections')
         }
-        sidebar.reveal(tab.requestId)
+        sidebar.reveal(treeId)
       } else {
         return
       }
@@ -620,7 +772,15 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       }
       set((state) => ({ closedTabs: state.closedTabs.slice(0, -1) }))
       const { tab } = closed
-      const target = targetOf(toTabMeta(tab))
+      const meta = toTabMeta(tab)
+      if (isItemTab(meta)) {
+        const container = containerOptions(useSidebarStore.getState().tree).find((candidate) => candidate.id === meta.itemId)
+        if (container) {
+          get().openItemTab({ kind: container.kind, itemId: container.id }, 'pinned')
+        }
+        return
+      }
+      const target = targetOf(meta)
       if (target !== null) {
         if (target.kind === 'globals' || environments().environments.some((environment) => environment.id === target.environmentId)) {
           get().openEnvironmentTab(target, 'pinned')
@@ -668,6 +828,10 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         await environments().saveDraft(scope)
         return
       }
+      if (isItemTab(tab)) {
+        await saveItemTab(tab)
+        return
+      }
       if (isExampleTab(tab)) {
         await examples().save(tab.id)
         return
@@ -685,7 +849,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
     saveAs: (tabId) => {
       const target = activeOr(tabId)
       const tab = tabById(target)
-      if (target !== null && !isExampleTab(tab) && !isEnvironmentTab(tab)) {
+      if (target !== null && !isExampleTab(tab) && !isSettingsTab(tab)) {
         set({ saveDialog: { tabId: target, mode: 'saveAs', closeAfter: false } })
       }
     },

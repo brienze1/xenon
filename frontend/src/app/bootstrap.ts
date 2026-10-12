@@ -3,6 +3,7 @@ import { useCookiesStore } from '@/features/cookies/store'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import { useExportStore } from '@/features/export/store'
 import { useImportStore } from '@/features/import-export/store'
+import { useItemSettingsStore } from '@/features/item-settings/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { useGitAccountsStore } from '@/features/settings/store'
 import type { ResponseEntry } from '@/features/response-viewer/model'
@@ -81,6 +82,11 @@ export function bootstrap(): () => void {
         useTabsStore.getState().pinIfEdited()
       }
     }),
+    useItemSettingsStore.subscribe((state, previous) => {
+      if (state.items !== previous.items) {
+        useTabsStore.getState().pinIfEdited()
+      }
+    }),
     useRequestBuilderStore.subscribe((state, previous) => {
       if (state.tabs !== previous.tabs) {
         useTabsStore.getState().pinIfEdited()
@@ -102,6 +108,10 @@ export function bootstrap(): () => void {
       }
     }),
     useSidebarStore.subscribe((state, previous) => {
+      if (state.tree !== previous.tree && state.status === 'ready') {
+        useTabsStore.getState().handleTreeChanged(state.tree)
+        void useItemSettingsStore.getState().refreshAll()
+      }
       if (
         state.expanded !== previous.expanded ||
         state.selectedId !== previous.selectedId ||

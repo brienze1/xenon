@@ -2,23 +2,20 @@ import { create } from 'zustand'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import { toAppError, type AppError } from '@/platform/errors'
 import type { HistoryEntry } from '@/platform/mappers/history'
-import type { KeyValueRow, RequestDraft } from '@/platform/mappers/request'
-import type { ItemSettings, TreeNode, TreeSearchResult } from '@/platform/mappers/tree'
+import type { RequestDraft } from '@/platform/mappers/request'
+import type { TreeNode, TreeSearchResult } from '@/platform/mappers/tree'
 import type { SidebarView } from '@/platform/mappers/ui-state'
 import type { Result } from '@/shared/types/result'
 import { clearHistory, getHistoryEntry, listHistory } from '@/platform/services/history'
-import { formatBulk as formatBulkRows, parseBulk as parseBulkText } from '@/platform/services/requests'
 import {
   createCollection,
   createFolder,
   createRequest,
   deleteItem,
   duplicateItem,
-  getItemSettings,
   getTree,
   moveItem,
   renameItem,
-  saveItemSettings,
   searchTree,
 } from '@/platform/services/tree'
 import { deleteExample, duplicateExample, renameExample } from '@/platform/services/examples'
@@ -76,10 +73,6 @@ interface SidebarState {
   /** Duplicates the selected item or example (Cmd/Ctrl+D). */
   duplicateSelected: () => Promise<void>
   removeExample: (exampleId: string) => Promise<AppError | null>
-  loadSettings: (id: string) => Promise<Result<ItemSettings | null, AppError>>
-  saveSettings: (settings: ItemSettings) => Promise<AppError | null>
-  formatBulk: (rows: KeyValueRow[]) => Promise<Result<string, AppError>>
-  parseBulk: (text: string) => Promise<Result<KeyValueRow[], AppError>>
   startDrag: (id: string) => void
   setDropTarget: (target: DropTarget | null) => void
   endDrag: () => void
@@ -372,17 +365,6 @@ export const useSidebarStore = create<SidebarState>()((set, get) => {
       }
       return null
     },
-
-    loadSettings: (id) => settle((localId) => getItemSettings(localId, id)),
-
-    saveSettings: async (settings) => {
-      const saved = await settle((localId) => saveItemSettings(localId, settings))
-      return saved.ok ? null : saved.error
-    },
-
-    formatBulk: (rows) => attempt(() => formatBulkRows(rows)),
-
-    parseBulk: (text) => attempt(() => parseBulkText(text)),
 
     startDrag: (id) => set({ draggingId: id, dropTarget: null }),
 

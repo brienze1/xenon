@@ -12,6 +12,7 @@ import { PanelPlusArt } from '@/shared/ui/empty-state/illustrations/PanelPlusArt
 import { Button } from '@/shared/ui/button/Button'
 import { activeTabKind } from '@/app/active-tab'
 import { ExampleWorkspace } from './ExampleWorkspace'
+import { ItemWorkspace } from './ItemWorkspace'
 import { RequestWorkspace } from './RequestWorkspace'
 import styles from './TabsArea.module.css'
 
@@ -47,6 +48,7 @@ export function TabsArea() {
   const newTab = useTabsStore((state) => state.newTab)
   const kind = useTabsStore(activeTabKind)
   const environmentId = useTabsStore((state) => state.tabs.find((tab) => tab.id === state.activeTabId)?.environmentId ?? null)
+  const itemId = useTabsStore((state) => state.tabs.find((tab) => tab.id === state.activeTabId)?.itemId ?? null)
 
   return (
     <div className={styles.area}>
@@ -58,6 +60,8 @@ export function TabsArea() {
           <div className={styles.workspace}>
             {kind === 'globals' ? (
               <GlobalsTab key={activeTabId} />
+            ) : (kind === 'collection' || kind === 'folder') && itemId ? (
+              <ItemWorkspace key={`${activeTabId}:${itemId}`} itemId={itemId} kind={kind} onSave={() => void save(activeTabId)} />
             ) : kind === 'environment' && environmentId ? (
               <EnvironmentTab key={activeTabId} environmentId={environmentId} />
             ) : kind === 'example' ? (

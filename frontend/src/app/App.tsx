@@ -8,7 +8,6 @@ import { ExportDialog } from '@/features/export/components/ExportDialog'
 import { ImportDialog } from '@/features/import-export/components/ImportDialog'
 import { useImportStore } from '@/features/import-export/store'
 import { PassphraseDialog } from '@/features/environments/components/PassphraseDialog'
-import { VariableTable } from '@/features/environments/components/VariableTable'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
@@ -27,22 +26,19 @@ import { CloneWorkspaceDialog } from '@/features/sync/components/CloneWorkspaceD
 import { ConflictView } from '@/features/sync/components/ConflictView'
 import { LinkRepoDialog } from '@/features/sync/components/LinkRepoDialog'
 import { SyncPanel } from '@/features/sync/components/SyncPanel'
-import type { ItemAuthSlot, ItemScriptsSlot } from '@/features/sidebar/components/SettingsForm'
 import type { EnvironmentTabTarget, OpenMode } from '@/features/tabs/model'
+import type { ContainerKind } from '@/platform/mappers/tree'
 import { useTabsStore } from '@/features/tabs/store'
 import { MissingFolderNotice } from '@/features/workspaces/components/MissingFolderNotice'
 import { WelcomeScreen } from '@/features/workspaces/components/WelcomeScreen'
 import { WorkspaceSwitcher } from '@/features/workspaces/components/WorkspaceSwitcher'
 import { useWorkspacesStore } from '@/features/workspaces/store'
-import { collectionScope } from '@/platform/mappers/variable'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
-import { activeEnvironmentTarget, isActiveTabRequest } from './active-tab'
+import { activeEnvironmentTarget, activeTabKind, isActiveTabRequest } from './active-tab'
 import styles from './App.module.css'
 import { bootstrap } from './bootstrap'
 import { GO_TO_TAB_POSITIONS, HOTKEYS, type HotkeyHandlers } from './hotkeys'
 import { AppShell } from './layout/AppShell'
-import { ItemAuth } from './layout/ItemAuth'
-import { ItemScripts } from './layout/ItemScripts'
 import { ConsoleDrawer } from './layout/regions/ConsoleDrawer'
 import { Footer } from './layout/regions/Footer'
 import { MainArea } from './layout/regions/MainArea'
@@ -112,16 +108,8 @@ const TOP_BAR_END_WITH_ENVIRONMENTS = (
   </>
 )
 
-function scriptsEditor(slot: ItemScriptsSlot) {
-  return <ItemScripts slot={slot} />
-}
-
-function authEditor(slot: ItemAuthSlot) {
-  return <ItemAuth slot={slot} />
-}
-
-function collectionVariables(collectionId: string) {
-  return <VariableTable scope={collectionScope(collectionId)} label="Collection variables" />
+function openItemTab(itemId: string, kind: ContainerKind, mode: OpenMode) {
+  useTabsStore.getState().openItemTab({ kind, itemId }, mode)
 }
 
 const CONSOLE = (
@@ -165,6 +153,7 @@ export function App() {
 
   const activeTabId = useTabsStore((state) => state.activeTabId)
   const selectedVariables = useTabsStore(useShallow(activeEnvironmentTarget))
+  const activeKind = useTabsStore(activeTabKind)
   const tabs = useTabsStore.getState
   const send = useRequestBuilderStore((state) => state.send)
   const adoptRename = useRequestBuilderStore((state) => state.adoptRename)
@@ -233,16 +222,14 @@ export function App() {
               onOpenHistoryEntry={(request) => void tabs().openDraft(request)}
               onOpenVariables={openEnvironmentTab}
               selectedVariables={selectedVariables}
-              collectionVariables={collectionVariables}
-              scriptsEditor={scriptsEditor}
-              authEditor={authEditor}
+              onOpenItem={openItemTab}
             />
           </Sidebar>
           <MainArea>
             <TabsArea key={active.localId} />
           </MainArea>
           <RightPanel>
-            {activeTabId && selectedVariables === null ? (
+            {activeTabId && (activeKind === 'request' || activeKind === 'example') ? (
               <SidePanel
                 key={active.localId}
                 tabId={activeTabId}

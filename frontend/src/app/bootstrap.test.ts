@@ -120,7 +120,7 @@ vi.mock('@/platform/services/requests', () => ({
   getRequest: vi.fn(),
   applyUrl: vi.fn(),
 }))
-vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn(), searchTree: vi.fn() }))
+vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn(), searchTree: vi.fn(), getItemSettings: vi.fn() }))
 vi.mock('@/platform/services/sync', () => ({ getSyncStatus: vi.fn(), listChanges: vi.fn(async () => []) }))
 vi.mock('@/platform/services/history', () => ({ listHistory: vi.fn(), getHistoryEntry: vi.fn(), clearHistory: vi.fn() }))
 
@@ -135,6 +135,7 @@ const environments = await import('@/platform/services/environments')
 const sync = await import('@/platform/services/sync')
 const { useSyncStore } = await import('@/features/sync/store')
 const { useEnvironmentsStore } = await import('@/features/environments/store')
+const { useItemSettingsStore } = await import('@/features/item-settings/store')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
 const { useConsoleStore } = await import('@/features/console/store')
 const { useCookiesStore } = await import('@/features/cookies/store')
@@ -352,6 +353,30 @@ describe('bootstrap', () => {
     useEnvironmentsStore.setState({ environments: [], status: 'ready' })
     expect(useTabsStore.getState().tabs.some((tab) => tab.id === tabId)).toBe(false)
     useEnvironmentsStore.getState().reset()
+    cleanup()
+  })
+
+  it('follows the tree: closes the tabs of deleted collections, rereads open settings, and pins a collection preview once edited', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
+    const cleanup = await started()
+    useWorkspacesStore.setState({ activeLocalId: 'A' })
+    useTabsStore.getState().hydrate('A', defaultUIState())
+    const settings = { id: 'c1', kind: 'collection', name: 'Billing', description: '', auth: { type: 'inherit' }, headers: [], scripts: { preRequest: '', postResponse: '', disabled: [] }, inheritScripts: null } as never
+    vi.mocked(tree.getItemSettings).mockResolvedValue(settings)
+    const billing = { id: 'c1', kind: 'collection' as const, name: 'Billing', method: null, url: null, error: null, warning: null, children: [] }
+    useSidebarStore.setState({ tree: [billing], status: 'ready' })
+    useTabsStore.getState().openItemTab({ kind: 'collection', itemId: 'c1' }, 'preview')
+    const tabId = useTabsStore.getState().activeTabId!
+    await useItemSettingsStore.getState().open('c1')
+    useItemSettingsStore.getState().edit('c1', { description: 'edited' })
+    expect(useTabsStore.getState().previewTabId).toBeNull()
+    vi.mocked(tree.getItemSettings).mockClear()
+    useSidebarStore.setState({ tree: [{ ...billing, name: 'Payments' }] })
+    expect(tree.getItemSettings).toHaveBeenCalledWith('A', 'c1')
+    expect(useTabsStore.getState().tabs.some((tab) => tab.id === tabId)).toBe(true)
+    useSidebarStore.setState({ tree: [] })
+    expect(useTabsStore.getState().tabs.some((tab) => tab.id === tabId)).toBe(false)
+    useItemSettingsStore.getState().reset()
     cleanup()
   })
 

@@ -24,7 +24,7 @@ const actions = {
   onPinRequest: vi.fn(),
   onOpenExample: vi.fn(),
   onPinExample: vi.fn(),
-  onOpenSettings: vi.fn(),
+  onOpenItem: vi.fn(),
   onDelete: vi.fn(),
   onRenamed: vi.fn(),
 }
@@ -114,6 +114,37 @@ describe('CollectionTree drag and drop', () => {
     render(<CollectionTree {...actions} />)
     fireEvent.click(row('r2'))
     expect(actions.onOpenRequest).toHaveBeenCalledWith('r2')
+  })
+
+  it('opens a collection or folder in a preview tab on click, pinned on double click, and expands a closed one', async () => {
+    await act(() => new Promise((resolve) => setTimeout(resolve, DND_CLICK_GUARD_MS)))
+    render(<CollectionTree {...actions} />)
+    fireEvent.click(row('f1'))
+    expect(actions.onOpenItem).toHaveBeenLastCalledWith('f1', 'folder', 'preview')
+    expect(useSidebarStore.getState().expanded.f1).toBe(true)
+    fireEvent.click(row('c1'))
+    expect(actions.onOpenItem).toHaveBeenLastCalledWith('c1', 'collection', 'preview')
+    expect(useSidebarStore.getState().expanded.c1).toBe(true)
+    fireEvent.doubleClick(row('c2'))
+    expect(actions.onOpenItem).toHaveBeenLastCalledWith('c2', 'collection', 'pinned')
+  })
+
+  it('only expands and collapses from the chevron, without opening a tab', async () => {
+    await act(() => new Promise((resolve) => setTimeout(resolve, DND_CLICK_GUARD_MS)))
+    render(<CollectionTree {...actions} />)
+    const chevron = row('c1').querySelector('[aria-hidden="true"]')!
+    fireEvent.click(chevron)
+    fireEvent.doubleClick(chevron)
+    expect(useSidebarStore.getState().expanded.c1).toBe(false)
+    expect(actions.onOpenItem).not.toHaveBeenCalled()
+  })
+
+  it('opens a collection or folder pinned from its context menu', () => {
+    render(<CollectionTree {...actions} />)
+    fireEvent.contextMenu(row('f1'), { clientX: 10, clientY: 10 })
+    expect(screen.queryByRole('menuitem', { name: 'Settings…' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Open' }))
+    expect(actions.onOpenItem).toHaveBeenCalledWith('f1', 'folder', 'pinned')
   })
 
   it('exports collections, folders and requests from their context menu, but not examples', async () => {
