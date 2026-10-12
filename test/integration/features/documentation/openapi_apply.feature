@@ -201,8 +201,9 @@ Feature: Edits to a collection's OpenAPI document are saved back onto its reques
         "id": 43
       }
       """
-    And the workspace file "acme/collections/billing/ping.yaml" should contain the field "name" equal to "Health check"
-    And the workspace file "acme/collections/billing/ping.yaml" should contain the field "url" equal to "{{host}}/ping"
+    And the workspace file "acme/collections/billing/health-check.yaml" should contain the field "name" equal to "Health check"
+    And the workspace file "acme/collections/billing/health-check.yaml" should contain the field "url" equal to "{{host}}/ping"
+    And the workspace file "acme/collections/billing/ping.yaml" should not exist
 
   @create
   Scenario: Operations without an x-xenon-id become new requests in the folder of their first tag
@@ -266,6 +267,41 @@ Feature: Edits to a collection's OpenAPI document are saved back onto its reques
     And the response should contain the field "deleted.0.id" equal to "{{ping}}"
     And the workspace file "acme/collections/billing/ping.yaml" should not exist
     And the workspace file "acme/collections/billing/invoices/list-invoices.yaml" should exist
+
+  @rename
+  Scenario Outline: A new summary renames the request like any other rename and keeps its id and tabs
+    Given I call "UIStateService.Save" with
+      """
+      { "local_id": "{{Acme.local_id}}", "tabs": [{ "tab_id": "tab-ping", "request_id": "{{ping}}", "pinned": true }], "active_tab_id": "tab-ping" }
+      """
+    When I call "TreeService.ApplyDocumentation" with resource fields
+      """
+      { "local_id": "{{Acme.local_id}}", "id": "{{billing}}", "yaml": {{resource:documentation/billing-edits.yaml#<edit>}} }
+      """
+    Then the call should succeed
+    And the response should contain the field "updated.0.id" equal to "{{ping}}"
+    And the response should contain the field "updated.0.name" equal to "<name>"
+    And the workspace folder "acme/collections/billing" should contain the entries "<entries>"
+    And the workspace file "acme/collections/billing/<file>" should contain the field "id" equal to "{{ping}}"
+    And the workspace file "acme/collections/billing/<file>" should contain the field "name" equal to "<name>"
+    And the workspace file "acme/collections/billing/<file>" should contain the field "url" equal to "{{host}}/ping"
+    And the workspace file "acme/collections/billing/collection.yaml" should contain the field "order" with the items "invoices, <file>"
+    When I call "RequestService.Get" with
+      """
+      { "local_id": "{{Acme.local_id}}", "id": "{{ping}}" }
+      """
+    Then the call should succeed
+    And the response should contain the field "name" equal to "<name>"
+    When I call "UIStateService.Get" with
+      """
+      { "local_id": "{{Acme.local_id}}" }
+      """
+    Then the response should contain the field "tabs.0.request_id" equal to "{{ping}}"
+
+    Examples:
+      | edit        | name         | file             | entries                                       |
+      | rename      | Health check | health-check.yaml | collection.yaml, health-check.yaml, invoices |
+      | rename_case | PING         | ping.yaml        | collection.yaml, invoices, ping.yaml          |
 
   @invalid
   Scenario Outline: A document that is not valid is refused with its line and column and nothing is written
