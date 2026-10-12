@@ -188,7 +188,7 @@ function EnvironmentEditor({ environment, active }: EnvironmentEditorProps) {
           </Banner.Message>
         </Banner.Root>
       ) : null}
-      <VariableTable scope={environmentScope(environment.id)} label={`${environment.name} variables`} draftLifetime="workspace" />
+      <VariableTable scope={environmentScope(environment.id)} label={`${environment.name} variables`} draftLifetime="workspace" savedByTab />
     </section>
   )
 }

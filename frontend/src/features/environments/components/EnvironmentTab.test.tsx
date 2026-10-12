@@ -76,18 +76,18 @@ describe('EnvironmentTab', () => {
     expect(variables.getVariableTable).toHaveBeenCalledWith('A', 'env:e1')
   })
 
-  it('edits, discards and saves the variables in place', async () => {
-    vi.mocked(variables.saveVariableTable).mockResolvedValue({ scope: 'env:e1', rows: [{ ...ROW, description: 'base' }], warnings: [] })
+  it('edits the variables in place and leaves saving and discarding to the tab, as request tabs do', async () => {
     render(<EnvironmentTab environmentId="e1" />)
-    const description = await screen.findByRole('textbox', { name: 'Description of url' })
-    await userEvent.type(description, 'x')
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Description of url' }), 'x')
     expect(useEnvironmentsStore.getState().drafts['env:e1']?.dirty).toBe(true)
-    await userEvent.click(screen.getByRole('button', { name: 'Discard Changes' }))
-    expect(screen.getByRole('textbox', { name: 'Description of url' })).toHaveValue('')
-    await userEvent.type(screen.getByRole('textbox', { name: 'Description of url' }), 'base')
-    await userEvent.click(screen.getByRole('button', { name: 'Save Variables' }))
-    expect(variables.saveVariableTable).toHaveBeenCalledWith('A', 'env:e1', [expect.objectContaining({ key: 'url', description: 'base' })], false)
-    expect(useEnvironmentsStore.getState().drafts['env:e1']?.dirty).toBe(false)
+    expect(screen.queryByRole('button', { name: 'Discard Changes' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save Variables' })).not.toBeInTheDocument()
+  })
+
+  it('has no save buttons on the globals tab either', async () => {
+    render(<GlobalsTab />)
+    expect(await screen.findByRole('table', { name: 'Global variables' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save Variables' })).not.toBeInTheDocument()
   })
 
   it('keeps unsaved edits while the tab is hidden', async () => {
