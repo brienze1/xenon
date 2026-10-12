@@ -257,6 +257,27 @@ func (g *GitServers) DeleteFile(name, filePath, message string) error {
 	return err
 }
 
+func (g *GitServers) RenameDefaultBranch(name, branch string) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	repository, err := git.PlainOpen(g.remotePath(name))
+	if err != nil {
+		return fmt.Errorf("the remote %s does not exist: %w", name, err)
+	}
+	current, err := repository.Reference(plumbing.NewBranchReferenceName(gitDefaultBranch), true)
+	if err != nil {
+		return fmt.Errorf("the remote %s has no branch %s: %w", name, gitDefaultBranch, err)
+	}
+	renamed := plumbing.NewBranchReferenceName(branch)
+	if err := repository.Storer.SetReference(plumbing.NewHashReference(renamed, current.Hash())); err != nil {
+		return err
+	}
+	if err := repository.Storer.RemoveReference(current.Name()); err != nil {
+		return err
+	}
+	return repository.Storer.SetReference(plumbing.NewSymbolicReference(plumbing.HEAD, renamed))
+}
+
 func (g *GitServers) CloneTo(name, target string) error {
 	g.mu.Lock()
 	credentials := g.credentials

@@ -34,6 +34,11 @@ func (t *testUtils) registerGivenGitSteps(ctx *godog.ScenarioContext) {
 	ctx.Given(`^the remote "([^"]*)" rejects pushes with "([^"]*)"$`, t.theRemoteRejectsPushesWith)
 	ctx.Given(`^the git http server delays its responses by (\d+) ms$`, t.theGitHttpServerDelaysItsResponsesBy)
 	ctx.Given(`^the git http server goes offline$`, t.theGitHttpServerGoesOffline)
+	ctx.Given(`^the default branch of the remote "([^"]*)" is renamed to "([^"]*)"$`, t.theDefaultBranchOfTheRemoteIsRenamedTo)
+}
+
+func (t *testUtils) theDefaultBranchOfTheRemoteIsRenamedTo(name, branch string) error {
+	return t.git.RenameDefaultBranch(t.substitute(name), t.substitute(branch))
 }
 
 func (t *testUtils) aTeammateDeletesOnTheRemote(path, name string) error {
