@@ -71,6 +71,7 @@ describe('RequestBuilder', () => {
   beforeEach(() => {
     resetStores()
     vi.resetAllMocks()
+    window.localStorage.clear()
     vi.mocked(requests.autoHeaders).mockResolvedValue([
       { key: 'Content-Type', value: 'application/json', disabled: false },
       { key: 'User-Agent', value: 'Xenon/0.1.0', disabled: false },
@@ -268,9 +269,42 @@ describe('RequestBuilder', () => {
     render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
     await user.click(screen.getByRole('tab', { name: 'Headers' }))
     await act(() => useRequestBuilderStore.getState().refreshAutoHeaders(tabId))
+    await user.click(screen.getByRole('button', { name: 'Show auto-generated headers' }))
     const auto = screen.getByRole('table', { name: 'Auto-generated headers' })
     expect(within(auto).getByText('Xenon/0.1.0')).toBeInTheDocument()
     await user.click(within(auto).getByRole('checkbox', { name: 'Send User-Agent' }))
+    expect(useRequestBuilderStore.getState().tabs[tabId]!.draft.disabledAutoHeaders).toEqual(['User-Agent'])
+  })
+
+  it('hides the auto headers by default and says how many are hidden', async () => {
+    const user = userEvent.setup()
+    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    await user.click(screen.getByRole('tab', { name: 'Headers' }))
+    await act(() => useRequestBuilderStore.getState().refreshAutoHeaders(tabId))
+    const toggle = screen.getByRole('button', { name: 'Show auto-generated headers' })
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    expect(toggle).toHaveTextContent('2 hidden')
+    expect(screen.queryByRole('table', { name: 'Auto-generated headers' })).not.toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Headers' })).toBeInTheDocument()
+  })
+
+  it('shows and hides the auto headers without changing what is sent, and remembers the choice', async () => {
+    const user = userEvent.setup()
+    const view = render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    await user.click(screen.getByRole('tab', { name: 'Headers' }))
+    await act(() => useRequestBuilderStore.getState().refreshAutoHeaders(tabId))
+    await user.click(screen.getByRole('button', { name: 'Show auto-generated headers' }))
+    const hide = screen.getByRole('button', { name: 'Hide auto-generated headers' })
+    expect(hide).toHaveAttribute('aria-pressed', 'true')
+    expect(hide).not.toHaveTextContent('hidden')
+    await user.click(within(screen.getByRole('table', { name: 'Auto-generated headers' })).getByRole('checkbox', { name: 'Send User-Agent' }))
+    await user.click(hide)
+    expect(screen.queryByRole('table', { name: 'Auto-generated headers' })).not.toBeInTheDocument()
+    expect(useRequestBuilderStore.getState().tabs[tabId]!.draft.disabledAutoHeaders).toEqual(['User-Agent'])
+    await user.click(screen.getByRole('button', { name: 'Show auto-generated headers' }))
+    view.unmount()
+    render(<RequestBuilder tabId={tabId} onSave={vi.fn()} />)
+    expect(screen.getByRole('table', { name: 'Auto-generated headers' })).toBeInTheDocument()
     expect(useRequestBuilderStore.getState().tabs[tabId]!.draft.disabledAutoHeaders).toEqual(['User-Agent'])
   })
 
