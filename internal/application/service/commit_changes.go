@@ -7,13 +7,11 @@ import (
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/pkg/logger"
-	"github.com/brienze1/xenon/pkg/timeutils"
 )
 
 type commitChanges struct {
 	claimSyncOperation usecase.ClaimSyncOperation
-	storeBlobs         usecase.StoreBlobs
-	writeSyncCommit    usecase.WriteSyncCommit
+	committer          syncCommitter
 	workspaces         linkedWorkspaces
 	status             syncStatusReader
 }
@@ -34,8 +32,7 @@ func NewCommitChangesService(
 ) adapter.CommitChangesService {
 	return &commitChanges{
 		claimSyncOperation: claimSyncOperation,
-		storeBlobs:         storeBlobs,
-		writeSyncCommit:    writeSyncCommit,
+		committer:          syncCommitter{storeBlobs: storeBlobs, writeSyncCommit: writeSyncCommit},
 		workspaces:         linkedWorkspaces{findWorkspaceRegistry: findWorkspaceRegistry, findLocalSyncSettings: findLocalSyncSettings, findGitAccounts: findGitAccounts},
 		status:             newSyncStatusReader(newSyncChanges(readBranchHeads, readTreeVersions, identifySyncItems), loadWorkspace, publishGitEvent, findSyncSession),
 	}
@@ -65,12 +62,7 @@ func (c *commitChanges) Commit(ctx context.Context, localId, message string, ite
 	if selected.IsEmpty() {
 		return nil, usecase.RejectEmptyCommit()
 	}
-	if err := c.storeBlobs.StoreWorktreeBlobs(ctx, linked.ClonePath(), linked.Subfolder(), selected.PresentPaths(snapshot.worktree)); err != nil {
-		return nil, err
-	}
-	author := linked.WithAccess(*account, entity.GitAccess{})
-	commit := entity.NewSyncCommit(author, snapshot.heads.Local, message, selected.TreeFrom(snapshot.head, snapshot.worktree), timeutils.Now())
-	if _, err := c.writeSyncCommit.Write(ctx, linked.ClonePath(), commit); err != nil {
+	if err := c.committer.commit(ctx, linked.WithAccess(*account, entity.GitAccess{}), *snapshot, selected, message); err != nil {
 		return nil, err
 	}
 	status, err := c.status.read(ctx, *linked)

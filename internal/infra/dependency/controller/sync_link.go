@@ -14,7 +14,7 @@ var syncLinkControllerInstance adapter.SyncLinkController
 func GetSyncLinkController() adapter.SyncLinkController {
 	if syncLinkControllerInstance == nil {
 		syncLinkControllerOnce.Do(func() {
-			syncLinkControllerInstance = controller.NewSyncLink(GetErrorHandler(), application.GetLinkWorkspaceService(), application.GetCloneWorkspaceService())
+			syncLinkControllerInstance = controller.NewSyncLink(GetErrorHandler(), application.GetLinkWorkspaceService(), application.GetCloneWorkspaceService(), application.GetUnlinkWorkspaceService())
 		})
 	}
 	return syncLinkControllerInstance

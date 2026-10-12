@@ -13,10 +13,11 @@ import (
 type environmentManage struct {
 	errorHandler             adapter.ErrorHandler
 	manageEnvironmentService appAdapter.ManageEnvironmentService
+	autoSyncService          appAdapter.AutoSyncService
 }
 
-func NewEnvironmentManage(errorHandler adapter.ErrorHandler, manageEnvironmentService appAdapter.ManageEnvironmentService) adapter.EnvironmentManageController {
-	return &environmentManage{errorHandler: errorHandler, manageEnvironmentService: manageEnvironmentService}
+func NewEnvironmentManage(errorHandler adapter.ErrorHandler, manageEnvironmentService appAdapter.ManageEnvironmentService, autoSyncService appAdapter.AutoSyncService) adapter.EnvironmentManageController {
+	return &environmentManage{errorHandler: errorHandler, manageEnvironmentService: manageEnvironmentService, autoSyncService: autoSyncService}
 }
 
 func (e *environmentManage) Get(bindingCtx context.Context, request dto.EnvironmentReference) (response *dto.Environment, err error) {
@@ -97,6 +98,7 @@ func (e *environmentManage) Update(bindingCtx context.Context, request dto.Updat
 	if err != nil {
 		return nil, err
 	}
+	triggerAutoSync(ctx, e.autoSyncService.Saved, request.LocalId)
 	result := dto.NewEnvironment(*details)
 
 	logger.Info(ctx, "Finished", result)

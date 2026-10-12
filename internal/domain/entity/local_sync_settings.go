@@ -53,3 +53,15 @@ func (l LocalSyncSettings) Shared() SyncSettings {
 func (l LocalSyncSettings) WorkspacePath() string {
 	return filepath.Join(l.ClonePath, filepath.FromSlash(l.Subfolder))
 }
+
+func (l LocalSyncSettings) PullsWhenOpened() bool {
+	return l.IsLinked() && l.AutoPull
+}
+
+func (l LocalSyncSettings) PushesAfterSave() bool {
+	return l.IsLinked() && l.AutoPush
+}
+
+func (l LocalSyncSettings) Encloses(path string) bool {
+	return isSameOrInside(path, l.ClonePath)
+}

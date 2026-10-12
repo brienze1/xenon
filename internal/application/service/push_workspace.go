@@ -6,18 +6,14 @@ import (
 	"github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
-	"github.com/brienze1/xenon/pkg/errs"
 	"github.com/brienze1/xenon/pkg/logger"
 	"github.com/brienze1/xenon/pkg/timeutils"
 )
 
-const phasePush = "push"
-
 type pushWorkspace struct {
-	pushBranch         usecase.PushBranch
 	claimSyncOperation usecase.ClaimSyncOperation
 	workspaces         linkedWorkspaces
-	puller             syncPull
+	pusher             syncPusher
 	status             syncStatusReader
 }
 
@@ -49,11 +45,10 @@ func NewPushWorkspaceService(
 ) adapter.PushWorkspaceService {
 	changes := newSyncChanges(readBranchHeads, readTreeVersions, identifySyncItems)
 	return &pushWorkspace{
-		pushBranch:         pushBranch,
 		claimSyncOperation: claimSyncOperation,
 		workspaces:         newLinkedWorkspaces(findWorkspaceRegistry, findLocalSyncSettings, findGitAccounts, findGitCredential, findKnownHosts, scanHostKey, publishGitEvent),
-		puller: newSyncPull(changes, publishGitEvent, fetchBranch, readTreeVersions, storeBlobs, convertSyncDocument, listCommitMessages, writeSyncCommit,
-			moveBranch, applySyncedFiles, publishWorkspaceEvent, saveSyncSession, renderSyncItem),
+		pusher: syncPusher{pushBranch: pushBranch, puller: newSyncPull(changes, publishGitEvent, fetchBranch, readTreeVersions, storeBlobs, convertSyncDocument,
+			listCommitMessages, writeSyncCommit, moveBranch, applySyncedFiles, publishWorkspaceEvent, saveSyncSession, renderSyncItem)},
 		status: newSyncStatusReader(changes, loadWorkspace, publishGitEvent, findSyncSession),
 	}
 }
@@ -70,19 +65,12 @@ func (p *pushWorkspace) Push(ctx context.Context, localId string) (*entity.SyncS
 	if err != nil {
 		return nil, err
 	}
-	err = p.push(ctx, *linked)
-	if errs.IsConflictError(err) {
-		session, pullErr := p.puller.pull(ctx, *linked)
-		switch {
-		case pullErr != nil:
-			return nil, pullErr
-		case session != nil:
-			return p.publish(ctx, *linked, func(status entity.SyncStatus) entity.SyncStatus { return status.InConflict() })
-		}
-		err = p.push(ctx, *linked)
-	}
+	session, err := p.pusher.push(ctx, *linked)
 	if err != nil {
 		return nil, err
+	}
+	if session != nil {
+		return p.publish(ctx, *linked, func(status entity.SyncStatus) entity.SyncStatus { return status.InConflict() })
 	}
 	published, err := p.publish(ctx, *linked, func(status entity.SyncStatus) entity.SyncStatus { return status.SyncedAt(timeutils.Now()) })
 	if err != nil {
@@ -91,17 +79,6 @@ func (p *pushWorkspace) Push(ctx context.Context, localId string) (*entity.SyncS
 
 	logger.Info(ctx, "Finished", published, map[string]any{"localId": localId})
 	return published, nil
-}
-
-func (p *pushWorkspace) push(ctx context.Context, linked entity.LinkedWorkspace) error {
-	if err := p.puller.publishGitEvent.Progress(ctx, linked.LocalID, phasePush, 0, 1); err != nil {
-		return err
-	}
-	heads, err := p.puller.changes.readBranchHeads.ReadHeads(ctx, linked.ClonePath(), linked.Branch())
-	if err != nil || !heads.HasLocalCommits() {
-		return err
-	}
-	return p.pushBranch.Push(ctx, linked.Access, linked.ClonePath(), linked.Branch(), heads.Remote)
 }
 
 func (p *pushWorkspace) publish(ctx context.Context, linked entity.LinkedWorkspace, decorate func(entity.SyncStatus) entity.SyncStatus) (*entity.SyncStatus, error) {

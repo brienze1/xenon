@@ -13,10 +13,11 @@ import (
 type treeSettings struct {
 	errorHandler              adapter.ErrorHandler
 	manageItemSettingsService appAdapter.ManageItemSettingsService
+	autoSyncService           appAdapter.AutoSyncService
 }
 
-func NewTreeSettings(errorHandler adapter.ErrorHandler, manageItemSettingsService appAdapter.ManageItemSettingsService) adapter.TreeSettingsController {
-	return &treeSettings{errorHandler: errorHandler, manageItemSettingsService: manageItemSettingsService}
+func NewTreeSettings(errorHandler adapter.ErrorHandler, manageItemSettingsService appAdapter.ManageItemSettingsService, autoSyncService appAdapter.AutoSyncService) adapter.TreeSettingsController {
+	return &treeSettings{errorHandler: errorHandler, manageItemSettingsService: manageItemSettingsService, autoSyncService: autoSyncService}
 }
 
 func (t *treeSettings) GetSettings(bindingCtx context.Context, request dto.TreeItemReference) (response *dto.ItemSettings, err error) {
@@ -69,6 +70,7 @@ func (t *treeSettings) SaveSettings(bindingCtx context.Context, request dto.Save
 	if err != nil {
 		return nil, err
 	}
+	triggerAutoSync(ctx, t.autoSyncService.Saved, request.LocalId)
 	result := dto.NewItemSettings(*settings)
 
 	logger.Info(ctx, "Finished", result)

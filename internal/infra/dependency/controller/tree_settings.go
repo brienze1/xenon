@@ -14,7 +14,7 @@ var treeSettingsControllerInstance adapter.TreeSettingsController
 func GetTreeSettingsController() adapter.TreeSettingsController {
 	if treeSettingsControllerInstance == nil {
 		treeSettingsControllerOnce.Do(func() {
-			treeSettingsControllerInstance = controller.NewTreeSettings(GetErrorHandler(), application.GetManageItemSettingsService())
+			treeSettingsControllerInstance = controller.NewTreeSettings(GetErrorHandler(), application.GetManageItemSettingsService(), application.GetAutoSyncService())
 		})
 	}
 	return treeSettingsControllerInstance

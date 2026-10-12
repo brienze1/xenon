@@ -14,7 +14,7 @@ var workspaceActivateControllerInstance adapter.WorkspaceActivateController
 func GetWorkspaceActivateController() adapter.WorkspaceActivateController {
 	if workspaceActivateControllerInstance == nil {
 		workspaceActivateControllerOnce.Do(func() {
-			workspaceActivateControllerInstance = controller.NewWorkspaceActivate(GetErrorHandler(), application.GetActivateWorkspaceService())
+			workspaceActivateControllerInstance = controller.NewWorkspaceActivate(GetErrorHandler(), application.GetActivateWorkspaceService(), application.GetAutoSyncService())
 		})
 	}
 	return workspaceActivateControllerInstance

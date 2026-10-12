@@ -13,15 +13,18 @@ import (
 type workspaceActivate struct {
 	errorHandler             adapter.ErrorHandler
 	activateWorkspaceService appAdapter.ActivateWorkspaceService
+	autoSyncService          appAdapter.AutoSyncService
 }
 
 func NewWorkspaceActivate(
 	errorHandler adapter.ErrorHandler,
 	activateWorkspaceService appAdapter.ActivateWorkspaceService,
+	autoSyncService appAdapter.AutoSyncService,
 ) adapter.WorkspaceActivateController {
 	return &workspaceActivate{
 		errorHandler:             errorHandler,
 		activateWorkspaceService: activateWorkspaceService,
+		autoSyncService:          autoSyncService,
 	}
 }
 
@@ -47,6 +50,7 @@ func (w *workspaceActivate) Handle(bindingCtx context.Context, request dto.Activ
 	if err != nil {
 		return nil, err
 	}
+	triggerAutoSync(ctx, w.autoSyncService.Opened, request.LocalId)
 
 	result := dto.NewWorkspaceSnapshot(*snapshot)
 

@@ -130,6 +130,12 @@ Feature: Unlink a workspace from its Git repository
       """
     Then the call should succeed
     And the workspace file "acme-plain/collections/api/ping.yaml" should contain the field "method" equal to "PATCH"
+    When I call "SyncService.Link" with
+      """
+      { "local_id": "{{Acme.local_id}}", "repository": "{{repo}}", "branch": "main", "subfolder": "api/xenon", "account_id": "{{account}}", "clone_path": "{{workspace_root}}/clones/acme-again", "mode": "adopt_repo" }
+      """
+    Then the call should succeed
+    And the response should contain the field "state" equal to "up_to_date"
     When I call "SyncService.Session" with
       """
       { "local_id": "{{Acme.local_id}}" }

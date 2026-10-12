@@ -14,7 +14,7 @@ var requestSaveControllerInstance adapter.RequestSaveController
 func GetRequestSaveController() adapter.RequestSaveController {
 	if requestSaveControllerInstance == nil {
 		requestSaveControllerOnce.Do(func() {
-			requestSaveControllerInstance = controller.NewRequestSave(GetErrorHandler(), application.GetSaveRequestService())
+			requestSaveControllerInstance = controller.NewRequestSave(GetErrorHandler(), application.GetSaveRequestService(), application.GetAutoSyncService())
 		})
 	}
 	return requestSaveControllerInstance

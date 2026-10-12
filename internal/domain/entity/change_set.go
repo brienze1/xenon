@@ -1,5 +1,9 @@
 package entity
 
+import "strings"
+
+const updateMessagePrefix = "Update "
+
 type ChangeSet struct {
 	Items []ChangeItem
 }
@@ -57,4 +61,16 @@ func (c ChangeSet) PresentPaths(worktree SyncedFiles) []string {
 		}
 	}
 	return present
+}
+
+func (c ChangeSet) UpdateMessage() string {
+	names := make([]string, 0, len(c.Items))
+	seen := map[string]bool{}
+	for _, item := range c.Items {
+		if !seen[item.ItemName] {
+			seen[item.ItemName] = true
+			names = append(names, item.ItemName)
+		}
+	}
+	return updateMessagePrefix + strings.Join(names, ", ")
 }

@@ -30,6 +30,10 @@ func (s *SyncService) CloneAsWorkspace(ctx context.Context, request dto.CloneWor
 	return s.link.CloneAsWorkspace(ctx, request)
 }
 
+func (s *SyncService) Unlink(ctx context.Context, request dto.UnlinkRepository) (*dto.WorkspaceSummary, error) {
+	return s.link.Unlink(ctx, request)
+}
+
 func (s *SyncService) Changes(ctx context.Context, request dto.SyncWorkspaceReference) ([]dto.SyncChangeItem, error) {
 	return s.manage.Changes(ctx, request)
 }

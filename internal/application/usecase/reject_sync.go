@@ -40,6 +40,14 @@ func RejectClonePathOverlap(clonePath string) error {
 	return errs.ConflictError("the folder "+clonePath+" overlaps a workspace folder; pick a folder outside every workspace", "GIT-66409")
 }
 
+func RejectUnlinkTargetInUse(target string) error {
+	return errs.ConflictError("the folder "+target+" is not empty; pick an empty or new folder for the workspace files", "GIT-43409")
+}
+
+func RejectUnlinkTargetOverlap(target string) error {
+	return errs.ConflictError("the folder "+target+" overlaps a workspace folder or Xenon's clone; pick a folder outside both", "GIT-44409")
+}
+
 func RejectEmptyCommit() error {
 	return errs.BadRequestError("none of the chosen items has changes to commit", "GIT-08400")
 }

@@ -13,10 +13,11 @@ import (
 type requestSave struct {
 	errorHandler       adapter.ErrorHandler
 	saveRequestService appAdapter.SaveRequestService
+	autoSyncService    appAdapter.AutoSyncService
 }
 
-func NewRequestSave(errorHandler adapter.ErrorHandler, saveRequestService appAdapter.SaveRequestService) adapter.RequestSaveController {
-	return &requestSave{errorHandler: errorHandler, saveRequestService: saveRequestService}
+func NewRequestSave(errorHandler adapter.ErrorHandler, saveRequestService appAdapter.SaveRequestService, autoSyncService appAdapter.AutoSyncService) adapter.RequestSaveController {
+	return &requestSave{errorHandler: errorHandler, saveRequestService: saveRequestService, autoSyncService: autoSyncService}
 }
 
 func (r *requestSave) Save(bindingCtx context.Context, request dto.SaveRequest) (response *dto.Request, err error) {
@@ -41,6 +42,7 @@ func (r *requestSave) Save(bindingCtx context.Context, request dto.SaveRequest) 
 	if err != nil {
 		return nil, err
 	}
+	triggerAutoSync(ctx, r.autoSyncService.Saved, request.LocalId)
 	result := dto.NewRequest(*saved)
 
 	logger.Info(ctx, "Finished", result)
@@ -69,6 +71,7 @@ func (r *requestSave) SaveAs(bindingCtx context.Context, request dto.SaveRequest
 	if err != nil {
 		return nil, err
 	}
+	triggerAutoSync(ctx, r.autoSyncService.Saved, request.LocalId)
 	result := dto.NewRequest(*saved)
 
 	logger.Info(ctx, "Finished", result)

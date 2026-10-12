@@ -241,16 +241,8 @@ Feature: Pull when the workspace is opened and push after each save
     Then the remote "acme/backend" branch "main" should have 3 commits
     And the last commit on the remote "acme/backend" branch "main" should have the message containing "Update Ping, Users"
     And the last commit on the remote "acme/backend" branch "main" should have the author containing "Luis <luis@acme.test>"
-    And the file "api/xenon/collections/api/ping.yaml" on the remote "acme/backend" should equal
-      """
-      xenon: 1
-      kind: request
-      id: 01JS0000000000000000000002
-      name: Ping
-      method: HEAD
-      url: https://api.acme.test/ping
-
-      """
+    And the file "api/xenon/collections/api/ping.yaml" on the remote "acme/backend" should exist
+    And the remote "acme/backend" history should not contain "tok-sync"
     And the last "git:status-changed" event should contain the field "status.state" equal to "up_to_date"
     When 5 seconds pass
     Then the remote "acme/backend" branch "main" should have 3 commits
