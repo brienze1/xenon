@@ -14,6 +14,9 @@
   --neon-green: #3dff4f;
   --neon-cyan: #3ec8ff;
   --neon-magenta: #ff3dff;
+  /* Hovered and pressed magenta buttons (Send): lighter on hover, deeper when pressed. */
+  --neon-magenta-hover: #ff8cff;
+  --neon-magenta-active: #d92ed9;
   --neon-yellow: #ffe53d;
   --neon-red: #ff3d5a;
 
@@ -45,6 +48,7 @@
   --glow-green: 0 0 4px rgb(61 255 79 / 60%), 0 0 14px rgb(61 255 79 / 35%);
   --glow-cyan: 0 0 4px rgb(62 200 255 / 60%), 0 0 14px rgb(62 200 255 / 35%);
   --glow-magenta: 0 0 4px rgb(255 61 255 / 60%), 0 0 14px rgb(255 61 255 / 35%);
+  --glow-magenta-strong: 0 0 6px rgb(255 61 255 / 85%), 0 0 18px rgb(255 61 255 / 65%), 0 0 32px rgb(255 61 255 / 40%);
   --glow-yellow: 0 0 4px rgb(255 229 61 / 60%), 0 0 14px rgb(255 229 61 / 35%);
   --glow-red: 0 0 4px rgb(255 61 90 / 60%), 0 0 14px rgb(255 61 90 / 35%);
 

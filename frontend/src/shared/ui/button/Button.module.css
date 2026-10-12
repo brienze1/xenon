@@ -38,10 +38,31 @@
   background: var(--neon-magenta);
   color: var(--color-bg);
   box-shadow: var(--glow-magenta);
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 80ms ease;
 }
 
 .accent:not(:disabled):hover {
-  filter: brightness(1.12);
+  background: var(--neon-magenta-hover);
+  box-shadow: var(--glow-magenta-strong);
+}
+
+.accent:not(:disabled):active {
+  background: var(--neon-magenta-active);
+  box-shadow: var(--glow-magenta);
+  transform: translateY(1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accent {
+    transition: none;
+  }
+
+  .accent:not(:disabled):active {
+    transform: none;
+  }
 }
 
 .secondary {
