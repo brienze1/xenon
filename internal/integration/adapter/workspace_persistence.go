@@ -8,4 +8,6 @@ type WorkspacePersistence interface {
 	usecase.InspectWorkspaceFolder
 	usecase.CopyWorkspaceFolder
 	usecase.RemoveWorkspaceFolder
+	usecase.SaveWorkspaceSync
+	usecase.ClearWorkspaceFolder
 }

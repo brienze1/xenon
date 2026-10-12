@@ -110,5 +110,6 @@ func (t *testUtils) startApp() {
 		binding.GetCookieService(),
 		binding.GetSnippetService(),
 		binding.GetExportService(),
+		binding.GetSyncService(),
 	}
 }

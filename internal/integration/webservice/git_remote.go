@@ -13,6 +13,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"golang.org/x/crypto/ssh"
@@ -29,7 +30,7 @@ var errHostKeyCaptured = errors.New("host key captured")
 func (g *gitWebservice) List(ctx context.Context, access entity.GitAccess) (*entity.RemoteInfo, error) {
 	logger.Debug(ctx, "Started", access)
 
-	info, err := g.list(ctx, access, remoteCodes{unauthorized: "GIT-11401", notFound: "GIT-15404", offline: "GIT-10503", failed: "GIT-26500"})
+	info, err := g.list(ctx, access, syncRemoteCodes)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +42,7 @@ func (g *gitWebservice) List(ctx context.Context, access entity.GitAccess) (*ent
 func (g *gitWebservice) Verify(ctx context.Context, access entity.GitAccess) (*entity.RemoteInfo, error) {
 	logger.Debug(ctx, "Started", access)
 
-	info, err := g.list(ctx, access, remoteCodes{unauthorized: "ACC-02401", notFound: "ACC-07404", offline: "ACC-08503", failed: "ACC-09500"})
+	info, err := g.list(ctx, access, remoteCodes{unauthorized: "ACC-02401", restricted: "ACC-61403", notFound: "ACC-07404", offline: "ACC-08503", failed: "ACC-09500"})
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +111,7 @@ func (g *gitWebservice) Clone(ctx context.Context, access entity.GitAccess, clon
 	case err != nil && isMissingReference(err):
 		return remoteFailure("the branch "+settings.Branch+" does not exist on the remote", "GIT-03404", http.StatusNotFound, "Pick another branch")
 	case err != nil:
-		return remoteError(err, remoteCodes{unauthorized: "GIT-37401", notFound: "GIT-38404", offline: "GIT-39503", failed: "GIT-40500"})
+		return remoteError(err, syncRemoteCodes)
 	default:
 		if err := checkout(clonePath, settings.Branch, settings.Subfolder); err != nil {
 			return errs.InternalServerError(err, "GIT-41500", "the clone could not be checked out")
@@ -141,7 +142,7 @@ func (g *gitWebservice) Fetch(ctx context.Context, access entity.GitAccess, clon
 	case isMissingReference(err):
 		return nil, remoteFailure("the branch "+branch+" does not exist on the remote", "GIT-20404", http.StatusNotFound, "Pick another branch")
 	default:
-		return nil, remoteError(err, remoteCodes{unauthorized: "GIT-43401", notFound: "GIT-44404", offline: "GIT-45503", failed: "GIT-46500"})
+		return nil, remoteError(err, syncRemoteCodes)
 	}
 	heads, err := branchHeads(repository, branch)
 	if err != nil {
@@ -173,10 +174,8 @@ func (g *gitWebservice) Push(ctx context.Context, access entity.GitAccess, clone
 	err = repository.PushContext(ctx, options)
 	switch {
 	case err == nil, errors.Is(err, git.NoErrAlreadyUpToDate):
-	case strings.Contains(err.Error(), "non-fast-forward"):
-		return remoteFailure("the remote branch moved since the last pull", "GIT-21409", http.StatusConflict, "Pull, then push again")
 	default:
-		return remoteError(err, remoteCodes{unauthorized: "GIT-49401", notFound: "GIT-50404", offline: "GIT-51503", failed: "GIT-52500"})
+		return pushError(err)
 	}
 
 	logger.Debug(ctx, "Finished", map[string]any{"clonePath": clonePath, "branch": branch})
@@ -248,25 +247,53 @@ func branchHeads(repository *git.Repository, branch string) (*entity.BranchHeads
 		Local:  referenceHash(repository, plumbing.NewBranchReferenceName(branch)),
 		Remote: referenceHash(repository, plumbing.NewRemoteReferenceName(originRemote, branch)),
 	}
-	if heads.Local == "" || heads.Remote == "" {
-		return heads, nil
-	}
-	local, err := repository.CommitObject(plumbing.NewHash(heads.Local))
+	local, err := optionalCommit(repository, heads.Local)
 	if err != nil {
 		return nil, err
 	}
-	remote, err := repository.CommitObject(plumbing.NewHash(heads.Remote))
+	remote, err := optionalCommit(repository, heads.Remote)
 	if err != nil {
 		return nil, err
 	}
-	bases, err := local.MergeBase(remote)
-	if err != nil {
+	if local != nil && remote != nil {
+		bases, err := local.MergeBase(remote)
+		if err != nil {
+			return nil, err
+		}
+		if len(bases) > 0 {
+			heads.Base = bases[0].Hash.String()
+		}
+	}
+	if heads.Ahead, err = commitsSince(local, heads.Base); err != nil {
 		return nil, err
 	}
-	if len(bases) > 0 {
-		heads.Base = bases[0].Hash.String()
+	if heads.Behind, err = commitsSince(remote, heads.Base); err != nil {
+		return nil, err
 	}
 	return heads, nil
+}
+
+func optionalCommit(repository *git.Repository, hash string) (*object.Commit, error) {
+	if hash == "" {
+		return nil, nil
+	}
+	return repository.CommitObject(plumbing.NewHash(hash))
+}
+
+func commitsSince(head *object.Commit, base string) (int, error) {
+	if head == nil {
+		return 0, nil
+	}
+	ignore := []plumbing.Hash{}
+	if base != "" {
+		ignore = append(ignore, plumbing.NewHash(base))
+	}
+	count := 0
+	err := object.NewCommitPreorderIter(head, nil, ignore).ForEach(func(*object.Commit) error {
+		count++
+		return nil
+	})
+	return count, err
 }
 
 func referenceHash(repository *git.Repository, name plumbing.ReferenceName) string {

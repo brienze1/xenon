@@ -23,3 +23,17 @@ func (t ThreeWayPlan) withAction(matches func(PathPlan) bool) []PathPlan {
 	}
 	return selected
 }
+
+func (t ThreeWayPlan) Merged(structural map[string]string) map[string]string {
+	merged := map[string]string{}
+	for _, plan := range t.Paths {
+		result := plan.Result()
+		if hash, found := structural[plan.Path]; found {
+			result = hash
+		}
+		if result != "" {
+			merged[plan.Path] = result
+		}
+	}
+	return merged
+}

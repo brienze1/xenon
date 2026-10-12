@@ -13,4 +13,9 @@ type GitWebservice interface {
 	usecase.WriteSyncCommit
 	usecase.CheckoutBranch
 	usecase.CheckSshAgent
+	usecase.ReadBranchHeads
+	usecase.MoveBranch
+	usecase.ListCommitMessages
+	usecase.StoreBlobs
+	usecase.ClaimSyncOperation
 }

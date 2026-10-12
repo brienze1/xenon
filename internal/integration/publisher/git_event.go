@@ -25,3 +25,21 @@ func (g *gitEventPublisher) HostKeyUnknown(ctx context.Context, repository strin
 	logger.Debug(ctx, "Finished", key, map[string]any{"repository": repository})
 	return nil
 }
+
+func (g *gitEventPublisher) StatusChanged(ctx context.Context, localId string, status entity.SyncStatus) error {
+	logger.Debug(ctx, "Started", status, map[string]any{"localId": localId})
+
+	g.eventEmitter.Emit(dto.GitStatusChangedEvent, dto.NewGitStatusChanged(localId, status))
+
+	logger.Debug(ctx, "Finished", status, map[string]any{"localId": localId})
+	return nil
+}
+
+func (g *gitEventPublisher) Progress(ctx context.Context, localId, phase string, done, total int) error {
+	logger.Debug(ctx, "Started", map[string]any{"localId": localId, "phase": phase, "done": done, "total": total})
+
+	g.eventEmitter.Emit(dto.GitProgressEvent, dto.NewGitProgress(localId, phase, done, total))
+
+	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "phase": phase})
+	return nil
+}

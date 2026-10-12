@@ -213,7 +213,7 @@ Feature: Sync status and the list of changes
       """
     Then the call should succeed
     And the response should contain the field "state" equal to "error"
-    And the response should contain the field "last_error.code" equal to "GIT-06428"
+    And the response should contain the field "last_error.code" equal to "GIT-07428"
     And the response should contain the field "last_error.message" equal to "No account - choose one"
     And the response should contain the field "settings.account_id" equal to ""
     When I call "SyncService.Pull" with

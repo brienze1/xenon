@@ -8,6 +8,7 @@ import (
 
 type Workspace struct {
 	Postman     map[string]any `yaml:"postman"`
+	Sync        WorkspaceSync  `yaml:"sync"`
 	Kind        string         `yaml:"kind"`
 	Id          string         `yaml:"id"`
 	Name        string         `yaml:"name"`
@@ -31,7 +32,7 @@ func NewWorkspace(workspace entity.Workspace) Workspace {
 }
 
 func (w *Workspace) ToEntity() entity.Workspace {
-	return entity.Workspace{ID: w.Id, Name: w.Name, Description: w.Description, Order: nonNil(w.Order), Variables: variableRowsToEntity(w.Variables), Postman: sourceFieldsToEntity(w.Postman)}
+	return entity.Workspace{ID: w.Id, Name: w.Name, Description: w.Description, Order: nonNil(w.Order), Variables: variableRowsToEntity(w.Variables), Postman: sourceFieldsToEntity(w.Postman), Sync: w.Sync.ToEntity()}
 }
 
 func (w *Workspace) Fields() []yamlnode.Field {

@@ -36,6 +36,7 @@ func GetRouter() adapter.Router {
 				binding.GetCookieService(),
 				binding.GetSnippetService(),
 				binding.GetExportService(),
+				binding.GetSyncService(),
 			)
 		})
 	}

@@ -180,6 +180,9 @@ func commitFiles(repository *git.Repository, hash, subfolder string) (map[string
 
 func writeCommit(store storer.EncodedObjectStorer, commit entity.SyncCommit) (string, error) {
 	draft := &treeDraft{files: map[string]plumbing.Hash{}, dirs: map[string]*treeDraft{}}
+	for name, hash := range commit.Blobs {
+		draft.add(strings.Split(name, "/"), plumbing.NewHash(hash))
+	}
 	for name, content := range commit.Files {
 		blob, err := writeBlob(store, content)
 		if err != nil {
@@ -203,7 +206,7 @@ func writeCommit(store storer.EncodedObjectStorer, commit entity.SyncCommit) (st
 		}
 		parents = append(parents, parent.Hash)
 	}
-	root, err := replaceSubtree(store, parentTree, splitSubfolder(commit.Subfolder), subtree, len(commit.Files) == 0)
+	root, err := replaceSubtree(store, parentTree, splitSubfolder(commit.Subfolder), subtree, len(commit.Files)+len(commit.Blobs) == 0)
 	if err != nil {
 		return "", err
 	}

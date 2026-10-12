@@ -70,3 +70,12 @@ func (p PathPlan) classify() enums.PathAction {
 		return pathaction.BothModified
 	}
 }
+
+func (p PathPlan) AnyVersion() string {
+	for _, version := range []string{p.Theirs, p.Base, p.Mine} {
+		if version != "" {
+			return version
+		}
+	}
+	return ""
+}

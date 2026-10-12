@@ -12,4 +12,5 @@ type UIStatePersistence interface {
 	usecase.SaveCookieAllowlist
 	usecase.FindLocalSyncSettings
 	usecase.SaveLocalSyncSettings
+	usecase.LocateClone
 }

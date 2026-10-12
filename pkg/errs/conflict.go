@@ -23,6 +23,11 @@ func ConflictError(description, code string, details ...ErrorDetails) BaseError 
 	}
 }
 
+func IsConflictError(err error) bool {
+	var target *conflictError
+	return errors.As(err, &target)
+}
+
 func (c *conflictError) ToDto(transactionId string) Error {
 	return toDto(transactionId, c.description, c.code, c.errorDetails)
 }

@@ -48,6 +48,15 @@ func (a *AppRegistry) OverlapsOther(path, localId string) bool {
 	return false
 }
 
+func (a *AppRegistry) OverlapsAny(path string) bool {
+	for _, workspace := range a.Workspaces {
+		if workspace.Overlaps(path) {
+			return true
+		}
+	}
+	return false
+}
+
 func (a *AppRegistry) Rename(localId, displayName string) (*RegisteredWorkspace, bool) {
 	workspace, found := a.Find(localId)
 	if !found {

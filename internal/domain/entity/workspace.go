@@ -6,6 +6,7 @@ const postmanGlobalsKey = "globals"
 
 type Workspace struct {
 	Postman     SourceFields
+	Sync        SyncSettings
 	ID          string
 	Name        string
 	Description string

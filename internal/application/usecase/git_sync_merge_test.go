@@ -267,3 +267,20 @@ func TestOrderMergeDeduplicates(t *testing.T) {
 		t.Fatalf("mergeOrder = %v, %v", values, ok)
 	}
 }
+
+func TestMapPathsToItemsJoinsWorkspaceLevelFilesToTheWorkspace(t *testing.T) {
+	workspace := entity.ItemRef{ID: "w1", Name: "Acme", Kind: itemkind.Workspace}
+	joined := MapPathsToItems([]entity.PathChange{
+		{Path: ".gitignore", Change: changetype.Added},
+		{Path: "workspace.yaml", Change: changetype.Added},
+	}, map[string]entity.ItemRef{"workspace.yaml": workspace})
+	want := []entity.ChangeItem{{ItemID: "w1", ItemName: "Acme", ItemKind: itemkind.Workspace, Change: changetype.Added, Paths: []string{".gitignore", "workspace.yaml"}}}
+	if !reflect.DeepEqual(joined, want) {
+		t.Fatalf("joined = %+v, want %+v", joined, want)
+	}
+	alone := MapPathsToItems([]entity.PathChange{{Path: ".gitignore", Change: changetype.Modified}}, map[string]entity.ItemRef{})
+	want = []entity.ChangeItem{{ItemID: ".gitignore", ItemName: ".gitignore", ItemKind: itemkind.Workspace, Change: changetype.Modified, Paths: []string{".gitignore"}}}
+	if !reflect.DeepEqual(alone, want) {
+		t.Fatalf("alone = %+v, want %+v", alone, want)
+	}
+}

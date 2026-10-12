@@ -27,6 +27,7 @@ func CustomValidator() Validate {
 	_ = validate.RegisterValidation("has_id", hasId)
 	_ = validate.RegisterValidation("variable_scope", variableScope)
 	_ = validate.RegisterValidation("import_input", importInput)
+	_ = validate.RegisterValidation("safe_subfolder", safeSubfolder)
 	validate.RegisterTagNameFunc(jsonName)
 	return &customValidator{validator: validate}
 }
@@ -70,6 +71,10 @@ func variableScope(field validator.FieldLevel) bool {
 func importInput(field validator.FieldLevel) bool {
 	paths, _ := field.Parent().FieldByName("Paths").Interface().([]string)
 	return entity.ImportRequest{Text: field.Field().String(), Paths: paths}.HasInput()
+}
+
+func safeSubfolder(field validator.FieldLevel) bool {
+	return entity.HasSafeSubfolder(field.Field().String())
 }
 
 func jsonName(field reflect.StructField) string {

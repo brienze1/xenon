@@ -82,6 +82,7 @@ Feature: Link a workspace to a Git repository
     And the app data file "workspaces/{{Acme.local_id}}/state.json" should contain the field "sync.repository" equal to "{{repo}}"
     And no file under the app data folder should contain "tok-sync"
     And no file under the workspace folder should contain "tok-sync"
+    And the file watcher should be watching the workspace path "clones/acme/api/xenon"
     When I call "WorkspaceService.List"
     Then the response should contain the path field "workspaces.0.path" equal to "{{workspace_root}}/clones/acme/api/xenon"
     When I call "SyncService.Changes" with
@@ -275,7 +276,7 @@ Feature: Link a workspace to a Git repository
       | no account          | {{repo}}   | main   | api       |                            | {{workspace_root}}/clones/a        |           | GIT-63400 |
       | relative clone path | {{repo}}   | main   | api       | {{account}}                | clones/a                           |           | GIT-63400 |
       | unknown mode        | {{repo}}   | main   | api       | {{account}}                | {{workspace_root}}/clones/a        | merge     | GIT-63400 |
-      | subfolder escapes   | {{repo}}   | main   | ../up     | {{account}}                | {{workspace_root}}/clones/a        |           | GIT-64400 |
+      | subfolder escapes   | {{repo}}   | main   | ../up     | {{account}}                | {{workspace_root}}/clones/a        |           | GIT-63400 |
       | clone path in use   | {{repo}}   | main   | api       | {{account}}                | {{workspace_root}}/clones/busy     |           | GIT-65409 |
       | inside workspace    | {{repo}}   | main   | api       | {{account}}                | {{workspace_root}}/acme/clone      |           | GIT-66409 |
       | unknown account     | {{repo}}   | main   | api       | 01JZ0000000000000000000000 | {{workspace_root}}/clones/a        |           | ACC-04404 |

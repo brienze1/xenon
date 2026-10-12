@@ -12,4 +12,7 @@ type TreePersistence interface {
 	usecase.SaveTreeItem
 	usecase.DeleteTreeItem
 	usecase.InspectFileChange
+	usecase.ApplySyncedFiles
+	usecase.IdentifySyncItems
+	usecase.ConvertSyncDocument
 }

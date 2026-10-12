@@ -177,3 +177,12 @@ func TestConflictDetails(t *testing.T) {
 		t.Fatalf("ErrorDetails() = %v", err.ErrorDetails())
 	}
 }
+
+func TestIsConflictError(t *testing.T) {
+	if !IsConflictError(fmt.Errorf("x: %w", ConflictError("m", "c"))) {
+		t.Fatal("a wrapped conflict error should be recognised")
+	}
+	if IsConflictError(BadRequestError("m", "c")) {
+		t.Fatal("a bad request is not a conflict")
+	}
+}

@@ -32,8 +32,9 @@ const (
 var errUntrustedHostKey = errors.New("the SSH host key is not trusted")
 
 type gitWebservice struct {
-	sshAgent adapter.SshAgent
-	locks    sync.Map
+	sshAgent   adapter.SshAgent
+	locks      sync.Map
+	operations sync.Map
 }
 
 func NewGitWebservice(sshAgent adapter.SshAgent) adapter.GitWebservice {

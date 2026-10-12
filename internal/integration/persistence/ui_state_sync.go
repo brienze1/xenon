@@ -9,7 +9,10 @@ import (
 	"github.com/brienze1/xenon/pkg/logger"
 )
 
-const localSyncKey = "sync"
+const (
+	localSyncKey = "sync"
+	clonesDir    = "repos"
+)
 
 func (u *uiStatePersistence) FindSyncSettings(ctx context.Context, localId string) (*entity.LocalSyncSettings, error) {
 	logger.Debug(ctx, "Started", map[string]any{"localId": localId})
@@ -40,4 +43,13 @@ func (u *uiStatePersistence) SaveSyncSettings(ctx context.Context, localId strin
 
 	logger.Debug(ctx, "Finished", settings, map[string]any{"localId": localId})
 	return nil
+}
+
+func (u *uiStatePersistence) DefaultClonePath(ctx context.Context, localId string) string {
+	logger.Debug(ctx, "Started", map[string]any{"localId": localId})
+
+	clonePath := appDataPath(clonesDir, localId)
+
+	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "clonePath": clonePath})
+	return clonePath
 }

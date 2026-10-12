@@ -198,6 +198,37 @@ func (w *workspacePersistence) RemoveFolder(ctx context.Context, path string) er
 	return nil
 }
 
+func (w *workspacePersistence) CopyInto(ctx context.Context, source, target string) error {
+	logger.Debug(ctx, "Started", map[string]any{"source": source, "target": target})
+
+	if err := copyWorkspaceFiles(source, target); err != nil {
+		return errs.FileError(err, "GIT-83500")
+	}
+
+	logger.Debug(ctx, "Finished", map[string]any{"source": source, "target": target})
+	return nil
+}
+
+func (w *workspacePersistence) ClearFolder(ctx context.Context, root string) error {
+	logger.Debug(ctx, "Started", map[string]any{"root": root})
+
+	entries, err := os.ReadDir(root)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return errs.FileError(err, "GIT-84500")
+	}
+	for _, entry := range entries {
+		if entry.Name() == gitDir {
+			continue
+		}
+		if err := os.RemoveAll(filepath.Join(root, entry.Name())); err != nil {
+			return errs.FileError(err, "GIT-85500")
+		}
+	}
+
+	logger.Debug(ctx, "Finished", map[string]any{"root": root, "entries": len(entries)})
+	return nil
+}
+
 func copyWorkspaceFiles(source, target string) error {
 	return filepath.WalkDir(source, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
@@ -223,4 +254,27 @@ func copyWorkspaceFiles(source, target string) error {
 		}
 		return os.WriteFile(destination, data, workspaceFileMode)
 	})
+}
+
+func (w *workspacePersistence) SaveSync(ctx context.Context, root string, settings entity.SyncSettings) error {
+	logger.Debug(ctx, "Started", map[string]any{"root": root, "repository": settings.Repository, "branch": settings.Branch, "subfolder": settings.Subfolder})
+
+	document, _, err := readWorkspace(root)
+	if err != nil {
+		return err
+	}
+	stored := model.NewWorkspaceSync(settings)
+	yamlnode.Patch(yamlnode.Root(document), stored.Fields())
+	data, err := yamlnode.Encode(document)
+	if err != nil {
+		return errs.InternalServerError(err, "GIT-81500", "workspace.yaml could not be encoded")
+	}
+	path := filepath.Join(root, workspaceFile)
+	if err := fileutils.WriteFileAtomic(path, data, workspaceFileMode); err != nil {
+		return errs.FileError(err, "GIT-82500")
+	}
+	w.index.RecordWrite(ctx, path, data)
+
+	logger.Debug(ctx, "Finished", map[string]any{"root": root})
+	return nil
 }

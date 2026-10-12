@@ -19,6 +19,9 @@ func NewChangeItem(ref ItemRef, change PathChange) ChangeItem {
 
 func (c ChangeItem) Combined(change PathChange) ChangeItem {
 	c.Paths = append(append([]string{}, c.Paths...), change.Path)
+	if c.Change == change.Change {
+		return c
+	}
 	if c.isMove(change) {
 		c.Change = changetype.Renamed
 		return c
@@ -30,4 +33,13 @@ func (c ChangeItem) Combined(change PathChange) ChangeItem {
 func (c ChangeItem) isMove(change PathChange) bool {
 	return (c.Change == changetype.Deleted && change.Change == changetype.Added) ||
 		(c.Change == changetype.Added && change.Change == changetype.Deleted)
+}
+
+func (c ChangeItem) IsAnyOf(ids []string) bool {
+	for _, id := range ids {
+		if c.ItemID == id {
+			return true
+		}
+	}
+	return false
 }

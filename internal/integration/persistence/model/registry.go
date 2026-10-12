@@ -10,12 +10,13 @@ type Registry struct {
 	Window        json.RawMessage       `json:"window,omitempty"`
 	Vault         json.RawMessage       `json:"vault,omitempty"`
 	Settings      json.RawMessage       `json:"settings,omitempty"`
+	GitAccounts   json.RawMessage       `json:"gitAccounts,omitempty"`
 	ActiveLocalId string                `json:"active_local_id"`
 	Workspaces    []RegisteredWorkspace `json:"workspaces"`
 	Version       int                   `json:"version"`
 }
 
-// NewRegistry keeps the window, vault and settings sections of the stored app.json.
+// NewRegistry keeps the window, vault, settings and Git account sections of the stored app.json.
 func NewRegistry(registry entity.AppRegistry, stored Registry) Registry {
 	model := Registry{
 		Version:       registry.Version,
@@ -24,6 +25,7 @@ func NewRegistry(registry entity.AppRegistry, stored Registry) Registry {
 		Window:        stored.Window,
 		Vault:         stored.Vault,
 		Settings:      stored.Settings,
+		GitAccounts:   stored.GitAccounts,
 	}
 	for _, workspace := range registry.Workspaces {
 		model.Workspaces = append(model.Workspaces, NewRegisteredWorkspace(workspace))
