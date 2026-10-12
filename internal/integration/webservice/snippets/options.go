@@ -29,11 +29,11 @@ const (
 )
 
 var (
-	indentCountOption    = entity.SnippetOptionSpec{ID: optionIndentCount, Label: "Set indentation count", Type: positiveOption, Default: "2"}
-	indentTypeOption     = entity.SnippetOptionSpec{ID: optionIndentType, Label: "Set indentation type", Type: enumOption, Default: "Space", Values: []string{"Tab", "Space"}}
-	timeoutOption        = entity.SnippetOptionSpec{ID: optionTimeout, Label: "Set request timeout (in milliseconds)", Type: positiveOption, Default: "0"}
-	followRedirectOption = entity.SnippetOptionSpec{ID: optionFollowRedirect, Label: "Follow redirects", Type: booleanOption, Default: "true"}
-	trimBodyOption       = entity.SnippetOptionSpec{ID: optionTrimBody, Label: "Trim request body fields", Type: booleanOption, Default: "false"}
+	indentCountOption    = entity.SnippetOptionSpec{ID: optionIndentCount, Label: "Set indentation count", Description: "Set the number of indentation characters to add per code level", Type: positiveOption, Default: "2"}
+	indentTypeOption     = entity.SnippetOptionSpec{ID: optionIndentType, Label: "Set indentation type", Description: "Select the character used to indent lines of code", Type: enumOption, Default: "Space", Values: []string{"Tab", "Space"}}
+	timeoutOption        = entity.SnippetOptionSpec{ID: optionTimeout, Label: "Set request timeout (in milliseconds)", Description: "Set number of milliseconds the request should wait for a response before timing out (use 0 for infinity)", Type: positiveOption, Default: "0"}
+	followRedirectOption = entity.SnippetOptionSpec{ID: optionFollowRedirect, Label: "Follow redirects", Description: "Automatically follow HTTP redirects", Type: booleanOption, Default: "true"}
+	trimBodyOption       = entity.SnippetOptionSpec{ID: optionTrimBody, Label: "Trim request body fields", Description: "Remove white space and additional lines that may affect the server's response", Type: booleanOption, Default: "false"}
 )
 
 type options map[string]string

@@ -32,15 +32,15 @@ var curlLanguage = entity.SnippetLanguageSpec{
 	Language: snippetlanguage.Curl,
 	Label:    "cURL",
 	Options: []entity.SnippetOptionSpec{
-		{ID: optionMultiLine, Label: "Generate multiline snippet", Type: booleanOption, Default: "true"},
-		{ID: optionLongFormat, Label: "Use long form options", Type: booleanOption, Default: "true"},
-		{ID: optionLineContinuation, Label: "Line continuation character", Type: enumOption, Default: `\`, Values: []string{`\`, "^", "`"}},
-		{ID: optionQuoteType, Label: "Quote type", Type: enumOption, Default: "single", Values: []string{"single", "double"}},
-		{ID: optionTimeoutSeconds, Label: "Set request timeout (in seconds)", Type: positiveOption, Default: "0"},
+		{ID: optionMultiLine, Label: "Generate multiline snippet", Description: "Split cURL command across multiple lines", Type: booleanOption, Default: "true"},
+		{ID: optionLongFormat, Label: "Use long form options", Description: "Use the long form for cURL options (--header instead of -H)", Type: booleanOption, Default: "true"},
+		{ID: optionLineContinuation, Label: "Line continuation character", Description: "Set a character used to mark the continuation of a statement on the next line (generally, \\ for OSX/Linux, ^ for Windows cmd and ` for Powershell)", Type: enumOption, Default: `\`, Values: []string{`\`, "^", "`"}},
+		{ID: optionQuoteType, Label: "Quote Type", Description: "String denoting the quote type to use (single or double) for URL (Use double quotes when running curl in cmd.exe and single quotes for the rest)", Type: enumOption, Default: "single", Values: []string{"single", "double"}},
+		{ID: optionTimeoutSeconds, Label: "Set request timeout (in seconds)", Description: "Set number of seconds the request should wait for a response before timing out (use 0 for infinity)", Type: positiveOption, Default: "0"},
 		followRedirectOption,
-		{ID: optionFollowMethod, Label: "Follow original HTTP method", Type: booleanOption, Default: "false"},
+		{ID: optionFollowMethod, Label: "Follow original HTTP method", Description: "Redirect with the original HTTP method instead of the default behavior of redirecting with GET", Type: booleanOption, Default: "false"},
 		trimBodyOption,
-		{ID: optionSilent, Label: "Use silent mode", Type: booleanOption, Default: "false"},
+		{ID: optionSilent, Label: "Use Silent Mode", Description: "Display the requested data without showing the cURL progress meter or error messages", Type: booleanOption, Default: "false"},
 	},
 }
 

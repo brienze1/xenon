@@ -181,6 +181,11 @@ Feature: Code snippets match Postman's code generators
     And the response field "1.options" should contain an item with "id" equal to "indentCount" and "default" equal to "2"
     And the response field "2.options" should contain an item with "id" equal to "indentType" and "default" equal to "Space"
     And the response field "3.options" should contain an item with "id" equal to "followRedirect" and "default" equal to "true"
+    And the response field "0.options" should contain an item with "id" equal to "multiLine" and "description" equal to "Split cURL command across multiple lines"
+    And the response field "0.options" should contain an item with "id" equal to "silent" and "description" equal to "Display the requested data without showing the cURL progress meter or error messages"
+    And the response field "1.options" should contain an item with "id" equal to "requestTimeout" and "description" equal to "Set number of milliseconds the request should wait for a response before timing out (use 0 for infinity)"
+    And the response field "2.options" should contain an item with "id" equal to "indentType" and "description" equal to "Select the character used to indent lines of code"
+    And the response field "3.options" should contain an item with "id" equal to "trimRequestBody" and "description" equal to "Remove white space and additional lines that may affect the server's response"
 
   @options
   Scenario: Options that are not valid for the language fall back to their defaults

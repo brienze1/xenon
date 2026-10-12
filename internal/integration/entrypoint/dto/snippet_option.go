@@ -13,15 +13,16 @@ const (
 )
 
 type SnippetOption struct {
-	Default any      `json:"default"`
-	Id      string   `json:"id"`
-	Label   string   `json:"label"`
-	Type    string   `json:"type"`
-	Values  []string `json:"values,omitempty"`
+	Default     any      `json:"default"`
+	Description string   `json:"description"`
+	Id          string   `json:"id"`
+	Label       string   `json:"label"`
+	Type        string   `json:"type"`
+	Values      []string `json:"values,omitempty"`
 }
 
 func NewSnippetOption(option entity.SnippetOptionSpec) SnippetOption {
-	return SnippetOption{Id: option.ID, Label: option.Label, Type: option.Type, Default: typedDefault(option), Values: slices.Clone(option.Values)}
+	return SnippetOption{Id: option.ID, Label: option.Label, Description: option.Description, Type: option.Type, Default: typedDefault(option), Values: slices.Clone(option.Values)}
 }
 
 func typedDefault(option entity.SnippetOptionSpec) any {

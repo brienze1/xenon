@@ -22,7 +22,7 @@ var jsFetchLanguage = entity.SnippetLanguageSpec{
 		timeoutOption,
 		followRedirectOption,
 		trimBodyOption,
-		{ID: optionAsyncAwait, Label: "Use async/await", Type: booleanOption, Default: "false"},
+		{ID: optionAsyncAwait, Label: "Use async/await", Description: "Modifies code snippet to incorporate async/await", Type: booleanOption, Default: "false"},
 	},
 }
 
