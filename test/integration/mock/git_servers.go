@@ -242,6 +242,43 @@ func (g *GitServers) CommitFile(name, filePath, content, message string) error {
 	return err
 }
 
+func (g *GitServers) CommitFolder(name, source, target, message string) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if _, err := g.ensureRemote(name); err != nil {
+		return err
+	}
+	worktreeFs := memfs.New()
+	worktree, err := g.teammateWorktree(g.remotePath(name), worktreeFs)
+	if err != nil {
+		return err
+	}
+	err = filepath.WalkDir(source, func(file string, entry os.DirEntry, err error) error {
+		if err != nil || entry.IsDir() {
+			return err
+		}
+		relative, err := filepath.Rel(source, file)
+		if err != nil {
+			return err
+		}
+		content, err := os.ReadFile(file)
+		if err != nil {
+			return err
+		}
+		destination := path.Join(target, filepath.ToSlash(relative))
+		if err := util.WriteFile(worktreeFs, destination, content, 0o644); err != nil {
+			return err
+		}
+		_, err = worktree.Add(destination)
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	_, err = worktree.Commit(message, &git.CommitOptions{Author: &object.Signature{Name: gitTeammateName, Email: gitTeammateEmail, When: time.Now()}})
+	return err
+}
+
 func (g *GitServers) DeleteFile(name, filePath, message string) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()

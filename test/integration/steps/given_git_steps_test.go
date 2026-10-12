@@ -35,6 +35,11 @@ func (t *testUtils) registerGivenGitSteps(ctx *godog.ScenarioContext) {
 	ctx.Given(`^the git http server delays its responses by (\d+) ms$`, t.theGitHttpServerDelaysItsResponsesBy)
 	ctx.Given(`^the git http server goes offline$`, t.theGitHttpServerGoesOffline)
 	ctx.Given(`^the default branch of the remote "([^"]*)" is renamed to "([^"]*)"$`, t.theDefaultBranchOfTheRemoteIsRenamedTo)
+	ctx.Step(`^a teammate commits the workspace folder "([^"]*)" as "([^"]*)" on the remote "([^"]*)"$`, t.aTeammateCommitsTheWorkspaceFolderAsOnTheRemote)
+}
+
+func (t *testUtils) aTeammateCommitsTheWorkspaceFolderAsOnTheRemote(folder, target, name string) error {
+	return t.git.CommitFolder(t.substitute(name), t.workspacePath(folder), t.substitute(target), "Update "+target)
 }
 
 func (t *testUtils) theDefaultBranchOfTheRemoteIsRenamedTo(name, branch string) error {
