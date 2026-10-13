@@ -115,7 +115,7 @@ func (s *Server) start(ctx context.Context, port int) entity.AIAccessStatus {
 	s.sdkServer = s.newSdkServer()
 	handler := sdk.NewStreamableHTTPHandler(func(*http.Request) *sdk.Server { return s.sdkServer }, &sdk.StreamableHTTPOptions{})
 	mux := http.NewServeMux()
-	mux.Handle(endpointPath, handler)
+	mux.Handle(endpointPath, s.closingSessions(handler))
 	s.httpServer = &http.Server{Handler: loopbackOnly(port, mux), ReadHeaderTimeout: readHeaderTimeout}
 	go s.serve(s.httpServer, listener)
 	return entity.RunningAIAccessStatus(port, 0)

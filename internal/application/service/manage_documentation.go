@@ -98,8 +98,8 @@ func (m *manageDocumentation) Plan(ctx context.Context, localId, id, text string
 	return plan, nil
 }
 
-func (m *manageDocumentation) Apply(ctx context.Context, localId, id, text string, confirmDeletions bool) (*entity.DocumentationResult, error) {
-	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id, "bytes": len(text), "confirmDeletions": confirmDeletions})
+func (m *manageDocumentation) Apply(ctx context.Context, localId, id, text string, confirmDeletions, keepDeleted bool) (*entity.DocumentationResult, error) {
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id, "bytes": len(text), "confirmDeletions": confirmDeletions, "keepDeleted": keepDeleted})
 
 	workspace, err := m.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
@@ -108,6 +108,10 @@ func (m *manageDocumentation) Apply(ctx context.Context, localId, id, text strin
 	plan, err := m.source.plan(ctx, workspace.Path, id, text, idutils.NewUlid)
 	if err != nil {
 		return nil, err
+	}
+	if keepDeleted {
+		kept := plan.KeepingDeleted()
+		plan = &kept
 	}
 	if plan.NeedsConfirmation(confirmDeletions) {
 		return nil, errs.BadRequestError("saving deletes requests; confirm the deletions first", "DOC-04400")

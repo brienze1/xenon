@@ -1,12 +1,14 @@
 package binding
 
 import (
+	"context"
 	"sync"
 
 	"github.com/brienze1/xenon/internal/infra/dependency/controller"
 	"github.com/brienze1/xenon/internal/infra/dependency/server"
 	"github.com/brienze1/xenon/internal/infra/server/binding"
 	"github.com/brienze1/xenon/internal/infra/server/mcp"
+	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
 )
 
 var aiAccessServiceOnce sync.Once
@@ -16,10 +18,15 @@ func GetAIAccessService() *binding.AIAccessService {
 	if aiAccessServiceInstance == nil {
 		aiAccessServiceOnce.Do(func() {
 			server.GetMCPServer().Mount(mcpControllers())
+			server.GetMCPServer().OnSessionClosed(denySessionApprovals)
 			aiAccessServiceInstance = binding.NewAIAccessService(controller.GetAIAccessController())
 		})
 	}
 	return aiAccessServiceInstance
+}
+
+func denySessionApprovals(ctx context.Context, sessionId string) {
+	_ = controller.GetAIAccessController().DenyApprovals(ctx, dto.AIApprovalDenial{SessionId: sessionId})
 }
 
 func mcpControllers() mcp.Controllers {

@@ -15,6 +15,7 @@ const (
 	MaxBodyReadBytes = 65536
 	cursorPrefix     = "o:"
 	itemsField       = "items"
+	errorsField      = "errors"
 	mcpTabPrefix     = "mcp:"
 	emptyArguments   = "{}"
 )
@@ -94,7 +95,7 @@ func omitEmpty(node any, keep bool) any {
 	case map[string]any:
 		compacted := make(map[string]any, len(value))
 		for key, field := range value {
-			if pruned := omitEmpty(field, key == itemsField); pruned != nil {
+			if pruned := omitEmpty(field, key == itemsField || key == errorsField); pruned != nil {
 				compacted[key] = pruned
 			}
 		}

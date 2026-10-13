@@ -122,7 +122,7 @@ func (t *treeDocumentation) ApplyDocumentation(bindingCtx context.Context, reque
 		return nil, err
 	}
 
-	applied, err := t.manageDocumentationService.Apply(ctx, request.LocalId, request.Id, request.Yaml, request.ConfirmDeletions)
+	applied, err := t.manageDocumentationService.Apply(ctx, request.LocalId, request.Id, request.Yaml, request.ConfirmDeletions, request.KeepDeleted)
 	if err != nil {
 		return nil, err
 	}

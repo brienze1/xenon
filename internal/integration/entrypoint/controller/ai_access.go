@@ -17,6 +17,7 @@ type aiAccess struct {
 	guardAIOutputService    appAdapter.GuardAIOutputService
 	notifyAIChangeService   appAdapter.NotifyAIChangeService
 	recordAIActivityService appAdapter.RecordAIActivityService
+	approveAISendService    appAdapter.ApproveAISendService
 }
 
 func NewAIAccess(
@@ -25,6 +26,7 @@ func NewAIAccess(
 	guardAIOutputService appAdapter.GuardAIOutputService,
 	notifyAIChangeService appAdapter.NotifyAIChangeService,
 	recordAIActivityService appAdapter.RecordAIActivityService,
+	approveAISendService appAdapter.ApproveAISendService,
 ) adapter.AIAccessController {
 	return &aiAccess{
 		errorHandler:            errorHandler,
@@ -32,6 +34,7 @@ func NewAIAccess(
 		guardAIOutputService:    guardAIOutputService,
 		notifyAIChangeService:   notifyAIChangeService,
 		recordAIActivityService: recordAIActivityService,
+		approveAISendService:    approveAISendService,
 	}
 }
 
@@ -168,6 +171,106 @@ func (a *aiAccess) Record(bindingCtx context.Context, request dto.AIActivityReco
 	}
 
 	a.recordAIActivityService.Record(ctx, request.LocalId, request.Client, request.ToEntity())
+
+	logger.Info(ctx, "Finished", request)
+	return nil
+}
+
+func (a *aiAccess) RequestApproval(bindingCtx context.Context, request dto.AIApprovalRequest) (response *dto.AIApprovalOutcome, err error) {
+	ctx := logger.GetContext(bindingCtx)
+	logger.Info(ctx, "Started", request)
+
+	defer func(ctx context.Context, request any) {
+		if recovered := recover(); recovered != nil {
+			err = handlePanic(ctx, request, recovered)
+		}
+		if err != nil {
+			response, err = nil, a.errorHandler.Handle(ctx, err, request)
+		}
+	}(ctx, request)
+
+	err = validator.CustomValidator().Struct("MCP-07400", &request)
+	if err != nil {
+		return nil, err
+	}
+
+	approval, err := a.approveAISendService.Request(ctx, request.ToEntity(), request.SessionId)
+	if err != nil {
+		return nil, err
+	}
+	result := dto.NewAIApprovalOutcome(approval)
+
+	logger.Info(ctx, "Finished", result)
+	return &result, nil
+}
+
+func (a *aiAccess) AnswerApproval(bindingCtx context.Context, request dto.AIApprovalAnswer) (err error) {
+	ctx := logger.GetContext(bindingCtx)
+	logger.Info(ctx, "Started", request)
+
+	defer func(ctx context.Context, request any) {
+		if recovered := recover(); recovered != nil {
+			err = handlePanic(ctx, request, recovered)
+		}
+		if err != nil {
+			err = a.errorHandler.Handle(ctx, err, request)
+		}
+	}(ctx, request)
+
+	err = validator.CustomValidator().Struct("MCP-07400", &request)
+	if err != nil {
+		return err
+	}
+
+	err = a.approveAISendService.Answer(ctx, request.Id, request.Approved)
+	if err != nil {
+		return err
+	}
+
+	logger.Info(ctx, "Finished", request)
+	return nil
+}
+
+func (a *aiAccess) PendingApprovals(bindingCtx context.Context) (response []dto.AIApproval, err error) {
+	ctx := logger.GetContext(bindingCtx)
+	logger.Info(ctx, "Started")
+
+	defer func(ctx context.Context) {
+		if recovered := recover(); recovered != nil {
+			err = handlePanic(ctx, nil, recovered)
+		}
+		if err != nil {
+			response, err = nil, a.errorHandler.Handle(ctx, err, nil)
+		}
+	}(ctx)
+
+	result := dto.NewAIApprovals(a.approveAISendService.Pending(ctx))
+
+	logger.Info(ctx, "Finished", map[string]any{"pending": len(result)})
+	return result, nil
+}
+
+func (a *aiAccess) DenyApprovals(bindingCtx context.Context, request dto.AIApprovalDenial) (err error) {
+	ctx := logger.GetContext(bindingCtx)
+	logger.Info(ctx, "Started", request)
+
+	defer func(ctx context.Context, request any) {
+		if recovered := recover(); recovered != nil {
+			err = handlePanic(ctx, request, recovered)
+		}
+		if err != nil {
+			err = a.errorHandler.Handle(ctx, err, request)
+		}
+	}(ctx, request)
+
+	if request.IsAll() {
+		err = a.approveAISendService.DenyAll(ctx)
+	} else {
+		err = a.approveAISendService.DenySession(ctx, request.SessionId)
+	}
+	if err != nil {
+		return err
+	}
 
 	logger.Info(ctx, "Finished", request)
 	return nil

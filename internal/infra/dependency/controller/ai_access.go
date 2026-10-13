@@ -20,6 +20,7 @@ func GetAIAccessController() adapter.AIAccessController {
 				application.GetGuardAIOutputService(),
 				application.GetNotifyAIChangeService(),
 				application.GetRecordAIActivityService(),
+				application.GetApproveAISendService(),
 			)
 		})
 	}

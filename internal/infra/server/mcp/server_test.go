@@ -45,6 +45,12 @@ func (f *fakeAIAccess) Guard(_ context.Context, request dto.AIGuard) (*dto.AIGua
 	return &guarded, nil
 }
 func (f *fakeAIAccess) Notify(context.Context, dto.AIChanges) error { return nil }
+func (f *fakeAIAccess) RequestApproval(context.Context, dto.AIApprovalRequest) (*dto.AIApprovalOutcome, error) {
+	return nil, nil
+}
+func (f *fakeAIAccess) AnswerApproval(context.Context, dto.AIApprovalAnswer) error { return nil }
+func (f *fakeAIAccess) PendingApprovals(context.Context) ([]dto.AIApproval, error) { return nil, nil }
+func (f *fakeAIAccess) DenyApprovals(context.Context, dto.AIApprovalDenial) error  { return nil }
 func (f *fakeAIAccess) Record(_ context.Context, request dto.AIActivityRecord) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -126,10 +132,6 @@ func TestServerListsTheToolsAndRunsThePipeline(t *testing.T) {
 	access.mu.Unlock()
 	if record.Client != "Claude Code" || record.Action != "explode" || record.Outcome != entity.AIActivityError || record.Code != "MCP-07400" || record.LocalId != "ws-1" || !strings.Contains(record.Args, "s3cret") {
 		t.Errorf("record = %+v", record)
-	}
-	stub, _ := session.CallTool(context.Background(), &sdk.CallToolParams{Name: "settings", Arguments: map[string]any{}})
-	if !stub.IsError {
-		t.Errorf("a stub handler must answer MCP-07400: %+v", stub)
 	}
 	_ = session.Close()
 	select {

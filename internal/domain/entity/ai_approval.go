@@ -7,6 +7,8 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums/approvaloutcome"
 )
 
+const AIApprovalTimeout = 120 * time.Second
+
 type AIApprovalEnvironment struct {
 	ID    string
 	Name  string
@@ -41,6 +43,18 @@ func (a AIApproval) IsPending() bool {
 
 func (a AIApproval) IsApproved() bool {
 	return a.Outcome == approvaloutcome.Approved
+}
+
+func (a AIApproval) IsTimedOut() bool {
+	return a.Outcome == approvaloutcome.TimedOut
+}
+
+func (a AIApproval) Denied() (AIApproval, bool) {
+	return a.Resolved(approvaloutcome.Denied)
+}
+
+func (a AIApproval) TimedOut() (AIApproval, bool) {
+	return a.Resolved(approvaloutcome.TimedOut)
 }
 
 // Resolved reports false when the approval was already answered; every terminal outcome is final.

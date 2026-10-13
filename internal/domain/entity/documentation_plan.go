@@ -55,6 +55,12 @@ func newCreatedRequest(operation ApiOperation, server string, newID func() strin
 	return CreatedRequest{Request: request, Path: operation.Path, Folders: FolderNames(operation.Tag())}
 }
 
+// KeepingDeleted leaves in place the requests the edited document no longer lists.
+func (d DocumentationPlan) KeepingDeleted() DocumentationPlan {
+	d.Deleted = []Request{}
+	return d
+}
+
 // NeedsConfirmation is true while the plan deletes requests the user has not agreed to delete.
 func (d DocumentationPlan) NeedsConfirmation(deletionsConfirmed bool) bool {
 	return d.HasDeletions() && !deletionsConfirmed

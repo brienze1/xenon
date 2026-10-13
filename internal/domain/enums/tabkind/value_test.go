@@ -16,6 +16,7 @@ func TestGetTabKind(t *testing.T) {
 		{raw: "globals", want: Globals},
 		{raw: "collection", want: Collection},
 		{raw: "folder", want: Folder},
+		{raw: "settings", want: Settings},
 	}
 	for _, tc := range cases {
 		for _, raw := range []string{tc.raw, strings.ToUpper(tc.raw), " " + tc.raw + " "} {
