@@ -253,7 +253,7 @@ Feature: Everything an AI client does is recorded in History
 
     Examples:
       | source | user_left | ai_left |
-      | user   | 0         | 2       |
+      | user   | 0         | 1       |
       | ai     | 1         | 0       |
       | all    | 0         | 0       |
 
@@ -392,7 +392,7 @@ Feature: Everything an AI client does is recorded in History
     And the response field "items" should contain an item with "tool" equal to "tree_edit" and "action" equal to "create"
     And the response field "items" should contain an item with "tool" equal to "tree_edit" and "target" equal to "Payments"
     And the response field "items.0.args" should not exist
-    When I save the response field "items.1.id" as "entry"
+    When I save the response field "items.0.id" as "entry"
     And I call the MCP tool "history" with
       """
       { "action": "get", "id": "{{entry}}" }

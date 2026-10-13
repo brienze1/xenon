@@ -108,7 +108,7 @@ Feature: AI clients use git sync on a linked workspace
   Scenario: Unlinking goes through the destructive delete tool
     When I call the MCP tool "delete" with
       """
-      { "target": "git_link" }
+      { "target": "git_link", "path": "{{workspace_root}}/acme-plain" }
       """
     Then the call should succeed
     When I call the MCP tool "git" with

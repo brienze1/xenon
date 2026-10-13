@@ -54,10 +54,16 @@ Feature: AI clients build and edit collections
       { "local_id": "{{Reference.local_id}}", "parent_id": "{{ref_orders}}", "name": "Create order" }
       """
     And I save the response field "id" as "ref_request"
+    And I call "RequestService.Get" with
+      """
+      { "local_id": "{{Reference.local_id}}", "id": "{{ref_request}}" }
+      """
+    And I save the response field "revision" as "ref_revision"
     And I call "RequestService.Save" with
       """
-      { "local_id": "{{Reference.local_id}}", "request": { "id": "{{ref_request}}", "name": "Create order", "method": "POST", "url": "{{api}}/orders" } }
+      { "local_id": "{{Reference.local_id}}", "base_revision": "{{ref_revision}}", "force": false, "request": { "id": "{{ref_request}}", "name": "Create order", "method": "POST", "url": "{{api}}/orders" } }
       """
+    Then the call should succeed
     Then the folder "workspaces/reference/collections" should equal the folder "workspaces/acme/collections" apart from ids
     When I call the MCP tool "tree" with
       """
