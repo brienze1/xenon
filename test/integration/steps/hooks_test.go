@@ -28,6 +28,7 @@ func (t *testUtils) before() error {
 	t.digest.Reset()
 	t.fileManager.Reset()
 	t.sshAgent.Reset()
+	t.window.Reset()
 	t.sshKeys = map[string]*mock.SshKey{}
 	if err := t.git.Reset(); err != nil {
 		return err
@@ -39,6 +40,7 @@ func (t *testUtils) before() error {
 	t.callError = nil
 	t.routeResponse = nil
 	t.background = nil
+	t.backgrounds = map[string]*backgroundCall{}
 	t.written = map[string]string{}
 
 	tempRoot, err := os.MkdirTemp("", "xenon-bdd-")
@@ -64,6 +66,9 @@ func (t *testUtils) before() error {
 		"app_data":       t.dataDir,
 		"resources":      resources,
 	}
+	if err := t.prepareMcp(); err != nil {
+		return err
+	}
 	if err := os.Setenv("XENON_SCRYPT_LOG_N", scryptLogN); err != nil {
 		return err
 	}
@@ -71,6 +76,7 @@ func (t *testUtils) before() error {
 }
 
 func (t *testUtils) after() {
+	t.closeMcp()
 	for _, path := range t.readOnly {
 		_ = os.Chmod(path, 0o755)
 	}

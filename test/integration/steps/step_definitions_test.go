@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/cucumber/godog"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/brienze1/xenon/internal/infra/dependency/external"
 	httpClient "github.com/brienze1/xenon/pkg/http"
@@ -43,8 +44,12 @@ type testUtils struct {
 	fileManager   *mock.FileManager
 	git           *mock.GitServers
 	sshAgent      *mock.SshAgent
+	window        *mock.WindowFocuser
+	mcpSessions   map[string]*mcp.ClientSession
+	bridge        *bridgeRun
 	sshKeys       map[string]*mock.SshKey
 	busyPorts     []net.Listener
+	mcpClientName string
 	vars          map[string]string
 	environment   map[string]string
 	readOnly      []string
@@ -54,6 +59,7 @@ type testUtils struct {
 	dataDir       string
 	routeResponse *httptest.ResponseRecorder
 	background    *backgroundCall
+	backgrounds   map[string]*backgroundCall
 	response      []byte
 	callError     []byte
 	elapsed       time.Duration
@@ -104,6 +110,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 			fileManager: mock.NewFileManager(),
 			git:         mock.NewGitServers(),
 			sshAgent:    mock.NewSshAgent(),
+			window:      mock.NewWindowFocuser(),
 		}
 		if os.Getenv("LOG_LEVEL") == "" {
 			_ = os.Setenv("LOG_LEVEL", "off")
@@ -177,4 +184,6 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	test.registerThenDigestSteps(ctx)
 	test.registerGivenGitSteps(ctx)
 	test.registerThenGitSteps(ctx)
+	test.registerWhenMcpSteps(ctx)
+	test.registerThenMcpSteps(ctx)
 }
