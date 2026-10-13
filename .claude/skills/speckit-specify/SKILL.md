@@ -85,22 +85,22 @@ Given that feature description, do this:
 
    **Resolution order for `SPECIFY_FEATURE_DIRECTORY`**:
    1. If the user explicitly provided `SPECIFY_FEATURE_DIRECTORY` (e.g., via environment variable, argument, or configuration), use it as-is
-   2. **Linear issue id prefix (PREFERRED — this repo's convention)**: if a Linear
-      issue id is known for this feature, use it as the directory prefix instead of a
-      running number:
-      - Construct the directory name: `<LINEAR-ID>-<short-name>`, e.g.
-        `PLT-1768-otp-resend-suppression`. Keep the team prefix and number exactly as
-        Linear shows them (`PLT-1768`, `LED-023`, `CMA-007`, …), uppercased.
-      - The Linear id comes from: the `/spec-task` invocation (which reads the task and
-        passes it in), an explicit id in the feature description/arguments, or the task
-        id embedded in the current git branch name (e.g. branch
-        `brienze/plt-1768-…` → `PLT-1768`). If more than one id applies, use the single
-        **owning** task; if truly none applies, fall back to numbering (below).
+   2. **Task id prefix (PREFERRED — this repo's convention)**: if a task id `XEN-NNN` is
+      known for this feature, use it as the directory prefix instead of a running number:
+      - Construct the directory name: `<XEN-ID>-<short-name>`, e.g.
+        `XEN-008-collection-runner`, uppercased.
+      - The task id comes from: the `/spec-task` invocation (which reads the GitHub issue
+        and passes it in — the id is the `XEN-NNN` prefix of the issue title, see
+        `.claude/skills/github-issues.md`), an explicit id in the feature
+        description/arguments, or the task id in the current git branch name (e.g. branch
+        `xen-008` → `XEN-008`). Never use the GitHub issue number itself. If more than one
+        id applies, use the single **owning** task; if truly none applies, fall back to
+        numbering (below).
       - Set `SPECIFY_FEATURE_DIRECTORY` to `specs/<directory-name>`.
-      - Rationale: Linear-id prefixes are globally unique and never collide across
-        parallel branches, unlike sequential `NNN` (which produced multiple `008-*`
+      - Rationale: task ids are assigned once, in the issue title, so they never collide
+        across parallel branches, unlike sequential `NNN` (which produced multiple `008-*`
         folders when several features were developed at once).
-   3. Otherwise (no Linear id at all), fall back to numbering under `specs/`:
+   3. Otherwise (no task id at all), fall back to numbering under `specs/`:
       - Check `.specify/init-options.json` for `feature_numbering` (preferred) or `branch_numbering` (deprecated, migration only — will be removed in a future release)
       - If `"timestamp"`: prefix is `YYYYMMDD-HHMMSS` (current timestamp)
       - If `"sequential"` or absent: prefix is `NNN` (next available 3-digit number after scanning existing directories in `specs/`)
@@ -119,7 +119,7 @@ Given that feature description, do this:
        "feature_directory": "<resolved feature dir>"
      }
      ```
-     Write the actual resolved directory path value (for example, `specs/PLT-1768-otp-resend-suppression`), not the literal string `SPECIFY_FEATURE_DIRECTORY`.
+     Write the actual resolved directory path value (for example, `specs/XEN-008-collection-runner`), not the literal string `SPECIFY_FEATURE_DIRECTORY`.
      This allows downstream commands (`/speckit-plan`, `/speckit-tasks`, etc.) to locate the feature directory without relying on git branch name conventions.
 
    **IMPORTANT**:

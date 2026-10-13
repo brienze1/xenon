@@ -1,5 +1,5 @@
 ---
-description: "Implement a task end-to-end (Linear card or free description): research → plan → branch → red BDD → green impl → refactor-diff loop → push (no PR)"
+description: "Implement a task end-to-end (GitHub issue or free description): research → plan → branch → red BDD → green impl → refactor-diff loop → push (no PR)"
 ---
 
 You are implementing a task end-to-end. Execute the phases below **strictly in order**. Do not skip a phase, do not reorder, and do not open a pull request at any point.
@@ -10,10 +10,10 @@ The full task flow, all on that branch:
 
 ```
 /research-task → /spec-task → /create-tests → /implement-task
-  (Linear desc)    (specs/)     (red .feature)   (green code → push)
+  (issue desc)     (specs/)     (red .feature)   (green code → push)
 ```
 
-Earlier steps are optional — this command works from a bare card or description too — but when they ran, **their output is your starting point**: the spec in `specs/<LINEAR-ID>-<slug>/` is the source of truth for *what* to build, and the red features `/create-tests` pushed are the tests you must turn green.
+Earlier steps are optional — this command works from a bare issue or description too — but when they ran, **their output is your starting point**: the spec in `specs/<XEN-ID>-<slug>/` is the source of truth for *what* to build, and the red features `/create-tests` pushed are the tests you must turn green.
 
 ---
 
@@ -23,32 +23,32 @@ Argument: $ARGUMENTS
 
 Determine the input mode:
 
-- **Card mode** — the argument is (or contains) a Linear issue identifier like `PLT-1234`. The task to implement is that card.
-- **Description mode** — the argument is a free-text description of work with no Linear identifier. There is no card.
+- **Issue mode** — the argument is (or contains) a GitHub issue reference: a number (`12`, `#12`), an issue URL, or a task id like `XEN-008`. Resolve it per `.claude/skills/github-issues.md`. The task to implement is that issue.
+- **Description mode** — the argument is a free-text description of work with no issue reference. There is no issue.
 
 Mode differences (everything else is identical):
 
-| | Card mode | Description mode |
+| | Issue mode | Description mode |
 |---|---|---|
-| Source of truth | `specs/<ID>-<slug>/` if present, else the Linear card (+ comments) | the supplied description |
-| Move card to **In Progress** | **yes** | n/a — never create or move a card |
-| Branch name | the lowercased card id (e.g. `plt-1234`) | the branch the user explicitly named; if none given, **ask** before Phase 3 |
-| Final Linear update | **yes** | n/a |
+| Source of truth | `specs/<XEN-ID>-<slug>/` if present, else the issue (+ comments) | the supplied description |
+| Label the issue **in progress** | **yes** | n/a — never create or change an issue |
+| Branch name | the lowercased task id (e.g. `xen-008`) | the branch the user explicitly named; if none given, **ask** before Phase 3 |
+| Final issue comment | **yes** | n/a |
 
-In description mode: **do not create a Linear card and do not move/modify anything in Linear.** Only use a specific branch name if the user stated one — otherwise ask which branch name to use before Phase 3.
+In description mode: **do not create an issue and do not change or comment on any issue.** Only use a specific branch name if the user stated one — otherwise ask which branch name to use before Phase 3.
 
 ---
 
 ## Phase 1 — Research & verify the work is correct
 
-Goal: confirm the work matches reality **before** writing anything. Specs (card or description) are often written from stale assumptions — catch that now, not mid-implementation.
+Goal: confirm the work matches reality **before** writing anything. Specs (issue or description) are often written from stale assumptions — catch that now, not mid-implementation.
 
-**Card mode only — first action:** once you've confirmed the argument is a real card and you're committing to work it, move it to **In Progress** via the Linear MCP (`save_issue` with the started state). Then continue.
+**Issue mode only — first action:** once you've confirmed the argument is a real issue and you're committing to work it, add the **in progress** label (commands in `.claude/skills/github-issues.md`). Then continue.
 
 1. Load the spec:
-   - **Card mode:** `get_issue` (full description, status, branch name, project) + `list_comments` (decisions, clarifications added after creation).
+   - **Issue mode:** `gh issue view <n> --repo brienze1/xenon --json number,title,body,labels,state,url,comments` — the full description, the task id in the title, and the comments (decisions and clarifications added after creation).
    - Check whether the task branch already exists on origin (`git fetch origin && git ls-remote --heads origin <branch>`). If it does, read what earlier steps left there:
-     - `specs/<LINEAR-ID>-<slug>/` — `spec.md`, `plan.md`, `tasks.md`, `contracts/`. **The spec wins over the raw card** where they disagree (note the discrepancy).
+     - `specs/<XEN-ID>-<slug>/` — `spec.md`, `plan.md`, `tasks.md`, `contracts/`. **The spec wins over the raw issue** where they disagree (note the discrepancy).
      - `git diff --stat origin/main...origin/<branch> -- test/integration/` — the red features `/create-tests` wrote.
    - **Description mode:** treat the supplied description as the spec. If it references companion docs you can reach, read them.
 2. Verify the spec against the **freshly fetched `origin/main`** (`git fetch origin main`, then `git show origin/main:<path>` / `git grep … origin/main`) — do not trust a local checkout to be current:
@@ -146,7 +146,7 @@ The BDD suite in `test/integration/` is part of this task and changing it is man
 
 ## Phase 8 — Push (NO PR)
 
-1. Commit the work with clear, scoped messages (one logical commit per concern is fine; reference the card id in card mode). Spec/test commits from earlier steps stay as they are.
+1. Commit the work with clear, scoped messages (one logical commit per concern is fine; reference the task id, e.g. `feat(XEN-008): …`, in issue mode). Spec/test commits from earlier steps stay as they are.
 2. Push the branch:
    ```bash
    git push -u origin <branch>
@@ -154,8 +154,8 @@ The BDD suite in `test/integration/` is part of this task and changing it is man
    If the branch was rebased in Phase 3 and already existed on origin, use `git push --force-with-lease` — never a bare `--force`.
 3. **Do NOT open a pull request.** Leave the branch pushed and available for review.
 4. Report back: branch name, commit SHAs, what shipped, test status, and anything logged-but-skipped (out-of-scope findings, pre-existing failures).
-   - **Card mode:** update the Linear card with what was actually built if it diverged from the description (format per `.claude/skills/linear-messaging.md`).
-   - **Description mode:** report back to the user only — touch nothing in Linear.
+   - **Issue mode:** comment on the issue with what was built (format per `.claude/skills/github-issues.md`), calling out anything that diverged from the description. Do not close the issue; it closes when the work merges to `main`.
+   - **Description mode:** report back to the user only — touch no issue.
 
 ---
 
@@ -163,8 +163,8 @@ The BDD suite in `test/integration/` is part of this task and changing it is man
 
 - Phases run in the exact order above. Research and plan-approval gate all code.
 - **One repo, one branch**: spec, tests and implementation all land on the task branch.
-- **Card mode:** move the card to In Progress at the start; branch = lowercased card id; update the card at the end.
-- **Description mode:** never create or move a Linear card; branch = the one the user named (ask if none given).
+- **Issue mode:** label the issue in progress at the start; branch = lowercased task id; comment on the issue at the end.
+- **Description mode:** never create or change an issue; branch = the one the user named (ask if none given).
 - The spec (`specs/<ID>-<slug>/`), when present, is the source of truth for what to build; the features `/create-tests` wrote are the contract — extend, never weaken.
 - **MANDATORY: `git fetch origin` FIRST, every run — never trust local `main` or an un-refreshed `origin/main` ref; verify `0` behind / `FRESH` before writing code, including when the worktree was pre-created.**
 - Red before green — always prove the test fails first.

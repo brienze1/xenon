@@ -101,20 +101,22 @@ assertion is needed, and keep the new step generic. See `bdd-testing.md`,
 
 ## Commands — the task flow
 
-All four run on **one branch per task** (the lowercased Linear id, e.g. `plt-1234`):
+Tasks are **GitHub issues** on `brienze1/xenon` (there is no Linear), read and updated with `gh` per
+`.claude/skills/github-issues.md`. Each task has an id `XEN-NNN` in its issue title. All four commands run on
+**one branch per task** (the lowercased id, e.g. `xen-008`):
 
 ```
 /research-task → /spec-task → /create-tests → /implement-task
-  (Linear desc)    (specs/)     (red .feature)   (green code → push)
+  (issue desc)     (specs/)     (red .feature)   (green code → push)
 ```
 
-- `/research-task <ID>` — verify the card against the code, resolve questions, rewrite the
-  Linear description. No code.
-- `/spec-task <ID>` — full Spec Kit chain (specify → clarify → plan → tasks → analyze →
-  checklist) into `specs/<ID>-<slug>/`, zero open questions, commit + push the spec.
-- `/create-tests <ID>` — red BDD features in `test/integration/features/` from the spec,
+- `/research-task <issue>` — verify the issue against the code, resolve questions, rewrite the
+  issue description. No code.
+- `/spec-task <issue>` — full Spec Kit chain (specify → clarify → plan → tasks → analyze →
+  checklist) into `specs/<XEN-ID>-<slug>/`, zero open questions, commit + push the spec.
+- `/create-tests <issue>` — red BDD features in `test/integration/features/` from the spec,
   commit + push to the task branch.
-- `/implement-task <ID | description>` — branch fresh off `origin/main` (reusing the task
+- `/implement-task <issue | description>` — branch fresh off `origin/main` (reusing the task
   branch), red → green, `/refactor-diff` until clean, push. Never opens a PR.
 - `/refactor-diff` — PR-diff-scoped refactor; touches only files changed vs `main` plus
   uncommitted work. Autonomous, never commits.
@@ -125,7 +127,7 @@ Spec Kit skills (`speckit-*`) are also available directly.
 
 - Never commit `REFACTORING_REPORT.md` or other refactor artifacts.
 - Work in a dedicated worktree branched from a **freshly fetched** `origin/main`.
-- Linear comments follow `.claude/skills/linear-messaging.md`.
+- Issue comments follow `.claude/skills/github-issues.md`.
 - Build/validation targets follow `.claude/skills/makefile.md` — `make validate` is the final
   quality gate, `make sort-imports` after each batch of Go changes.
 - Secrets never land in workspace files, logs, fixtures or commits (PRD: Environments and secrets).

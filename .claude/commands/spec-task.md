@@ -1,9 +1,9 @@
 ---
-description: Read a Linear task and drive it through the full GitHub Spec Kit flow (specify → clarify → plan → tasks → analyze → checklist) to produce a complete spec folder with every open question resolved before implementation.
-argument-hint: <LINEAR-TASK-ID or URL> (e.g. PLT-1653)
+description: Read a GitHub issue and drive it through the full GitHub Spec Kit flow (specify → clarify → plan → tasks → analyze → checklist) to produce a complete spec folder with every open question resolved before implementation.
+argument-hint: <issue number, URL or XEN-id> (e.g. 12 or XEN-008)
 ---
 
-# spec-task — Linear task → full Spec Kit spec folder
+# spec-task — GitHub issue → full Spec Kit spec folder
 
 You are turning **$ARGUMENTS** into a complete Spec Kit feature spec. This repo
 is already Spec Kit-initialized (`.specify/` exists). Run **every** phase of
@@ -12,17 +12,17 @@ do not skip a phase because the task "seems simple," and do not merge phases
 together. Each phase below maps to an actual skill invocation via the `Skill`
 tool; invoke it and let it do its full work before moving to the next.
 
-This is a **single repo**: the specs live in `specs/<LINEAR-ID>-<slug>/` right
+This is a **single repo**: the specs live in `specs/<XEN-ID>-<slug>/` right
 next to the code they describe (`cmd/`, `internal/`, `pkg/`) and the BDD suite
 that will verify them (`test/integration/`). Ground every phase in *this* repo's
 code — there is no separate spec or e2e repo.
 
 The task flow this command sits in, all on **one branch** (the lowercased
-Linear id, e.g. `plt-1653`):
+task id, e.g. `xen-008`; see `.claude/skills/github-issues.md`):
 
 ```
 /research-task → /spec-task → /create-tests → /implement-task
-  (Linear desc)    (specs/)     (red .feature)   (green code → push)
+  (issue desc)     (specs/)     (red .feature)   (green code → push)
 ```
 
 ## Non-negotiable rules
@@ -30,7 +30,7 @@ Linear id, e.g. `plt-1653`):
 1. **Run the full chain, no shortcuts.** Order is fixed:
    `speckit-specify` → `speckit-clarify` → `speckit-plan` → `speckit-tasks` →
    `speckit-analyze` → `speckit-checklist`. Do not reorder, do not skip a step
-   because it seems redundant with what you already know from Linear, and do
+   because it seems redundant with what you already know from the issue, and do
    not run `speckit-implement` — this command stops at a complete, analyzed
    spec folder, it does not write product code.
 2. **Each phase must genuinely run**, not be hand-rolled by you. Invoke the
@@ -40,7 +40,7 @@ Linear id, e.g. `plt-1653`):
 3. **Zero open questions at the end. This is the definition of done.**
    The spec folder this command produces must be immediately implementable by
    someone who cannot ask anyone anything. When this command finishes, **no
-   artifact in `specs/<LINEAR-ID>-<slug>/` may contain an unresolved decision** — no
+   artifact in `specs/<XEN-ID>-<slug>/` may contain an unresolved decision** — no
    `[NEEDS CLARIFICATION]`, no `[Gap]` left dangling, no `TBD`, `TODO`, `???`,
    `to be decided`, `needs confirmation`, no unchecked checklist item, and no
    task phrased as "investigate/determine/decide whether X". Every such item is
@@ -76,47 +76,50 @@ Linear id, e.g. `plt-1653`):
    `/create-tests` and `/implement-task` (often run from other sessions /
    worktrees) pick the spec up from that branch, so the artifacts must
    actually be on GitHub when this command finishes. Still **don't open a
-   PR** — just push the branch. Only stage the `specs/<LINEAR-ID>-<slug>/` folder (and
+   PR** — just push the branch. Only stage the `specs/<XEN-ID>-<slug>/` folder (and
    `.specify/feature.json`) for this commit, nothing else you didn't touch.
    **Do not commit until Step 7's gate passes** — never push a spec with open
    items in it.
 
-## Step 0 — Read the Linear task
+## Step 0 — Read the issue
 
-Use the Linear MCP tools:
-- `mcp__linear__get_issue` for **$ARGUMENTS** — title, description, acceptance
-  criteria, labels, linked docs.
-- `mcp__linear__list_comments` — later clarifications may refine or override
-  the description.
+Follow `.claude/skills/github-issues.md` to resolve **$ARGUMENTS** to one issue and its `XEN-NNN` task id (assign
+the next free id if the title has none), then read it:
+
+```bash
+gh issue view <n> --repo brienze1/xenon --json number,title,body,labels,state,url,comments
+```
+
+- The body holds the description and acceptance criteria; labels and linked issues give context.
+- Comments: later clarifications may refine or override the description.
 
 If this task was already run through `/research-task`, the description should
 already contain a verified, code-grounded plan (Summary, Affected repos/files,
 Technical plan, Out of scope). Prefer that content as your source of truth. If
 the description still reads like raw, unverified requirements, that's fine too
 — Spec Kit's own clarification phases exist to handle that — but don't invent
-technical details that aren't in Linear or the linked code; carry unresolved
+technical details that aren't in the issue or the linked code; carry unresolved
 ambiguity into `speckit-clarify` rather than guessing it away here.
 
 Compose a single, self-contained **feature description** paragraph from the
 task (title + description + relevant comments) — this is what you'll pass as
-the argument to `speckit-specify`. Do not just paste the raw Linear markdown;
+the argument to `speckit-specify`. Do not just paste the raw issue markdown;
 distill it into the plain-language feature description Spec Kit expects (what
 users need and why — Spec Kit itself keeps this implementation-agnostic).
 
 ## Step 1 — `speckit-specify`
 
 Invoke the `speckit-specify` skill with the feature description from Step 0.
-**Pass the Linear issue id (e.g. `PLT-1768`) so the spec folder is named
-`specs/<LINEAR-ID>-<short-slug>/` (this repo's convention), NOT a sequential
-`NNN-` prefix.** Linear-id prefixes never collide across parallel branches;
-sequential numbering does (it once produced several `008-*` folders at once).
-Use the id of the task this `/spec-task` run is for; keep the team prefix and
-number as Linear shows them (`PLT-1768`, `LED-023`, …), uppercased.
+**Pass the task id (e.g. `XEN-008`) so the spec folder is named
+`specs/<XEN-ID>-<short-slug>/` (this repo's convention), NOT a sequential
+`NNN-` prefix.** Task ids are assigned once, in the issue title, so they never
+collide across parallel branches; sequential numbering does. Use the id of the
+task this `/spec-task` run is for, uppercased (`XEN-008`), never the issue number.
 
 Let it run its full flow: short-name generation, spec directory creation,
 writing `spec.md`, generating `checklists/requirements.md`, and its own
 validation loop (up to 3 iterations). If it surfaces `[NEEDS CLARIFICATION]`
-questions, close every one of them **inside this phase** under rule 4 — Linear
+questions, close every one of them **inside this phase** under rule 4 — issue
 content first, then the code and the database, then the user. No marker may
 survive into Step 2.
 
@@ -148,7 +151,7 @@ caps how many questions this *phase* asks, not how complete the spec must be.
 
 Invoke the `speckit-plan` skill to generate the design artifacts (`plan.md`
 and whatever supporting design docs the template produces) for this feature.
-If Linear (especially a prior `/research-task` run) already named the real
+If the issue (especially after a prior `/research-task` run) already named the real
 files/endpoints involved, feed that as guidance so the plan is grounded
 in the actual codebase rather than generic.
 
@@ -203,7 +206,7 @@ finance, legal), that *decision to route it* is itself the resolution: record
 in the artifact who must decide, what specifically they must decide, and what
 blocks until they do — then tick the item. "Someone should think about this"
 is not a resolution; "this is blocked pending X's decision on Y, tracked in
-Linear" is.
+the issue" is.
 
 ## Step 7 — Open-items gate (must pass before committing)
 
@@ -211,7 +214,7 @@ Before staging anything, sweep the whole feature folder and prove it is clean.
 This is a hard gate, not a formality.
 
 ```bash
-FEATURE_DIR=specs/<LINEAR-ID>-<slug>
+FEATURE_DIR=specs/<XEN-ID>-<slug>
 
 # 1. Unresolved-decision markers anywhere in the spec folder
 grep -rniE '\[NEEDS CLARIFICATION|\bTBD\b|\bTODO\b|\?\?\?|to be decided|to be determined|needs (confirmation|decision|input)|decide later|open question' "$FEATURE_DIR"
@@ -261,27 +264,27 @@ If any hit is a real open item, resolve it under rule 4 and re-run the gate.
 ## Step 8 — Branch, commit, and push the spec
 
 The goal is a branch on GitHub that `/create-tests` (and whoever implements
-the task) can link back to from Linear.
+the task) can link back to from the issue.
 
 1. **Check current branch state first** (`git status`, `git branch
    --show-current`) — a `before_specify` hook, or the harness that created this
    worktree, may already have put you on a branch. The task branch is **the
-   lowercased Linear id** (e.g. `plt-1653`) — the same branch `/create-tests`
+   lowercased task id** (e.g. `xen-008`) — the same branch `/create-tests`
    and `/implement-task` use, so all three commands stack onto one branch.
-   - Already on `plt-1653` → reuse it.
-   - `plt-1653` exists on origin (`git ls-remote --heads origin plt-1653`) →
+   - Already on `xen-008` → reuse it.
+   - `xen-008` exists on origin (`git ls-remote --heads origin xen-008`) →
      check it out and build on it; never overwrite its history.
-   - Otherwise → `git fetch origin main && git checkout -b plt-1653 origin/main`.
+   - Otherwise → `git fetch origin main && git checkout -b xen-008 origin/main`.
      Always branch from a **freshly fetched** `origin/main`, never local `main`.
 
-   The spec **folder** keeps the uppercase id (`specs/PLT-1653-<slug>/`); only
+   The spec **folder** keeps the uppercase id (`specs/XEN-008-<slug>/`); only
    the branch is lowercase.
-2. Confirm `git status` shows only the new `specs/<LINEAR-ID>-<slug>/` folder (and
+2. Confirm `git status` shows only the new `specs/<XEN-ID>-<slug>/` folder (and
    `.specify/feature.json` if it changed) — do not sweep in unrelated
    in-progress work with a blanket `git add -A`.
 3. Commit:
    ```
-   git add specs/<LINEAR-ID>-<slug> .specify/feature.json
+   git add specs/<XEN-ID>-<slug> .specify/feature.json
    git commit -m "spec($TASK_ID): add spec/plan/tasks for <short-name>"
    ```
 4. Push the branch to `origin` and set upstream:
@@ -293,25 +296,26 @@ the task) can link back to from Linear.
    or `git status` showed unexpected files) — otherwise this push is the
    expected, requested outcome of the command.
 
-## Step 9 — Link the spec in Linear
+## Step 9 — Link the spec in the issue
 
 Get the GitHub URL for the pushed folder:
 ```
 gh repo view --json owner,name -q '.owner.login + "/" + .name'
 ```
-Construct `https://github.com/<owner>/<repo>/tree/<branch-name>/specs/<LINEAR-ID>-<slug>`
+Construct `https://github.com/<owner>/<repo>/tree/<branch-name>/specs/<XEN-ID>-<slug>`
 (link the folder, not individual files, so `spec.md`/`plan.md`/`tasks.md`/
 `checklists/` are all reachable from one link).
 
-Post this as a comment on the Linear task via `mcp__linear__save_comment` —
-don't overwrite the description (that's `/research-task`'s job). Keep the
-comment short and structured, e.g.:
+Post this as a comment on the issue (`gh issue comment <n> --repo brienze1/xenon --body-file <file>`) —
+don't overwrite the description (that's `/research-task`'s job). Use the comment format in
+`.claude/skills/github-issues.md`, e.g.:
 
 ```
-Spec Kit artifacts generated and pushed: <branch-name>
+🤖 **spec-task**: ✅ SPEC READY
 
-<github-tree-url>
+**Branch:** `xen-008`
 
+**Spec:** <github-tree-url>
 - spec.md
 - plan.md
 - tasks.md
@@ -321,8 +325,8 @@ Spec Kit artifacts generated and pushed: <branch-name>
 ## Step 10 — Report back
 
 Summarize for the user:
-- The feature directory created (`specs/<LINEAR-ID>-<slug>/`), the branch name, and
-  the GitHub link posted to Linear.
+- The feature directory created (`specs/<XEN-ID>-<slug>/`), the branch name, and
+  the GitHub link posted to the issue.
 - Which phases ran clean vs. required fixes/clarification, and what was
   resolved.
 - **Every question that came up and how each was closed** — split into the ones
@@ -334,8 +338,8 @@ Summarize for the user:
   and state what it blocks.
 - The final state: spec, plan, tasks, and checklist all present, consistent,
   fully resolved, and pushed — implementable as-is, with nothing left for the
-  implementer to decide. Next in the flow: `/create-tests <LINEAR-ID>` (red
-  BDD on the same branch), then `/implement-task <LINEAR-ID>`.
+  implementer to decide. Next in the flow: `/create-tests <XEN-ID>` (red
+  BDD on the same branch), then `/implement-task <XEN-ID>`.
 
 Do not describe the spec as complete if anything is still open. If you genuinely
 could not close something, say so plainly at the top of the report and state

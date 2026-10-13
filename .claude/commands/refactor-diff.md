@@ -39,7 +39,7 @@ Most PRs are vibe-coded — they work but don't follow the architecture. `/refac
 - You want to clean up a feature branch before review
 - You're looping (`/loop /refactor-diff`) to incrementally improve a PR
 - Reviewers flagged "this is hard to read" and you want it tightened to skill standards
-- You finished implementing a Linear task and want a quality pass before pushing
+- You finished implementing a task (GitHub issue) and want a quality pass before pushing
 
 ## Process
 
