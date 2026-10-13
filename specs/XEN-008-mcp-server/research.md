@@ -236,3 +236,22 @@ guard's arguments masking also hides them in History action rows.
 Every MCP call is also logged at Info level with the client, tool, action, outcome and duration. Arguments are omitted
 from the log, because `logger.WithRedactions` covers only known secrets. The log line is the fallback when no
 workspace is active.
+
+## Implementation notes (recorded during /implement-task)
+
+- **Protocol versions**: the server offers MCP versions up to 2025-11-25. With 2026-07-28 the SDK runs
+  sessionless, which would lose the per-session client name, the `mcp:<session>` tab and the session-close hook that
+  withdraws pending approvals. Clients negotiate down automatically.
+- **Port**: an unsaved port is stored as absent (0). The effective port is the saved one, else `XENON_MCP_PORT`,
+  else 47821. Settings Get and Save report the effective value.
+- **Settings Save** re-applies AI access only when `ai_access` is in the payload, so unrelated saves never drop open
+  MCP sessions.
+- **History caps on read**: besides capping in memory, a read rewrites the file once a source is more than 20% over
+  its cap. Lowering a cap and later raising it must not bring old entries back (spec US6 sc. 8).
+- **Known-secret set** lives in an integration-layer in-memory store shared by the guard, recorder and send services.
+  The services skill forbids one service calling another.
+- **Stdio bridge** uses a small Streamable HTTP client of its own (with the SDK's `jsonrpc` encoding). The SDK client
+  transport, used as a raw connection, never sends `Mcp-Protocol-Version` after initialize, and it hides a rejected
+  POST's error from the reader.
+- **`settings` / `settings_edit`** are workspace-scoped like every other tool (contract Conventions), so they answer
+  MCP-06404 when no workspace is open.

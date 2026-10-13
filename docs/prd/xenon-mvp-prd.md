@@ -348,6 +348,67 @@ Each workspace can be linked to its own Git repository (GitHub or any other Git 
 - Branch switching and creating branches from inside Xenon.
 - Pull requests, history view and blame.
 
+## AI access (MCP)
+
+Xenon runs an **MCP server** while it is open, so AI clients on the same machine (Claude Code, Claude Desktop,
+Cursor and similar) can work with everything in Xenon on the user's behalf. Added after the MVP stages (XEN-008).
+
+**Connecting**
+
+- The server listens on `http://127.0.0.1:<port>/mcp` (Streamable HTTP), port **47821** by default, changeable in
+  Settings. Clients that only speak stdio run `xenon mcp`, which bridges to the running app and never opens a window.
+- Only the local machine can reach it: loopback only, with Host and Origin checks against DNS rebinding. There is no
+  token, and any program running as the same user can connect. That is accepted, because such a program can already
+  read the vault key from the keychain.
+- Settings → AI access (MCP) has an on/off switch (on by default), the port, the status, the stdio command and
+  ready-to-paste client configs. Changes apply at once.
+
+**What an AI can do**
+
+- Everything the UI does, through a small set of 24 resource tools with an `action` argument:
+  - workspaces, the collection/folder/request/example tree, collection and folder settings and documentation;
+  - sending saved or ad-hoc requests with the active environment;
+  - environments, globals and variables;
+  - History, import and export, code snippets, cookies, the console, scripts, app settings, and git sync on a linked
+    workspace.
+- Tools act on the single active workspace. Switching workspace through MCP switches the window too, and every change
+  shows up in the open window at once.
+- Responses are compact: lists give ids and names, 100 per page; text bodies are capped at 16 KB and paged; binary
+  bodies are never inlined.
+
+**Secrets are write-only for AI**
+
+- An AI can create secrets, set or replace their values (straight into the vault) and send requests that use them.
+- It can never read a value back. There is no reveal, copy or vault tool; snippets and exports with secrets, and
+  turning a secret plain, are refused as human-only.
+- A final leak guard masks every known secret value (raw, URL-encoded, JSON-escaped and base64) in everything an AI
+  receives, including echoed responses, test names, the console and errors. Files the AI writes from a response are
+  written masked.
+- Two residual risks are accepted and shown in Settings:
+  - a value a script deliberately transforms;
+  - an AI sending `{{secret}}` to a destination it controls.
+
+**Approvals**
+
+- An AI send to an environment marked "Confirm before send" brings Xenon to the front with an Approve / Deny prompt.
+  If there is no answer within 120 seconds, the client disconnects or Xenon quits, the send is denied and nothing
+  goes out.
+- Settings has **"Dangerously skip approvals"** (off by default) for unattended use. It never relaxes the secret rule.
+- Deleting, pushing and other destructive tools are marked destructive, so the AI client's own approval covers them.
+  Git accounts, the vault and file pickers stay human-only.
+
+**AI activity in History**
+
+- Every AI tool call, reads included, is recorded in the workspace's History. AI sends are send entries tagged
+  "AI · <client>". Every other call is an action entry with the tool, target, outcome, duration and masked arguments.
+- History has a source filter (All / User / AI) next to Clear History, which clears only what the filter shows.
+- Settings → History sets a cap per source (User and AI, 1,000 by default, 100 to 20,000).
+
+**Settings**
+
+- Settings opens as a **main-area tab** (gear button or Cmd/Ctrl+,), not a dialog. It has sections for Scripts,
+  History, AI access (MCP), Git accounts and Shortcuts.
+
 ## Hotkeys and environment switcher
 
 Hotkeys copy Postman's, so muscle memory carries over; on Windows and Linux, Cmd becomes Ctrl.
@@ -428,7 +489,7 @@ Stages 4 (scripts) and the OAuth 2.0 part of 5 carry most of the risk. Everythin
 
 - [x] Import from Bruno too? **Yes** — a Bruno (.bru) collection importer is part of stage 3, alongside Postman.
 - [x] Platforms? **macOS, Windows and Linux from day one**, built and tested on all three.
-- [x] Request history? **Added to stage 1**: a sidebar History view per workspace (last 1,000 sends, local only, never synced), re-openable in a tab.
+- [x] Request history? **Added to stage 1**: a sidebar History view per workspace (last 1,000 sends, local only, never synced), re-openable in a tab. Since XEN-008 the cap is set per source (user / AI) in Settings and AI activity is recorded too.
 - [x] Folder variables? **No** — only collections and globals, as in Postman.
 - [x] Variables? **Postman's initial + current values**, full list of **Postman dynamic variables**; keychain unavailable → **passphrase fallback**.
 - [x] Import scope (stage 3): **Postman v2.0/v2.1 JSON**, environments, globals and data dump (each item assigned to a workspace, since dumps carry no workspace membership); **Bruno .bru and OpenCollection YAML** with bru→pm script translation; **cURL**. Xenon YAML import ships with export (stage 6). Postman v3 YAML is not in the MVP.
@@ -445,6 +506,14 @@ Stages 4 (scripts) and the OAuth 2.0 part of 5 carry most of the risk. Everythin
 - [x] Where are collection and folder settings edited? **User decision:** like Postman, in a **main-area tab** next to the open requests, not in a dialog. A single click on a collection or folder row opens a preview tab and expands a closed row (a double click or the first edit pins it; the chevron only expands and collapses; the context menu’s **Open** pins it). The tab has a collection/folder icon, the item’s name, a dirty dot, Cmd/Ctrl+S, Save / Don’t Save / Cancel on close and is restored after a restart. Inner tabs: **Overview** (name — renames the item like the sidebar — and a markdown description with preview), **Authorization** (inherit, none or any auth type), **Headers** (sent with every request below), **Scripts** (pre-request and post-response, plus a folder’s "Inherit parent scripts") **Variables** (collections only; folders have no variables, as in Postman) and **Documentation** (collections and folders, see below). Renaming, moving or deleting the item updates or closes its tab; a change on disk while the tab has unsaved edits shows a banner to keep your version or load the one from disk. The right-click "Settings…" dialog is gone.
 - [x] A **Documentation** inner tab on collections (user decision, built Oct 12, 2026) shows the collection as a static, offline **OpenAPI 3.1 (Swagger)** document and edits it **both ways**. Go generates it from the requests: folders become tags ("A / B" when nested, grouped under their top-level folder in `x-tagGroups`), each request an operation with its name, description, path variables and `{{variable}}` path segments, query parameters, headers, body and saved examples (as responses); the auth type becomes a security scheme (never a credential); `{{variables}}` stay as written and the server is the common start of the URLs; every operation carries `x-xenon-id`, and a second request on the same method and path is listed under `x-xenon-variants`. The tab has a **Preview** (rendered by Xenon with its own colours, no Swagger UI) and a **YAML** editor; a document that is not valid YAML/OpenAPI shows its line and column and is never written. **Save** first lists the plan — requests updated, created (an operation without `x-xenon-id`, in the folder of its first tag, created when missing) and deleted (only after ticking the confirmation) — then writes every request file together, one atomic write each. Only what OpenAPI expresses changes (names, descriptions, method, URL, parameters, headers, bodies, examples, the collection’s title and description); scripts, auth values and settings stay. Folder descriptions show as tag descriptions but are not written back, and an existing request does not move when its tag changes.
 - [x] **Folder documentation and tag groups** (user decision, built Oct 12, 2026). Every folder, at any depth, has the same two-way **Documentation** tab, covering **only what is inside it** (its requests and sub-folders, recursively): the info title and description are the folder’s name and description, its sub-folders become tags relative to it ("Admin / Audit"), and the auth its requests really use still resolves through the folders and collection above it. Saving is scoped to the folder: the plan only updates and deletes requests inside it, an operation without `x-xenon-id` is created inside it (in the sub-folder its tag names, created when missing), and a new title renames the folder like any other rename. The same calls serve both (`GetDocumentation`, `PreviewDocumentation`, `PlanDocumentation`, `ApplyDocumentation` take the id of a collection or a folder; a request is refused). Every folder is a tag named by its full path with the folder’s description as the tag description, and the **`x-tagGroups`** vendor extension (Redoc’s way of sectioning tags) groups each top-level folder’s tag with all of its nested folders’ tags. The Preview shows each group as a section (group heading → folder sections → operations) after the requests no group holds, and falls back to plain folder sections when a document has no `x-tagGroups`. `x-tagGroups` is presentational: editing it changes the preview but never a request.
+
+**Decisions (Oct 13, 2026)**
+
+- [x] AI access through an **MCP server** (XEN-008, GitHub issue #3). It runs over HTTP on loopback plus a `xenon mcp`
+  stdio bridge, has no token and an on/off switch. Secrets are write-only behind a leak guard over every AI result.
+  An AI send to a "Confirm before send" environment needs Approve/Deny in Xenon, unless "Dangerously skip approvals"
+  is on. Tools are resource tools with an action. AI activity goes into History, with a source filter and per-source
+  caps. Settings becomes a tab. See "AI access (MCP)".
 
 **Open questions**
 

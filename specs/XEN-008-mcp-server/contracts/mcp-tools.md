@@ -175,7 +175,7 @@ Notify: `VariablesChanged`.
 ### 16. `docs_edit` — D — "Apply an edited OpenAPI document to a collection."
 | action | args | notes |
 | --- | --- | --- |
-| `apply` | `collection_id`, `yaml`, `confirm_deletes?:false` | `TreeDocumentation.ApplyDocumentation`; deletes only when `confirm_deletes:true` |
+| `apply` | `collection_id`, `yaml`, `confirm_deletes?:false` | `TreeDocumentation.ApplyDocumentation`; without `confirm_deletes` the updates and creates are applied and the deletions kept (`keep_deleted`); deletes only when `confirm_deletes:true` |
 Notify: `WorkspaceTreeChanged`.
 
 ### 17. `cookies_edit` — D — "Add or edit cookies and the cookie allowlist."
@@ -240,7 +240,7 @@ return `MCP-03403` or `MCP-04408`. Notify: `HistoryChanged`, `CookiesChanged`.
 | `cookies` | — | `Cookie.Clear` |
 | `workspace` | `id`, `move_to_trash?:true` | `WorkspaceRemove.Handle` |
 | `token` | `owner_id` | `OAuth.Clear` |
-| `git_link` | — | `SyncLink.Unlink` |
+| `git_link` | `path` (an empty folder that keeps the workspace files, as the UI asks for) | `SyncLink.Unlink` |
 | `history` | `source?` (`all`\|`user`\|`ai`) | `History.Clear` |
 | `console` | — | `Console.Clear` |
 Argument name: `target` (instead of `action`). Notify: matching event per target.
