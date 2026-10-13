@@ -7,5 +7,5 @@ import (
 )
 
 type SaveHistoryEntry interface {
-	Save(ctx context.Context, localId string, entry entity.HistoryEntry) error
+	Save(ctx context.Context, localId string, entry entity.HistoryEntry, caps entity.HistoryCaps) error
 }

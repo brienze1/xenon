@@ -130,3 +130,11 @@ func (s SendExecution) LogValue() any {
 	}
 	return value
 }
+
+// DerivedSecrets returns encoded values built from secrets for this send, such as the basic-auth credentials.
+func (s SendExecution) DerivedSecrets(secrets []string) []string {
+	if s.SentRequest == nil || !s.SentRequest.Auth.IsBasic() || !s.SentRequest.Auth.Basic.Uses(secrets) {
+		return []string{}
+	}
+	return []string{s.SentRequest.Auth.Basic.Credentials()}
+}

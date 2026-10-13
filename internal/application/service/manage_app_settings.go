@@ -12,10 +12,11 @@ import (
 type manageAppSettings struct {
 	findAppSettings usecase.FindAppSettings
 	saveAppSettings usecase.SaveAppSettings
+	serveAIAccess   usecase.ServeAIAccess
 }
 
-func NewManageAppSettingsService(findAppSettings usecase.FindAppSettings, saveAppSettings usecase.SaveAppSettings) adapter.ManageAppSettingsService {
-	return &manageAppSettings{findAppSettings: findAppSettings, saveAppSettings: saveAppSettings}
+func NewManageAppSettingsService(findAppSettings usecase.FindAppSettings, saveAppSettings usecase.SaveAppSettings, serveAIAccess usecase.ServeAIAccess) adapter.ManageAppSettingsService {
+	return &manageAppSettings{findAppSettings: findAppSettings, saveAppSettings: saveAppSettings, serveAIAccess: serveAIAccess}
 }
 
 func (m *manageAppSettings) Get(ctx context.Context) (*entity.AppSettings, error) {
@@ -30,11 +31,22 @@ func (m *manageAppSettings) Get(ctx context.Context) (*entity.AppSettings, error
 	return settings, nil
 }
 
-func (m *manageAppSettings) Save(ctx context.Context, settings entity.AppSettings) (*entity.AppSettings, error) {
-	logger.Info(ctx, "Started", settings)
+func (m *manageAppSettings) Save(ctx context.Context, patch entity.AppSettingsPatch) (*entity.AppSettings, error) {
+	logger.Info(ctx, "Started", patch)
 
+	current, err := m.findAppSettings.FindAppSettings(ctx)
+	if err != nil {
+		return nil, err
+	}
+	settings := current.Merged(patch)
+	if err := usecase.ValidateAppSettings(settings); err != nil {
+		return nil, err
+	}
 	if err := m.saveAppSettings.SaveAppSettings(ctx, settings); err != nil {
 		return nil, err
+	}
+	if patch.ChangesAIAccess() {
+		m.serveAIAccess.Apply(ctx, settings.AIAccess)
 	}
 
 	logger.Info(ctx, "Finished", settings)

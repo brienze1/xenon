@@ -66,3 +66,7 @@ func TestTimersRunAfterTheDelayUnlessStopped(t *testing.T) {
 		t.Fatal("stop reports whether the timer was still pending")
 	}
 }
+
+func TestFocusWithoutRunningApplicationIsANoOp(t *testing.T) {
+	NewWindowFocuser().Focus()
+}

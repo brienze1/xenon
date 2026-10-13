@@ -8,5 +8,5 @@ import (
 
 type ManageAppSettingsService interface {
 	Get(ctx context.Context) (*entity.AppSettings, error)
-	Save(ctx context.Context, settings entity.AppSettings) (*entity.AppSettings, error)
+	Save(ctx context.Context, patch entity.AppSettingsPatch) (*entity.AppSettings, error)
 }

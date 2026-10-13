@@ -4,6 +4,7 @@ import (
 	"context"
 
 	appAdapter "github.com/brienze1/xenon/internal/application/adapter"
+	"github.com/brienze1/xenon/internal/infra/properties"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/validator"
@@ -36,7 +37,7 @@ func (s *settings) Get(bindingCtx context.Context) (response *dto.AppSettings, e
 	if err != nil {
 		return nil, err
 	}
-	result := dto.NewAppSettings(*found)
+	result := dto.NewAppSettings(*found, properties.Properties().Application.MCPPortOverride)
 
 	logger.Info(ctx, "Finished", result)
 	return &result, nil
@@ -55,7 +56,7 @@ func (s *settings) Save(bindingCtx context.Context, request dto.AppSettings) (re
 		}
 	}(ctx, request)
 
-	err = validator.CustomValidator().Struct("SCR-01400", &request)
+	err = validator.CustomValidator().Struct("SET-00400", &request)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +65,7 @@ func (s *settings) Save(bindingCtx context.Context, request dto.AppSettings) (re
 	if err != nil {
 		return nil, err
 	}
-	result := dto.NewAppSettings(*saved)
+	result := dto.NewAppSettings(*saved, properties.Properties().Application.MCPPortOverride)
 
 	logger.Info(ctx, "Finished", result)
 	return &result, nil

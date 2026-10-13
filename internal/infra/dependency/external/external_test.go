@@ -109,3 +109,20 @@ func TestLoopbackFactoryIsASingletonThatCanBeReplaced(t *testing.T) {
 		t.Fatal("SetLoopback must replace the cached instance")
 	}
 }
+
+type fakeWindowFocuser struct{ focused int }
+
+func (f *fakeWindowFocuser) Focus() { f.focused++ }
+
+func TestWindowFocuserFactoryIsASingletonThatCanBeReplaced(t *testing.T) {
+	first := GetWindowFocuser()
+	if first == nil || GetWindowFocuser() != first {
+		t.Fatal("GetWindowFocuser must return one cached instance")
+	}
+	replacement := &fakeWindowFocuser{}
+	SetWindowFocuser(replacement)
+	GetWindowFocuser().Focus()
+	if replacement.focused != 1 {
+		t.Fatal("SetWindowFocuser must replace the cached instance")
+	}
+}

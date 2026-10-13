@@ -149,7 +149,7 @@ func (t *testUtils) theResponseShouldContainTheFieldMatching(path, pattern strin
 	if err != nil {
 		return err
 	}
-	return expectMatch(stringify(actual), pattern, path)
+	return expectMatch(stringify(actual), strings.ReplaceAll(pattern, `\\`, `\`), path)
 }
 
 func (t *testUtils) theResponseShouldMatchTheFieldOfTheResourceFile(field, resource string) error {

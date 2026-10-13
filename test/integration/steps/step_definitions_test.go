@@ -127,6 +127,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		external.SetFileManager(suite.fileManager)
 		external.SetSshAgent(suite.sshAgent)
 		external.SetTimers(suite.time)
+		external.SetWindowFocuser(suite.window)
 		external.SetHttpClientFactory(httpClient.HttpClientFactory(logger.LoggerWrapper()))
 		logger.SetOutput(suite.logs)
 	})

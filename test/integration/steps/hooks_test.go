@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	wails "github.com/wailsapp/wails/v3/pkg/application"
+
 	"github.com/brienze1/xenon/internal/infra/dependency/binding"
 	"github.com/brienze1/xenon/internal/infra/dependency/consumer"
 	"github.com/brienze1/xenon/test/integration/mock"
@@ -77,6 +79,7 @@ func (t *testUtils) before() error {
 
 func (t *testUtils) after() {
 	t.closeMcp()
+	t.stopMcpServer()
 	for _, path := range t.readOnly {
 		_ = os.Chmod(path, 0o755)
 	}
@@ -117,5 +120,15 @@ func (t *testUtils) startApp() {
 		binding.GetSnippetService(),
 		binding.GetExportService(),
 		binding.GetSyncService(),
+		binding.GetAIAccessService(),
 	}
+	t.startMcpServer()
+}
+
+func (t *testUtils) startMcpServer() {
+	_ = binding.GetAIAccessService().ServiceStartup(context.Background(), wails.ServiceOptions{})
+}
+
+func (t *testUtils) stopMcpServer() {
+	_ = binding.GetAIAccessService().ServiceShutdown()
 }

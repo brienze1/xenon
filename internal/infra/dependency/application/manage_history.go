@@ -16,8 +16,10 @@ func GetManageHistoryService() adapter.ManageHistoryService {
 		manageHistoryOnce.Do(func() {
 			manageHistoryInstance = service.NewManageHistoryService(
 				integration.GetRegistryPersistence(),
+				integration.GetRegistryPersistence(),
 				integration.GetHistoryPersistence(),
 				integration.GetHistoryPersistence(),
+				integration.GetAIEventPublisher(),
 			)
 		})
 	}

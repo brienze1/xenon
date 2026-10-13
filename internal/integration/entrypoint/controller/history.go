@@ -93,7 +93,7 @@ func (h *history) Clear(bindingCtx context.Context, request dto.ClearHistory) (e
 		return err
 	}
 
-	err = h.manageHistoryService.Clear(ctx, request.LocalId)
+	err = h.manageHistoryService.Clear(ctx, request.LocalId, request.ToEntity())
 	if err != nil {
 		return err
 	}

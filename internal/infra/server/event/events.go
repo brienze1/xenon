@@ -23,4 +23,9 @@ func init() {
 	wails.RegisterEvent[dto.GitHostKeyUnknown](dto.GitHostKeyUnknownEvent)
 	wails.RegisterEvent[dto.GitStatusChanged](dto.GitStatusChangedEvent)
 	wails.RegisterEvent[dto.GitProgress](dto.GitProgressEvent)
+	wails.RegisterEvent[dto.AIAccessStatusChanged](dto.AIAccessStatusChangedEvent)
+	wails.RegisterEvent[dto.AIApprovalRequested](dto.AIApprovalRequestedEvent)
+	wails.RegisterEvent[dto.AIApprovalResolved](dto.AIApprovalResolvedEvent)
+	wails.RegisterEvent[dto.HistoryChanged](dto.HistoryChangedEvent)
+	wails.RegisterEvent[dto.WorkspacesChanged](dto.WorkspacesChangedEvent)
 }

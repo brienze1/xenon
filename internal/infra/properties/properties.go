@@ -16,6 +16,7 @@ const (
 	defaultOAuthCallbackMs    = 5 * 60 * 1000
 	defaultGitHubApiURL       = "https://api.github.com"
 	defaultGitHubLoginURL     = "https://github.com"
+	maxPort                   = 65535
 )
 
 // gitHubClientID is the GitHub OAuth App client id, set at build time with -ldflags -X.
@@ -41,11 +42,13 @@ type oauth struct {
 }
 
 type application struct {
-	DataDir  string
-	LogLevel string
-	Env      string
-	Version  string
-	TempDir  string
+	MCPPortOverride *int
+	DataDir         string
+	LogLevel        string
+	Env             string
+	Version         string
+	TempDir         string
+	Executable      string
 }
 
 type imports struct {
@@ -61,11 +64,13 @@ type vault struct {
 func Properties() *properties {
 	return &properties{
 		Application: &application{
-			DataDir:  dataDir(os.Getenv("XENON_DATA_DIR"), runtime.GOOS, os.UserConfigDir),
-			LogLevel: os.Getenv("LOG_LEVEL"),
-			Env:      os.Getenv("XENON_ENV"),
-			Version:  withDefault(os.Getenv("XENON_VERSION"), defaultVersion),
-			TempDir:  os.TempDir(),
+			DataDir:         dataDir(os.Getenv("XENON_DATA_DIR"), runtime.GOOS, os.UserConfigDir),
+			LogLevel:        os.Getenv("LOG_LEVEL"),
+			Env:             os.Getenv("XENON_ENV"),
+			Version:         withDefault(os.Getenv("XENON_VERSION"), defaultVersion),
+			TempDir:         os.TempDir(),
+			Executable:      executablePath(os.Executable),
+			MCPPortOverride: portOrNil(os.Getenv("XENON_MCP_PORT")),
 		},
 		Vault: &vault{
 			ForcePassphrase: os.Getenv("XENON_FORCE_PASSPHRASE") == "true",
@@ -103,6 +108,22 @@ func appFolderName(goos string) string {
 		return "xenon"
 	}
 	return "Xenon"
+}
+
+func executablePath(executable func() (string, error)) string {
+	path, err := executable()
+	if err != nil {
+		return appFolderName(runtime.GOOS)
+	}
+	return path
+}
+
+func portOrNil(value string) *int {
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed <= 0 || parsed > maxPort {
+		return nil
+	}
+	return &parsed
 }
 
 func withDefault(value, defaultValue string) string {

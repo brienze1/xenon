@@ -10,6 +10,9 @@ import (
 	"sync"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/historyfilter"
+	"github.com/brienze1/xenon/internal/domain/enums/historysource"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/persistence/model"
 	"github.com/brienze1/xenon/pkg/errs"
@@ -29,8 +32,8 @@ func NewHistoryPersistence() adapter.HistoryPersistence {
 	return &historyPersistence{}
 }
 
-func (h *historyPersistence) Save(ctx context.Context, localId string, entry entity.HistoryEntry) error {
-	logger.Debug(ctx, "Started", entry, map[string]any{"localId": localId})
+func (h *historyPersistence) Save(ctx context.Context, localId string, entry entity.HistoryEntry, caps entity.HistoryCaps) error {
+	logger.Debug(ctx, "Started", entry, map[string]any{"localId": localId, "caps": caps})
 
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -38,7 +41,7 @@ func (h *historyPersistence) Save(ctx context.Context, localId string, entry ent
 		return errs.FileError(err, "HIS-05500")
 	}
 	line, _ := json.Marshal(model.NewHistoryEntry(entry))
-	if err := appendHistoryLine(historyPath(localId), line); err != nil {
+	if err := appendHistoryLine(historyPath(localId), line, caps); err != nil {
 		return err
 	}
 
@@ -46,17 +49,17 @@ func (h *historyPersistence) Save(ctx context.Context, localId string, entry ent
 	return nil
 }
 
-func (h *historyPersistence) Find(ctx context.Context, localId string) (*entity.History, error) {
-	logger.Debug(ctx, "Started", map[string]any{"localId": localId})
+func (h *historyPersistence) Find(ctx context.Context, localId string, caps entity.HistoryCaps) (*entity.History, error) {
+	logger.Debug(ctx, "Started", map[string]any{"localId": localId, "caps": caps})
 
 	h.mu.Lock()
-	stored, err := readHistoryFile(historyPath(localId))
+	lines, err := compactedHistoryLines(historyPath(localId), caps)
 	h.mu.Unlock()
 	if err != nil {
 		return nil, err
 	}
-	entries := make([]entity.HistoryEntry, 0, entity.HistoryCap)
-	for _, line := range historyLines(stored) {
+	entries := make([]entity.HistoryEntry, 0, len(lines))
+	for _, line := range lines {
 		var decoded model.HistoryEntry
 		if err := json.Unmarshal(line, &decoded); err != nil {
 			logger.Warn(ctx, err, "Skipping an unreadable history line", map[string]any{"localId": localId})
@@ -64,16 +67,16 @@ func (h *historyPersistence) Find(ctx context.Context, localId string) (*entity.
 		}
 		entries = append(entries, decoded.ToEntity())
 	}
-	history := entity.NewHistory(entries)
+	history := entity.NewHistory(entries, caps)
 
 	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "entries": len(entries)})
 	return &history, nil
 }
 
-func (h *historyPersistence) FindEntry(ctx context.Context, localId, id string) (*entity.HistoryEntry, error) {
+func (h *historyPersistence) FindEntry(ctx context.Context, localId, id string, caps entity.HistoryCaps) (*entity.HistoryEntry, error) {
 	logger.Debug(ctx, "Started", map[string]any{"localId": localId, "id": id})
 
-	history, err := h.Find(ctx, localId)
+	history, err := h.Find(ctx, localId, caps)
 	if err != nil {
 		return nil, err
 	}
@@ -86,19 +89,23 @@ func (h *historyPersistence) FindEntry(ctx context.Context, localId, id string) 
 	return &entry, nil
 }
 
-func (h *historyPersistence) Clear(ctx context.Context, localId string) error {
-	logger.Debug(ctx, "Started", map[string]any{"localId": localId})
+func (h *historyPersistence) Clear(ctx context.Context, localId string, source enums.HistoryFilter) error {
+	logger.Debug(ctx, "Started", map[string]any{"localId": localId, "source": source})
 
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if err := os.MkdirAll(appDataPath(workspacesDataDir, localId), appDataDirMode); err != nil {
 		return errs.FileError(err, "HIS-09500")
 	}
-	if err := fileutils.WriteFileAtomic(historyPath(localId), []byte{}, appDataFileMode); err != nil {
+	kept, err := historyLinesKeptOnClear(historyPath(localId), source)
+	if err != nil {
+		return err
+	}
+	if err := fileutils.WriteFileAtomic(historyPath(localId), joinHistoryLines(kept), appDataFileMode); err != nil {
 		return errs.FileError(err, "HIS-08500")
 	}
 
-	logger.Debug(ctx, "Finished", map[string]any{"localId": localId})
+	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "source": source})
 	return nil
 }
 
@@ -127,12 +134,45 @@ func historyLines(stored []byte) [][]byte {
 	return lines
 }
 
-func appendHistoryLine(path string, line []byte) error {
+func historyLineSource(line []byte) enums.HistorySource {
+	var decoded model.HistorySource
+	if err := json.Unmarshal(line, &decoded); err != nil {
+		return historysource.User
+	}
+	return decoded.ToEntity()
+}
+
+func historyLinesKeptOnClear(path string, source enums.HistoryFilter) ([][]byte, error) {
+	if source == historyfilter.All {
+		return [][]byte{}, nil
+	}
+	stored, err := readHistoryFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return entity.WithoutHistorySource(historyLines(stored), historyLineSource, historysource.GetHistorySource(source.String())), nil
+}
+
+func compactedHistoryLines(path string, caps entity.HistoryCaps) ([][]byte, error) {
+	stored, err := readHistoryFile(path)
+	if err != nil {
+		return nil, err
+	}
+	kept, compact := entity.CompactHistory(historyLines(stored), historyLineSource, caps)
+	if compact {
+		if err := compactHistory(path, kept); err != nil {
+			return nil, err
+		}
+	}
+	return kept, nil
+}
+
+func appendHistoryLine(path string, line []byte, caps entity.HistoryCaps) error {
 	stored, err := readHistoryFile(path)
 	if err != nil {
 		return err
 	}
-	if kept, compact := entity.RetainHistory(append(historyLines(stored), line)); compact {
+	if kept, compact := entity.CompactHistory(append(historyLines(stored), line), historyLineSource, caps); compact {
 		return compactHistory(path, kept)
 	}
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, appDataFileMode)
@@ -153,8 +193,15 @@ func separatorAfter(stored []byte) []byte {
 	return lineBreak
 }
 
+func joinHistoryLines(lines [][]byte) []byte {
+	if len(lines) == 0 {
+		return []byte{}
+	}
+	return append(bytes.Join(lines, lineBreak), lineBreak...)
+}
+
 func compactHistory(path string, kept [][]byte) error {
-	if err := fileutils.WriteFileAtomic(path, append(bytes.Join(kept, lineBreak), lineBreak...), appDataFileMode); err != nil {
+	if err := fileutils.WriteFileAtomic(path, joinHistoryLines(kept), appDataFileMode); err != nil {
 		return errs.FileError(err, "HIS-07500")
 	}
 	return nil

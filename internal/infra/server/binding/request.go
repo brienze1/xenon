@@ -62,6 +62,7 @@ func (r *RequestService) AutoHeaders(ctx context.Context, request dto.AutoHeader
 }
 
 func (r *RequestService) Send(ctx context.Context, request dto.SendRequest) (*dto.SendResult, error) {
+	request.Origin = dto.UserSendOrigin()
 	return r.send.Send(ctx, request)
 }
 
