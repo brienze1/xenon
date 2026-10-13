@@ -1,0 +1,105 @@
+import type {
+  ItemSettings as ItemSettingsDto,
+  QuickSearchHit as QuickSearchHitDto,
+  TreeNode as TreeNodeDto,
+  TreeSearch as TreeSearchDto,
+} from '../../../bindings/github.com/brienze1/xenon/internal/integration/entrypoint/dto/models'
+import { toAuth, toAuthDto, toKeyValueDto, toKeyValueRow, toScriptsDto, toScriptSet, type KeyValueRow, type RequestAuth, type ScriptSet } from './request'
+
+/** `example` nodes only exist in the sidebar's rows; the tree lists examples on their request. */
+export type TreeNodeKind = 'collection' | 'folder' | 'request' | 'example' | 'error'
+export type ContainerKind = 'collection' | 'folder'
+
+export interface TreeExample {
+  id: string
+  name: string
+  code: number
+}
+
+export interface TreeNode {
+  id: string
+  kind: TreeNodeKind
+  name: string
+  method: string | null
+  url: string | null
+  error: string | null
+  warning: string | null
+  children: TreeNode[]
+  /** Saved examples of a request, in sidebar order (empty for other kinds). */
+  examples?: TreeExample[]
+}
+
+export interface TreeSearchResult {
+  matchIds: string[]
+  ancestorIds: string[]
+}
+
+export interface ItemSettings {
+  id: string
+  kind: ContainerKind
+  name: string
+  description: string
+  auth: RequestAuth
+  headers: KeyValueRow[]
+  scripts: ScriptSet
+  /** Folders only: whether the collection's and outer folders' scripts run too; `null` for collections. */
+  inheritScripts: boolean | null
+}
+
+const NODE_KINDS: ReadonlySet<string> = new Set<TreeNodeKind>(['collection', 'folder', 'request', 'error'])
+
+export function toTreeNode(dto: TreeNodeDto): TreeNode {
+  return {
+    id: dto.id,
+    kind: NODE_KINDS.has(dto.kind) ? (dto.kind as TreeNodeKind) : 'error',
+    name: dto.name,
+    method: dto.method ?? null,
+    url: dto.url ?? null,
+    error: dto.error ? dto.error : null,
+    warning: dto.warning ? dto.warning : null,
+    children: (dto.children ?? []).map(toTreeNode),
+    examples: (dto.examples ?? []).map(({ id, name, code }) => ({ id, name, code })),
+  }
+}
+
+/** A request found by quick search (Cmd/Ctrl+K), with the collection and folders above it. */
+export interface QuickSearchHit {
+  id: string
+  name: string
+  method: string
+  url: string
+  path: string
+}
+
+export function toQuickSearchHit(dto: QuickSearchHitDto): QuickSearchHit {
+  return { id: dto.id, name: dto.name, method: dto.method, url: dto.url, path: dto.path }
+}
+
+export function toTreeSearch(dto: TreeSearchDto): TreeSearchResult {
+  return { matchIds: dto.match_ids ?? [], ancestorIds: dto.ancestor_ids ?? [] }
+}
+
+export function toItemSettings(dto: ItemSettingsDto): ItemSettings {
+  return {
+    id: dto.id,
+    kind: dto.kind === 'folder' ? 'folder' : 'collection',
+    name: dto.name,
+    description: dto.description,
+    auth: toAuth(dto.auth),
+    headers: (dto.headers ?? []).map(toKeyValueRow),
+    scripts: toScriptSet(dto.scripts),
+    inheritScripts: dto.kind === 'folder' ? (dto.inherit_scripts ?? true) : null,
+  }
+}
+
+export function toSaveItemSettingsDto(localId: string, settings: ItemSettings) {
+  return {
+    local_id: localId,
+    id: settings.id,
+    description: settings.description,
+    auth: toAuthDto(settings.auth),
+    headers: settings.headers.map(toKeyValueDto),
+    scripts: toScriptsDto(settings.scripts),
+    ...(settings.inheritScripts === null ? {} : { inherit_scripts: settings.inheritScripts }),
+  }
+}

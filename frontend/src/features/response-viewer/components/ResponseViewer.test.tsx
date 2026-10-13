@@ -1,0 +1,265 @@
+import { act, render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { AppError } from '@/platform/errors'
+import type { SendResult } from '@/platform/mappers/request'
+
+vi.mock('@/platform/services/requests', () => ({ lastResult: vi.fn(), releaseResponse: vi.fn(), saveResponseBody: vi.fn() }))
+vi.mock('@/platform/services/dialogs', () => ({ pickSaveFile: vi.fn() }))
+vi.mock('@/platform/services/response-body', () => ({ fetchResponseText: vi.fn() }))
+
+const requests = await import('@/platform/services/requests')
+const dialogs = await import('@/platform/services/dialogs')
+const responseBody = await import('@/platform/services/response-body')
+const { useResponseViewerStore } = await import('@/features/response-viewer/store')
+const { ResponseViewer } = await import('./ResponseViewer')
+const { ResponseHeaders } = await import('./ResponseHeaders')
+const { ResponseCookiesTab } = await import('./ResponseCookiesTab')
+const { useTabsStore } = await import('@/features/tabs/store')
+const { useExamplesStore } = await import('@/features/examples/store')
+
+function result(overrides: Partial<SendResult> = {}): SendResult {
+  return {
+    tabId: 'tab',
+    sendId: 's', outcome: 'sent', tests: [], testSummary: { total: 0, passed: 0, failed: 0, skipped: 0 }, scriptErrors: [],
+    ok: true,
+    statusCode: 200,
+    statusText: 'OK',
+    proto: 'HTTP/1.1',
+    headers: [
+      { key: 'Content-Type', value: 'application/json' },
+      { key: 'Set-Cookie', value: 'a=1' },
+      { key: 'Set-Cookie', value: 'b=2' },
+    ],
+    cookiesSet: [
+      { name: 'a', value: '1', domain: 'api.test', path: '/', expires: null, sameSite: '', secure: false, httpOnly: true, hostOnly: true, raw: 'a=1; Path=/; HttpOnly' },
+      { name: 'b', value: '2', domain: 'api.test', path: '/v1', expires: '2037-10-21T07:28:00Z', sameSite: 'Lax', secure: true, httpOnly: false, hostOnly: false, raw: 'b=2' },
+    ],
+    sizeBytes: 9,
+    contentType: 'application/json',
+    isBinary: false,
+    bodyUrl: '/xenon/response/tab',
+    inlineBody: '{"a":[1]}',
+    timings: { dnsMs: 1, connectMs: 2, tlsMs: 3, firstByteMs: 40, downloadMs: 5, totalMs: 1520 },
+    error: null,
+    ...overrides,
+  }
+}
+
+function show(value: SendResult) {
+  act(() => useResponseViewerStore.getState().setResult('tab', value))
+}
+
+describe('ResponseViewer', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+    vi.mocked(requests.lastResult).mockResolvedValue(null)
+    useResponseViewerStore.getState().reset()
+  })
+
+  it('shows the empty state until a response arrives', async () => {
+    render(<ResponseViewer tabId="tab" />)
+    expect(await screen.findByRole('region', { name: 'No response yet' })).toBeInTheDocument()
+    expect(requests.lastResult).toHaveBeenCalledWith('tab')
+  })
+
+  it('rehydrates the last result kept by Go when the tab is shown again', async () => {
+    vi.mocked(requests.lastResult).mockResolvedValue(result())
+    render(<ResponseViewer tabId="tab" />)
+    expect(await screen.findByText('200 OK')).toBeInTheDocument()
+  })
+
+  it('shows the sending state and binding failures', () => {
+    render(<ResponseViewer tabId="tab" />)
+    act(() => useResponseViewerStore.getState().startSending('tab'))
+    expect(screen.getByRole('status')).toHaveTextContent('Sending request…')
+    act(() => useResponseViewerStore.getState().setFailure('tab', new AppError('SND-00400', 'invalid request')))
+    expect(screen.getByRole('alert')).toHaveTextContent('invalid request')
+  })
+
+  it('shows the status, the size and a timing breakdown on hover', async () => {
+    const user = userEvent.setup()
+    render(<ResponseViewer tabId="tab" />)
+    show(result({ statusCode: 404, statusText: 'Not Found' }))
+    expect(screen.getByText('404 Not Found')).toBeInTheDocument()
+    expect(screen.getByText('9 B')).toBeInTheDocument()
+    await user.hover(screen.getByRole('button', { name: 'Time 1.52\u00a0s' }))
+    const tooltip = screen.getByRole('tooltip')
+    expect(within(tooltip).getAllByRole('term').map((term) => term.textContent)).toEqual([
+      'DNS lookup',
+      'TCP connection',
+      'TLS handshake',
+      'Time to first byte',
+      'Download',
+      'Total',
+    ])
+    expect(within(tooltip).getByText('40 ms')).toBeInTheDocument()
+    show(result({ statusCode: 302, statusText: 'Found' }))
+    expect(screen.getByText('302 Found')).toBeInTheDocument()
+    show(result())
+    expect(screen.getByText('200 OK')).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Response status' })).toBeInTheDocument()
+  })
+
+  it('announces a received response politely', () => {
+    render(<ResponseViewer tabId="tab" />)
+    show(result({ statusCode: 404, statusText: 'Not Found' }))
+    expect(screen.getByText('Response received: 404 Not Found')).toHaveAttribute('aria-live', 'polite')
+  })
+
+  it('pretty prints by default and shows the raw body as received', async () => {
+    const user = userEvent.setup()
+    render(<ResponseViewer tabId="tab" />)
+    show(result())
+    expect(screen.getByRole('radio', { name: 'Pretty' })).toBeChecked()
+    expect(screen.getByRole('radio', { name: 'Pretty' })).toHaveAttribute('name', 'tab-body-view')
+    expect(await screen.findByRole('textbox', { name: 'Pretty response body' })).toHaveTextContent('"a": [')
+    await user.click(screen.getByRole('radio', { name: 'Raw' }))
+    expect(await screen.findByRole('textbox', { name: 'Raw response body' })).toHaveTextContent('{"a":[1]}')
+  })
+
+  it('moves between body views with the arrow keys', async () => {
+    const user = userEvent.setup()
+    render(<ResponseViewer tabId="tab" />)
+    show(result())
+    expect(screen.getByRole('group', { name: 'Body view' })).toBeInTheDocument()
+    screen.getByRole('radio', { name: 'Pretty' }).focus()
+    await user.keyboard('{ArrowRight}')
+    expect(screen.getByRole('radio', { name: 'Raw' })).toHaveFocus()
+    expect(screen.getByRole('radio', { name: 'Raw' })).toBeChecked()
+    await user.keyboard('{ArrowDown}')
+    expect(screen.getByRole('radio', { name: 'Preview' })).toBeChecked()
+    await user.keyboard('{ArrowDown}')
+    expect(screen.getByRole('radio', { name: 'Pretty' })).toHaveFocus()
+    await user.keyboard('{ArrowUp}')
+    expect(screen.getByRole('radio', { name: 'Preview' })).toBeChecked()
+  })
+
+  it('opens bodies larger than 5 MB in Raw first and loads them from the route', async () => {
+    vi.mocked(responseBody.fetchResponseText).mockResolvedValue('big body')
+    render(<ResponseViewer tabId="tab" />)
+    show(result({ sizeBytes: 6 * 1024 * 1024, inlineBody: null, contentType: 'text/plain' }))
+    expect(screen.getByRole('radio', { name: 'Raw' })).toBeChecked()
+    expect(await screen.findByRole('textbox', { name: 'Raw response body' })).toHaveTextContent('big body')
+    expect(responseBody.fetchResponseText).toHaveBeenCalledWith('/xenon/response/tab')
+  })
+
+  it('handles binary bodies with an image preview', async () => {
+    const user = userEvent.setup()
+    render(<ResponseViewer tabId="tab" />)
+    show(result({ isBinary: true, inlineBody: null, contentType: 'image/png', sizeBytes: 70 }))
+    expect(screen.getByText('Binary body (70 B). Use Preview or Save to File.')).toBeInTheDocument()
+    expect(responseBody.fetchResponseText).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('radio', { name: 'Preview' }))
+    expect(await screen.findByRole('img', { name: 'Response preview' })).toHaveAttribute('src', '/xenon/response/tab')
+  })
+
+  it('previews HTML in a sandboxed frame and explains when there is no preview', async () => {
+    const user = userEvent.setup()
+    render(<ResponseViewer tabId="tab" />)
+    show(result({ contentType: 'text/html', inlineBody: '<p>hi</p>' }))
+    await user.click(screen.getByRole('radio', { name: 'Preview' }))
+    expect(await screen.findByTitle('Response preview')).toHaveAttribute('sandbox', '')
+    show(result())
+    await user.click(screen.getByRole('radio', { name: 'Preview' }))
+    const bodyPanel = screen.getByRole('tabpanel')
+    expect(await within(bodyPanel).findByText(/No preview available for/)).toHaveTextContent('No preview available for application/json.')
+    expect(within(bodyPanel).getByText('application/json')).toHaveAttribute('translate', 'no')
+  })
+
+  it('copies the exact body and saves it to a file', async () => {
+    const user = userEvent.setup()
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue()
+    vi.mocked(dialogs.pickSaveFile).mockResolvedValue('/out/response.json')
+    render(<ResponseViewer tabId="tab" />)
+    show(result())
+    const copy = screen.getByRole('button', { name: 'Copy body' })
+    expect(copy.textContent).toBe('')
+    await user.click(copy)
+    expect(writeText).toHaveBeenCalledWith('{"a":[1]}')
+    expect(copy).toHaveAttribute('title', 'Copied')
+    expect(screen.getByText('copied the response body to the clipboard.', { exact: false })).toHaveTextContent('Xenon copied the response body to the clipboard.')
+    await user.click(screen.getByRole('button', { name: 'Save to File' }))
+    expect(requests.saveResponseBody).toHaveBeenCalledWith('tab', '/out/response.json')
+  })
+
+  it('tells the user when the clipboard refuses the copy', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'))
+    render(<ResponseViewer tabId="tab" />)
+    show(result())
+    await user.click(screen.getByRole('button', { name: 'Copy body' }))
+    expect(screen.getByRole('button', { name: 'Copy body' })).toHaveAttribute('title', 'Copy failed')
+    expect(screen.getByText('copy to the clipboard.', { exact: false })).toHaveTextContent('Xenon couldn’t copy to the clipboard')
+  })
+
+  it('lists every response header, repeated ones included', async () => {
+    const user = userEvent.setup()
+    render(<ResponseViewer tabId="tab" />)
+    show(result())
+    await user.click(screen.getByRole('tab', { name: 'Headers (3)' }))
+    const table = screen.getByRole('table', { name: 'Response headers' })
+    expect(within(table).getAllByText('Set-Cookie')).toHaveLength(2)
+    expect(within(table).getByText('b=2')).toBeInTheDocument()
+  })
+
+  it('lists the cookies the response set in the Cookies tab', async () => {
+    const user = userEvent.setup()
+    render(<ResponseViewer tabId="tab" />)
+    show(result())
+    await user.click(screen.getByRole('tab', { name: 'Cookies (2)' }))
+    const table = screen.getByRole('table', { name: 'Response cookies' })
+    const [, first, second] = within(table).getAllByRole('row')
+    expect(first).toHaveTextContent(/^a1api\.test\/SessionYesNo$/)
+    const cells = within(second!).getAllByRole('cell').map((cell) => cell.textContent)
+    expect(cells.slice(0, 4)).toEqual(['b', '2', 'api.test', '/v1'])
+    expect(cells[4]).toMatch(/2037.*UTC$/)
+    expect(cells.slice(5)).toEqual(['No', 'Yes'])
+  })
+
+  it.each([
+    ['timeout', 'Timed out after 5000 ms', 'Increase the timeout in the request Settings (0 = no timeout)', 'Request Timed Out', ''],
+    ['tls', 'Certificate not trusted', 'Turn off SSL certificate verification in Settings to send anyway', 'SSL/TLS Error', ''],
+    ['dns', 'Could not resolve host x.invalid', '', 'Could Not Resolve Host', 'Check the host name in the URL and your network connection, then send again.'],
+    ['cancelled', 'Request cancelled', '', 'Request Cancelled', 'Send the request again when you are ready.'],
+  ] as const)('explains a %s error with its hint or a next step', (kind, message, hint, title, nextStep) => {
+    render(<ResponseViewer tabId="tab" />)
+    show(result({ ok: false, statusCode: 0, error: { kind, message, hint } }))
+    const alert = screen.getByRole('alert', { name: 'Request error' })
+    expect(within(alert).getByRole('heading', { name: title })).toBeInTheDocument()
+    expect(alert).toHaveTextContent(message)
+    expect(alert).toHaveTextContent(hint || nextStep)
+  })
+
+  it('saves the response of a saved request as an example', async () => {
+    useTabsStore.setState({ tabs: [{ id: 'tab', requestId: 'r1', pinned: true }] })
+    useExamplesStore.getState().reset()
+    render(<ResponseViewer tabId="tab" />)
+    show(result())
+    await userEvent.click(screen.getByRole('button', { name: 'Save as Example' }))
+    expect(useExamplesStore.getState().saveDialog).toEqual({ tabId: 'tab', requestId: 'r1' })
+  })
+
+  it('asks to save the request before keeping examples of it', () => {
+    useTabsStore.setState({ tabs: [{ id: 'tab', requestId: null, pinned: true }] })
+    render(<ResponseViewer tabId="tab" />)
+    show(result())
+    expect(screen.getByRole('button', { name: 'Save as Example' })).toBeDisabled()
+  })
+})
+
+describe('ResponseHeaders', () => {
+  it('says when the response has no headers', () => {
+    render(<ResponseHeaders headers={[]} />)
+    expect(screen.getByText('No headers')).toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+  })
+})
+
+describe('ResponseCookiesTab', () => {
+  it('says when the response set no cookies', () => {
+    render(<ResponseCookiesTab cookies={[]} />)
+    expect(screen.getByText('The response set no cookies')).toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+  })
+})

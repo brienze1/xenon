@@ -1,0 +1,8 @@
+info:
+  name: Orders
+  seq: 2
+request:
+  auth:
+    type: basic
+    username: shop
+    password: "{{shop_pw}}"

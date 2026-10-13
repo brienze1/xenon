@@ -1,0 +1,40 @@
+{
+  "id": "rw-aweber-public-api-examples-3",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Check access_token is defined and not empty",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected false to deeply equal true"
+    },
+    {
+      "name": "Successfully get an account Id",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "Cannot read properties of undefined (reading '0')"
+    },
+    {
+      "name": "Successfully submitted request",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "base_url": "https://api.aweber.com/1.0"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

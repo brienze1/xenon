@@ -1,0 +1,3 @@
+curl --location --request PUT 'https://api.example.test/blob' `
+--header 'Content-Type: application/octet-stream' `
+--data-binary '@files/invoice.txt'

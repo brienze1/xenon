@@ -1,0 +1,35 @@
+{
+  "id": "rw-webex-postman-webex-calling-1",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"_\" is deprecated. Use \"require('lodash')\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "WEBEX_TOKEN": "redacted-value",
+      "WEBEX_API_URL": "https://webexapis.com/v1/",
+      "DESTINATION": "Set this to the number or address to call",
+      "TRANSFER_DESTINATION": "Set this to the number or address to transfer to",
+      "PARK_DESTINATION": "The destination where the call needs to be park and retrieved from",
+      "VOICE_MESSAGE_ID": "Set this to the voice message Id"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": {
+    "method": "GET",
+    "url": "https://postman-echo.com/",
+    "headers": [],
+    "body": null
+  },
+  "sentRequests": [],
+  "vault": {}
+}

@@ -1,0 +1,61 @@
+{
+  "id": "rw-ne4istb-postman-combine-collections-1",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Body contains cookies",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Body contains cookie foo1",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected false to be truthy"
+    },
+    {
+      "name": "Body does not contain cookie foo2",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected false to be truthy"
+    },
+    {
+      "name": "Status code is 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tests\" is deprecated. Use \"pm.test()\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"responseCode\" is deprecated. Use \"pm.response.code\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "Echo-variable": "check",
+      "test": "1"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

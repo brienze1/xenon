@@ -1,0 +1,66 @@
+package dto
+
+import (
+	"encoding/json"
+	"strings"
+
+	"github.com/brienze1/xenon/internal/domain/entity"
+)
+
+type HeaderList struct {
+	Rows        []KeyValue
+	IsRawString bool
+}
+
+func (h *HeaderList) UnmarshalJSON(data []byte) error {
+	var raw string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return json.Unmarshal(data, &h.Rows)
+	}
+	h.IsRawString = true
+	for _, line := range strings.Split(strings.ReplaceAll(raw, "\r\n", "\n"), "\n") {
+		key, value, found := strings.Cut(line, ":")
+		if found && strings.TrimSpace(key) != "" {
+			h.Rows = append(h.Rows, NewKeyValue(strings.TrimSpace(key), strings.TrimSpace(value)))
+		}
+	}
+	return nil
+}
+
+func (h *HeaderList) ToEntity() []entity.KeyValue {
+	return keyValuesToEntity(h.Rows)
+}
+
+func (h *HeaderList) Passthrough(fields map[string]any) map[string]any {
+	if h.IsRawString {
+		fields["header"] = map[string]any{"raw": true}
+		return fields
+	}
+	return withList(fields, "header", keyValuePassthrough(h.Rows))
+}
+
+func NewHeaderList(rows []entity.KeyValue, passthrough any) HeaderList {
+	if flag := asMap(passthrough); flag["raw"] == true {
+		headers := make([]KeyValue, 0, len(rows))
+		for _, row := range rows {
+			headers = append(headers, NewKeyValueRow(row, map[string]any{}))
+		}
+		return HeaderList{Rows: headers, IsRawString: true}
+	}
+	headers := make([]KeyValue, 0, len(rows))
+	for index, row := range rows {
+		headers = append(headers, NewKeyValueRow(row, mapAt(asList(passthrough), index)))
+	}
+	return HeaderList{Rows: headers}
+}
+
+func (h HeaderList) MarshalJSON() ([]byte, error) {
+	if !h.IsRawString {
+		return encodeJson(h.Rows)
+	}
+	lines := make([]string, 0, len(h.Rows))
+	for _, row := range h.Rows {
+		lines = append(lines, text(row.Key)+": "+text(row.Value))
+	}
+	return encodeJson(strings.Join(lines, "\n"))
+}

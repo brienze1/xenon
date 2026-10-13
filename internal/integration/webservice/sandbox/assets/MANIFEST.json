@@ -1,0 +1,215 @@
+{
+  "reference": "postman-sandbox@6.7.4",
+  "files": [
+    {
+      "module": "ajv",
+      "file": "ajv.js",
+      "name": "ajv",
+      "version": "6.12.5",
+      "sha256": "85126b8467705098e76a1565f905dfffbd233afc503193ded6d1a3bbbe209796"
+    },
+    {
+      "module": "chai",
+      "file": "chai.js",
+      "name": "chai",
+      "version": "4.4.1",
+      "sha256": "3352ea261b9aab4de3d0cd16074e7e90a79540418cf73741c754b03a62804d27"
+    },
+    {
+      "module": "lodash",
+      "file": "lodash.js",
+      "name": "lodash",
+      "version": "4.18.1",
+      "sha256": "f5465f55566bf544aad0a31c6135889ca1ed81eea8f53ec61c6cbe86926f07cf"
+    },
+    {
+      "module": "lodash3",
+      "file": "lodash3.js",
+      "name": "lodash3",
+      "version": "3.10.2",
+      "sha256": "8dcd59feca17faf3f915f8c8b4a209000e662311d259d181f92d24f08c2b86db"
+    },
+    {
+      "module": "moment",
+      "file": "moment.js",
+      "name": "moment",
+      "version": "2.30.1",
+      "sha256": "845c524969edd5b3af9aa6d8718d29fe92e8dbe25b955214a8e064a05a9a5027"
+    },
+    {
+      "module": "tv4",
+      "file": "tv4.js",
+      "name": "tv4",
+      "version": "1.3.0",
+      "sha256": "85e6e2a010147234f498fccf114177c79a04c6f48acf863ac2bf14dbd49ddf47"
+    },
+    {
+      "module": "uuid",
+      "file": "uuid.js",
+      "name": "postman-sandbox",
+      "version": "6.7.4",
+      "sha256": "28f908b96852c7b5a9ef0fc4c8cad5f7fbf056c5d1cf9c0704a047829bc9ceb9"
+    },
+    {
+      "module": "backbone",
+      "file": "backbone.js",
+      "name": "backbone",
+      "version": "1.6.0",
+      "sha256": "d8c52da94fc69f3dd767505e7ddbde8bd1dc66b5a84a9acd4a5239bfe2280de4"
+    },
+    {
+      "module": "cheerio",
+      "file": "cheerio.js",
+      "name": "cheerio",
+      "version": "0.22.0",
+      "sha256": "b83e942503d52e3416e514c00e730929ad0fe3192885f9ab07b0f751fd4b625f"
+    },
+    {
+      "module": "crypto-js",
+      "file": "crypto-js.js",
+      "name": "crypto-js",
+      "version": "3.3.0",
+      "sha256": "c2bd17261a48d0539fffe3ae42f9a8897580a4dea2655185bdb298affe3dc1eb"
+    },
+    {
+      "module": "csv-parse/lib/sync",
+      "file": "csv-parse-lib-sync.js",
+      "name": "csv-parse",
+      "version": "1.2.4",
+      "sha256": "0516b4256442a0c45f4d3e557cd41e394296a4517fc311e72703367f33d86609"
+    },
+    {
+      "module": "xml2js",
+      "file": "xml2js.js",
+      "name": "xml2js",
+      "version": "0.6.2",
+      "sha256": "8cd291598d56cae7dda36478ff71163a40517d36c70af872c0cd98780ca923a4"
+    },
+    {
+      "module": "liquid-json",
+      "file": "liquid-json.js",
+      "name": "liquid-json",
+      "version": "0.3.1",
+      "sha256": "6f519d3b04bbdb92727b3d2e22d9816b7b13c9885729df6416199adba1eb1069"
+    },
+    {
+      "module": "http-reasons",
+      "file": "http-reasons.js",
+      "name": "http-reasons",
+      "version": "0.1.0",
+      "sha256": "a016cbbbe88d1a41c9c5620d6b5359506dc32bd7c97f8174e666e2b3a654a471"
+    },
+    {
+      "module": "mime-format",
+      "file": "mime-format.js",
+      "name": "mime-format",
+      "version": "2.0.2",
+      "sha256": "afb717fad2402bded49d0dbcafda3de81907d3ae8990f027e068947b498dfa19"
+    },
+    {
+      "module": "mime",
+      "file": "mime.js",
+      "name": "mime",
+      "version": "3.0.0",
+      "sha256": "5f3c22cf732073f9a36372a803f044f887fabfed2f7ee10fcfe4838a6ad9d89b"
+    },
+    {
+      "module": "sugar",
+      "file": "sugar.js",
+      "name": "postman-sandbox",
+      "version": "6.7.4",
+      "sha256": "cf1df861f49da9bfaf25fed4481e017d99837ed44624f442dadf116614c6183e"
+    },
+    {
+      "module": "sugar-methods",
+      "file": "sugar-methods.js",
+      "name": "postman-sandbox",
+      "version": "6.7.4",
+      "sha256": "8bc02ca6bae6c9211f9a3c6b0526d15ebb570bc1765dcce784961bec1d9b175a"
+    },
+    {
+      "module": "assert",
+      "file": "assert.js",
+      "name": "assert",
+      "version": "2.0.0",
+      "sha256": "a5010c25ddf07a3f1af5a2c495262189ee64bbe17457414a259c8dbb439be534"
+    },
+    {
+      "module": "buffer",
+      "file": "buffer.js",
+      "name": "buffer",
+      "version": "6.0.3",
+      "sha256": "d25c72802c4caf850f817793ae843090ae1a9e0504da336ed256bffeae2be673"
+    },
+    {
+      "module": "events",
+      "file": "events.js",
+      "name": "events",
+      "version": "2.1.0",
+      "sha256": "80c170776f196c45af0681ca6f5f9c3f0305e4b3d4817d3fa89dacb1dbb36ab5"
+    },
+    {
+      "module": "path",
+      "file": "path.js",
+      "name": "path-browserify",
+      "version": "0.0.1",
+      "sha256": "b240ae66f1a045c549a6fd2fc24aa66a09d6e599625a372c0804a984bcc821e0"
+    },
+    {
+      "module": "punycode",
+      "file": "punycode.js",
+      "name": "punycode",
+      "version": "1.4.1",
+      "sha256": "47cd017ad27c60573d3167120080615b5779e945d7820284015c10659debaa70"
+    },
+    {
+      "module": "querystring",
+      "file": "querystring.js",
+      "name": "querystring-es3",
+      "version": "0.2.1",
+      "sha256": "1935f70a2fa8f958781404df22025afe730c90e633e9290dcdc27e287159d58a"
+    },
+    {
+      "module": "stream",
+      "file": "stream.js",
+      "name": "stream-browserify",
+      "version": "2.0.2",
+      "sha256": "54bd18d2fa1bf66e35c86102348a92f000281d37349ca024d1ee4380a6be5784"
+    },
+    {
+      "module": "string_decoder",
+      "file": "string_decoder.js",
+      "name": "string_decoder",
+      "version": "1.3.0",
+      "sha256": "2599411941b92eb3bca1524e8753bbf1bb778030fcd7f9a9c0520580a625545a"
+    },
+    {
+      "module": "timers",
+      "file": "timers.js",
+      "name": "timers-browserify",
+      "version": "1.4.2",
+      "sha256": "a4cca627c0c7b09360bc4efd9e241d6b7facfbaf69b873f43fb098d10dbd96c0"
+    },
+    {
+      "module": "url",
+      "file": "url.js",
+      "name": "url",
+      "version": "0.11.4",
+      "sha256": "65c28bbba638488cae823745598956c8c21bc8e846a60363383e109b4c17dd34"
+    },
+    {
+      "module": "util",
+      "file": "util.js",
+      "name": "util",
+      "version": "0.10.4",
+      "sha256": "6135e79e8a47477fa08c1641044032a80ddb4c14cf072d5c28a7b44d799fa81a"
+    },
+    {
+      "module": "intl",
+      "file": "intl.js",
+      "name": "formatjs-intl",
+      "version": "@formatjs/intl-getcanonicallocales@3.2.12 @formatjs/intl-locale@5.3.12 @formatjs/intl-pluralrules@6.3.15 @formatjs/intl-numberformat@9.4.3 @formatjs/intl-datetimeformat@7.8.0",
+      "sha256": "e994fa03e068644365c92946382cfafa56a408404734b64d06d6d24d9854e204"
+    }
+  ]
+}

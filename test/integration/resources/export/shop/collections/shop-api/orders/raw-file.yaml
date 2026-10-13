@@ -1,0 +1,12 @@
+xenon: 1
+kind: request
+id: 01JX0000000000000000000024
+name: Raw file
+method: PUT
+url: "{{base_url}}/blobs/7"
+body:
+  mode: binary
+  binary:
+    src: files/payload.bin
+auth:
+  type: inherit

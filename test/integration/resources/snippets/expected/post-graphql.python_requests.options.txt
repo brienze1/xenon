@@ -1,0 +1,13 @@
+import requests
+import json
+
+url = "https://api.example.test/graphql"
+
+payload = "{\"query\":\"query User($id: ID!) { user(id: $id) { name } }\",\"variables\":{\"id\":\"42\"}}"
+headers = {
+  'Content-Type': 'application/json'
+}
+
+response = requests.request("POST", url, headers=headers, data=payload, allow_redirects=False, timeout=5)
+
+print(response.text)

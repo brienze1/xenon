@@ -1,0 +1,59 @@
+{
+  "id": "assert-json-schema",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "schema valid",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "schema invalid",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected data to satisfy schema but found following errors: \ndata should have required property 'missing', data.id should be string"
+    },
+    {
+      "name": "schema all errors",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected data to satisfy schema but found following errors: \ndata.id should be string, data.name should be number"
+    },
+    {
+      "name": "not schema",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected data to not satisfy schema"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

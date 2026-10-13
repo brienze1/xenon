@@ -1,0 +1,1 @@
+{ "method": "POST", "url": "https://api.example.test/login", "header": [], "body": { "mode": "urlencoded", "urlencoded": [ { "key": "user", "value": "ana" }, { "key": "pass", "value": "s3 cret&x" }, { "key": "skip", "value": "1", "disabled": true } ] } }

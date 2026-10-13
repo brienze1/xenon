@@ -1,0 +1,1 @@
+curl --location "https://api.example.test/search?q=x&api_key=k3y"

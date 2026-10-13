@@ -1,0 +1,20 @@
+const controller = new AbortController();
+const timerId = setTimeout(() => controller.abort(), 5000);
+const myHeaders = new Headers();
+myHeaders.append("Content-Type", "application/octet-stream");
+
+const file = "<file contents here>";
+
+const requestOptions = {
+    method: "PUT",
+    headers: myHeaders,
+    body: file,
+    signal: controller.signal,
+    redirect: "manual"
+};
+
+fetch("https://api.example.test/blob", requestOptions)
+    .then((response) => response.text())
+    .then((result) => console.log(result))
+    .catch((error) => console.error(error))
+    .finally(() => clearTimeout(timerId));

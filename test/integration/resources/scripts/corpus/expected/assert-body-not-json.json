@@ -1,0 +1,52 @@
+{
+  "id": "assert-body-not-json",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "json",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response body to be a valid json but got error Unexpected token 'p' at 1:1"
+    },
+    {
+      "name": "withBody",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "body exact",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

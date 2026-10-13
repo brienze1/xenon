@@ -1,0 +1,22 @@
+xenon: 1
+kind: request
+id: 01JX0000000000000000000021
+name: Upload invoice
+method: POST
+url: "{{base_url}}/invoices"
+body:
+  mode: formdata
+  formdata:
+    - key: kind
+      type: text
+      value: invoice
+    - key: note
+      type: text
+      value: skipped
+      enabled: false
+    - key: file
+      type: file
+      src: files/invoice.txt
+      description: the invoice
+auth:
+  type: inherit

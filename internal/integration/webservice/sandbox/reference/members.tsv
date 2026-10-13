@@ -1,0 +1,225 @@
+pm	pm	The Postman scripting object: variables, request, response, tests and helpers.
+pm.variables	pm.variables	Variables of every scope, resolved local → environment → collection → globals; writes stay for this send.
+pm.variables.has	has(key: string): boolean	Whether a variable with this name is defined in any scope.
+pm.variables.get	get(key: string): any	The value of the variable, from the strongest scope that defines it.
+pm.variables.set	set(key: string, value: any): void	Sets a local variable for the rest of this send (it wins over every other scope).
+pm.variables.unset	unset(key: string): void	Removes a local variable set during this send.
+pm.variables.clear	clear(): void	Removes every local variable set during this send.
+pm.variables.replaceIn	replaceIn(template: string): string	Replaces {{variables}} in the text with their values.
+pm.variables.toObject	toObject(): object	Every resolved variable as a plain object.
+pm.environment	pm.environment	The active environment's variables.
+pm.environment.name	name: string	The name of the active environment.
+pm.environment.has	has(key: string): boolean	Whether the active environment defines this variable.
+pm.environment.get	get(key: string): any	The current value of a variable in the active environment.
+pm.environment.set	set(key: string, value: any): void	Sets the current value of a variable in the active environment.
+pm.environment.unset	unset(key: string): void	Clears the current value of a variable in the active environment.
+pm.environment.clear	clear(): void	Clears the current values of every variable in the active environment.
+pm.environment.replaceIn	replaceIn(template: string): string	Replaces {{variables}} in the text with the active environment's values.
+pm.environment.toObject	toObject(): object	The active environment's variables as a plain object.
+pm.collectionVariables	pm.collectionVariables	The variables of the request's collection.
+pm.collectionVariables.has	has(key: string): boolean	Whether the collection defines this variable.
+pm.collectionVariables.get	get(key: string): any	The current value of a collection variable.
+pm.collectionVariables.set	set(key: string, value: any): void	Sets the current value of a collection variable.
+pm.collectionVariables.unset	unset(key: string): void	Clears the current value of a collection variable.
+pm.collectionVariables.clear	clear(): void	Clears the current values of every collection variable.
+pm.collectionVariables.replaceIn	replaceIn(template: string): string	Replaces {{variables}} in the text with the collection's values.
+pm.collectionVariables.toObject	toObject(): object	The collection variables as a plain object.
+pm.globals	pm.globals	The workspace's global variables.
+pm.globals.has	has(key: string): boolean	Whether a global variable with this name exists.
+pm.globals.get	get(key: string): any	The current value of a global variable.
+pm.globals.set	set(key: string, value: any): void	Sets the current value of a global variable.
+pm.globals.unset	unset(key: string): void	Clears the current value of a global variable.
+pm.globals.clear	clear(): void	Clears the current values of every global variable.
+pm.globals.replaceIn	replaceIn(template: string): string	Replaces {{variables}} in the text with the global values.
+pm.globals.toObject	toObject(): object	The global variables as a plain object.
+pm.iterationData	pm.iterationData	Collection-runner data; always empty in Xenon.
+pm.iterationData.has	has(key: string): boolean	Always false: Xenon has no collection runner.
+pm.iterationData.get	get(key: string): any	Always undefined: Xenon has no collection runner.
+pm.iterationData.unset	unset(key: string): void	Does nothing: Xenon has no collection runner.
+pm.iterationData.toObject	toObject(): object	Always an empty object.
+pm.iterationData.toJSON	toJSON(): object	Always an empty object.
+pm.request	pm.request	The request being sent; changes in pre-request scripts apply to this send only.
+pm.request.url	url: Url	The request URL.
+pm.request.url.toString	toString(): string	The full URL as text.
+pm.request.url.getHost	getHost(): string	The host name.
+pm.request.url.getPath	getPath(): string	The path, starting with /.
+pm.request.url.getPathWithQuery	getPathWithQuery(): string	The path followed by the query string.
+pm.request.url.getQueryString	getQueryString(): string	The query string without the leading ?.
+pm.request.url.getRaw	getRaw(): string	The URL as written.
+pm.request.url.getRemote	getRemote(): string	The host and port.
+pm.request.url.update	update(url: string | object): void	Replaces the URL.
+pm.request.url.addQueryParams	addQueryParams(params: string | object[]): void	Adds query parameters.
+pm.request.url.removeQueryParams	removeQueryParams(params: string | string[]): void	Removes query parameters by name.
+pm.request.url.query	query: PropertyList	The query parameters.
+pm.request.method	method: string	The HTTP method.
+pm.request.headers	headers: HeaderList	The request headers.
+pm.request.headers.add	add(header: { key: string, value: string }): void	Adds a header.
+pm.request.headers.upsert	upsert(header: { key: string, value: string }): void	Adds a header or replaces the one with the same name.
+pm.request.headers.remove	remove(key: string): void	Removes the headers with this name.
+pm.request.headers.get	get(key: string): string	The value of a header.
+pm.request.headers.has	has(key: string, value?: string): boolean	Whether a header with this name (and value) exists.
+pm.request.headers.one	one(key: string): Header	The header with this name.
+pm.request.headers.all	all(): Header[]	Every header.
+pm.request.headers.each	each(callback: (header) => void): void	Calls the callback for every header.
+pm.request.headers.filter	filter(callback: (header) => boolean): Header[]	The headers the callback accepts.
+pm.request.headers.find	find(callback: (header) => boolean): Header	The first header the callback accepts.
+pm.request.headers.map	map(callback: (header) => any): any[]	Maps every header.
+pm.request.headers.reduce	reduce(callback, initial): any	Reduces the headers to one value.
+pm.request.headers.count	count(): number	The number of headers.
+pm.request.headers.clear	clear(): void	Removes every header.
+pm.request.headers.toObject	toObject(): object	The headers as a name → value object.
+pm.request.headers.insert	insert(header, before?): void	Inserts a header, before another one if given.
+pm.request.headers.prepend	prepend(header): void	Adds a header at the start.
+pm.request.headers.append	append(header): void	Adds a header at the end.
+pm.request.headers.populate	populate(headers): void	Adds several headers.
+pm.request.headers.repopulate	repopulate(headers): void	Replaces every header.
+pm.request.headers.idx	idx(index: number): Header	The header at this position.
+pm.request.headers.indexOf	indexOf(header): number	The position of a header.
+pm.request.body	body: RequestBody	The request body.
+pm.request.body.mode	mode: string	The body mode: raw, urlencoded, formdata, file or graphql.
+pm.request.body.raw	raw: string	The raw body text.
+pm.request.body.urlencoded	urlencoded: PropertyList	The URL-encoded form fields.
+pm.request.body.formdata	formdata: PropertyList	The multipart form fields.
+pm.request.body.update	update(body: string | object): void	Replaces the body.
+pm.request.body.isEmpty	isEmpty(): boolean	Whether the body has no content.
+pm.request.body.toString	toString(): string	The body as text.
+pm.request.body.toJSON	toJSON(): object	The body as a plain object.
+pm.request.addHeader	addHeader(header): void	Adds a header.
+pm.request.upsertHeader	upsertHeader(header): void	Adds a header or replaces the one with the same name.
+pm.request.removeHeader	removeHeader(key: string): void	Removes a header.
+pm.request.addQueryParams	addQueryParams(params): void	Adds query parameters.
+pm.request.removeQueryParams	removeQueryParams(params): void	Removes query parameters.
+pm.request.update	update(request: object): void	Replaces parts of the request.
+pm.request.clone	clone(): Request	A copy of the request.
+pm.request.size	size(): object	The size of the request.
+pm.request.toJSON	toJSON(): object	The request as a plain object.
+pm.request.auth	auth: RequestAuth	The request's authorization.
+pm.response	pm.response	The response (post-response scripts only).
+pm.response.code	code: number	The status code.
+pm.response.status	status: string	The status text, e.g. OK.
+pm.response.headers	headers: HeaderList	The response headers.
+pm.response.headers.get	get(key: string): string	The value of a response header.
+pm.response.headers.has	has(key: string, value?: string): boolean	Whether a response header with this name (and value) exists.
+pm.response.headers.toObject	toObject(): object	The response headers as a name → value object.
+pm.response.responseTime	responseTime: number	How long the response took, in milliseconds.
+pm.response.responseSize	responseSize: number	The size of the response body, in bytes.
+pm.response.cookies	cookies: CookieList	The cookies the response set.
+pm.response.json	json(): any	The body parsed as JSON.
+pm.response.jsonp	jsonp(callback?: string): any	The body parsed as JSONP.
+pm.response.text	text(): string	The body as text.
+pm.response.reason	reason(): string	The status reason phrase.
+pm.response.details	details(): object	The status code, name and detail.
+pm.response.size	size(): object	The body and header sizes.
+pm.response.mime	mime(): object	The content type of the body.
+pm.response.contentInfo	contentInfo(): object	The content type, charset and file name of the body.
+pm.response.dataURI	dataURI(): string	The body as a data URI.
+pm.response.encoding	encoding(): object	The encoding of the body.
+pm.response.to	to: Assertion	Starts an assertion on the response (pm.response.to.have.status(200)).
+pm.response.to.have.status	status(code: number | string)	Asserts the status code, or the reason when given a string.
+pm.response.to.have.statusCode	statusCode(code: number)	Asserts the status code.
+pm.response.to.have.statusCodeClass	statusCodeClass(digit: number)	Asserts the first digit of the status code.
+pm.response.to.have.statusReason	statusReason(reason: string)	Asserts the status reason phrase.
+pm.response.to.have.header	header(key: string, value?: string)	Asserts a header exists (with this value).
+pm.response.to.have.body	body(value?: string | object)	Asserts the body (equals the value).
+pm.response.to.have.jsonBody	jsonBody(path?: string, value?: any)	Asserts the body is JSON (with this value at the path).
+pm.response.to.have.jsonSchema	jsonSchema(schema: object, ajvOptions?: object)	Asserts the JSON body matches the schema.
+pm.response.to.have.responseTime	responseTime	Asserts on the response time (e.g. .below(200)).
+pm.response.to.have.responseSize	responseSize	Asserts on the response size.
+pm.response.to.be.ok	ok	Asserts status 200 OK.
+pm.response.to.be.error	error	Asserts a 4xx or 5xx status.
+pm.response.to.be.json	json	Asserts the body is JSON.
+pm.response.to.be.withBody	withBody	Asserts the response has a body.
+pm.response.to.be.info	info	Asserts a 1xx status.
+pm.response.to.be.success	success	Asserts a 2xx status.
+pm.response.to.be.redirection	redirection	Asserts a 3xx status.
+pm.response.to.be.clientError	clientError	Asserts a 4xx status.
+pm.response.to.be.serverError	serverError	Asserts a 5xx status.
+pm.response.to.be.accepted	accepted	Asserts status 202 Accepted.
+pm.response.to.be.withoutContent	withoutContent	Asserts status 204 No Content.
+pm.response.to.be.badRequest	badRequest	Asserts status 400 Bad Request.
+pm.response.to.be.unauthorized	unauthorized	Asserts status 401 Unauthorized.
+pm.response.to.be.unauthorised	unauthorised	Asserts status 401 Unauthorized.
+pm.response.to.be.forbidden	forbidden	Asserts status 403 Forbidden.
+pm.response.to.be.notFound	notFound	Asserts status 404 Not Found.
+pm.response.to.be.notAcceptable	notAcceptable	Asserts status 406 Not Acceptable.
+pm.response.to.be.rateLimited	rateLimited	Asserts status 429 Too Many Requests.
+pm.response.to.be.postmanRequest	postmanRequest	Asserts the value is a Postman request.
+pm.response.to.be.postmanResponse	postmanResponse	Asserts the value is a Postman response.
+pm.response.to.be.postmanRequestOrResponse	postmanRequestOrResponse	Asserts the value is a Postman request or response.
+pm.info	pm.info	Information about the running script.
+pm.info.eventName	eventName: string	prerequest or test.
+pm.info.iteration	iteration: number	Always 0: Xenon has no collection runner.
+pm.info.iterationCount	iterationCount: number	Always 1: Xenon has no collection runner.
+pm.info.requestName	requestName: string	The name of the request being sent.
+pm.info.requestId	requestId: string	The id of the request being sent.
+pm.cookies	pm.cookies	The cookies for the request's domain.
+pm.cookies.has	has(name: string): boolean	Whether a cookie with this name exists.
+pm.cookies.get	get(name: string): string	The value of a cookie.
+pm.cookies.toObject	toObject(): object	The cookies as a name → value object.
+pm.cookies.jar	jar(): CookieJar	The workspace cookie jar (get, getAll, set, unset, clear).
+pm.sendRequest	sendRequest(request: string | object, callback?: (err, response) => void): Promise<Response>	Sends another request; resolves {{variables}}; await it or pass a callback.
+pm.execution	pm.execution	Controls the current send.
+pm.execution.skipRequest	skipRequest(): void	Skips sending the request (pre-request scripts only).
+pm.execution.runRequest	runRequest(requestId: string, options?: { variables }): Promise<Response>	Runs a saved request with its scripts.
+pm.execution.location	location: string[]	The path of the item whose script runs; .current is that item.
+pm.execution.setNextRequest	setNextRequest(name: string): void	Does nothing: Xenon has no collection runner.
+pm.test	test(name: string, fn: (done?) => void): pm	Defines a test; take done for asynchronous tests.
+pm.test.skip	skip(name: string): pm	Defines a skipped test.
+pm.test.index	index(): number	The number of tests defined so far.
+pm.expect	expect(value: any): Assertion	Starts a Chai assertion.
+pm.vault	pm.vault	The workspace secrets.
+pm.vault.get	get(key: string): Promise<string>	The value of a workspace secret.
+pm.vault.set	set(key: string, value: string): Promise<void>	Sets a workspace secret.
+pm.vault.unset	unset(key: string): Promise<void>	Removes the value of a workspace secret.
+pm.visualizer	pm.visualizer	Postman's visualizer; not rendered in Xenon.
+pm.visualizer.set	set(template: string, data?: object): void	Does nothing: Xenon does not render visualizations.
+pm.visualizer.clear	clear(): void	Does nothing: Xenon does not render visualizations.
+console	console	Writes to the console.
+console.log	log(...values: any[]): void	Logs values.
+console.info	info(...values: any[]): void	Logs values at info level.
+console.warn	warn(...values: any[]): void	Logs values at warning level.
+console.error	error(...values: any[]): void	Logs values at error level.
+console.debug	debug(...values: any[]): void	Logs values at debug level.
+console.clear	clear(): void	Clears the console.
+setTimeout	setTimeout(callback: () => void, ms?: number): number	Runs the callback after a delay; the script waits for it.
+clearTimeout	clearTimeout(id: number): void	Cancels a timeout.
+setInterval	setInterval(callback: () => void, ms?: number): number	Runs the callback repeatedly.
+clearInterval	clearInterval(id: number): void	Cancels an interval.
+setImmediate	setImmediate(callback: () => void): number	Runs the callback as soon as possible.
+clearImmediate	clearImmediate(id: number): void	Cancels an immediate callback.
+atob	atob(base64: string): string	Decodes base64 text.
+btoa	btoa(text: string): string	Encodes text as base64.
+Buffer	Buffer	Node's Buffer for binary data.
+URL	URL	Parses and builds URLs.
+URLSearchParams	URLSearchParams	Parses and builds query strings.
+TextEncoder	TextEncoder	Encodes text as UTF-8 bytes.
+TextDecoder	TextDecoder	Decodes UTF-8 bytes to text.
+structuredClone	structuredClone(value: any): any	A deep copy of the value.
+queueMicrotask	queueMicrotask(callback: () => void): void	Runs the callback after the current task.
+crypto	crypto	Web Crypto.
+crypto.getRandomValues	getRandomValues(array: TypedArray): TypedArray	Fills the array with random values.
+crypto.randomUUID	randomUUID(): string	A random UUID v4.
+crypto.subtle	crypto.subtle	Web Crypto digests and HMAC.
+crypto.subtle.digest	digest(algorithm: string, data: BufferSource): Promise<ArrayBuffer>	Hashes data (SHA-1, SHA-256, SHA-384, SHA-512).
+crypto.subtle.importKey	importKey(format, keyData, algorithm, extractable, usages): Promise<CryptoKey>	Imports an HMAC key.
+crypto.subtle.sign	sign(algorithm, key, data): Promise<ArrayBuffer>	Signs data with an HMAC key.
+crypto.subtle.verify	verify(algorithm, key, signature, data): Promise<boolean>	Verifies an HMAC signature.
+AbortController	AbortController	Creates abort signals.
+AbortSignal	AbortSignal	A signal that something was aborted.
+Event	Event	A DOM event.
+EventTarget	EventTarget	Dispatches DOM events.
+DOMException	DOMException	A DOM error.
+Blob	Blob	Binary data with a type.
+Intl	Intl	Number and date formatting (en-US).
+require	require(name: string): any	Loads a library: ajv, chai, cheerio, crypto-js, lodash, moment, uuid, xml2js, …
+CryptoJS	CryptoJS	crypto-js 3.3.0 (HmacSHA256, SHA256, AES, enc.Base64, …).
+_	_	lodash 3 (the legacy global; require('lodash') gives lodash 4).
+tv4	tv4	Tiny Validator for JSON Schema.
+cheerio	cheerio	jQuery-style HTML parsing.
+xml2Json	xml2Json(xml: string): object	Converts XML to a JSON object.
+postman	postman	The legacy postman object (setEnvironmentVariable, getResponseHeader, …).
+tests	tests	Legacy tests: tests["name"] = condition.
+responseBody	responseBody: string	Legacy: the response body as text.
+responseCode	responseCode: { code, name, detail }	Legacy: the response status.
+responseHeaders	responseHeaders: object	Legacy: the response headers.
+responseTime	responseTime: number	Legacy: the response time in milliseconds.

@@ -1,0 +1,63 @@
+{
+  "id": "rw-acronis-cyberapp-sample-components-1",
+  "covers": [
+    "real-world",
+    "real-world signing"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/acronis/cyberapp-sample-components",
+    "path": "postman_collection.json",
+    "url": "https://github.com/acronis/cyberapp-sample-components/blob/cd28cf6410b2fef8de68370c61cdc088982ce976/postman_collection.json",
+    "licence": "MIT",
+    "item": "collection"
+  },
+  "phase": "prerequest",
+  "script": "function base64EncodeVariable(name) {\n    const auth = pm.variables.replaceIn(`{{${name}}}`)\n    const base64Hash = CryptoJS.enc.Utf8.parse(auth)\n    const base64 = CryptoJS.enc.Base64.stringify(base64Hash)\n    pm.collectionVariables.set(`Encrypted${name}`, base64)\n}\nbase64EncodeVariable('CyberAppAuth')\nbase64EncodeVariable('CyberAppExtra')\n\npm.request.headers.add({\n    'key': 'X-CyberApp-Extra',\n    'value': '{{EncryptedCyberAppExtra}}'\n})",
+  "request": {
+    "url": "https://api.example.com/resource",
+    "method": "GET",
+    "header": []
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [
+    {
+      "key": "CyberAppAuth",
+      "value": "redacted-value"
+    },
+    {
+      "key": "CyberAppExtra",
+      "value": "{}"
+    },
+    {
+      "key": "EncryptedCyberAppAuth",
+      "value": "redacted-value"
+    },
+    {
+      "key": "EncryptedCyberAppExtra",
+      "value": ""
+    },
+    {
+      "key": "AppCode",
+      "value": "vendor.app"
+    },
+    {
+      "key": "BaseUrl",
+      "value": "http://127.0.0.1:8080"
+    },
+    {
+      "key": "TenantId",
+      "value": "00000000-0000-0000-0000-000000000000"
+    },
+    {
+      "key": "CloudUrl",
+      "value": "https://eu8-cloud.acronis.com"
+    }
+  ],
+  "globals": [],
+  "variables": [],
+  "cookies": []
+}

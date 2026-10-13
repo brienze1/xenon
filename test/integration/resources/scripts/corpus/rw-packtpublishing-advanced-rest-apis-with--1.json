@@ -1,0 +1,52 @@
+{
+  "id": "rw-packtpublishing-advanced-rest-apis-with--1",
+  "covers": [
+    "real-world",
+    "real-world oauth-token-chain",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/PacktPublishing/Advanced-REST-APIs-with-Flask-and-Python",
+    "path": "S01/ARAC-Section01.postman-collection.json",
+    "url": "https://github.com/PacktPublishing/Advanced-REST-APIs-with-Flask-and-Python/blob/320dc746dc81d1a56a322b168c3742b6711d0c96/S01/ARAC-Section01.postman-collection.json",
+    "licence": "MIT",
+    "item": "login"
+  },
+  "phase": "test",
+  "script": "var jsonData = pm.response.json();\npm.test(\"access_token not empty\", function () {\n    pm.expect(jsonData.access_token).not.eql(undefined);\n});\n\npm.test(\"refresh token not empty\", function () {\n    pm.expect(jsonData.refresh_token).not.eql(undefined);\n});\n// set access token as environement variable\nif (jsonData.access_token !== undefined) {\n    postman.setEnvironmentVariable(\"access_token\", jsonData.access_token);\n} else {\n    postman.setEnvironmentVariable(\"access_token\", null);\n}\n// set refresh token as environement variable\nif (jsonData.refresh_token !== undefined) {\n    postman.setEnvironmentVariable(\"refresh_token\", jsonData.refresh_token);\n} else {\n    postman.setEnvironmentVariable(\"refresh_token\", null);\n}",
+  "request": {
+    "url": "{{url}}/login",
+    "method": "POST",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\n  \"username\" : \"jose\",\n  \"password\" : \"1234\"\n}"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

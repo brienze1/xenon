@@ -1,0 +1,92 @@
+{
+  "id": "rw-dmitryt-otus-microservices-hw-1",
+  "covers": [
+    "real-world",
+    "real-world schema",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/dmitryt/otus-microservices-hw",
+    "path": "hw07/Users_API.postman_collection.json",
+    "url": "https://github.com/dmitryt/otus-microservices-hw/blob/62577e96f9a0efd4b807abc1a5ee2adbceddd964/hw07/Users_API.postman_collection.json",
+    "licence": "MIT",
+    "item": "Create order"
+  },
+  "phase": "test",
+  "script": "var json = pm.response.json();\n\nvar orderSchema = {\n  type: \"object\",\n  properties: {\n    id: {type: \"integer\"},\n    price: {type: \"integer\"},\n    userId: {type: \"integer\"},\n    items: {\n        type: \"array\",\n        items: [{\n            properties: {\n                id: {type: \"integer\"},\n                amount: {type: \"integer\"},\n                price: {type: \"integer\"},\n            }\n        }]\n    },\n  },\n  required: [\"id\", \"userId\", \"price\"],\n  additionalProperties: true,\n};\n\nconsole.log('REQUEST', pm.request.body.raw);\nconsole.log('RESPONSE', JSON.stringify(json));\n\npm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Content-Type header is application/json\", () => {\n  pm.expect(pm.response.headers.get('Content-Type')).to.eql('application/json; charset=utf-8');\n});\n\npm.test(\"Check result\", () => {\n  var json = pm.response.json();\n  pm.expect(tv4.validate(json, orderSchema)).to.eql(true);\n  pm.collectionVariables.set(\"orderPrice\", json.price);\n  pm.collectionVariables.set(\"orderId\", json.id);\n\n  // Artificial delay to allow updating the balance\n  setTimeout(function(){}, 1000);\n});\n\npostman.setNextRequest('Check balance after 1st attempt');",
+  "request": {
+    "url": "{{ordersUrl}}/api/v1/orders",
+    "method": "POST",
+    "header": [],
+    "body": {
+      "mode": "raw",
+      "raw": "{\"items\": [{\"id\": 1, \"amount\": 1}, {\"id\": 2, \"amount\": 1}]}"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [
+    {
+      "key": "baseUrl",
+      "value": "http://arch.homework"
+    },
+    {
+      "key": "authUrl",
+      "value": "redacted-value"
+    },
+    {
+      "key": "user",
+      "value": ""
+    },
+    {
+      "key": "billingUrl",
+      "value": "http://arch.homework/billing"
+    },
+    {
+      "key": "currentUsername",
+      "value": ""
+    },
+    {
+      "key": "currentUserToken",
+      "value": "redacted-value"
+    },
+    {
+      "key": "ordersUrl",
+      "value": "http://arch.homework/orders"
+    },
+    {
+      "key": "userBalance",
+      "value": ""
+    },
+    {
+      "key": "orderPrice",
+      "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    },
+    {
+      "key": "notificationsUrl",
+      "value": "http://arch.homework/notifications"
+    }
+  ],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

@@ -1,0 +1,16 @@
+.drawer {
+  position: relative;
+  grid-area: console;
+  display: flex;
+  height: var(--console-height);
+  min-height: 0;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}

@@ -1,0 +1,10 @@
+import requests
+
+url = "https://api.example.test/search?q=x&api_key=k3y"
+
+payload = {}
+headers = {}
+
+response = requests.request("GET", url, headers=headers, data=payload)
+
+print(response.text)

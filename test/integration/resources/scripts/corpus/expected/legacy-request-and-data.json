@@ -1,0 +1,82 @@
+{
+  "id": "legacy-request-and-data",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"request\" is deprecated. Use \"pm.request\" instead."
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        "https://api.example.com/v1/users?page=2&limit=10",
+        "POST",
+        {
+          "content-type": "application/json",
+          "x-trace": "abc"
+        },
+        "{\"name\":\"Ada\",\"tags\":[\"a\",\"b\"]}",
+        true
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"data\" is deprecated. Use \"pm.iterationData\" instead."
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        {},
+        {
+          "$type": "undefined"
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": {
+    "method": "POST",
+    "url": "https://api.example.com/v1/users?page=2&limit=10",
+    "headers": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "X-Trace",
+        "value": "abc"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\"name\":\"Ada\",\"tags\":[\"a\",\"b\"]}"
+    }
+  },
+  "sentRequests": [],
+  "vault": {}
+}

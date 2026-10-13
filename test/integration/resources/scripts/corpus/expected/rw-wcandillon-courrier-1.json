@@ -1,0 +1,44 @@
+{
+  "id": "rw-wcandillon-courrier-1",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Status code is 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Returns swagger file",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected false to be truthy"
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"responseCode\" is deprecated. Use \"pm.response.code\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tests\" is deprecated. Use \"pm.test()\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

@@ -1,0 +1,8 @@
+script:pre-request {
+  const envName = bru.getEnvName();
+  if (envName === "prod" && req.getMethod() === "DELETE") {
+    throw new Error("Refusing to run a DELETE against prod");
+  }
+  const userAgent = bru.getProcessEnv("CI") ? "xenon-ci" : "xenon-local";
+  req.setHeader("User-Agent", userAgent);
+}

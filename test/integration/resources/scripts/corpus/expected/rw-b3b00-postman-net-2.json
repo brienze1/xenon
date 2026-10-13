@@ -1,0 +1,52 @@
+{
+  "id": "rw-b3b00-postman-net-2",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Response status code is 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Verify that the response body is not empty",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Validate the response contains the expected number of holidays for the year 2024",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected [ Array(9) ] to have a length of 11 but got 9"
+    },
+    {
+      "name": "Verify that each holiday date is in the format 'YYYY-MM-DD'",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "log is not defined"
+    },
+    {
+      "name": "Each holiday date is a non-empty string",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

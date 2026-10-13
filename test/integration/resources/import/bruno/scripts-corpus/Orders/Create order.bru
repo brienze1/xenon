@@ -1,0 +1,48 @@
+meta {
+  name: Create order
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/orders
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "items": [{ "sku": "chair", "qty": 1 }]
+  }
+}
+
+script:pre-request {
+  const order = req.getBody();
+  order.reference = "ord-" + Date.now();
+  order.customerId = bru.getEnvVar("customer_id");
+  req.setBody(order);
+  bru.setVar("orderRef", order.reference);
+}
+
+script:post-response {
+  if (res.status === 429) {
+    const wait = Number(res.getHeader("retry-after") || 1) * 1000;
+    await bru.sleep(wait);
+  }
+  bru.setVar("lastStatus", res.status);
+  console.log(`status ${res.status} in ${res.getResponseTime()} ms`);
+}
+
+tests {
+  test("order created", function () {
+    expect(res.getStatus()).to.equal(201);
+    const data = res.getBody();
+    expect(data.id).to.be.a("string");
+    expect(data.reference).to.equal(bru.getVar("orderRef"));
+    bru.setVar("orderId", data.id);
+  });
+
+  test("location header", function () {
+    expect(res.getHeader("location")).to.include(res.body.id);
+  });
+}

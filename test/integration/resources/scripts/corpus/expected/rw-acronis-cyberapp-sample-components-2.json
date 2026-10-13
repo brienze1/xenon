@@ -1,0 +1,47 @@
+{
+  "id": "rw-acronis-cyberapp-sample-components-2",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Status code is 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Response has correct callback response type",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Response matches against the callback schema",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "CyberAppAuth": "redacted-value",
+      "CyberAppExtra": "{}",
+      "EncryptedCyberAppAuth": "redacted-value",
+      "EncryptedCyberAppExtra": "",
+      "AppCode": "vendor.app",
+      "BaseUrl": "http://127.0.0.1:8080",
+      "TenantId": "00000000-0000-0000-0000-000000000000",
+      "CloudUrl": "https://eu8-cloud.acronis.com"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

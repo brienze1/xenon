@@ -1,0 +1,41 @@
+{
+  "id": "rw-covidgreen-covid-green-backend-api-1",
+  "error": {
+    "name": "TypeError",
+    "message": "Cannot read properties of undefined (reading 'toString')"
+  },
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Status code is 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Schema is valid",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected false to be true"
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tv4\" is deprecated. Use \"require('ajv')\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

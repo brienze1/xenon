@@ -1,0 +1,39 @@
+{
+  "id": "rw-xeroapi-xero-postman-oauth2-2",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Access Token: test-access-token Refresh Token: undefined",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"postman.setEnvironmentVariable\" is deprecated. Use \"pm.environment.set()\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tests\" is deprecated. Use \"pm.test()\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "access_token": "test-access-token"
+    },
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

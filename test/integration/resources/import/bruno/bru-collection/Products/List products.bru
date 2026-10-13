@@ -1,0 +1,72 @@
+meta {
+  name: List products
+  type: http
+  seq: 2
+  tags: [
+    smoke
+  ]
+}
+
+get {
+  url: {{base_url}}/products?page=1&debug=true
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 1
+  ~debug: true
+}
+
+headers {
+  Accept: application/json
+  ~X-Trace: 1
+}
+
+vars:pre-request {
+  category: chairs
+}
+
+vars:post-response {
+  firstId: res.body.items[0].id
+  total: res("total")
+}
+
+assert {
+  res.status: eq 200
+  res.body.items: isArray
+  res.body.total: gt 0
+  res.headers["content-type"]: contains json
+  res.body.name: matches ^Ch
+  res.body.price: between 1, 10
+  res.body.missing: isUndefined
+}
+
+script:pre-request {
+  const start = bru.getEnvVar("start");
+  bru.setVar("start", Date.now());
+  req.setHeader("X-Category", bru.getVar("category"));
+}
+
+script:post-response {
+  bru.setEnvVar("lastId", res.getBody().items[0].id);
+  bru.setNextRequest("Create product");
+}
+
+tests {
+  test("has items", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().items.length).to.be.above(0);
+  });
+}
+
+docs {
+  Lists all **products**.
+}
+
+settings {
+  encodeUrl: true
+  timeout: 5000
+  followRedirects: false
+  maxRedirects: 3
+}

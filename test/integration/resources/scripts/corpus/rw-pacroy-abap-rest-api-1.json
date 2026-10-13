@@ -1,0 +1,47 @@
+{
+  "id": "rw-pacroy-abap-rest-api-1",
+  "covers": [
+    "real-world",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/pacroy/abap-rest-api",
+    "path": "postman/SimpleRESTTest.postman_collection.json",
+    "url": "https://github.com/pacroy/abap-rest-api/blob/08f7a39b1ea3be32344bcc1f7a33740cd21e9fa2/postman/SimpleRESTTest.postman_collection.json",
+    "licence": "MIT",
+    "item": "GetToken"
+  },
+  "phase": "test",
+  "script": "if (tests[\"Status code is 200\"] = responseCode.code === 200) {\n    var token = postman.getResponseHeader(\"x-csrf-token\");\n    tests[\"x-csrf-token=\" + token] = true;\n    pm.environment.set(\"x-csrf-token\", token);\n}",
+  "request": {
+    "url": "{{protocol}}://{{host}}:{{port}}/test/hello?sap-client={{client_test}}&sap-language=EN",
+    "method": "GET",
+    "header": [
+      {
+        "key": "X-CSRF-Token",
+        "value": "redacted-value"
+      }
+    ]
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

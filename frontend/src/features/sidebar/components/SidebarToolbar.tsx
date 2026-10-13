@@ -1,0 +1,44 @@
+import { IconButton } from '@/shared/ui/icon-button/IconButton'
+import { useImportStore } from '@/features/import-export/store'
+import { useSidebarStore } from '@/features/sidebar/store'
+import styles from './SidebarToolbar.module.css'
+
+const ADD_GLYPH = <span aria-hidden="true">+</span>
+
+const IMPORT_GLYPH = <span aria-hidden="true">⤓</span>
+
+export function SidebarToolbar() {
+  const view = useSidebarStore((state) => state.view)
+  const query = useSidebarStore((state) => (state.view === 'history' ? state.historyQuery : state.query))
+  const setQuery = useSidebarStore((state) => state.setQuery)
+  const setHistoryQuery = useSidebarStore((state) => state.setHistoryQuery)
+  const createCollection = useSidebarStore((state) => state.createCollection)
+  const openImport = useImportStore((state) => state.open)
+  const history = view === 'history'
+
+  return (
+    <div className={styles.toolbar}>
+      {history ? null : (
+        <>
+          <IconButton label="New Collection" className={styles.add} onClick={() => void createCollection()}>
+            {ADD_GLYPH}
+          </IconButton>
+          <IconButton label="Import" className={styles.add} onClick={openImport}>
+            {IMPORT_GLYPH}
+          </IconButton>
+        </>
+      )}
+      <input
+        type="search"
+        name={history ? 'history-search' : 'request-search'}
+        aria-label={history ? 'Search history' : 'Search requests'}
+        placeholder={history ? 'Search URL or method…' : 'Search requests…'}
+        autoComplete="off"
+        className={styles.search}
+        spellCheck={false}
+        value={query}
+        onChange={(event) => (history ? setHistoryQuery(event.target.value) : setQuery(event.target.value))}
+      />
+    </div>
+  )
+}

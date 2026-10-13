@@ -1,0 +1,73 @@
+{
+  "id": "pm-collection-variables-methods",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "log",
+      "args": [
+        true,
+        "v1",
+        {
+          "$type": "undefined"
+        }
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        "/v1/yes",
+        {
+          "version": "v1",
+          "shared": "from-collection",
+          "created": "yes"
+        }
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        {}
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "last": 1
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": {
+    "method": "POST",
+    "url": "https://api.example.com/v1/users?page=2&limit=10",
+    "headers": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "X-Trace",
+        "value": "abc"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\"name\":\"Ada\",\"tags\":[\"a\",\"b\"]}"
+    }
+  },
+  "sentRequests": [],
+  "vault": {}
+}

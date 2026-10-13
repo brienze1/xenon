@@ -1,0 +1,15 @@
+xenon: 1
+kind: folder
+id: 01JX0000000000000000000003
+name: Orders
+order:
+  - upload-invoice.yaml
+  - login.yaml
+  - graphql.yaml
+  - raw-file.yaml
+  - signed.yaml
+auth:
+  type: none
+headers:
+  - key: X-Area
+    value: orders

@@ -1,0 +1,128 @@
+[
+  {
+    "id": "get-environment-variable",
+    "title": "Get an environment variable",
+    "phase": "any",
+    "text": "pm.environment.get(\"variable_key\");"
+  },
+  {
+    "id": "get-global-variable",
+    "title": "Get a global variable",
+    "phase": "any",
+    "text": "pm.globals.get(\"variable_key\");"
+  },
+  {
+    "id": "get-variable",
+    "title": "Get a variable",
+    "phase": "any",
+    "text": "pm.variables.get(\"variable_key\");"
+  },
+  {
+    "id": "get-collection-variable",
+    "title": "Get a collection variable",
+    "phase": "any",
+    "text": "pm.collectionVariables.get(\"variable_key\");"
+  },
+  {
+    "id": "set-environment-variable",
+    "title": "Set an environment variable",
+    "phase": "any",
+    "text": "pm.environment.set(\"variable_key\", \"variable_value\");"
+  },
+  {
+    "id": "set-global-variable",
+    "title": "Set a global variable",
+    "phase": "any",
+    "text": "pm.globals.set(\"variable_key\", \"variable_value\");"
+  },
+  {
+    "id": "set-collection-variable",
+    "title": "Set a collection variable",
+    "phase": "any",
+    "text": "pm.collectionVariables.set(\"variable_key\", \"variable_value\");"
+  },
+  {
+    "id": "clear-environment-variable",
+    "title": "Clear an environment variable",
+    "phase": "any",
+    "text": "pm.environment.unset(\"variable_key\");"
+  },
+  {
+    "id": "clear-global-variable",
+    "title": "Clear a global variable",
+    "phase": "any",
+    "text": "pm.globals.unset(\"variable_key\");"
+  },
+  {
+    "id": "clear-collection-variable",
+    "title": "Clear a collection variable",
+    "phase": "any",
+    "text": "pm.collectionVariables.unset(\"variable_key\");"
+  },
+  {
+    "id": "send-request",
+    "title": "Send a request",
+    "phase": "any",
+    "text": "pm.sendRequest(\"https://postman-echo.com/get\", function (err, response) {\n    console.log(response.json());\n});"
+  },
+  {
+    "id": "status-code-200",
+    "title": "Status code: Code is 200",
+    "phase": "postResponse",
+    "text": "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});"
+  },
+  {
+    "id": "body-contains-string",
+    "title": "Response body: Contains string",
+    "phase": "postResponse",
+    "text": "pm.test(\"Body matches string\", function () {\n    pm.expect(pm.response.text()).to.include(\"string_you_want_to_search\");\n});"
+  },
+  {
+    "id": "json-value-check",
+    "title": "Response body: JSON value check",
+    "phase": "postResponse",
+    "text": "pm.test(\"Your test name\", function () {\n    var jsonData = pm.response.json();\n    pm.expect(jsonData.value).to.eql(100);\n});"
+  },
+  {
+    "id": "body-equals-string",
+    "title": "Response body: Is equal to a string",
+    "phase": "postResponse",
+    "text": "pm.test(\"Body is correct\", function () {\n    pm.response.to.have.body(\"response_body_string\");\n});"
+  },
+  {
+    "id": "content-type-header",
+    "title": "Response headers: Content-Type header check",
+    "phase": "postResponse",
+    "text": "pm.test(\"Content-Type is present\", function () {\n    pm.response.to.have.header(\"Content-Type\");\n});"
+  },
+  {
+    "id": "response-time",
+    "title": "Response time is less than 200ms",
+    "phase": "postResponse",
+    "text": "pm.test(\"Response time is less than 200ms\", function () {\n    pm.expect(pm.response.responseTime).to.be.below(200);\n});"
+  },
+  {
+    "id": "successful-post",
+    "title": "Status code: Successful POST request",
+    "phase": "postResponse",
+    "text": "pm.test(\"Successful POST request\", function () {\n    pm.expect(pm.response.code).to.be.oneOf([201, 202]);\n});"
+  },
+  {
+    "id": "status-code-name",
+    "title": "Status code: Code name has string",
+    "phase": "postResponse",
+    "text": "pm.test(\"Status code name has string\", function () {\n    pm.response.to.have.status(\"Created\");\n});"
+  },
+  {
+    "id": "xml-to-json",
+    "title": "Response body: Convert XML body to a JSON Object",
+    "phase": "postResponse",
+    "text": "var jsonObject = xml2Json(responseBody);"
+  },
+  {
+    "id": "tiny-validator",
+    "title": "Use Tiny Validator for JSON data",
+    "phase": "postResponse",
+    "text": "var schema = {\n    \"items\": {\n        \"type\": \"boolean\"\n    }\n};\n\nvar data1 = [true, false];\nvar data2 = [true, 123];\n\npm.test('Schema is valid', function() {\n    pm.expect(tv4.validate(data1, schema)).to.be.true;\n    pm.expect(tv4.validate(data2, schema)).to.be.true;\n});"
+  }
+]

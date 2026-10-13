@@ -1,0 +1,51 @@
+{
+  "id": "rw-halcyongrid-halcyon-3",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "rpc_login_key: redacted-value",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"xml2Json\" is deprecated. Use \"require('xml2js')\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"postman.setEnvironmentVariable\" is deprecated. Use \"pm.environment.set()\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"environment\" is deprecated. Use \"pm.environment\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tests\" is deprecated. Use \"pm.test()\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "rpc_login_key": "redacted-value"
+    },
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

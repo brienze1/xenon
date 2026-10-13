@@ -1,0 +1,111 @@
+{
+  "id": "assert-status-class-204",
+  "covers": [
+    "sandbox-api §2 status properties"
+  ],
+  "source": {
+    "kind": "hand-written",
+    "licence": "Xenon project (same licence as this repository)"
+  },
+  "phase": "test",
+  "script": "pm.test('to.be.ok', () => pm.response.to.be.ok);\npm.test('to.be.error', () => pm.response.to.be.error);\npm.test('to.be.info', () => pm.response.to.be.info);\npm.test('to.be.success', () => pm.response.to.be.success);\npm.test('to.be.redirection', () => pm.response.to.be.redirection);\npm.test('to.be.clientError', () => pm.response.to.be.clientError);\npm.test('to.be.serverError', () => pm.response.to.be.serverError);\npm.test('to.be.accepted', () => pm.response.to.be.accepted);\npm.test('to.be.withoutContent', () => pm.response.to.be.withoutContent);\npm.test('to.be.badRequest', () => pm.response.to.be.badRequest);\npm.test('to.be.unauthorized', () => pm.response.to.be.unauthorized);\npm.test('to.be.unauthorised', () => pm.response.to.be.unauthorised);\npm.test('to.be.forbidden', () => pm.response.to.be.forbidden);\npm.test('to.be.notFound', () => pm.response.to.be.notFound);\npm.test('to.be.notAcceptable', () => pm.response.to.be.notAcceptable);\npm.test('to.be.rateLimited', () => pm.response.to.be.rateLimited);\npm.test('to.not.be.ok', () => pm.response.to.not.be.ok);\npm.test('to.not.be.error', () => pm.response.to.not.be.error);",
+  "request": {
+    "url": "https://api.example.com/v1/users?page=2&limit=10",
+    "method": "POST",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "X-Trace",
+        "value": "abc"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\"name\":\"Ada\",\"tags\":[\"a\",\"b\"]}"
+    }
+  },
+  "environment": {
+    "name": "dev",
+    "values": [
+      {
+        "key": "base_url",
+        "value": "https://api.example.com"
+      },
+      {
+        "key": "user",
+        "value": "ada"
+      },
+      {
+        "key": "shared",
+        "value": "from-env"
+      }
+    ]
+  },
+  "collectionVariables": [
+    {
+      "key": "version",
+      "value": "v1"
+    },
+    {
+      "key": "shared",
+      "value": "from-collection"
+    },
+    {
+      "key": "coll_only",
+      "value": "c"
+    }
+  ],
+  "globals": [
+    {
+      "key": "tenant",
+      "value": "acme"
+    },
+    {
+      "key": "shared",
+      "value": "from-globals"
+    },
+    {
+      "key": "glob_only",
+      "value": "g"
+    }
+  ],
+  "variables": [
+    {
+      "key": "local_only",
+      "value": "l"
+    }
+  ],
+  "cookies": [
+    {
+      "name": "session",
+      "value": "s1",
+      "domain": "api.example.com",
+      "path": "/"
+    },
+    {
+      "name": "theme",
+      "value": "dark",
+      "domain": "api.example.com",
+      "path": "/"
+    }
+  ],
+  "response": {
+    "code": 204,
+    "status": "No Content",
+    "header": [
+      {
+        "key": "Set-Cookie",
+        "value": "session=s1; Path=/"
+      },
+      {
+        "key": "X-Rate",
+        "value": "10"
+      }
+    ],
+    "body": "",
+    "responseTime": 123
+  }
+}

@@ -1,0 +1,15 @@
+{
+	"fixed": {
+		"file_version": "0.1.0"
+	},
+	"info": {
+		"0000": {
+			"ProductVersion": "0.1.0",
+			"CompanyName": "Luis Brienze",
+			"FileDescription": "Local-first desktop API client",
+			"LegalCopyright": "(c) 2026, Luis Brienze",
+			"ProductName": "Xenon",
+			"Comments": "Xenon"
+		}
+	}
+}

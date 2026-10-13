@@ -1,0 +1,42 @@
+{
+  "id": "rw-gipplab-vmext-1",
+  "covers": [
+    "real-world",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/gipplab/vmext",
+    "path": "htw-citeplag-node.postman_collection.json",
+    "url": "https://github.com/gipplab/vmext/blob/e51c56e123dfafbecb74e35928781241239ab3b7/htw-citeplag-node.postman_collection.json",
+    "licence": "Apache-2.0",
+    "item": "http://localhost:4001/api/v1/math/renderAST"
+  },
+  "phase": "test",
+  "script": "tests[\"Status code is 200\"] = responseCode.code === 200;\n\ntests[\"Content-Type is present\"] = postman.getResponseHeader(\"Content-Type\");\n\ntests[\"Response time is less than 300ms\"] = responseTime < 300;",
+  "request": {
+    "url": "localhost:4001/api/v1/math/renderAST",
+    "method": "POST",
+    "header": []
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

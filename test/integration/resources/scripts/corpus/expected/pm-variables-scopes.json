@@ -1,0 +1,107 @@
+{
+  "id": "pm-variables-scopes",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "log",
+      "args": [
+        "from-env",
+        "c",
+        "g",
+        "l",
+        {
+          "$type": "undefined"
+        }
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        true,
+        false
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        "from-local",
+        "number",
+        {
+          "a": 1
+        }
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        "https://api.example.com/v1/acme/from-local/{{unknown}}"
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        {
+          "tenant": "acme",
+          "shared": "from-local",
+          "glob_only": "g",
+          "version": "v1",
+          "coll_only": "c",
+          "base_url": "https://api.example.com",
+          "user": "ada",
+          "local_only": "l",
+          "num": 42,
+          "obj": {
+            "a": 1
+          }
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l",
+      "shared": "from-local",
+      "num": 42,
+      "obj": {
+        "a": 1
+      }
+    }
+  },
+  "request": {
+    "method": "POST",
+    "url": "https://api.example.com/v1/users?page=2&limit=10",
+    "headers": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "X-Trace",
+        "value": "abc"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\"name\":\"Ada\",\"tags\":[\"a\",\"b\"]}"
+    }
+  },
+  "sentRequests": [],
+  "vault": {}
+}

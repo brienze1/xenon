@@ -1,0 +1,64 @@
+{
+  "id": "rw-ciscodevnet-postman-xapi-1",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Start SIP call to Space: success",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Start SIP call to Space: parseing response as XML",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected false to be truthy"
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"responseCode\" is deprecated. Use \"pm.response.code\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tests\" is deprecated. Use \"pm.test()\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"xml2Json\" is deprecated. Use \"require('xml2js')\" instead."
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        {
+          "$type": "undefined"
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "endpoint": "http://192.168.1.32",
+      "credentials": "redacted-value",
+      "creds-admin": "redacted-value",
+      "creads-integrator": "redacted-value",
+      "creds-localadmin": "redacted-value"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

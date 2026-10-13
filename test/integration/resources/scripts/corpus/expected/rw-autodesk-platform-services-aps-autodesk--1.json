@@ -1,0 +1,37 @@
+{
+  "id": "rw-autodesk-platform-services-aps-autodesk--1",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Create Forms, Status code is 200",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "Cannot read properties of undefined (reading 'find')"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "APSBaseDomain": "",
+      "clientId": "",
+      "clientSecret": "redacted-value",
+      "accountName": "",
+      "projectName": "",
+      "one_user_email_as_assignee": "redacted-value",
+      "accountId": "",
+      "projectId": "",
+      "locationId": "",
+      "assignee_id": "redacted-value",
+      "formId": 1,
+      "templateId": ""
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

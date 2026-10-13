@@ -1,0 +1,12 @@
+import requests
+
+url = "https://api.example.test/notes"
+
+payload = "  @mention the team  "
+headers = {
+  'Content-Type': 'text/plain'
+}
+
+response = requests.request("POST", url, headers=headers, data=payload)
+
+print(response.text)

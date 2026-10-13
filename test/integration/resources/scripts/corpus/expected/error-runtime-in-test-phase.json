@@ -1,0 +1,41 @@
+{
+  "id": "error-runtime-in-test-phase",
+  "error": {
+    "name": "JSONError",
+    "message": "Unexpected token 'b' at 1:2\n{bad\n ^"
+  },
+  "skipped": false,
+  "tests": [
+    {
+      "name": "ran",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

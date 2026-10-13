@@ -1,0 +1,52 @@
+{
+  "id": "rw-garystafford-spring-postgresql-demo-1",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Status code is 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Body contains correct app version",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected '{\"id\":1,\"name\":\"example\",\"status\":\"ac…' to include 'PCF Spring PostgreSQL Demo undefined.…'"
+    },
+    {
+      "name": "Body contains correct active profile",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected '{\"id\":1,\"name\":\"example\",\"status\":\"ac…' to include 'The Spring \\'undefined\\' Profile is a…'"
+    },
+    {
+      "name": "Header 'server' contains value 'envoy'",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "the given combination of arguments (undefined and string) is invalid for this assertion. You can use an array, a map, an object, a set, a string, or a weakset instead of a string"
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"postman.getResponseHeader\" is deprecated. Use \"pm.response.headers.get()\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

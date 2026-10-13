@@ -1,0 +1,187 @@
+openapi: 3.1.0
+info:
+  title: Shop API
+  description: The shop's public API.
+  version: 1.0.0
+servers:
+  - url: '{{baseUrl}}'
+tags:
+  - name: Products
+  - name: Products / Admin
+  - name: Auth
+x-tagGroups:
+  - name: Products
+    tags:
+      - Products
+      - Products / Admin
+  - name: Auth
+    tags:
+      - Auth
+paths:
+  /products:
+    get:
+      tags:
+        - Products
+      summary: List products
+      description: Lists the products, one page at a time.
+      x-xenon-id: 01JK7000000000000000000010
+      parameters:
+        - name: limit
+          in: query
+          description: Page size
+          schema:
+            type: string
+          example: "10"
+        - name: sort
+          in: query
+          schema:
+            type: string
+          example: name
+        - name: X-Trace
+          in: header
+          description: Correlation id
+          schema:
+            type: string
+          example: '{{traceId}}'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              examples:
+                A page:
+                  x-xenon-id: 01JK7000000000000000000020
+                  value:
+                    - id: 1
+                      name: Mug
+      security:
+        - bearerAuth: []
+    post:
+      tags:
+        - Products / Admin
+      summary: Create product
+      x-xenon-id: 01JK7000000000000000000012
+      requestBody:
+        content:
+          application/json:
+            example: '{"name": "Mug", "price": {{price}}}'
+      security:
+        - apiKeyAuth: []
+  /products/{id}:
+    get:
+      tags:
+        - Products
+      summary: Get product
+      x-xenon-id: 01JK7000000000000000000011
+      parameters:
+        - name: id
+          in: path
+          description: Product id
+          required: true
+          schema:
+            type: string
+          example: "42"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              examples:
+                Found:
+                  x-xenon-id: 01JK7000000000000000000021
+                  value:
+                    id: 42
+                    name: Mug
+        "404":
+          description: Not Found
+          content:
+            text/plain:
+              examples:
+                Missing:
+                  x-xenon-id: 01JK7000000000000000000022
+                  value: no such product
+      security:
+        - bearerAuth: []
+      x-xenon-variants:
+        - summary: Get product (v2)
+          x-xenon-id: 01JK7000000000000000000015
+          parameters:
+            - name: id
+              in: path
+              required: true
+              schema:
+                type: string
+              example: "7"
+            - name: X-Api-Version
+              in: header
+              schema:
+                type: string
+              example: "2"
+          security:
+            - basicAuth: []
+  /login:
+    post:
+      tags:
+        - Auth
+      summary: Login
+      x-xenon-id: 01JK7000000000000000000013
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: Account name
+                  example: alice
+                password:
+                  type: string
+                  example: '{{password}}'
+      security: []
+  /users/{userId}/avatar:
+    post:
+      summary: Upload avatar
+      x-xenon-id: 01JK7000000000000000000014
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: '{{userId}}'
+          x-xenon-variable: true
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+                caption:
+                  type: string
+                  example: Me
+      security:
+        - oauth2Auth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+    apiKeyAuth:
+      type: apiKey
+      name: X-API-Key
+      in: header
+    oauth2Auth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: '{{baseUrl}}/oauth/token'
+          scopes:
+            avatars:write: ""
+            profile: ""
+    basicAuth:
+      type: http
+      scheme: basic

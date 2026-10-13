@@ -1,0 +1,52 @@
+{
+  "id": "rw-rahul-barick-postman-newman-2",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Gets the correct users url",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected false to be truthy"
+    },
+    {
+      "name": "Gets the correct emails url",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected false to be truthy"
+    },
+    {
+      "name": "Gets the correct followers url",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected false to be truthy"
+    },
+    {
+      "name": "Gets the correct following url",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected false to be truthy"
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tests\" is deprecated. Use \"pm.test()\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

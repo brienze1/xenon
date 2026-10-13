@@ -1,0 +1,115 @@
+{
+  "id": "pm-test-sync",
+  "covers": [
+    "sandbox-api §1 pm.test"
+  ],
+  "source": {
+    "kind": "hand-written",
+    "licence": "Xenon project (same licence as this repository)"
+  },
+  "phase": "test",
+  "script": "pm.test('passes', function () { pm.expect(1).to.equal(1); });\npm.test('fails', () => { pm.expect('a').to.equal('b'); });\npm.test('throws', () => { throw new Error('custom failure'); });\npm.test('empty');\nconsole.log(pm.test.index());",
+  "request": {
+    "url": "https://api.example.com/v1/users?page=2&limit=10",
+    "method": "POST",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "X-Trace",
+        "value": "abc"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\"name\":\"Ada\",\"tags\":[\"a\",\"b\"]}"
+    }
+  },
+  "environment": {
+    "name": "dev",
+    "values": [
+      {
+        "key": "base_url",
+        "value": "https://api.example.com"
+      },
+      {
+        "key": "user",
+        "value": "ada"
+      },
+      {
+        "key": "shared",
+        "value": "from-env"
+      }
+    ]
+  },
+  "collectionVariables": [
+    {
+      "key": "version",
+      "value": "v1"
+    },
+    {
+      "key": "shared",
+      "value": "from-collection"
+    },
+    {
+      "key": "coll_only",
+      "value": "c"
+    }
+  ],
+  "globals": [
+    {
+      "key": "tenant",
+      "value": "acme"
+    },
+    {
+      "key": "shared",
+      "value": "from-globals"
+    },
+    {
+      "key": "glob_only",
+      "value": "g"
+    }
+  ],
+  "variables": [
+    {
+      "key": "local_only",
+      "value": "l"
+    }
+  ],
+  "cookies": [
+    {
+      "name": "session",
+      "value": "s1",
+      "domain": "api.example.com",
+      "path": "/"
+    },
+    {
+      "name": "theme",
+      "value": "dark",
+      "domain": "api.example.com",
+      "path": "/"
+    }
+  ],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json; charset=utf-8"
+      },
+      {
+        "key": "Set-Cookie",
+        "value": "session=s1; Path=/"
+      },
+      {
+        "key": "X-Rate",
+        "value": "10"
+      }
+    ],
+    "body": "{\"id\":7,\"name\":\"Ada\",\"items\":[{\"id\":1,\"price\":2.5},{\"id\":2,\"price\":4}],\"token\":\"tok-1\",\"nested\":{\"deep\":{\"value\":true}}}",
+    "responseTime": 123
+  }
+}

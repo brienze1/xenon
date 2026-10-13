@@ -1,0 +1,150 @@
+name: CI
+
+on:
+  push:
+    branches: [init, main, 'xen-*']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: validate (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install the snippet runtimes (curl, node, go and python requests run generated snippets in BDD)
+        run: |
+          python -m pip install requests==2.32.3
+          curl --version
+          node --version
+          go version
+
+      - name: Install Linux webview dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+
+      - name: Ensure make is available
+        if: runner.os == 'Windows'
+        run: command -v make || choco install make -y
+
+      - name: Setup tools and frontend dependencies
+        run: make setup
+
+      - name: Generate bindings
+        run: make bindings
+
+      - name: Validate
+        run: make validate
+
+      - name: Fail on files changed by validate
+        run: git diff --exit-code
+
+      - name: Build
+        run: make build
+
+  sandbox:
+    name: sandbox assets & parity (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: |
+            tools/sandbox-assets/package-lock.json
+            tools/parity/package-lock.json
+
+      - name: Ensure make is available
+        if: runner.os == 'Windows'
+        run: command -v make || choco install make -y
+
+      - name: Rebuild sandbox assets (fails on drift)
+        run: make sandbox-assets
+
+      - name: Run the postman-sandbox oracle (fails on drift)
+        run: make parity-oracle
+
+      - name: Parity diff against the oracle (>= 98% of the corpus, SC-001)
+        run: make parity-diff
+
+  newman:
+    name: newman (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: tools/newman/package-lock.json
+
+      - name: Install Linux webview dependencies (the BDD harness links the Wails bindings)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+
+      - name: Ensure make is available
+        if: runner.os == 'Windows'
+        run: command -v make || choco install make -y
+
+      - name: Export the Xenon-created corpus to Postman and run it with Newman (SC-002)
+        run: make newman

@@ -1,0 +1,11 @@
+.main {
+  grid-area: main;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.main:focus-visible {
+  outline: none;
+  box-shadow: inset var(--focus-ring);
+}

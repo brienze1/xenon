@@ -1,0 +1,755 @@
+# cURL import corpus (SC-005): each command in bash, Windows cmd and PowerShell syntax must
+# produce the same request. Hand-authored; `expected` follows spec FR-024 and has the shape of
+# the RequestService.ParseCurl response (`request` + `notices`): objects are matched field by
+# field, lists must match in length and order. Imported file references always need a re-pick.
+commands:
+  - name: "simple get"
+    bash: |-
+      curl 'https://api.test/users'
+    cmd: |-
+      curl ^"https://api.test/users^"
+    powershell: |-
+      curl.exe 'https://api.test/users'
+    expected:
+      request:
+        method: GET
+        url: https://api.test/users
+        headers: []
+        body:
+          mode: none
+        auth:
+          type: inherit
+      notices: []
+  - name: "explicit method"
+    bash: |-
+      curl -X 'DELETE' \
+        'https://api.test/users/1'
+    cmd: |-
+      curl -X ^"DELETE^" ^
+        ^"https://api.test/users/1^"
+    powershell: |-
+      curl.exe -X 'DELETE' `
+        'https://api.test/users/1'
+    expected:
+      request:
+        method: DELETE
+        url: https://api.test/users/1
+        headers: []
+        body:
+          mode: none
+        auth:
+          type: inherit
+      notices: []
+  - name: "long request flag"
+    bash: |-
+      curl --request 'PATCH' \
+        'https://api.test/users/1'
+    cmd: |-
+      curl --request ^"PATCH^" ^
+        ^"https://api.test/users/1^"
+    powershell: |-
+      curl.exe --request 'PATCH' `
+        'https://api.test/users/1'
+    expected:
+      request:
+        method: PATCH
+        url: https://api.test/users/1
+        headers: []
+        body:
+          mode: none
+        auth:
+          type: inherit
+      notices: []
+  - name: "headers"
+    bash: |-
+      curl 'https://api.test/x' \
+        -H 'Accept: application/json' \
+        -H 'X-Trace: a b'
+    cmd: |-
+      curl ^"https://api.test/x^" ^
+        -H ^"Accept: application/json^" ^
+        -H ^"X-Trace: a b^"
+    powershell: |-
+      curl.exe 'https://api.test/x' `
+        -H 'Accept: application/json' `
+        -H 'X-Trace: a b'
+    expected:
+      request:
+        method: GET
+        url: https://api.test/x
+        headers:
+        - key: Accept
+          value: application/json
+        - key: X-Trace
+          value: a b
+        body:
+          mode: none
+        auth:
+          type: inherit
+      notices: []
+  - name: "json data"
+    bash: |-
+      curl -X 'POST' \
+        'https://api.test/x' \
+        -H 'Content-Type: application/json' \
+        -d '{"a":1}'
+    cmd: |-
+      curl -X ^"POST^" ^
+        ^"https://api.test/x^" ^
+        -H ^"Content-Type: application/json^" ^
+        -d ^"{\^"a\^":1}^"
+    powershell: |-
+      curl.exe -X 'POST' `
+        'https://api.test/x' `
+        -H 'Content-Type: application/json' `
+        -d '{"a":1}'
+    expected:
+      request:
+        method: POST
+        url: https://api.test/x
+        headers:
+        - key: Content-Type
+          value: application/json
+        body:
+          mode: raw
+          raw:
+            content: '{"a":1}'
+        auth:
+          type: inherit
+      notices: []
+  - name: "data implies post"
+    bash: |-
+      curl 'https://api.test/x' \
+        --data 'a=1&b=2'
+    cmd: |-
+      curl ^"https://api.test/x^" ^
+        --data ^"a=1^&b=2^"
+    powershell: |-
+      curl.exe 'https://api.test/x' `
+        --data 'a=1&b=2'
+    expected:
+      request:
+        method: POST
+        url: https://api.test/x
+        headers: []
+        body:
+          mode: urlencoded
+          urlencoded:
+          - key: a
+            value: '1'
+          - key: b
+            value: '2'
+        auth:
+          type: inherit
+      notices: []
+  - name: "data raw"
+    bash: |-
+      curl 'https://api.test/x' \
+        --data-raw '@not-a-file'
+    cmd: |-
+      curl ^"https://api.test/x^" ^
+        --data-raw ^"@not-a-file^"
+    powershell: |-
+      curl.exe 'https://api.test/x' `
+        --data-raw '@not-a-file'
+    expected:
+      request:
+        method: POST
+        url: https://api.test/x
+        headers: []
+        body:
+          mode: raw
+          raw:
+            content: '@not-a-file'
+        auth:
+          type: inherit
+      notices: []
+  - name: "data ascii"
+    bash: |-
+      curl 'https://api.test/x' \
+        --data-ascii 'plain text'
+    cmd: |-
+      curl ^"https://api.test/x^" ^
+        --data-ascii ^"plain text^"
+    powershell: |-
+      curl.exe 'https://api.test/x' `
+        --data-ascii 'plain text'
+    expected:
+      request:
+        method: POST
+        url: https://api.test/x
+        headers: []
+        body:
+          mode: raw
+          raw:
+            content: plain text
+        auth:
+          type: inherit
+      notices: []
+  - name: "data binary file"
+    bash: |-
+      curl 'https://api.test/x' \
+        --data-binary '@/tmp/payload.bin'
+    cmd: |-
+      curl ^"https://api.test/x^" ^
+        --data-binary ^"@/tmp/payload.bin^"
+    powershell: |-
+      curl.exe 'https://api.test/x' `
+        --data-binary '@/tmp/payload.bin'
+    expected:
+      request:
+        method: POST
+        url: https://api.test/x
+        headers: []
+        body:
+          mode: binary
+          binary:
+            src: /tmp/payload.bin
+            src_state: repick
+        auth:
+          type: inherit
+      notices: []
+  - name: "data urlencode"
+    bash: |-
+      curl 'https://api.test/x' \
+        --data-urlencode 'q=hello world' \
+        --data-urlencode 'lang=pt-BR'
+    cmd: |-
+      curl ^"https://api.test/x^" ^
+        --data-urlencode ^"q=hello world^" ^
+        --data-urlencode ^"lang=pt-BR^"
+    powershell: |-
+      curl.exe 'https://api.test/x' `
+        --data-urlencode 'q=hello world' `
+        --data-urlencode 'lang=pt-BR'
+    expected:
+      request:
+        method: POST
+        url: https://api.test/x
+        headers: []
+        body:
+          mode: urlencoded
+          urlencoded:
+          - key: q
+            value: hello world
+          - key: lang
+            value: pt-BR
+        auth:
+          type: inherit
+      notices: []
+  - name: "form fields"
+    bash: |-
+      curl 'https://api.test/upload' \
+        -F 'note=hi' \
+        -F 'file=@/tmp/a.txt'
+    cmd: |-
+      curl ^"https://api.test/upload^" ^
+        -F ^"note=hi^" ^
+        -F ^"file=@/tmp/a.txt^"
+    powershell: |-
+      curl.exe 'https://api.test/upload' `
+        -F 'note=hi' `
+        -F 'file=@/tmp/a.txt'
+    expected:
+      request:
+        method: POST
+        url: https://api.test/upload
+        headers: []
+        body:
+          mode: formdata
+          formdata:
+          - key: note
+            type: text
+            value: hi
+          - key: file
+            type: file
+            src: /tmp/a.txt
+            src_state: repick
+        auth:
+          type: inherit
+      notices: []
+  - name: "form long flag"
+    bash: |-
+      curl 'https://api.test/upload' \
+        --form 'a=1'
+    cmd: |-
+      curl ^"https://api.test/upload^" ^
+        --form ^"a=1^"
+    powershell: |-
+      curl.exe 'https://api.test/upload' `
+        --form 'a=1'
+    expected:
+      request:
+        method: POST
+        url: https://api.test/upload
+        headers: []
+        body:
+          mode: formdata
+          formdata:
+          - key: a
+            type: text
+            value: '1'
+        auth:
+          type: inherit
+      notices: []
+  - name: "get with data"
+    bash: |-
+      curl -G \
+        'https://api.test/search' \
+        -d 'q=xenon' \
+        -d 'page=2'
+    cmd: |-
+      curl -G ^
+        ^"https://api.test/search^" ^
+        -d ^"q=xenon^" ^
+        -d ^"page=2^"
+    powershell: |-
+      curl.exe -G `
+        'https://api.test/search' `
+        -d 'q=xenon' `
+        -d 'page=2'
+    expected:
+      request:
+        method: GET
+        url: https://api.test/search?q=xenon&page=2
+        headers: []
+        body:
+          mode: none
+        auth:
+          type: inherit
+      notices: []
+  - name: "head"
+    bash: |-
+      curl -I \
+        'https://api.test/x'
+    cmd: |-
+      curl -I ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe -I `
+        'https://api.test/x'
+    expected:
+      request:
+        method: HEAD
+        url: https://api.test/x
+        headers: []
+        body:
+          mode: none
+        auth:
+          type: inherit
+      notices: []
+  - name: "upload file"
+    bash: |-
+      curl -T '/tmp/payload.bin' \
+        'https://api.test/blob'
+    cmd: |-
+      curl -T ^"/tmp/payload.bin^" ^
+        ^"https://api.test/blob^"
+    powershell: |-
+      curl.exe -T '/tmp/payload.bin' `
+        'https://api.test/blob'
+    expected:
+      request:
+        method: PUT
+        url: https://api.test/blob
+        headers: []
+        body:
+          mode: binary
+          binary:
+            src: /tmp/payload.bin
+            src_state: repick
+        auth:
+          type: inherit
+      notices: []
+  - name: "url flag"
+    bash: |-
+      curl --url 'https://api.test/x' \
+        -X 'PUT'
+    cmd: |-
+      curl --url ^"https://api.test/x^" ^
+        -X ^"PUT^"
+    powershell: |-
+      curl.exe --url 'https://api.test/x' `
+        -X 'PUT'
+    expected:
+      request:
+        method: PUT
+        url: https://api.test/x
+        headers: []
+        body:
+          mode: none
+        auth:
+          type: inherit
+      notices: []
+  - name: "basic user"
+    bash: |-
+      curl -u 'ana:secret' \
+        'https://api.test/x'
+    cmd: |-
+      curl -u ^"ana:secret^" ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe -u 'ana:secret' `
+        'https://api.test/x'
+    expected:
+      request:
+        method: GET
+        url: https://api.test/x
+        headers: []
+        body:
+          mode: none
+        auth:
+          type: basic
+          basic:
+            username: ana
+            password: secret
+      notices: []
+  - name: "basic flag"
+    bash: |-
+      curl --user 'ana:secret' \
+        --basic \
+        'https://api.test/x'
+    cmd: |-
+      curl --user ^"ana:secret^" ^
+        --basic ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe --user 'ana:secret' `
+        --basic `
+        'https://api.test/x'
+    expected:
+      request:
+        method: GET
+        url: https://api.test/x
+        headers: []
+        body:
+          mode: none
+        auth:
+          type: basic
+          basic:
+            username: ana
+            password: secret
+      notices: []
+  - name: "digest"
+    bash: |-
+      curl --digest \
+        -u 'ana:secret' \
+        'https://api.test/x'
+    cmd: |-
+      curl --digest ^
+        -u ^"ana:secret^" ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe --digest `
+        -u 'ana:secret' `
+        'https://api.test/x'
+    expected:
+      request:
+        method: GET
+        url: https://api.test/x
+        headers: []
+        body:
+          mode: none
+        auth:
+          type: digest
+      notices: []
+  - name: "cookie"
+    bash: |-
+      curl -b 'session=abc; theme=dark' \
+        'https://api.test/x'
+    cmd: |-
+      curl -b ^"session=abc; theme=dark^" ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe -b 'session=abc; theme=dark' `
+        'https://api.test/x'
+    expected:
+      request:
+        method: GET
+        url: https://api.test/x
+        headers:
+        - key: Cookie
+          value: session=abc; theme=dark
+        body:
+          mode: none
+        auth:
+          type: inherit
+      notices: []
+  - name: "user agent"
+    bash: |-
+      curl -A 'Xenon/1.0' \
+        'https://api.test/x'
+    cmd: |-
+      curl -A ^"Xenon/1.0^" ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe -A 'Xenon/1.0' `
+        'https://api.test/x'
+    expected:
+      request:
+        method: GET
+        url: https://api.test/x
+        headers:
+        - key: User-Agent
+          value: Xenon/1.0
+        body:
+          mode: none
+        auth:
+          type: inherit
+      notices: []
+  - name: "referer"
+    bash: |-
+      curl -e 'https://ref.test' \
+        'https://api.test/x'
+    cmd: |-
+      curl -e ^"https://ref.test^" ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe -e 'https://ref.test' `
+        'https://api.test/x'
+    expected:
+      request:
+        method: GET
+        url: https://api.test/x
+        headers:
+        - key: Referer
+          value: https://ref.test
+        body:
+          mode: none
+        auth:
+          type: inherit
+      notices: []
+  - name: "json flag"
+    bash: |-
+      curl --json '{"b":2}' \
+        'https://api.test/x'
+    cmd: |-
+      curl --json ^"{\^"b\^":2}^" ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe --json '{"b":2}' `
+        'https://api.test/x'
+    expected:
+      request:
+        method: POST
+        url: https://api.test/x
+        headers:
+        - key: Content-Type
+          value: application/json
+        - key: Accept
+          value: application/json
+        body:
+          mode: raw
+          raw:
+            content: '{"b":2}'
+            language: json
+        auth:
+          type: inherit
+      notices: []
+  - name: "insecure"
+    bash: |-
+      curl -k \
+        'https://self-signed.test'
+    cmd: |-
+      curl -k ^
+        ^"https://self-signed.test^"
+    powershell: |-
+      curl.exe -k `
+        'https://self-signed.test'
+    expected:
+      request:
+        method: GET
+        url: https://self-signed.test
+        headers: []
+        body:
+          mode: none
+        auth:
+          type: inherit
+        settings:
+          verify_ssl: false
+      notices: []
+  - name: "location"
+    bash: |-
+      curl -L \
+        'https://api.test/redirect'
+    cmd: |-
+      curl -L ^
+        ^"https://api.test/redirect^"
+    powershell: |-
+      curl.exe -L `
+        'https://api.test/redirect'
+    expected:
+      request:
+        method: GET
+        url: https://api.test/redirect
+        headers: []
+        body:
+          mode: none
+        auth:
+          type: inherit
+        settings:
+          follow_redirects: true
+      notices: []
+  - name: "compressed ignored"
+    bash: |-
+      curl --compressed \
+        'https://api.test/x'
+    cmd: |-
+      curl --compressed ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe --compressed `
+        'https://api.test/x'
+    expected:
+      request:
+        method: GET
+        url: https://api.test/x
+        headers: []
+        body:
+          mode: none
+        auth:
+          type: inherit
+      notices: []
+  - name: "silent and verbose ignored"
+    bash: |-
+      curl -s \
+        -v \
+        -S \
+        'https://api.test/x'
+    cmd: |-
+      curl -s ^
+        -v ^
+        -S ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe -s `
+        -v `
+        -S `
+        'https://api.test/x'
+    expected:
+      request:
+        method: GET
+        url: https://api.test/x
+        headers: []
+        body:
+          mode: none
+        auth:
+          type: inherit
+      notices: []
+  - name: "unknown flag listed"
+    bash: |-
+      curl --frobnicate \
+        'https://api.test/x'
+    cmd: |-
+      curl --frobnicate ^
+        ^"https://api.test/x^"
+    powershell: |-
+      curl.exe --frobnicate `
+        'https://api.test/x'
+    expected:
+      request:
+        method: GET
+        url: https://api.test/x
+        headers: []
+        body:
+          mode: none
+        auth:
+          type: inherit
+      notices:
+      - Ignored unknown option --frobnicate
+  - name: "quotes inside"
+    bash: |-
+      curl 'https://api.test/x' \
+        -H 'X-Quote: it'\''s "quoted"'
+    cmd: |-
+      curl ^"https://api.test/x^" ^
+        -H ^"X-Quote: it's \^"quoted\^"^"
+    powershell: |-
+      curl.exe 'https://api.test/x' `
+        -H 'X-Quote: it''s "quoted"'
+    expected:
+      request:
+        method: GET
+        url: https://api.test/x
+        headers:
+        - key: X-Quote
+          value: it's "quoted"
+        body:
+          mode: none
+        auth:
+          type: inherit
+      notices: []
+  - name: "query string kept"
+    bash: |-
+      curl 'https://api.test/x?a=1&b=two%20words'
+    cmd: |-
+      curl ^"https://api.test/x?a=1^&b=two^%20words^"
+    powershell: |-
+      curl.exe 'https://api.test/x?a=1&b=two%20words'
+    expected:
+      request:
+        method: GET
+        url: https://api.test/x?a=1&b=two%20words
+        headers: []
+        body:
+          mode: none
+        auth:
+          type: inherit
+      notices: []
+  - name: "devtools style"
+    bash: |-
+      curl 'https://api.test/graphql' \
+        -H 'accept: */*' \
+        -H 'content-type: application/json' \
+        --data-raw '{"query":"{ me { id } }"}' \
+        --compressed
+    cmd: |-
+      curl ^"https://api.test/graphql^" ^
+        -H ^"accept: */*^" ^
+        -H ^"content-type: application/json^" ^
+        --data-raw ^"{\^"query\^":\^"{ me { id } }\^"}^" ^
+        --compressed
+    powershell: |-
+      curl.exe 'https://api.test/graphql' `
+        -H 'accept: */*' `
+        -H 'content-type: application/json' `
+        --data-raw '{"query":"{ me { id } }"}' `
+        --compressed
+    expected:
+      request:
+        method: POST
+        url: https://api.test/graphql
+        headers:
+        - key: accept
+          value: '*/*'
+        - key: content-type
+          value: application/json
+        body:
+          mode: raw
+          raw:
+            content: '{"query":"{ me { id } }"}'
+        auth:
+          type: inherit
+      notices: []
+  - name: "variables kept"
+    bash: |-
+      curl '{{base_url}}/users/{{id}}' \
+        -H 'Authorization: Bearer {{token}}'
+    cmd: |-
+      curl ^"{{base_url}}/users/{{id}}^" ^
+        -H ^"Authorization: Bearer {{token}}^"
+    powershell: |-
+      curl.exe '{{base_url}}/users/{{id}}' `
+        -H 'Authorization: Bearer {{token}}'
+    expected:
+      request:
+        method: GET
+        url: '{{base_url}}/users/{{id}}'
+        headers:
+        - key: Authorization
+          value: Bearer {{token}}
+        body:
+          mode: none
+        auth:
+          type: inherit
+      notices: []

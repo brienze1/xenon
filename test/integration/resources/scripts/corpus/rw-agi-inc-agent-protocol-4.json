@@ -1,0 +1,45 @@
+{
+  "id": "rw-agi-inc-agent-protocol-4",
+  "covers": [
+    "real-world"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/agi-inc/agent-protocol",
+    "path": "testing_suite/agent_protocol_v1.json",
+    "url": "https://github.com/agi-inc/agent-protocol/blob/5047199152dc6e1ba83320b1b59f94af24046dcf/testing_suite/agent_protocol_v1.json",
+    "licence": "MIT",
+    "item": "Get all the tasks"
+  },
+  "phase": "test",
+  "script": "pm.test(\"Response time is less than 500ms\", function () {\n    pm.expect(pm.response.responseTime).to.be.below(500);\n});\n\npm.test(\"Content-Type is present\", function () {\n    pm.response.to.have.header(\"Content-Type\");\n});\n\npm.test(\"Content-Type is application/json\", function () {\n    var contentType = pm.response.headers.get('Content-Type');\n    pm.expect(contentType).to.include('application/json');\n});",
+  "request": {
+    "url": "{{url}}/ap/v1/agent/tasks",
+    "method": "GET",
+    "header": [],
+    "body": {
+      "mode": "raw",
+      "raw": "{\n    \"input\": \"Write the word 'Washington' to a .txt file\"\n}"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

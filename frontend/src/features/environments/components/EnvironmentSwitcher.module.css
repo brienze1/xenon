@@ -1,0 +1,128 @@
+.container {
+  --wails-draggable: no-drag;
+
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.switcher {
+  --wails-draggable: no-drag;
+}
+
+.name {
+  max-width: 200px;
+  overflow: hidden;
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  color: var(--color-text-muted);
+}
+
+.menu {
+  right: 0;
+  left: auto;
+  max-height: min(420px, calc(100vh - var(--space-8) - var(--space-7)));
+  overflow-y: auto;
+}
+
+.separator {
+  height: 1px;
+  border: 0;
+  margin: var(--space-2) 0;
+  background: var(--color-border);
+}
+
+.broken {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.brokenMark {
+  overflow: hidden;
+  color: var(--neon-red);
+  font-size: var(--font-size-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.error {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: 10;
+  width: max-content;
+  max-width: 420px;
+}
+
+.trigger.green {
+  color: var(--neon-green);
+  box-shadow: var(--glow-green);
+}
+
+.trigger.cyan {
+  color: var(--neon-cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+.trigger.magenta {
+  color: var(--neon-magenta);
+  box-shadow: var(--glow-magenta);
+}
+
+.trigger.yellow {
+  color: var(--neon-yellow);
+  box-shadow: var(--glow-yellow);
+}
+
+.trigger.red {
+  color: var(--neon-red);
+  box-shadow: var(--glow-red);
+}
+
+.option {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.optionName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.swatch {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+.swatch[data-color='green'] {
+  background: var(--neon-green);
+}
+
+.swatch[data-color='cyan'] {
+  background: var(--neon-cyan);
+}
+
+.swatch[data-color='magenta'] {
+  background: var(--neon-magenta);
+}
+
+.swatch[data-color='yellow'] {
+  background: var(--neon-yellow);
+}
+
+.swatch[data-color='red'] {
+  background: var(--neon-red);
+}

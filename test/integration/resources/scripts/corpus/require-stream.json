@@ -1,0 +1,95 @@
+{
+  "id": "require-stream",
+  "covers": [
+    "sandbox-api §4 stream"
+  ],
+  "source": {
+    "kind": "hand-written",
+    "licence": "Xenon project (same licence as this repository)"
+  },
+  "phase": "prerequest",
+  "script": "const { Readable } = require('stream'); const r = new Readable({read() {}}); const chunks = []; r.on('data', (c) => chunks.push(c.toString())); r.on('end', () => console.log(chunks.join(''))); r.push('ab'); r.push('cd'); r.push(null);",
+  "request": {
+    "url": "https://api.example.com/v1/users?page=2&limit=10",
+    "method": "POST",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "X-Trace",
+        "value": "abc"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\"name\":\"Ada\",\"tags\":[\"a\",\"b\"]}"
+    }
+  },
+  "environment": {
+    "name": "dev",
+    "values": [
+      {
+        "key": "base_url",
+        "value": "https://api.example.com"
+      },
+      {
+        "key": "user",
+        "value": "ada"
+      },
+      {
+        "key": "shared",
+        "value": "from-env"
+      }
+    ]
+  },
+  "collectionVariables": [
+    {
+      "key": "version",
+      "value": "v1"
+    },
+    {
+      "key": "shared",
+      "value": "from-collection"
+    },
+    {
+      "key": "coll_only",
+      "value": "c"
+    }
+  ],
+  "globals": [
+    {
+      "key": "tenant",
+      "value": "acme"
+    },
+    {
+      "key": "shared",
+      "value": "from-globals"
+    },
+    {
+      "key": "glob_only",
+      "value": "g"
+    }
+  ],
+  "variables": [
+    {
+      "key": "local_only",
+      "value": "l"
+    }
+  ],
+  "cookies": [
+    {
+      "name": "session",
+      "value": "s1",
+      "domain": "api.example.com",
+      "path": "/"
+    },
+    {
+      "name": "theme",
+      "value": "dark",
+      "domain": "api.example.com",
+      "path": "/"
+    }
+  ]
+}

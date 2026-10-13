@@ -1,0 +1,12 @@
+meta {
+  name: Orders
+  seq: 3
+}
+
+script:pre-request {
+  const token = bru.getEnvVar("access_token");
+  if (!token) {
+    console.warn("No access token yet; run Login first");
+  }
+  req.setHeader("Authorization", "Bearer " + token);
+}

@@ -1,0 +1,12 @@
+info:
+  name: Products
+  seq: 1
+request:
+  auth:
+    type: inherit
+  headers:
+    - name: X-Area
+      value: products
+  scripts:
+    - type: after-response
+      code: bru.setVar("lastStatus", res.getStatus());

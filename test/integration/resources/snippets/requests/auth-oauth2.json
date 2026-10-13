@@ -1,0 +1,1 @@
+{ "method": "DELETE", "url": "https://api.example.test/orders/7", "header": [ { "key": "Authorization", "value": "Bearer access-1" } ] }

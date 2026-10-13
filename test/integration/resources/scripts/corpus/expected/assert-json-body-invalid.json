@@ -1,0 +1,45 @@
+{
+  "id": "assert-json-body-invalid",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "jsonBody",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response body to be a valid json but got error Unexpected token 'n' at 1:1"
+    },
+    {
+      "name": "jsonBody path",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected undefined in response to contain property 'a'"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

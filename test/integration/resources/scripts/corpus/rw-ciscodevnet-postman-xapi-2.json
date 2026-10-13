@@ -1,0 +1,77 @@
+{
+  "id": "rw-ciscodevnet-postman-xapi-2",
+  "covers": [
+    "real-world",
+    "real-world xml-html",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/CiscoDevNet/postman-xapi",
+    "path": "xapi-admin.json",
+    "url": "https://github.com/CiscoDevNet/postman-xapi/blob/ffd6ca75e3c738853678c8e77aa58dd673f0054d/xapi-admin.json",
+    "licence": "MIT",
+    "item": "Command Call (SIP)"
+  },
+  "phase": "test",
+  "script": "if (responseCode.code != 200) {\n    tests[\"Start SIP call: failed\"] = false;\n}\nelse {\n    tests[\"Start SIP call: success\"] = true;\n\n    var xmlData = xml2Json(responseBody);\n    console.log(xmlData);\n    if (!xmlData) {\n        tests[\"Start SIP call: parseing response as XML\"] = false;\n    }\n    else {\n        tests[\"Start SIP call: parseing response as XML\"] = true;\n        if ((!xmlData.Command) || (!xmlData.Command.DialResult) || (!xmlData.Command.DialResult.CallId)) {\n            tests[\"Start SIP call: checking XML payload\"] = false;\n        }\n        else {\n            tests[\"Start SIP call: checking XML payload\"] = true;\n\n            var callId = xmlData.Command.DialResult.CallId;\n            postman.setEnvironmentVariable(\"_call\", callId);\n            tests[\"Start SIP call: retreived Call with id:\" + callId] = true\n        }\n    }\n}",
+  "request": {
+    "url": "{{endpoint}}/putxml",
+    "method": "POST",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "text/xml"
+      },
+      {
+        "key": "Authorization",
+        "value": "redacted-value"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "<Command>\r\n\t<Dial>\r\n\t\t<Number>user@example.com</Number>\r\n\t</Dial>\r\n</Command>"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [
+    {
+      "key": "endpoint",
+      "value": "http://192.168.1.32"
+    },
+    {
+      "key": "credentials",
+      "value": "redacted-value"
+    },
+    {
+      "key": "creds-admin",
+      "value": "redacted-value"
+    },
+    {
+      "key": "creads-integrator",
+      "value": "redacted-value"
+    },
+    {
+      "key": "creds-localadmin",
+      "value": "redacted-value"
+    }
+  ],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

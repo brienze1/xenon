@@ -1,0 +1,59 @@
+{
+  "id": "rw-webex-postman-webex-calling-1",
+  "covers": [
+    "real-world",
+    "real-world lodash"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/webex/postman-webex-calling",
+    "path": "call-control-and-voice-messaging-api/webex-calling-calls-api.json",
+    "url": "https://github.com/webex/postman-webex-calling/blob/38d060c38ec69420c962111a22b59793fc2da626/call-control-and-voice-messaging-api/webex-calling-calls-api.json",
+    "licence": "MIT",
+    "item": "Cleanup"
+  },
+  "phase": "prerequest",
+  "script": "function cleanup() {\n    const clean = _.keys(pm.collectionVariables.toObject());\n    _.each(clean, (arrItem) => {\n        //console.log(`Evalauating environment varable:${arrItem}`);\n        if (arrItem.startsWith(\"_\")) {\n            //console.log(`Will remove temporary env var:${arrItem}`);\n            pm.collectionVariables.unset(arrItem);\n        }\n    });\n}\n\n// Run the cleanup script which deletes all env vars that start with \"_\"\ncleanup();",
+  "request": {
+    "url": "https://postman-echo.com/",
+    "method": "GET",
+    "header": []
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [
+    {
+      "key": "WEBEX_TOKEN",
+      "value": "redacted-value"
+    },
+    {
+      "key": "WEBEX_API_URL",
+      "value": "https://webexapis.com/v1/"
+    },
+    {
+      "key": "DESTINATION",
+      "value": "Set this to the number or address to call"
+    },
+    {
+      "key": "TRANSFER_DESTINATION",
+      "value": "Set this to the number or address to transfer to"
+    },
+    {
+      "key": "PARK_DESTINATION",
+      "value": "The destination where the call needs to be park and retrieved from"
+    },
+    {
+      "key": "_callId",
+      "value": ""
+    },
+    {
+      "key": "VOICE_MESSAGE_ID",
+      "value": "Set this to the voice message Id"
+    }
+  ],
+  "globals": [],
+  "variables": [],
+  "cookies": []
+}

@@ -1,0 +1,66 @@
+{
+  "id": "assert-postman-types",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "response is postmanResponse",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "response is not postmanRequest",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expecting a postman request object but got PostmanResponse{ …(9) }"
+    },
+    {
+      "name": "response is request or response",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "request is postmanRequest",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "object is postmanResponse",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expecting a postman response object but got {}"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

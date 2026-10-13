@@ -1,0 +1,43 @@
+{
+  "id": "rw-microcks-microcks-2",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Valid response",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected false to be truthy"
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"globals\" is deprecated. Use \"pm.globals\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tv4\" is deprecated. Use \"require('ajv')\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tests\" is deprecated. Use \"pm.test()\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

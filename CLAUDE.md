@@ -49,10 +49,12 @@ pattern", "project convention", or "we'll fix it later".
 
 How the PRD's tech rules map onto the layers:
 
-- **Wails bound services are entrypoints.** Each Go service React calls (workspaces, requests,
-  environments, vault, sync, import/export) is a controller in
-  `internal/integration/entrypoint/` with DTOs, calling use cases — same role an HTTP
-  controller has in the skills. Only entrypoints and `internal/infra/` may import Wails.
+- **Wails bindings play the REST router's role.** Each Go service React calls (workspaces,
+  tree, requests, history, UI state, …) is a thin binding struct in
+  `internal/infra/server/binding/` that only adapts (ctx, DTO in → controller → DTO out). The
+  controllers live in `internal/integration/entrypoint/controller/` and keep the full controller
+  skill pattern (validation, `ToEntity`, application adapter, error handler, panic recovery).
+  Only `internal/infra/` and `cmd/` may import Wails.
 - **"The Go core has no Wails imports"** is satisfied by the layering itself: domain,
   application and the non-entrypoint integration packages never import Wails, so a future
   `cmd/cli` reuses them by wiring a different entrypoint.

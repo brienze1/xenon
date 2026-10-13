@@ -1,0 +1,28 @@
+meta {
+  name: Signed
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/signed/report
+  body: none
+  auth: inherit
+}
+
+script:pre-request {
+  const crypto = require("crypto");
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const secret = bru.getEnvVar("api_secret");
+  const payload = timestamp + req.getMethod() + req.getUrl();
+  const signature = crypto.createHmac("sha256", secret).update(payload).digest("hex");
+  req.setHeader("X-Timestamp", timestamp);
+  req.setHeader("X-Signature", signature);
+}
+
+tests {
+  test("report is signed", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getHeader("x-signature-valid")).to.equal("true");
+  });
+}

@@ -1,0 +1,25 @@
+xenon: 1
+kind: request
+id: 01JX0000000000000000000013
+name: Create product
+method: POST
+url: "{{base_url}}/products"
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  mode: raw
+  raw:
+    language: json
+    content: |-
+      {
+        "name": "Pen",
+        "price": 1.5
+      }
+auth:
+  type: basic
+  basic:
+    username: admin
+    password: "{{admin_password}}"
+settings:
+  followRedirects: false

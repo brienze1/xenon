@@ -1,0 +1,47 @@
+{
+  "id": "rw-tbobm-machinery-3",
+  "covers": [
+    "real-world",
+    "real-world schema",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/tbobm/machinery",
+    "path": "postman/Machinery.postman_collection.json",
+    "url": "https://github.com/tbobm/machinery/blob/555f74a69d205e122d596891cb494b764ca51ca1/postman/Machinery.postman_collection.json",
+    "licence": "Apache-2.0",
+    "item": "Create a Workflow"
+  },
+  "phase": "test",
+  "script": "pm.test(\"Status code is 201\", function () {\n    pm.response.to.have.status(201);\n});\n\nvar serviceResponse = {\n    \"workflow_id\": {\n        \"type\": \"string\"\n    }\n};\n\n\npm.test('Response contains a workflow_id', function () {\n    pm.expect(tv4.validate(pm.response.json(), serviceResponse)).to.be.true\n    postman.setGlobalVariable(\"workflow_id\", pm.response.json()['workflow_id'])\n\n});",
+  "request": {
+    "url": "http://{{APP_URL}}/w",
+    "method": "POST",
+    "header": [],
+    "body": {
+      "mode": "raw",
+      "raw": "{\n    \"name\": \"process-text\",\n    \"services\": [\"upper\"],\n    \"inputs\": [\n         {\n            \"name\": \"message\",\n            \"type\": \"string\",\n            \"description\": \"The text to process\"\n        }\n    ],\n    \"outputs\": [\n         {\n            \"name\": \"message\",\n            \"type\": \"string\",\n            \"description\": \"The processed text\"\n        },\n         {\n            \"name\": \"space_count\",\n            \"type\": \"int\",\n            \"description\": \"The number of spaces\"\n        }\n    ],\n    \"operations\": [ ]\n}\n"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

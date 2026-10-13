@@ -1,0 +1,1 @@
+curl -m 5 "https://api.example.test/digest" -H "Authorization: Digest username=\"ana\", realm=\"xenon@test\", nonce=\"n1\", uri=\"/digest\", algorithm=MD5, response=\"6629fae49393a05397450978507c4ef1\", qop=auth, nc=00000001, cnonce=\"0a4f113b\""

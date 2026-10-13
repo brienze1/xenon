@@ -1,0 +1,59 @@
+{
+  "id": "rw-rhalff-realworld-flutter-app-4",
+  "covers": [
+    "real-world",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/rhalff/realworld-flutter-app",
+    "path": "Conduit.postman_collection.json",
+    "url": "https://github.com/rhalff/realworld-flutter-app/blob/30e877795009417146407a6ff74ed7951c2116b3/Conduit.postman_collection.json",
+    "licence": "MIT",
+    "item": "Update Article"
+  },
+  "phase": "test",
+  "script": "if (!(environment.isIntegrationTest)) {\nvar responseJSON = JSON.parse(responseBody);\n\ntests['Response contains \"article\" property'] = responseJSON.hasOwnProperty('article');\n\nvar article = responseJSON.article || {};\n\ntests['Article has \"title\" property'] = article.hasOwnProperty('title');\ntests['Article has \"slug\" property'] = article.hasOwnProperty('slug');\ntests['Article has \"body\" property'] = article.hasOwnProperty('body');\ntests['Article has \"createdAt\" property'] = article.hasOwnProperty('createdAt');\ntests['Article\\'s \"createdAt\" property is an ISO 8601 timestamp'] = /^\\d{4,}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\d.\\d+(?:[+-][0-2]\\d:[0-5]\\d|Z)$/.test(article.createdAt);\ntests['Article has \"updatedAt\" property'] = article.hasOwnProperty('updatedAt');\ntests['Article\\'s \"updatedAt\" property is an ISO 8601 timestamp'] = /^\\d{4,}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\d.\\d+(?:[+-][0-2]\\d:[0-5]\\d|Z)$/.test(article.updatedAt);\ntests['Article has \"description\" property'] = article.hasOwnProperty('description');\ntests['Article has \"tagList\" property'] = article.hasOwnProperty('tagList');\ntests['Article\\'s \"tagList\" property is an Array'] = Array.isArray(article.tagList);\ntests['Article has \"author\" property'] = article.hasOwnProperty('author');\ntests['Article has \"favorited\" property'] = article.hasOwnProperty('favorited');\ntests['Article has \"favoritesCount\" property'] = article.hasOwnProperty('favoritesCount');\ntests['favoritesCount is an integer'] = Number.isInteger(article.favoritesCount);\n}",
+  "request": {
+    "url": "{{APIURL}}/articles/{{slug}}",
+    "method": "PUT",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "X-Requested-With",
+        "value": "XMLHttpRequest"
+      },
+      {
+        "key": "Authorization",
+        "value": "redacted-value"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\"article\":{\"body\":\"With two hands\"}}"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

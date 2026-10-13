@@ -1,0 +1,86 @@
+{
+  "id": "global-url",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "log",
+      "args": [
+        "https:",
+        "user",
+        "example.com",
+        "8080",
+        "/p/a",
+        "?x=1&y=2",
+        "#h",
+        "https://example.com:8080",
+        "2"
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        "https://user:pw@example.com:8080/p/a?x=1&y=2&z=a+b#h",
+        "https://user:pw@example.com:8080/p/a?x=1&y=2&z=a+b#h"
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        "a=1&b=x%26y&a=2",
+        [
+          "1",
+          "2"
+        ],
+        true
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        "https://base.example/rel"
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": {
+    "method": "POST",
+    "url": "https://api.example.com/v1/users?page=2&limit=10",
+    "headers": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "X-Trace",
+        "value": "abc"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\"name\":\"Ada\",\"tags\":[\"a\",\"b\"]}"
+    }
+  },
+  "sentRequests": [],
+  "vault": {}
+}

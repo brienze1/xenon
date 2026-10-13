@@ -1,10 +1,17 @@
 # Go
 *.out
+coverage.out
 coverage.html
 nancy-report.log
+mutation_results.log
+*.syso
 
 # Wails / frontend
+.task/
+bin/
 build/bin/
+build/linux/appimage/build/
+build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
 frontend/node_modules/
 frontend/dist/
 frontend/bindings/
@@ -17,3 +24,6 @@ frontend/bindings/
 
 # Refactor artifacts — never commit
 REFACTORING_REPORT.md
+
+# Node tooling outside the frontend
+tools/*/node_modules/

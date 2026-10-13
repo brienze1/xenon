@@ -1,0 +1,33 @@
+.art {
+  width: 120px;
+  height: 96px;
+  overflow: visible;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 4;
+}
+
+.green {
+  stroke: var(--neon-green);
+}
+
+.cyan {
+  stroke: var(--neon-cyan);
+}
+
+.magenta {
+  stroke: var(--neon-magenta);
+}
+
+.yellow {
+  stroke: var(--neon-yellow);
+}
+
+.red {
+  stroke: var(--neon-red);
+}
+
+.drip {
+  stroke-width: 3;
+}

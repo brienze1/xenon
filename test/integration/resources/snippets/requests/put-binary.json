@@ -1,0 +1,1 @@
+{ "method": "PUT", "url": "https://api.example.test/blob", "header": [ { "key": "Content-Type", "value": "application/octet-stream" } ], "body": { "mode": "file", "file": { "src": "files/invoice.txt" } } }

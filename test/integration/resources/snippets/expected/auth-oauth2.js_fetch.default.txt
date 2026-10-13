@@ -1,0 +1,13 @@
+const myHeaders = new Headers();
+myHeaders.append("Authorization", "Bearer access-1");
+
+const requestOptions = {
+  method: "DELETE",
+  headers: myHeaders,
+  redirect: "follow"
+};
+
+fetch("https://api.example.test/orders/7", requestOptions)
+  .then((response) => response.text())
+  .then((result) => console.log(result))
+  .catch((error) => console.error(error));

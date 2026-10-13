@@ -1,0 +1,137 @@
+{
+  "id": "rw-inovex-scrumlr-io-1",
+  "covers": [
+    "real-world",
+    "real-world oauth-token-chain"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/inovex/scrumlr.io",
+    "path": "server/api.postman_collection.json",
+    "url": "https://github.com/inovex/scrumlr.io/blob/6bae213129563eea946ec58e7a38d068dc53e0c3/server/api.postman_collection.json",
+    "licence": "MIT",
+    "item": "Create column template"
+  },
+  "phase": "prerequest",
+  "script": "let body = \n    {\n        \"name\": \"My new board template\",\n        \"description\": \"This is a new test description for a board template\",\n        \"accessPolicy\": \"PUBLIC\",\n        \"favourite\": true,\n        \"columnTemplates\": [ \n            { \n                \"name\": \"Lean coffee\", \n                \"description\":\"A template column description\", \n                \"visible\": true,\n                \"color\": \"backlog-blue\"\n            },\n            { \n                \"name\": \"Actions\", \n                \"description\":\"A template column description\", \n                \"visible\": false, \n                \"color\": \"planning-pink\"\n            }\n        ]\n    };\n\nbody = JSON.stringify(body)\n\npm.sendRequest({\n    url: pm.variables.get(\"base_url\") + \"/templates\",\n    method: 'POST',\n    header: {\n        \"Content-Type\": \"application/json; charset=utf-8\",\n        \"Authorization\": pm.collectionVariables.get(\"jwt\"),\n    },\n    body: body\n   \n}, function (err, response) {\n    const res = response.json();\n\n    pm.test(\"PreRequestScript – Successful POST request (createBoardTemplate)\", () => {\n        pm.expect(response.code).to.be.equal(201);\n    });\n    \n    pm.test(\"PreRequestScript – Check id\", () => {\n        pm.expect(res.id).to.exist;\n    })\n\n    pm.collectionVariables.set(\"board_template_id\", res.id);\n});",
+  "request": {
+    "url": "{{base_url}}/templates/{{board_template_id}}/columns",
+    "method": "POST",
+    "header": [],
+    "body": {
+      "mode": "raw",
+      "raw": "{\n    \"name\": \"A created column\",\n    \"description\": \"A created column description\",\n    \"color\": \"backlog-blue\",\n    \"visible\": false\n}"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "bearer_token",
+      "value": "redacted-value"
+    },
+    {
+      "key": "board_id",
+      "value": "{board}"
+    },
+    {
+      "key": "column_id",
+      "value": "{column}"
+    },
+    {
+      "key": "owner_id",
+      "value": "{user}"
+    },
+    {
+      "key": "voting_id",
+      "value": "{voting}"
+    },
+    {
+      "key": "user_id",
+      "value": "{user}"
+    },
+    {
+      "key": "note_id",
+      "value": "{note}"
+    },
+    {
+      "key": "reaction_id",
+      "value": "{reaction}"
+    },
+    {
+      "key": "board_name",
+      "value": "{board_name}"
+    },
+    {
+      "key": "board_to_delete_id",
+      "value": "{board_to_delete_id}"
+    },
+    {
+      "key": "timer_end",
+      "value": "{timer_end}"
+    },
+    {
+      "key": "column_to_delete_id",
+      "value": "{column_to_delete_id}"
+    },
+    {
+      "key": "note_to_delete_id",
+      "value": "{note_to_delete_id}"
+    },
+    {
+      "key": "board_template_id",
+      "value": "{board_template_id}"
+    },
+    {
+      "key": "column_template_id",
+      "value": "{column_template_id}"
+    }
+  ],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "sendRequest": [
+    {
+      "code": 200,
+      "status": "OK",
+      "header": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": "{\"access_token\":\"test-access-token\",\"token\":\"test-token\",\"token_type\":\"Bearer\",\"expires_in\":3600,\"id\":1,\"data\":{\"id\":1}}",
+      "responseTime": 80
+    },
+    {
+      "code": 200,
+      "status": "OK",
+      "header": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": "{\"access_token\":\"test-access-token\",\"token\":\"test-token\",\"token_type\":\"Bearer\",\"expires_in\":3600,\"id\":1,\"data\":{\"id\":1}}",
+      "responseTime": 80
+    },
+    {
+      "code": 200,
+      "status": "OK",
+      "header": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": "{\"access_token\":\"test-access-token\",\"token\":\"test-token\",\"token_type\":\"Bearer\",\"expires_in\":3600,\"id\":1,\"data\":{\"id\":1}}",
+      "responseTime": 80
+    }
+  ]
+}

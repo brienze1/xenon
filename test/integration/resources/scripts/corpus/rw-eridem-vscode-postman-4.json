@@ -1,0 +1,43 @@
+{
+  "id": "rw-eridem-vscode-postman-4",
+  "covers": [
+    "real-world",
+    "real-world lodash",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/eridem/vscode-postman",
+    "path": "examples/echo-v1.postman_collection.json",
+    "url": "https://github.com/eridem/vscode-postman/blob/95154cd9fe4f7772200e1ca983889e9339795a80/examples/echo-v1.postman_collection.json",
+    "licence": "MIT",
+    "item": "POST Raw Text"
+  },
+  "phase": "test",
+  "script": "var responseJSON;\n\ntry { \n    responseJSON = JSON.parse(responseBody); \n    tests['response is valid JSON'] = true;\n}\ncatch (e) { \n    responseJSON = {}; \n    tests['response is valid JSON'] = false;\n}\n\n\ntests['response has post data'] = _.has(responseJSON, 'data');\ntests['response matches the data posted'] = (responseJSON.data && responseJSON.data.length === 256);\n\ntests[\"content-type equals text/plain\"] = responseJSON && responseJSON.headers && (responseJSON.headers[\"content-type\"] === 'text/plain');",
+  "request": {
+    "url": "https://postman-echo.com/post",
+    "method": "POST",
+    "header": []
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

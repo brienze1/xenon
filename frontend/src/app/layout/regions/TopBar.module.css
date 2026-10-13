@@ -1,0 +1,32 @@
+.topBar {
+  --wails-draggable: drag;
+
+  position: relative;
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  height: 40px;
+  padding: 0 var(--space-4) 0 88px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.wordmark {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  color: var(--neon-magenta);
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+}
+
+.end {
+  --wails-draggable: no-drag;
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-left: auto;
+}

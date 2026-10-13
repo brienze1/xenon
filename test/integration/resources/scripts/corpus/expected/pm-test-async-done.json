@@ -1,0 +1,52 @@
+{
+  "id": "pm-test-async-done",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "async assertion fails",
+      "passed": false,
+      "skipped": false,
+      "async": true,
+      "error": "expected 2 to deeply equal 3"
+    },
+    {
+      "name": "async done error",
+      "passed": false,
+      "skipped": false,
+      "async": true,
+      "error": "async broke"
+    },
+    {
+      "name": "async pass",
+      "passed": true,
+      "skipped": false,
+      "async": true,
+      "error": null
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

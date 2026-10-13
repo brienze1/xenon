@@ -1,0 +1,18 @@
+const controller = new AbortController();
+const timerId = setTimeout(() => controller.abort(), 5000);
+const formdata = new FormData();
+formdata.append("note", "hello");
+formdata.append("file", fileInput.files[0], "invoice.txt");
+
+const requestOptions = {
+    method: "POST",
+    body: formdata,
+    signal: controller.signal,
+    redirect: "manual"
+};
+
+fetch("https://api.example.test/upload", requestOptions)
+    .then((response) => response.text())
+    .then((result) => console.log(result))
+    .catch((error) => console.error(error))
+    .finally(() => clearTimeout(timerId));

@@ -1,0 +1,41 @@
+{
+  "id": "rw-cilki-gameframe-online-4",
+  "covers": [
+    "real-world"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/cilki/gameframe.online",
+    "path": "postman/Postman.json",
+    "url": "https://github.com/cilki/gameframe.online/blob/fec07051a848fbb88a1646c3a5d2c6a60006973f/postman/Postman.json",
+    "licence": "Apache-2.0",
+    "item": "DEVELOPER_METADATA"
+  },
+  "phase": "test",
+  "script": "/*\n * Postman test for the DEVELOPER_METADATA query\n * Copyright (C) 2018 GameFrame\n */\n\npm.test(\"HTTP Code\", function() {\n  pm.response.to.have.status(200);\n});\n\npm.test(\"CORS Header\", function() {\n  pm.response.to.have.header(\"Access-Control-Allow-Origin\");\n});\n\npm.test(\"Response Time\", function() {\n  pm.expect(pm.response.responseTime).to.be.below(800);\n});\n\npm.test(\"Response Content\", function() {\n  var json = pm.response.json();\n  pm.expect(json.developer_id).to.eql(parseInt(pm.variables.get(\"developer_id\")));\n  pm.expect(json.name).to.not.be.null;\n  pm.expect(json.country).to.not.be.null;\n  pm.expect(json.logo).to.not.be.null;\n  pm.expect(json.foundation).to.not.be.null;\n  pm.expect(json.games).to.not.be.null;\n  pm.expect(json.articles).to.not.be.null;\n});\n\npm.test(\"Response Links\", function() {\n  var json = pm.response.json();\n  pm.expect(json.games.length).to.be.above(0);\n  pm.expect(json.articles.length).to.be.above(0);\n});",
+  "request": {
+    "url": "http://{{host}}/v1/developer/{{developer_id}}",
+    "method": "GET",
+    "header": []
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

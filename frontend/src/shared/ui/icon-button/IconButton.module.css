@@ -1,0 +1,23 @@
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+}
+
+.iconButton:not(:disabled):hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+.iconButton[aria-pressed='true'] {
+  color: var(--neon-cyan);
+}
+
+.iconButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

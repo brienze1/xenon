@@ -1,0 +1,50 @@
+{
+  "id": "rw-paybook-sync-rest-2",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Testing user deleted",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Postman global data deleted",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"responseCode\" is deprecated. Use \"pm.response.code\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tests\" is deprecated. Use \"pm.test()\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"postman.clearGlobalVariable\" is deprecated. Use \"pm.globals.unset()\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

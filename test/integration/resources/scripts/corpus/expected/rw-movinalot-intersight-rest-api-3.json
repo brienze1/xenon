@@ -1,0 +1,69 @@
+{
+  "id": "rw-movinalot-intersight-rest-api-3",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Status code is 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Response time is less than 500ms",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"responseCode\" is deprecated. Use \"pm.response.code\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tests\" is deprecated. Use \"pm.test()\" instead."
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        {
+          "id": 1,
+          "name": "example",
+          "status": "active",
+          "data": [
+            {
+              "id": 1,
+              "value": "a"
+            },
+            {
+              "id": 2,
+              "value": "b"
+            }
+          ],
+          "token": "test-token",
+          "access_token": "test-access-token",
+          "success": true,
+          "message": "ok",
+          "total": 2
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

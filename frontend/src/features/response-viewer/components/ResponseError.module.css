@@ -1,0 +1,26 @@
+.error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-6);
+}
+
+.title {
+  color: var(--neon-red);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  text-wrap: balance;
+}
+
+.message {
+  min-width: 0;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.hint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}

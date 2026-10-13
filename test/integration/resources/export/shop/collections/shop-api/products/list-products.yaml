@@ -1,0 +1,59 @@
+xenon: 1
+kind: request
+id: 01JX0000000000000000000011
+name: List products
+description: Lists the catalogue
+method: GET
+url: "{{base_url}}/products?page=1&size={{page_size}}"
+params:
+  - key: page
+    value: "1"
+  - key: size
+    value: "{{page_size}}"
+    description: page size
+  - key: debug
+    value: "true"
+    enabled: false
+headers:
+  - key: Accept
+    value: application/json
+  - key: X-Trace
+    value: "1"
+    enabled: false
+    description: tracing
+auth:
+  type: inherit
+scripts:
+  postResponse: |-
+    pm.test("listed", function () {
+        pm.expect(pm.response.json()).to.be.an("object");
+    });
+examples:
+  - id: 01JX0000000000000000000091
+    name: Listed
+    request:
+      method: GET
+      url: "{{base_url}}/products?page=1"
+      params:
+        - key: page
+          value: "1"
+    response:
+      code: 200
+      status: OK
+      contentType: application/json
+      bodyEncoding: text
+      headers:
+        - key: Content-Type
+          value: application/json
+      body: '[{"id":1,"name":"Pen"}]'
+  - id: 01JX0000000000000000000092
+    name: Logo
+    request:
+      method: GET
+      url: "{{base_url}}/products?page=2"
+    response:
+      code: 200
+      status: OK
+      contentType: image/png
+      bodyEncoding: base64
+      body: iVBORw0KGgo=

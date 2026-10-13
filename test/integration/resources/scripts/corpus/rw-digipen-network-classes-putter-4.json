@@ -1,0 +1,63 @@
+{
+  "id": "rw-digipen-network-classes-putter-4",
+  "covers": [
+    "real-world"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/DigiPen-Network-Classes/putter",
+    "path": "examples/short.json",
+    "url": "https://github.com/DigiPen-Network-Classes/putter/blob/4a697d558c478984a690072403b3ed514c656c46/examples/short.json",
+    "licence": "MIT",
+    "item": "Create succeeds with distinct second user"
+  },
+  "phase": "test",
+  "script": "var jsonData = pm.response.json();\n\npm.test(\"status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test('should return a user ID', function() {\n    pm.expect(jsonData).to.have.property('id');\n    pm.expect(jsonData.id).to.not.be.empty;\n});\n\npm.test('should not have the same user ID as the first user', function() {\n    pm.expect(jsonData).to.have.property('id');\n    pm.expect(jsonData.id).to.not.equal(pm.environment.get('userId'));\n});\n\npm.test('should return the correct username', function() {\n    pm.expect(jsonData).to.have.property('username');\n    pm.expect(jsonData.username).to.equal(pm.environment.get(\"otherUser\"));\n});\n\npm.environment.set(\"otherUserId\", jsonData.id);",
+  "request": {
+    "url": "http://{{address}}:{{port}}/api/v1/users/",
+    "method": "POST",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\n\"username\": \"{{otherUser}}\",\n\"password\": \"{{otherPassword}}\",\n\"avatar\": \"{{otherAvatar}}\"\n}"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [
+    {
+      "key": "port",
+      "value": "3100"
+    },
+    {
+      "key": "address",
+      "value": "localhost"
+    },
+    {
+      "key": "game_port",
+      "value": "4200"
+    }
+  ],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

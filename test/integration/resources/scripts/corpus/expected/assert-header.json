@@ -1,0 +1,80 @@
+{
+  "id": "assert-header",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "header",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "header case",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "header value",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "header value wrong",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected 'X-Rate' response header to be '11' but got '10'"
+    },
+    {
+      "name": "header missing",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to have header with key 'X-Missing'"
+    },
+    {
+      "name": "not header",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected response to not have header with key 'X-Rate'"
+    },
+    {
+      "name": "expect headers",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

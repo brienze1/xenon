@@ -1,0 +1,55 @@
+{
+  "id": "rw-tencentserverlessapps-live-room-1",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "check error",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected undefined to deeply equal +0"
+    },
+    {
+      "name": "check fields",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected [ { id: 1, value: 'a' }, …(1) ] to have property 'avatar'"
+    },
+    {
+      "name": "check fields tags",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected undefined to deeply equal 'im'"
+    },
+    {
+      "name": "check apaas apis",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected [ { id: 1, value: 'a' }, …(1) ] to have property 'apaasUserId'"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "localService": "http://localhost:9000/local",
+      "service": "",
+      "username": "",
+      "password": "redacted-value",
+      "salt": "",
+      "token": "redacted-value",
+      "userId": "",
+      "sdkAppId": "",
+      "roomId": ""
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

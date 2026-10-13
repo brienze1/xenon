@@ -1,0 +1,20 @@
+{
+  "curl": {
+    "default": {},
+    "compact": { "multiLine": false, "longFormat": false, "quoteType": "double", "followRedirect": false, "requestTimeoutInSeconds": 5 },
+    "windows": { "lineContinuationCharacter": "^", "quoteType": "double", "trimRequestBody": true },
+    "powershell": { "lineContinuationCharacter": "`" }
+  },
+  "js_fetch": {
+    "default": {},
+    "options": { "followRedirect": false, "requestTimeout": 5000, "trimRequestBody": true, "indentCount": 4, "indentType": "Space" }
+  },
+  "go_native": {
+    "default": {},
+    "options": { "followRedirect": false, "requestTimeout": 5000, "trimRequestBody": true }
+  },
+  "python_requests": {
+    "default": {},
+    "options": { "followRedirect": false, "requestTimeout": 5, "trimRequestBody": true }
+  }
+}

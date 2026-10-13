@@ -1,0 +1,46 @@
+{
+  "id": "rw-ambertests-explore-with-postman-1",
+  "covers": [
+    "real-world",
+    "real-world schema"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/ambertests/explore-with-postman",
+    "path": "postman_json/Restful-Booker.postman_collection.json",
+    "url": "https://github.com/ambertests/explore-with-postman/blob/b910f97b6751773d988830986004a3bae27fec2b/postman_json/Restful-Booker.postman_collection.json",
+    "licence": "MIT",
+    "item": "Get All Bookings"
+  },
+  "phase": "test",
+  "script": "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\nvar schema = {\n  \"items\": {\n    \"type\": \"object\",\n    \"properties\" : \n              {\n                  \"bookingid\": { \"type\": \"number\" },\n              }\n  }\n};\n\npm.test('Schema is valid', function() {\n  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;\n});",
+  "request": {
+    "url": "{{RB_URL}}/booking",
+    "method": "GET",
+    "header": [],
+    "body": {
+      "mode": "raw",
+      "raw": ""
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

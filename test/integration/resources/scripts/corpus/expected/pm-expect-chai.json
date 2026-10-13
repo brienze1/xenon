@@ -1,0 +1,122 @@
+{
+  "id": "pm-expect-chai",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "deep",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "include",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "property",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "type",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "length",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected [ 1 ] to have a length of 2 but got 1"
+    },
+    {
+      "name": "oneOf",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected 3 to be one of [ 1, 2 ]"
+    },
+    {
+      "name": "match",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "keys",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "above",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected 5 to be above 10"
+    },
+    {
+      "name": "not",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "closeTo",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected 1.5 to be close to 1 +/- 0.1"
+    },
+    {
+      "name": "members",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "throw",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

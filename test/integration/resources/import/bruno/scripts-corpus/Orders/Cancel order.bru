@@ -1,0 +1,31 @@
+meta {
+  name: Cancel order
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{base_url}}/orders/{{orderId}}
+  body: none
+  auth: inherit
+}
+
+script:pre-request {
+  if (!bru.getVar("orderId")) {
+    bru.runner.skipRequest();
+  }
+  const base = bru.interpolate("{{base_url}}/orders");
+  bru.setVar("ordersBase", base);
+}
+
+tests {
+  test("order cancelled", function () {
+    expect(res.status).to.be.oneOf([200, 204]);
+  });
+
+  test("cancel is idempotent", function () {
+    const status = res.getStatus();
+    bru.setGlobalEnvVar("lastCancelStatus", status);
+    expect(bru.getGlobalEnvVar("lastCancelStatus")).to.equal(status);
+  });
+}

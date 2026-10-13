@@ -1,0 +1,101 @@
+{
+  "id": "rw-autodesk-platform-services-aps-autodesk--1",
+  "covers": [
+    "real-world",
+    "real-world signing",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/autodesk-platform-services/aps-autodesk.build.api-postman.collection",
+    "path": "Forms API/Forms API.postman_collection.json",
+    "url": "https://github.com/autodesk-platform-services/aps-autodesk.build.api-postman.collection/blob/e5fe945c96b227b1fba03b8e9564807b6708151b/Forms API/Forms API.postman_collection.json",
+    "licence": "MIT",
+    "item": "POST Form"
+  },
+  "phase": "test",
+  "script": "pm.test(\"Create Forms, Status code is 200\", function () {\n    pm.response.to.have.status(200);\n    var body = JSON.parse(responseBody); \n\n    //get form id and ids of custom fields and tabular fields \n    pm.collectionVariables.set(\"formId\",body.id);\n\n    //find first field of text value\n    var textVal_Field = body.customValues.find(i=>i.valueName == 'textVal');\n    if(textVal_Field)\n        pm.collectionVariables.set(\"textVal_Field_Id\",textVal_Field.fieldId);\n    \n    //find first field of number value\n    var numberVal_Field = body.customValues.find(i=>i.valueName == 'numberVal');\n    if(numberVal_Field)\n        pm.collectionVariables.set(\"numberVal_Field_Id\",numberVal_Field.fieldId);\n\n    //find first field of date value\n    var dateVal_Field = body.customValues.find(i=>i.valueName == 'dateVal');\n    if(dateVal_Field)\n        pm.collectionVariables.set(\"dateVal_Field_Id\",dateVal_Field.fieldId);\n\n     //find first field of date value\n    var toggleVal_Field = body.customValues.find(i=>i.valueName == 'toggleVal');\n    if(toggleVal_Field)\n        pm.collectionVariables.set(\"toggleVal_Field_Id\",toggleVal_Field.fieldId);\n    \n     //find signature field\n    var svgVal_Field = body.customValues.find(i=>i.valueName == 'svgVal');\n    if(svgVal_Field)\n        pm.collectionVariables.set(\"svgVal_Field_Id\",svgVal_Field.fieldId);\n\n     //find first field of choice value\n    var choiceVal_Field = body.customValues.find(i=>i.valueName == 'choiceVal_Field');\n    if(choiceVal_Field)\n        pm.collectionVariables.set(\"choiceVal_Field_Id\",choiceVal_Field.fieldId);\n    \n    //find first field of array value\n    var arrayVal_Field = body.customValues.find(i=>i.valueName == 'arrayVal_Field');\n    if(arrayVal_Field)\n        pm.collectionVariables.set(\"arrayVal_Field_Id\",arrayVal_Field.fieldId);\n\n    //Table Values\n    //check if any table is defined\n    if(body.tabularValues && body.tabularValues.hasOwnProperty(\"equipmentEntries\"))\n        pm.collectionVariables.set(\"equipmentEntries\",true);\n    if(body.tabularValues && body.tabularValues.hasOwnProperty(\"materialsEntries\"))\n        pm.collectionVariables.set(\"materialsEntries\",true);\n     if(body.tabularValues && body.tabularValues.hasOwnProperty(\"worklogEntries\"))\n        pm.collectionVariables.set(\"worklogEntries\",true); \n});",
+  "request": {
+    "url": "{{APSBaseDomain}}redacted-value/:projectId/form-templates/:templateId/forms",
+    "method": "POST",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\n    \"description\":\"Create Forms by API\",\n    \"notes\":\"Create Forms by API\",\n    \"formDate\":\"{{current_date_time}}\",\n    \"userCreatedAt\": \"2023-01-01T20:38:32+00:00\",\n\n    \"assigneeId\": \"{{assignee_id}}\", \n    \"assigneeType\": \"user\" ,\n    \"locationId\":\"{{locationId}}\"\n}"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [
+    {
+      "key": "APSBaseDomain",
+      "value": ""
+    },
+    {
+      "key": "clientId",
+      "value": ""
+    },
+    {
+      "key": "clientSecret",
+      "value": "redacted-value"
+    },
+    {
+      "key": "accountName",
+      "value": ""
+    },
+    {
+      "key": "projectName",
+      "value": ""
+    },
+    {
+      "key": "one_user_email_as_assignee",
+      "value": "redacted-value"
+    },
+    {
+      "key": "accountId",
+      "value": ""
+    },
+    {
+      "key": "projectId",
+      "value": ""
+    },
+    {
+      "key": "locationId",
+      "value": ""
+    },
+    {
+      "key": "assignee_id",
+      "value": "redacted-value"
+    },
+    {
+      "key": "formId",
+      "value": ""
+    },
+    {
+      "key": "templateId",
+      "value": ""
+    }
+  ],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

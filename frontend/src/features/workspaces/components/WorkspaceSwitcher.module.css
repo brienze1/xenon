@@ -1,0 +1,44 @@
+.switcher {
+  --wails-draggable: no-drag;
+}
+
+.name {
+  max-width: 220px;
+  overflow: hidden;
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  color: var(--color-text-muted);
+}
+
+.missing {
+  color: var(--neon-red);
+  font-size: var(--font-size-xs);
+}
+
+.container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  --wails-draggable: no-drag;
+}
+
+.separator {
+  height: 1px;
+  border: 0;
+  margin: var(--space-2) 0;
+  background: var(--color-border);
+}
+
+.error {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  z-index: 10;
+  width: max-content;
+  max-width: 420px;
+}

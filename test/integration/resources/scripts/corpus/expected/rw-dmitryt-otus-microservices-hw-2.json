@@ -1,0 +1,77 @@
+{
+  "id": "rw-dmitryt-otus-microservices-hw-2",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Status code is 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Content-Type header is application/json",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected 'application/json' to deeply equal 'application/json; charset=utf-8'"
+    },
+    {
+      "name": "Check result",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected false to deeply equal true"
+    }
+  ],
+  "console": [
+    {
+      "level": "log",
+      "args": [
+        "REQUEST",
+        "{\"items\": [{\"id\": 1, \"amount\": 1}, {\"id\": 3, \"amount\": 1}]}"
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        "RESPONSE",
+        "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}"
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tv4\" is deprecated. Use \"require('ajv')\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"postman.setNextRequest\" is deprecated. Use \"pm.execution.setNextRequest()\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "baseUrl": "http://arch.homework",
+      "authUrl": "redacted-value",
+      "user": "",
+      "billingUrl": "http://arch.homework/billing",
+      "currentUsername": "",
+      "currentUserToken": "redacted-value",
+      "ordersUrl": "http://arch.homework/orders",
+      "userBalance": "",
+      "orderPrice": "",
+      "orderId": "",
+      "notificationsUrl": "http://arch.homework/notifications"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

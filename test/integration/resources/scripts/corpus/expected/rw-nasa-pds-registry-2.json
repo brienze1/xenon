@@ -1,0 +1,48 @@
+{
+  "id": "rw-nasa-pds-registry-2",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "C2488844 Status code is 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "C2488844 Response takes less than 100ms",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "C2488844 Response contains same number of properties",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected undefined to deeply equal 172"
+    },
+    {
+      "name": "C2488844 Response property objects follow expected schema",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "responseJson is not iterable"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "baseUrl": "http://registry-api:8080",
+      "opensearchUrl": "https://elasticsearch:9200"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

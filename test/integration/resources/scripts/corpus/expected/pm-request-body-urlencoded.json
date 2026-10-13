@@ -1,0 +1,69 @@
+{
+  "id": "pm-request-body-urlencoded",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "log",
+      "args": [
+        "urlencoded",
+        {
+          "a": "1",
+          "b": "2"
+        },
+        false
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        {
+          "b": "2",
+          "c": "3"
+        },
+        "b=2&c=3"
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "user": "ada",
+      "shared": "from-env"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": {
+    "method": "POST",
+    "url": "https://api.example.com/form",
+    "headers": [],
+    "body": {
+      "mode": "urlencoded",
+      "urlencoded": [
+        {
+          "key": "b",
+          "value": "2"
+        },
+        {
+          "key": "c",
+          "value": "3"
+        }
+      ]
+    }
+  },
+  "sentRequests": [],
+  "vault": {}
+}

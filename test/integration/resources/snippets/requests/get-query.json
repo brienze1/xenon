@@ -1,0 +1,1 @@
+{ "method": "GET", "url": "https://api.example.test/users?page=2&limit=10&q=ana%20maria", "header": [ { "key": "Accept", "value": "application/json" }, { "key": "X-Trace", "value": "it's me" } ] }

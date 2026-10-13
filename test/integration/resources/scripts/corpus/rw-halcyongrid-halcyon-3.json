@@ -1,0 +1,72 @@
+{
+  "id": "rw-halcyongrid-halcyon-3",
+  "covers": [
+    "real-world",
+    "real-world xml-html",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/HalcyonGrid/halcyon",
+    "path": "doc/remote_admin.postman_collection.json",
+    "url": "https://github.com/HalcyonGrid/halcyon/blob/3125cc15fca1a25f9ce0a9df4217bda5a3ced2ea/doc/remote_admin.postman_collection.json",
+    "licence": "BSD-3-Clause",
+    "item": "XMLRPC Login JWT"
+  },
+  "phase": "test",
+  "script": "var jsonObject = {};\n\ntry {\n    jsonObject = xml2Json(responseBody);\n    \n    if (jsonObject.hasOwnProperty(\"methodResponse\") && jsonObject.methodResponse.hasOwnProperty(\"params\")) {\n        postman.setEnvironmentVariable(\"rpc_login_key\", jsonObject.methodResponse.params.param.value.struct.member[0].value.string);\n    }\n}\ncatch(e) {\n    tests[\"parserr: \" + JSON.stringify(e)] = false;\n    tests[\"data: \" + JSON.stringify(jsonObject)] = false;\n}\n\ntests[\"rpc_login_key: \" + environment.rpc_login_key] = environment.rpc_login_key !== null && environment.rpc_login_key.length > 0;",
+  "request": {
+    "url": "{{PROTOCOL}}://{{GRIDSERVER_URL}}:{{GRIDSERVER_PORT}}/xmlrpc/RemoteAdmin",
+    "method": "POST",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "text/xml"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "<?xml version=\"1.0\"?>\n<methodCall>\n    <methodName>session.login_with_token</methodName>\n    <params>\n        <param>\n            <value><string>{{restadmin_jwt_token}}</string></value>\n        </param>\n    </params>\n</methodCall>"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Encoding",
+        "value": "gzip"
+      },
+      {
+        "key": "Content-Length",
+        "value": "196"
+      },
+      {
+        "key": "Content-Type",
+        "value": "text/xml; charset=utf-8"
+      },
+      {
+        "key": "Date",
+        "value": "Tue, 05 Jul 2016 05:41:19 GMT"
+      },
+      {
+        "key": "Keep-Alive",
+        "value": "timeout=15,max=100"
+      },
+      {
+        "key": "Server",
+        "value": "Mono-HTTPAPI/1.0"
+      }
+    ],
+    "body": "<?xml version=\"1.0\" encoding=\"utf-8\"?><methodResponse><params><param><value><struct><member><name>Value</name><value><string>redacted-value</string></value></member><member><name>Status</name><value><string>Success</string></value></member></struct></value></param></params></methodResponse>",
+    "responseTime": 120
+  }
+}

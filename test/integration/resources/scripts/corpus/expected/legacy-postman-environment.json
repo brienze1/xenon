@@ -1,0 +1,88 @@
+{
+  "id": "legacy-postman-environment",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"postman.setEnvironmentVariable\" is deprecated. Use \"pm.environment.set()\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"postman.getEnvironmentVariable\" is deprecated. Use \"pm.environment.get()\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"environment\" is deprecated. Use \"pm.environment\" instead."
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        "abc",
+        "ada",
+        "abc"
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"postman.clearEnvironmentVariable\" is deprecated. Use \"pm.environment.unset()\" instead."
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        {
+          "$type": "undefined"
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "base_url": "https://api.example.com",
+      "shared": "from-env",
+      "legacy_token": "abc"
+    },
+    "collectionVariables": {
+      "version": "v1",
+      "shared": "from-collection",
+      "coll_only": "c"
+    },
+    "globals": {
+      "tenant": "acme",
+      "shared": "from-globals",
+      "glob_only": "g"
+    },
+    "local": {
+      "local_only": "l"
+    }
+  },
+  "request": {
+    "method": "POST",
+    "url": "https://api.example.com/v1/users?page=2&limit=10",
+    "headers": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "X-Trace",
+        "value": "abc"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\"name\":\"Ada\",\"tags\":[\"a\",\"b\"]}"
+    }
+  },
+  "sentRequests": [],
+  "vault": {}
+}

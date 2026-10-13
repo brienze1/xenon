@@ -1,0 +1,52 @@
+{
+  "id": "rw-benrandall-idb-4",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Content-Type is present and correct",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Status code is 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Contains items relationship with associated data",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected '{\"id\":1,\"name\":\"example\",\"status\":\"ac…' to include 'examine_info'"
+    },
+    {
+      "name": "local data items exist",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "Cannot read properties of undefined (reading 'length')"
+    },
+    {
+      "name": "first skill name is correct",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected 'example' to equal 'Crafting'"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

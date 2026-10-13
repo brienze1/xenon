@@ -1,0 +1,36 @@
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.tree {
+  position: relative;
+  width: 100%;
+}
+
+.slot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+.slot > div {
+  height: 100%;
+}
+
+.empty {
+  flex: 1;
+  padding: var(--space-5);
+}
+
+.noMatches {
+  padding: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.slot:has([aria-invalid='true']) {
+  z-index: 1;
+}

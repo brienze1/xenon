@@ -1,0 +1,52 @@
+{
+  "id": "rw-andrewcmartin-idb-2",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Displays at least 5 Results",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "Cannot read properties of undefined (reading 'length')"
+    },
+    {
+      "name": "Has at least 300 Results",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected undefined to be a number or a date"
+    },
+    {
+      "name": "Status code is 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Schema is valid",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tv4\" is deprecated. Use \"require('ajv')\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

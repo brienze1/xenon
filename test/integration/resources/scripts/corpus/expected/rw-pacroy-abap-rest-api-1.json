@@ -1,0 +1,54 @@
+{
+  "id": "rw-pacroy-abap-rest-api-1",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Status code is 200",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "x-csrf-token=undefined",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"responseCode\" is deprecated. Use \"pm.response.code\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tests\" is deprecated. Use \"pm.test()\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"postman.getResponseHeader\" is deprecated. Use \"pm.response.headers.get()\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "x-csrf-token": {
+        "$type": "undefined"
+      }
+    },
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

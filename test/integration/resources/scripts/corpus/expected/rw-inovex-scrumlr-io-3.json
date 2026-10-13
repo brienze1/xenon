@@ -1,0 +1,75 @@
+{
+  "id": "rw-inovex-scrumlr-io-3",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "PreRequestScript – Successful POST request (createBoard)",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected 200 to equal 201"
+    },
+    {
+      "name": "PreRequestScript – Check id is included",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "PreRequestScript – Check name is included",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected undefined to exist"
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "base_url": "http://localhost:8080",
+      "bearer_token": "redacted-value",
+      "board_id": "{board}",
+      "column_id": "{column}",
+      "owner_id": "{user}",
+      "voting_id": "{voting}",
+      "user_id": "{user}",
+      "note_id": "{note}",
+      "reaction_id": "{reaction}",
+      "board_name": "{board_name}",
+      "board_to_delete_id": 1,
+      "timer_end": "{timer_end}",
+      "column_to_delete_id": "{column_to_delete_id}",
+      "note_to_delete_id": "{note_to_delete_id}",
+      "board_template_id": "{board_template_id}",
+      "column_template_id": "{column_template_id}"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": {
+    "method": "DELETE",
+    "url": "{{base_url}}/boards/{{board_to_delete_id}}",
+    "headers": [],
+    "body": null
+  },
+  "sentRequests": [
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/boards",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json; charset=utf-8"
+        }
+      ],
+      "body": {
+        "mode": "raw",
+        "raw": "{\"name\":\"Board to delete\",\"accessPolicy\":\"PUBLIC\",\"columns\":[{\"name\":\"Lean coffee\",\"visible\":true,\"color\":\"backlog-blue\"},{\"name\":\"Actions\",\"visible\":false,\"color\":\"planning-pink\"}]}"
+      }
+    }
+  ],
+  "vault": {}
+}

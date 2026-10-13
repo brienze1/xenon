@@ -1,0 +1,31 @@
+{
+  "id": "rw-agi-inc-agent-protocol-1",
+  "covers": [
+    "real-world",
+    "real-world lodash",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/agi-inc/agent-protocol",
+    "path": "testing_suite/agent_protocol_v1.json",
+    "url": "https://github.com/agi-inc/agent-protocol/blob/5047199152dc6e1ba83320b1b59f94af24046dcf/testing_suite/agent_protocol_v1.json",
+    "licence": "MIT",
+    "item": "Cleanup Previous Run Copy"
+  },
+  "phase": "prerequest",
+  "script": "// See https://blog.postman.com/2019/05/28/pro-tip-dynamically-unset-postman-environment-variables/\n// for more details on what we're doing here. \n\ncleanupCollectionVariables();\n\nfunction cleanupCollectionVariables() {\n    const clean = _.keys(pm.collectionVariables.toObject());\n\n    _.each(clean, (arrItem) => {\n        pm.collectionVariables.unset(arrItem);\n    });\n}",
+  "request": {
+    "url": "https://postman-echo.com/delay/0",
+    "method": "GET",
+    "header": []
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": []
+}

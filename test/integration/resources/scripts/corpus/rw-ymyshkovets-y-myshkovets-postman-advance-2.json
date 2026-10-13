@@ -1,0 +1,80 @@
+{
+  "id": "rw-ymyshkovets-y-myshkovets-postman-advance-2",
+  "covers": [
+    "real-world",
+    "real-world lodash"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/ymyshkovets/y.myshkovets-postman-advanced",
+    "path": "homework2/Collection.postman_collection.json",
+    "url": "https://github.com/ymyshkovets/y.myshkovets-postman-advanced/blob/c830c7a05b3b8bfa14fe29e0c58e44a2b9dfe167/homework2/Collection.postman_collection.json",
+    "licence": "MIT",
+    "item": "Tasks 1"
+  },
+  "phase": "test",
+  "script": "const names1 = [\"Alex\", \"Dima\", \"Kate\", \"Galina\", \"Ivan\"];\nconst names2 = [\"Dima\", \"Ivan\", \"Kate\"];\n\nconsole.log(_.difference(names1, names2));",
+  "request": {
+    "url": "https://redacted-value",
+    "method": "GET",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ]
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [
+    {
+      "key": "psw",
+      "value": "vwbqcn"
+    },
+    {
+      "key": "user",
+      "value": "studentws20"
+    },
+    {
+      "key": "date",
+      "value": "2020-11-23T17:39:18+03:00"
+    },
+    {
+      "key": "uuid",
+      "value": "redacted-value"
+    },
+    {
+      "key": "projectID",
+      "value": "27150"
+    },
+    {
+      "key": "url",
+      "value": "https://ws-tracks.demohoster.com"
+    },
+    {
+      "key": "host",
+      "value": "https://ws-tracks.demohoster.com"
+    },
+    {
+      "key": "moment",
+      "value": "2020-11-23T17:35:23+03:00"
+    }
+  ],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

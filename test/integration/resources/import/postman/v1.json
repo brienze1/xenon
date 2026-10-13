@@ -1,0 +1,18 @@
+{
+	"id": "0f1e2d3c-0000-4000-8000-0000000000aa",
+	"name": "Legacy v1",
+	"order": [
+		"r1"
+	],
+	"folders": [],
+	"requests": [
+		{
+			"id": "r1",
+			"name": "Old request",
+			"url": "https://old.acme.test",
+			"method": "GET",
+			"headers": "",
+			"collectionId": "0f1e2d3c-0000-4000-8000-0000000000aa"
+		}
+	]
+}

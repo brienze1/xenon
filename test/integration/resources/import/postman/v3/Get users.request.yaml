@@ -1,0 +1,4 @@
+$kind: http-request
+method: GET
+url: https://api.acme.test/users
+order: 1000

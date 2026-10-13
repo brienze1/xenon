@@ -1,0 +1,41 @@
+{
+  "id": "rw-rdelfin-idb-1",
+  "covers": [
+    "real-world"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/rdelfin/idb",
+    "path": "Postman.json",
+    "url": "https://github.com/rdelfin/idb/blob/43e46e955ccd25962bdc3ff29693702aaea67624/Postman.json",
+    "licence": "MIT",
+    "item": "Brand Tests"
+  },
+  "phase": "test",
+  "script": "pm.test(\"Content-Type is present\", function () {\n    pm.response.to.have.header(\"Content-Type\");\n});\n\npm.test(\"Successful request\", function () {\n    pm.response.to.be.ok;\n    pm.response.to.be.json;\n});\n\npm.test(\"Has name\", function () {\n    var jsonData = pm.response.json();\n    jsonData.forEach(function (brand) {\n        pm.expect(brand.name).to.not.eql(null);\n    });\n});\n\npm.test(\"Area Served defined\", function () {\n    var jsonData = pm.response.json();\n    jsonData.forEach(function (brand) {\n        pm.expect(\"area_served\" in brand).to.eql(true);\n    });\n});\n\npm.test(\"Carriers defined\", function () {\n    var jsonData = pm.response.json();\n    jsonData.forEach(function (brand) {\n        pm.expect(\"carriers\" in brand).to.eql(true);\n    });\n});\n\npm.test(\"Found Date defined\", function () {\n    var jsonData = pm.response.json();\n    jsonData.forEach(function (brand) {\n        pm.expect(\"found_date\" in brand).to.eql(true);\n    });\n});\n\npm.test(\"Founders defined\", function () {\n    var jsonData = pm.response.json();\n    jsonData.forEach(function (brand) {\n        pm.expect(\"founders\" in brand).to.eql(true);\n    });\n});\n\npm.test(\"Image defined\", function () {\n    var jsonData = pm.response.json();\n    jsonData.forEach(function (brand) {\n        pm.expect(\"image\" in brand).to.eql(true);\n    });\n});\n\npm.test(\"Industries defined\", function () {\n    var jsonData = pm.response.json();\n    jsonData.forEach(function (brand) {\n        pm.expect(\"industries\" in brand).to.eql(true);\n    });\n});\n\npm.test(\"Location defined\", function () {\n    var jsonData = pm.response.json();\n    jsonData.forEach(function (brand) {\n        pm.expect(\"location\" in brand).to.eql(true);\n    });\n});\n\npm.test(\"OSs defined\", function () {\n    var jsonData = pm.response.json();\n    jsonData.forEach(function (brand) {\n        pm.expect(\"os\" in brand).to.eql(true);\n    });\n});\n\npm.test(\"Parent defined\", function () {\n    var jsonData = pm.response.json();\n    jsonData.forEach(function (brand) {\n        pm.expect(\"parent\" in brand).to.eql(true);\n    });\n});\n\npm.test(\"Models defined\", function () {\n    var jsonData = pm.response.json();\n    jsonData.forEach(function (brand) {\n        pm.expect(\"phone_models\" in brand).to.eql(true);\n    });\n});\n\npm.test(\"Type defined\", function () {\n    var jsonData = pm.response.json();\n    jsonData.forEach(function (brand) {\n        pm.expect(\"type\" in brand).to.eql(true);\n    });\n});",
+  "request": {
+    "url": "http://phonedb.info/brands",
+    "method": "GET",
+    "header": []
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

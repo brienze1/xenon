@@ -1,0 +1,9 @@
+.notice {
+  margin: var(--space-3);
+}
+
+.error {
+  display: block;
+  margin-top: var(--space-2);
+  color: var(--neon-red);
+}

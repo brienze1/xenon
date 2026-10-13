@@ -1,0 +1,41 @@
+{
+  "id": "rw-ymyshkovets-y-myshkovets-postman-advance-2",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"_\" is deprecated. Use \"require('lodash')\" instead."
+      ]
+    },
+    {
+      "level": "log",
+      "args": [
+        [
+          "Alex",
+          "Galina"
+        ]
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "psw": "vwbqcn",
+      "user": "studentws20",
+      "date": "2020-11-23T17:39:18+03:00",
+      "uuid": "redacted-value",
+      "projectID": "27150",
+      "url": "https://ws-tracks.demohoster.com",
+      "host": "https://ws-tracks.demohoster.com",
+      "moment": "2020-11-23T17:35:23+03:00"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

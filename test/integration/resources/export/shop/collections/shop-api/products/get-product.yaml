@@ -1,0 +1,16 @@
+xenon: 1
+kind: request
+id: 01JX0000000000000000000012
+name: Get product
+method: GET
+url: "{{base_url}}/products/:id"
+pathVariables:
+  - key: id
+    value: "42"
+    description: product id
+auth:
+  type: apikey
+  apikey:
+    key: X-Api-Key
+    value: "{{api_key}}"
+    in: header

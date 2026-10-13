@@ -1,0 +1,1 @@
+curl -m 5 "https://api.example.test/users?page=2&limit=10&q=ana%20maria" -H "Accept: application/json" -H "X-Trace: it's me"

@@ -1,0 +1,20 @@
+const controller = new AbortController();
+const timerId = setTimeout(() => controller.abort(), 5000);
+const myHeaders = new Headers();
+myHeaders.append("Content-Type", "text/plain");
+
+const raw = "@mention the team";
+
+const requestOptions = {
+    method: "POST",
+    headers: myHeaders,
+    body: raw,
+    signal: controller.signal,
+    redirect: "manual"
+};
+
+fetch("https://api.example.test/notes", requestOptions)
+    .then((response) => response.text())
+    .then((result) => console.log(result))
+    .catch((error) => console.error(error))
+    .finally(() => clearTimeout(timerId));

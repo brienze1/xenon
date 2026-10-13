@@ -1,0 +1,25 @@
+meta {
+  name: Vars
+  type: http
+  seq: 3
+}
+
+get {
+  url: https://api.test/vars
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  host: {{base_url}}
+  count: 3
+  ~off: x
+}
+
+vars:post-response {
+  id: res.body.id
+  code: res.status
+  token: res.headers["x-token"]
+  name: bru.getEnvVar("name")
+  raw: res("data.id")
+}

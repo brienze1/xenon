@@ -1,0 +1,73 @@
+{
+  "id": "rw-gsma-cpas-bwrp-blockchain-adapter-2",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "Body matches string",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected '{\"id\":1,\"name\":\"example\",\"status\":\"ac…' to include 'documentID'"
+    },
+    {
+      "name": "Body matches string",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected '{\"id\":1,\"name\":\"example\",\"status\":\"ac…' to include 'txID'"
+    },
+    {
+      "name": "documentID response check",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "Target cannot be null or undefined."
+    },
+    {
+      "name": "txID response check",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "Target cannot be null or undefined."
+    },
+    {
+      "name": "Response time is less than 5s",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "Successful POST request",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected 200 to be one of [ 201, 202 ]"
+    },
+    {
+      "name": "Response Structure is valid",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"tv4\" is deprecated. Use \"require('ajv')\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

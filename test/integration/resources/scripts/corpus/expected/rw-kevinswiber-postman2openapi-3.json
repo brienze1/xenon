@@ -1,0 +1,49 @@
+{
+  "id": "rw-kevinswiber-postman2openapi-3",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "response is ok",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "response has valid json body",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "request must have a valid delay",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "response should take more time than the delay specified",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    }
+  ],
+  "console": [],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {
+      "var": "variable_value",
+      "hello_variable_value": "hello",
+      "var_int": "1000"
+    },
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}

@@ -1,0 +1,53 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it } from 'vitest'
+import { Tooltip } from './Tooltip'
+
+describe('Tooltip', () => {
+  it('shows on hover and focus and hides afterwards', async () => {
+    render(
+      <Tooltip content="DNS 4 ms">
+        <button type="button">120 ms</button>
+      </Tooltip>,
+    )
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    await userEvent.hover(screen.getByRole('button'))
+    expect(screen.getByRole('tooltip')).toHaveTextContent('DNS 4 ms')
+    await userEvent.unhover(screen.getByRole('button'))
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    await userEvent.tab()
+    const tooltip = screen.getByRole('tooltip')
+    expect(screen.getByRole('button')).toHaveAttribute('aria-describedby', tooltip.id)
+    expect(screen.getByRole('button').parentElement).not.toHaveAttribute('aria-describedby')
+    await userEvent.tab()
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
+  it('draws on the page body so a clipped pane cannot hide it, flipping below the anchor when there is no room above', async () => {
+    render(
+      <div style={{ overflow: 'hidden' }}>
+        <Tooltip content="Total 379 ms">
+          <button type="button">379 ms</button>
+        </Tooltip>
+      </div>,
+    )
+    await userEvent.hover(screen.getByRole('button'))
+    const tooltip = screen.getByRole('tooltip')
+    expect(tooltip.parentElement).toBe(document.body)
+    expect(tooltip.style.top).toBe('4px')
+    expect(tooltip.style.left).toBe('8px')
+  })
+
+  it('places itself in page coordinates when the UI is zoomed', async () => {
+    document.body.style.setProperty('zoom', '2')
+    render(
+      <Tooltip content="Total 379 ms">
+        <button type="button">379 ms</button>
+      </Tooltip>,
+    )
+    await userEvent.hover(screen.getByRole('button'))
+    expect(screen.getByRole('tooltip').style.top).toBe('2px')
+    expect(screen.getByRole('tooltip').style.left).toBe('4px')
+    document.body.style.removeProperty('zoom')
+  })
+})

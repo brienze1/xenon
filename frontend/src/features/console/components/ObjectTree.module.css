@@ -1,0 +1,36 @@
+.node,
+.leaf {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.summary {
+  cursor: pointer;
+}
+
+.summary:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.leaf {
+  padding-left: var(--space-5);
+}
+
+.children {
+  padding-left: var(--space-5);
+}
+
+.key {
+  color: var(--neon-cyan);
+}
+
+.key::after {
+  content: ': ';
+  color: var(--color-text-muted);
+}
+
+.value {
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}

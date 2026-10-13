@@ -1,0 +1,28 @@
+{
+  "id": "rw-agi-inc-agent-protocol-1",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"_\" is deprecated. Use \"require('lodash')\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {},
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": {
+    "method": "GET",
+    "url": "https://postman-echo.com/delay/0",
+    "headers": [],
+    "body": null
+  },
+  "sentRequests": [],
+  "vault": {}
+}

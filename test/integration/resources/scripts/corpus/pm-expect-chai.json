@@ -1,0 +1,115 @@
+{
+  "id": "pm-expect-chai",
+  "covers": [
+    "sandbox-api §1 pm.expect"
+  ],
+  "source": {
+    "kind": "hand-written",
+    "licence": "Xenon project (same licence as this repository)"
+  },
+  "phase": "test",
+  "script": "pm.test('deep', () => pm.expect({a: [1, 2]}).to.deep.equal({a: [1, 2]}));\npm.test('include', () => pm.expect([1, 2, 3]).to.include(2));\npm.test('property', () => pm.expect({a: {b: 1}}).to.have.nested.property('a.b', 1));\npm.test('type', () => pm.expect('x').to.be.a('string'));\npm.test('length', () => pm.expect([1]).to.have.lengthOf(2));\npm.test('oneOf', () => pm.expect(3).to.be.oneOf([1, 2]));\npm.test('match', () => pm.expect('abc').to.match(/^a/));\npm.test('keys', () => pm.expect({a: 1, b: 2}).to.have.all.keys('a', 'b'));\npm.test('above', () => pm.expect(5).to.be.above(10));\npm.test('not', () => pm.expect(null).to.not.be.ok);\npm.test('closeTo', () => pm.expect(1.5).to.be.closeTo(1, 0.1));\npm.test('members', () => pm.expect([1, 2]).to.have.members([2, 1]));\npm.test('throw', () => pm.expect(() => { throw new TypeError('x') }).to.throw(TypeError));",
+  "request": {
+    "url": "https://api.example.com/v1/users?page=2&limit=10",
+    "method": "POST",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "X-Trace",
+        "value": "abc"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\"name\":\"Ada\",\"tags\":[\"a\",\"b\"]}"
+    }
+  },
+  "environment": {
+    "name": "dev",
+    "values": [
+      {
+        "key": "base_url",
+        "value": "https://api.example.com"
+      },
+      {
+        "key": "user",
+        "value": "ada"
+      },
+      {
+        "key": "shared",
+        "value": "from-env"
+      }
+    ]
+  },
+  "collectionVariables": [
+    {
+      "key": "version",
+      "value": "v1"
+    },
+    {
+      "key": "shared",
+      "value": "from-collection"
+    },
+    {
+      "key": "coll_only",
+      "value": "c"
+    }
+  ],
+  "globals": [
+    {
+      "key": "tenant",
+      "value": "acme"
+    },
+    {
+      "key": "shared",
+      "value": "from-globals"
+    },
+    {
+      "key": "glob_only",
+      "value": "g"
+    }
+  ],
+  "variables": [
+    {
+      "key": "local_only",
+      "value": "l"
+    }
+  ],
+  "cookies": [
+    {
+      "name": "session",
+      "value": "s1",
+      "domain": "api.example.com",
+      "path": "/"
+    },
+    {
+      "name": "theme",
+      "value": "dark",
+      "domain": "api.example.com",
+      "path": "/"
+    }
+  ],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json; charset=utf-8"
+      },
+      {
+        "key": "Set-Cookie",
+        "value": "session=s1; Path=/"
+      },
+      {
+        "key": "X-Rate",
+        "value": "10"
+      }
+    ],
+    "body": "{\"id\":7,\"name\":\"Ada\",\"items\":[{\"id\":1,\"price\":2.5},{\"id\":2,\"price\":4}],\"token\":\"tok-1\",\"nested\":{\"deep\":{\"value\":true}}}",
+    "responseTime": 123
+  }
+}

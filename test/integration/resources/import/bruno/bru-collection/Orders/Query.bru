@@ -1,0 +1,30 @@
+meta {
+  name: Query
+  type: graphql
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/graphql
+  body: graphql
+  auth: digest
+}
+
+auth:digest {
+  username: ana
+  password: {{pw}}
+}
+
+body:graphql {
+  query {
+    orders {
+      id
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "limit": 10
+  }
+}

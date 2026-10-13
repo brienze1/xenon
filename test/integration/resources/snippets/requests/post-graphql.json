@@ -1,0 +1,1 @@
+{ "method": "POST", "url": "https://api.example.test/graphql", "header": [], "body": { "mode": "graphql", "graphql": { "query": "query User($id: ID!) { user(id: $id) { name } }", "variables": "{\"id\": \"42\"}" } } }

@@ -1,0 +1,1 @@
+{ "method": "POST", "url": "https://api.example.test/upload", "header": [], "body": { "mode": "formdata", "formdata": [ { "key": "note", "value": "hello", "type": "text" }, { "key": "file", "src": "files/invoice.txt", "type": "file" } ] } }

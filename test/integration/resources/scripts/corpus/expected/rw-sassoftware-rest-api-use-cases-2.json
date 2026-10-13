@@ -1,0 +1,58 @@
+{
+  "id": "rw-sassoftware-rest-api-use-cases-2",
+  "error": null,
+  "skipped": false,
+  "tests": [],
+  "console": [
+    {
+      "level": "log",
+      "args": [
+        "7. Instance untagged successfully"
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"postman.setEnvironmentVariable\" is deprecated. Use \"pm.environment.set()\" instead."
+      ]
+    },
+    {
+      "level": "warn",
+      "args": [
+        "Using \"postman.getResponseHeader\" is deprecated. Use \"pm.response.headers.get()\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "tag_last_modified": {
+        "$type": "undefined"
+      },
+      "tag_etag": {
+        "$type": "undefined"
+      }
+    },
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [
+    {
+      "method": "GET",
+      "url": "undefined/catalog/tags/undefined",
+      "headers": [
+        {
+          "key": "Accept",
+          "value": "application/vnd.sas.metadata.tag+json"
+        },
+        {
+          "key": "Authorization",
+          "value": "Bearer undefined"
+        }
+      ],
+      "body": null
+    }
+  ],
+  "vault": {}
+}

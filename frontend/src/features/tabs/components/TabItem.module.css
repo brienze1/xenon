@@ -1,0 +1,129 @@
+.tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 220px;
+  padding: 0 var(--space-3);
+  border-right: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+}
+
+.tab:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+.tab:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.active {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.active::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--neon-cyan);
+  box-shadow: var(--glow-cyan);
+  content: '';
+}
+
+.preview .name {
+  font-style: italic;
+}
+
+.dragging {
+  z-index: 1;
+  opacity: 0.8;
+}
+
+.method {
+  flex: none;
+  font-size: var(--font-size-xs);
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dirty {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--neon-yellow);
+}
+
+.close {
+  flex: none;
+  padding: 0 var(--space-1);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.tab:hover .close,
+.active .close {
+  opacity: 1;
+}
+
+.close:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+.kindIcon {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: var(--color-text-muted);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.4;
+}
+
+.kindBadge {
+  flex: none;
+  min-width: 32px;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.kindBadge[data-color='green'] {
+  color: var(--neon-green);
+}
+
+.kindBadge[data-color='cyan'] {
+  color: var(--neon-cyan);
+}
+
+.kindBadge[data-color='magenta'] {
+  color: var(--neon-magenta);
+}
+
+.kindBadge[data-color='yellow'] {
+  color: var(--neon-yellow);
+}
+
+.kindBadge[data-color='red'] {
+  color: var(--neon-red);
+}

@@ -1,0 +1,386 @@
+update: |
+  openapi: 3.1.0
+  info:
+    title: Billing
+    description: All billing calls.
+    version: 1.0.0
+  servers:
+    - url: '{{host}}'
+  tags:
+    - name: Invoices
+  paths:
+    /invoices:
+      get:
+        tags:
+          - Invoices
+        summary: List invoices
+        description: Lists open invoices.
+        x-xenon-id: 01JK8000000000000000000010
+        parameters:
+          - name: status
+            in: query
+            description: Invoice status
+            schema:
+              type: string
+            example: open
+          - name: X-Tenant
+            in: header
+            schema:
+              type: string
+            example: globex
+          - name: X-Request-Id
+            in: header
+            description: Request id
+            schema:
+              type: string
+            example: '{{requestId}}'
+        security: []
+      post:
+        tags:
+          - Invoices
+        summary: Create invoice
+        x-xenon-id: 01JK8000000000000000000011
+        requestBody:
+          content:
+            application/json:
+              example:
+                amount: 2500
+                currency: EUR
+        responses:
+          "201":
+            description: Created
+            content:
+              application/json:
+                examples:
+                  Created:
+                    x-xenon-id: 01JK8000000000000000000020
+                    value:
+                      id: 43
+        security:
+          - bearerAuth: []
+    /ping:
+      get:
+        summary: Health check
+        x-xenon-id: 01JK8000000000000000000012
+        security: []
+  components:
+    securitySchemes:
+      bearerAuth:
+        type: http
+        scheme: bearer
+create: |
+  openapi: 3.1.0
+  info:
+    title: Billing
+    description: Invoices and payments.
+    version: 1.0.0
+  servers:
+    - url: '{{host}}'
+  paths:
+    /invoices:
+      get:
+        tags:
+          - Invoices
+        summary: List invoices
+        x-xenon-id: 01JK8000000000000000000010
+        parameters:
+          - name: status
+            in: query
+            description: Invoice status
+            schema:
+              type: string
+            example: open
+          - name: X-Tenant
+            in: header
+            schema:
+              type: string
+            example: acme
+        security: []
+      post:
+        tags:
+          - Invoices
+        summary: Create invoice
+        x-xenon-id: 01JK8000000000000000000011
+        requestBody:
+          content:
+            application/json:
+              example:
+                amount: 1000
+        responses:
+          "201":
+            description: Created
+            content:
+              application/json:
+                examples:
+                  Created:
+                    x-xenon-id: 01JK8000000000000000000020
+                    value:
+                      id: 42
+        security:
+          - bearerAuth: []
+    /invoices/{id}:
+      delete:
+        tags:
+          - Invoices / Archive
+        summary: Archive invoice
+        parameters:
+          - name: id
+            in: path
+            description: Invoice id
+            required: true
+            schema:
+              type: string
+            example: "7"
+        responses:
+          "200":
+            description: OK
+            content:
+              application/json:
+                examples:
+                  Archived:
+                    value:
+                      archived: true
+    /ping:
+      get:
+        summary: Ping
+        x-xenon-id: 01JK8000000000000000000012
+        security: []
+    /version:
+      get:
+        summary: Version
+        description: Returns the API version.
+delete: |
+  openapi: 3.1.0
+  info:
+    title: Billing
+    description: Invoices and payments.
+    version: 1.0.0
+  servers:
+    - url: '{{host}}'
+  paths:
+    /invoices:
+      get:
+        tags:
+          - Invoices
+        summary: List invoices
+        x-xenon-id: 01JK8000000000000000000010
+        parameters:
+          - name: status
+            in: query
+            description: Invoice status
+            schema:
+              type: string
+            example: open
+          - name: X-Tenant
+            in: header
+            schema:
+              type: string
+            example: acme
+        security: []
+      post:
+        tags:
+          - Invoices
+        summary: Create invoice
+        x-xenon-id: 01JK8000000000000000000011
+        requestBody:
+          content:
+            application/json:
+              example:
+                amount: 1000
+        responses:
+          "201":
+            description: Created
+            content:
+              application/json:
+                examples:
+                  Created:
+                    x-xenon-id: 01JK8000000000000000000020
+                    value:
+                      id: 42
+        security:
+          - bearerAuth: []
+duplicate: |
+  openapi: 3.1.0
+  info:
+    title: Billing
+    version: 1.0.0
+  paths:
+    /invoices:
+      get:
+        summary: List invoices
+        x-xenon-id: 01JK8000000000000000000010
+    /ping:
+      get:
+        summary: Ping
+        x-xenon-id: 01JK8000000000000000000010
+rename: |
+  openapi: 3.1.0
+  info:
+    title: Billing
+    description: Invoices and payments.
+    version: 1.0.0
+  servers:
+    - url: '{{host}}'
+  paths:
+    /invoices:
+      get:
+        tags:
+          - Invoices
+        summary: List invoices
+        x-xenon-id: 01JK8000000000000000000010
+        parameters:
+          - name: status
+            in: query
+            description: Invoice status
+            schema:
+              type: string
+            example: open
+          - name: X-Tenant
+            in: header
+            schema:
+              type: string
+            example: acme
+        security: []
+      post:
+        tags:
+          - Invoices
+        summary: Create invoice
+        x-xenon-id: 01JK8000000000000000000011
+        requestBody:
+          content:
+            application/json:
+              example:
+                amount: 1000
+        responses:
+          "201":
+            description: Created
+            content:
+              application/json:
+                examples:
+                  Created:
+                    x-xenon-id: 01JK8000000000000000000020
+                    value:
+                      id: 42
+        security:
+          - bearerAuth: []
+    /ping:
+      get:
+        summary: Health check
+        x-xenon-id: 01JK8000000000000000000012
+        security: []
+rename_case: |
+  openapi: 3.1.0
+  info:
+    title: Billing
+    description: Invoices and payments.
+    version: 1.0.0
+  servers:
+    - url: '{{host}}'
+  paths:
+    /invoices:
+      get:
+        tags:
+          - Invoices
+        summary: List invoices
+        x-xenon-id: 01JK8000000000000000000010
+        parameters:
+          - name: status
+            in: query
+            description: Invoice status
+            schema:
+              type: string
+            example: open
+          - name: X-Tenant
+            in: header
+            schema:
+              type: string
+            example: acme
+        security: []
+      post:
+        tags:
+          - Invoices
+        summary: Create invoice
+        x-xenon-id: 01JK8000000000000000000011
+        requestBody:
+          content:
+            application/json:
+              example:
+                amount: 1000
+        responses:
+          "201":
+            description: Created
+            content:
+              application/json:
+                examples:
+                  Created:
+                    x-xenon-id: 01JK8000000000000000000020
+                    value:
+                      id: 42
+        security:
+          - bearerAuth: []
+    /ping:
+      get:
+        summary: PING
+        x-xenon-id: 01JK8000000000000000000012
+        security: []
+tag_groups: |
+  openapi: 3.1.0
+  info:
+    title: Billing
+    description: Invoices and payments.
+    version: 1.0.0
+  servers:
+    - url: '{{host}}'
+  tags:
+    - name: Invoices
+  x-tagGroups:
+    - name: Money
+      tags:
+        - Invoices
+  paths:
+    /invoices:
+      get:
+        tags:
+          - Invoices
+        summary: List invoices
+        x-xenon-id: 01JK8000000000000000000010
+        parameters:
+          - name: status
+            in: query
+            description: Invoice status
+            schema:
+              type: string
+            example: open
+          - name: X-Tenant
+            in: header
+            schema:
+              type: string
+            example: acme
+        security: []
+      post:
+        tags:
+          - Invoices
+        summary: Create invoice
+        x-xenon-id: 01JK8000000000000000000011
+        requestBody:
+          content:
+            application/json:
+              example:
+                amount: 1000
+        responses:
+          "201":
+            description: Created
+            content:
+              application/json:
+                examples:
+                  Created:
+                    x-xenon-id: 01JK8000000000000000000020
+                    value:
+                      id: 42
+        security:
+          - bearerAuth: []
+    /ping:
+      get:
+        summary: Ping
+        x-xenon-id: 01JK8000000000000000000012
+        security: []

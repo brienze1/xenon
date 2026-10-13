@@ -1,0 +1,769 @@
+{
+	"info": {
+		"_postman_id": "c0ffee00-0000-4000-8000-000000000001",
+		"name": "Acme API",
+		"description": {
+			"content": "The **Acme** API",
+			"type": "text/markdown"
+		},
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "1234567",
+		"_collection_link": "https://go.postman.co/collection/1234567-c0ffee00"
+	},
+	"item": [
+		{
+			"name": "Users",
+			"id": "fld-users",
+			"description": "User endpoints",
+			"auth": {
+				"type": "noauth"
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "users-pre",
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							"pm.variables.set(\"x\", 1);"
+						]
+					},
+					"disabled": true
+				}
+			],
+			"variable": [
+				{
+					"key": "page",
+					"value": "1",
+					"type": "string"
+				}
+			],
+			"item": [
+				{
+					"name": "List users",
+					"id": "req-list-users",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "list-test",
+								"type": "text/javascript",
+								"packages": {},
+								"exec": [
+									"pm.test(\"list\", function () {",
+									"    var data = pm.response.json();",
+									"    pm.expect(data.length).to.be.above(0);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Trace",
+								"value": "1",
+								"disabled": true,
+								"description": "tracing"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/users?page=1&size=10&debug=true",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "size",
+									"value": "10",
+									"description": "page size"
+								},
+								{
+									"key": "debug",
+									"value": "true",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"id": "ex-list-ok",
+							"name": "200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "X-Trace",
+										"value": "1",
+										"disabled": true,
+										"description": "tracing"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/users?page=1&size=10&debug=true",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"users"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "size",
+											"value": "10",
+											"description": "page size"
+										},
+										{
+											"key": "debug",
+											"value": "true",
+											"disabled": true
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "[\n  { \"id\": 1, \"name\": \"Ana\" }\n]"
+						}
+					]
+				},
+				{
+					"name": "Admin",
+					"id": "fld-admin",
+					"auth": {
+						"type": "basic",
+						"basic": {
+							"username": "admin",
+							"password": "{{admin_pw}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "admin-test",
+								"type": "text/javascript",
+								"packages": {},
+								"exec": [
+									"pm.test(\"admin\", () => pm.expect(pm.response.code).to.eql(200));"
+								]
+							}
+						}
+					],
+					"item": [
+						{
+							"name": "Get user",
+							"id": "req-get-user",
+							"request": {
+								"auth": {
+									"type": "apikey",
+									"apikey": {
+										"key": "X-Api-Key",
+										"value": "{{api_key}}",
+										"in": "header"
+									}
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/users/:id",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"users",
+										":id"
+									],
+									"variable": [
+										{
+											"key": "id",
+											"value": "42",
+											"description": "user id"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"id": "ex-get-found",
+									"name": "Found",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/users/42",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"users",
+												"42"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "X-Request-Id",
+											"value": "abc"
+										}
+									],
+									"cookie": [],
+									"responseTime": 120,
+									"body": "{\"id\":42,\"name\":\"Ana\"}"
+								},
+								{
+									"id": "ex-get-missing",
+									"name": "Not found",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/users/0",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"users",
+												"0"
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "text",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "text/plain"
+										}
+									],
+									"cookie": [],
+									"body": "missing"
+								}
+							]
+						},
+						{
+							"name": "Delete user",
+							"id": "req-delete-user",
+							"protocolProfileBehavior": {
+								"followRedirects": false,
+								"strictSSL": false,
+								"disableUrlEncoding": true,
+								"disableCookies": true
+							},
+							"request": {
+								"auth": {
+									"type": "digest",
+									"digest": {
+										"username": "ana",
+										"password": "{{pw}}",
+										"realm": "acme",
+										"algorithm": "MD5"
+									}
+								},
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/users/:id",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"users",
+										":id"
+									],
+									"variable": [
+										{
+											"key": "id",
+											"value": "42"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Propfind",
+					"id": "req-propfind",
+					"request": {
+						"auth": {
+							"type": "hawk",
+							"hawk": {
+								"authId": "hawk-id",
+								"authKey": "{{hawk_key}}",
+								"algorithm": "sha256"
+							}
+						},
+						"method": "PROPFIND",
+						"header": [],
+						"url": "{{base_url}}/files?depth=1"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Bodies",
+			"id": "fld-bodies",
+			"item": [
+				{
+					"name": "Raw JSON",
+					"id": "req-raw-json",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "raw-pre",
+								"type": "text/javascript",
+								"packages": {},
+								"exec": [
+									"// pm.visualizer.set is only mentioned in a comment",
+									"const jar = pm.cookies.jar();",
+									"console.log(pm.info.requestName, \"pm.iterationData in a string\");"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "ntlm",
+							"ntlm": {
+								"username": "dom\\ana",
+								"password": "{{ntlm_pw}}"
+							}
+						},
+						"method": "POST",
+						"header": "Content-Type: application/json\nX-Raw: yes",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 1000\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/invoices",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"invoices"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Raw XML",
+					"id": "req-raw-xml",
+					"request": {
+						"auth": {
+							"type": "jwt",
+							"jwt": {
+								"algorithm": "HS256",
+								"secret": "{{jwt_secret}}",
+								"payload": "{}"
+							}
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "<a/>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/xml",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"xml"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Urlencoded",
+					"id": "req-urlencoded",
+					"request": {
+						"auth": {
+							"type": "asap",
+							"asap": {
+								"kid": "key-1",
+								"iss": "acme"
+							}
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "a",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "b",
+									"value": "2",
+									"type": "text",
+									"disabled": true,
+									"description": "off"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/form",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"form"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Form data",
+					"id": "req-form-data",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "form-pre",
+								"type": "text/javascript",
+								"packages": {},
+								"exec": [
+									"const moment = pm.require('npm:moment@2.29.4');",
+									"pm.environment.set(\"now\", moment().format());"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "oauth2",
+							"oauth2": {
+								"grant_type": "client_credentials",
+								"accessTokenUrl": "https://auth.acme.test/token",
+								"addTokenTo": "header",
+								"useBrowser": false
+							}
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "note",
+									"value": "hi",
+									"type": "text",
+									"description": "a note"
+								},
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/Users/someone/.ssh/id_rsa"
+								},
+								{
+									"key": "multi",
+									"type": "file",
+									"src": [
+										"/tmp/a.txt",
+										"/tmp/b.txt"
+									],
+									"contentType": "text/plain",
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/upload",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"upload"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Binary",
+					"id": "req-binary",
+					"request": {
+						"auth": {
+							"type": "awsv4",
+							"awsv4": {
+								"accessKey": "AKIA",
+								"secretKey": "{{aws_secret}}",
+								"region": "us-east-1",
+								"service": "s3"
+							}
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "file",
+							"file": {
+								"src": "/tmp/payload.bin",
+								"content": ""
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/blob",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"blob"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GraphQL",
+					"id": "req-graphql",
+					"request": {
+						"auth": {
+							"type": "edgegrid",
+							"edgegrid": {
+								"accessToken": "at",
+								"clientToken": "ct"
+							}
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query { me { id } }",
+								"variables": "{\"a\":1}"
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/graphql",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Disabled body",
+					"id": "req-disabled-body",
+					"request": {
+						"auth": {
+							"type": "oauth1",
+							"oauth1": {
+								"consumerKey": "ck",
+								"signatureMethod": "HMAC-SHA1"
+							}
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "ignored",
+							"disabled": true
+						},
+						"url": {
+							"raw": "{{base_url}}/disabled",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"disabled"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Empty body",
+					"id": "req-empty-body",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "get",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/empty",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"empty"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Ping",
+			"id": "req-ping",
+			"description": {
+				"content": "Health check",
+				"type": "text/plain"
+			},
+			"variable": [
+				{
+					"key": "x",
+					"value": "1"
+				}
+			],
+			"request": "https://api.acme.test/ping",
+			"response": []
+		},
+		{
+			"name": "Rebuilt URL",
+			"id": "req-rebuilt",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"protocol": "https",
+					"host": [
+						"api",
+						"acme",
+						"test"
+					],
+					"port": "8443",
+					"path": [
+						"v1",
+						"rebuilt"
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "1"
+						}
+					],
+					"hash": "frag"
+				},
+				"proxy": {
+					"host": "proxy.acme.test",
+					"port": 8080
+				},
+				"certificate": {
+					"name": "client",
+					"matches": [
+						"https://api.acme.test/*"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": {
+			"token": "{{token}}"
+		}
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "col-pre",
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"pm.environment.set(\"ts\", Date.now());"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "col-test",
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"pm.test(\"status ok\", () => pm.response.to.have.status(200));"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://api.acme.test",
+			"type": "string"
+		},
+		{
+			"key": "page_size",
+			"value": 50,
+			"type": "number",
+			"description": "Default page"
+		},
+		{
+			"key": "legacy",
+			"value": "x",
+			"type": "string",
+			"disabled": true
+		}
+	],
+	"protocolProfileBehavior": {
+		"disableBodyPruning": true
+	}
+}

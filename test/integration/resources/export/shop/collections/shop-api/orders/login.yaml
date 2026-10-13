@@ -1,0 +1,18 @@
+xenon: 1
+kind: request
+id: 01JX0000000000000000000022
+name: Login
+method: POST
+url: "{{base_url}}/login"
+body:
+  mode: urlencoded
+  urlencoded:
+    - key: user
+      value: ana
+    - key: pass
+      value: s3 cret&x
+    - key: skip
+      value: "1"
+      enabled: false
+auth:
+  type: inherit

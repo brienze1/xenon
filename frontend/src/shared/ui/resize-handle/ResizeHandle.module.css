@@ -1,0 +1,72 @@
+/* A 12px grab area centred on the border; only the 2px line inside it lights up. The area never shrinks on hover. */
+.handle {
+  position: absolute;
+  z-index: 2;
+  touch-action: none;
+  background: transparent;
+}
+
+.handle::after {
+  position: absolute;
+  background: transparent;
+  content: '';
+  transition: background-color 80ms ease-out;
+}
+
+.vertical {
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  cursor: col-resize;
+}
+
+.vertical::after {
+  top: 0;
+  bottom: 0;
+  left: 5px;
+  width: 2px;
+}
+
+.horizontal {
+  left: 0;
+  right: 0;
+  height: 12px;
+  cursor: row-resize;
+}
+
+.horizontal::after {
+  top: 5px;
+  left: 0;
+  right: 0;
+  height: 2px;
+}
+
+.vertical.end {
+  right: -6px;
+}
+
+.vertical.start {
+  left: -6px;
+}
+
+.horizontal.start {
+  top: -6px;
+}
+
+.horizontal.end {
+  bottom: -6px;
+}
+
+.handle:hover::after {
+  background: var(--neon-cyan);
+}
+
+.handle:focus-visible {
+  outline: none;
+}
+
+.handle:focus-visible::after,
+.dragging::after {
+  background: var(--neon-cyan);
+  box-shadow: var(--glow-cyan);
+}

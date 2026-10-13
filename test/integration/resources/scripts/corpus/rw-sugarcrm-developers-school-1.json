@@ -1,0 +1,47 @@
+{
+  "id": "rw-sugarcrm-developers-school-1",
+  "covers": [
+    "real-world",
+    "real-world oauth-token-chain",
+    "real-world legacy"
+  ],
+  "source": {
+    "kind": "public-collection",
+    "repository": "https://github.com/sugarcrm-developers/school",
+    "path": "data/ProfessorM_PostmanModuleInstall.json",
+    "url": "https://github.com/sugarcrm-developers/school/blob/2f102b8dc10a7a740ec0fd1a65395e5e57ec3593/data/ProfessorM_PostmanModuleInstall.json",
+    "licence": "Apache-2.0",
+    "item": "Authenticate"
+  },
+  "phase": "test",
+  "script": "var jsonData = JSON.parse(responseBody);\nvar access_token = jsonData.access_token;\n\ntests[\"Successful POST request\"] = responseCode.code === 200;\ntests[\"access_token exists\"] = access_token !== null || access_token !== \"\";\n\npostman.setEnvironmentVariable(\"access_token\", access_token);",
+  "request": {
+    "url": "{{url}}{{rest_endpoint}}/oauth2/token",
+    "method": "POST",
+    "header": [],
+    "body": {
+      "mode": "raw",
+      "raw": "{\n   \"grant_type\":\"password\",\n   \"client_id\":\"sugar\",\n   \"client_secret\":\"\",\n   \"username\":\"{{username}}\",\n   \"password\":\"{{password}}\",\n   \"platform\":\"base\"\n}"
+    }
+  },
+  "environment": {
+    "name": "real-world",
+    "values": []
+  },
+  "collectionVariables": [],
+  "globals": [],
+  "variables": [],
+  "cookies": [],
+  "response": {
+    "code": 200,
+    "status": "OK",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "body": "{\"id\":1,\"name\":\"example\",\"status\":\"active\",\"data\":[{\"id\":1,\"value\":\"a\"},{\"id\":2,\"value\":\"b\"}],\"token\":\"test-token\",\"access_token\":\"test-access-token\",\"success\":true,\"message\":\"ok\",\"total\":2}",
+    "responseTime": 120
+  }
+}

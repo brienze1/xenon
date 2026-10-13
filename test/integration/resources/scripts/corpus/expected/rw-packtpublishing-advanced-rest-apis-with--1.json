@@ -1,0 +1,41 @@
+{
+  "id": "rw-packtpublishing-advanced-rest-apis-with--1",
+  "error": null,
+  "skipped": false,
+  "tests": [
+    {
+      "name": "access_token not empty",
+      "passed": true,
+      "skipped": false,
+      "async": false,
+      "error": null
+    },
+    {
+      "name": "refresh token not empty",
+      "passed": false,
+      "skipped": false,
+      "async": false,
+      "error": "expected undefined to not deeply equal undefined"
+    }
+  ],
+  "console": [
+    {
+      "level": "warn",
+      "args": [
+        "Using \"postman.setEnvironmentVariable\" is deprecated. Use \"pm.environment.set()\" instead."
+      ]
+    }
+  ],
+  "variables": {
+    "environment": {
+      "access_token": "test-access-token",
+      "refresh_token": null
+    },
+    "collectionVariables": {},
+    "globals": {},
+    "local": {}
+  },
+  "request": null,
+  "sentRequests": [],
+  "vault": {}
+}
