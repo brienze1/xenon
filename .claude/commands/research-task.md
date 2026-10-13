@@ -1,14 +1,14 @@
 ---
-description: Read a Linear task, research where the real changes must land in this repo, ask the user to resolve open questions, then rewrite the Linear description with the verified plan.
-argument-hint: <LINEAR-TASK-ID or URL> (e.g. PLT-1652)
+description: Read a GitHub issue, research where the real changes must land in this repo, ask the user to resolve open questions, then rewrite the issue description with the verified plan.
+argument-hint: <issue number, URL or XEN-id> (e.g. 12 or XEN-008)
 ---
 
-# research-task — turn a Linear task into a verified, code-grounded plan
+# research-task — turn a GitHub issue into a verified, code-grounded plan
 
-You are researching **$ARGUMENTS**. The task description in Linear was written
+You are researching **$ARGUMENTS**. The issue description on GitHub was written
 before anyone read the code — it may contain guesses, stale assumptions, or
 gaps. Your job: replace those with what the code actually says, close every
-open question with the user, then rewrite the Linear description so it is
+open question with the user, then rewrite the issue description so it is
 objective, accurate, and immediately actionable for whoever implements it.
 
 This is a **single repo**: the service code (`cmd/`, `internal/`, `pkg/`), its
@@ -33,15 +33,20 @@ spec repos to split the work across.
    scope. Remove assumptions the research disproved — don't leave them
    alongside the correction.
 5. **Do not commit, push, or open PRs.** The only artifact this command
-   produces is the updated Linear description.
+   produces is the updated issue description.
 
-## Step 1 — Read the Linear task
+## Step 1 — Read the issue
 
-Use the Linear MCP tools:
-- `mcp__linear__get_issue` for **$ARGUMENTS** — title, current description,
-  labels, project, linked issues/docs.
-- `mcp__linear__list_comments` — later clarifications often override the
-  original description; treat comments as higher-priority truth.
+Follow `.claude/skills/github-issues.md` to resolve **$ARGUMENTS** to one issue and its `XEN-NNN` task id (assign
+the next free id if the title has none), then read it:
+
+```bash
+gh issue view <n> --repo brienze1/xenon --json number,title,body,labels,state,url,comments
+```
+
+- The body is the current description; labels and linked issues/PRs give context.
+- Comments: later clarifications often override the original description; treat comments as higher-priority
+  truth.
 
 Extract, in your own words:
 - **What outcome is wanted** (the actual behavior/bug/feature).
@@ -51,7 +56,7 @@ Extract, in your own words:
 - **What's unclear or unstated** — candidate questions for Step 4.
 
 Also check whether a spec already exists for this task: `ls specs/ | grep -i
-<LINEAR-ID>`. If it does, read it — it may already settle questions.
+<XEN-ID>`. If it does, read it — it may already settle questions.
 
 ## Step 2 — Find where the change actually lives
 
@@ -94,15 +99,15 @@ For each area touched, read enough real source to state with confidence:
   anything the task doesn't mention but the code says is also affected.
 
 If personal data (CPF, phone, address, financial identifiers, etc.) is part of
-what you're inspecting or would need to appear in the rewritten Linear
+what you're inspecting or would need to appear in the rewritten issue
 description, apply the LGPD data-minimization rule: don't paste full
-identifiers into the Linear description — reference the field/column
+identifiers into the issue description — reference the field/column
 generically, and flag it to the user if the task seems to require exporting or
 repurposing such data.
 
 ## Step 4 — Ask the user
 
-Before writing anything back to Linear, resolve every open question from Steps
+Before writing anything back to the issue, resolve every open question from Steps
 1–3 with the user via `AskUserQuestion`. Typical triggers:
 - The code supports the change in more than one plausible place/way.
 - The task is ambiguous about scope (e.g. "fix X" could mean one endpoint or
@@ -146,21 +151,21 @@ Structure (adapt headers to fit, but keep this shape):
 - <question> → <the user's answer> (only if Step 4 happened)
 ```
 
-## Step 6 — Update the Linear description
+## Step 6 — Update the issue description
 
-- Fetch the current description again (`mcp__linear__get_issue`) in case it
+- Fetch the current body again (`gh issue view <n> --json body`) in case it
   changed since Step 1.
 - Rewrite it: **keep** whatever context/background was accurate, **replace**
   claims that Steps 2–3 disproved, and **append** the plan from Step 5. Do not
   leave a stale assumption sitting next to its correction — remove it.
-- Save with `mcp__linear__save_issue` (update the existing issue's
-  description, not a new one).
-- Do not touch labels, status, assignee, or project unless the user asked you
-  to.
+- Write the new body to a scratchpad file and save it with
+  `gh issue edit <n> --repo brienze1/xenon --body-file <file>` (update the existing issue, not a new one).
+- Do not touch labels, assignees or milestones unless the user asked you to (adding a missing `XEN-NNN` prefix
+  to the title is the one exception, per the skill).
 
 ## Step 7 — Report back
 
 Summarize to the user in a few sentences: what was confirmed, what was wrong
 in the original description, what got resolved via questions, and confirm the
-Linear description was updated (link/id). Keep it short — the description
+issue description was updated (issue link and `XEN-NNN` id). Keep it short — the description
 itself is the durable artifact. Next step in the flow is `/spec-task`.

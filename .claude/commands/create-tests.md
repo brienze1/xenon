@@ -1,11 +1,11 @@
 ---
-description: Author/update red BDD feature files in this repo from a Linear task (and its Spec Kit spec), reusing the generic step catalog.
-argument-hint: <LINEAR-TASK-ID or URL> (e.g. PLT-1673)
+description: Author/update red BDD feature files in this repo from a GitHub issue (and its Spec Kit spec), reusing the generic step catalog.
+argument-hint: <issue number, URL or XEN-id> (e.g. 12 or XEN-008)
 ---
 
-# create-tests — BDD features from a Linear task
+# create-tests — BDD features from a GitHub issue
 
-You are acting as the **QA engineer** for this task. Given the Linear task
+You are acting as the **QA engineer** for this task. Given the GitHub issue
 **$ARGUMENTS**, write (or update) godog `.feature` files under
 `test/integration/features/` that validate the **real expectations** described
 in the task and its spec.
@@ -58,30 +58,34 @@ task touches.
 
 ## Step 1 — Read the task and its spec
 
-Use the Linear MCP tools:
-- `mcp__linear__get_issue` for **$ARGUMENTS** — title, description, acceptance
-  criteria, linked docs.
-- `mcp__linear__list_comments` — clarifications and scope changes often live here.
+Follow `.claude/skills/github-issues.md` to resolve **$ARGUMENTS** to one issue and its `XEN-NNN` task id, then
+read it:
 
-Then get onto the task branch (lowercased id, e.g. `plt-1673`) — the one
+```bash
+gh issue view <n> --repo brienze1/xenon --json number,title,body,labels,state,url,comments
+```
+
+The body holds the description and acceptance criteria; clarifications and scope changes often live in the comments.
+
+Then get onto the task branch (lowercased id, e.g. `xen-008`) — the one
 `/spec-task` pushed:
 
 ```bash
 git fetch origin
-git ls-remote --heads origin plt-1673   # exists → check it out / rebase onto it
+git ls-remote --heads origin xen-008   # exists → check it out / rebase onto it
 ```
 
 If the branch doesn't exist yet, create it from a freshly fetched
-`origin/main` (`git checkout -b plt-1673 origin/main`).
+`origin/main` (`git checkout -b xen-008 origin/main`).
 
 **The Spec Kit spec is the primary source** when it exists:
-`specs/<LINEAR-ID>-<slug>/` (`ls specs/ | grep -i <LINEAR-ID>`). Pull functional
+`specs/<XEN-ID>-<slug>/` (`ls specs/ | grep -i <XEN-ID>`). Pull functional
 requirements and acceptance scenarios from `spec.md`, the concrete technical
 shape (endpoints/fields/tables) from `plan.md` and `contracts/`, and the
-feature files it promised from `tasks.md`. If the spec and the raw Linear
+feature files it promised from `tasks.md`. If the spec and the raw issue
 description disagree, the spec wins (it's the researched version) — but note
 the discrepancy rather than silently picking one. No spec → fall back to the
-Linear description/comments.
+issue description/comments.
 
 Extract, in your own words: **what changes**, **the exact expected value(s)**,
 **the scope boundary** (what must stay UNCHANGED), and any **edge cases /
@@ -163,8 +167,8 @@ features up from the branch, so they must be pushed:
 
 ```bash
 git add test/integration/
-git commit -m "test(<LINEAR-ID>): red BDD scenarios for <short-name>"
-git push -u origin plt-1673
+git commit -m "test(<XEN-ID>): red BDD scenarios for <short-name>"
+git push -u origin xen-008
 ```
 
 Stage only `test/integration/` — never sweep in unrelated work. **Do not open a
@@ -176,5 +180,5 @@ PR.**
   the existing catalog couldn't express it).
 - Which scenarios are red (expected — not implemented yet) vs green, with the
   one-line reason for each red.
-- Any discrepancy between spec and Linear you noticed.
-- Next in the flow: `/implement-task <LINEAR-ID>`.
+- Any discrepancy between spec and issue you noticed.
+- Next in the flow: `/implement-task <XEN-ID>`.
