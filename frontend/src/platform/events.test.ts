@@ -26,6 +26,35 @@ describe('platform events', () => {
     expect(callback).toHaveBeenCalledWith({ localId: 'L1' })
   })
 
+  it('maps the AI access events', () => {
+    const status = vi.fn()
+    expect(events.onAIAccessStatusChanged(status)).toBe(unsubscribe)
+    handlers.get(events.AI_ACCESS_STATUS_CHANGED)?.({ data: { state: 'error', reason: 'port 47821 is in use', code: 'MCP-01500', clients: 0 } })
+    expect(status).toHaveBeenCalledWith({ state: 'error', address: null, reason: 'port 47821 is in use', code: 'MCP-01500', clients: 0 })
+    const requested = vi.fn()
+    events.onApprovalRequested(requested)
+    handlers.get(events.AI_APPROVAL_REQUESTED)?.({
+      data: { id: 'a1', client: 'Claude Code', method: 'POST', url: '{{base}}/orders', environment: { id: 'e1', name: 'Production', color: 'red' }, created_at: '2026-10-13T10:00:00Z' },
+    })
+    expect(requested).toHaveBeenCalledWith({ id: 'a1', client: 'Claude Code', method: 'POST', url: '{{base}}/orders', environment: { id: 'e1', name: 'Production', color: 'red' }, createdAt: '2026-10-13T10:00:00Z' })
+    const resolved = vi.fn()
+    events.onApprovalResolved(resolved)
+    handlers.get(events.AI_APPROVAL_RESOLVED)?.({ data: { id: 'a1', outcome: 'denied' } })
+    expect(resolved).toHaveBeenCalledWith({ id: 'a1', outcome: 'denied' })
+  })
+
+  it('maps history:changed and workspaces:changed payloads', () => {
+    const history = vi.fn()
+    events.onHistoryChanged(history)
+    handlers.get(events.HISTORY_CHANGED)?.({ data: { local_id: 'L1' } })
+    expect(history).toHaveBeenCalledWith('L1')
+    const workspaces = vi.fn()
+    events.onWorkspacesChanged(workspaces)
+    handlers.get(events.WORKSPACES_CHANGED)?.({ data: { active_local_id: 'L2' } })
+    handlers.get(events.WORKSPACES_CHANGED)?.({ data: { active_local_id: '' } })
+    expect(workspaces.mock.calls).toEqual([['L2'], [null]])
+  })
+
   it('maps git:host-key-unknown payloads', () => {
     const callback = vi.fn()
     expect(events.onGitHostKeyUnknown(callback)).toBe(unsubscribe)

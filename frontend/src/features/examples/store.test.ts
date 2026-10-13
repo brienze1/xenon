@@ -212,7 +212,7 @@ describe('examples store', () => {
         snippetOptions: [],
         activeTabId: 'tab-x',
         previewTabId: null,
-        sidebar: { expanded: [], selectedId: null, view: 'collections', search: '' },
+        sidebar: { expanded: [], selectedId: null, view: 'collections', search: '', historySource: 'all' },
         layout: useWorkspacesStore.getState().layout,
       })
     })

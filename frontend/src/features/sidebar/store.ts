@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import { toAppError, type AppError } from '@/platform/errors'
-import type { HistoryEntry } from '@/platform/mappers/history'
+import type { HistoryActivity, HistoryEntry, HistorySourceFilter } from '@/platform/mappers/history'
 import type { RequestDraft } from '@/platform/mappers/request'
 import type { TreeNode, TreeSearchResult } from '@/platform/mappers/tree'
 import type { SidebarView } from '@/platform/mappers/ui-state'
@@ -33,6 +33,8 @@ interface SidebarState {
   history: HistoryEntry[]
   historyStatus: SidebarStatus
   historyQuery: string
+  /** The History view's source filter (All / User / AI), remembered per workspace. */
+  historySource: HistorySourceFilter
   tree: TreeNode[]
   status: SidebarStatus
   error: AppError | null
@@ -51,7 +53,11 @@ interface SidebarState {
   setView: (view: SidebarView) => void
   loadHistory: () => Promise<void>
   setHistoryQuery: (query: string) => void
+  setHistorySource: (source: HistorySourceFilter) => void
+  /** Clears the entries the current source filter shows. */
   clearHistory: () => Promise<AppError | null>
+  /** An AI action row's detail: what it did, with its masked arguments. */
+  loadHistoryActivity: (id: string) => Promise<Result<HistoryActivity | null, AppError>>
   openHistoryEntry: (id: string) => Promise<RequestDraft | null>
   setQuery: (query: string) => void
   toggle: (id: string) => void
@@ -94,6 +100,7 @@ const initialState = {
   history: [] as HistoryEntry[],
   historyStatus: 'idle' as SidebarStatus,
   historyQuery: '',
+  historySource: 'all' as HistorySourceFilter,
   tree: [] as TreeNode[],
   status: 'idle' as SidebarStatus,
   error: null as AppError | null,
@@ -169,8 +176,8 @@ export const useSidebarStore = create<SidebarState>()((set, get) => {
 
     setTree: (tree) => set({ tree, status: 'ready', error: null }),
 
-    applyState: ({ expanded, selectedId, query, view }) => {
-      set({ expanded, selectedId })
+    applyState: ({ expanded, selectedId, query, view, historySource }) => {
+      set({ expanded, selectedId, historySource })
       get().setQuery(query)
       get().setView(view)
     },
@@ -183,11 +190,11 @@ export const useSidebarStore = create<SidebarState>()((set, get) => {
     },
 
     loadHistory: async () => {
-      const query = get().historyQuery
+      const { historyQuery: query, historySource: source } = get()
       set((state) => ({ historyStatus: state.historyStatus === 'ready' ? 'ready' : 'loading' }))
       await run(async (localId) => {
-        const history = await listHistory(localId, { query })
-        if (activeLocalId() === localId && get().historyQuery === query) {
+        const history = await listHistory(localId, { query, source })
+        if (activeLocalId() === localId && get().historyQuery === query && get().historySource === source) {
           set({ history, historyStatus: 'ready' })
         }
       })
@@ -202,13 +209,26 @@ export const useSidebarStore = create<SidebarState>()((set, get) => {
       historyTimer = setTimeout(() => void get().loadHistory(), SEARCH_DELAY_MS)
     },
 
+    setHistorySource: (source) => {
+      if (source === get().historySource) {
+        return
+      }
+      set({ historySource: source })
+      void get().loadHistory()
+    },
+
     clearHistory: async () => {
+      const source = get().historySource
       const cleared = await settle(async (localId) => {
-        await clearHistory(localId)
-        set({ history: [] })
+        await clearHistory(localId, source)
+        if (get().historySource === source) {
+          set({ history: [] })
+        }
       })
       return cleared.ok ? null : cleared.error
     },
+
+    loadHistoryActivity: (id) => settle(async (localId) => (await getHistoryEntry(localId, id)).activity),
 
     openHistoryEntry: (id) =>
       run(async (localId) => {

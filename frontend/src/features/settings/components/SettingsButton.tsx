@@ -1,5 +1,5 @@
 import { IconButton } from '@/shared/ui/icon-button/IconButton'
-import { useSettingsStore } from '@/features/settings/store'
+import { useTabsStore } from '@/features/tabs/store'
 import styles from './SettingsButton.module.css'
 
 const GEAR = (
@@ -10,9 +10,9 @@ const GEAR = (
 )
 
 export function SettingsButton() {
-  const openSettings = useSettingsStore((state) => state.openSettings)
+  const openSettingsTab = useTabsStore((state) => state.openSettingsTab)
   return (
-    <IconButton label="Settings" onClick={() => void openSettings()}>
+    <IconButton label="Settings" onClick={openSettingsTab}>
       {GEAR}
     </IconButton>
   )

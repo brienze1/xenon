@@ -36,6 +36,21 @@ vi.mock('@/platform/services/tree', async (importOriginal) => ({
   getItemSettings: vi.fn(),
   saveItemSettings: vi.fn(),
 }))
+vi.mock('@/platform/services/settings', () => ({
+  SCRIPT_TIMEOUT_OUT_OF_RANGE: 'SCR-01400',
+  HISTORY_USER_CAP_OUT_OF_RANGE: 'SET-02400',
+  HISTORY_AI_CAP_OUT_OF_RANGE: 'SET-03400',
+  AI_PORT_OUT_OF_RANGE: 'SET-04400',
+  getSettings: vi.fn(async () => ({ scriptTimeoutMs: 10000, historyUserCap: 1000, historyAiCap: 1000, aiAccess: { enabled: true, port: 47821, skipApprovals: false } })),
+  saveSettings: vi.fn(),
+}))
+vi.mock('@/platform/services/ai-access', () => ({
+  getAIAccessStatus: vi.fn(async () => ({ state: 'off', address: null, reason: null, code: null, clients: 0, stdioCommand: '', httpConfig: '', stdioConfig: '' })),
+  copyText: vi.fn(),
+  listPendingApprovals: vi.fn(async () => []),
+  answerApproval: vi.fn(),
+}))
+vi.mock('@/platform/services/git-accounts', () => ({ GITHUB_SIGN_IN_NOT_CONFIGURED: 'ACC-01503', listGitAccounts: vi.fn(async () => []) }))
 vi.mock('@/platform/services/dialogs', () => ({ pickFolder: vi.fn(), pickFile: vi.fn(), pickSaveFile: vi.fn() }))
 vi.mock('@/platform/services/ui-state', () => ({ getUIState: vi.fn(), saveUIState: vi.fn(async () => undefined) }))
 vi.mock('@/platform/services/requests', () => ({
@@ -62,6 +77,8 @@ const { useResponseViewerStore } = await import('@/features/response-viewer/stor
 const { useSidebarStore } = await import('@/features/sidebar/store')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { useSearchStore } = await import('@/features/search/store')
+const { useSettingsStore } = await import('@/features/settings/store')
+const { useAIAccessStore } = await import('@/features/ai-access/store')
 const { bootstrap, openLastWorkspace } = await import('./bootstrap')
 const { App } = await import('./App')
 
@@ -121,6 +138,44 @@ describe('App', () => {
     await renderApp()
     expect(await screen.findByRole('form', { name: 'Create workspace' })).toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: 'Sidebar' })).not.toBeInTheDocument()
+  })
+
+  it('opens Settings as a full page with no workspace, from the gear button and Cmd/Ctrl+, and closes back to the welcome screen', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [], activeLocalId: null })
+    await renderApp()
+    await screen.findByRole('form', { name: 'Create workspace' })
+    await userEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    expect(await screen.findByRole('heading', { name: 'Settings' })).toBeInTheDocument()
+    expect(screen.queryByRole('form', { name: 'Create workspace' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tablist', { name: 'Open requests' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Close Settings' }))
+    expect(screen.getByRole('form', { name: 'Create workspace' })).toBeInTheDocument()
+    press(',')
+    expect(await screen.findByRole('heading', { name: 'Settings' })).toBeInTheDocument()
+    act(() => useSettingsStore.getState().closePage())
+  })
+
+  it('opens the single Settings tab with Cmd/Ctrl+, and the gear button', async () => {
+    await renderWorkspace()
+    press(',')
+    expect(openTabs()).toHaveLength(2)
+    expect(await screen.findByRole('heading', { name: 'Settings' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'AI access (MCP)' })).toBeInTheDocument()
+    expect(screen.queryByRole('complementary', { name: 'Side panel' })).not.toBeInTheDocument()
+    const settingsTabId = useTabsStore.getState().activeTabId
+    act(() => useTabsStore.getState().cycle(1))
+    expect(useTabsStore.getState().activeTabId).not.toBe(settingsTabId)
+    await userEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    expect(openTabs()).toHaveLength(2)
+    expect(useTabsStore.getState().activeTabId).toBe(settingsTabId)
+  })
+
+  it('mounts the AI approval prompt', async () => {
+    await renderWorkspace()
+    act(() => useAIAccessStore.getState().add({ id: 'a1', client: 'Claude Code', method: 'GET', url: '{{base}}/x', environment: { id: 'e1', name: 'Production', color: 'red' }, createdAt: 't' }))
+    expect(screen.getByRole('dialog', { name: 'Approve AI Request?' })).toBeInTheDocument()
+    act(() => useAIAccessStore.getState().resolve('a1'))
+    expect(screen.queryByRole('dialog', { name: 'Approve AI Request?' })).not.toBeInTheDocument()
   })
 
   it('reopens the last active workspace in the full window layout', async () => {

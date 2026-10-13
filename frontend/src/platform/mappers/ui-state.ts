@@ -3,6 +3,7 @@ import type {
   Tab as TabDto,
   UIState as UIStateDto,
 } from '../../../bindings/github.com/brienze1/xenon/internal/integration/entrypoint/dto/models'
+import { toHistorySourceFilter, type HistorySourceFilter } from './history'
 import { toRequestDraft, toRequestDto, type RequestDraft } from './request'
 
 export type SidebarView = 'collections' | 'history' | 'environments'
@@ -10,9 +11,10 @@ export type SplitOrientation = 'stacked' | 'side-by-side'
 
 /**
  * `environment` and `globals` tabs edit variables instead of a request; `collection` and `folder`
- * tabs edit the settings that the requests below the item inherit.
+ * tabs edit the settings that the requests below the item inherit; the single `settings` tab edits
+ * the app settings.
  */
-export type TabKind = 'request' | 'example' | 'environment' | 'globals' | 'collection' | 'folder'
+export type TabKind = 'request' | 'example' | 'environment' | 'globals' | 'collection' | 'folder' | 'settings'
 
 export interface TabState {
   tabId: string
@@ -35,6 +37,8 @@ export interface SidebarUIState {
   selectedId: string | null
   view: SidebarView
   search: string
+  /** The History view's source filter, remembered per workspace. */
+  historySource: HistorySourceFilter
 }
 
 export interface LayoutState {
@@ -92,7 +96,7 @@ export function defaultUIState(): UIState {
     snippetOptions: [],
     activeTabId: null,
     previewTabId: null,
-    sidebar: { expanded: [], selectedId: null, view: 'collections', search: '' },
+    sidebar: { expanded: [], selectedId: null, view: 'collections', search: '', historySource: 'all' },
     layout: defaultLayout(),
   }
 }
@@ -108,8 +112,8 @@ function toSidebarView(view: string): SidebarView {
 }
 
 function toTabKind(dto: TabDto): TabKind {
-  if (dto.kind === 'globals') {
-    return 'globals'
+  if (dto.kind === 'globals' || dto.kind === 'settings') {
+    return dto.kind
   }
   if (dto.kind === 'environment' && dto.environment_id) {
     return 'environment'
@@ -163,6 +167,7 @@ export function toUIState(dto: UIStateDto | null): UIState {
       selectedId: orNull(dto.sidebar.selected_id),
       view: toSidebarView(dto.sidebar.view),
       search: dto.sidebar.search,
+      historySource: toHistorySourceFilter(dto.history_source),
     },
     layout: toLayout(dto.layout),
   }
@@ -188,6 +193,7 @@ export function toUIStateDto(localId: string, state: UIState): UIStateDto {
     version: 1,
     active_tab_id: state.activeTabId ?? '',
     preview_tab_id: state.previewTabId ?? '',
+    history_source: state.sidebar.historySource,
     tabs: state.tabs.map(toTabDto),
     closed_tabs: state.closedTabs.map((closed) => ({ closed_at: closed.closedAt, tab: toTabDto(closed.tab) })),
     snippet_options: state.snippetOptions.map((saved) => ({ language: saved.language, options: saved.options })),

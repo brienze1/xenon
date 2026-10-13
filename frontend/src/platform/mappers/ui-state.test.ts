@@ -13,12 +13,13 @@ const LAYOUT = {
   split_ratio: 0.5,
 }
 
-function dto(tabs: object[], view = 'collections') {
+function dto(tabs: object[], view = 'collections', historySource?: string) {
   return {
     local_id: 'ws',
     version: 1,
     active_tab_id: '',
     preview_tab_id: '',
+    history_source: historySource,
     tabs,
     closed_tabs: [],
     snippet_options: [],
@@ -79,5 +80,19 @@ describe('ui-state mapper', () => {
     const state = { ...defaultUIState(), tabs: [{ tabId: 'e', kind: 'environment' as const, environmentId: 'env1', requestId: null, pinned: false, baseRevision: null, draft: null }] }
     const written = toUIStateDto('ws', state)
     expect(written.tabs?.[0]).toMatchObject({ kind: 'environment', environment_id: 'env1', request_id: '' })
+  })
+
+  it('reads and writes the settings tab', () => {
+    const state = toUIState(dto([{ ...TAB, tab_id: 's', kind: 'settings' }]))
+    expect(state.tabs[0]).toMatchObject({ tabId: 's', kind: 'settings', requestId: null })
+    expect(toUIStateDto('ws', state).tabs?.[0]).toMatchObject({ tab_id: 's', kind: 'settings' })
+  })
+
+  it('remembers the history source filter, defaulting to all', () => {
+    expect(toUIState(dto([], 'history', 'ai')).sidebar.historySource).toBe('ai')
+    expect(toUIState(dto([], 'history', 'robots')).sidebar.historySource).toBe('all')
+    expect(toUIState(dto([])).sidebar.historySource).toBe('all')
+    const state = { ...defaultUIState(), sidebar: { ...defaultUIState().sidebar, historySource: 'user' as const } }
+    expect(toUIStateDto('ws', state).history_source).toBe('user')
   })
 })

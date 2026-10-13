@@ -6,11 +6,12 @@ import { useTabsStore } from '@/features/tabs/store'
 
 export const UNTITLED_REQUEST = 'Untitled Request'
 export const GLOBALS_TITLE = 'Globals'
+export const SETTINGS_TITLE = 'Settings'
 const UNKNOWN_ENVIRONMENT = 'Environment'
 const UNKNOWN_COLLECTION = 'Collection'
 const UNKNOWN_FOLDER = 'Folder'
 
-/** The name a tab shows: its request's, environment's, collection's or folder's name, or "Globals". */
+/** The name a tab shows: its request's, environment's, collection's or folder's name, "Globals" or "Settings". */
 export function useTabTitle(tabId: string | null): string {
   const kind = useTabsStore((state) => state.tabs.find((tab) => tab.id === tabId)?.kind)
   const environmentId = useTabsStore((state) => state.tabs.find((tab) => tab.id === tabId)?.environmentId ?? null)
@@ -26,6 +27,9 @@ export function useTabTitle(tabId: string | null): string {
   }
   if (kind === 'globals') {
     return GLOBALS_TITLE
+  }
+  if (kind === 'settings') {
+    return SETTINGS_TITLE
   }
   if (kind === 'environment') {
     return environmentName ?? UNKNOWN_ENVIRONMENT

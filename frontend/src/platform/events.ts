@@ -1,4 +1,5 @@
 import { Events } from '@wailsio/runtime'
+import { toAIAccessRuntime, toPendingApproval, type AIAccessRuntime, type PendingApproval } from './mappers/ai-access'
 import { toConsoleEntriesEvent, type ConsoleEntriesEvent } from './mappers/console'
 import { toSyncStatus, type SyncStatus } from './mappers/sync'
 import { toVaultStatus, type VaultStatus } from './mappers/vault'
@@ -20,6 +21,11 @@ export const COOKIES_CHANGED = 'cookies:changed'
 export const GIT_HOST_KEY_UNKNOWN = 'git:host-key-unknown'
 export const GIT_STATUS_CHANGED = 'git:status-changed'
 export const GIT_PROGRESS = 'git:progress'
+export const AI_ACCESS_STATUS_CHANGED = 'ai:access-status-changed'
+export const AI_APPROVAL_REQUESTED = 'ai:approval-requested'
+export const AI_APPROVAL_RESOLVED = 'ai:approval-resolved'
+export const HISTORY_CHANGED = 'history:changed'
+export const WORKSPACES_CHANGED = 'workspaces:changed'
 
 export interface WorkspaceTreeChanged {
   localId: string
@@ -73,7 +79,48 @@ export interface GitProgress {
   total: number
 }
 
+export interface ApprovalResolved {
+  id: string
+  /** approved, denied, timed_out or cancelled (app quitting, client gone). */
+  outcome: string
+}
+
 type Unsubscribe = () => void
+
+/** The MCP server started, stopped, failed, or its client count changed. */
+export function onAIAccessStatusChanged(callback: (status: AIAccessRuntime) => void): Unsubscribe {
+  return Events.On(AI_ACCESS_STATUS_CHANGED, (event) => {
+    callback(toAIAccessRuntime(event.data))
+  })
+}
+
+/** An AI send to a confirm-before-send environment waits for Approve / Deny. */
+export function onApprovalRequested(callback: (approval: PendingApproval) => void): Unsubscribe {
+  return Events.On(AI_APPROVAL_REQUESTED, (event) => {
+    callback(toPendingApproval(event.data))
+  })
+}
+
+/** A pending approval was answered, timed out, or cancelled; its prompt goes away. */
+export function onApprovalResolved(callback: (resolved: ApprovalResolved) => void): Unsubscribe {
+  return Events.On(AI_APPROVAL_RESOLVED, (event) => {
+    callback({ id: event.data.id, outcome: event.data.outcome })
+  })
+}
+
+/** A workspace's history gained or lost entries (a user or AI send, an AI action, a clear). */
+export function onHistoryChanged(callback: (localId: string) => void): Unsubscribe {
+  return Events.On(HISTORY_CHANGED, (event) => {
+    callback(event.data.local_id)
+  })
+}
+
+/** MCP created, opened, renamed, removed or switched a workspace; `activeLocalId` is empty when none is active. */
+export function onWorkspacesChanged(callback: (activeLocalId: string | null) => void): Unsubscribe {
+  return Events.On(WORKSPACES_CHANGED, (event) => {
+    callback(event.data.active_local_id ? event.data.active_local_id : null)
+  })
+}
 
 export function onGitStatusChanged(callback: (event: GitStatusChanged) => void): Unsubscribe {
   return Events.On(GIT_STATUS_CHANGED, (event) => {

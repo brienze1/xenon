@@ -107,20 +107,20 @@ export function getDocumentation(localId: string, itemId: string): Promise<Docum
 /** Reads edited YAML without writing anything; fails with the line and column of the first problem. */
 export function previewDocumentation(localId: string, itemId: string, yaml: string): Promise<Documentation> {
   return call(async () =>
-    toDocumentation(required(await TreeService.PreviewDocumentation({ local_id: localId, id: itemId, yaml, confirm_deletions: false }))),
+    toDocumentation(required(await TreeService.PreviewDocumentation({ local_id: localId, id: itemId, yaml, confirm_deletions: false, keep_deleted: false }))),
   )
 }
 
 /** What saving the edited YAML would change, without writing anything. */
 export function planDocumentation(localId: string, itemId: string, yaml: string): Promise<DocumentationPlan> {
   return call(async () =>
-    toDocumentationPlan(required(await TreeService.PlanDocumentation({ local_id: localId, id: itemId, yaml, confirm_deletions: false }))),
+    toDocumentationPlan(required(await TreeService.PlanDocumentation({ local_id: localId, id: itemId, yaml, confirm_deletions: false, keep_deleted: false }))),
   )
 }
 
 /** Writes every change of the edited YAML onto the requests of the collection or folder; deletions need `confirmDeletions`. */
 export function applyDocumentation(localId: string, itemId: string, yaml: string, confirmDeletions: boolean): Promise<DocumentationApplied> {
   return call(async () =>
-    toDocumentationApplied(required(await TreeService.ApplyDocumentation({ local_id: localId, id: itemId, yaml, confirm_deletions: confirmDeletions }))),
+    toDocumentationApplied(required(await TreeService.ApplyDocumentation({ local_id: localId, id: itemId, yaml, confirm_deletions: confirmDeletions, keep_deleted: false }))),
   )
 }

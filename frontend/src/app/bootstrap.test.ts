@@ -4,6 +4,7 @@ import type { ExportProgress, GitProgress, GitStatusChanged, HostKeyUnknown, Imp
 import type { SyncStatus } from '@/platform/mappers/sync'
 import type { ConsoleEntriesEvent } from '@/platform/mappers/console'
 import type { VaultStatus } from '@/platform/mappers/vault'
+import type { AIAccessRuntime, PendingApproval } from '@/platform/mappers/ai-access'
 
 const unsubscribe = vi.fn()
 const handlers: {
@@ -22,9 +23,34 @@ const handlers: {
   hostKeyUnknown?: (prompt: HostKeyUnknown) => void
   gitStatusChanged?: (event: GitStatusChanged) => void
   gitProgress?: (event: GitProgress) => void
+  historyChanged?: (localId: string) => void
+  workspacesChanged?: (activeLocalId: string | null) => void
+  approvalRequested?: (approval: PendingApproval) => void
+  approvalResolved?: (resolved: { id: string; outcome: string }) => void
+  aiAccessStatusChanged?: (status: AIAccessRuntime) => void
 } = {}
 
 vi.mock('@/platform/events', () => ({
+  onHistoryChanged: vi.fn((callback) => {
+    handlers.historyChanged = callback
+    return unsubscribe
+  }),
+  onWorkspacesChanged: vi.fn((callback) => {
+    handlers.workspacesChanged = callback
+    return unsubscribe
+  }),
+  onApprovalRequested: vi.fn((callback) => {
+    handlers.approvalRequested = callback
+    return unsubscribe
+  }),
+  onApprovalResolved: vi.fn((callback) => {
+    handlers.approvalResolved = callback
+    return unsubscribe
+  }),
+  onAIAccessStatusChanged: vi.fn((callback) => {
+    handlers.aiAccessStatusChanged = callback
+    return unsubscribe
+  }),
   onConsoleEntries: vi.fn((callback) => {
     handlers.consoleEntries = callback
     return unsubscribe
@@ -123,6 +149,14 @@ vi.mock('@/platform/services/requests', () => ({
 vi.mock('@/platform/services/tree', () => ({ getTree: vi.fn(), searchTree: vi.fn(), getItemSettings: vi.fn(), getDocumentation: vi.fn() }))
 vi.mock('@/platform/services/sync', () => ({ getSyncStatus: vi.fn(), listChanges: vi.fn(async () => []) }))
 vi.mock('@/platform/services/history', () => ({ listHistory: vi.fn(), getHistoryEntry: vi.fn(), clearHistory: vi.fn() }))
+vi.mock('@/platform/services/ai-access', () => ({
+  APPROVAL_ALREADY_RESOLVED: 'MCP-05409',
+  APPROVAL_UNKNOWN: 'MCP-07400',
+  listPendingApprovals: vi.fn(),
+  answerApproval: vi.fn(),
+  getAIAccessStatus: vi.fn(),
+  copyText: vi.fn(),
+}))
 
 const services = await import('@/platform/services/workspaces')
 const tree = await import('@/platform/services/tree')
@@ -133,6 +167,9 @@ const vault = await import('@/platform/services/vault')
 const variables = await import('@/platform/services/variables')
 const environments = await import('@/platform/services/environments')
 const sync = await import('@/platform/services/sync')
+const aiAccess = await import('@/platform/services/ai-access')
+const { useAIAccessStore } = await import('@/features/ai-access/store')
+const { useSettingsStore } = await import('@/features/settings/store')
 const { useSyncStore } = await import('@/features/sync/store')
 const { useEnvironmentsStore } = await import('@/features/environments/store')
 const { useItemSettingsStore } = await import('@/features/item-settings/store')
@@ -211,6 +248,8 @@ describe('bootstrap', () => {
     vi.mocked(environments.listEnvironments).mockResolvedValue({ environments: [], activeId: null })
     vi.mocked(sync.getSyncStatus).mockResolvedValue(syncStatus)
     vi.mocked(sync.listChanges).mockResolvedValue([])
+    vi.mocked(aiAccess.listPendingApprovals).mockResolvedValue([])
+    useAIAccessStore.setState({ pending: [], answering: null, error: null })
     useSyncStore.getState().reset(null)
     useWorkspacesStore.setState({ workspaces: [], activeLocalId: null, missingLocalId: null, status: 'idle', error: null })
   })
@@ -252,7 +291,7 @@ describe('bootstrap', () => {
     expect(useGitAccountsStore.getState().hostKeyPrompt).toEqual(prompt)
     useGitAccountsStore.setState({ hostKeyPrompt: null })
     cleanup()
-    expect(unsubscribe).toHaveBeenCalledTimes(15)
+    expect(unsubscribe).toHaveBeenCalledTimes(20)
   })
 
   it('opens the import dialog from the menu and from dropped files only when a workspace is active', async () => {
@@ -303,6 +342,71 @@ describe('bootstrap', () => {
     expect(tree.getTree).not.toHaveBeenCalled()
     handlers.treeChanged?.({ localId: 'A' })
     expect(tree.getTree).toHaveBeenCalledWith('A')
+    cleanup()
+  })
+
+  it('keeps following MCP writes through the tree and request-on-disk events', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
+    const cleanup = await started()
+    useWorkspacesStore.setState({ activeLocalId: 'A' })
+    handlers.treeChanged?.({ localId: 'A' })
+    expect(tree.getTree).toHaveBeenCalledWith('A')
+    const handle = vi.spyOn(useTabsStore.getState(), 'handleChangedOnDisk').mockResolvedValue()
+    const refreshDocs = vi.spyOn(useDocumentationStore.getState(), 'refreshAll').mockResolvedValue()
+    const event = { localId: 'A', requestId: 'r1', deleted: false, revision: 'rev-2' }
+    handlers.changedOnDisk?.(event)
+    expect(handle).toHaveBeenCalledWith(event)
+    expect(refreshDocs).toHaveBeenCalled()
+    handle.mockRestore()
+    refreshDocs.mockRestore()
+    cleanup()
+  })
+
+  it('reloads the shown history when the active workspace history changed', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
+    const cleanup = await started()
+    useWorkspacesStore.setState({ activeLocalId: 'A' })
+    useSidebarStore.getState().setView('history')
+    await vi.waitFor(() => expect(history.listHistory).toHaveBeenCalledTimes(1))
+    handlers.historyChanged?.('other')
+    expect(history.listHistory).toHaveBeenCalledTimes(1)
+    handlers.historyChanged?.('A')
+    expect(history.listHistory).toHaveBeenCalledTimes(2)
+    expect(history.listHistory).toHaveBeenLastCalledWith('A', { query: '', source: 'all' })
+    cleanup()
+  })
+
+  it('follows workspace changes made through MCP', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
+    const cleanup = await started()
+    const follow = vi.spyOn(useWorkspacesStore.getState(), 'follow').mockResolvedValue()
+    handlers.workspacesChanged?.('A')
+    expect(follow).toHaveBeenCalledWith('A')
+    follow.mockRestore()
+    cleanup()
+  })
+
+  it('queues AI approvals from start and from events, and follows the AI access status', async () => {
+    const approval = { id: 'a1', client: 'Claude Code', method: 'POST', url: '{{base}}/orders', environment: { id: 'e1', name: 'Production', color: 'red' }, createdAt: 't' }
+    vi.mocked(aiAccess.listPendingApprovals).mockResolvedValue([approval])
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
+    const cleanup = await started()
+    await vi.waitFor(() => expect(useAIAccessStore.getState().pending).toEqual([approval]))
+    handlers.approvalRequested?.({ ...approval, id: 'a2' })
+    expect(useAIAccessStore.getState().pending.map((pending) => pending.id)).toEqual(['a1', 'a2'])
+    handlers.approvalResolved?.({ id: 'a1', outcome: 'timed_out' })
+    expect(useAIAccessStore.getState().pending.map((pending) => pending.id)).toEqual(['a2'])
+    handlers.aiAccessStatusChanged?.({ state: 'running', address: 'http://127.0.0.1:47821/mcp', reason: null, code: null, clients: 1 })
+    expect(useSettingsStore.getState().aiStatus).toMatchObject({ state: 'running', address: 'http://127.0.0.1:47821/mcp', clients: 1 })
+    cleanup()
+  })
+
+  it('closes the full-page Settings once a workspace is active', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
+    const cleanup = await started()
+    useSettingsStore.getState().openPage()
+    useWorkspacesStore.setState({ activeLocalId: 'A' })
+    expect(useSettingsStore.getState().pageOpen).toBe(false)
     cleanup()
   })
 

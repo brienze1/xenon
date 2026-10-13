@@ -2,6 +2,7 @@ import { EnvironmentTab } from '@/features/environments/components/EnvironmentTa
 import { GlobalsTab } from '@/features/environments/components/GlobalsTab'
 import { VaultBrokenNotice } from '@/features/environments/components/VaultBrokenNotice'
 import { SaveAsExampleDialog } from '@/features/examples/components/SaveAsExampleDialog'
+import { SettingsTab } from '@/features/settings/components/SettingsTab'
 import { CloseTabPrompt } from '@/features/tabs/components/CloseTabPrompt'
 import { SaveRequestDialog } from '@/features/tabs/components/SaveRequestDialog'
 import { TabNotice } from '@/features/tabs/components/TabNotice'
@@ -11,6 +12,7 @@ import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
 import { PanelPlusArt } from '@/shared/ui/empty-state/illustrations/PanelPlusArt'
 import { Button } from '@/shared/ui/button/Button'
 import { activeTabKind } from '@/app/active-tab'
+import { HOTKEYS } from '@/app/hotkeys'
 import { ExampleWorkspace } from './ExampleWorkspace'
 import { ItemWorkspace } from './ItemWorkspace'
 import { RequestWorkspace } from './RequestWorkspace'
@@ -31,6 +33,8 @@ const TAB_DIALOGS = (
     <SaveAsExampleDialog onCreated={openCreatedExample} />
   </>
 )
+
+const SETTINGS_TAB = <SettingsTab shortcuts={HOTKEYS} />
 
 const NO_TABS_INTRO = (
   <>
@@ -58,7 +62,9 @@ export function TabsArea() {
         <>
           <TabNotice tabId={activeTabId} />
           <div className={styles.workspace}>
-            {kind === 'globals' ? (
+            {kind === 'settings' ? (
+              SETTINGS_TAB
+            ) : kind === 'globals' ? (
               <GlobalsTab key={activeTabId} />
             ) : (kind === 'collection' || kind === 'folder') && itemId ? (
               <ItemWorkspace key={`${activeTabId}:${itemId}`} itemId={itemId} kind={kind} onSave={() => void save(activeTabId)} />
