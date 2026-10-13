@@ -25,8 +25,8 @@ Every decision below is final. Facts come from this repository (paths cited) or 
   - The server is an `http.Server` on `127.0.0.1:<port>` serving `/mcp` through `StreamableHTTPHandler`, in stateful
     mode so the session carries the client name.
   - The default port is **47821**. It is a fixed, unassigned, high port, configurable within 1024–65535.
-  - `properties.MCPPortOverride` comes from `XENON_MCP_PORT`, and BDD uses `0` for an ephemeral port. The actual bound
-    address is reported by `Status()`.
+  - `properties.MCPPortOverride` comes from `XENON_MCP_PORT` and replaces the default port while no port is saved. BDD
+    sets it to a free port chosen per scenario. The actual bound address is reported by `Status()`.
   - The server starts from a Wails service's `ServiceStartup`, as `binding/request.go:80` already does for
     `ServiceShutdown`, when `settings.aiAccess.enabled`. It stops in `ServiceShutdown`, which also denies pending
     approvals.

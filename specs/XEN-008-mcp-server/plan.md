@@ -241,7 +241,8 @@ controllers, then services, then use cases.
 | `test/integration/features/mcp/authoring.feature` | US3 sc. 1–5; FR-009, FR-012, FR-013 (docs), FR-016 (events) |
 | `test/integration/features/mcp/environments.feature` | US4 sc. 1–2; FR-011 |
 | `test/integration/features/mcp/workspaces.feature` | US4 sc. 7; FR-008, "no active workspace" edge case |
-| `test/integration/features/mcp/other_tools.feature` | US4 sc. 4–6; FR-013, FR-014 (import, export, snippets, cookies, console, scripts, settings, oauth metadata, git) |
+| `test/integration/features/mcp/other_tools.feature` | US4 sc. 4–5; FR-013, FR-014 (import, export, snippets, cookies, console, scripts, settings) |
+| `test/integration/features/mcp/git.feature` | US4 sc. 6; FR-013 git sync (status, changes, commit, push, pull, unlink), FR-015 accounts human-only, FR-016 git events |
 | `test/integration/features/mcp/approvals.feature` | US5 sc. 1–6; FR-026–029 |
 | `test/integration/features/history/ai_activity.feature` | US6 sc. 1–8; FR-031–035 |
 | `test/integration/features/settings/app_settings.feature` | FR-003 fields, FR-004 apply-now, FR-006 (not changeable via MCP), FR-034 caps validation |

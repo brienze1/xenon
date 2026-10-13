@@ -15,7 +15,7 @@
 
 | Binding.Method | Change |
 | --- | --- |
-| `SettingsService.Get` / `Save` | DTO gains `history_user_cap`, `history_ai_cap`, `ai_access:{enabled, port, skip_approvals}`; Save validates all (`SCR-01400`, `SET-02400`, `SET-03400`, `SET-04400`) and applies AI access immediately (FR-004) |
+| `SettingsService.Get` / `Save` | DTO gains `history_user_cap`, `history_ai_cap`, `ai_access:{enabled, port, skip_approvals}`. Save leaves **omitted fields unchanged** (so `{ "script_timeout_ms": 2500 }` keeps the caps and AI access), then validates all (`SCR-01400`, `SET-02400`, `SET-03400`, `SET-04400`) and applies AI access immediately (FR-004) |
 | `HistoryService.List` | input gains `source` (`all`\|`user`\|`ai`, default `all`); rows gain `kind`, `source`, `client`, `activity{tool,action,target,outcome,code,duration_ms}` |
 | `HistoryService.Get` | action entries return `activity` incl. masked `args` |
 | `HistoryService.Clear` | input gains `source` (default `all`) — clears only that source |

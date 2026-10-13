@@ -5,7 +5,7 @@ Server: `http://127.0.0.1:<port>/mcp` (Streamable HTTP). Implementation name `xe
 ## Conventions (all tools)
 
 - **Limits**: a request body over 4 MiB is rejected with HTTP 413. A rejected Host or Origin gets HTTP 403 and a
-  warning log line, without the body.
+  warning log line containing `MCP request rejected` and the reason (`host` or `origin`), without the body.
 - **Arguments**: `action` (enum, required where the tool has more than one action) plus action-specific fields. Ids
   are Xenon ids (ULIDs) as returned by list/get. Unknown actions or invalid arguments return `MCP-07400`.
 - **Workspace**: every tool except `workspace` / `workspace_edit` acts on the active workspace. When none is active it
@@ -36,7 +36,7 @@ Server: `http://127.0.0.1:<port>/mcp` (Streamable HTTP). Implementation name `xe
   actions).
 - **Descriptions**: the exact one-sentence description is given per tool below.
 
-Item kinds in `tree`: `collection`, `folder`, `request`, `example`.
+Item kinds in `tree`: `collection`, `folder`, `request`, `example`. An item's `path` is its ancestors' names and its own name joined with ` / ` (for example `Billing / Invoices / List invoices`). An id that is not in the active workspace returns `MCP-08404`.
 
 ---
 
@@ -54,7 +54,7 @@ Controllers: `WorkspaceList.Handle` (its result marks the active workspace).
 ### 2. `tree` — R — "Browse, read and search collections, folders, requests and examples."
 | action | args | returns |
 | --- | --- | --- |
-| `list` | `parent_id?` (omit → collections), `depth?` (1 default; `"all"` = full tree) | `items:[{id,kind,name,method?,children?}]` (children = count; nested `items` only when depth > 1) |
+| `list` | `parent_id?` (omit → collections), `depth?` (integer ≥ 1, default 1; `"all"` = full tree) | `items:[{id,kind,name,method?,children?}]` (children = count; nested `items` only when depth > 1) |
 | `get` | `id` | the item: request → `{id,name,method,url,params,headers,body,auth,scripts?,description?,path}`; folder/collection → `{id,kind,name,description?,path,children}`; example → `{id,name,request,response}` |
 | `settings` | `id` (collection/folder) | `{auth,headers,scripts,variables,description}` (secret variable values `•••••`) |
 | `search` | `query`, `limit?` | `items:[{id,kind,name,method?,path}]` |
@@ -123,8 +123,8 @@ Controller: `SyncManage.Status/Changes`, `SyncConflict.Session`.
 ### 11. `scripts` — R — "Check a script for errors or read the scripting reference."
 | action | args | returns |
 | --- | --- | --- |
-| `check` | `code`, `phase` (`pre`\|`post`) | `{errors:[{line,column,message}]}` |
-| `reference` | `topic?` | compact `pm.*` reference text |
+| `check` | `text` (the script) | `{errors:[{line,column,message}]}` |
+| `reference` | — | `{members:[{path,kind}]}` (the `pm.*` reference, as `ScriptService.Reference` returns it) |
 | `snippets` | — | `items:[{id,name,code}]` |
 Controller: `ScriptTools`.
 
@@ -179,7 +179,7 @@ Notify: `VariablesChanged`.
 Notify: `WorkspaceTreeChanged`.
 
 ### 17. `cookies_edit` — D — "Add or edit cookies and the cookie allowlist."
-`upsert {domain,name,value,path?,expires?,secure?,http_only?}` → `Cookie.Upsert`; `allowlist {domains}` →
+`upsert {domain, raw}` (`raw` is a Set-Cookie line) → `Cookie.Upsert`; `allowlist {domains}` →
 `Cookie.SaveAllowlist`. Notify: `CookiesChanged`.
 
 ### 18. `git_edit` — D — "Link, configure, commit, pull and resolve git sync for the workspace."
@@ -188,7 +188,7 @@ Notify: `WorkspaceTreeChanged`.
 | `link` | `url`, `branch`, `subfolder?`, `account_id`, `use_repo_workspace?` | `SyncLink.Link` |
 | `clone` | `url`, `branch`, `subfolder?`, `account_id`, `path` | `SyncLink.CloneAsWorkspace` |
 | `settings` | `auto_pull?`, `auto_push?`, … | `SyncManage.SaveSettings` |
-| `commit` | `message`, `paths?` (default: all) | `SyncTransfer.Commit` |
+| `commit` | `message`, `item_ids?` (default: every changed item) | `SyncTransfer.Commit` |
 | `pull` | — | `SyncTransfer.Pull` (may open a conflict session) |
 | `resolve` | `items:[{id, choice}]` | `SyncConflict.Resolve` |
 | `finish_pull` / `cancel_pull` | — | `SyncConflict.FinishPull/CancelPull` |

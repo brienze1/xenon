@@ -35,24 +35,29 @@ task follows `frontend-architecture`. Run `make sort-imports` after each batch o
 
 ## Phase 1: Setup
 
-- [ ] T001 Add `github.com/modelcontextprotocol/go-sdk@v1.8.0` to `go.mod`/`go.sum` (`go get`, `go mod tidy`); importable only from `internal/infra/server/mcp`, `internal/infra/mcpbridge` and `test/integration` (design decision R1).
-- [ ] T002 [P] Add `XENON_MCP_PORT` to `internal/infra/properties/properties.go` (`MCPPortOverride *int`; when unset the settings port is used; `0` = ephemeral) per the properties skill, with a unit test in `properties_test.go`.
+- [x] T001 Add `github.com/modelcontextprotocol/go-sdk@v1.8.0` to `go.mod`/`go.sum` (`go get`, `go mod tidy`); importable only from `internal/infra/server/mcp`, `internal/infra/mcpbridge` and `test/integration` (design decision R1). — done by `/create-tests` (go.mod/go.sum; the dependency was already indirect at v1.6.1).
+- [ ] T002 [P] Add `XENON_MCP_PORT` to `internal/infra/properties/properties.go` (`MCPPortOverride *int`): it replaces the default port 47821 while no port is saved in settings; a saved port always wins. Follow the properties skill, with a unit test in `properties_test.go`.
 - [ ] T003 [P] Amend `docs/prd/xenon-mvp-prd.md` (FR-030):
   - Add a section "AI access (MCP)" covering: transport (HTTP + `xenon mcp`); loopback only, no token, on/off switch; secrets write-only, the leak guard, AI-written files written masked, and the two accepted residual risks (transformed values; sending to a destination the AI controls); approvals and "Dangerously skip approvals"; AI activity in History with per-source caps and filter; the 24-tool scheme.
   - Update the History line (sources, configurable caps) and the Settings description (it opens as a tab).
   - Add a decision entry dated 2026-10-13 to the decisions list.
-- [ ] T004 [P] Add a generic MCP test client in `test/integration/steps/when_mcp_steps_test.go`:
+- [x] T004 [P] Add a generic MCP test client in `test/integration/steps/when_mcp_steps_test.go`: — done by `/create-tests`. Deviations: steps are registered with `ctx.Step`, because godog binds Given/When/Then strictly. Clients are kept per name, so several sessions stay open at once. Also added: named background calls (`I start calling the MCP tool "<tool>" in the background as "<name>" with` / `the background call "<name>" should finish within N ms`), `the MCP endpoint should refuse connections`, `I post a body of N bytes to the MCP endpoint`, and in `then_mcp_steps_test.go` `the error should not contain`, `the response should have at most N characters`, `the response field "<f>" should have N characters`, `every item of the response field "<f>" should have the field "<k>" matching "<re>"`. Documenting these steps in `.claude/skills/bdd-step-definitions.md` is left for `/implement-task`.
   - It uses the SDK `StreamableClientTransport` against the address from `AIAccessService.Status`.
   - Steps: `I call the MCP tool "<tool>" with` (docstring), `I call the MCP tool "<tool>"`, `I call the MCP tool "<tool>" in the background with`, `the background MCP call finishes`, `I list the MCP tools`, `the MCP client is named "<name>"`, and `I post to the MCP endpoint with the headers` (table). The last step sets the route response, so the existing `the route response status should be N` applies.
   - Results become "the response": the parsed JSON text block, plus `is_error`. This way every existing `the response should …` step applies.
   - Make the existing step `the last call should have taken less than <n> ms` also measure the last MCP call.
   - Document the steps in `.claude/skills/bdd-step-definitions.md`.
-- [ ] T005 [P] Add generic steps in `test/integration/steps/when_program_steps_test.go` / `then_program_steps_test.go`:
+- [x] T005 [P] Add generic steps in `test/integration/steps/when_program_steps_test.go` / `then_program_steps_test.go`: — done by `/create-tests`, in `when_mcp_steps_test.go`. The bridge step builds `./cmd/xenon` once per suite and runs `xenon mcp`. Until `internal/infra/mcpbridge` exists it fails at once instead of launching the GUI. Added `the bridge output should match "<re>"` and `the bridge error output should contain`.
   - `I run the stdio bridge with the input` (docstring): it runs `go run ./cmd/xenon mcp` (built once per suite) with the suite's `XENON_DATA_DIR` and `XENON_MCP_PORT`.
   - `the bridge output should contain "<text>"` and `the bridge exit code should be <n>`.
-- [ ] T006 [P] Add a window-focuser mock `test/integration/mock/window_focuser.go` (records focus calls), set through a new `external.SetWindowFocuser`. Add steps `the Xenon window should have been brought to the front` and `… should not have been brought to the front` in `then_app_steps_test.go`.
-- [ ] T007 [P] Add a generic echo capability to `test/integration/mock/api.go`: the step `the mock API echoes every request to "<path>"` makes the route return the received method, URL, headers (as a JSON object) and body as a JSON body, and also every header as a response header.
-- [ ] T008 [P] Add a test hook in `test/integration/steps/hooks_test.go` that sets `XENON_MCP_PORT=0` for every scenario and stops the MCP server on scenario teardown.
+- [ ] T006 [P] (`/create-tests` added the mock `test/integration/mock/window_focuser.go`, `suite.window` and the step `the Xenon window should have been brought to the front N times`; left for `/implement-task`: `external.SetWindowFocuser` and injecting `suite.window`.) Add a window-focuser mock `test/integration/mock/window_focuser.go` (records focus calls), set through a new `external.SetWindowFocuser`. Add steps `the Xenon window should have been brought to the front` and `… should not have been brought to the front` in `then_app_steps_test.go`.
+- [x] T007 [P] Add a generic echo capability to `test/integration/mock/api.go`: the step `the mock API echoes every request to "<path>"` makes the route return the received method, URL, headers (as a JSON object) and body as a JSON body, and also every header as a response header. — done by `/create-tests` (`SetEcho`, plus `the mock API echoes every request to "<path>" [with status N]`; the echo JSON is `{method,path,query,headers,body}` and every request header is reflected as `X-Echo-<Header>`). Also added `the "<var>" variable is set to the port of the mocked api url`.
+- [ ] T008 [P] Test hooks in `test/integration/steps/hooks_test.go`:
+  - Every scenario gets a free port in `XENON_MCP_PORT` (`{{mcp_port}}`, `{{mcp_url}}`); done by `/create-tests`.
+  - `startApp()` starts the MCP server through its dependency getter and adds `binding.GetAIAccessService()` to the binding list.
+  - `after()` stops the server.
+  - Inject `suite.window` with `external.SetWindowFocuser`.
+  - The last three are done by `/implement-task` once the production symbols exist.
 
 ---
 
@@ -130,7 +135,7 @@ existing suite is still green (`make bdd`).
 **Goal**: An AI client connects over HTTP or stdio, browses the tree level by level, and sends saved or ad-hoc
 requests. **Independent test**: `connect.feature`, `stdio_bridge.feature` and `browse_and_send.feature` green.
 
-- [ ] T022 [P] [US1] Write `test/integration/features/mcp/connect.feature` (`@all @xen_008 @mcp`):
+- [x] T022 [P] [US1] Write `test/integration/features/mcp/connect.feature` (`@all @xen_008 @mcp`):
   - Connect and list tools: 24 tools; names; each description is one sentence; hints match the contract's hint summary (12 R, 2 W, 10 D; idempotent per Conventions) — SC-007.
   - The tools/list payload is 24,000 characters or fewer (SC-005).
   - Switching AI access off or on, and changing the port, through `SettingsService.Save` (US1 sc. 6).
@@ -140,8 +145,8 @@ requests. **Independent test**: `connect.feature`, `stdio_bridge.feature` and `b
   - Unknown action → `MCP-07400` as a tool error.
   - Connecting and listing tools take less than 1000 ms (`the last call should have taken less than 1000 ms`, SC-001).
   - Two clients (`the MCP client is named` A, then B) create items concurrently. Both succeed and both items exist (edge case "Two AI clients at once").
-- [ ] T023 [P] [US1] Write `test/integration/features/mcp/stdio_bridge.feature`: tools listed through the bridge; AI access off → exit 1 with the "off" message; server not running → exit 1 with the "not running" message; a non-Xenon HTTP server on the port (mock API route) → exit 1 with the "in use by another program" message, and nothing is forwarded (contracts/stdio-bridge.md).
-- [ ] T024 [P] [US1] Write `test/integration/features/mcp/browse_and_send.feature`:
+- [x] T023 [P] [US1] Write `test/integration/features/mcp/stdio_bridge.feature`: tools listed through the bridge; AI access off → exit 1 with the "off" message; server not running → exit 1 with the "not running" message; a non-Xenon HTTP server on the port (mock API route) → exit 1 with the "in use by another program" message, and nothing is forwarded (contracts/stdio-bridge.md).
+- [x] T024 [P] [US1] Write `test/integration/features/mcp/browse_and_send.feature`:
   - `tree list` returns the top level only, with child counts; `parent_id` gives one level; `depth: "all"` gives the full tree.
   - Search, and get for each kind.
   - Send a saved request and an ad-hoc request against the mock API: status, headers, timing, tests; history recorded; nothing saved for the ad-hoc request.
@@ -168,7 +173,7 @@ requests. **Independent test**: `connect.feature`, `stdio_bridge.feature` and `b
 **Goal**: The AI can write and use secrets but never read them. **Independent test**: `secrets_write_only.feature` and
 `leak_guard.feature` green, with 0 plaintext hits.
 
-- [ ] T033 [P] [US2] Write `test/integration/features/mcp/secrets_write_only.feature`:
+- [x] T033 [P] [US2] Write `test/integration/features/mcp/secrets_write_only.feature`:
   - `env_edit add_var` with secret: the vault holds the value; the workspace file holds only `secret: true`; the response shows `•••••`.
   - Replace a value.
   - `env get` / `env inspect` → secret masked, plain values in full.
@@ -176,7 +181,7 @@ requests. **Independent test**: `connect.feature`, `stdio_bridge.feature` and `b
   - `env_edit set_vars` turning a secret plain → `MCP-02403`, unchanged; plain → secret allowed (moves to the vault).
   - Locked vault (passphrase mode) send → `SND-06409` passed through.
   - The tool list has no reveal, copy or vault tool (US2 sc. 1–2, 4–6, 8–9).
-- [ ] T034 [P] [US2] Write `test/integration/features/mcp/leak_guard.feature` against `the mock API echoes every request to "/echo"`:
+- [x] T034 [P] [US2] Write `test/integration/features/mcp/leak_guard.feature` against `the mock API echoes every request to "/echo"`:
   - A Scenario Outline over secret value × form (raw, URL-encoded, JSON-escaped, base64; basic auth `user:secret`) × tool (`send`, `response last`, `response body`, `history list/get`, `console list/get`, `snippet generate`, `cookies list`, `env get/inspect`, `tree get/settings/search`, `docs get`, `workspace active`, `git status/changes`, `export options`, `import detect`). Each asserts `the response should not contain "<form>"` and contains `•••••`.
   - The same matrix for an OAuth 2.0 access token stored in the vault (FR-019).
   - Error messages: a failing call whose error text would contain the secret (an echo target returning 500 with the token in its body) returns it masked.
@@ -187,7 +192,9 @@ requests. **Independent test**: `connect.feature`, `stdio_bridge.feature` and `b
   - A 3-character secret is masked as a whole value, but not inside words.
   - `the log output should not contain` the secret. The leak guard never alters the bytes the mock target received (FR-021).
   - `export run` (Xenon and Postman) to a path: the exported file does not contain any form of the secret (SC-004 "exports").
-  - Redaction on disk: `env_edit add_var` with `secret:true` and a value, and `env_edit set_current` on a secret row, both while the vault is locked (`VLT-04409`); `tree_edit save_settings` with a secret variable value; and `import run` with a passphrase. The workspace's `history.jsonl` does not contain any of the values or the passphrase (constitution II; FR-031).
+  - Redaction on disk: `env_edit add_var` with `secret:true` and a value, and `env_edit set_current` on a secret row, both while the vault is locked (`VLT-04409`); `tree_edit save_settings` with a secret variable value; and `import run` with a passphrase. The workspace's `history.jsonl` does not contain any of the values or the passphrase (constitution II; FR-031). Written as `@args_on_disk` in `history/ai_activity.feature`, because it needs a passphrase-mode vault while leak_guard's Background uses the keychain.
+  - The short-value rule (masked only as a whole field value under 4 characters) is locked by the `known_secrets.go` table tests in T010, not by BDD: the MCP text nests escaped JSON, where a whole-value assertion cannot be phrased reliably.
+  - Tools that only show a secret when one is planted literally (`workspace`, `git`, `import detect`, `export options`) are covered by the registry walk in T036, which checks that the guard wraps every tool.
 - [ ] T035 [US2] Run T033–T034 → **red**.
 - [ ] T036 [US2] Wire the leak guard into every result:
   - `internal/infra/server/mcp/call.go` calls `AIAccess.Guard` on the serialized result and on error messages.
@@ -203,7 +210,7 @@ requests. **Independent test**: `connect.feature`, `stdio_bridge.feature` and `b
 
 **Goal**: The AI builds and edits collections, and the UI refreshes. **Independent test**: `authoring.feature` green.
 
-- [ ] T040 [P] [US3] Write `test/integration/features/mcp/authoring.feature`:
+- [x] T040 [P] [US3] Write `test/integration/features/mcp/authoring.feature`:
   - Create a collection, then a folder, then a request. Files match a binding-created item (`the file … should equal` with a resource fixture), and a `workspace:tree-changed` event is emitted within 1000 ms (SC-003).
   - Update fields; a request update emits `request:changed-on-disk` with the id.
   - Rename, move, duplicate; `delete target:item`.
@@ -225,9 +232,9 @@ requests. **Independent test**: `connect.feature`, `stdio_bridge.feature` and `b
 **Goal**: Full parity for environments, workspaces, history reads, import/export, snippets, cookies, console, scripts,
 settings and git. **Independent test**: `environments.feature`, `workspaces.feature` and `other_tools.feature` green.
 
-- [ ] T047 [P] [US4] Write `test/integration/features/mcp/environments.feature`: list; `set_active` emits `variables:changed` and the UI's active environment changes; create, update, duplicate; `delete target:environment`; `set_current` keeps the file unchanged; `set_vars` changes the file's initial value; reset and persist (US4 sc. 1–2).
-- [ ] T048 [P] [US4] Write `test/integration/features/mcp/workspaces.feature`: list marks the active workspace; create, open, rename; `switch` emits `workspaces:changed` with the new active id; `delete target:workspace` moves it to the trash (trash mock); with no active workspace, `tree list` → `MCP-06404` while `workspace list` and `workspace_edit create` still work; `tree get` with an id that belongs to another (non-active) workspace returns not found (US4 sc. 7, FR-008, workspace-boundary edge case).
-- [ ] T049 [P] [US4] Write `test/integration/features/mcp/other_tools.feature`, using the existing git, cookie and import fixtures:
+- [x] T047 [P] [US4] Write `test/integration/features/mcp/environments.feature`: list; `set_active` emits `variables:changed` and the UI's active environment changes; create, update, duplicate; `delete target:environment`; `set_current` keeps the file unchanged; `set_vars` changes the file's initial value; reset and persist (US4 sc. 1–2).
+- [x] T048 [P] [US4] Write `test/integration/features/mcp/workspaces.feature`: list marks the active workspace; create, open, rename; `switch` emits `workspaces:changed` with the new active id; `delete target:workspace` moves it to the trash (trash mock); with no active workspace, `tree list` → `MCP-06404` while `workspace list` and `workspace_edit create` still work; `tree get` with an id that belongs to another (non-active) workspace returns not found (US4 sc. 7, FR-008, workspace-boundary edge case).
+- [x] T049 [P] [US4] Write `test/integration/features/mcp/other_tools.feature`, with git in its own `test/integration/features/mcp/git.feature`, using the existing git, cookie and import fixtures:
   - Import a Postman collection by path, including clashes, matching a binding import.
   - Export Xenon and Postman to a path, matching the binding export with secrets off.
   - Snippet languages and generate.
@@ -255,7 +262,7 @@ settings and git. **Independent test**: `environments.feature`, `workspaces.feat
 **Goal**: AI sends to confirm-before-send environments wait for the human, unless "Dangerously skip approvals" is on.
 **Independent test**: `approvals.feature` green, plus `ApprovalPrompt.test.tsx`.
 
-- [ ] T059 [P] [US5] Write `test/integration/features/mcp/approvals.feature`:
+- [x] T059 [P] [US5] Write `test/integration/features/mcp/approvals.feature`:
   - Bypass off: the send runs in the background → an `ai:approval-requested` event with client, method, raw URL and environment name and colour → the window is brought to the front. Then:
     - `AIAccessService.AnswerApproval approved:true` → the mock API received 1 request; the result is returned.
     - Deny → `MCP-03403`; the mock API received 0.
@@ -287,7 +294,7 @@ settings and git. **Independent test**: `environments.feature`, `workspaces.feat
 **Goal**: Every AI call is visible in History, filterable by source, with per-source caps. **Independent test**:
 `ai_activity.feature` and `app_settings.feature` green, plus `HistoryView.test.tsx`.
 
-- [ ] T066 [P] [US6] Write `test/integration/features/history/ai_activity.feature` (`@all @xen_008 @ai_activity`):
+- [x] T066 [P] [US6] Write `test/integration/features/history/ai_activity.feature` (`@all @xen_008 @ai_activity`):
   - With `the MCP client is named "Claude Code"`: a read call, a write call, a failing call (error code) and a denied send each produce one entry with kind, source, client, tool, action, target, outcome and duration.
   - Sends are not duplicated as action rows. A denied send (approval), a timed-out send, and a send with an invalid argument (`MCP-07400`) each produce one action row (`tool: send`, outcome denied / timed_out / error), and no send row.
   - Action `args` are masked and capped at 2 KB.
@@ -298,7 +305,7 @@ settings and git. **Independent test**: `environments.feature`, `workspaces.feat
   - `history:changed` is emitted.
   - Old history lines with no source read as user.
   - Through MCP: `history list source:ai` returns compact rows without `args`; `history get` on an action row returns its masked `args` (FR-035, US6 sc. 7).
-- [ ] T067 [P] [US6] Write `test/integration/features/settings/app_settings.feature` (`@all @xen_008 @app_settings`): `SettingsService.Get` defaults (1000, 1000, enabled, 47821, skip false); Save validates `SET-02400`, `SET-03400`, `SET-04400` and `SCR-01400`; an old `app.json` without the keys gets the defaults; the AI access fields are applied immediately (status event).
+- [x] T067 [P] [US6] Write `test/integration/features/settings/app_settings.feature` (`@all @xen_008 @app_settings`): `SettingsService.Get` defaults (1000, 1000, enabled, 47821, skip false); Save validates `SET-02400`, `SET-03400`, `SET-04400` and `SCR-01400`; an old `app.json` without the keys gets the defaults; the AI access fields are applied immediately (status event).
 - [ ] T068 [P] [US6] Update `frontend/src/features/sidebar/components/HistoryView.test.tsx`: a filter (All/User/AI) next to Clear History, remembered via UI state; AI rows tagged "AI · <client>"; action rows show tool·action, target, outcome and duration, and expand to masked args; Clear History clears the filtered source; a reload on `history:changed`.
 - [ ] T069 [US6] Run T066–T068 → **red**.
 - [ ] T070 [US6] Add the recorder:

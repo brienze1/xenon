@@ -12,7 +12,7 @@
 4. After the client's `initialize`, checks that the server answered with `serverInfo.name == "xenon"`. If it did
    not, prints `Port <n> is in use by another program — change the port in Xenon → Settings → AI access (MCP).` to
    stderr and exits 1, so AI traffic is never forwarded to a foreign server.
-5. Pumps newline-delimited JSON-RPC between stdin/stdout and the server session until stdin closes (exit 0) or the
+5. Pumps newline-delimited JSON-RPC between stdin/stdout and the server session until stdin closes; it then waits (up to 5 s) for the responses to requests already forwarded, writes them, and exits 0 or the
    server goes away (stderr `Xenon closed the connection.`, exit 1). stdout carries only protocol messages.
 6. Never starts the Xenon GUI and never triggers single-instance activation.
 

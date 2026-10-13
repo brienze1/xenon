@@ -25,8 +25,9 @@ Stored in `<DataDir>/app.json` under `settings` as `scriptTimeoutMs`, `historyUs
 
 - These fields cannot be changed through MCP. The `settings_edit` tool rejects any `ai_access` key with `MCP-02403`
   (FR-006).
-- `properties.MCPPortOverride` (env `XENON_MCP_PORT`), when set, replaces `Port` at bind time only. It is never
-  persisted.
+- `properties.MCPPortOverride` (env `XENON_MCP_PORT`), when set, replaces the **default** port (47821) while no port
+  has been saved in settings. A saved port always wins. It is never persisted. Tests use it to give each scenario a free
+  port.
 
 ## AIAccessStatus (new, runtime) — `entity/ai_access_status.go`
 
@@ -63,7 +64,7 @@ from tool arguments.
 | Outcome | string | `ok` \| `error` \| `denied` \| `timed_out` |
 | Code | string | Xenon error code when Outcome = error |
 | DurationMs | int64 | |
-| Args | string | JSON with secret-carrying fields redacted by tool and field name (`secret_value` anywhere; `value` in `env_edit` `add_var`/`set_current`; `value` beside `secret:true`; `passphrase` anywhere — research R10), then the leak guard; ≤ 2048 bytes (`…` appended when cut) |
+| Args | string | JSON, cut to 2,048 bytes with `…` appended when longer, with secret-carrying fields redacted by tool and field name (`secret_value` anywhere; `value` in `env_edit` `add_var`/`set_current`; `value` beside `secret:true`; `passphrase` anywhere — research R10), then the leak guard |
 
 ## History (changed) — `entity/history.go`
 
@@ -118,4 +119,5 @@ running, error · `approvaloutcome`: pending, approved, denied, timed_out.
 | `MCP-05409` | Approval already resolved |
 | `MCP-06404` | No active workspace |
 | `MCP-07400` | Unknown action for this tool / invalid arguments |
+| `MCP-08404` | Item id not found in the active workspace (unknown id, or an id from another workspace) |
 | `SET-02400` / `SET-03400` / `SET-04400` | History user cap / AI cap / port out of range |
