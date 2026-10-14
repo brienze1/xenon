@@ -9,7 +9,7 @@ return for v3 sources.
 | Source | `kind` | `version` | `items[]` |
 |---|---|---|---|
 | v3 collection JSON (file or pasted) | `postman_collection` | `3` | 1 × `{kind: "collection", name, counts}` |
-| v3 collection folder or zip (incl. `postman/v3` fixture) | `postman_collection` | `3` | 1 × collection |
+| v3 collection folder or zip (incl. the `postman/v3/native-git` fixture) | `postman_collection` | `3` | 1 × collection |
 | `*.request.yaml` | `postman_request` | `3` | 1 × `{kind: "request"}` |
 | `*.environment.yaml`, environment JSON | `postman_environment` | `3` | 1 × `{kind: "environment"}` |
 | `*.globals.yaml`, globals JSON | `postman_globals` | `3` | 1 × `{kind: "globals"}` |
@@ -40,8 +40,10 @@ These are unchanged from other formats:
 
 ## MCP `import` tool description (text change only)
 
-`Import Postman (v2.0/v2.1 JSON, v3 JSON or git-native folders, environments, globals, data dumps, workspace
-folders), Bruno or Xenon files from paths, or a pasted cURL command.`
+`Import Postman v2 or v3 files and folders, Bruno or Xenon files from paths into the workspace.`
+
+It stays one sentence with no other period, as `mcp/connect.feature` requires of every tool description
+(`^[A-Z][^.]*\.$`).
 
 ## UI
 

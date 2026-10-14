@@ -8,9 +8,10 @@ existing passthrough keeps them for export (R6). `{…}` means "same object, tra
 
 | v3 input | Normalised to |
 |---|---|
-| `headers`, `response.headers`, `auth.credentials` as a YAML map `{k: v}` | list `[{key: k, value: v}]` in map order as decoded (yaml.v3 `MappingNode` order, i.e. file order) |
+| `headers`, `queryParams`, `pathVariables`, example `request.headers`/`queryParams`, `response.headers`, `auth.credentials` as a YAML map `{k: v}` (seen in `collection migrate` output, e.g. `queryParams: {page: "1"}`) | list `[{key: k, value: v}]` in map order as decoded (yaml.v3 `MappingNode` order, i.e. file order) |
 | `auth.credentials` as list `[{key, value}]` | unchanged |
 | `queryParams[].value: null` | `""` |
+| `$kind`, `order` (any level), a request's YAML `examples` path, variable `secret: false` | consumed by the translation (they drive kind, order, example lookup and secrecy); never copied into the v2.1 document |
 | empty values in `settings` (`{}`, `[]`, e.g. `disabledSystemHeaders: []`) | dropped; `settings` with nothing left emits no `protocolProfileBehavior` |
 | empty `scripts: []`, `headers: []`, `queryParams: []`, `variables: []` | emitted as empty v2.1 lists (mapped fields, no passthrough effect) |
 | collection/folder `auth` list `[a1, a2, …]` | `a1`. If the list has 2+ entries: one `unsupported_auth` warning (R8), and the whole list is kept under `postmanV3.auth` |

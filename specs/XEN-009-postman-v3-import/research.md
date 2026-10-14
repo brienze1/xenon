@@ -25,7 +25,7 @@ No `NEEDS CLARIFICATION` remains.
 
 **Shape variants seen in real output** (each must be read):
 
-- `headers`, `auth.credentials` and example `response.headers` appear **both** as a list of `{key, value, …}` and
+- `headers`, `queryParams`, `pathVariables`, `auth.credentials` and example `response.headers` appear **both** as a list of `{key, value, …}` and
   as a YAML map `{Content-Type: application/json}`. `collection migrate` writes maps; `collection get --json` writes
   lists.
 - Collection and folder `auth` is a **list** `[{id, name, type, credentials}]` (multi-auth shape). The CLI writes
@@ -199,9 +199,13 @@ skipped parts do. Warnings raised by the reused v2.1 conversion keep their item 
 - An item with an unknown `$kind` → the same error with `unknown $kind "<k>"`, unless the kind ends in `-request`.
   Those are skipped with the R8 `unsupported_request_type` warning, so protocols Postman adds later do not break
   imports.
-- **The reason never quotes content**. The decoder error is reduced to `line <n>: <error class>`:
-  - backtick-quoted spans in yaml.v3 messages (for example `` cannot unmarshal !!str `s3cr3t…` ``) become `…`;
-  - JSON errors become their offset-free class (`unexpected end of input`, `invalid character`, `wrong type`).
+- **The reason never quotes content.** It is exactly one of:
+  - `line <n>: a value has the wrong type` for a yaml.v3 `TypeError` (its first error's line);
+  - `line <n>: <message>` for a yaml.v3 syntax error, with the `yaml: line <n>: ` prefix stripped (syntax messages
+    never quote values);
+  - `byte <offset>: invalid JSON` for a `json.SyntaxError`;
+  - `field <json field path> has the wrong type` for a `json.UnmarshalTypeError`;
+  - `unknown $kind "<k>"`.
 
   This keeps secret values out of error text, logs and the MCP output (constitution II).
 - Code range `IMP-11xxx` is unused today (checked with grep).
@@ -296,5 +300,5 @@ skipped parts do. Warnings raised by the reused v2.1 conversion keep their item 
 - **`postman/v3/large-1000-v3.zip`** is `postman collection migrate large-1000.json`, zipped (1,011 files, about
   4 MB unpacked).
 - **`postman/v3/malformed/`** is a collection folder with one broken `*.request.yaml`.
-- The existing `postman/v3/Get users.request.yaml` and `.resources/definition.yaml` stay; the format-detection rows
-  use them.
+- The existing `Get users.request.yaml` and `.resources/definition.yaml` move to `postman/v3/native-git/`, because
+  `postman/v3/` now holds every v3 fixture. The format-detection rows use that path.

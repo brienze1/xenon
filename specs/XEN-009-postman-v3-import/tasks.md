@@ -141,8 +141,9 @@ follows `frontend-architecture`. Run `make sort-imports` after each batch of Go 
   - the generator script used in T003;
   - the hand-added cases list from T004.
 
-  Change the existing `postman/v3/` row from "refused formats" to "detected as a v3 collection folder and a v3
-  request".
+  Change the existing `postman/v3/` row from "refused formats" to "`postman/v3/native-git/`: detected as a v3
+  collection folder and a v3 request". The two original files moved there because `postman/v3/` now holds every
+  v3 fixture.
 
 ---
 
@@ -288,8 +289,8 @@ apart from ids.
 - [ ] T028 [US1] In `internal/integration/webservice/postman_v3.go`, for `PostmanCollection` with a single JSON
   document:
   1. decode `dto.Collection`. On error, raise `IMP-11400` `"<path> is not a valid Postman v3 file: <reason>"`,
-     where `<reason>` is sanitised per R9 by a shared `postmanv3/dto` helper `DecodeError(path, err)`: line plus
-     error class, with backtick-quoted spans replaced by `…`. Unit-test it with a yaml type error carrying
+     where `<reason>` is one of the exact R9 forms, built by a shared `postmanv3/dto` helper
+     `DecodeError(path, err)`. Unit-test it with a yaml type error carrying
      `s3cr3t-fixture` and assert the value is absent;
   2. `ToPostmanV21`;
   3. `json.Marshal`;
@@ -326,17 +327,18 @@ specified.
   - (11) `folder_variables` warning on `Nested`;
   - (13) `extras/Map headers.request.yaml` imported into a folder of an existing collection with its two examples,
     and as top-level refused `IMP-35400`;
-  - (14) `malformed/` → `IMP-11400` with `Broken.request.yaml` in the description, and the description does not
-    contain the broken file's quoted value `s3cr3t-fixture-broken`;
+  - (14) `malformed/` → `IMP-11400` with the exact description
+    `Broken.request.yaml is not a valid Postman v3 file: line 4: a value has the wrong type`, so
+    `s3cr3t-fixture-broken` is absent;
   - (14b) `extras/` includes `Future.request.yaml` with `$kind: carrier-pigeon-request` → an
     `unsupported_request_type` warning, not an error;
   - (16) `apiSecret` (`secret: true`) in the vault, with `secret: true` and no value in the collection file;
-  - a zip of `rich/` (via `the zip file … is extracted to …`) detects and imports the same.
+  - the zip path for v3 folders is covered by `workspace.zip` (T043) and `large-1000-v3.zip` (T053).
 
   Prove red.
 - [ ] T031 [P] [US2] In `test/integration/features/import/format_detection.feature`, move the `postman v3 folder`
   and `postman v3 file` rows from the `@refused` outline to the `@detect` outline as
-  `| postman/v3 | postman_collection | 3 |` and `| postman/v3/Get users.request.yaml | postman_request | 3 |`. Add
+  `| postman/v3/native-git | postman_collection | 3 |` and `| postman/v3/native-git/Get users.request.yaml | postman_request | 3 |`. Add
   `| postman/v3/rich.json | postman_collection | 3 |` and `| postman/v3/rich | postman_collection | 3 |`. Prove the
   moved rows red.
 
