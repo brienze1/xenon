@@ -16,7 +16,8 @@ The project root `Makefile` defines the full validation pipeline and build targe
 make validate
 ```
 
-This runs ALL quality checks in order. If any step fails, the pipeline stops.
+This runs the quality checks in order (steps 1–7, then the frontend checks). If any step fails, the pipeline stops.
+Mutation testing (steps 8–10) is separate: `make validate-mutation`, run occasionally.
 
 ---
 
@@ -84,8 +85,8 @@ make validate-coverage
 
 Runs mutation testing with `gremlins`. Excludes `cmd/`, `pkg/`, `test/`, `config/`, `build/`, `.claude/` directories. Covers `./internal/...` only.
 
-`MUTATION_SKIP=true` skips steps 8–10 (`make validate MUTATION_SKIP=true`). CI always sets it because mutation testing
-takes hours; run the mutation gates locally. Windows skips them on its own (gremlins path bug).
+Mutation testing takes hours, so it is **not part of `make validate`** (locally or in CI). Run steps 8–10 now and then
+with `make validate-mutation`. Windows skips them on its own (gremlins path bug).
 
 ```bash
 make mutation-test

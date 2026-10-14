@@ -64,8 +64,8 @@ jobs:
       - name: Generate bindings
         run: make bindings
 
-      - name: Validate (mutation gates run locally, not in CI)
-        run: make validate MUTATION_SKIP=true
+      - name: Validate
+        run: make validate
 
       - name: Fail on files changed by validate
         run: git diff --exit-code
