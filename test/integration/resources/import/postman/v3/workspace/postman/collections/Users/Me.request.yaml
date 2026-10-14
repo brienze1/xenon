@@ -1,0 +1,5 @@
+$kind: http-request
+id: f0000000-0000-4000-8000-000000000011
+url: https://users.acme.test/me
+method: GET
+order: 1000

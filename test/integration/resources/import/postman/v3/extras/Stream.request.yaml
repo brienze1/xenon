@@ -1,0 +1,6 @@
+$kind: grpc-request
+id: e0000000-0000-4000-8000-000000000016
+url: grpc.extras.test:443
+methodPath: extras.Stream/Watch
+message:
+  content: "{}"

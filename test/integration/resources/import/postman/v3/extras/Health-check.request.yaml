@@ -1,0 +1,6 @@
+$kind: http-request
+id: e0000000-0000-4000-8000-000000000013
+name: Health/check
+url: "{{host}}/health"
+method: GET
+order: 3000

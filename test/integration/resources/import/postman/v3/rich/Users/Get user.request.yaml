@@ -1,0 +1,29 @@
+$kind: http-request
+id: c0000000-0000-4000-8000-000000000001
+description: Request docs
+url: "{{baseUrl}}/users/:id?page=1&skip=2"
+method: GET
+headers:
+  - key: Accept
+    value: application/json
+  - key: X-Off
+    value: "1"
+    disabled: true
+    description: off header
+queryParams:
+  - key: page
+    value: "1"
+    description: Page
+  - key: skip
+    value: "2"
+    disabled: true
+pathVariables:
+  - key: id
+    value: "42"
+    description: User id
+scripts:
+  - type: afterResponse
+    code: pm.test("200", () => pm.response.to.have.status(200));
+    language: text/javascript
+examples: ./.resources/Get user.resources/examples
+order: 1000

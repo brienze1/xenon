@@ -1,0 +1,9 @@
+name: Globals
+values:
+  - key: g1
+    value: v1
+    enabled: true
+  - key: gsecret
+    value: s3cr3t-fixture-global
+    enabled: true
+    type: secret

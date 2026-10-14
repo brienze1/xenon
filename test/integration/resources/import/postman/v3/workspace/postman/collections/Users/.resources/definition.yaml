@@ -1,0 +1,6 @@
+$kind: collection
+id: f0000000-0000-4000-8000-000000000010
+variables:
+  - key: usersSecret
+    value: s3cr3t-fixture-workspace-collection
+    secret: true

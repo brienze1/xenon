@@ -1,0 +1,26 @@
+name: staging
+values:
+  - key: host
+    value: https://staging.acme.test
+    enabled: true
+  - key: debug
+    value: "true"
+    enabled: false
+  - key: apiKey
+    value: s3cr3t-fixture-env
+    enabled: true
+    type: secret
+  - key: token
+    value: s3cr3t-fixture-token
+    enabled: true
+    secret: true
+  - key: linked
+    type: secret
+    secret: true
+    enabled: true
+    source:
+      provider: postman
+      postman:
+        type: cloud
+        secretId: 11111111-2222-3333-4444-555555555555
+        vaultId: 66666666-7777-8888-9999-000000000000

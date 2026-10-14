@@ -1,0 +1,12 @@
+{
+  "id": "6e0b8c1e-0000-4000-8000-000000000001",
+  "name": "Globals",
+  "workspace": "d5beea0d-171d-4a4a-8849-e61219f5f8be",
+  "createdAt": "2025-06-28T19:53:45.000Z",
+  "updatedAt": "2025-06-28T19:53:45.000Z",
+  "lastRevision": 1751140425000,
+  "lastUpdatedBy": "8454478",
+  "values": [
+    { "key": "cloud_region", "value": "us-east-1", "enabled": true, "type": "any" }
+  ]
+}

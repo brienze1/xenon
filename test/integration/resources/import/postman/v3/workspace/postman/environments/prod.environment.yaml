@@ -1,0 +1,5 @@
+name: prod
+values:
+  - key: host
+    value: https://acme.test
+    enabled: true

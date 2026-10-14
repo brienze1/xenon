@@ -1,0 +1,8 @@
+$kind: http-request
+id: c0000000-0000-4000-8000-000000000015
+url: "{{baseUrl}}/js"
+method: POST
+body:
+  type: javascript
+  content: let a = 1;
+order: 5000

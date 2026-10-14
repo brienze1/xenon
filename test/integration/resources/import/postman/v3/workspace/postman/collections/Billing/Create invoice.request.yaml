@@ -1,0 +1,8 @@
+$kind: http-request
+id: f0000000-0000-4000-8000-000000000003
+url: "{{billingUrl}}/invoices"
+method: POST
+body:
+  type: json
+  content: '{"amount":10}'
+order: 2000

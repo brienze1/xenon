@@ -1,0 +1,15 @@
+$kind: http-example
+id: e0000000-0000-4000-8000-000000000020
+request:
+  url: "{{host}}/map"
+  method: POST
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: '{"ok":true}'
+order: 1000

@@ -1,0 +1,8 @@
+{
+  "name": "Globals",
+  "values": [
+    { "key": "local_region", "value": "sa-east-1", "enabled": true }
+  ],
+  "id": "postman/globals/workspace.globals.yaml",
+  "path": "/home/someone/repo/postman/globals/workspace.globals.yaml"
+}

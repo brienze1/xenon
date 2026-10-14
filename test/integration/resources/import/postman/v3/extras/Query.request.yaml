@@ -1,0 +1,13 @@
+$kind: graphql-request
+id: e0000000-0000-4000-8000-000000000014
+url: "{{host}}/graphql"
+query: query { me { id } }
+variables: '{"x":1}'
+headers:
+  - key: X-Gql
+    value: "1"
+scripts:
+  - type: beforeQuery
+    code: console.log("before query");
+    language: text/javascript
+order: 4000

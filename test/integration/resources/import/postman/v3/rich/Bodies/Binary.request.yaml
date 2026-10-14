@@ -1,0 +1,9 @@
+$kind: http-request
+id: c0000000-0000-4000-8000-000000000019
+url: "{{baseUrl}}/bin"
+method: PUT
+body:
+  type: file
+  content:
+    src: /nonexistent/xenon-fixture/blob.bin
+order: 9000

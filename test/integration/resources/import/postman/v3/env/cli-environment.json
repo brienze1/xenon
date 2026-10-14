@@ -1,0 +1,15 @@
+{
+  "id": "8454478-2a54fdfa-03d8-40ea-b14c-614a46ff7246",
+  "name": "Cloud dev",
+  "owner": "8454478",
+  "color": null,
+  "createdAt": "2025-06-25T21:57:36.000Z",
+  "updatedAt": "2025-06-25T21:57:36.000Z",
+  "lastRevision": 1750888656000,
+  "lastUpdatedBy": "8454478",
+  "team": null,
+  "values": [
+    { "key": "base_url", "value": "https://dev.cloud.test", "enabled": true, "type": "default" },
+    { "key": "cloud_token", "value": "********", "enabled": true, "type": "secret" }
+  ]
+}

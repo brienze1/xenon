@@ -1,0 +1,515 @@
+{
+  "id": "a0000000-0000-4000-8000-000000000001",
+  "name": "Rich API",
+  "$kind": "collection",
+  "description": "The **Rich** API",
+  "variables": [
+    {
+      "key": "baseUrl",
+      "value": "https://api.rich.test",
+      "disabled": false,
+      "secret": false
+    },
+    {
+      "key": "off",
+      "value": "x",
+      "disabled": true,
+      "secret": false
+    },
+    {
+      "key": "page",
+      "value": "1",
+      "disabled": false,
+      "secret": false,
+      "description": "Default page"
+    }
+  ],
+  "auth": [
+    {
+      "id": "auth-bearer",
+      "name": "bearer auth",
+      "type": "bearer",
+      "credentials": [
+        {
+          "key": "token",
+          "value": "{{token}}"
+        }
+      ]
+    }
+  ],
+  "scripts": [
+    {
+      "type": "http:beforeRequest",
+      "code": "pm.environment.set(\"ts\", Date.now());",
+      "language": "text/javascript"
+    },
+    {
+      "type": "http:afterResponse",
+      "code": "pm.test(\"status ok\", () => pm.response.to.have.status(200));",
+      "language": "text/javascript"
+    }
+  ],
+  "items": [
+    {
+      "$kind": "collection",
+      "id": "b0000000-0000-4000-8000-000000000001",
+      "name": "Users",
+      "description": "Users docs",
+      "auth": [
+        {
+          "id": "auth-basic",
+          "name": "basic auth",
+          "type": "basic",
+          "credentials": [
+            {
+              "key": "username",
+              "value": "{{user}}"
+            },
+            {
+              "key": "password",
+              "value": "{{pass}}"
+            }
+          ]
+        }
+      ],
+      "scripts": [
+        {
+          "type": "http:beforeRequest",
+          "code": "console.log(\"users folder\");",
+          "language": "text/javascript"
+        }
+      ],
+      "items": [
+        {
+          "$kind": "http-request",
+          "id": "c0000000-0000-4000-8000-000000000001",
+          "name": "Get user",
+          "url": "{{baseUrl}}/users/:id?page=1&skip=2",
+          "method": "GET",
+          "headers": [
+            {
+              "key": "Accept",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Off",
+              "value": "1",
+              "disabled": true,
+              "description": "off header"
+            }
+          ],
+          "queryParams": [
+            {
+              "key": "page",
+              "value": "1",
+              "description": "Page"
+            },
+            {
+              "key": "skip",
+              "value": "2",
+              "disabled": true
+            }
+          ],
+          "pathVariables": [
+            {
+              "key": "id",
+              "value": "42",
+              "description": "User id"
+            }
+          ],
+          "scripts": [
+            {
+              "type": "afterResponse",
+              "code": "pm.test(\"200\", () => pm.response.to.have.status(200));",
+              "language": "text/javascript"
+            }
+          ],
+          "settings": {
+            "disabledSystemHeaders": []
+          },
+          "description": "Request docs",
+          "examples": [
+            {
+              "$kind": "http-example",
+              "id": "d0000000-0000-4000-8000-000000000001",
+              "name": "200 OK",
+              "request": {
+                "url": "{{baseUrl}}/users/42",
+                "method": "GET",
+                "headers": []
+              },
+              "response": {
+                "statusCode": 200,
+                "statusText": "OK",
+                "headers": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "type": "json",
+                  "content": "{\"id\":42}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "$kind": "http-request",
+          "id": "c0000000-0000-4000-8000-000000000002",
+          "name": "Inherit auth",
+          "url": "{{baseUrl}}/inherit",
+          "method": "GET",
+          "headers": [],
+          "queryParams": [],
+          "pathVariables": [],
+          "scripts": [],
+          "settings": {
+            "disabledSystemHeaders": []
+          },
+          "examples": []
+        },
+        {
+          "$kind": "http-request",
+          "id": "c0000000-0000-4000-8000-000000000003",
+          "name": "No auth",
+          "url": "{{baseUrl}}/noauth",
+          "method": "GET",
+          "headers": [],
+          "queryParams": [],
+          "pathVariables": [],
+          "auth": {
+            "type": "noauth"
+          },
+          "scripts": [],
+          "settings": {
+            "disabledSystemHeaders": []
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "$kind": "collection",
+      "id": "b0000000-0000-4000-8000-000000000002",
+      "name": "Bodies",
+      "scripts": [],
+      "items": [
+        {
+          "$kind": "http-request",
+          "id": "c0000000-0000-4000-8000-000000000011",
+          "name": "JSON",
+          "url": "{{baseUrl}}/json",
+          "method": "POST",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "queryParams": [],
+          "pathVariables": [],
+          "body": {
+            "type": "json",
+            "content": "{\"amount\":1000}"
+          },
+          "scripts": [],
+          "settings": {
+            "disabledSystemHeaders": []
+          },
+          "examples": []
+        },
+        {
+          "$kind": "http-request",
+          "id": "c0000000-0000-4000-8000-000000000012",
+          "name": "Text",
+          "url": "{{baseUrl}}/text",
+          "method": "POST",
+          "headers": [],
+          "queryParams": [],
+          "pathVariables": [],
+          "body": {
+            "type": "text",
+            "content": "hello"
+          },
+          "scripts": [],
+          "settings": {
+            "disabledSystemHeaders": []
+          },
+          "examples": []
+        },
+        {
+          "$kind": "http-request",
+          "id": "c0000000-0000-4000-8000-000000000013",
+          "name": "XML",
+          "url": "{{baseUrl}}/xml",
+          "method": "POST",
+          "headers": [],
+          "queryParams": [],
+          "pathVariables": [],
+          "body": {
+            "type": "xml",
+            "content": "<a/>"
+          },
+          "scripts": [],
+          "settings": {
+            "disabledSystemHeaders": []
+          },
+          "examples": []
+        },
+        {
+          "$kind": "http-request",
+          "id": "c0000000-0000-4000-8000-000000000014",
+          "name": "HTML",
+          "url": "{{baseUrl}}/html",
+          "method": "POST",
+          "headers": [],
+          "queryParams": [],
+          "pathVariables": [],
+          "body": {
+            "type": "html",
+            "content": "<p>hi</p>"
+          },
+          "scripts": [],
+          "settings": {
+            "disabledSystemHeaders": []
+          },
+          "examples": []
+        },
+        {
+          "$kind": "http-request",
+          "id": "c0000000-0000-4000-8000-000000000015",
+          "name": "JavaScript",
+          "url": "{{baseUrl}}/js",
+          "method": "POST",
+          "headers": [],
+          "queryParams": [],
+          "pathVariables": [],
+          "body": {
+            "type": "javascript",
+            "content": "let a = 1;"
+          },
+          "scripts": [],
+          "settings": {
+            "disabledSystemHeaders": []
+          },
+          "examples": []
+        },
+        {
+          "$kind": "http-request",
+          "id": "c0000000-0000-4000-8000-000000000016",
+          "name": "Form",
+          "url": "{{baseUrl}}/form",
+          "method": "POST",
+          "headers": [],
+          "queryParams": [],
+          "pathVariables": [],
+          "body": {
+            "type": "formdata",
+            "content": [
+              {
+                "key": "name",
+                "type": "text",
+                "value": "x"
+              },
+              {
+                "key": "off",
+                "type": "text",
+                "value": "y",
+                "disabled": true
+              },
+              {
+                "key": "file",
+                "type": "file",
+                "src": "/nonexistent/xenon-fixture/a.png"
+              }
+            ]
+          },
+          "scripts": [],
+          "settings": {
+            "disabledSystemHeaders": []
+          },
+          "examples": []
+        },
+        {
+          "$kind": "http-request",
+          "id": "c0000000-0000-4000-8000-000000000017",
+          "name": "Urlenc",
+          "url": "{{baseUrl}}/urlenc",
+          "method": "POST",
+          "headers": [],
+          "queryParams": [],
+          "pathVariables": [],
+          "body": {
+            "type": "urlencoded",
+            "content": [
+              {
+                "key": "a",
+                "value": "1"
+              },
+              {
+                "key": "b",
+                "value": "2",
+                "disabled": true
+              }
+            ]
+          },
+          "scripts": [],
+          "settings": {
+            "disabledSystemHeaders": []
+          },
+          "examples": []
+        },
+        {
+          "$kind": "http-request",
+          "id": "c0000000-0000-4000-8000-000000000018",
+          "name": "GraphQL",
+          "url": "{{baseUrl}}/graphql",
+          "method": "POST",
+          "headers": [],
+          "queryParams": [],
+          "pathVariables": [],
+          "body": {
+            "type": "graphql",
+            "content": {
+              "query": "query { me { id } }",
+              "variables": "{\"x\":1}"
+            }
+          },
+          "scripts": [],
+          "settings": {
+            "disabledSystemHeaders": []
+          },
+          "examples": []
+        },
+        {
+          "$kind": "http-request",
+          "id": "c0000000-0000-4000-8000-000000000019",
+          "name": "Binary",
+          "url": "{{baseUrl}}/bin",
+          "method": "PUT",
+          "headers": [],
+          "queryParams": [],
+          "pathVariables": [],
+          "body": {
+            "type": "file",
+            "content": {
+              "src": "/nonexistent/xenon-fixture/blob.bin"
+            }
+          },
+          "scripts": [],
+          "settings": {
+            "disabledSystemHeaders": []
+          },
+          "examples": []
+        },
+        {
+          "$kind": "http-request",
+          "id": "c0000000-0000-4000-8000-000000000020",
+          "name": "ApiKey",
+          "url": "{{baseUrl}}/key",
+          "method": "GET",
+          "headers": [],
+          "queryParams": [],
+          "pathVariables": [],
+          "auth": {
+            "type": "apikey",
+            "credentials": [
+              {
+                "key": "key",
+                "value": "X-Key"
+              },
+              {
+                "key": "value",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "in",
+                "value": "header"
+              }
+            ]
+          },
+          "scripts": [],
+          "settings": {
+            "disabledSystemHeaders": []
+          },
+          "examples": []
+        },
+        {
+          "$kind": "http-request",
+          "id": "c0000000-0000-4000-8000-000000000021",
+          "name": "Digest",
+          "url": "{{baseUrl}}/digest",
+          "method": "GET",
+          "headers": [],
+          "queryParams": [],
+          "pathVariables": [],
+          "auth": {
+            "type": "digest",
+            "credentials": [
+              {
+                "key": "username",
+                "value": "u"
+              },
+              {
+                "key": "password",
+                "value": "{{pass}}"
+              }
+            ]
+          },
+          "scripts": [],
+          "settings": {
+            "disabledSystemHeaders": []
+          },
+          "examples": []
+        },
+        {
+          "$kind": "http-request",
+          "id": "c0000000-0000-4000-8000-000000000022",
+          "name": "Hawk",
+          "url": "{{baseUrl}}/hawk",
+          "method": "GET",
+          "headers": [],
+          "queryParams": [],
+          "pathVariables": [],
+          "auth": {
+            "type": "hawk",
+            "credentials": [
+              {
+                "key": "authId",
+                "value": "id"
+              },
+              {
+                "key": "authKey",
+                "value": "{{hawkKey}}"
+              }
+            ]
+          },
+          "scripts": [],
+          "settings": {
+            "disabledSystemHeaders": []
+          },
+          "examples": []
+        },
+        {
+          "$kind": "http-request",
+          "id": "c0000000-0000-4000-8000-000000000023",
+          "name": "Redirects",
+          "url": "{{baseUrl}}/redirects",
+          "method": "GET",
+          "headers": [],
+          "queryParams": [],
+          "pathVariables": [],
+          "scripts": [],
+          "settings": {
+            "followRedirects": false,
+            "strictSSL": false,
+            "maxRedirects": 3
+          },
+          "examples": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+$kind: http-request
+url: https://broken.test
+method: GET
+headers: 's3cr3t-fixture-broken'

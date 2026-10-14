@@ -1,0 +1,15 @@
+$kind: collection
+id: b0000000-0000-4000-8000-000000000001
+description: Users docs
+scripts:
+  - type: http:beforeRequest
+    code: console.log("users folder");
+    language: text/javascript
+auth:
+  - id: 808c287b-6984-4d5b-852a-e8729b94d14c
+    type: basic
+    name: basic auth
+    credentials:
+      username: "{{user}}"
+      password: "{{pass}}"
+order: 1000

@@ -1,0 +1,9 @@
+$kind: http-request
+id: c0000000-0000-4000-8000-000000000023
+url: "{{baseUrl}}/redirects"
+method: GET
+settings:
+  strictSSL: false
+  followRedirects: false
+  maxRedirects: 3
+order: 13000

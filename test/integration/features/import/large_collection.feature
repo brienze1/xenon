@@ -40,3 +40,29 @@ Feature: Import a large collection quickly with steady progress
       """
     Then the response should contain the field "0.children" array length equal to 10
     And the response should contain the field "0.children.9.children" array length equal to 100
+
+  @success @xen_009 @postman_v3_large
+  Scenario: A 1,000-request v3 git-native collection is imported in the same time bound
+    When I call "ImportService.Detect" with
+      """
+      { "paths": ["{{resources}}/import/postman/v3/large-1000-v3.zip"] }
+      """
+    Then the call should succeed
+    And the last call should have taken less than 2000 ms
+    And the response should contain the field "kind" equal to "postman_collection"
+    And the response should contain the field "version" equal to "3"
+    And the response should contain the field "items.0.counts.requests" equal to "1000"
+    And the response should contain the field "items.0.counts.folders" equal to "10"
+    And I save the response field "source_id" as "source"
+    When I call "ImportService.Import" with
+      """
+      { "source_id": "{{source}}", "items": [ { "key": "0", "include": true, "target_local_id": "{{Acme.local_id}}" } ] }
+      """
+    Then the call should succeed
+    And the last call should have taken less than 8000 ms
+    And the response should contain the field "workspaces.0.created.requests" equal to "1000"
+    And the response should contain the field "failed" array length equal to 0
+    And the "import:progress" events should have been emitted at most 250 ms apart
+    And the workspace file "acme/collections/large-api/area-09/request-0999.yaml" should contain the field "method" equal to "POST"
+    And the workspace file "acme/collections/large-api/area-09/request-0999.yaml" should contain the field "url" equal to "{{base_url}}/area/9/items/999?page=1"
+    And the workspace file "acme/collections/large-api/area-09/request-0999.yaml" should contain the field "params.0.key" equal to "page"
