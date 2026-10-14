@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -79,6 +80,9 @@ func buildBridge() (string, error) {
 			return
 		}
 		bridgeBinary = filepath.Join(folder, "xenon")
+		if runtime.GOOS == "windows" {
+			bridgeBinary += ".exe"
+		}
 		build := exec.Command("go", "build", "-o", bridgeBinary, "./cmd/xenon")
 		build.Dir = root
 		if output, err := build.CombinedOutput(); err != nil {
