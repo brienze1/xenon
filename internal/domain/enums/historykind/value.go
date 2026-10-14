@@ -7,15 +7,18 @@ import (
 )
 
 const (
-	Send   enums.HistoryKind = "send"
-	Action enums.HistoryKind = "action"
+	Send    enums.HistoryKind = "send"
+	Action  enums.HistoryKind = "action"
+	Unknown enums.HistoryKind = "unknown"
 )
 
 func GetHistoryKind(s string) enums.HistoryKind {
 	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "send", "":
+		return Send
 	case "action":
 		return Action
 	default:
-		return Send
+		return Unknown
 	}
 }

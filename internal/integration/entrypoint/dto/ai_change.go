@@ -2,13 +2,9 @@ package dto
 
 import (
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/aichangekind"
 )
-
-type AIChanges struct {
-	LocalId string     `json:"local_id" validate:"required,not_blank"`
-	Changes []AIChange `json:"changes" validate:"dive"`
-}
 
 type AIChange struct {
 	Kind      string `json:"kind" validate:"required,oneof=tree request variables history cookies workspaces"`
@@ -16,10 +12,14 @@ type AIChange struct {
 	Revision  string `json:"revision,omitempty"`
 }
 
-func (a *AIChanges) ToEntity() []entity.AIChange {
-	changes := make([]entity.AIChange, 0, len(a.Changes))
-	for _, change := range a.Changes {
-		changes = append(changes, entity.AIChange{Kind: aichangekind.GetAIChangeKind(change.Kind), RequestID: change.RequestId, Revision: change.Revision})
-	}
-	return changes
+func NewAIChange(kind enums.AIChangeKind) AIChange {
+	return AIChange{Kind: kind.String()}
+}
+
+func NewRequestAIChange(requestId, revision string) AIChange {
+	return AIChange{Kind: aichangekind.Request.String(), RequestId: requestId, Revision: revision}
+}
+
+func (a *AIChange) ToEntity() entity.AIChange {
+	return entity.AIChange{Kind: aichangekind.GetAIChangeKind(a.Kind), RequestID: a.RequestId, Revision: a.Revision}
 }

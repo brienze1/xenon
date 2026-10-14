@@ -13,12 +13,6 @@ type AIApprovalRequested struct {
 	CreatedAt   string                `json:"created_at"`
 }
 
-type AIApprovalEnvironment struct {
-	Id    string `json:"id"`
-	Name  string `json:"name"`
-	Color string `json:"color"`
-}
-
 func NewAIApprovalRequested(approval entity.AIApproval) AIApprovalRequested {
 	return AIApprovalRequested{
 		Id:          approval.ID,
@@ -26,6 +20,6 @@ func NewAIApprovalRequested(approval entity.AIApproval) AIApprovalRequested {
 		Method:      approval.Method,
 		Url:         approval.RawURL,
 		CreatedAt:   approval.CreatedAt.UTC().Format("2006-01-02T15:04:05.000Z"),
-		Environment: AIApprovalEnvironment{Id: approval.Environment.ID, Name: approval.Environment.Name, Color: approval.Environment.Color},
+		Environment: NewAIApprovalEnvironment(approval.Environment),
 	}
 }

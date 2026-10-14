@@ -7,7 +7,6 @@ import (
 	"github.com/brienze1/xenon/internal/infra/properties"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
-	"github.com/brienze1/xenon/internal/integration/entrypoint/validator"
 	"github.com/brienze1/xenon/pkg/logger"
 )
 
@@ -56,14 +55,17 @@ func (s *settings) Save(bindingCtx context.Context, request dto.AppSettings) (re
 		}
 	}(ctx, request)
 
-	err = validator.CustomValidator().Struct("SET-00400", &request)
+	err = validateSaveSettings(&request)
 	if err != nil {
 		return nil, err
 	}
 
 	saved, err := s.manageAppSettingsService.Save(ctx, request.ToEntity())
-	if err != nil {
+	if saved == nil {
 		return nil, err
+	}
+	if err != nil {
+		s.errorHandler.Handle(ctx, err, request)
 	}
 	result := dto.NewAppSettings(*saved, properties.Properties().Application.MCPPortOverride)
 

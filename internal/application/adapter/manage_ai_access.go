@@ -7,7 +7,8 @@ import (
 )
 
 type ManageAIAccessService interface {
-	Status(ctx context.Context) entity.AIAccessStatus
+	// Start returns the applied status even when only publishing it failed.
 	Start(ctx context.Context) (*entity.AIAccessStatus, error)
-	Stop(ctx context.Context) entity.AIAccessStatus
+	// Stop returns the stopped status even when publishing it failed.
+	Stop(ctx context.Context) (entity.AIAccessStatus, error)
 }

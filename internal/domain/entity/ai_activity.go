@@ -3,28 +3,20 @@ package entity
 import (
 	"strings"
 	"unicode/utf8"
+
+	"github.com/brienze1/xenon/internal/domain/enums"
 )
 
 const (
 	MaxAIActivityArgsBytes = 2048
 	aiActivityArgsEllipsis = "…"
-	AIActivityOk           = "ok"
-	AIActivityError        = "error"
-	AIActivityDenied       = "denied"
-	AIActivityTimedOut     = "timed_out"
 )
-
-type AIActivityTarget struct {
-	ID   string
-	Name string
-	Path string
-}
 
 type AIActivity struct {
 	Tool       string
 	Action     string
 	Target     AIActivityTarget
-	Outcome    string
+	Outcome    enums.AIActivityOutcome
 	Code       string
 	Args       string
 	DurationMs int64

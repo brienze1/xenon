@@ -8,6 +8,6 @@ import (
 
 type ServeAIAccess interface {
 	Apply(ctx context.Context, settings entity.AIAccessSettings) entity.AIAccessStatus
-	Status(ctx context.Context) entity.AIAccessStatus
+	Disable(ctx context.Context, settings entity.AIAccessSettings) entity.AIAccessStatus
 	Stop(ctx context.Context) entity.AIAccessStatus
 }

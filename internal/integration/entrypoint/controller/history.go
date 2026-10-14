@@ -6,7 +6,6 @@ import (
 	appAdapter "github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
-	"github.com/brienze1/xenon/internal/integration/entrypoint/validator"
 	"github.com/brienze1/xenon/pkg/logger"
 )
 
@@ -32,7 +31,7 @@ func (h *history) List(bindingCtx context.Context, request dto.ListHistory) (res
 		}
 	}(ctx, request)
 
-	err = validator.CustomValidator().Struct("HIS-00400", &request)
+	err = validateListHistory(&request)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +59,7 @@ func (h *history) Get(bindingCtx context.Context, request dto.HistoryReference) 
 		}
 	}(ctx, request)
 
-	err = validator.CustomValidator().Struct("HIS-01400", &request)
+	err = validateGetHistory(&request)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +87,7 @@ func (h *history) Clear(bindingCtx context.Context, request dto.ClearHistory) (e
 		}
 	}(ctx, request)
 
-	err = validator.CustomValidator().Struct("HIS-02400", &request)
+	err = validateClearHistory(&request)
 	if err != nil {
 		return err
 	}

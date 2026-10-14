@@ -2,6 +2,7 @@ package entity
 
 import (
 	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/historyfilter"
 	"github.com/brienze1/xenon/internal/domain/enums/historysource"
 )
 
@@ -10,44 +11,10 @@ const (
 	MinHistoryCap          = 100
 	MaxHistoryCap          = 20000
 	DefaultHistoryPageSize = 1000
-	historySlackDivisor    = 5
 )
-
-var DefaultHistoryCaps = HistoryCaps{User: DefaultHistoryCap, AI: DefaultHistoryCap}
-
-type HistoryCaps struct {
-	User int
-	AI   int
-}
 
 type History struct {
 	entries []HistoryEntry
-}
-
-func IsValidHistoryCap(limit int) bool {
-	return limit >= MinHistoryCap && limit <= MaxHistoryCap
-}
-
-func (h HistoryCaps) OrDefault() HistoryCaps {
-	if !IsValidHistoryCap(h.User) {
-		h.User = DefaultHistoryCap
-	}
-	if !IsValidHistoryCap(h.AI) {
-		h.AI = DefaultHistoryCap
-	}
-	return h
-}
-
-func (h HistoryCaps) For(source enums.HistorySource) int {
-	if source == historysource.AI {
-		return h.AI
-	}
-	return h.User
-}
-
-func (h HistoryCaps) compactionThreshold(source enums.HistorySource) int {
-	limit := h.For(source)
-	return limit + limit/historySlackDivisor
 }
 
 // CompactHistory keeps the newest cap entries of each source once one source grows a fifth past its cap.
@@ -88,6 +55,21 @@ func WithoutHistorySource[T any](oldestFirst []T, sourceOf func(T) enums.History
 		}
 	}
 	return kept
+}
+
+func HistoryAfterClear[T any](oldestFirst []T, sourceOf func(T) enums.HistorySource, filter enums.HistoryFilter) []T {
+	switch filter {
+	case historyfilter.User:
+		return WithoutHistorySource(oldestFirst, sourceOf, historysource.User)
+	case historyfilter.AI:
+		return WithoutHistorySource(oldestFirst, sourceOf, historysource.AI)
+	default:
+		return []T{}
+	}
+}
+
+func ClearsAllHistory(filter enums.HistoryFilter) bool {
+	return historyfilter.All.Equals(KnownHistoryFilter(filter).String())
 }
 
 func HistoryEntrySource(entry HistoryEntry) enums.HistorySource {

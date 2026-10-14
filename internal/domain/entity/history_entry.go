@@ -58,8 +58,22 @@ func (h HistoryEntry) IsAction() bool {
 	return h.Kind == historykind.Action && h.Activity != nil
 }
 
+// Normalized reads an entry of unknown kind, or an action without its activity, as a send.
+func (h HistoryEntry) Normalized() HistoryEntry {
+	if h.IsAction() {
+		return HistoryEntry{ID: h.ID, SentAt: h.SentAt, Kind: h.Kind, Source: h.Source, Client: h.Client, Activity: h.Activity}
+	}
+	h.Kind = historykind.Send
+	h.Activity = nil
+	return h
+}
+
 func (h HistoryEntry) Origin() enums.HistorySource {
-	if h.Source == historysource.AI {
+	return HistoryOrigin(h.Source)
+}
+
+func HistoryOrigin(source enums.HistorySource) enums.HistorySource {
+	if source == historysource.AI {
 		return historysource.AI
 	}
 	return historysource.User
@@ -95,6 +109,10 @@ func (h HistoryEntry) Matches(query string) bool {
 
 func (h HistoryEntry) HasID(id string) bool {
 	return h.ID == id
+}
+
+func (h HistoryEntry) ActivityTarget() AIActivityTarget {
+	return AIActivityTarget{ID: h.ID}
 }
 
 func (h HistoryEntry) LogValue() any {

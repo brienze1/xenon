@@ -7,15 +7,18 @@ import (
 )
 
 const (
-	User enums.HistorySource = "user"
-	AI   enums.HistorySource = "ai"
+	User    enums.HistorySource = "user"
+	AI      enums.HistorySource = "ai"
+	Unknown enums.HistorySource = "unknown"
 )
 
 func GetHistorySource(s string) enums.HistorySource {
 	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "user", "":
+		return User
 	case "ai":
 		return AI
 	default:
-		return User
+		return Unknown
 	}
 }

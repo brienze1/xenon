@@ -3,7 +3,9 @@ package steps
 import (
 	"bytes"
 	"fmt"
+	"net"
 	"regexp"
+	"time"
 
 	"github.com/cucumber/godog"
 )
@@ -14,6 +16,8 @@ func (t *testUtils) registerThenMcpSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the response field "([^"]*)" should have (\d+) characters$`, t.theResponseFieldShouldHaveCharacters)
 	ctx.Then(`^every item of the response field "([^"]*)" should have the field "([^"]*)" matching "([^"]*)"$`, t.everyItemOfTheResponseFieldShouldHaveTheFieldMatching)
 	ctx.Then(`^the Xenon window should have been brought to the front (\d+) times?$`, t.theXenonWindowShouldHaveBeenBroughtToTheFrontTimes)
+	ctx.Then(`^the background call "([^"]*)" should finish within (\d+) ms$`, t.theNamedBackgroundCallShouldFinishWithin)
+	ctx.Then(`^the MCP endpoint should refuse connections$`, t.theMcpEndpointShouldRefuseConnections)
 }
 
 func (t *testUtils) theErrorShouldNotContain(text string) error {
@@ -62,6 +66,24 @@ func (t *testUtils) everyItemOfTheResponseFieldShouldHaveTheFieldMatching(path, 
 		if !found || !expression.MatchString(stringify(value)) {
 			return fmt.Errorf("%s: an item has %s = %q, expected it to match %q: %s", path, key, stringify(value), pattern, stringify(item))
 		}
+	}
+	return nil
+}
+
+func (t *testUtils) theNamedBackgroundCallShouldFinishWithin(name string, milliseconds int) error {
+	call, found := t.backgrounds[name]
+	if !found {
+		return fmt.Errorf("no background call named %q was started", name)
+	}
+	t.background = call
+	return t.theBackgroundCallShouldFinishWithin(milliseconds)
+}
+
+func (t *testUtils) theMcpEndpointShouldRefuseConnections() error {
+	connection, err := net.DialTimeout("tcp", "127.0.0.1:"+t.vars["mcp_port"], time.Second)
+	if err == nil {
+		_ = connection.Close()
+		return fmt.Errorf("the MCP endpoint %s accepted a connection", t.mcpEndpoint())
 	}
 	return nil
 }

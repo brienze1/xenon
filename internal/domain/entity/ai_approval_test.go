@@ -46,3 +46,17 @@ func TestAIApprovalResolvesOnlyOnce(t *testing.T) {
 		t.Errorf("LogValue() = %v", logged)
 	}
 }
+
+func TestAIApprovalQueuedStartsAFreshPendingApproval(t *testing.T) {
+	created := time.Date(2026, 10, 13, 10, 0, 0, 0, time.UTC)
+	environment := AIApprovalEnvironment{ID: "e", Name: "Prod", Color: "red"}
+	request := AIApproval{ID: "stale", Client: "", Method: "DELETE", RawURL: "{{api}}/users/7", Environment: environment, Outcome: approvaloutcome.Denied}
+	queued := request.Queued("01B", created)
+	want := NewAIApproval("01B", "", "DELETE", "{{api}}/users/7", environment, created)
+	if queued != want {
+		t.Fatalf("Queued() = %+v, want %+v", queued, want)
+	}
+	if !queued.IsPending() || queued.Client != DefaultAIClientName {
+		t.Errorf("queued = %+v", queued)
+	}
+}

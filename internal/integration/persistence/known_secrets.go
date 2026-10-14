@@ -22,8 +22,8 @@ func (k *knownSecretsPersistence) Register(ctx context.Context, values ...string
 	logger.Debug(ctx, "Started", map[string]any{"values": len(values)})
 
 	k.mu.Lock()
-	k.known.Add(values...)
-	snapshot := k.known.With()
+	k.known = k.known.With(values...)
+	snapshot := k.known
 	k.mu.Unlock()
 
 	logger.Debug(ctx, "Finished", snapshot)

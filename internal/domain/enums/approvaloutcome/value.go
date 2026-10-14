@@ -11,10 +11,13 @@ const (
 	Approved enums.ApprovalOutcome = "approved"
 	Denied   enums.ApprovalOutcome = "denied"
 	TimedOut enums.ApprovalOutcome = "timed_out"
+	Unknown  enums.ApprovalOutcome = "unknown"
 )
 
 func GetApprovalOutcome(s string) enums.ApprovalOutcome {
 	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "pending", "":
+		return Pending
 	case "approved":
 		return Approved
 	case "denied":
@@ -22,6 +25,6 @@ func GetApprovalOutcome(s string) enums.ApprovalOutcome {
 	case "timed_out":
 		return TimedOut
 	default:
-		return Pending
+		return Unknown
 	}
 }

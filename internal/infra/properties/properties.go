@@ -19,7 +19,6 @@ const (
 	maxPort                   = 65535
 )
 
-// gitHubClientID is the GitHub OAuth App client id, set at build time with -ldflags -X.
 var gitHubClientID = ""
 
 type properties struct {

@@ -5,16 +5,18 @@ import (
 
 	wails "github.com/wailsapp/wails/v3/pkg/application"
 
+	serverAdapter "github.com/brienze1/xenon/internal/infra/server/adapter"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
 )
 
 type AIAccessService struct {
-	aiAccess adapter.AIAccessController
+	aiAccess  adapter.AIAccessController
+	mcpServer serverAdapter.MCPServer
 }
 
-func NewAIAccessService(aiAccess adapter.AIAccessController) *AIAccessService {
-	return &AIAccessService{aiAccess: aiAccess}
+func NewAIAccessService(aiAccess adapter.AIAccessController, mcpServer serverAdapter.MCPServer) *AIAccessService {
+	return &AIAccessService{aiAccess: aiAccess, mcpServer: mcpServer}
 }
 
 func (a *AIAccessService) Status(ctx context.Context) (*dto.AIAccessStatus, error) {
@@ -30,15 +32,9 @@ func (a *AIAccessService) AnswerApproval(ctx context.Context, request dto.AIAppr
 }
 
 func (a *AIAccessService) ServiceStartup(ctx context.Context, _ wails.ServiceOptions) error {
-	_, err := a.aiAccess.Start(ctx)
-	return err
+	return a.mcpServer.Start(ctx)
 }
 
 func (a *AIAccessService) ServiceShutdown() error {
-	ctx := context.Background()
-	if err := a.aiAccess.DenyApprovals(ctx, dto.AIApprovalDenial{}); err != nil {
-		return err
-	}
-	_, err := a.aiAccess.Stop(ctx)
-	return err
+	return a.mcpServer.Stop(context.Background())
 }

@@ -47,9 +47,9 @@ func TestKnownSecretsMask(t *testing.T) {
 		t.Errorf("With must not change the original: %d %d", grown.Count(), known.Count())
 	}
 	var empty KnownSecrets
-	empty.Add("late")
+	empty = empty.With("late")
 	if empty.Count() != 1 || strings.Join(empty.Values(), ",") != "late" {
-		t.Errorf("zero value Add = %v", empty.Values())
+		t.Errorf("zero value With = %v", empty.Values())
 	}
 	if logged := known.LogValue().(map[string]any); len(logged) != 1 || logged["count"] != 4 {
 		t.Errorf("LogValue() = %v", logged)
@@ -88,7 +88,7 @@ func TestSendExecutionDerivesTheBasicAuthCredentials(t *testing.T) {
 	if derived := execution.DerivedSecrets([]string{"other"}); len(derived) != 0 {
 		t.Errorf("no secret took part: %v", derived)
 	}
-	if derived := (SendExecution{}).DerivedSecrets([]string{"s3cret"}); len(derived) != 0 {
+	if derived := (&SendExecution{}).DerivedSecrets([]string{"s3cret"}); len(derived) != 0 {
 		t.Errorf("nothing was sent: %v", derived)
 	}
 }

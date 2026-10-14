@@ -1,6 +1,9 @@
 package model
 
-import "github.com/brienze1/xenon/internal/domain/entity"
+import (
+	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums/aiactivityoutcome"
+)
 
 type AIActivity struct {
 	Target     *AIActivityTarget `json:"target,omitempty"`
@@ -12,23 +15,18 @@ type AIActivity struct {
 	DurationMs int64             `json:"duration_ms"`
 }
 
-type AIActivityTarget struct {
-	Id   string `json:"id,omitempty"`
-	Name string `json:"name,omitempty"`
-	Path string `json:"path,omitempty"`
-}
-
 func NewAIActivity(activity entity.AIActivity) AIActivity {
 	model := AIActivity{
 		Tool:       activity.Tool,
 		Action:     activity.Action,
-		Outcome:    activity.Outcome,
+		Outcome:    activity.Outcome.String(),
 		Code:       activity.Code,
 		Args:       activity.Args,
 		DurationMs: activity.DurationMs,
 	}
-	if activity.Target != (entity.AIActivityTarget{}) {
-		model.Target = &AIActivityTarget{Id: activity.Target.ID, Name: activity.Target.Name, Path: activity.Target.Path}
+	if !activity.Target.IsEmpty() {
+		target := NewAIActivityTarget(activity.Target)
+		model.Target = &target
 	}
 	return model
 }
@@ -37,13 +35,13 @@ func (a *AIActivity) ToEntity() entity.AIActivity {
 	activity := entity.AIActivity{
 		Tool:       a.Tool,
 		Action:     a.Action,
-		Outcome:    a.Outcome,
+		Outcome:    aiactivityoutcome.GetAIActivityOutcome(a.Outcome),
 		Code:       a.Code,
 		Args:       a.Args,
 		DurationMs: a.DurationMs,
 	}
 	if a.Target != nil {
-		activity.Target = entity.AIActivityTarget{ID: a.Target.Id, Name: a.Target.Name, Path: a.Target.Path}
+		activity.Target = a.Target.ToEntity()
 	}
 	return activity
 }

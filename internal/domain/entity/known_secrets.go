@@ -21,25 +21,16 @@ type KnownSecrets struct {
 
 func NewKnownSecrets(values ...string) KnownSecrets {
 	known := KnownSecrets{values: map[string]struct{}{}}
-	known.Add(values...)
+	for _, value := range values {
+		if value != "" {
+			known.values[value] = struct{}{}
+		}
+	}
 	return known
 }
 
-func (k *KnownSecrets) Add(values ...string) {
-	if k.values == nil {
-		k.values = map[string]struct{}{}
-	}
-	for _, value := range values {
-		if value != "" {
-			k.values[value] = struct{}{}
-		}
-	}
-}
-
 func (k KnownSecrets) With(values ...string) KnownSecrets {
-	union := NewKnownSecrets(k.Values()...)
-	union.Add(values...)
-	return union
+	return NewKnownSecrets(append(k.Values(), values...)...)
 }
 
 func (k KnownSecrets) Values() []string {

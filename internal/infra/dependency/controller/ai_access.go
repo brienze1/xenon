@@ -16,11 +16,14 @@ func GetAIAccessController() adapter.AIAccessController {
 		aiAccessControllerOnce.Do(func() {
 			aiAccessControllerInstance = controller.NewAIAccess(
 				GetErrorHandler(),
+				application.GetFindAIAccessStatusService(),
 				application.GetManageAIAccessService(),
 				application.GetGuardAIOutputService(),
 				application.GetNotifyAIChangeService(),
 				application.GetRecordAIActivityService(),
 				application.GetApproveAISendService(),
+				application.GetFindAIApprovalsService(),
+				application.GetPublishAIAccessStatusService(),
 			)
 		})
 	}

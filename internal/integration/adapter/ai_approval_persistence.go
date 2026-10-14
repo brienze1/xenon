@@ -6,4 +6,5 @@ type AIApprovalPersistence interface {
 	usecase.QueueAIApproval
 	usecase.FindAIApprovals
 	usecase.ResolveAIApproval
+	usecase.SettleAIApproval
 }

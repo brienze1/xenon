@@ -188,7 +188,7 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", origin, map[string]any{"localId": localId, "tabId": tabId, "request": request, "appVersion": appVersion, "acknowledgement": acknowledgement, "result": execution})
+	logger.Info(ctx, "Finished", origin, map[string]any{"localId": localId, "tabId": tabId, "request": request, "appVersion": appVersion, "acknowledgement": acknowledgement, "result": &execution})
 	return &execution, nil
 }
 
@@ -203,14 +203,14 @@ func (s *sendRequest) oauthToken(ctx context.Context, localId string, effective 
 	if err != nil {
 		return nil, err
 	}
-	if expired && !acknowledgement.AcceptsExpiredToken() {
+	if acknowledgement.RejectsExpiredToken(expired) {
 		return nil, usecase.RejectExpiredToken(effective.AuthOwner)
 	}
 	return token, nil
 }
 
 func (s *sendRequest) scriptOwners(ctx context.Context, root string, request entity.Request, ancestors []entity.Collection) ([]entity.ScriptOwner, error) {
-	if request.ScriptsEdited || !entity.IsSavedRequestID(request.ID) {
+	if request.UsesOwnScripts() {
 		return request.ScriptOwners(ancestors), nil
 	}
 	stored, err := s.findRequest.Find(ctx, root, request.ID)

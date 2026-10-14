@@ -16,5 +16,6 @@ type AIAccessController interface {
 	RequestApproval(ctx context.Context, request dto.AIApprovalRequest) (*dto.AIApprovalOutcome, error)
 	AnswerApproval(ctx context.Context, request dto.AIApprovalAnswer) error
 	PendingApprovals(ctx context.Context) ([]dto.AIApproval, error)
-	DenyApprovals(ctx context.Context, request dto.AIApprovalDenial) error
+	Shutdown(ctx context.Context) error
+	ClientsChanged(ctx context.Context) error
 }

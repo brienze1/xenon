@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 	"unicode/utf8"
+
+	"github.com/brienze1/xenon/internal/domain/enums/aiactivityoutcome"
 )
 
 func TestSendOriginNamesTheClient(t *testing.T) {
@@ -53,7 +55,7 @@ func TestAIActivityArgsAreCutAt2KB(t *testing.T) {
 
 func TestActionHistoryEntriesMatchTheirActivity(t *testing.T) {
 	at := time.Date(2026, 10, 13, 10, 0, 0, 0, time.UTC)
-	entry := NewActionHistoryEntry("01", at, "", AIActivity{Tool: "tree_edit", Action: "create", Target: AIActivityTarget{Name: "Payments"}, Outcome: AIActivityOk})
+	entry := NewActionHistoryEntry("01", at, "", AIActivity{Tool: "tree_edit", Action: "create", Target: AIActivityTarget{Name: "Payments"}, Outcome: aiactivityoutcome.Ok})
 	if !entry.IsAction() || entry.Client != DefaultAIClientName || entry.Origin() != "ai" || !entry.IsIn("ai") || entry.IsIn("user") || !entry.IsIn("all") {
 		t.Fatalf("entry = %+v", entry)
 	}

@@ -12,14 +12,12 @@ type AIAccessSettings struct {
 	SkipApprovals bool
 }
 
-type AIAccessPatch struct {
-	Enabled       *bool
-	Port          *int
-	SkipApprovals *bool
-}
-
 func DefaultAIAccessSettings() AIAccessSettings {
 	return AIAccessSettings{Enabled: true}
+}
+
+func (a AIAccessSettings) ShouldListen() bool {
+	return a.Enabled
 }
 
 func (a AIAccessSettings) HasChosenPort() bool {
@@ -46,16 +44,7 @@ func (a AIAccessSettings) Merged(patch *AIAccessPatch) AIAccessSettings {
 	if patch == nil {
 		return a
 	}
-	if patch.Enabled != nil {
-		a.Enabled = *patch.Enabled
-	}
-	if patch.Port != nil {
-		a.Port = *patch.Port
-	}
-	if patch.SkipApprovals != nil {
-		a.SkipApprovals = *patch.SkipApprovals
-	}
-	return a
+	return patch.ApplyTo(a)
 }
 
 func (a AIAccessSettings) LogValue() any {

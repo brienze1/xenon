@@ -6,8 +6,11 @@ import (
 
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/integration/adapter"
+	"github.com/brienze1/xenon/pkg/errs"
 	"github.com/brienze1/xenon/pkg/logger"
 )
+
+const approvalIdAttribute = "id"
 
 type queuedApproval struct {
 	resolved  chan entity.AIApproval
@@ -43,7 +46,7 @@ func (a *aiApprovalPersistence) FindPending(ctx context.Context) []entity.AIAppr
 
 	pending := a.pending(func(*queuedApproval) bool { return true })
 
-	logger.Debug(ctx, "Finished", map[string]any{"pending": len(pending)})
+	logger.Debug(ctx, "Finished", map[string]any{"pending": pending})
 	return pending
 }
 
@@ -52,32 +55,56 @@ func (a *aiApprovalPersistence) FindSessionPending(ctx context.Context, sessionI
 
 	pending := a.pending(func(queued *queuedApproval) bool { return queued.sessionId == sessionId })
 
-	logger.Debug(ctx, "Finished", map[string]any{"sessionId": sessionId, "pending": len(pending)})
+	logger.Debug(ctx, "Finished", map[string]any{"sessionId": sessionId, "pending": pending})
 	return pending
 }
 
-func (a *aiApprovalPersistence) Resolve(ctx context.Context, id string, resolve func(entity.AIApproval) (entity.AIApproval, bool)) (*entity.AIApproval, bool) {
+func (a *aiApprovalPersistence) Resolve(ctx context.Context, id string, resolve func(entity.AIApproval) (entity.AIApproval, bool)) (*entity.AIApproval, error) {
 	logger.Debug(ctx, "Started", map[string]any{"id": id})
 
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	queued, found := a.approvals[id]
 	if !found {
-		logger.Debug(ctx, "Finished", map[string]any{"id": id, "found": false})
+		return nil, errs.BadRequestError("no pending send with this id", entity.AIInvalidArgumentsCode,
+			errs.ErrorDetails{Attribute: approvalIdAttribute, Messages: []string{id}})
+	}
+	resolved, accepted := resolve(queued.approval)
+	if !accepted {
+		return nil, errs.ConflictError("this send was already approved, denied or timed out", "MCP-05409",
+			errs.ErrorDetails{Attribute: approvalIdAttribute, Messages: []string{id}})
+	}
+	a.settle(id, queued, resolved)
+
+	logger.Debug(ctx, "Finished", resolved, map[string]any{"id": id})
+	return &resolved, nil
+}
+
+func (a *aiApprovalPersistence) Settle(ctx context.Context, id string, resolve func(entity.AIApproval) (entity.AIApproval, bool)) (*entity.AIApproval, bool) {
+	logger.Debug(ctx, "Started", map[string]any{"id": id})
+
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	queued, found := a.approvals[id]
+	if !found {
+		logger.Debug(ctx, "Finished", map[string]any{"id": id, "settled": false})
 		return nil, false
 	}
 	resolved, accepted := resolve(queued.approval)
 	if !accepted {
-		current := queued.approval
-		logger.Debug(ctx, "Finished", current, map[string]any{"id": id, "accepted": false})
-		return &current, false
+		logger.Debug(ctx, "Finished", queued.approval, map[string]any{"id": id, "settled": false})
+		return nil, false
 	}
+	a.settle(id, queued, resolved)
+
+	logger.Debug(ctx, "Finished", resolved, map[string]any{"id": id, "settled": true})
+	return &resolved, true
+}
+
+func (a *aiApprovalPersistence) settle(id string, queued *queuedApproval, resolved entity.AIApproval) {
 	queued.approval = resolved
 	a.order = a.withoutId(id)
 	queued.resolved <- resolved
-
-	logger.Debug(ctx, "Finished", resolved, map[string]any{"id": id, "accepted": true})
-	return &resolved, true
 }
 
 func (a *aiApprovalPersistence) pending(matches func(*queuedApproval) bool) []entity.AIApproval {

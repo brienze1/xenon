@@ -6,7 +6,6 @@ import (
 	"github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
-	"github.com/brienze1/xenon/pkg/errs"
 	"github.com/brienze1/xenon/pkg/idutils"
 	"github.com/brienze1/xenon/pkg/logger"
 )
@@ -71,19 +70,19 @@ func (m *manageDocumentation) Get(ctx context.Context, localId, id string) (*ent
 }
 
 func (m *manageDocumentation) Preview(ctx context.Context, text string) (*entity.ApiDocumentation, error) {
-	logger.Info(ctx, "Started", map[string]any{"bytes": len(text)})
+	logger.Info(ctx, "Started", map[string]any{"text": text})
 
 	documentation, err := m.source.read(ctx, text)
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", map[string]any{"bytes": len(text), "result": *documentation})
+	logger.Info(ctx, "Finished", map[string]any{"text": text, "result": *documentation})
 	return documentation, nil
 }
 
 func (m *manageDocumentation) Plan(ctx context.Context, localId, id, text string) (*entity.DocumentationPlan, error) {
-	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id, "bytes": len(text)})
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id, "text": text})
 
 	workspace, err := m.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
@@ -94,29 +93,26 @@ func (m *manageDocumentation) Plan(ctx context.Context, localId, id, text string
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "id": id, "result": *plan})
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "id": id, "text": text, "result": *plan})
 	return plan, nil
 }
 
 func (m *manageDocumentation) Apply(ctx context.Context, localId, id, text string, confirmDeletions, keepDeleted bool) (*entity.DocumentationResult, error) {
-	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id, "bytes": len(text), "confirmDeletions": confirmDeletions, "keepDeleted": keepDeleted})
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id, "text": text, "confirmDeletions": confirmDeletions, "keepDeleted": keepDeleted})
 
 	workspace, err := m.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
 		return nil, err
 	}
-	plan, err := m.source.plan(ctx, workspace.Path, id, text, idutils.NewUlid)
+	planned, err := m.source.plan(ctx, workspace.Path, id, text, idutils.NewUlid)
 	if err != nil {
 		return nil, err
 	}
-	if keepDeleted {
-		kept := plan.KeepingDeleted()
-		plan = &kept
+	plan := planned.Applying(keepDeleted)
+	if err := plan.ConfirmedBy(confirmDeletions); err != nil {
+		return nil, err
 	}
-	if plan.NeedsConfirmation(confirmDeletions) {
-		return nil, errs.BadRequestError("saving deletes requests; confirm the deletions first", "DOC-04400")
-	}
-	written, err := m.writer.write(ctx, workspace.Path, *plan)
+	written, err := m.writer.write(ctx, workspace.Path, plan)
 	if err != nil {
 		return nil, err
 	}
@@ -130,6 +126,6 @@ func (m *manageDocumentation) Apply(ctx context.Context, localId, id, text strin
 	}
 	result := entity.DocumentationResult{Plan: *written, Documentation: *documentation}
 
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "id": id, "result": result})
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "id": id, "text": text, "confirmDeletions": confirmDeletions, "keepDeleted": keepDeleted, "result": result})
 	return &result, nil
 }

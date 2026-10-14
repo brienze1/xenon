@@ -9,12 +9,12 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"strconv"
 	"sync"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 
+	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/infra/properties"
 )
 
@@ -45,18 +45,17 @@ func Run(stdin io.Reader, stdout, stderr io.Writer) int {
 }
 
 func run(stdin io.Reader, stdout io.Writer) error {
-	access := readAIAccess(properties.Properties().Application.DataDir)
-	if !access.isEnabled() {
+	access := findAIAccess(context.Background())
+	if !access.ShouldListen() {
 		return errAccessOff
 	}
-	port := access.resolvedPort(properties.Properties().Application.MCPPortOverride)
-	address := net.JoinHostPort("127.0.0.1", strconv.Itoa(port))
-	connection, err := net.DialTimeout("tcp", address, connectTimeout)
+	port := access.EffectivePort(properties.Properties().Application.MCPPortOverride)
+	connection, err := net.DialTimeout("tcp", entity.AIAccessListenAddress(port), connectTimeout)
 	if err != nil {
 		return errNotRunning
 	}
 	_ = connection.Close()
-	return newBridge(port, "http://"+address+"/mcp", stdout).pump(stdin)
+	return newBridge(port, entity.AIAccessURL(port), stdout).pump(stdin)
 }
 
 type bridge struct {

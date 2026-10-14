@@ -9,26 +9,25 @@ type AppSettings struct {
 	AIAccess        *AIAccessSettings `json:"ai_access,omitempty"`
 }
 
-type AIAccessSettings struct {
-	Enabled       *bool `json:"enabled,omitempty"`
-	Port          *int  `json:"port,omitempty"`
-	SkipApprovals *bool `json:"skip_approvals,omitempty"`
-}
-
 func NewAppSettings(settings entity.AppSettings, aiPortOverride *int) AppSettings {
-	port := settings.AIAccess.EffectivePort(aiPortOverride)
+	access := NewAIAccessSettings(settings.AIAccess, settings.AIAccess.EffectivePort(aiPortOverride))
 	return AppSettings{
 		ScriptTimeoutMs: &settings.ScriptTimeoutMs,
 		HistoryUserCap:  &settings.HistoryUserCap,
 		HistoryAICap:    &settings.HistoryAICap,
-		AIAccess:        &AIAccessSettings{Enabled: &settings.AIAccess.Enabled, Port: &port, SkipApprovals: &settings.AIAccess.SkipApprovals},
+		AIAccess:        &access,
 	}
+}
+
+func NewPartialAppSettings(scriptTimeoutMs, historyUserCap, historyAICap *int) AppSettings {
+	return AppSettings{ScriptTimeoutMs: scriptTimeoutMs, HistoryUserCap: historyUserCap, HistoryAICap: historyAICap}
 }
 
 func (a *AppSettings) ToEntity() entity.AppSettingsPatch {
 	patch := entity.AppSettingsPatch{ScriptTimeoutMs: a.ScriptTimeoutMs, HistoryUserCap: a.HistoryUserCap, HistoryAICap: a.HistoryAICap}
 	if a.AIAccess != nil {
-		patch.AIAccess = &entity.AIAccessPatch{Enabled: a.AIAccess.Enabled, Port: a.AIAccess.Port, SkipApprovals: a.AIAccess.SkipApprovals}
+		access := a.AIAccess.ToEntity()
+		patch.AIAccess = &access
 	}
 	return patch
 }

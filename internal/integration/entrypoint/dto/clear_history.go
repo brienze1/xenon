@@ -10,6 +10,10 @@ type ClearHistory struct {
 	Source  string `json:"source" validate:"omitempty,oneof=all user ai"`
 }
 
+func NewClearHistory(localId, source string) ClearHistory {
+	return ClearHistory{LocalId: localId, Source: source}
+}
+
 func (c *ClearHistory) ToEntity() enums.HistoryFilter {
 	return historyfilter.GetHistoryFilter(c.Source)
 }

@@ -7,85 +7,150 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/aitooleffect"
+	serverAdapter "github.com/brienze1/xenon/internal/infra/server/adapter"
+	"github.com/brienze1/xenon/internal/integration/adapter"
+	"github.com/brienze1/xenon/internal/integration/entrypoint/controller"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
+	"github.com/brienze1/xenon/internal/integration/entrypoint/middleware"
 )
 
-type fakePublisher struct {
-	statuses []entity.AIAccessStatus
-	mu       sync.Mutex
+type receivedCall struct {
+	call dto.MCPCall
+	tool string
 }
 
-func (f *fakePublisher) AccessStatusChanged(_ context.Context, status entity.AIAccessStatus) error {
+type fakeCallController struct {
+	calls  []receivedCall
+	closed chan string
+	mu     sync.Mutex
+}
+
+func newFakeCallController() *fakeCallController {
+	return &fakeCallController{closed: make(chan string, 4)}
+}
+
+func (f *fakeCallController) Call(_ context.Context, call dto.MCPCall, tool adapter.MCPToolController) dto.MCPOutcome {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.statuses = append(f.statuses, status)
-	return nil
-}
-func (f *fakePublisher) ApprovalRequested(context.Context, entity.AIApproval) error { return nil }
-func (f *fakePublisher) ApprovalResolved(context.Context, entity.AIApproval) error  { return nil }
-func (f *fakePublisher) HistoryChanged(context.Context, string) error               { return nil }
-func (f *fakePublisher) WorkspacesChanged(context.Context, string) error            { return nil }
-
-type fakeAIAccess struct {
-	records []dto.AIActivityRecord
-	mu      sync.Mutex
+	f.calls = append(f.calls, receivedCall{call: call, tool: tool.Tool().Name})
+	return dto.NewMCPOutcome(`{"code":"MCP-07400"}`, true)
 }
 
-func (f *fakeAIAccess) Status(context.Context) (*dto.AIAccessStatus, error) { return nil, nil }
-func (f *fakeAIAccess) Start(context.Context) (*dto.AIAccessStatus, error)  { return nil, nil }
-func (f *fakeAIAccess) Stop(context.Context) (*dto.AIAccessStatus, error)   { return nil, nil }
-func (f *fakeAIAccess) Guard(_ context.Context, request dto.AIGuard) (*dto.AIGuarded, error) {
-	guarded := dto.NewAIGuarded(strings.ReplaceAll(request.Text, "s3cret", "•••••"))
-	return &guarded, nil
-}
-func (f *fakeAIAccess) Notify(context.Context, dto.AIChanges) error { return nil }
-func (f *fakeAIAccess) RequestApproval(context.Context, dto.AIApprovalRequest) (*dto.AIApprovalOutcome, error) {
-	return nil, nil
-}
-func (f *fakeAIAccess) AnswerApproval(context.Context, dto.AIApprovalAnswer) error { return nil }
-func (f *fakeAIAccess) PendingApprovals(context.Context) ([]dto.AIApproval, error) { return nil, nil }
-func (f *fakeAIAccess) DenyApprovals(context.Context, dto.AIApprovalDenial) error  { return nil }
-func (f *fakeAIAccess) Record(_ context.Context, request dto.AIActivityRecord) error {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.records = append(f.records, request)
+func (f *fakeCallController) CloseSession(_ context.Context, session dto.MCPSession) error {
+	f.closed <- session.Id
 	return nil
 }
 
-type fakeWorkspaceList struct{ active string }
+type fakeToolController struct {
+	tool entity.AITool
+}
 
-func (f fakeWorkspaceList) Handle(context.Context) (*dto.WorkspaceList, error) {
-	return &dto.WorkspaceList{ActiveLocalId: f.active}, nil
+func (f fakeToolController) Tool() dto.MCPTool {
+	return dto.NewMCPTool(f.tool)
+}
+
+func (f fakeToolController) Handle(context.Context, dto.MCPToolCall) (dto.MCPToolResult, error) {
+	return dto.MCPToolResult{}, nil
+}
+
+func fakeTool(name string) adapter.MCPToolController {
+	return fakeToolController{tool: entity.AITool{Name: name, Description: name, Effect: aitooleffect.ReadOnly}}
+}
+
+func fakeControllers(call adapter.MCPCallController) Controllers {
+	return Controllers{
+		Call:          call,
+		Workspace:     fakeTool("workspace"),
+		WorkspaceEdit: fakeTool("workspace_edit"),
+		Tree:          fakeTool("tree"),
+		TreeEdit:      fakeTool("tree_edit"),
+		Env:           fakeTool("env"),
+		EnvEdit:       fakeTool("env_edit"),
+		History:       fakeTool("history"),
+		Docs:          fakeTool("docs"),
+		DocsEdit:      fakeTool("docs_edit"),
+		Response:      fakeTool("response"),
+		Snippet:       fakeTool("snippet"),
+		Send:          fakeTool("send"),
+		Cookies:       fakeTool("cookies"),
+		CookiesEdit:   fakeTool("cookies_edit"),
+		Console:       fakeTool("console"),
+		Git:           fakeTool("git"),
+		GitEdit:       fakeTool("git_edit"),
+		GitPush:       fakeTool("git_push"),
+		Scripts:       fakeTool("scripts"),
+		Settings:      fakeTool("settings"),
+		SettingsEdit:  fakeTool("settings_edit"),
+		Import:        fakeTool("import"),
+		Export:        fakeTool("export"),
+		Delete:        fakeTool("delete"),
+	}
+}
+
+func realToolControllers() []adapter.MCPToolController {
+	return []adapter.MCPToolController{
+		controller.NewMCPWorkspace(nil, nil, nil),
+		controller.NewMCPWorkspaceEdit(nil, nil, nil, nil, nil, nil),
+		controller.NewMCPTree(nil, nil, nil, nil, nil, nil, nil),
+		controller.NewMCPTreeEdit(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil),
+		controller.NewMCPEnv(nil, nil, nil, nil, nil, nil),
+		controller.NewMCPEnvEdit(nil, nil, nil, nil, nil),
+		controller.NewMCPHistory(nil, nil),
+		controller.NewMCPDocs(nil, nil, nil),
+		controller.NewMCPDocsEdit(nil, nil, nil, nil),
+		controller.NewMCPResponse(nil, nil, nil),
+		controller.NewMCPSnippet(nil, nil, nil, nil),
+		controller.NewMCPSend(nil, nil, nil, nil, nil, nil, nil, nil),
+		controller.NewMCPCookies(nil, nil),
+		controller.NewMCPCookiesEdit(nil, nil),
+		controller.NewMCPConsole(nil, nil),
+		controller.NewMCPGit(nil, nil, nil),
+		controller.NewMCPGitEdit(nil, nil, nil, nil, nil, nil, nil, nil),
+		controller.NewMCPGitPush(nil, nil),
+		controller.NewMCPScripts(nil, nil),
+		controller.NewMCPSettings(nil, nil),
+		controller.NewMCPSettingsEdit(nil, nil),
+		controller.NewMCPImport(nil, nil),
+		controller.NewMCPExport(nil, nil, nil, nil, nil),
+		controller.NewMCPDelete(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil),
+	}
 }
 
 func freePort(t *testing.T) int {
 	t.Helper()
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	busy, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer listener.Close()
-	return listener.Addr().(*net.TCPAddr).Port
+	defer busy.Close()
+	return busy.Addr().(*net.TCPAddr).Port
 }
 
-func newTestServer(t *testing.T, active string) (*Server, *fakePublisher, *fakeAIAccess, int) {
+func newTestListener(t *testing.T, call adapter.MCPCallController) serverAdapter.MCPListener {
 	t.Helper()
-	publisher, access := &fakePublisher{}, &fakeAIAccess{}
-	server := NewServer(publisher)
-	server.Mount(Controllers{AIAccess: access, WorkspaceList: fakeWorkspaceList{active: active}})
+	testListener := NewListener()
+	testListener.Route(NewRoutes(fakeControllers(call), middleware.NewLoopbackGuardMiddleware(), middleware.NewMCPSessionClosingMiddleware(call)))
+	t.Cleanup(testListener.Close)
+	return testListener
+}
+
+func listen(t *testing.T, testListener serverAdapter.MCPListener, clientsChanged func(ctx context.Context)) int {
+	t.Helper()
 	port := freePort(t)
-	status := server.Apply(context.Background(), entity.AIAccessSettings{Enabled: true, Port: port})
-	if !status.IsRunning() {
-		t.Fatalf("Apply() = %+v", status)
+	testListener.Watch(clientsChanged)
+	if err := testListener.Listen(port); err != nil {
+		t.Fatalf("Listen() = %v", err)
 	}
-	t.Cleanup(func() { server.Stop(context.Background()) })
-	return server, publisher, access, port
+	return port
 }
 
 func connect(t *testing.T, port int, name string) *sdk.ClientSession {
@@ -109,68 +174,44 @@ func eventually(t *testing.T, condition func() bool) {
 	}
 }
 
-func TestServerListsTheToolsAndRunsThePipeline(t *testing.T) {
-	server, publisher, access, port := newTestServer(t, "ws-1")
-	closed := make(chan string, 1)
-	server.OnSessionClosed(func(_ context.Context, sessionId string) { closed <- sessionId })
+func TestListenerServesTheToolsThroughTheCallController(t *testing.T) {
+	call := newFakeCallController()
+	testListener := newTestListener(t, call)
+	var changes atomic.Int32
+	port := listen(t, testListener, func(context.Context) { changes.Add(1) })
 	session := connect(t, port, "Claude Code")
 	listed, err := session.ListTools(context.Background(), nil)
-	if err != nil || len(listed.Tools) != len(registry) || len(registry) != 24 {
+	if err != nil || len(listed.Tools) != 24 {
 		t.Fatalf("ListTools() = %d tools, %v", len(listed.Tools), err)
 	}
-	eventually(t, func() bool { return server.Status(context.Background()).Clients == 1 })
+	eventually(t, func() bool { return testListener.Clients() == 1 })
 	result, err := session.CallTool(context.Background(), &sdk.CallToolParams{Name: "tree", Arguments: map[string]any{"action": "explode", "note": "s3cret"}})
-	if err != nil || !result.IsError {
+	if err != nil || !result.IsError || result.Content[0].(*sdk.TextContent).Text != `{"code":"MCP-07400"}` {
 		t.Fatalf("CallTool() = %+v, %v", result, err)
 	}
-	text := result.Content[0].(*sdk.TextContent).Text
-	if !strings.Contains(text, `"code":"MCP-07400"`) {
-		t.Errorf("error text = %s", text)
-	}
-	access.mu.Lock()
-	record := access.records[0]
-	access.mu.Unlock()
-	if record.Client != "Claude Code" || record.Action != "explode" || record.Outcome != entity.AIActivityError || record.Code != "MCP-07400" || record.LocalId != "ws-1" || !strings.Contains(record.Args, "s3cret") {
-		t.Errorf("record = %+v", record)
+	call.mu.Lock()
+	received := call.calls[0]
+	call.mu.Unlock()
+	if received.tool != "tree" || received.call.Client != "Claude Code" || received.call.Session == "" || !strings.Contains(string(received.call.Arguments), "s3cret") {
+		t.Errorf("received call = %+v", received)
 	}
 	_ = session.Close()
 	select {
-	case id := <-closed:
-		if id == "" {
-			t.Error("the closed session has no id")
+	case id := <-call.closed:
+		if id != received.call.Session {
+			t.Errorf("closed session %q, want %q", id, received.call.Session)
 		}
 	case <-time.After(3 * time.Second):
-		t.Fatal("the session close hook was not called")
+		t.Fatal("the call controller was not told the session closed")
 	}
-	eventually(t, func() bool { return server.Status(context.Background()).Clients == 0 })
-	publisher.mu.Lock()
-	defer publisher.mu.Unlock()
-	if len(publisher.statuses) < 3 || !publisher.statuses[0].IsRunning() {
-		t.Errorf("published statuses = %+v", publisher.statuses)
+	eventually(t, func() bool { return testListener.Clients() == 0 })
+	if changes.Load() < 2 {
+		t.Errorf("clients changed %d times, want at least 2", changes.Load())
 	}
 }
 
-func TestServerNeedsAnActiveWorkspaceForScopedTools(t *testing.T) {
-	_, _, access, port := newTestServer(t, "")
-	session := connect(t, port, "")
-	result, err := session.CallTool(context.Background(), &sdk.CallToolParams{Name: "tree", Arguments: map[string]any{"action": "list"}})
-	if err != nil || !result.IsError || !strings.Contains(result.Content[0].(*sdk.TextContent).Text, "MCP-06404") {
-		t.Fatalf("CallTool() = %+v, %v", result, err)
-	}
-	unscoped, _ := session.CallTool(context.Background(), &sdk.CallToolParams{Name: "workspace", Arguments: map[string]any{"action": 3}})
-	if !unscoped.IsError || !strings.Contains(unscoped.Content[0].(*sdk.TextContent).Text, "MCP-07400") {
-		t.Errorf("a non-string action = %+v", unscoped)
-	}
-	access.mu.Lock()
-	defer access.mu.Unlock()
-	if len(access.records) != 2 || access.records[0].Client != entity.DefaultAIClientName {
-		t.Errorf("records = %+v", access.records)
-	}
-	_ = session.Close()
-}
-
-func TestServerRejectsForeignHostsAndOrigins(t *testing.T) {
-	_, _, _, port := newTestServer(t, "ws-1")
+func TestListenerRejectsForeignHostsAndOrigins(t *testing.T) {
+	port := listen(t, newTestListener(t, newFakeCallController()), nil)
 	cases := []struct {
 		header string
 		value  string
@@ -200,43 +241,42 @@ func TestServerRejectsForeignHostsAndOrigins(t *testing.T) {
 	}
 }
 
-func TestServerReportsABusyPortAndStops(t *testing.T) {
-	server, _, _, _ := newTestServer(t, "ws-1")
+func TestListenerReportsABusyPortAndCloses(t *testing.T) {
+	testListener := newTestListener(t, newFakeCallController())
 	busy, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer busy.Close()
-	port := busy.Addr().(*net.TCPAddr).Port
-	status := server.Apply(context.Background(), entity.AIAccessSettings{Enabled: true, Port: port})
-	if status.State != "error" || status.Code != entity.PortInUseCode || status.Reason != "port "+strconv.Itoa(port)+" is in use" {
-		t.Fatalf("busy port status = %+v", status)
+	if err := testListener.Listen(busy.Addr().(*net.TCPAddr).Port); err == nil {
+		t.Fatal("Listen() on a busy port must fail")
 	}
-	if off := server.Apply(context.Background(), entity.AIAccessSettings{Enabled: false, Port: port}); off.State != "off" {
-		t.Fatalf("disabled status = %+v", off)
-	}
-	if stopped := server.Stop(context.Background()); stopped.State != "off" {
-		t.Fatalf("Stop() = %+v", stopped)
+	testListener.Close()
+	if clients := testListener.Clients(); clients != 0 {
+		t.Fatalf("Clients() = %d", clients)
 	}
 }
 
 func TestToolDefinitionsCarryTheContractHints(t *testing.T) {
-	counts := map[effect]int{}
-	for _, definition := range registry {
-		counts[definition.effect]++
-		annotations := definition.annotations()
-		if annotations.OpenWorldHint == nil || *annotations.OpenWorldHint != definition.openWorld {
-			t.Errorf("%s: open world hint %v", definition.name, annotations.OpenWorldHint)
+	counts := map[enums.AIToolEffect]int{}
+	for _, tool := range realToolControllers() {
+		definition := tool.Tool()
+		spec := definition.ToEntity()
+		counts[spec.Effect]++
+		sdkTool := newToolDefinition(definition)
+		annotations := sdkTool.Annotations
+		if annotations.OpenWorldHint == nil || *annotations.OpenWorldHint != spec.OpenWorld {
+			t.Errorf("%s: open world hint %v", spec.Name, annotations.OpenWorldHint)
 		}
-		if definition.effect != readOnly && (annotations.DestructiveHint == nil || *annotations.DestructiveHint != (definition.effect == destructive)) {
-			t.Errorf("%s: destructive hint %v", definition.name, annotations.DestructiveHint)
+		if spec.Effect != aitooleffect.ReadOnly && (annotations.DestructiveHint == nil || *annotations.DestructiveHint != (spec.Effect == aitooleffect.Destructive)) {
+			t.Errorf("%s: destructive hint %v", spec.Name, annotations.DestructiveHint)
 		}
-		schema := definition.inputSchema()
-		if definition.hasActions() && schema["properties"] == nil {
-			t.Errorf("%s: no action enum", definition.name)
+		schema := sdkTool.InputSchema.(map[string]any)
+		if len(spec.Actions) > 0 && schema["properties"] == nil {
+			t.Errorf("%s: no action enum", spec.Name)
 		}
 	}
-	if counts[readOnly] != 12 || counts[write] != 2 || counts[destructive] != 10 {
+	if counts[aitooleffect.ReadOnly] != 12 || counts[aitooleffect.Write] != 2 || counts[aitooleffect.Destructive] != 10 {
 		t.Errorf("hint counts = %v", counts)
 	}
 }

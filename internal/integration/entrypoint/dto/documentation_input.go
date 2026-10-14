@@ -8,6 +8,10 @@ type DocumentationInput struct {
 	KeepDeleted      bool   `json:"keep_deleted"`
 }
 
+func NewDocumentationInput(localId, id, yaml string, confirmDeletions, keepDeleted bool) DocumentationInput {
+	return DocumentationInput{LocalId: localId, Id: id, Yaml: yaml, ConfirmDeletions: confirmDeletions, KeepDeleted: keepDeleted}
+}
+
 func (d DocumentationInput) LogValue() any {
 	return map[string]any{"local_id": d.LocalId, "id": d.Id, "bytes": len(d.Yaml), "confirm_deletions": d.ConfirmDeletions, "keep_deleted": d.KeepDeleted}
 }

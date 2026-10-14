@@ -58,7 +58,6 @@ func (c *xenonClient) setProtocolVersion(version string) {
 	c.protocolVersion = version
 }
 
-// send POSTs one message and emits every JSON-RPC message the response carries, in order.
 func (c *xenonClient) send(ctx context.Context, payload []byte, emit func(jsonrpc.Message)) error {
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, bytes.NewReader(payload))
 	if err != nil {

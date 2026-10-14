@@ -100,7 +100,7 @@ func useSettings(t *testing.T, appJSON string, overridePort int) {
 	t.Helper()
 	dataDir := t.TempDir()
 	if appJSON != "" {
-		if err := os.WriteFile(filepath.Join(dataDir, appFileName), []byte(appJSON), 0o600); err != nil {
+		if err := os.WriteFile(filepath.Join(dataDir, "app.json"), []byte(appJSON), 0o600); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -203,26 +203,12 @@ func TestRunReportsXenonClosingTheConnection(t *testing.T) {
 	}
 }
 
-func TestResolvedPort(t *testing.T) {
-	cases := []struct {
-		name     string
-		access   aiAccess
-		override *int
-		want     int
-	}{
-		{name: "default", want: defaultPort},
-		{name: "override replaces default", override: overrideOf(50000), want: 50000},
-		{name: "saved port wins", access: aiAccess{Port: 48000}, override: overrideOf(50000), want: 48000},
-	}
-	for _, testCase := range cases {
-		t.Run(testCase.name, func(t *testing.T) {
-			if got := testCase.access.resolvedPort(testCase.override); got != testCase.want {
-				t.Fatalf("got %d, want %d", got, testCase.want)
-			}
-		})
-	}
-}
+func TestRunReadsUnreadableSettingsAsDefaults(t *testing.T) {
+	useSettings(t, `not json`, startFakeServer(t, &fakeServer{name: xenonServerName}))
 
-func overrideOf(port int) *int {
-	return &port
+	code, stdout, stderr := runBridge(initializeLine)
+
+	if code != 0 || stderr != "" || !strings.Contains(stdout, `"name":"xenon"`) {
+		t.Fatalf("exit %d, stdout %q, stderr %q", code, stdout, stderr)
+	}
 }

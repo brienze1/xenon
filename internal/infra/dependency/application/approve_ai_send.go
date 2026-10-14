@@ -18,7 +18,8 @@ func GetApproveAISendService() adapter.ApproveAISendService {
 				integration.GetAIApprovalPersistence(),
 				integration.GetAIApprovalPersistence(),
 				integration.GetAIApprovalPersistence(),
-				integration.GetAIApprovalTimer(),
+				integration.GetAIApprovalPersistence(),
+				integration.GetAIApprovalTimerWebservice(),
 				integration.GetWindowFocusWebservice(),
 				integration.GetAIEventPublisher(),
 			)

@@ -11,8 +11,6 @@ import (
 
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums"
-	"github.com/brienze1/xenon/internal/domain/enums/historyfilter"
-	"github.com/brienze1/xenon/internal/domain/enums/historysource"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/persistence/model"
 	"github.com/brienze1/xenon/pkg/errs"
@@ -40,7 +38,10 @@ func (h *historyPersistence) Save(ctx context.Context, localId string, entry ent
 	if err := os.MkdirAll(appDataPath(workspacesDataDir, localId), appDataDirMode); err != nil {
 		return errs.FileError(err, "HIS-05500")
 	}
-	line, _ := json.Marshal(model.NewHistoryEntry(entry))
+	line, err := json.Marshal(model.NewHistoryEntry(entry))
+	if err != nil {
+		return errs.FileError(err, "HIS-11500")
+	}
 	if err := appendHistoryLine(historyPath(localId), line, caps); err != nil {
 		return err
 	}
@@ -69,7 +70,7 @@ func (h *historyPersistence) Find(ctx context.Context, localId string, caps enti
 	}
 	history := entity.NewHistory(entries, caps)
 
-	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "entries": len(entries)})
+	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "entries": entries})
 	return &history, nil
 }
 
@@ -137,20 +138,20 @@ func historyLines(stored []byte) [][]byte {
 func historyLineSource(line []byte) enums.HistorySource {
 	var decoded model.HistorySource
 	if err := json.Unmarshal(line, &decoded); err != nil {
-		return historysource.User
+		return model.HistorySource{}.ToEntity()
 	}
 	return decoded.ToEntity()
 }
 
 func historyLinesKeptOnClear(path string, source enums.HistoryFilter) ([][]byte, error) {
-	if source == historyfilter.All {
+	if entity.ClearsAllHistory(source) {
 		return [][]byte{}, nil
 	}
 	stored, err := readHistoryFile(path)
 	if err != nil {
 		return nil, err
 	}
-	return entity.WithoutHistorySource(historyLines(stored), historyLineSource, historysource.GetHistorySource(source.String())), nil
+	return entity.HistoryAfterClear(historyLines(stored), historyLineSource, source), nil
 }
 
 func compactedHistoryLines(path string, caps entity.HistoryCaps) ([][]byte, error) {

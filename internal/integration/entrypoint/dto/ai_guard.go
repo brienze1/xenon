@@ -5,18 +5,18 @@ type AIGuard struct {
 	Text    string `json:"text"`
 }
 
-type AIGuarded struct {
-	Text string `json:"text"`
-}
-
-func NewAIGuarded(text string) AIGuarded {
-	return AIGuarded{Text: text}
+func NewAIGuard(localId, text string) AIGuard {
+	return AIGuard{LocalId: localId, Text: text}
 }
 
 func (a AIGuard) LogValue() any {
 	return map[string]any{"local_id": a.LocalId, "length": len(a.Text)}
 }
 
-func (a AIGuarded) LogValue() any {
-	return map[string]any{"length": len(a.Text)}
+func (a *AIGuard) WorkspaceId() string {
+	return a.LocalId
+}
+
+func (a *AIGuard) GuardedText() string {
+	return a.Text
 }

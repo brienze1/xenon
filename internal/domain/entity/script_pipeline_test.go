@@ -189,7 +189,8 @@ func TestSendExecutionCarriesScriptEffects(t *testing.T) {
 	if got := execution.LogValue(); !reflect.DeepEqual(got, map[string]any{"id": "01S", "outcome": sendoutcome.Error, "pre_runs": 1, "post_runs": 1, "status_code": 0}) {
 		t.Errorf("LogValue = %v", got)
 	}
-	if got := NewSendExecution("x").LogValue(); !reflect.DeepEqual(got, map[string]any{"id": "x", "outcome": enums.SendOutcome(""), "pre_runs": 0, "post_runs": 0}) {
+	fresh := NewSendExecution("x")
+	if got := fresh.LogValue(); !reflect.DeepEqual(got, map[string]any{"id": "x", "outcome": enums.SendOutcome(""), "pre_runs": 0, "post_runs": 0}) {
 		t.Errorf("LogValue without response = %v", got)
 	}
 }

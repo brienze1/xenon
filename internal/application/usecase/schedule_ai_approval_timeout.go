@@ -7,5 +7,5 @@ import (
 
 type ScheduleAIApprovalTimeout interface {
 	// Schedule runs expire after delay, detached from ctx's cancellation.
-	Schedule(ctx context.Context, approvalId string, delay time.Duration, expire func(ctx context.Context))
+	Schedule(ctx context.Context, approvalId string, delay time.Duration, expire func(ctx context.Context) error)
 }

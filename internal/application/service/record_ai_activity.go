@@ -35,19 +35,19 @@ func NewRecordAIActivityService(
 	}
 }
 
-func (r *recordAIActivity) Record(ctx context.Context, localId, client string, activity entity.AIActivity) {
+func (r *recordAIActivity) Record(ctx context.Context, localId, client string, activity entity.AIActivity) error {
 	logger.Info(ctx, "Started", activity, map[string]any{"localId": localId, "client": client})
 
-	if localId == "" {
-		logger.Info(ctx, "Finished - no active workspace, the call is only logged", activity, map[string]any{"client": client})
-		return
+	if !entity.HasActiveWorkspace(localId) {
+		logger.Info(ctx, "Finished", activity, map[string]any{"localId": localId, "client": client})
+		return nil
 	}
 	if err := r.record(ctx, localId, client, activity); err != nil {
-		logger.Warn(ctx, err, "The AI activity could not be recorded in History", activity, map[string]any{"localId": localId, "client": client})
-		return
+		return err
 	}
 
 	logger.Info(ctx, "Finished", activity, map[string]any{"localId": localId, "client": client})
+	return nil
 }
 
 func (r *recordAIActivity) record(ctx context.Context, localId, client string, activity entity.AIActivity) error {
@@ -60,8 +60,7 @@ func (r *recordAIActivity) record(ctx context.Context, localId, client string, a
 		return err
 	}
 	known := r.registerKnownSecrets.Register(ctx, usecase.CollectKnownSecrets(vault)...)
-	redacted := usecase.RedactSecretArgs(activity.Tool, activity.Action, activity.Args)
-	guarded := activity.WithArgs(usecase.MaskKnownSecrets(redacted, known))
+	guarded := activity.WithArgs(usecase.MaskKnownSecrets(activity.RedactedArgs(), known))
 	entry := entity.NewActionHistoryEntry(idutils.NewUlid(), timeutils.Now(), client, guarded)
 	if err := r.saveHistoryEntry.Save(ctx, localId, entry, settings.HistoryCaps()); err != nil {
 		return err

@@ -4,7 +4,7 @@ import "sync"
 
 type WindowFocuser struct {
 	focused int
-	mu      sync.Mutex
+	mu      sync.RWMutex
 }
 
 func NewWindowFocuser() *WindowFocuser {
@@ -18,8 +18,8 @@ func (w *WindowFocuser) Focus() {
 }
 
 func (w *WindowFocuser) Count() int {
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.mu.RLock()
+	defer w.mu.RUnlock()
 	return w.focused
 }
 

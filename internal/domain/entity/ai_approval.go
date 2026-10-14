@@ -9,12 +9,6 @@ import (
 
 const AIApprovalTimeout = 120 * time.Second
 
-type AIApprovalEnvironment struct {
-	ID    string
-	Name  string
-	Color string
-}
-
 type AIApproval struct {
 	CreatedAt   time.Time
 	Environment AIApprovalEnvironment
@@ -35,6 +29,16 @@ func NewAIApproval(id, client, method, rawURL string, environment AIApprovalEnvi
 		CreatedAt:   createdAt,
 		Outcome:     approvaloutcome.Pending,
 	}
+}
+
+func (a AIApproval) Queued(id string, createdAt time.Time) AIApproval {
+	return NewAIApproval(id, a.Client, a.Method, a.RawURL, a.Environment, createdAt)
+}
+
+const EverySessionID = ""
+
+func IsEverySession(sessionId string) bool {
+	return sessionId == EverySessionID
 }
 
 func (a AIApproval) IsPending() bool {

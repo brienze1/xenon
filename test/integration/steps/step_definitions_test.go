@@ -186,5 +186,8 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	test.registerGivenGitSteps(ctx)
 	test.registerThenGitSteps(ctx)
 	test.registerWhenMcpSteps(ctx)
+	test.registerWhenMcpHttpSteps(ctx)
+	test.registerWhenMcpBridgeSteps(ctx)
 	test.registerThenMcpSteps(ctx)
+	test.registerThenMcpBridgeSteps(ctx)
 }

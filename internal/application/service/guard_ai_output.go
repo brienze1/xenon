@@ -5,6 +5,7 @@ import (
 
 	"github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/application/usecase"
+	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/pkg/logger"
 )
 
@@ -17,32 +18,27 @@ func NewGuardAIOutputService(findVault usecase.FindVault, registerKnownSecrets u
 	return &guardAIOutput{findVault: findVault, registerKnownSecrets: registerKnownSecrets}
 }
 
-func (g *guardAIOutput) Guard(ctx context.Context, localId, text string) string {
+func (g *guardAIOutput) Guard(ctx context.Context, localId, text string) (string, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "length": len(text)})
 
-	known := g.registerKnownSecrets.Register(ctx, g.collect(ctx, localId)...)
+	secrets, err := g.collect(ctx, localId)
+	known := g.registerKnownSecrets.Register(ctx, secrets...)
 	masked := usecase.MaskKnownSecrets(text, known)
+	if err != nil {
+		return masked, err
+	}
 
-	logger.Info(ctx, "Finished", known, map[string]any{"localId": localId, "length": len(masked)})
-	return masked
+	logger.Info(ctx, "Finished", known, map[string]any{"localId": localId, "length": len(text), "masked": len(masked)})
+	return masked, nil
 }
 
-func (g *guardAIOutput) Register(ctx context.Context, values ...string) {
-	logger.Info(ctx, "Started", map[string]any{"values": len(values)})
-
-	known := g.registerKnownSecrets.Register(ctx, values...)
-
-	logger.Info(ctx, "Finished", known)
-}
-
-func (g *guardAIOutput) collect(ctx context.Context, localId string) []string {
-	if localId == "" {
-		return []string{}
+func (g *guardAIOutput) collect(ctx context.Context, localId string) ([]string, error) {
+	if !entity.HasActiveWorkspace(localId) {
+		return []string{}, nil
 	}
 	vault, err := g.findVault.Find(ctx, localId)
 	if err != nil {
-		logger.Warn(ctx, err, "The vault could not be read; masking with the secrets seen so far", map[string]any{"localId": localId})
-		return []string{}
+		return []string{}, err
 	}
-	return usecase.CollectKnownSecrets(vault)
+	return usecase.CollectKnownSecrets(vault), nil
 }

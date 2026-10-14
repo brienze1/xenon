@@ -35,7 +35,7 @@ func (u UIState) Normalized() UIState {
 	}
 	u.Sidebar = u.Sidebar.Normalized()
 	u.Layout = u.Layout.Normalized()
-	u.HistorySource = historyfilter.GetHistoryFilter(u.HistorySource.String())
+	u.HistorySource = KnownHistoryFilter(historyfilter.GetHistoryFilter(u.HistorySource.String()))
 	return u
 }
 

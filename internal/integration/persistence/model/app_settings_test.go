@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums/aiactivityoutcome"
 )
 
 func TestAppSettingsFromAnOldAppJsonReadAsDefaults(t *testing.T) {
@@ -60,7 +61,7 @@ func TestHistoryEntryLinesWithoutSourceReadAsUserSends(t *testing.T) {
 	if entry.Kind != "send" || entry.Source != "user" || entry.Request.URL != "https://old.test" || entry.Result.StatusCode != 200 {
 		t.Fatalf("ToEntity() = %+v", entry)
 	}
-	action := entity.NewActionHistoryEntry("02", entry.SentAt, "", entity.AIActivity{Tool: "tree", Action: "list", Outcome: entity.AIActivityOk, Target: entity.AIActivityTarget{ID: "1", Name: "A"}})
+	action := entity.NewActionHistoryEntry("02", entry.SentAt, "", entity.AIActivity{Tool: "tree", Action: "list", Outcome: aiactivityoutcome.Ok, Target: entity.AIActivityTarget{ID: "1", Name: "A"}})
 	data, _ := json.Marshal(NewHistoryEntry(action))
 	var decoded HistoryEntry
 	if err := json.Unmarshal(data, &decoded); err != nil {

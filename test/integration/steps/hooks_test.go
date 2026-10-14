@@ -2,13 +2,16 @@ package steps
 
 import (
 	"context"
+	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 
-	wails "github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/brienze1/xenon/internal/infra/dependency/binding"
 	"github.com/brienze1/xenon/internal/infra/dependency/consumer"
+	"github.com/brienze1/xenon/internal/infra/dependency/server"
 	"github.com/brienze1/xenon/test/integration/mock"
 )
 
@@ -93,6 +96,33 @@ func (t *testUtils) after() {
 	_ = os.RemoveAll(t.tempRoot)
 }
 
+func (t *testUtils) prepareMcp() error {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return err
+	}
+	port := strconv.Itoa(listener.Addr().(*net.TCPAddr).Port)
+	if err := listener.Close(); err != nil {
+		return err
+	}
+	t.mcpClientName = defaultMcpClientName
+	t.mcpSessions = map[string]*mcp.ClientSession{}
+	t.bridge = nil
+	t.vars["mcp_port"] = port
+	t.vars["mcp_url"] = "http://127.0.0.1:" + port + "/mcp"
+	if _, saved := t.environment["XENON_MCP_PORT"]; !saved {
+		t.environment["XENON_MCP_PORT"] = os.Getenv("XENON_MCP_PORT")
+	}
+	return os.Setenv("XENON_MCP_PORT", port)
+}
+
+func (t *testUtils) closeMcp() {
+	for name, session := range t.mcpSessions {
+		_ = session.Close()
+		delete(t.mcpSessions, name)
+	}
+}
+
 func (t *testUtils) startApp() {
 	consumerOnce.Do(func() {
 		consumer.GetFileChangeConsumer().Register(context.Background())
@@ -126,9 +156,9 @@ func (t *testUtils) startApp() {
 }
 
 func (t *testUtils) startMcpServer() {
-	_ = binding.GetAIAccessService().ServiceStartup(context.Background(), wails.ServiceOptions{})
+	_ = server.GetMCPServer().Start(context.Background())
 }
 
 func (t *testUtils) stopMcpServer() {
-	_ = binding.GetAIAccessService().ServiceShutdown()
+	_ = server.GetMCPServer().Stop(context.Background())
 }

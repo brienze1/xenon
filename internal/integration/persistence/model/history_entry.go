@@ -26,10 +26,6 @@ type HistoryEntry struct {
 	Version         int            `json:"version"`
 }
 
-type HistorySource struct {
-	Source string `json:"source"`
-}
-
 func NewHistoryEntry(entry entity.HistoryEntry) HistoryEntry {
 	model := HistoryEntry{
 		Version: historyVersion,
@@ -55,31 +51,25 @@ func NewHistoryEntry(entry entity.HistoryEntry) HistoryEntry {
 
 func (h *HistoryEntry) ToEntity() entity.HistoryEntry {
 	entry := entity.HistoryEntry{
-		ID:     h.Id,
-		SentAt: h.SentAt.UTC(),
-		Kind:   historykind.GetHistoryKind(h.Kind),
-		Source: historysource.GetHistorySource(h.Source),
-		Client: h.Client,
+		ID:              h.Id,
+		SentAt:          h.SentAt.UTC(),
+		Kind:            historykind.GetHistoryKind(h.Kind),
+		Source:          entity.HistoryOrigin(historysource.GetHistorySource(h.Source)),
+		Client:          h.Client,
+		SourceRequestID: h.SourceRequestId,
+		Outcome:         historyOutcome(h.Outcome),
 	}
-	if entry.Kind == historykind.Action && h.Activity != nil {
+	if h.Activity != nil {
 		activity := h.Activity.ToEntity()
 		entry.Activity = &activity
-		return entry
 	}
-	entry.Kind = historykind.Send
-	entry.SourceRequestID = h.SourceRequestId
-	entry.Outcome = historyOutcome(h.Outcome)
 	if h.Request != nil {
 		entry.Request = h.Request.ToEntity()
 	}
 	if h.Result != nil {
 		entry.Result = h.Result.ToEntity()
 	}
-	return entry
-}
-
-func (h HistorySource) ToEntity() enums.HistorySource {
-	return historysource.GetHistorySource(h.Source)
+	return entry.Normalized()
 }
 
 func historyOutcome(raw string) enums.SendOutcome {

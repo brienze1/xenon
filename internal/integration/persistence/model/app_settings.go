@@ -9,19 +9,13 @@ type AppSettings struct {
 	HistoryAICap    int               `json:"historyAiCap,omitempty"`
 }
 
-type AIAccessSettings struct {
-	Enabled       *bool `json:"enabled,omitempty"`
-	Port          int   `json:"port,omitempty"`
-	SkipApprovals bool  `json:"skipApprovals"`
-}
-
 func NewAppSettings(settings entity.AppSettings) AppSettings {
-	enabled := settings.AIAccess.Enabled
+	access := NewAIAccessSettings(settings.AIAccess)
 	return AppSettings{
 		ScriptTimeoutMs: settings.ScriptTimeoutMs,
 		HistoryUserCap:  settings.HistoryUserCap,
 		HistoryAICap:    settings.HistoryAICap,
-		AIAccess:        &AIAccessSettings{Enabled: &enabled, Port: settings.AIAccess.Port, SkipApprovals: settings.AIAccess.SkipApprovals},
+		AIAccess:        &access,
 	}
 }
 
@@ -36,14 +30,4 @@ func (a *AppSettings) ToEntity() entity.AppSettings {
 		settings.AIAccess = a.AIAccess.ToEntity()
 	}
 	return settings.OrDefault()
-}
-
-func (a *AIAccessSettings) ToEntity() entity.AIAccessSettings {
-	access := entity.DefaultAIAccessSettings()
-	if a.Enabled != nil {
-		access.Enabled = *a.Enabled
-	}
-	access.Port = a.Port
-	access.SkipApprovals = a.SkipApprovals
-	return access
 }

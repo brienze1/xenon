@@ -69,3 +69,7 @@ func (a AIAccessStatus) WithClients(clients int) AIAccessStatus {
 func (a AIAccessStatus) LogValue() any {
 	return map[string]any{"state": a.State, "port": a.Port, "reason": a.Reason, "clients": a.Clients}
 }
+
+func (a AIAccessStatus) Differs(other AIAccessStatus) bool {
+	return a != other
+}

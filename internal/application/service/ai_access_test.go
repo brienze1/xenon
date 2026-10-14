@@ -8,6 +8,7 @@ import (
 
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/aiactivityoutcome"
 	"github.com/brienze1/xenon/internal/domain/enums/aichangekind"
 	"github.com/brienze1/xenon/internal/domain/enums/historyfilter"
 )
@@ -29,8 +30,9 @@ func (f *fakeAppSettings) SaveAppSettings(_ context.Context, settings entity.App
 }
 
 type fakeServeAIAccess struct {
-	applied []entity.AIAccessSettings
-	stopped int
+	applied  []entity.AIAccessSettings
+	disabled []entity.AIAccessSettings
+	stopped  int
 }
 
 func (f *fakeServeAIAccess) Apply(_ context.Context, settings entity.AIAccessSettings) entity.AIAccessStatus {
@@ -42,9 +44,24 @@ func (f *fakeServeAIAccess) Status(context.Context) entity.AIAccessStatus {
 	return entity.RunningAIAccessStatus(entity.DefaultAIPort, 2)
 }
 
+func (f *fakeServeAIAccess) Disable(_ context.Context, settings entity.AIAccessSettings) entity.AIAccessStatus {
+	f.disabled = append(f.disabled, settings)
+	return entity.OffAIAccessStatus(settings.EffectivePort(nil))
+}
+
 func (f *fakeServeAIAccess) Stop(context.Context) entity.AIAccessStatus {
 	f.stopped++
 	return entity.OffAIAccessStatus(entity.DefaultAIPort)
+}
+
+type fakePublishedStatus struct {
+	published entity.AIAccessStatus
+}
+
+func (f *fakePublishedStatus) ReplacePublished(_ context.Context, status entity.AIAccessStatus) entity.AIAccessStatus {
+	previous := f.published
+	f.published = status
+	return previous
 }
 
 type fakeVault struct {
@@ -61,8 +78,8 @@ type fakeKnownSecrets struct {
 }
 
 func (f *fakeKnownSecrets) Register(_ context.Context, values ...string) entity.KnownSecrets {
-	f.known.Add(values...)
-	return f.known.With()
+	f.known = f.known.With(values...)
+	return f.known
 }
 
 type fakeHistoryStore struct {
@@ -142,8 +159,8 @@ func (f *fakeEvents) VariablesChanged(_ context.Context, localId string, _ []ent
 func (f *fakeEvents) VaultStatusChanged(context.Context, entity.VaultStatus) error { return nil }
 
 func TestSaveAppSettingsMergesValidatesAndAppliesAIAccess(t *testing.T) {
-	store, server := &fakeAppSettings{settings: entity.DefaultAppSettings()}, &fakeServeAIAccess{}
-	service := NewManageAppSettingsService(store, store, server)
+	store, server, events := &fakeAppSettings{settings: entity.DefaultAppSettings()}, &fakeServeAIAccess{}, &fakeEvents{}
+	service := NewManageAppSettingsService(store, store, server, &fakePublishedStatus{}, events)
 	timeout, port, low := 2500, 48000, 99
 
 	saved, err := service.Save(context.Background(), entity.AppSettingsPatch{ScriptTimeoutMs: &timeout})
@@ -153,6 +170,14 @@ func TestSaveAppSettingsMergesValidatesAndAppliesAIAccess(t *testing.T) {
 	saved, err = service.Save(context.Background(), entity.AppSettingsPatch{AIAccess: &entity.AIAccessPatch{Port: &port}})
 	if err != nil || saved.AIAccess.Port != port || len(server.applied) != 1 || server.applied[0].Port != port {
 		t.Fatalf("Save(port) = %+v, %v, applied %+v", saved, err, server.applied)
+	}
+	disabled := false
+	saved, err = service.Save(context.Background(), entity.AppSettingsPatch{AIAccess: &entity.AIAccessPatch{Enabled: &disabled}})
+	if err != nil || saved.AIAccess.Enabled || len(server.applied) != 1 || len(server.disabled) != 1 || server.disabled[0].Enabled {
+		t.Fatalf("Save(disabled) = %+v, %v, disabled %+v", saved, err, server.disabled)
+	}
+	if got := strings.Join(events.names, ","); got != "access,access" {
+		t.Fatalf("published events = %s", got)
 	}
 	store.saved = nil
 	if _, err := service.Save(context.Background(), entity.AppSettingsPatch{HistoryUserCap: &low}); err == nil || !strings.Contains(err.Error(), "bad request") || store.saved != nil {
@@ -168,17 +193,28 @@ func TestSaveAppSettingsMergesValidatesAndAppliesAIAccess(t *testing.T) {
 }
 
 func TestManageAIAccessStartsFromTheSavedSettings(t *testing.T) {
-	store, server := &fakeAppSettings{settings: entity.DefaultAppSettings()}, &fakeServeAIAccess{}
-	service := NewManageAIAccessService(store, server)
+	store, server, events := &fakeAppSettings{settings: entity.DefaultAppSettings()}, &fakeServeAIAccess{}, &fakeEvents{}
+	published := &fakePublishedStatus{}
+	service := NewManageAIAccessService(store, server, published, events)
 	started, err := service.Start(context.Background())
 	if err != nil || !started.IsRunning() || len(server.applied) != 1 || !server.applied[0].Enabled {
 		t.Fatalf("Start() = %+v, %v", started, err)
 	}
-	if status := service.Status(context.Background()); status.Clients != 2 {
-		t.Errorf("Status() = %+v", status)
+	if status := NewFindAIAccessStatusService(server).Find(context.Background()); status.Clients != 2 {
+		t.Errorf("Find() = %+v", status)
 	}
-	if stopped := service.Stop(context.Background()); stopped.IsRunning() || server.stopped != 1 {
-		t.Errorf("Stop() = %+v", stopped)
+	if err := NewPublishAIAccessStatusService(server, published, events).Publish(context.Background()); err != nil {
+		t.Errorf("Publish() = %v", err)
+	}
+	if stopped, err := service.Stop(context.Background()); err != nil || stopped.IsRunning() || server.stopped != 1 {
+		t.Errorf("Stop() = %+v, %v", stopped, err)
+	}
+	store.settings.AIAccess.Enabled = false
+	if off, err := service.Start(context.Background()); err != nil || off.IsRunning() || len(server.applied) != 1 || len(server.disabled) != 1 {
+		t.Errorf("Start(disabled) = %+v, %v", off, err)
+	}
+	if got := strings.Join(events.names, ","); got != "access,access,access" {
+		t.Errorf("published events = %s", got)
 	}
 	store.err = errors.New("unreadable")
 	if _, err := service.Start(context.Background()); err == nil {
@@ -190,18 +226,18 @@ func TestGuardAIOutputMasksVaultAndSessionSecrets(t *testing.T) {
 	vault := entity.Vault{State: "unlocked", Secrets: map[string]map[string]string{"globals": {"token": "vault-secret"}}}
 	known := &fakeKnownSecrets{}
 	service := NewGuardAIOutputService(fakeVault{vault: &vault}, known)
-	service.Register(context.Background(), "session-secret")
+	known.Register(context.Background(), "session-secret")
 
-	masked := service.Guard(context.Background(), "ws-1", `{"a":"vault-secret","b":"session-secret","c":"plain"}`)
-	if masked != `{"a":"•••••","b":"•••••","c":"plain"}` {
-		t.Fatalf("Guard() = %s", masked)
+	masked, err := service.Guard(context.Background(), "ws-1", `{"a":"vault-secret","b":"session-secret","c":"plain"}`)
+	if err != nil || masked != `{"a":"•••••","b":"•••••","c":"plain"}` {
+		t.Fatalf("Guard() = %s, %v", masked, err)
 	}
 	failing := NewGuardAIOutputService(fakeVault{err: errors.New("locked out")}, known)
-	if masked := failing.Guard(context.Background(), "ws-1", "vault-secret"); masked != "•••••" {
-		t.Errorf("values seen before stay masked when the vault fails: %s", masked)
+	if masked, err := failing.Guard(context.Background(), "ws-1", "vault-secret"); err == nil || masked != "•••••" {
+		t.Errorf("values seen before stay masked when the vault fails and the failure is returned: %s, %v", masked, err)
 	}
-	if masked := failing.Guard(context.Background(), "", "session-secret"); masked != "•••••" {
-		t.Errorf("no workspace: %s", masked)
+	if masked, err := failing.Guard(context.Background(), "", "session-secret"); err != nil || masked != "•••••" {
+		t.Errorf("no workspace: %s, %v", masked, err)
 	}
 }
 
@@ -231,9 +267,11 @@ func TestRecordAIActivityAppendsARedactedGuardedActionEntry(t *testing.T) {
 	settings.HistoryAICap = 100
 	history, events := &fakeHistoryStore{}, &fakeEvents{}
 	service := NewRecordAIActivityService(&fakeAppSettings{settings: settings}, fakeVault{vault: &vault}, &fakeKnownSecrets{}, history, events)
-	activity := entity.AIActivity{Tool: "env_edit", Action: "add_var", Outcome: entity.AIActivityError, Args: `{"action":"add_var","value":"typed-secret","note":"vault-secret"}`}
+	activity := entity.AIActivity{Tool: "env_edit", Action: "add_var", Outcome: aiactivityoutcome.Error, Args: `{"action":"add_var","value":"typed-secret","note":"vault-secret"}`}
 
-	service.Record(context.Background(), "ws", "Claude Code", activity)
+	if err := service.Record(context.Background(), "ws", "Claude Code", activity); err != nil {
+		t.Fatalf("Record() = %v", err)
+	}
 	if len(history.saved) != 1 || history.caps.AI != 100 || strings.Join(events.names, ",") != "history:ws" {
 		t.Fatalf("saved %d entries with caps %+v, events %v", len(history.saved), history.caps, events.names)
 	}
@@ -241,16 +279,21 @@ func TestRecordAIActivityAppendsARedactedGuardedActionEntry(t *testing.T) {
 	if !recorded.IsAction() || recorded.Client != "Claude Code" || recorded.Activity.Args != `{"action":"add_var","note":"•••••","value":"•••••"}` {
 		t.Errorf("recorded = %+v / %s", recorded, recorded.Activity.Args)
 	}
-	service.Record(context.Background(), "", "Claude Code", activity)
+	if err := service.Record(context.Background(), "", "Claude Code", activity); err != nil {
+		t.Errorf("no workspace must only log: %v", err)
+	}
 	history.err = errors.New("disk full")
-	service.Record(context.Background(), "ws", "Claude Code", activity)
-	if len(history.saved) != 2 {
-		t.Errorf("no workspace must only log; a failing save must not panic: %d", len(history.saved))
+	if err := service.Record(context.Background(), "ws", "Claude Code", activity); err == nil || len(history.saved) != 2 {
+		t.Errorf("a failing save must be returned: %v, %d", err, len(history.saved))
 	}
 	failing := NewRecordAIActivityService(&fakeAppSettings{err: errors.New("x")}, fakeVault{}, &fakeKnownSecrets{}, history, events)
-	failing.Record(context.Background(), "ws", "c", activity)
+	if err := failing.Record(context.Background(), "ws", "c", activity); err == nil {
+		t.Error("a settings failure must be returned")
+	}
 	noVault := NewRecordAIActivityService(&fakeAppSettings{settings: settings}, fakeVault{err: errors.New("x")}, &fakeKnownSecrets{}, history, events)
-	noVault.Record(context.Background(), "ws", "c", activity)
+	if err := noVault.Record(context.Background(), "ws", "c", activity); err == nil {
+		t.Error("a vault failure must be returned")
+	}
 }
 
 func TestManageHistoryFiltersBySourceAndPublishesClears(t *testing.T) {

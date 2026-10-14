@@ -1,10 +1,6 @@
 package dto
 
-import (
-	"encoding/json"
-
-	"github.com/brienze1/xenon/internal/domain/entity"
-)
+import "github.com/brienze1/xenon/internal/domain/entity"
 
 const (
 	mcpServerName      = "xenon"
@@ -23,17 +19,6 @@ type AIAccessStatus struct {
 	Clients      int    `json:"clients"`
 }
 
-type mcpClientConfig struct {
-	McpServers map[string]mcpServerConfig `json:"mcpServers"`
-}
-
-type mcpServerConfig struct {
-	Type    string   `json:"type,omitempty"`
-	Url     string   `json:"url,omitempty"`
-	Command string   `json:"command,omitempty"`
-	Args    []string `json:"args,omitempty"`
-}
-
 func NewAIAccessStatus(status entity.AIAccessStatus, executable string) AIAccessStatus {
 	return AIAccessStatus{
 		State:        status.State.String(),
@@ -42,12 +27,7 @@ func NewAIAccessStatus(status entity.AIAccessStatus, executable string) AIAccess
 		Code:         status.Code,
 		Clients:      status.Clients,
 		StdioCommand: executable + " " + stdioBridgeCommand,
-		HttpConfig:   clientConfig(mcpServerConfig{Type: httpTransportType, Url: status.URL()}),
-		StdioConfig:  clientConfig(mcpServerConfig{Command: executable, Args: []string{stdioBridgeCommand}}),
+		HttpConfig:   NewMCPClientConfig(NewHTTPMCPServerConfig(status.URL())).JSON(),
+		StdioConfig:  NewMCPClientConfig(NewStdioMCPServerConfig(executable)).JSON(),
 	}
-}
-
-func clientConfig(server mcpServerConfig) string {
-	config, _ := json.Marshal(mcpClientConfig{McpServers: map[string]mcpServerConfig{mcpServerName: server}})
-	return string(config)
 }

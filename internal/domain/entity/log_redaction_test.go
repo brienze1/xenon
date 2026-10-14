@@ -73,7 +73,7 @@ func TestHistoryEntryLogNeverContainsSecrets(t *testing.T) {
 	execution.RecordResponse(entity.EffectiveRequest{URL: "https://api.example.test/history", Headers: request.Headers}, response)
 	entry := entity.NewHistoryEntry("entry-1", time.Now(), request, execution, entity.UserSendOrigin())
 
-	logger.Info(context.Background(), "Finished", entry, entity.HistoryEntries{entry}, map[string]any{"result": entry, "response": response, "execution": execution})
+	logger.Info(context.Background(), "Finished", entry, entity.HistoryEntries{entry}, map[string]any{"result": entry, "response": response, "execution": &execution})
 
 	assertRedacted(t, logs.String(), "https://api.example.test/history")
 }

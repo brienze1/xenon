@@ -24,6 +24,13 @@ func (h HistoryQuery) FromSource(source enums.HistoryFilter) HistoryQuery {
 	return h
 }
 
+func KnownHistoryFilter(filter enums.HistoryFilter) enums.HistoryFilter {
+	if filter == historyfilter.User || filter == historyfilter.AI {
+		return filter
+	}
+	return historyfilter.All
+}
+
 func (h HistoryQuery) IsFilledBy(count int) bool {
 	return count >= h.Limit
 }
