@@ -752,6 +752,7 @@ Feature: Import Xenon YAML exports
       { "source_id": "{{first_source}}", "items": [ { "key": "0", "include": true, "target_local_id": "{{Beta.local_id}}"<beta_parent> } ] }
       """
     And I save the response field "items.0.id" as "beta_item"
+    And the current time is "2026-10-11T10:00:00Z"
     And I call "ExportService.Export" with
       """
       {
@@ -769,6 +770,7 @@ Feature: Import Xenon YAML exports
       { "source_id": "{{second_source}}", "items": [ { "key": "0", "include": true, "target_local_id": "{{Gamma.local_id}}"<gamma_parent> } ] }
       """
     And I save the response field "items.0.id" as "gamma_item"
+    And the current time is "2026-10-11T10:00:00Z"
     When I call "ExportService.Export" with
       """
       {
@@ -806,6 +808,7 @@ Feature: Import Xenon YAML exports
       { "source_id": "{{first_source}}", "items": [ { "key": "0", "include": true, "target_local_id": "{{Beta.local_id}}" } ] }
       """
     And I save the response field "items.0.id" as "beta_item"
+    And the current time is "2026-10-11T10:00:00Z"
     And I call "ExportService.Export" with
       """
       {
@@ -823,6 +826,7 @@ Feature: Import Xenon YAML exports
       { "source_id": "{{second_source}}", "items": [ { "key": "0", "include": true, "target_local_id": "{{Gamma.local_id}}" } ] }
       """
     And I save the response field "items.0.id" as "gamma_item"
+    And the current time is "2026-10-11T10:00:00Z"
     When I call "ExportService.Export" with
       """
       {
