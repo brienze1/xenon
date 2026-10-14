@@ -28,6 +28,8 @@ describe('DocumentationPanel', () => {
     store().reset()
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
     vi.mocked(tree.getDocumentation).mockResolvedValue(generated)
+    // The debounced preview of an edited draft is not under test here: keep it pending so it never lands after a test
+    vi.mocked(tree.previewDocumentation).mockReturnValue(new Promise(() => {}))
   })
 
   it('renders the documentation by folder and opens an operation to show its parameters and examples', async () => {

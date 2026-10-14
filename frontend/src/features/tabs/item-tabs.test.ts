@@ -99,6 +99,8 @@ async function openAndEdit(itemId: string, kind: 'collection' | 'folder', mode: 
 describe('collection and folder tabs', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    // The debounced documentation preview is not under test here: keep it pending so it never lands after a test
+    vi.mocked(tree.previewDocumentation).mockReturnValue(new Promise(() => {}))
     tabs().reset()
     items().reset()
     useDocumentationStore.getState().reset()
