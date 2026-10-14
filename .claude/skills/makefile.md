@@ -84,6 +84,9 @@ make validate-coverage
 
 Runs mutation testing with `gremlins`. Excludes `cmd/`, `pkg/`, `test/`, `config/`, `build/`, `.claude/` directories. Covers `./internal/...` only.
 
+`MUTATION_SKIP=true` skips steps 8–10 (`make validate MUTATION_SKIP=true`). CI always sets it because mutation testing
+takes hours; run the mutation gates locally. Windows skips them on its own (gremlins path bug).
+
 ```bash
 make mutation-test
 ```

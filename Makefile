@@ -24,6 +24,7 @@ ifeq ($(OS),Windows_NT)
 MUTATION_SKIP := true
 MUTATION_SKIP_NOTE := "Mutation gates skipped on Windows: gremlins $(GREMLINS_VERSION) keys coverage by backslash paths and reports every mutant NOT COVERED there. macOS and Linux enforce them on the same code."
 endif
+MUTATION_SKIP_NOTE ?= "Mutation gates skipped (MUTATION_SKIP is set) - run make mutation-test locally to enforce them."
 
 .PHONY: setup dev bindings build package ensure-dist sort-imports fix-struct-alignment vet \
 	check-dead-code dependency-check tests bdd validate-coverage mutation-test \
