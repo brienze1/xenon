@@ -1,5 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { HistoryEntry } from '@/platform/mappers/history'
 import { cn } from '@/shared/lib/cn'
 import { formatDuration } from '@/shared/lib/format-duration'
@@ -9,13 +9,18 @@ import { Button } from '@/shared/ui/button/Button'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
 import { ClockArt } from '@/shared/ui/empty-state/illustrations/ClockArt'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
+import { aiTag } from '@/features/sidebar/lib/history-labels'
 import { historyRows, sentTime } from '@/features/sidebar/lib/history-rows'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { ClearHistoryDialog } from './ClearHistoryDialog'
+import { HistoryActionRow } from './HistoryActionRow'
+import { HistorySourceFilter } from './HistorySourceFilter'
 import styles from './HistoryView.module.css'
 
 export const HISTORY_DAY_HEIGHT = 28
 export const HISTORY_ENTRY_HEIGHT = 44
+/** An expanded AI action row: the row plus its (scrollable) masked arguments. */
+export const HISTORY_EXPANDED_HEIGHT = HISTORY_ENTRY_HEIGHT + 168
 
 const EMPTY_HISTORY = (
   <EmptyState.Root label="No history" className={styles.empty}>
@@ -26,6 +31,8 @@ const EMPTY_HISTORY = (
     <EmptyState.Description>Every request you send in this workspace shows up here, newest first.</EmptyState.Description>
   </EmptyState.Root>
 )
+
+const NOTHING_FROM_SOURCE = <p role="status" className={styles.noMatches}>No entries from this source yet.</p>
 
 const NO_MATCHES = <p role="status" className={styles.noMatches}>No history entries match your search.</p>
 
@@ -58,10 +65,15 @@ function HistoryEntryButton({ entry, onOpen }: HistoryEntryButtonProps) {
     <button
       type="button"
       className={styles.entry}
-      aria-label={`${entry.method} ${entry.url || 'no URL'}, ${result.label}, ${time}`}
+      aria-label={`${entry.source === 'ai' ? `${aiTag(entry.client)} — ` : ''}${entry.method} ${entry.url || 'no URL'}, ${result.label}, ${time}`}
       onClick={() => onOpen(entry.id)}
     >
       <span className={styles.line}>
+        {entry.source === 'ai' ? (
+          <span className={styles.aiTag} translate="no">
+            {aiTag(entry.client)}
+          </span>
+        ) : null}
         <MethodBadge method={entry.method} className={styles.method} />
         <span className={styles.url} title={entry.url} translate="no">
           {entry.url || 'No URL'}
@@ -82,17 +94,33 @@ export function HistoryView({ onOpenEntry }: HistoryViewProps) {
   const history = useSidebarStore((state) => state.history)
   const status = useSidebarStore((state) => state.historyStatus)
   const hasQuery = useSidebarStore((state) => state.historyQuery.trim() !== '')
+  const source = useSidebarStore((state) => state.historySource)
   const clearHistory = useSidebarStore((state) => state.clearHistory)
   const [confirming, setConfirming] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const rows = useMemo(() => historyRows(history, new Date()), [history])
   const scrollRef = useRef<HTMLDivElement>(null)
   // eslint-disable-next-line react-hooks/incompatible-library -- the virtualizer is read during render only, never memoized
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: (index) => (rows[index]?.kind === 'day' ? HISTORY_DAY_HEIGHT : HISTORY_ENTRY_HEIGHT),
+    estimateSize: (index) => {
+      const row = rows[index]
+      if (row?.kind === 'day') {
+        return HISTORY_DAY_HEIGHT
+      }
+      return row?.key === expandedId ? HISTORY_EXPANDED_HEIGHT : HISTORY_ENTRY_HEIGHT
+    },
     overscan: 10,
   })
+
+  useEffect(() => {
+    virtualizer.measure()
+  }, [expandedId, virtualizer])
+
+  function toggle(id: string) {
+    setExpandedId((current) => (current === id ? null : id))
+  }
 
   async function confirmClear() {
     const failure = await clearHistory()
@@ -105,16 +133,19 @@ export function HistoryView({ onOpenEntry }: HistoryViewProps) {
   return (
     <div className={styles.view}>
       <div className={styles.header}>
-        <span className={styles.count}>{history.length === 1 ? '1 entry' : `${formatNumber(history.length, 0)} entries`}</span>
+        <HistorySourceFilter />
         <Button variant="ghost" size="sm" disabled={history.length === 0} onClick={() => setConfirming(true)}>
           Clear History
         </Button>
       </div>
+      <span className={styles.count}>{history.length === 1 ? '1 entry' : `${formatNumber(history.length, 0)} entries`}</span>
       {status === 'ready' && history.length === 0 ? (
         hasQuery ? (
           NO_MATCHES
-        ) : (
+        ) : source === 'all' ? (
           EMPTY_HISTORY
+        ) : (
+          NOTHING_FROM_SOURCE
         )
       ) : (
         <div ref={scrollRef} className={styles.scroll}>
@@ -133,6 +164,8 @@ export function HistoryView({ onOpenEntry }: HistoryViewProps) {
                 >
                   {row.kind === 'day' ? (
                     <h3 className={styles.day}>{row.label}</h3>
+                  ) : row.entry.kind === 'action' ? (
+                    <HistoryActionRow entry={row.entry} expanded={row.entry.id === expandedId} onToggle={toggle} />
                   ) : (
                     <HistoryEntryButton entry={row.entry} onOpen={onOpenEntry} />
                   )}
@@ -142,7 +175,7 @@ export function HistoryView({ onOpenEntry }: HistoryViewProps) {
           </div>
         </div>
       )}
-      <ClearHistoryDialog open={confirming} onCancel={() => setConfirming(false)} onConfirm={confirmClear} />
+      <ClearHistoryDialog open={confirming} source={source} onCancel={() => setConfirming(false)} onConfirm={confirmClear} />
     </div>
   )
 }

@@ -102,3 +102,30 @@ func TestGitPropertiesDefaultAndOverride(t *testing.T) {
 		t.Fatalf("unexpected overrides %+v", overridden)
 	}
 }
+
+func TestMCPPortOverrideReplacesOnlyWhenValid(t *testing.T) {
+	cases := map[string]*int{"": nil, "nope": nil, "0": nil, "-1": nil, "65536": nil, "47900": intPointer(47900)}
+	for value, want := range cases {
+		t.Setenv("XENON_MCP_PORT", value)
+		got := Properties().Application.MCPPortOverride
+		if (got == nil) != (want == nil) || got != nil && *got != *want {
+			t.Errorf("XENON_MCP_PORT=%q: got %v, want %v", value, got, want)
+		}
+	}
+}
+
+func TestExecutablePathFallsBackToTheAppName(t *testing.T) {
+	if got := executablePath(func() (string, error) { return "/Applications/Xenon.app/Contents/MacOS/xenon", nil }); got != "/Applications/Xenon.app/Contents/MacOS/xenon" {
+		t.Errorf("executablePath() = %q", got)
+	}
+	if got := executablePath(func() (string, error) { return "", errors.New("unknown") }); got == "" {
+		t.Error("executablePath() must never be empty")
+	}
+	if Properties().Application.Executable == "" {
+		t.Error("the running executable must be known")
+	}
+}
+
+func intPointer(value int) *int {
+	return &value
+}

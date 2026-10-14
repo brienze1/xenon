@@ -1,3 +1,4 @@
+import type { HistorySourceFilter } from '@/platform/mappers/history'
 import type { SidebarView } from '@/platform/mappers/ui-state'
 
 export type SidebarStatus = 'idle' | 'loading' | 'ready'
@@ -7,6 +8,7 @@ export interface SidebarSnapshot {
   selectedId: string | null
   query: string
   view: SidebarView
+  historySource: HistorySourceFilter
 }
 
 /** An entry of the Environments view: one environment or the workspace globals. */

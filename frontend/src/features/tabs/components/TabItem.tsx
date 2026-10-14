@@ -5,6 +5,7 @@ import { isScopeDirty, useEnvironmentsStore } from '@/features/environments/stor
 import { useExamplesStore } from '@/features/examples/store'
 import { isItemDirty, useItemSettingsStore } from '@/features/item-settings/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
+import { isSettingsDirty, useSettingsStore } from '@/features/settings/store'
 import { collectionScope } from '@/platform/mappers/variable'
 import { cn } from '@/shared/lib/cn'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
@@ -26,6 +27,13 @@ const COLLECTION_ICON = (
 const FOLDER_ICON = (
   <svg viewBox="0 0 16 16" className={styles.kindIcon} role="img" aria-label="Folder">
     <path d="M2 4.5V12.5h12V5.5H7.5L6 3.5H2z" />
+  </svg>
+)
+
+const SETTINGS_ICON = (
+  <svg viewBox="0 0 24 24" className={styles.kindIcon} role="img" aria-label="Settings">
+    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+    <circle cx="12" cy="12" r="3" />
   </svg>
 )
 
@@ -57,7 +65,8 @@ export function TabItem({ tabId }: TabItemProps) {
   const environmentColor = useEnvironmentsStore(
     (state) => state.environments.find((environment) => environment.id === environmentId)?.color ?? 'none',
   )
-  const dirty = draftDirty || responseDirty || variablesDirty || settingsDirty || collectionVariablesDirty
+  const appSettingsDirty = useSettingsStore((state) => kind === 'settings' && isSettingsDirty(state))
+  const dirty = draftDirty || responseDirty || variablesDirty || settingsDirty || collectionVariablesDirty || appSettingsDirty
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({ id: tabId, attributes: { role: 'tab' } })
   // Only a pointer drag makes the moving tab inert: during a keyboard drag the tab must keep
   // focus so the arrow keys keep moving it and assistive tech keeps announcing it.
@@ -123,6 +132,8 @@ export function TabItem({ tabId }: TabItemProps) {
           COLLECTION_ICON
         ) : kind === 'folder' ? (
           FOLDER_ICON
+        ) : kind === 'settings' ? (
+          SETTINGS_ICON
         ) : kind === 'environment' ? (
           <span className={styles.kindBadge} data-color={environmentColor}>
             ENV

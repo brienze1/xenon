@@ -182,3 +182,9 @@ PR.**
   one-line reason for each red.
 - Any discrepancy between spec and issue you noticed.
 - Next in the flow: `/implement-task <XEN-ID>`.
+
+## Step 8 — Continue the flow automatically
+
+The user wants the task flow to run end to end without being asked. Once the red features are pushed and every
+pre-existing scenario is still green, invoke `/implement-task <XEN-ID>` yourself (Skill tool) — do not stop and
+wait.

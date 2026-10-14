@@ -65,6 +65,22 @@ func (v Vault) SecretsFor(scope ScopeRef) map[string]string {
 	return copyValues(v.Secrets[scope.String()])
 }
 
+func (v Vault) KnownSecretValues() []string {
+	if !v.IsReadable() {
+		return []string{}
+	}
+	values := make([]string, 0, len(v.Secrets)+len(v.OAuth2Tokens))
+	for _, scoped := range v.Secrets {
+		for _, value := range scoped {
+			values = append(values, value)
+		}
+	}
+	for _, token := range v.OAuth2Tokens {
+		values = append(values, token.Secrets()...)
+	}
+	return values
+}
+
 func (v Vault) WithSecrets(scope ScopeRef, values map[string]string) Vault {
 	v.Secrets = withScopeValues(v.Secrets, scope, values)
 	return v

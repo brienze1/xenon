@@ -3,6 +3,9 @@ import { toAppError } from '../errors'
 import { toAppSettings, toAppSettingsDto, type AppSettings } from '../mappers/settings'
 
 export const SCRIPT_TIMEOUT_OUT_OF_RANGE = 'SCR-01400'
+export const HISTORY_USER_CAP_OUT_OF_RANGE = 'SET-02400'
+export const HISTORY_AI_CAP_OUT_OF_RANGE = 'SET-03400'
+export const AI_PORT_OUT_OF_RANGE = 'SET-04400'
 
 async function call<T>(operation: () => Promise<T>): Promise<T> {
   try {

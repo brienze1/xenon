@@ -20,5 +20,11 @@ func (t *testUtils) theAppIsRestarted() error {
 	}
 	t.dataDir = restarted
 	t.vars["app_data"] = restarted
-	return os.Setenv("XENON_DATA_DIR", restarted)
+	t.closeMcp()
+	t.stopMcpServer()
+	if err := os.Setenv("XENON_DATA_DIR", restarted); err != nil {
+		return err
+	}
+	t.startMcpServer()
+	return nil
 }

@@ -7,6 +7,6 @@ import (
 )
 
 type FindHistory interface {
-	Find(ctx context.Context, localId string) (*entity.History, error)
-	FindEntry(ctx context.Context, localId, id string) (*entity.HistoryEntry, error)
+	Find(ctx context.Context, localId string, caps entity.HistoryCaps) (*entity.History, error)
+	FindEntry(ctx context.Context, localId, id string, caps entity.HistoryCaps) (*entity.HistoryEntry, error)
 }

@@ -1,6 +1,7 @@
 package steps
 
 import (
+	"net/http"
 	"os"
 	"time"
 
@@ -15,6 +16,8 @@ func (t *testUtils) registerGivenApiSteps(ctx *godog.ScenarioContext) {
 	ctx.Given(`^the requests to "([^"]*)" respond with the header "([^"]*)" equal to "([^"]*)"$`, t.theRequestsRespondWithTheHeader)
 	ctx.Given(`^the "([^"]*)" requests to "([^"]*)" respond after (\d+)ms$`, t.theRequestsRespondAfter)
 	ctx.Given(`^the requests to "([^"]*)" redirect to "([^"]*)" with status (\d+)$`, t.theRequestsRedirectTo)
+	ctx.Given(`^the mock API echoes every request to "([^"]*)"$`, t.theMockApiEchoesEveryRequestTo)
+	ctx.Given(`^the mock API echoes every request to "([^"]*)" with status (\d+)$`, t.theMockApiEchoesEveryRequestToWithStatus)
 }
 
 func (t *testUtils) theRequestReturnsStatusWithTheFollowingResponse(index int, method, path string, status int, body *godog.DocString) error {
@@ -53,5 +56,15 @@ func (t *testUtils) theRequestsRespondAfter(method, path string, milliseconds in
 
 func (t *testUtils) theRequestsRedirectTo(path, target string, status int) error {
 	t.api.SetRedirect(path, t.substitute(target), status)
+	return nil
+}
+
+func (t *testUtils) theMockApiEchoesEveryRequestTo(path string) error {
+	t.api.SetEcho(t.substitute(path), http.StatusOK)
+	return nil
+}
+
+func (t *testUtils) theMockApiEchoesEveryRequestToWithStatus(path string, status int) error {
+	t.api.SetEcho(t.substitute(path), status)
 	return nil
 }

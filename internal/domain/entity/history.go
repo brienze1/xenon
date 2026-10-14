@@ -1,23 +1,83 @@
 package entity
 
+import (
+	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/historyfilter"
+	"github.com/brienze1/xenon/internal/domain/enums/historysource"
+)
+
 const (
-	HistoryCap                 = 1000
-	HistoryCompactionThreshold = 1200
+	DefaultHistoryCap      = 1000
+	MinHistoryCap          = 100
+	MaxHistoryCap          = 20000
+	DefaultHistoryPageSize = 1000
 )
 
 type History struct {
 	entries []HistoryEntry
 }
 
-func RetainHistory[T any](oldestFirst []T) ([]T, bool) {
-	if len(oldestFirst) <= HistoryCompactionThreshold {
+// CompactHistory keeps the newest cap entries of each source once one source grows a fifth past its cap.
+func CompactHistory[T any](oldestFirst []T, sourceOf func(T) enums.HistorySource, caps HistoryCaps) ([]T, bool) {
+	counts := map[enums.HistorySource]int{}
+	for _, entry := range oldestFirst {
+		counts[sourceOf(entry)]++
+	}
+	if counts[historysource.User] <= caps.compactionThreshold(historysource.User) && counts[historysource.AI] <= caps.compactionThreshold(historysource.AI) {
 		return oldestFirst, false
 	}
-	return oldestFirst[len(oldestFirst)-HistoryCap:], true
+	return KeepNewestHistory(oldestFirst, sourceOf, caps), true
 }
 
-func NewHistory(oldestFirst []HistoryEntry) History {
-	kept := oldestFirst[max(len(oldestFirst)-HistoryCap, 0):]
+func KeepNewestHistory[T any](oldestFirst []T, sourceOf func(T) enums.HistorySource, caps HistoryCaps) []T {
+	kept := make([]T, 0, len(oldestFirst))
+	seen := map[enums.HistorySource]int{}
+	for index := len(oldestFirst) - 1; index >= 0; index-- {
+		source := sourceOf(oldestFirst[index])
+		if seen[source] >= caps.For(source) {
+			continue
+		}
+		seen[source]++
+		kept = append(kept, oldestFirst[index])
+	}
+	reversed := make([]T, 0, len(kept))
+	for index := len(kept) - 1; index >= 0; index-- {
+		reversed = append(reversed, kept[index])
+	}
+	return reversed
+}
+
+func WithoutHistorySource[T any](oldestFirst []T, sourceOf func(T) enums.HistorySource, source enums.HistorySource) []T {
+	kept := make([]T, 0, len(oldestFirst))
+	for _, entry := range oldestFirst {
+		if sourceOf(entry) != source {
+			kept = append(kept, entry)
+		}
+	}
+	return kept
+}
+
+func HistoryAfterClear[T any](oldestFirst []T, sourceOf func(T) enums.HistorySource, filter enums.HistoryFilter) []T {
+	switch filter {
+	case historyfilter.User:
+		return WithoutHistorySource(oldestFirst, sourceOf, historysource.User)
+	case historyfilter.AI:
+		return WithoutHistorySource(oldestFirst, sourceOf, historysource.AI)
+	default:
+		return []T{}
+	}
+}
+
+func ClearsAllHistory(filter enums.HistoryFilter) bool {
+	return historyfilter.All.Equals(KnownHistoryFilter(filter).String())
+}
+
+func HistoryEntrySource(entry HistoryEntry) enums.HistorySource {
+	return entry.Origin()
+}
+
+func NewHistory(oldestFirst []HistoryEntry, caps HistoryCaps) History {
+	kept := KeepNewestHistory(oldestFirst, HistoryEntrySource, caps)
 	entries := make([]HistoryEntry, 0, len(kept))
 	for index := len(kept) - 1; index >= 0; index-- {
 		entries = append(entries, kept[index])
@@ -45,6 +105,10 @@ func (h History) Find(id string) (HistoryEntry, bool) {
 		}
 	}
 	return HistoryEntry{}, false
+}
+
+func (h History) WithoutSource(source enums.HistorySource) []HistoryEntry {
+	return WithoutHistorySource(h.entries, HistoryEntrySource, source)
 }
 
 func (h History) startAfter(query HistoryQuery) int {

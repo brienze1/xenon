@@ -2,12 +2,14 @@ package mock
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 )
@@ -19,6 +21,7 @@ type ApiMock struct {
 	responseHeaders map[string]http.Header
 	delays          map[string]time.Duration
 	redirects       map[string]apiRedirect
+	echoes          map[string]int
 	requests        map[string]receivedRequest
 	callCount       map[string]int
 	mu              sync.RWMutex
@@ -76,6 +79,7 @@ func (m *ApiMock) Reset() {
 	m.responseHeaders = make(map[string]http.Header)
 	m.delays = make(map[string]time.Duration)
 	m.redirects = make(map[string]apiRedirect)
+	m.echoes = make(map[string]int)
 	m.requests = make(map[string]receivedRequest)
 	m.callCount = make(map[string]int)
 }
@@ -105,6 +109,31 @@ func (m *ApiMock) SetRedirect(path, target string, status int) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.redirects[path] = apiRedirect{target: target, statusCode: status}
+}
+
+func (m *ApiMock) SetEcho(path string, status int) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.echoes[path] = status
+}
+
+func writeEcho(w http.ResponseWriter, r *http.Request, body []byte, status int) {
+	headers := map[string]string{}
+	for key, values := range r.Header {
+		joined := strings.Join(values, ", ")
+		headers[key] = joined
+		w.Header().Set("X-Echo-"+key, joined)
+	}
+	echo, _ := json.Marshal(map[string]any{
+		"method":  r.Method,
+		"path":    r.URL.Path,
+		"query":   r.URL.RawQuery,
+		"headers": headers,
+		"body":    string(body),
+	})
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_, _ = w.Write(echo)
 }
 
 func (m *ApiMock) GetCallCount(method, path string) int {
@@ -191,6 +220,7 @@ func (m *ApiMock) handler(w http.ResponseWriter, r *http.Request) {
 	m.requests[requestKey(r.Method, r.URL.Path, index)] = receivedRequest{headers: r.Header.Clone(), query: r.URL.Query(), rawQuery: r.URL.RawQuery, body: body}
 	delay := m.delays[route]
 	redirect, redirected := m.redirects[r.URL.Path]
+	echoStatus, echoed := m.echoes[r.URL.Path]
 	response, configured := m.responses[requestKey(r.Method, r.URL.Path, index)]
 	extraHeaders := m.responseHeaders[r.URL.Path].Clone()
 	m.mu.Unlock()
@@ -207,6 +237,10 @@ func (m *ApiMock) handler(w http.ResponseWriter, r *http.Request) {
 	}
 	if redirected {
 		http.Redirect(w, r, redirect.target, redirect.statusCode)
+		return
+	}
+	if echoed {
+		writeEcho(w, r, body, echoStatus)
 		return
 	}
 	if !configured {

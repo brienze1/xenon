@@ -21,6 +21,8 @@ func NewTabKind(kind enums.TabKind, exampleId, environmentId, itemId string) enu
 	switch {
 	case kind == tabkind.Globals:
 		return tabkind.Globals
+	case kind == tabkind.Settings:
+		return tabkind.Settings
 	case environmentId != "":
 		return tabkind.Environment
 	case itemId != "" && kind == tabkind.Folder:

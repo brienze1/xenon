@@ -60,15 +60,17 @@ Goal: confirm the work matches reality **before** writing anything. Specs (issue
 
 ---
 
-## Phase 2 — Plan (plan mode)
+## Phase 2 — Plan (no approval gate)
 
-1. Enter plan mode (EnterPlanMode).
-2. Plan **every** change needed, per layer (domain → application → integration → infrastructure → tests), following the Clean Architecture skills in `.claude/skills/`. If `plan.md` / `tasks.md` exist, the plan follows them — call out any deviation and why. Include:
+**Do not enter plan mode and do not ask for plan approval** (no EnterPlanMode / ExitPlanMode): the user has
+pre-approved implementation plans for this command. Plan, show the plan, and continue straight into Phase 3.
+
+1. Plan **every** change needed, per layer (domain → application → integration → infrastructure → tests), following the Clean Architecture skills in `.claude/skills/`. If `plan.md` / `tasks.md` exist, the plan follows them — call out any deviation and why. Include:
    - the exact files/DTOs/services/validators/migrations to add or change,
    - the BDD scenarios that lock each expectation (by feature file + tag) — the ones `/create-tests` already wrote, plus any it missed,
    - contract/versioning notes (additive vs `/v2`), risk, and rollback.
-3. Use AskUserQuestion for any genuinely open contract decision the research surfaced. In description mode, this is also where you confirm the branch name if the user didn't give one.
-4. Exit plan mode (ExitPlanMode) and get the plan approved before touching code.
+2. Print the plan in the conversation (and keep it in the Quant mindmap when available), then continue — do not wait for a reply.
+3. Use AskUserQuestion only for a genuinely open contract decision the research surfaced (not to approve the plan). In description mode, this is also where you confirm the branch name if the user didn't give one.
 
 ---
 
@@ -161,7 +163,7 @@ The BDD suite in `test/integration/` is part of this task and changing it is man
 
 ## Rules
 
-- Phases run in the exact order above. Research and plan-approval gate all code.
+- Phases run in the exact order above. Research gates all code; the plan is shown, not approved — never stop for plan approval.
 - **One repo, one branch**: spec, tests and implementation all land on the task branch.
 - **Issue mode:** label the issue in progress at the start; branch = lowercased task id; comment on the issue at the end.
 - **Description mode:** never create or change an issue; branch = the one the user named (ask if none given).

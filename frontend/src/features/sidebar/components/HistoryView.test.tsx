@@ -24,7 +24,7 @@ const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 30)
 const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
 
 function entry(id: string, method: string, url: string, sentAt: Date, extra: Partial<HistoryEntry> = {}): HistoryEntry {
-  return { id, sentAt: sentAt.toISOString(), method, url, outcome: 'sent', statusCode: 200, errorKind: null, totalMs: 42, sizeBytes: 10, sourceRequestId: null, ...extra }
+  return { id, sentAt: sentAt.toISOString(), kind: 'send', source: 'user', client: null, activity: null, method, url, outcome: 'sent', statusCode: 200, errorKind: null, totalMs: 42, sizeBytes: 10, sourceRequestId: null, ...extra }
 }
 
 const entries = [
@@ -71,7 +71,7 @@ describe('HistoryView', () => {
     await renderHistory()
     expect(screen.getByRole('button', { name: 'Sidebar view: History' })).toBeInTheDocument()
     expect(useSidebarStore.getState().view).toBe('history')
-    expect(history.listHistory).toHaveBeenCalledWith('ws', { query: '' })
+    expect(history.listHistory).toHaveBeenCalledWith('ws', { query: '', source: 'all' })
     expect(screen.getByRole('heading', { name: 'Today' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Yesterday' })).toBeInTheDocument()
     const list = screen.getByRole('list', { name: 'History' })
@@ -111,7 +111,7 @@ describe('HistoryView', () => {
       vi.useRealTimers()
     }
     await waitFor(() => expect(within(screen.getByRole('list', { name: 'History' })).getAllByRole('button')).toHaveLength(1))
-    expect(history.listHistory).toHaveBeenLastCalledWith('ws', { query: 'post' })
+    expect(history.listHistory).toHaveBeenLastCalledWith('ws', { query: 'post', source: 'all' })
     expect(useSidebarStore.getState().query).toBe('')
     vi.mocked(history.listHistory).mockResolvedValue([])
     await act(async () => {
@@ -123,7 +123,7 @@ describe('HistoryView', () => {
 
   it('opens an entry as a new unsaved request', async () => {
     const request = { ...emptyDraft(), id: 'r1', name: 'Create order', method: 'POST', url: 'https://api.test/orders' }
-    vi.mocked(history.getHistoryEntry).mockResolvedValue({ entry: entries[0]!, request })
+    vi.mocked(history.getHistoryEntry).mockResolvedValue({ entry: entries[0]!, request, activity: null })
     const actions = await renderHistory()
     await userEvent.click(screen.getByRole('button', { name: /^POST https:\/\/api.test\/orders/ }))
     await waitFor(() => expect(actions.onOpenHistoryEntry).toHaveBeenCalledTimes(1))
@@ -140,7 +140,7 @@ describe('HistoryView', () => {
     expect(history.clearHistory).not.toHaveBeenCalled()
     await userEvent.click(screen.getByRole('button', { name: 'Clear History' }))
     await userEvent.click(within(await screen.findByRole('dialog', { name: 'Clear History?' })).getByRole('button', { name: 'Clear History' }))
-    await waitFor(() => expect(history.clearHistory).toHaveBeenCalledWith('ws'))
+    await waitFor(() => expect(history.clearHistory).toHaveBeenCalledWith('ws', 'all'))
     expect(await screen.findByRole('region', { name: 'No history' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Clear History' })).toBeDisabled()
   })
@@ -155,6 +155,75 @@ describe('HistoryView', () => {
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('The history file is locked. Check that the workspace folder exists')
     expect(useSidebarStore.getState().error).toBeNull()
     expect(screen.getByRole('list', { name: 'History' })).toBeInTheDocument()
+  })
+
+  it('filters by source next to Clear History and remembers the choice', async () => {
+    await renderHistory()
+    const filter = screen.getByRole('radiogroup', { name: 'History source' })
+    expect(filter.parentElement).toContainElement(screen.getByRole('button', { name: 'Clear History' }))
+    expect(within(filter).getAllByRole('radio').map((radio) => radio.textContent)).toEqual(['All', 'User', 'AI'])
+    expect(within(filter).getByRole('radio', { name: 'All' })).toBeChecked()
+    vi.mocked(history.listHistory).mockResolvedValue([])
+    await userEvent.click(within(filter).getByRole('radio', { name: 'AI' }))
+    expect(within(filter).getByRole('radio', { name: 'AI' })).toBeChecked()
+    expect(history.listHistory).toHaveBeenLastCalledWith('ws', { query: '', source: 'ai' })
+    expect(useSidebarStore.getState().historySource).toBe('ai')
+    expect(await screen.findByText('No entries from this source yet.')).toBeInTheDocument()
+    await userEvent.keyboard('{ArrowLeft}')
+    expect(useSidebarStore.getState().historySource).toBe('user')
+    expect(within(filter).getByRole('radio', { name: 'User' })).toHaveFocus()
+  })
+
+  it('tags AI sends with the client and opens them like any send', async () => {
+    vi.mocked(history.listHistory).mockResolvedValue([entry('h9', 'POST', 'https://api.test/orders', today, { source: 'ai', client: 'Claude Code', statusCode: 201 })])
+    const request = { ...emptyDraft(), method: 'POST', url: 'https://api.test/orders' }
+    vi.mocked(history.getHistoryEntry).mockResolvedValue({ entry: entries[0]!, request, activity: null })
+    const actions = await renderHistory()
+    const row = within(screen.getByRole('list', { name: 'History' })).getByRole('button')
+    expect(row).toHaveTextContent('AI · Claude Code')
+    expect(row).toHaveAccessibleName(/^AI · Claude Code — POST https:\/\/api\.test\/orders, 201, /)
+    await userEvent.click(row)
+    await waitFor(() => expect(actions.onOpenHistoryEntry).toHaveBeenCalledWith({ ...request, id: '' }))
+  })
+
+  it('shows AI action rows with tool and action, target, outcome and duration, and expands them to their masked arguments', async () => {
+    const activity = { tool: 'tree', action: 'create', target: { id: 'r9', name: 'POST /orders', path: 'Payments / Orders' }, outcome: 'ok' as const, code: null, durationMs: 12, args: null }
+    const failed = { tool: 'env_edit', action: 'set_current', target: null, outcome: 'error' as const, code: 'VAR-01400', durationMs: 3, args: null }
+    vi.mocked(history.listHistory).mockResolvedValue([
+      entry('a2', '', '', today, { kind: 'action', source: 'ai', client: 'Claude Code', activity, totalMs: 12 }),
+      entry('a1', '', '', today, { kind: 'action', source: 'ai', client: 'Claude Code', activity: failed, totalMs: 3 }),
+    ])
+    vi.mocked(history.getHistoryEntry).mockResolvedValue({ entry: entries[0]!, request: emptyDraft(), activity: { ...activity, args: '{"name":"POST /orders","secret_value":"•••••"}' } })
+    const actions = await renderHistory()
+    const [created, refused] = within(screen.getByRole('list', { name: 'History' })).getAllByRole('button')
+    expect(created).toHaveTextContent('AI · Claude Code')
+    expect(created).toHaveTextContent('tree.create')
+    expect(created).toHaveTextContent('POST /orders')
+    expect(created).toHaveTextContent('ok')
+    expect(created).toHaveTextContent('12 ms')
+    expect(created).toHaveAttribute('aria-expanded', 'false')
+    expect(refused).toHaveTextContent('env_edit.set_current')
+    expect(refused).toHaveTextContent('VAR-01400')
+    await userEvent.click(created!)
+    expect(created).toHaveAttribute('aria-expanded', 'true')
+    const args = await screen.findByRole('region', { name: 'Arguments (masked)' })
+    expect(await within(args).findByText('{"name":"POST /orders","secret_value":"•••••"}')).toBeInTheDocument()
+    expect(history.getHistoryEntry).toHaveBeenCalledWith('ws', 'a2')
+    expect(actions.onOpenHistoryEntry).not.toHaveBeenCalled()
+    await userEvent.click(created!)
+    expect(screen.queryByRole('region', { name: 'Arguments (masked)' })).not.toBeInTheDocument()
+  })
+
+  it('clears only the source the filter shows', async () => {
+    vi.mocked(history.clearHistory).mockResolvedValue()
+    await renderHistory()
+    await userEvent.click(screen.getByRole('radio', { name: 'AI' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Clear History' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Clear AI History?' })
+    expect(dialog).toHaveTextContent('removes every AI send and action in this workspace')
+    expect(dialog).toHaveTextContent('Your own sends stay.')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Clear AI History' }))
+    await waitFor(() => expect(history.clearHistory).toHaveBeenCalledWith('ws', 'ai'))
   })
 
   it('shows the failure when the history cannot be loaded', async () => {

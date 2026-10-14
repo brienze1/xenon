@@ -27,13 +27,13 @@ describe('ui state service', () => {
       ],
       activeTabId: 't1',
       previewTabId: 't2',
-      sidebar: { expanded: ['c1'], selectedId: 'r2', view: 'history' as const, search: 'q' },
+      sidebar: { expanded: ['c1'], selectedId: 'r2', view: 'history' as const, search: 'q', historySource: 'ai' as const },
       layout: { ...defaultUIState().layout, split: 'side-by-side' as const, splitRatio: 0.6 },
     }
     vi.mocked(UIStateService.Save).mockResolvedValue(undefined as never)
     await saveUIState('L1', state)
     const dto = vi.mocked(UIStateService.Save).mock.calls[0]![0]
-    expect(dto).toMatchObject({ local_id: 'L1', version: 1, active_tab_id: 't1', preview_tab_id: 't2', sidebar: { selected_id: 'r2', view: 'history' } })
+    expect(dto).toMatchObject({ local_id: 'L1', version: 1, active_tab_id: 't1', preview_tab_id: 't2', history_source: 'ai', sidebar: { selected_id: 'r2', view: 'history' } })
     expect(dto.tabs?.[0]).toMatchObject({ tab_id: 't1', request_id: '', base_revision: '', draft: { url: 'https://u' } })
     expect(dto.tabs?.[1]).not.toHaveProperty('draft')
     expect(dto.layout).toMatchObject({ split: 'side-by-side', split_ratio: 0.6 })

@@ -355,12 +355,12 @@ describe('tabs store', () => {
   it('remembers which sidebar view is shown', async () => {
     vi.mocked(history.listHistory).mockResolvedValue([])
     tabs().reset()
-    tabs().hydrate('ws', { ...defaultUIState(), sidebar: { expanded: [], selectedId: null, view: 'history', search: '' } })
+    tabs().hydrate('ws', { ...defaultUIState(), sidebar: { expanded: [], selectedId: null, view: 'history', search: '', historySource: 'ai' } })
     await vi.advanceTimersByTimeAsync(0)
     expect(useSidebarStore.getState().view).toBe('history')
-    expect(history.listHistory).toHaveBeenCalledWith('ws', { query: '' })
+    expect(history.listHistory).toHaveBeenCalledWith('ws', { query: '', source: 'ai' })
     await tabs().flushPersist()
-    expect(vi.mocked(uiState.saveUIState).mock.calls[0]![1].sidebar.view).toBe('history')
+    expect(vi.mocked(uiState.saveUIState).mock.calls[0]![1].sidebar).toMatchObject({ view: 'history', historySource: 'ai' })
     useSidebarStore.getState().setView('collections')
     await tabs().flushPersist()
     expect(vi.mocked(uiState.saveUIState).mock.calls[1]![1].sidebar.view).toBe('collections')
@@ -385,7 +385,7 @@ describe('tabs store', () => {
       ],
       activeTabId: 't-new',
       previewTabId: 't-preview',
-      sidebar: { expanded: ['c1'], selectedId: 'A', view: 'collections', search: 'q' },
+      sidebar: { expanded: ['c1'], selectedId: 'A', view: 'collections', search: 'q', historySource: 'user' },
     }
     tabs().reset()
     builder().reset()

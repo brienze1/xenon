@@ -19,6 +19,8 @@ type sendRequest struct {
 	sendHttpRequest       usecase.SendHttpRequest
 	saveResponse          usecase.SaveResponse
 	saveHistoryEntry      usecase.SaveHistoryEntry
+	registerKnownSecrets  usecase.RegisterKnownSecrets
+	publishAIEvent        usecase.PublishAIEvent
 	generateDynamicValue  usecase.GenerateDynamicValue
 	signAwsRequest        usecase.SignAwsRequest
 	answerDigest          usecase.AnswerDigestChallenge
@@ -70,6 +72,8 @@ func NewSendRequestService(
 	saveCookies usecase.SaveCookies,
 	findCookieAllowlist usecase.FindCookieAllowlist,
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
+	registerKnownSecrets usecase.RegisterKnownSecrets,
+	publishAIEvent usecase.PublishAIEvent,
 ) adapter.SendRequestService {
 	scopes := variableScopes{findEnvironment: findEnvironment, findTreeItem: findTreeItem, loadWorkspace: loadWorkspace}
 	vaults := vaultWriter{
@@ -88,6 +92,8 @@ func NewSendRequestService(
 		sendHttpRequest:       sendHttpRequest,
 		saveResponse:          saveResponse,
 		saveHistoryEntry:      saveHistoryEntry,
+		registerKnownSecrets:  registerKnownSecrets,
+		publishAIEvent:        publishAIEvent,
 		generateDynamicValue:  generateDynamicValue,
 		signAwsRequest:        signAwsRequest,
 		answerDigest:          answerDigest,
@@ -127,8 +133,8 @@ func NewSendRequestService(
 	}
 }
 
-func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request entity.Request, appVersion string, acknowledgement entity.SendAcknowledgement) (*entity.SendExecution, error) {
-	logger.Info(ctx, "Started", map[string]any{"localId": localId, "tabId": tabId, "request": request, "appVersion": appVersion, "acknowledgement": acknowledgement})
+func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request entity.Request, appVersion string, acknowledgement entity.SendAcknowledgement, origin entity.SendOrigin) (*entity.SendExecution, error) {
+	logger.Info(ctx, "Started", origin, map[string]any{"localId": localId, "tabId": tabId, "request": request, "appVersion": appVersion, "acknowledgement": acknowledgement})
 
 	workspace, err := s.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
@@ -174,11 +180,15 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 	if err := s.cookies.settle(ctx, localId, cookiesBefore); err != nil {
 		return nil, err
 	}
-	if err := s.saveHistoryEntry.Save(ctx, localId, entity.NewHistoryEntry(idutils.NewUlid(), sentAt, request, execution)); err != nil {
+	s.registerKnownSecrets.Register(ctx, append(secrets, execution.DerivedSecrets(secrets)...)...)
+	if err := s.saveHistoryEntry.Save(ctx, localId, entity.NewHistoryEntry(idutils.NewUlid(), sentAt, request, execution, origin), settings.HistoryCaps()); err != nil {
+		return nil, err
+	}
+	if err := s.publishAIEvent.HistoryChanged(ctx, localId); err != nil {
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "tabId": tabId, "request": request, "appVersion": appVersion, "acknowledgement": acknowledgement, "result": execution})
+	logger.Info(ctx, "Finished", origin, map[string]any{"localId": localId, "tabId": tabId, "request": request, "appVersion": appVersion, "acknowledgement": acknowledgement, "result": &execution})
 	return &execution, nil
 }
 
@@ -193,14 +203,14 @@ func (s *sendRequest) oauthToken(ctx context.Context, localId string, effective 
 	if err != nil {
 		return nil, err
 	}
-	if expired && !acknowledgement.AcceptsExpiredToken() {
+	if acknowledgement.RejectsExpiredToken(expired) {
 		return nil, usecase.RejectExpiredToken(effective.AuthOwner)
 	}
 	return token, nil
 }
 
 func (s *sendRequest) scriptOwners(ctx context.Context, root string, request entity.Request, ancestors []entity.Collection) ([]entity.ScriptOwner, error) {
-	if request.ScriptsEdited || !entity.IsSavedRequestID(request.ID) {
+	if request.UsesOwnScripts() {
 		return request.ScriptOwners(ancestors), nil
 	}
 	stored, err := s.findRequest.Find(ctx, root, request.ID)

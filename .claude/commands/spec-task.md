@@ -344,3 +344,9 @@ Summarize for the user:
 Do not describe the spec as complete if anything is still open. If you genuinely
 could not close something, say so plainly at the top of the report and state
 what it blocks — an honest gap is recoverable, a gap buried under "done" is not.
+
+## Step 11 — Continue the flow automatically
+
+The user wants the task flow to run end to end without being asked. Once the Step 7 gate passed and the spec is
+pushed, invoke `/create-tests <XEN-ID>` yourself (Skill tool) on the same branch — do not stop and wait. Stop
+instead only if something is genuinely open (a gap you could not close), and say so.

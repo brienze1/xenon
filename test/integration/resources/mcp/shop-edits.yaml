@@ -1,0 +1,13 @@
+edited: |
+  openapi: 3.1.0
+  info:
+    title: Shop
+    version: 1.0.0
+  servers:
+    - url: https://shop.test
+  paths:
+    /products:
+      get:
+        summary: List products
+        description: Every product in the shop
+        x-xenon-id: 01JV0000000000000000000011

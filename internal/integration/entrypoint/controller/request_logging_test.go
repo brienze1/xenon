@@ -3,6 +3,7 @@ package controller
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"os"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums/historysource"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
 	"github.com/brienze1/xenon/pkg/logger"
 )
@@ -35,7 +37,7 @@ func (l *logBuffer) String() string {
 
 type echoSendService struct{}
 
-func (echoSendService) Send(_ context.Context, _, _ string, request entity.Request, _ string, _ entity.SendAcknowledgement) (*entity.SendExecution, error) {
+func (echoSendService) Send(_ context.Context, _, _ string, request entity.Request, _ string, _ entity.SendAcknowledgement, _ entity.SendOrigin) (*entity.SendExecution, error) {
 	headers := []entity.KeyValue{entity.NewKeyValue("Set-Cookie", "session="+secretToken)}
 	execution := entity.NewSendExecution("send")
 	execution.RecordResponse(entity.EffectiveRequest{}, entity.NewResponse(200, "OK", "HTTP/1.1", headers, []byte(request.Auth.Bearer.Token), 10, entity.Timings{}))
@@ -80,14 +82,21 @@ func (storedResponseService) SaveBody(context.Context, string, string) error { r
 func (storedResponseService) Release(context.Context, string) error          { return nil }
 func (storedResponseService) ReleaseAll(context.Context) error               { return nil }
 
-func secretRequest() dto.Request {
-	return dto.Request{
-		Method:  "POST",
-		Url:     "https://api.example.test/me",
-		Auth:    dto.Auth{Type: "bearer", Bearer: dto.AuthBearer{Token: secretToken}},
-		Headers: []dto.KeyValue{{Key: "X-Api-Key", Value: secretToken}},
-		Body:    dto.Body{Mode: "raw", Raw: dto.BodyRaw{Content: secretToken}},
+const secretRequestJSON = `{
+	"method": "POST",
+	"url": "https://api.example.test/me",
+	"auth": { "type": "bearer", "bearer": { "token": "` + secretToken + `" } },
+	"headers": [ { "key": "X-Api-Key", "value": "` + secretToken + `" } ],
+	"body": { "mode": "raw", "raw": { "content": "` + secretToken + `" } }
+}`
+
+func decodeDTO[T any](t *testing.T, raw string) T {
+	t.Helper()
+	var decoded T
+	if err := json.Unmarshal([]byte(raw), &decoded); err != nil {
+		t.Fatal(err)
 	}
+	return decoded
 }
 
 func captureLogs(t *testing.T) *logBuffer {
@@ -106,26 +115,26 @@ func TestRequestControllersNeverLogSecrets(t *testing.T) {
 	send := NewRequestSend(NewErrorHandler(), echoSendService{})
 	response := NewRequestResponse(NewErrorHandler(), storedResponseService{})
 
-	sent, err := send.Send(ctx, dto.SendRequest{LocalId: "ws", TabId: "tab", Request: secretRequest()})
+	sent, err := send.Send(ctx, dto.NewSendRequest(dto.NewSendOrigin(historysource.User, ""), "ws", "tab", "", decodeDTO[dto.Request](t, secretRequestJSON), false, false))
 	if err != nil || *sent.InlineBody != secretToken {
 		t.Fatalf("send = %+v %v", sent, err)
 	}
-	if _, err := edit.ApplyUrl(ctx, dto.ApplyRequest{Request: secretRequest()}); err != nil {
+	if _, err := edit.ApplyUrl(ctx, decodeDTO[dto.ApplyRequest](t, `{"request": `+secretRequestJSON+`}`)); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := edit.ApplyParams(ctx, dto.ApplyRequest{Request: secretRequest()}); err != nil {
+	if _, err := edit.ApplyParams(ctx, decodeDTO[dto.ApplyRequest](t, `{"request": `+secretRequestJSON+`}`)); err != nil {
 		t.Fatal(err)
 	}
-	if headers, err := edit.AutoHeaders(ctx, dto.AutoHeadersRequest{LocalId: "ws", Request: secretRequest()}); err != nil || headers[0].Value != "Bearer "+secretToken {
+	if headers, err := edit.AutoHeaders(ctx, decodeDTO[dto.AutoHeadersRequest](t, `{"local_id": "ws", "request": `+secretRequestJSON+`}`)); err != nil || headers[0].Value != "Bearer "+secretToken {
 		t.Fatalf("auto headers = %+v %v", headers, err)
 	}
-	if rows, err := edit.ParseBulk(ctx, dto.BulkText{Text: secretToken}); err != nil || rows.Rows[0].Value != secretToken {
+	if rows, err := edit.ParseBulk(ctx, dto.NewBulkText(secretToken)); err != nil || rows.Rows[0].Value != secretToken {
 		t.Fatalf("parse bulk = %+v %v", rows, err)
 	}
-	if text, err := edit.FormatBulk(ctx, dto.BulkRows{Rows: []dto.KeyValue{{Key: "Authorization", Value: secretToken}}}); err != nil || text.Text != secretToken {
+	if text, err := edit.FormatBulk(ctx, dto.NewBulkRows([]entity.KeyValue{entity.NewKeyValue("Authorization", secretToken)})); err != nil || text.Text != secretToken {
 		t.Fatalf("format bulk = %+v %v", text, err)
 	}
-	if parsed, err := edit.ParseCurl(ctx, dto.CurlText{Text: secretToken}); err != nil || parsed.Request.Headers[0].Value != secretToken {
+	if parsed, err := edit.ParseCurl(ctx, decodeDTO[dto.CurlText](t, `{"text": "`+secretToken+`"}`)); err != nil || parsed.Request.Headers[0].Value != secretToken {
 		t.Fatalf("parse curl = %+v %v", parsed, err)
 	}
 	if last, err := response.LastResult(ctx, dto.NewTabReference("tab")); err != nil || *last.InlineBody != secretToken {

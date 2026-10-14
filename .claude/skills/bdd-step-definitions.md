@@ -184,6 +184,33 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 | `the N "METHOD" request for "path" headers should have the variable "key" with value "val"` | Validates mock API received headers |
 | `the N "METHOD" request for "path" json body should have the variable "field" with value "val"` | Validates mock API received body |
 
+### MCP, stdio-bridge and echo steps (Xenon)
+
+These live in `when_mcp_steps_test.go`, `then_mcp_steps_test.go` and `given_api_steps_test.go`. Every scenario gets
+a free MCP port in `XENON_MCP_PORT` (`{{mcp_port}}`, `{{mcp_url}}`). An MCP result becomes "the response" (or "the
+error", as `{"error": {...}}`), so the generic response and error steps apply to it.
+
+| Step pattern | Purpose |
+|---|---|
+| `the MCP client is named "name"` | Picks the client (one session per name, kept for the scenario) |
+| `I call the MCP tool "tool" with` + JSON / `I call the MCP tool "tool"` | Calls a tool; the text result is the response |
+| `I call the MCP tool "tool" N times with` + JSON | Repeats a call (fails on the first error) |
+| `I start calling the MCP tool "tool" in the background [as "name"] with` + JSON | Starts a call that blocks (for example, waiting for approval) |
+| `the background call ["name"] should finish within N ms` | Waits for a background call and makes its result the response |
+| `I list the MCP tools` | The response is the tool list |
+| `the MCP session is closed` | Closes the current client's session |
+| `I post to the MCP endpoint with the headers` + table / `I post a body of N bytes to the MCP endpoint` | Raw HTTP posts; assert with `the route response status should be N` |
+| `the MCP endpoint should refuse connections` | Nothing listens on the MCP port |
+| `I run the stdio bridge with the input` + lines | Runs `xenon mcp` with the given stdin |
+| `the bridge exit code should be N` / `the bridge output should [not] contain\|match "x"` / `the bridge error output should contain "x"` | Bridge assertions |
+| `the mock API echoes every request to "path" [with status N]` | Echo route: JSON `{method,path,query,headers,body}`, headers reflected as `X-Echo-<Header>` |
+| `the "var" variable is set to the port of the mocked api url` | The mock API's port |
+| `the error should not contain "x"` / `the response should have at most N characters` / `the response field "f" should have N characters` / `every item of the response field "f" should have the field "k" matching "re"` | Generic assertions |
+| `the Xenon window should have been brought to the front N times` | Window-focuser mock |
+
+Register steps that can open or continue a scenario with `ctx.Step`: godog binds `Given`/`When`/`Then` strictly.
+Step arguments cannot contain `"`, so compare such values with a docstring step or a regex instead.
+
 ---
 
 ## Before Hook (Reset Mock STATE Only)

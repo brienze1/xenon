@@ -18,7 +18,8 @@ PARITY_EXPECTED_DIR := test/integration/resources/scripts/corpus/expected
 SNIPPET_EXPECTED_DIR := test/integration/resources/snippets/expected
 
 GO_FILES = $(shell find . -name '*.go' -not -path './frontend/*' -not -path './build/*' -not -path './tools/*' -not -path './.git/*')
-INTERNAL_PACKAGES = $(shell go list ./internal/... 2>/dev/null)
+# A flag, not the package list: the full list overflows the Windows command line inside a recipe
+HAS_INTERNAL_PACKAGES = $(if $(shell go list ./internal/... 2>/dev/null),yes,)
 NO_INTERNAL_NOTE := "No packages under internal/ yet - skipping (the gate enforces once backend code exists)."
 ifeq ($(OS),Windows_NT)
 MUTATION_SKIP := true
@@ -27,7 +28,7 @@ endif
 
 .PHONY: setup dev bindings build package ensure-dist sort-imports fix-struct-alignment vet \
 	check-dead-code dependency-check tests bdd validate-coverage mutation-test \
-	validate-mutation-coverage validate-test-efficacy frontend-check validate \
+	validate-mutation-coverage validate-test-efficacy validate-mutation frontend-check validate \
 	sandbox-assets parity-oracle parity-diff parity script-reference snippet-golden newman
 
 setup:
@@ -75,15 +76,19 @@ validate:
 	$(MAKE) tests
 	@echo "Validating test coverage..."
 	$(MAKE) validate-coverage
+	@echo "Running frontend checks..."
+	$(MAKE) frontend-check
+	@echo "Validation completed!"
+
+# Mutation testing takes hours, so it is not part of validate - run it now and then
+validate-mutation:
 	@echo "Running mutation tests..."
 	$(MAKE) mutation-test
 	@echo "Validating mutation coverage..."
 	$(MAKE) validate-mutation-coverage
 	@echo "Validating test efficacy..."
 	$(MAKE) validate-test-efficacy
-	@echo "Running frontend checks..."
-	$(MAKE) frontend-check
-	@echo "Validation completed!"
+	@echo "Mutation validation completed!"
 
 vet: ensure-dist
 	@echo "Running go vet..."
@@ -130,7 +135,7 @@ dependency-check: ensure-dist
 
 tests: ensure-dist
 	@echo "Running tests..."
-	@if [ -n "$(INTERNAL_PACKAGES)" ]; then \
+	@if [ -n "$(HAS_INTERNAL_PACKAGES)" ]; then \
 		go test ./... -coverpkg=./internal/... -coverprofile=coverage.out -p=100 && \
 		go tool cover -func coverage.out; \
 	else \
@@ -149,7 +154,7 @@ bdd: ensure-dist
 
 validate-coverage:
 	@echo "Validating coverage..."
-	@if [ ! -f coverage.out ] || [ -z "$(INTERNAL_PACKAGES)" ]; then \
+	@if [ ! -f coverage.out ] || [ -z "$(HAS_INTERNAL_PACKAGES)" ]; then \
 		echo $(NO_INTERNAL_NOTE); \
 		exit 0; \
 	fi; \
@@ -174,7 +179,7 @@ mutation-test: ensure-dist
 		rm -f mutation_results.log; \
 		exit 0; \
 	fi; \
-	if [ -z "$(INTERNAL_PACKAGES)" ]; then \
+	if [ -z "$(HAS_INTERNAL_PACKAGES)" ]; then \
 		echo $(NO_INTERNAL_NOTE); \
 		rm -f mutation_results.log; \
 		exit 0; \
@@ -217,7 +222,7 @@ validate-mutation-coverage:
 	@coverage=$$(grep -E 'Mutator coverage: [0-9]+(\.[0-9]+)?%' mutation_results.log 2>/dev/null | tail -1 | awk '{print $$3}' | sed 's/%//'); \
 	if [ -z "$$coverage" ]; then \
 		if [ -n "$(MUTATION_SKIP)" ]; then echo $(MUTATION_SKIP_NOTE); exit 0; fi; \
-		if [ -z "$(INTERNAL_PACKAGES)" ]; then echo $(NO_INTERNAL_NOTE); exit 0; fi; \
+		if [ -z "$(HAS_INTERNAL_PACKAGES)" ]; then echo $(NO_INTERNAL_NOTE); exit 0; fi; \
 		echo "No mutation coverage found in mutation_results.log - run make mutation-test first."; \
 		exit 1; \
 	fi; \
@@ -235,7 +240,7 @@ validate-test-efficacy:
 	@efficacy=$$(grep -E 'Test efficacy: [0-9]+(\.[0-9]+)?%' mutation_results.log 2>/dev/null | tail -1 | awk '{print $$3}' | sed 's/%//'); \
 	if [ -z "$$efficacy" ]; then \
 		if [ -n "$(MUTATION_SKIP)" ]; then echo $(MUTATION_SKIP_NOTE); exit 0; fi; \
-		if [ -z "$(INTERNAL_PACKAGES)" ]; then echo $(NO_INTERNAL_NOTE); exit 0; fi; \
+		if [ -z "$(HAS_INTERNAL_PACKAGES)" ]; then echo $(NO_INTERNAL_NOTE); exit 0; fi; \
 		echo "No test efficacy found in mutation_results.log - run make mutation-test first."; \
 		exit 1; \
 	fi; \

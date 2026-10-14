@@ -242,6 +242,33 @@ describe('workspaces store', () => {
     expect(useTabsStore.getState().tabs).toEqual([])
   })
 
+  it('follows workspace changes made through MCP: rereads the list, switches, stays, or leaves', async () => {
+    useWorkspacesStore.setState({ workspaces: [acme], activeLocalId: 'A' })
+    useTabsStore.getState().hydrate('A', defaultUIState())
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme, { ...globex, name: 'Globex Corp' }], activeLocalId: 'G' })
+    vi.mocked(services.activateWorkspace).mockResolvedValue(snapshot(globex))
+    await store().follow('G')
+    expect(services.activateWorkspace).toHaveBeenCalledWith('G')
+    expect(store()).toMatchObject({ activeLocalId: 'G', workspaces: [acme, globex] })
+    vi.mocked(services.activateWorkspace).mockClear()
+    const tabs = useTabsStore.getState().tabs
+    await store().follow('G')
+    expect(services.activateWorkspace).not.toHaveBeenCalled()
+    expect(useTabsStore.getState().tabs).toBe(tabs)
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [], activeLocalId: null })
+    await store().follow(null)
+    expect(store()).toMatchObject({ workspaces: [], activeLocalId: null })
+    expect(useTabsStore.getState().tabs).toEqual([])
+  })
+
+  it('keeps the active workspace when the list cannot be reread', async () => {
+    useWorkspacesStore.setState({ workspaces: [acme], activeLocalId: 'A' })
+    vi.mocked(services.listWorkspaces).mockRejectedValue(new AppError('WKS-09500', 'registry unreadable'))
+    await store().follow('G')
+    expect(store()).toMatchObject({ activeLocalId: 'A', error: { code: 'WKS-09500' } })
+    expect(services.activateWorkspace).not.toHaveBeenCalled()
+  })
+
   it('removes an inactive workspace without switching', async () => {
     useWorkspacesStore.setState({ workspaces: [acme, globex], activeLocalId: 'G' })
     vi.mocked(services.removeWorkspace).mockResolvedValue({ workspaces: [globex], activeLocalId: 'G' })

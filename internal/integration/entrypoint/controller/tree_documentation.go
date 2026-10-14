@@ -6,7 +6,6 @@ import (
 	appAdapter "github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
-	"github.com/brienze1/xenon/internal/integration/entrypoint/validator"
 	"github.com/brienze1/xenon/pkg/logger"
 )
 
@@ -33,7 +32,7 @@ func (t *treeDocumentation) GetDocumentation(bindingCtx context.Context, request
 		}
 	}(ctx, request)
 
-	err = validator.CustomValidator().Struct("DOC-11400", &request)
+	err = validateGetDocumentation(&request)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +60,7 @@ func (t *treeDocumentation) PreviewDocumentation(bindingCtx context.Context, req
 		}
 	}(ctx, request)
 
-	err = validator.CustomValidator().Struct("DOC-12400", &request)
+	err = validatePreviewDocumentation(&request)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +88,7 @@ func (t *treeDocumentation) PlanDocumentation(bindingCtx context.Context, reques
 		}
 	}(ctx, request)
 
-	err = validator.CustomValidator().Struct("DOC-13400", &request)
+	err = validatePlanDocumentation(&request)
 	if err != nil {
 		return nil, err
 	}
@@ -117,16 +116,16 @@ func (t *treeDocumentation) ApplyDocumentation(bindingCtx context.Context, reque
 		}
 	}(ctx, request)
 
-	err = validator.CustomValidator().Struct("DOC-14400", &request)
+	err = validateApplyDocumentation(&request)
 	if err != nil {
 		return nil, err
 	}
 
-	applied, err := t.manageDocumentationService.Apply(ctx, request.LocalId, request.Id, request.Yaml, request.ConfirmDeletions)
+	applied, err := t.manageDocumentationService.Apply(ctx, request.LocalId, request.Id, request.Yaml, request.ConfirmDeletions, request.KeepDeleted)
 	if err != nil {
 		return nil, err
 	}
-	triggerAutoSync(ctx, t.autoSyncService.Saved, request.LocalId)
+	scheduleAutoSync(ctx, t.errorHandler, t.autoSyncService.Saved, request.LocalId)
 	result := dto.NewDocumentationApplied(*applied)
 
 	logger.Info(ctx, "Finished", result)

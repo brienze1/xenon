@@ -2,6 +2,7 @@ import { SAVE_CONFLICT_CODE } from '@/platform/errors'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import { useItemSettingsStore } from '@/features/item-settings/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
+import { useSettingsStore } from '@/features/settings/store'
 import { withNextStep } from '@/shared/lib/next-step'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
@@ -26,7 +27,9 @@ export function CloseTabPrompt() {
   const variablesSaving = useEnvironmentsStore((state) => (scope === null ? false : state.drafts[scope]?.saving === true))
   const itemId = useTabsStore((state) => state.tabs.find((tab) => tab.id === tabId)?.itemId ?? null)
   const settingsSaving = useItemSettingsStore((state) => (itemId === null ? false : state.items[itemId]?.saving === true))
-  const saving = requestSaving || variablesSaving || settingsSaving
+  const isSettingsTab = useTabsStore((state) => state.tabs.find((tab) => tab.id === tabId)?.kind === 'settings')
+  const appSettingsSaving = useSettingsStore((state) => isSettingsTab && state.saving)
+  const saving = requestSaving || variablesSaving || settingsSaving || appSettingsSaving
 
   return (
     <Dialog.Root open={tabId !== null} onOpenChange={(open) => (open ? undefined : void resolveClose('cancel'))}>

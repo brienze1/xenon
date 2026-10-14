@@ -45,6 +45,11 @@ interface WorkspacesState {
   add: (name: string, path: string) => Promise<WorkspaceSummary | null>
   open: (path: string) => Promise<boolean>
   activate: (localId: string) => Promise<void>
+  /**
+   * Catches up with a change made outside the UI (an AI client through MCP): rereads the list and
+   * switches to `activeLocalId`, or leaves the workspace when none is active any more.
+   */
+  follow: (activeLocalId: string | null) => Promise<void>
   rename: (localId: string, name: string) => Promise<boolean>
   remove: (localId: string, moveToTrash: boolean) => Promise<boolean>
   locate: (localId: string) => Promise<void>
@@ -155,6 +160,25 @@ export const useWorkspacesStore = create<WorkspacesState>()((set, get) => {
         set((state) => ({ workspaces: withMissing(state.workspaces, localId) }))
         leaveWorkspace(localId)
       }
+    },
+
+    follow: async (activeLocalId) => {
+      const current = get().activeLocalId
+      try {
+        const list = await listWorkspaces()
+        set({ workspaces: list.workspaces, status: 'ready' })
+      } catch (error) {
+        set({ error: toAppError(error) })
+        return
+      }
+      if (activeLocalId === current) {
+        return
+      }
+      if (activeLocalId === null) {
+        leaveWorkspace(null)
+        return
+      }
+      await get().activate(activeLocalId)
     },
 
     rename: async (localId, name) => {

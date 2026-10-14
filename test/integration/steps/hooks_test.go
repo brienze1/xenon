@@ -2,11 +2,16 @@ package steps
 
 import (
 	"context"
+	"net"
 	"os"
 	"path/filepath"
+	"strconv"
+
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/brienze1/xenon/internal/infra/dependency/binding"
 	"github.com/brienze1/xenon/internal/infra/dependency/consumer"
+	"github.com/brienze1/xenon/internal/infra/dependency/server"
 	"github.com/brienze1/xenon/test/integration/mock"
 )
 
@@ -28,6 +33,7 @@ func (t *testUtils) before() error {
 	t.digest.Reset()
 	t.fileManager.Reset()
 	t.sshAgent.Reset()
+	t.window.Reset()
 	t.sshKeys = map[string]*mock.SshKey{}
 	if err := t.git.Reset(); err != nil {
 		return err
@@ -39,6 +45,7 @@ func (t *testUtils) before() error {
 	t.callError = nil
 	t.routeResponse = nil
 	t.background = nil
+	t.backgrounds = map[string]*backgroundCall{}
 	t.written = map[string]string{}
 
 	tempRoot, err := os.MkdirTemp("", "xenon-bdd-")
@@ -64,6 +71,9 @@ func (t *testUtils) before() error {
 		"app_data":       t.dataDir,
 		"resources":      resources,
 	}
+	if err := t.prepareMcp(); err != nil {
+		return err
+	}
 	if err := os.Setenv("XENON_SCRYPT_LOG_N", scryptLogN); err != nil {
 		return err
 	}
@@ -71,6 +81,8 @@ func (t *testUtils) before() error {
 }
 
 func (t *testUtils) after() {
+	t.closeMcp()
+	t.stopMcpServer()
 	for _, path := range t.readOnly {
 		_ = os.Chmod(path, 0o755)
 	}
@@ -82,6 +94,33 @@ func (t *testUtils) after() {
 		_ = os.Setenv(name, previous)
 	}
 	_ = os.RemoveAll(t.tempRoot)
+}
+
+func (t *testUtils) prepareMcp() error {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return err
+	}
+	port := strconv.Itoa(listener.Addr().(*net.TCPAddr).Port)
+	if err := listener.Close(); err != nil {
+		return err
+	}
+	t.mcpClientName = defaultMcpClientName
+	t.mcpSessions = map[string]*mcp.ClientSession{}
+	t.bridge = nil
+	t.vars["mcp_port"] = port
+	t.vars["mcp_url"] = "http://127.0.0.1:" + port + "/mcp"
+	if _, saved := t.environment["XENON_MCP_PORT"]; !saved {
+		t.environment["XENON_MCP_PORT"] = os.Getenv("XENON_MCP_PORT")
+	}
+	return os.Setenv("XENON_MCP_PORT", port)
+}
+
+func (t *testUtils) closeMcp() {
+	for name, session := range t.mcpSessions {
+		_ = session.Close()
+		delete(t.mcpSessions, name)
+	}
 }
 
 func (t *testUtils) startApp() {
@@ -111,5 +150,15 @@ func (t *testUtils) startApp() {
 		binding.GetSnippetService(),
 		binding.GetExportService(),
 		binding.GetSyncService(),
+		binding.GetAIAccessService(),
 	}
+	t.startMcpServer()
+}
+
+func (t *testUtils) startMcpServer() {
+	_ = server.GetMCPServer().Start(context.Background())
+}
+
+func (t *testUtils) stopMcpServer() {
+	_ = server.GetMCPServer().Stop(context.Background())
 }

@@ -1,6 +1,12 @@
 package entity
 
+import (
+	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/historyfilter"
+)
+
 type HistoryQuery struct {
+	Source   enums.HistoryFilter
 	Text     string
 	BeforeID string
 	Limit    int
@@ -8,9 +14,21 @@ type HistoryQuery struct {
 
 func NewHistoryQuery(text, beforeId string, limit int) HistoryQuery {
 	if limit == 0 {
-		limit = HistoryCap
+		limit = DefaultHistoryPageSize
 	}
-	return HistoryQuery{Text: text, BeforeID: beforeId, Limit: limit}
+	return HistoryQuery{Source: historyfilter.All, Text: text, BeforeID: beforeId, Limit: limit}
+}
+
+func (h HistoryQuery) FromSource(source enums.HistoryFilter) HistoryQuery {
+	h.Source = source
+	return h
+}
+
+func KnownHistoryFilter(filter enums.HistoryFilter) enums.HistoryFilter {
+	if filter == historyfilter.User || filter == historyfilter.AI {
+		return filter
+	}
+	return historyfilter.All
 }
 
 func (h HistoryQuery) IsFilledBy(count int) bool {
@@ -18,7 +36,7 @@ func (h HistoryQuery) IsFilledBy(count int) bool {
 }
 
 func (h HistoryQuery) Matches(entry HistoryEntry) bool {
-	return entry.Matches(h.Text)
+	return entry.IsIn(h.Source) && entry.Matches(h.Text)
 }
 
 func (h HistoryQuery) HasCursor() bool {

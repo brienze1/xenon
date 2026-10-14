@@ -3,12 +3,18 @@ package dto
 import "github.com/brienze1/xenon/internal/domain/entity"
 
 type HistoryEntryDetail struct {
-	Request Request      `json:"request"`
-	Entry   HistoryEntry `json:"entry"`
+	Activity *AIActivity  `json:"activity,omitempty"`
+	Request  Request      `json:"request"`
+	Entry    HistoryEntry `json:"entry"`
 }
 
 func NewHistoryEntryDetail(entry entity.HistoryEntry) HistoryEntryDetail {
-	return HistoryEntryDetail{Entry: NewHistoryEntry(entry), Request: NewRequest(entry.Request)}
+	detail := HistoryEntryDetail{Entry: NewHistoryEntry(entry), Request: NewRequest(entry.Request)}
+	if entry.IsAction() {
+		activity := NewAIActivity(*entry.Activity, true)
+		detail.Activity = &activity
+	}
+	return detail
 }
 
 func (h HistoryEntryDetail) LogValue() any {

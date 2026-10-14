@@ -1,28 +1,33 @@
 package dto
 
-import "github.com/brienze1/xenon/internal/domain/entity"
+import (
+	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums/historyfilter"
+)
 
 type UIState struct {
-	LocalId      string           `json:"local_id" validate:"required,not_blank"`
-	ActiveTabId  string           `json:"active_tab_id"`
-	PreviewTabId string           `json:"preview_tab_id"`
-	Tabs         []Tab            `json:"tabs" validate:"dive"`
-	ClosedTabs   []ClosedTab      `json:"closed_tabs" validate:"dive"`
-	Snippets     []SnippetOptions `json:"snippet_options" validate:"dive"`
-	Sidebar      SidebarState     `json:"sidebar"`
-	Layout       Layout           `json:"layout"`
-	Version      int              `json:"version"`
+	LocalId       string           `json:"local_id" validate:"required,not_blank"`
+	ActiveTabId   string           `json:"active_tab_id"`
+	PreviewTabId  string           `json:"preview_tab_id"`
+	HistorySource string           `json:"history_source"`
+	Sidebar       SidebarState     `json:"sidebar"`
+	Tabs          []Tab            `json:"tabs" validate:"dive"`
+	ClosedTabs    []ClosedTab      `json:"closed_tabs" validate:"dive"`
+	Snippets      []SnippetOptions `json:"snippet_options" validate:"dive"`
+	Layout        Layout           `json:"layout"`
+	Version       int              `json:"version"`
 }
 
 func NewUIState(localId string, state entity.UIState) UIState {
 	result := UIState{
-		LocalId:      localId,
-		Version:      state.Version,
-		ActiveTabId:  state.ActiveTabID,
-		PreviewTabId: state.PreviewTabID,
-		Tabs:         make([]Tab, 0, len(state.Tabs)),
-		Sidebar:      NewSidebarState(state.Sidebar),
-		Layout:       NewLayout(state.Layout),
+		LocalId:       localId,
+		Version:       state.Version,
+		ActiveTabId:   state.ActiveTabID,
+		PreviewTabId:  state.PreviewTabID,
+		Tabs:          make([]Tab, 0, len(state.Tabs)),
+		Sidebar:       NewSidebarState(state.Sidebar),
+		Layout:        NewLayout(state.Layout),
+		HistorySource: state.HistorySource.String(),
 	}
 	for _, tab := range state.Tabs {
 		result.Tabs = append(result.Tabs, NewTab(tab))
@@ -53,6 +58,7 @@ func (u *UIState) ToEntity() entity.UIState {
 	}
 	state.Sidebar = u.Sidebar.ToEntity()
 	state.Layout = u.Layout.ToEntity()
+	state.HistorySource = historyfilter.GetHistoryFilter(u.HistorySource)
 	return state
 }
 

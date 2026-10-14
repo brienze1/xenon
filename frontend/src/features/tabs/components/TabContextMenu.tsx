@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { ContextMenu } from '@/shared/ui/context-menu/ContextMenu'
-import { isEnvironmentTab, isItemTab, useTabsStore } from '@/features/tabs/store'
+import { isAppSettingsTab, isEnvironmentTab, isItemTab, useTabsStore } from '@/features/tabs/store'
 import styles from './TabContextMenu.module.css'
 
 interface TabContextMenuProps {
@@ -26,18 +26,18 @@ interface TabMenuProps {
 }
 
 function TabMenu({ tabId, name }: TabMenuProps) {
-  const { position, count, requestId, isExample, isVariables, isItem } = useTabsStore(
+  const { position, count, requestId, isExample, isVariables, isItem, isSettings } = useTabsStore(
     useShallow((state) => {
       const index = state.tabs.findIndex((tab) => tab.id === tabId)
       const tab = state.tabs[index]
-      return { position: index, count: state.tabs.length, requestId: tab?.requestId ?? null, isExample: tab?.kind === 'example', isVariables: isEnvironmentTab(tab), isItem: isItemTab(tab) }
+      return { position: index, count: state.tabs.length, requestId: tab?.requestId ?? null, isExample: tab?.kind === 'example', isVariables: isEnvironmentTab(tab), isItem: isItemTab(tab), isSettings: isAppSettingsTab(tab) }
     }),
   )
   const tabs = useTabsStore.getState
   return (
     <ContextMenu.Menu label={`${name} tab actions`}>
       <ContextMenu.Item onSelect={() => tabs().newTab()}>New Request</ContextMenu.Item>
-      <ContextMenu.Item disabled={isExample || isVariables || isItem} onSelect={() => tabs().duplicateTab(tabId)}>
+      <ContextMenu.Item disabled={isExample || isVariables || isItem || isSettings} onSelect={() => tabs().duplicateTab(tabId)}>
         Duplicate Tab
       </ContextMenu.Item>
       <ContextMenu.Separator />

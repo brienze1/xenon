@@ -52,6 +52,8 @@ func GetSendRequestService() adapter.SendRequestService {
 				integration.GetVaultPersistence(),
 				integration.GetUIStatePersistence(),
 				integration.GetWorkspaceEventPublisher(),
+				integration.GetKnownSecretsPersistence(),
+				integration.GetAIEventPublisher(),
 			)
 		})
 	}

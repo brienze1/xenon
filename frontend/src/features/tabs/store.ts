@@ -4,6 +4,7 @@ import { isScopeDirty, useEnvironmentsStore } from '@/features/environments/stor
 import { useExamplesStore } from '@/features/examples/store'
 import { isItemDirty, useItemSettingsStore } from '@/features/item-settings/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
+import { isSettingsDirty, useSettingsStore } from '@/features/settings/store'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
@@ -52,6 +53,8 @@ interface TabsState {
   handleExampleDeleted: (exampleId: string) => void
   /** Opens (or focuses) the tab editing an environment's variables or the globals. */
   openEnvironmentTab: (target: EnvironmentTabTarget, mode: OpenMode) => void
+  /** Opens (or focuses) the single, pinned Settings tab; with no workspace, the full-page Settings. */
+  openSettingsTab: () => void
   /** Closes the tabs of environments that no longer exist. */
   handleEnvironmentsChanged: (environmentIds: string[]) => void
   /** Opens (or focuses) the tab editing a collection's or folder's settings. */
@@ -134,9 +137,22 @@ export function isItemTab(tab: TabMeta | undefined): boolean {
   return (tab?.kind === 'collection' || tab?.kind === 'folder') && Boolean(tab.itemId)
 }
 
-/** Whether the tab has no request draft (environment, globals, collection and folder tabs). */
-function isSettingsTab(tab: TabMeta | undefined): boolean {
-  return isEnvironmentTab(tab) || isItemTab(tab)
+/** Whether the tab edits the app settings (the single Settings tab). */
+export function isAppSettingsTab(tab: TabMeta | undefined): boolean {
+  return tab?.kind === 'settings'
+}
+
+/** Whether the tab has no request draft (environment, globals, collection, folder and Settings tabs). */
+function hasNoRequestDraft(tab: TabMeta | undefined): boolean {
+  return isEnvironmentTab(tab) || isItemTab(tab) || isAppSettingsTab(tab)
+}
+
+function appSettings() {
+  return useSettingsStore.getState()
+}
+
+function settingsTabMeta(id: string): TabMeta {
+  return { id, requestId: null, pinned: true, kind: 'settings', exampleId: null, environmentId: null, itemId: null }
 }
 
 function items() {
@@ -182,6 +198,9 @@ function isDirty(tabId: string): boolean {
   if (scope !== null) {
     return isScopeDirty(environments(), scope)
   }
+  if (isAppSettingsTab(tab)) {
+    return isSettingsDirty(appSettings())
+  }
   if (isItemTab(tab)) {
     const variables = collectionVariablesScope(tab)
     return isItemDirty(items(), tab!.itemId!) || (variables !== null && isScopeDirty(environments(), variables)) || isDocumentationTabDirty(tab)
@@ -199,6 +218,9 @@ function cancelPersist(): void {
 }
 
 function toTabMeta(tab: TabState): TabMeta {
+  if (tab.kind === 'settings') {
+    return settingsTabMeta(tab.tabId)
+  }
   if ((tab.kind === 'collection' || tab.kind === 'folder') && tab.itemId) {
     return itemTabMeta(tab.tabId, { kind: tab.kind, itemId: tab.itemId }, tab.pinned)
   }
@@ -250,7 +272,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
   }
 
   function addTab(meta: TabMeta, after?: string) {
-    if (!isSettingsTab(meta)) {
+    if (!hasNoRequestDraft(meta)) {
       builder().ensureTab(meta.id)
     }
     set((state) => {
@@ -263,7 +285,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
 
   function remember(tab: TabMeta) {
     const snapshot = tabSnapshot(tab)
-    if (!isSettingsTab(tab) && snapshot.requestId === null && (snapshot.draft === null || isPristine(snapshot.draft))) {
+    if (!hasNoRequestDraft(tab) && snapshot.requestId === null && (snapshot.draft === null || isPristine(snapshot.draft))) {
       return
     }
     set((state) => ({ closedTabs: latestClosedTabs([...state.closedTabs, { closedAt: new Date().toISOString(), tab: snapshot }]) }))
@@ -352,6 +374,24 @@ export const useTabsStore = create<TabsState>()((set, get) => {
     return documented
   }
 
+  /** Saves the Settings form; an invalid field keeps the tab open and focused with its inline error. */
+  async function saveAppSettingsAndClose(tabId: string) {
+    set({ closeError: null })
+    const saved = await appSettings().save()
+    if (!saved.ok) {
+      set((state) => (state.closePrompt === tabId ? { closeError: saved.error } : state))
+      return
+    }
+    if (!saved.value) {
+      set({ closePrompt: null, closeQueue: [] })
+      focus(tabId)
+      return
+    }
+    set({ closePrompt: null })
+    get().closeTab(tabId)
+    promptNext()
+  }
+
   async function saveItemAndClose(tab: TabMeta) {
     set({ closeError: null })
     const saved = await saveItemTab(tab)
@@ -402,10 +442,14 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       selectedId: sidebar.selectedId,
       view: sidebar.view,
       search: sidebar.query,
+      historySource: sidebar.historySource,
     }
   }
 
   function tabSnapshot(tab: TabMeta): TabState {
+    if (isAppSettingsTab(tab)) {
+      return { tabId: tab.id, kind: 'settings', requestId: null, pinned: true, baseRevision: null, draft: null }
+    }
     if (isItemTab(tab)) {
       return { tabId: tab.id, kind: tab.kind, requestId: null, itemId: tab.itemId ?? null, pinned: tab.pinned, baseRevision: null, draft: null }
     }
@@ -445,9 +489,10 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         selectedId: state.sidebar.selectedId,
         query: state.sidebar.search,
         view: state.sidebar.view,
+        historySource: state.sidebar.historySource,
       })
       for (const tab of state.tabs) {
-        if (tab.kind === 'environment' || tab.kind === 'globals' || tab.kind === 'collection' || tab.kind === 'folder') {
+        if (tab.kind === 'environment' || tab.kind === 'globals' || tab.kind === 'collection' || tab.kind === 'folder' || tab.kind === 'settings') {
           continue
         }
         if (tab.kind === 'example' && tab.requestId && tab.exampleId) {
@@ -585,6 +630,19 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       }
     },
 
+    openSettingsTab: () => {
+      if (get().localId === null) {
+        appSettings().openPage()
+        return
+      }
+      const existing = get().tabs.find(isAppSettingsTab)
+      if (existing) {
+        focus(existing.id)
+        return
+      }
+      addTab(settingsTabMeta(newTabId()))
+    },
+
     handleEnvironmentsChanged: (environmentIds) => {
       const existing = new Set(environmentIds)
       for (const tab of get().tabs) {
@@ -694,6 +752,10 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         await saveItemAndClose(tab!)
         return
       }
+      if (isAppSettingsTab(tab)) {
+        await saveAppSettingsAndClose(tabId)
+        return
+      }
       if (!tab?.requestId) {
         set({ closePrompt: null, closeError: null, saveDialog: { tabId, mode: 'save', closeAfter: true } })
         return
@@ -731,6 +793,10 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       }
       if (isItemTab(closing)) {
         dropItem(closing!)
+        return
+      }
+      if (isAppSettingsTab(closing)) {
+        appSettings().discard()
         return
       }
       builder().dropTab(tabId)
@@ -794,6 +860,10 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       set((state) => ({ closedTabs: state.closedTabs.slice(0, -1) }))
       const { tab } = closed
       const meta = toTabMeta(tab)
+      if (isAppSettingsTab(meta)) {
+        get().openSettingsTab()
+        return
+      }
       if (isItemTab(meta)) {
         const container = containerOptions(useSidebarStore.getState().tree).find((candidate) => candidate.id === meta.itemId)
         if (container) {
@@ -853,6 +923,10 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         await saveItemTab(tab)
         return
       }
+      if (isAppSettingsTab(tab)) {
+        await appSettings().save()
+        return
+      }
       if (isExampleTab(tab)) {
         await examples().save(tab.id)
         return
@@ -870,7 +944,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
     saveAs: (tabId) => {
       const target = activeOr(tabId)
       const tab = tabById(target)
-      if (target !== null && !isExampleTab(tab) && !isSettingsTab(tab)) {
+      if (target !== null && !isExampleTab(tab) && !hasNoRequestDraft(tab)) {
         set({ saveDialog: { tabId: target, mode: 'saveAs', closeAfter: false } })
       }
     },

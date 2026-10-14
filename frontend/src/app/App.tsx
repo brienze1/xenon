@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { ApprovalPrompt } from '@/features/ai-access/components/ApprovalPrompt'
 import { ConsoleDrawer as ConsoleContent } from '@/features/console/components/ConsoleDrawer'
 import { CookiesButton } from '@/features/cookies/components/CookiesButton'
 import { CookiesDialog } from '@/features/cookies/components/CookiesDialog'
@@ -16,7 +17,7 @@ import { useSearchStore } from '@/features/search/store'
 import { SidePanel } from '@/features/side-panel/components/SidePanel'
 import { SettingsButton } from '@/features/settings/components/SettingsButton'
 import { HostKeyPrompt } from '@/features/settings/components/HostKeyPrompt'
-import { SettingsDialog } from '@/features/settings/components/SettingsDialog'
+import { SettingsTab } from '@/features/settings/components/SettingsTab'
 import { useSettingsStore } from '@/features/settings/store'
 import { SidebarPanel } from '@/features/sidebar/components/SidebarPanel'
 import { useSidebarStore } from '@/features/sidebar/store'
@@ -77,7 +78,7 @@ const IMPORT_DIALOG = <ImportDialog />
 
 const EXPORT_DIALOG = <ExportDialog />
 
-const SETTINGS_DIALOG = <SettingsDialog shortcuts={HOTKEYS} />
+const APPROVAL_PROMPT = <ApprovalPrompt />
 
 const HOST_KEY_PROMPT = <HostKeyPrompt />
 
@@ -113,8 +114,17 @@ const CONSOLE = (
 )
 
 function openSettings() {
-  void useSettingsStore.getState().openSettings()
+  useTabsStore.getState().openSettingsTab()
 }
+
+/** Closes the full-page Settings shown with no workspace open, dropping unsaved edits. */
+function closeSettingsPage() {
+  const settings = useSettingsStore.getState()
+  settings.discard()
+  settings.closePage()
+}
+
+const SETTINGS_PAGE = <SettingsTab shortcuts={HOTKEYS} onClose={closeSettingsPage} />
 
 const NO_WORKSPACE_HOTKEYS: HotkeyHandlers = { settings: openSettings }
 
@@ -131,6 +141,7 @@ export function App() {
   const status = useWorkspacesStore((state) => state.status)
   const hasWorkspaces = useWorkspacesStore((state) => state.workspaces.length > 0)
   const missingLocalId = useWorkspacesStore((state) => state.missingLocalId)
+  const settingsPageOpen = useSettingsStore((state) => state.pageOpen)
   const layout = useWorkspacesStore((state) => state.layout)
   const setLayout = useWorkspacesStore((state) => state.setLayout)
   const active = useWorkspacesStore((state) =>
@@ -222,12 +233,18 @@ export function App() {
         </>
       ) : (
         <MainArea>
-          {missingLocalId ? <MissingFolderNotice localId={missingLocalId} /> : status === 'ready' ? WELCOME_SCREEN : null}
+          {settingsPageOpen ? (
+            SETTINGS_PAGE
+          ) : missingLocalId ? (
+            <MissingFolderNotice localId={missingLocalId} />
+          ) : status === 'ready' ? (
+            WELCOME_SCREEN
+          ) : null}
         </MainArea>
       )}
       {active ? CONSOLE : null}
       {PASSPHRASE_DIALOG}
-      {SETTINGS_DIALOG}
+      {APPROVAL_PROMPT}
       {HOST_KEY_PROMPT}
       {active ? IMPORT_DIALOG : null}
       {active ? EXPORT_DIALOG : null}

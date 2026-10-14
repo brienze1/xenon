@@ -3,13 +3,31 @@ package model
 import "github.com/brienze1/xenon/internal/domain/entity"
 
 type AppSettings struct {
-	ScriptTimeoutMs int `json:"scriptTimeoutMs"`
+	AIAccess        *AIAccessSettings `json:"aiAccess,omitempty"`
+	ScriptTimeoutMs int               `json:"scriptTimeoutMs"`
+	HistoryUserCap  int               `json:"historyUserCap,omitempty"`
+	HistoryAICap    int               `json:"historyAiCap,omitempty"`
 }
 
 func NewAppSettings(settings entity.AppSettings) AppSettings {
-	return AppSettings{ScriptTimeoutMs: settings.ScriptTimeoutMs}
+	access := NewAIAccessSettings(settings.AIAccess)
+	return AppSettings{
+		ScriptTimeoutMs: settings.ScriptTimeoutMs,
+		HistoryUserCap:  settings.HistoryUserCap,
+		HistoryAICap:    settings.HistoryAICap,
+		AIAccess:        &access,
+	}
 }
 
 func (a *AppSettings) ToEntity() entity.AppSettings {
-	return entity.AppSettings{ScriptTimeoutMs: a.ScriptTimeoutMs}.OrDefault()
+	settings := entity.AppSettings{
+		ScriptTimeoutMs: a.ScriptTimeoutMs,
+		HistoryUserCap:  a.HistoryUserCap,
+		HistoryAICap:    a.HistoryAICap,
+		AIAccess:        entity.DefaultAIAccessSettings(),
+	}
+	if a.AIAccess != nil {
+		settings.AIAccess = a.AIAccess.ToEntity()
+	}
+	return settings.OrDefault()
 }

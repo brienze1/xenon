@@ -119,6 +119,12 @@ func TestTabKindOfEnvironmentAndGlobalsTabs(t *testing.T) {
 	}
 }
 
+func TestTabKindOfTheSettingsTab(t *testing.T) {
+	if NewTabKind(tabkind.Settings, "", "", "") != tabkind.Settings {
+		t.Error("the settings kind makes a settings tab")
+	}
+}
+
 func TestTabKindOfCollectionAndFolderTabs(t *testing.T) {
 	if NewTabKind(tabkind.Collection, "", "", "c1") != tabkind.Collection || NewTabKind(tabkind.Request, "", "", "c1") != tabkind.Collection {
 		t.Error("an item id makes a collection tab unless the kind says folder")

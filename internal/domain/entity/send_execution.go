@@ -123,10 +123,18 @@ func (s *SendExecution) AddNested(nested NestedRequest) {
 	s.Nested = append(s.Nested, nested)
 }
 
-func (s SendExecution) LogValue() any {
+func (s *SendExecution) LogValue() any {
 	value := map[string]any{"id": s.ID, "outcome": s.Outcome, "pre_runs": len(s.PreRuns), "post_runs": len(s.PostRuns)}
 	if s.Response != nil {
 		value["status_code"] = s.Response.StatusCode
 	}
 	return value
+}
+
+// DerivedSecrets returns encoded values built from secrets for this send, such as the basic-auth credentials.
+func (s *SendExecution) DerivedSecrets(secrets []string) []string {
+	if s.SentRequest == nil || !s.SentRequest.Auth.IsBasic() || !s.SentRequest.Auth.Basic.Uses(secrets) {
+		return []string{}
+	}
+	return []string{s.SentRequest.Auth.Basic.Credentials()}
 }

@@ -2,6 +2,7 @@ package steps
 
 import (
 	"net"
+	"net/url"
 	"strings"
 
 	"github.com/cucumber/godog"
@@ -9,12 +10,22 @@ import (
 
 func (t *testUtils) registerGivenVariableSteps(ctx *godog.ScenarioContext) {
 	ctx.Given(`^the "([^"]*)" variable is set to the mocked api url$`, t.theVariableIsSetToTheMockedApiUrl)
+	ctx.Given(`^the "([^"]*)" variable is set to the port of the mocked api url$`, t.theVariableIsSetToThePortOfTheMockedApiUrl)
 	ctx.Given(`^the "([^"]*)" variable is set to the mocked tls api url$`, t.theVariableIsSetToTheMockedTlsApiUrl)
 	ctx.Given(`^the "([^"]*)" variable is set to a closed port url$`, t.theVariableIsSetToAClosedPortUrl)
 	ctx.Given(`^the "([^"]*)" variable is set to "([^"]*)"$`, t.theVariableIsSetTo)
 	ctx.Given(`^the "([^"]*)" variable is set to "([^"]*)" repeated (\d+) times separated by "([^"]*)"$`, t.theVariableIsSetToRepeatedTimesSeparatedBy)
 	ctx.Given(`^the "([^"]*)" variable is set to the field "([^"]*)" of the resource file "([^"]*)"$`, t.theVariableIsSetToTheFieldOfTheResourceFile)
 	ctx.Step(`^I save the workspace file "([^"]*)" field "([^"]*)" as "([^"]*)"$`, t.iSaveTheWorkspaceFileFieldAs)
+}
+
+func (t *testUtils) theVariableIsSetToThePortOfTheMockedApiUrl(name string) error {
+	parsed, err := url.Parse(t.api.URL())
+	if err != nil {
+		return err
+	}
+	t.vars[name] = parsed.Port()
+	return nil
 }
 
 func (t *testUtils) theVariableIsSetToTheMockedApiUrl(name string) error {

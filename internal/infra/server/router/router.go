@@ -35,6 +35,7 @@ type router struct {
 	snippet      *binding.SnippetService
 	exporter     *binding.ExportService
 	sync         *binding.SyncService
+	aiAccess     *binding.AIAccessService
 }
 
 func NewRouter(
@@ -60,6 +61,7 @@ func NewRouter(
 	snippet *binding.SnippetService,
 	exporter *binding.ExportService,
 	sync *binding.SyncService,
+	aiAccess *binding.AIAccessService,
 ) serverAdapter.Router {
 	return &router{
 		workspace:    workspace,
@@ -84,6 +86,7 @@ func NewRouter(
 		snippet:      snippet,
 		exporter:     exporter,
 		sync:         sync,
+		aiAccess:     aiAccess,
 	}
 }
 
@@ -159,5 +162,6 @@ func (r *router) registerServices() []wails.Service {
 		r.registerSyncRoutes(),
 		r.registerCookieRoutes(),
 		r.registerSnippetRoutes(),
+		r.registerAIAccessRoutes(),
 	}
 }

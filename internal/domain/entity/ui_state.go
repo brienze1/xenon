@@ -1,20 +1,26 @@
 package entity
 
+import (
+	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/historyfilter"
+)
+
 const uiStateVersion = 1
 
 type UIState struct {
-	ActiveTabID  string
-	PreviewTabID string
-	Tabs         []Tab
-	ClosedTabs   []ClosedTab
-	Snippets     []SnippetOptions
-	Sidebar      SidebarState
-	Layout       Layout
-	Version      int
+	ActiveTabID   string
+	PreviewTabID  string
+	HistorySource enums.HistoryFilter
+	Tabs          []Tab
+	ClosedTabs    []ClosedTab
+	Snippets      []SnippetOptions
+	Sidebar       SidebarState
+	Layout        Layout
+	Version       int
 }
 
 func NewUIState() UIState {
-	return UIState{Version: uiStateVersion, Tabs: []Tab{}, ClosedTabs: []ClosedTab{}, Snippets: []SnippetOptions{}, Sidebar: NewSidebarState(), Layout: NewLayout()}
+	return UIState{Version: uiStateVersion, HistorySource: historyfilter.All, Tabs: []Tab{}, ClosedTabs: []ClosedTab{}, Snippets: []SnippetOptions{}, Sidebar: NewSidebarState(), Layout: NewLayout()}
 }
 
 func (u UIState) Normalized() UIState {
@@ -29,6 +35,7 @@ func (u UIState) Normalized() UIState {
 	}
 	u.Sidebar = u.Sidebar.Normalized()
 	u.Layout = u.Layout.Normalized()
+	u.HistorySource = KnownHistoryFilter(historyfilter.GetHistoryFilter(u.HistorySource.String()))
 	return u
 }
 
@@ -67,12 +74,13 @@ func (u UIState) LogValue() any {
 		tabs = append(tabs, tab.LogValue())
 	}
 	return map[string]any{
-		"activeTabId":  u.ActiveTabID,
-		"previewTabId": u.PreviewTabID,
-		"tabs":         tabs,
-		"closedTabs":   len(u.ClosedTabs),
-		"sidebar":      u.Sidebar,
-		"layout":       u.Layout,
-		"version":      u.Version,
+		"activeTabId":   u.ActiveTabID,
+		"previewTabId":  u.PreviewTabID,
+		"tabs":          tabs,
+		"closedTabs":    len(u.ClosedTabs),
+		"sidebar":       u.Sidebar,
+		"layout":        u.Layout,
+		"historySource": u.HistorySource,
+		"version":       u.Version,
 	}
 }

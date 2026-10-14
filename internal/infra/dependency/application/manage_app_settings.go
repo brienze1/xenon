@@ -14,7 +14,13 @@ var manageAppSettingsInstance adapter.ManageAppSettingsService
 func GetManageAppSettingsService() adapter.ManageAppSettingsService {
 	if manageAppSettingsInstance == nil {
 		manageAppSettingsOnce.Do(func() {
-			manageAppSettingsInstance = service.NewManageAppSettingsService(integration.GetRegistryPersistence(), integration.GetRegistryPersistence())
+			manageAppSettingsInstance = service.NewManageAppSettingsService(
+				integration.GetRegistryPersistence(),
+				integration.GetRegistryPersistence(),
+				integration.GetAIAccessWebservice(),
+				integration.GetAIAccessStatusPersistence(),
+				integration.GetAIEventPublisher(),
+			)
 		})
 	}
 	return manageAppSettingsInstance

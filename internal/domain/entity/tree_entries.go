@@ -1,0 +1,49 @@
+package entity
+
+import "strings"
+
+// Entries lists every node then its examples then its children, in tree order.
+func (t Tree) Entries() []TreeEntry {
+	return appendTreeEntries(make([]TreeEntry, 0), t.Root.Children, "", "")
+}
+
+func appendTreeEntries(entries []TreeEntry, nodes []TreeNode, parentID, parentPath string) []TreeEntry {
+	for _, node := range nodes {
+		path := joinAIItemPath(parentPath, node.Name)
+		entries = append(entries, TreeEntry{Node: node, ParentID: parentID, Path: path})
+		for _, example := range node.Examples {
+			entries = append(entries, TreeEntry{Node: node, Example: &example, RequestID: node.ID, ParentID: node.ID, Path: joinAIItemPath(path, example.Name)})
+		}
+		entries = appendTreeEntries(entries, node.Children, node.ID, path)
+	}
+	return entries
+}
+
+func (t Tree) Entry(id string) (TreeEntry, bool) {
+	for _, entry := range t.Entries() {
+		if entry.ID() == id {
+			return entry, true
+		}
+	}
+	return TreeEntry{}, false
+}
+
+// Search keeps tree order: the matched ids plus every entry whose name contains the query, at most limit.
+func (t Tree) Search(query string, matchIDs []string, limit int) []TreeEntry {
+	matched := make(map[string]bool, len(matchIDs))
+	for _, id := range matchIDs {
+		matched[id] = true
+	}
+	needle := strings.ToLower(strings.TrimSpace(query))
+	all := t.Entries()
+	found := make([]TreeEntry, 0, min(len(all), limit))
+	for _, entry := range all {
+		if len(found) == limit {
+			break
+		}
+		if matched[entry.ID()] || strings.Contains(strings.ToLower(entry.Name()), needle) {
+			found = append(found, entry)
+		}
+	}
+	return found
+}

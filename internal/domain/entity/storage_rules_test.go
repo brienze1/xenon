@@ -3,6 +3,8 @@ package entity
 import (
 	"testing"
 
+	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/historysource"
 	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
 	"github.com/brienze1/xenon/internal/domain/enums/rawlanguage"
 )
@@ -28,19 +30,26 @@ func TestFolderInfoRules(t *testing.T) {
 	}
 }
 
-func TestRetainHistoryCompactsOnlyPastTheThreshold(t *testing.T) {
-	below := make([]int, HistoryCompactionThreshold)
-	if kept, compact := RetainHistory(below); compact || len(kept) != HistoryCompactionThreshold {
+func TestCompactHistoryCompactsEachSourceOnlyPastItsThreshold(t *testing.T) {
+	sourceOf := func(source enums.HistorySource) enums.HistorySource { return source }
+	caps := HistoryCaps{User: 100, AI: 100}
+	below := append(repeatedSource(historysource.User, 120), repeatedSource(historysource.AI, 120)...)
+	if kept, compact := CompactHistory(below, sourceOf, caps); compact || len(kept) != 240 {
 		t.Fatalf("below threshold: %d %v", len(kept), compact)
 	}
-	above := make([]int, HistoryCompactionThreshold+1)
-	for index := range above {
-		above[index] = index
-	}
-	kept, compact := RetainHistory(above)
-	if !compact || len(kept) != HistoryCap || kept[0] != len(above)-HistoryCap || kept[len(kept)-1] != len(above)-1 {
+	above := append(repeatedSource(historysource.AI, 121), repeatedSource(historysource.User, 30)...)
+	kept, compact := CompactHistory(above, sourceOf, caps)
+	if !compact || len(kept) != 130 || kept[0] != historysource.AI || kept[len(kept)-1] != historysource.User {
 		t.Fatalf("above threshold: %d %v", len(kept), compact)
 	}
+}
+
+func repeatedSource(source enums.HistorySource, count int) []enums.HistorySource {
+	sources := make([]enums.HistorySource, count)
+	for index := range sources {
+		sources[index] = source
+	}
+	return sources
 }
 
 func TestRequestStorageHelpers(t *testing.T) {

@@ -11,6 +11,7 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums/authtype"
 	"github.com/brienze1/xenon/internal/domain/enums/bodymode"
 	"github.com/brienze1/xenon/internal/domain/enums/formdatatype"
+	"github.com/brienze1/xenon/internal/domain/enums/historysource"
 	"github.com/brienze1/xenon/internal/domain/enums/rawlanguage"
 	"github.com/brienze1/xenon/internal/domain/enums/scripterrorkind"
 	"github.com/brienze1/xenon/internal/domain/enums/scriptownerkind"
@@ -19,13 +20,18 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums/teststatus"
 )
 
-func decodeRequest(t *testing.T, raw string) Request {
+func decodeDTO[T any](t *testing.T, raw string) T {
 	t.Helper()
-	var request Request
-	if err := json.Unmarshal([]byte(raw), &request); err != nil {
+	var decoded T
+	if err := json.Unmarshal([]byte(raw), &decoded); err != nil {
 		t.Fatal(err)
 	}
-	return request
+	return decoded
+}
+
+func decodeRequest(t *testing.T, raw string) Request {
+	t.Helper()
+	return decodeDTO[Request](t, raw)
 }
 
 func TestEmptyRequestGetsTheDefaults(t *testing.T) {
@@ -95,18 +101,18 @@ func TestRequestToEntity(t *testing.T) {
 }
 
 func TestCommandLogValues(t *testing.T) {
-	request := Request{Id: "1", Method: "GET", Url: "u"}
+	request := decodeRequest(t, `{"id": "1", "method": "GET", "url": "u"}`)
 	cases := []struct {
 		got  any
 		want any
 	}{
-		{ApplyRequest{Request: request}.LogValue(), request.LogValue()},
-		{AutoHeadersRequest{LocalId: "ws", Request: request}.LogValue(), map[string]any{"local_id": "ws", "request": request.LogValue()}},
-		{SendRequest{LocalId: "ws", TabId: "t", Request: request, AcknowledgeMissingSecrets: true, ConfirmedEnvironmentId: "env"}.LogValue(), map[string]any{"local_id": "ws", "tab_id": "t", "request": request.LogValue(), "acknowledge_missing_secrets": true, "confirmed_environment_id": "env"}},
+		{decodeDTO[ApplyRequest](t, `{"request": {"id": "1", "method": "GET", "url": "u"}}`).LogValue(), request.LogValue()},
+		{decodeDTO[AutoHeadersRequest](t, `{"local_id": "ws", "request": {"id": "1", "method": "GET", "url": "u"}}`).LogValue(), map[string]any{"local_id": "ws", "request": request.LogValue()}},
+		{NewSendRequest(NewSendOrigin(historysource.AI, "Claude"), "ws", "t", "env", request, true, false).LogValue(), map[string]any{"local_id": "ws", "tab_id": "t", "request": request.LogValue(), "acknowledge_missing_secrets": true, "confirmed_environment_id": "env", "origin": "ai", "client": "Claude"}},
 		{NewBulkText("abc").LogValue(), map[string]any{"length": 3}},
-		{BulkRows{Rows: []KeyValue{{}, {}}}.LogValue(), map[string]any{"rows": 2}},
+		{NewBulkRows([]entity.KeyValue{{}, {}}).LogValue(), map[string]any{"rows": 2}},
 		{NewAutoHeaderList([]entity.AutoHeader{{Key: "A"}}).LogValue(), map[string]any{"headers": 1}},
-		{SendResult{TabId: "t", SendId: "s", Outcome: "sent", Ok: true, StatusCode: 200, SizeBytes: 5}.LogValue(), map[string]any{"tab_id": "t", "send_id": "s", "outcome": "sent", "ok": true, "status_code": 200, "size_bytes": int64(5)}},
+		{decodeDTO[SendResult](t, `{"tab_id": "t", "send_id": "s", "outcome": "sent", "ok": true, "status_code": 200, "size_bytes": 5}`).LogValue(), map[string]any{"tab_id": "t", "send_id": "s", "outcome": "sent", "ok": true, "status_code": 200, "size_bytes": int64(5)}},
 	}
 	for _, tc := range cases {
 		if !reflect.DeepEqual(tc.got, tc.want) {
@@ -184,7 +190,7 @@ func TestResponseBodyAndSavePath(t *testing.T) {
 	if body := NewResponseBody(response, nil); body.ContentType != "image/png" {
 		t.Fatalf("body = %+v", body)
 	}
-	save := SaveResponseBody{Path: "/tmp/a/../b.bin"}
+	save := decodeDTO[SaveResponseBody](t, `{"path": "/tmp/a/../b.bin"}`)
 	if save.GetPath() != filepath.FromSlash("/tmp/b.bin") {
 		t.Fatalf("path = %q", save.GetPath())
 	}

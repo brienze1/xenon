@@ -1,3 +1,4 @@
+import { useAIAccessStore } from '@/features/ai-access/store'
 import { useConsoleStore } from '@/features/console/store'
 import { useCookiesStore } from '@/features/cookies/store'
 import type { DocumentationSaved } from '@/features/documentation/model'
@@ -7,7 +8,7 @@ import { useExportStore } from '@/features/export/store'
 import { useImportStore } from '@/features/import-export/store'
 import { useItemSettingsStore } from '@/features/item-settings/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
-import { useGitAccountsStore } from '@/features/settings/store'
+import { useGitAccountsStore, useSettingsStore } from '@/features/settings/store'
 import type { ResponseEntry } from '@/features/response-viewer/model'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
@@ -15,7 +16,11 @@ import { STATUS_REFRESH_MS, useSyncStore } from '@/features/sync/store'
 import { useTabsStore } from '@/features/tabs/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import {
+  onAIAccessStatusChanged,
+  onApprovalRequested,
+  onApprovalResolved,
   onConsoleEntries,
+  onHistoryChanged,
   onCookiesChanged,
   onGitHostKeyUnknown,
   onGitProgress,
@@ -30,6 +35,7 @@ import {
   onVaultStatusChanged,
   onWorkspaceFolderMissing,
   onWorkspaceTreeChanged,
+  onWorkspacesChanged,
 } from '@/platform/events'
 
 type ResponseEntries = Record<string, ResponseEntry>
@@ -76,6 +82,15 @@ export function bootstrap(): () => void {
         useRequestBuilderStore.getState().refreshInspections()
       }
     }),
+    onHistoryChanged((localId) => {
+      if (useWorkspacesStore.getState().activeLocalId === localId) {
+        refreshHistory()
+      }
+    }),
+    onWorkspacesChanged((activeLocalId) => void useWorkspacesStore.getState().follow(activeLocalId)),
+    onApprovalRequested((approval) => useAIAccessStore.getState().add(approval)),
+    onApprovalResolved(({ id }) => useAIAccessStore.getState().resolve(id)),
+    onAIAccessStatusChanged((status) => useSettingsStore.getState().applyStatus(status)),
     onImportProgress((progress) => useImportStore.getState().applyProgress(progress)),
     onConsoleEntries((event) => useConsoleStore.getState().applyEvent(event)),
     onCookiesChanged((localId) => useCookiesStore.getState().jarChanged(localId)),
@@ -148,7 +163,8 @@ export function bootstrap(): () => void {
         state.expanded !== previous.expanded ||
         state.selectedId !== previous.selectedId ||
         state.query !== previous.query ||
-        state.view !== previous.view
+        state.view !== previous.view ||
+        state.historySource !== previous.historySource
       ) {
         persistTabs()
       }
@@ -159,6 +175,7 @@ export function bootstrap(): () => void {
       }
       if (state.activeLocalId !== previous.activeLocalId && state.activeLocalId !== null) {
         void useEnvironmentsStore.getState().loadVault()
+        useSettingsStore.getState().closePage()
       }
       if (state.activeLocalId !== previous.activeLocalId) {
         useSyncStore.getState().reset(state.activeLocalId)
@@ -175,6 +192,7 @@ export function bootstrap(): () => void {
     () => window.clearInterval(syncTimer),
   ]
   void useEnvironmentsStore.getState().loadVault()
+  void useAIAccessStore.getState().load()
   void openLastWorkspace()
   return () => {
     for (const unsubscribe of unsubscribers) {

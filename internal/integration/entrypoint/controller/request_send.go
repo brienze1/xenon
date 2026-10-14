@@ -7,7 +7,6 @@ import (
 	"github.com/brienze1/xenon/internal/infra/properties"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
-	"github.com/brienze1/xenon/internal/integration/entrypoint/validator"
 	"github.com/brienze1/xenon/pkg/logger"
 )
 
@@ -33,16 +32,16 @@ func (r *requestSend) Send(bindingCtx context.Context, request dto.SendRequest) 
 		}
 	}(ctx, request)
 
-	err = validator.CustomValidator().Struct("SND-00400", &request)
+	err = validateSendRequest(&request)
 	if err != nil {
 		return nil, err
 	}
 
-	sent, err := r.sendRequestService.Send(ctx, request.LocalId, request.TabId, request.ToEntity(), properties.Properties().Application.Version, request.ToAcknowledgement())
+	sent, err := r.sendRequestService.Send(ctx, request.WorkspaceId(), request.TargetTabId(), request.ToEntity(), properties.Properties().Application.Version, request.ToAcknowledgement(), request.ToSendOrigin())
 	if err != nil {
 		return nil, err
 	}
-	result := dto.NewSendResult(request.TabId, *sent)
+	result := dto.NewSendResult(request.TargetTabId(), *sent)
 
 	logger.Info(ctx, "Finished", result)
 	return &result, nil

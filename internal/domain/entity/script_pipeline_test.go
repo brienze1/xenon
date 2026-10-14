@@ -189,7 +189,8 @@ func TestSendExecutionCarriesScriptEffects(t *testing.T) {
 	if got := execution.LogValue(); !reflect.DeepEqual(got, map[string]any{"id": "01S", "outcome": sendoutcome.Error, "pre_runs": 1, "post_runs": 1, "status_code": 0}) {
 		t.Errorf("LogValue = %v", got)
 	}
-	if got := NewSendExecution("x").LogValue(); !reflect.DeepEqual(got, map[string]any{"id": "x", "outcome": enums.SendOutcome(""), "pre_runs": 0, "post_runs": 0}) {
+	fresh := NewSendExecution("x")
+	if got := fresh.LogValue(); !reflect.DeepEqual(got, map[string]any{"id": "x", "outcome": enums.SendOutcome(""), "pre_runs": 0, "post_runs": 0}) {
 		t.Errorf("LogValue without response = %v", got)
 	}
 }
@@ -199,23 +200,23 @@ func TestHistoryEntriesOfScriptOutcomes(t *testing.T) {
 	at := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	stopped := NewSendExecution("s")
 	stopped.AddRun(NewScriptRun(preRef(), at).Failed(NewScriptError(scripterrorkind.Runtime, "x", preRef())))
-	entry := NewHistoryEntry("h", at, request, stopped)
+	entry := NewHistoryEntry("h", at, request, stopped, UserSendOrigin())
 	if entry.Outcome != sendoutcome.StoppedByScriptError || entry.WentOut() || entry.HasStatus() || entry.Result.StatusCode != 0 {
 		t.Errorf("stopped = %+v", entry)
 	}
 	skipped := NewSendExecution("s")
 	skipped.AddRun(NewScriptRun(preRef(), at).SkippedRequest())
-	if NewHistoryEntry("h", at, request, skipped).WentOut() {
+	if NewHistoryEntry("h", at, request, skipped, UserSendOrigin()).WentOut() {
 		t.Errorf("a skipped send did not go out")
 	}
 	sent := NewSendExecution("s")
 	sent.RecordResponse(EffectiveRequest{}, Response{StatusCode: 201})
-	if sentEntry := NewHistoryEntry("h", at, request, sent); !sentEntry.WentOut() || !sentEntry.HasStatus() || sentEntry.Result.StatusCode != 201 {
+	if sentEntry := NewHistoryEntry("h", at, request, sent, UserSendOrigin()); !sentEntry.WentOut() || !sentEntry.HasStatus() || sentEntry.Result.StatusCode != 201 {
 		t.Errorf("sent = %+v", sentEntry)
 	}
 	failed := NewSendExecution("s")
 	failed.RecordResponse(EffectiveRequest{}, NewFailedResponse(NewSendError(senderrorkind.Dns, "x"), Timings{}))
-	if failedEntry := NewHistoryEntry("h", at, request, failed); !failedEntry.WentOut() || failedEntry.HasStatus() {
+	if failedEntry := NewHistoryEntry("h", at, request, failed, UserSendOrigin()); !failedEntry.WentOut() || failedEntry.HasStatus() {
 		t.Errorf("failed = %+v", failedEntry)
 	}
 }
@@ -249,10 +250,10 @@ func TestAppSettingsFallBackToTheDefault(t *testing.T) {
 	if got := (AppSettings{ScriptTimeoutMs: 2500}).OrDefault(); got.ScriptTimeoutMs != 2500 {
 		t.Errorf("valid = %+v", got)
 	}
-	if got := (AppSettings{ScriptTimeoutMs: 5}).OrDefault(); got != DefaultAppSettings() {
+	if got := (AppSettings{ScriptTimeoutMs: 5, AIAccess: DefaultAIAccessSettings()}).OrDefault(); got != DefaultAppSettings() {
 		t.Errorf("invalid = %+v", got)
 	}
-	if got := (AppSettings{ScriptTimeoutMs: 5}).LogValue(); !reflect.DeepEqual(got, map[string]any{"script_timeout_ms": 5}) {
+	if got := (AppSettings{ScriptTimeoutMs: 5}).LogValue().(map[string]any); got["script_timeout_ms"] != 5 {
 		t.Errorf("LogValue = %v", got)
 	}
 }

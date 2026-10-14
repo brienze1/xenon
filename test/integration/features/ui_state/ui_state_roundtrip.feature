@@ -399,6 +399,35 @@ Feature: Remember tabs, drafts, sidebar and layout per workspace
     And the response should contain the field "closed_tabs.0.tab.environment_id" equal to "01JB0000000000000000000078"
     And the response should contain the field "sidebar.view" equal to "environments"
 
+  @settings_tab @xen_008
+  Scenario: A Settings tab keeps its kind and its history filter is remembered
+    When I call "UIStateService.Save" with
+      """
+      {
+        "local_id": "{{Acme.local_id}}",
+        "tabs": [
+          { "tab_id": "tab-request", "request_id": "01JB0000000000000000000004", "pinned": true },
+          { "tab_id": "tab-settings", "kind": "settings", "request_id": "", "pinned": true }
+        ],
+        "active_tab_id": "tab-settings",
+        "preview_tab_id": "",
+        "sidebar": { "expanded": [], "selected_id": "", "view": "history", "search": "" },
+        "history_source": "ai"
+      }
+      """
+    Then the call should succeed
+    And the app data file "workspaces/{{Acme.local_id}}/state.json" should contain the field "tabs.1.kind" equal to "settings"
+    Given the app is restarted
+    When I call "UIStateService.Get" with
+      """
+      { "local_id": "{{Acme.local_id}}" }
+      """
+    Then the call should succeed
+    And the response should contain the field "tabs.1.kind" equal to "settings"
+    And the response should contain the field "tabs.1.request_id" equal to ""
+    And the response should contain the field "active_tab_id" equal to "tab-settings"
+    And the response should contain the field "history_source" equal to "ai"
+
   @environment_tabs @xen_007
   Scenario: A state file written before environment tabs existed still loads
     Given the app data file "workspaces/{{Acme.local_id}}/state.json" contains

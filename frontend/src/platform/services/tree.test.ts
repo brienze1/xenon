@@ -199,10 +199,10 @@ describe('tree service', () => {
         document: documentDto,
       } as never)
       await expect(tree.previewDocumentation('ws', 'c1', 'x')).resolves.toMatchObject({ yaml: 'x' })
-      expect(TreeService.PreviewDocumentation).toHaveBeenCalledWith({ local_id: 'ws', id: 'c1', yaml: 'x', confirm_deletions: false })
+      expect(TreeService.PreviewDocumentation).toHaveBeenCalledWith({ local_id: 'ws', id: 'c1', yaml: 'x', confirm_deletions: false, keep_deleted: false })
       await expect(tree.planDocumentation('ws', 'c1', 'x')).resolves.toEqual({ name: 'Billing', collectionChanged: false, updated: [item], created: [], deleted: [] })
       const applied = await tree.applyDocumentation('ws', 'c1', 'x', true)
-      expect(TreeService.ApplyDocumentation).toHaveBeenCalledWith({ local_id: 'ws', id: 'c1', yaml: 'x', confirm_deletions: true })
+      expect(TreeService.ApplyDocumentation).toHaveBeenCalledWith({ local_id: 'ws', id: 'c1', yaml: 'x', confirm_deletions: true, keep_deleted: false })
       expect(applied).toMatchObject({ collectionChanged: true, updated: [item], documentation: { yaml: 'y' } })
     })
 

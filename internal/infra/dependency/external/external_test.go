@@ -1,8 +1,10 @@
 package external
 
 import (
+	"context"
 	"testing"
 
+	serverAdapter "github.com/brienze1/xenon/internal/infra/server/adapter"
 	httpClient "github.com/brienze1/xenon/pkg/http"
 )
 
@@ -107,5 +109,41 @@ func TestLoopbackFactoryIsASingletonThatCanBeReplaced(t *testing.T) {
 	SetLoopback(first)
 	if GetLoopback() != first {
 		t.Fatal("SetLoopback must replace the cached instance")
+	}
+}
+
+type fakeWindowFocuser struct{ focused int }
+
+func (f *fakeWindowFocuser) Focus() { f.focused++ }
+
+func TestWindowFocuserFactoryIsASingletonThatCanBeReplaced(t *testing.T) {
+	first := GetWindowFocuser()
+	if first == nil || GetWindowFocuser() != first {
+		t.Fatal("GetWindowFocuser must return one cached instance")
+	}
+	replacement := &fakeWindowFocuser{}
+	SetWindowFocuser(replacement)
+	GetWindowFocuser().Focus()
+	if replacement.focused != 1 {
+		t.Fatal("SetWindowFocuser must replace the cached instance")
+	}
+}
+
+type fakeAIAccessListener struct{ clients int }
+
+func (f *fakeAIAccessListener) Listen(int) error                { return nil }
+func (f *fakeAIAccessListener) Close()                          {}
+func (f *fakeAIAccessListener) Clients() int                    { return f.clients }
+func (f *fakeAIAccessListener) Route(serverAdapter.MCPRoutes)   {}
+func (f *fakeAIAccessListener) Watch(func(ctx context.Context)) {}
+
+func TestAIAccessListenerFactoryIsASingletonThatCanBeReplaced(t *testing.T) {
+	first := GetAIAccessListener()
+	if first == nil || GetAIAccessListener() != first {
+		t.Fatal("GetAIAccessListener must return one cached instance")
+	}
+	SetAIAccessListener(&fakeAIAccessListener{clients: 3})
+	if clients := GetAIAccessListener().Clients(); clients != 3 {
+		t.Fatalf("SetAIAccessListener must replace the cached instance, got %d clients", clients)
 	}
 }
