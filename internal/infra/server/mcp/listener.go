@@ -26,6 +26,7 @@ var legacyProtocolVersions = []string{"2025-11-25", "2025-06-18", "2025-03-26", 
 type listener struct {
 	routes         serverAdapter.MCPRoutes
 	httpServer     *http.Server
+	netListener    net.Listener
 	sdkServer      *sdk.Server
 	sessions       map[string]struct{}
 	clientsChanged func(ctx context.Context)
@@ -61,6 +62,7 @@ func (l *listener) Listen(port int) error {
 	endpoint := sdk.NewStreamableHTTPHandler(func(*http.Request) *sdk.Server { return sdkServer }, &sdk.StreamableHTTPOptions{})
 	l.sdkServer = sdkServer
 	l.httpServer = &http.Server{Handler: l.routes.Handler(endpoint), ReadHeaderTimeout: readHeaderTimeout}
+	l.netListener = netListener
 	go serve(l.httpServer, netListener)
 	return nil
 }
@@ -76,7 +78,11 @@ func (l *listener) Close() {
 	if l.httpServer != nil {
 		_ = l.httpServer.Close()
 	}
-	l.httpServer, l.sdkServer = nil, nil
+	// Serve runs on its own goroutine, so http.Server may not hold the socket yet: close it here to free the port at once
+	if l.netListener != nil {
+		_ = l.netListener.Close()
+	}
+	l.httpServer, l.sdkServer, l.netListener = nil, nil, nil
 }
 
 func (l *listener) Clients() int {
