@@ -10,6 +10,10 @@ type Example struct {
 	Response ExampleResponse `yaml:"response"`
 }
 
+func (e *Example) sortKey() Child {
+	return newChild(Child{Name: e.Name, SortName: e.Name}, e.Order)
+}
+
 func (e *Example) toPostmanV21() (map[string]any, error) {
 	response := copied(e.Extra)
 	response["name"] = e.Name

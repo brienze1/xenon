@@ -7,8 +7,8 @@ import (
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/importitemkind"
-	"github.com/brienze1/xenon/internal/domain/enums/importkind"
 	"github.com/brienze1/xenon/pkg/idutils"
+	"github.com/brienze1/xenon/pkg/timeutils"
 )
 
 type importReaders struct {
@@ -21,93 +21,110 @@ type importReaders struct {
 	readXenonExport        usecase.ReadXenonExport
 }
 
-func (i importReaders) read(ctx context.Context, input entity.ImportInput, read *importRead) error {
-	if input.IsPostmanV3() {
-		return i.postmanV3(ctx, input, read)
+func (i importReaders) detected(ctx context.Context, inputs []entity.ImportInput, tempDirs []string) (*entity.ImportSource, error) {
+	detected := make([]entity.ImportInput, 0, len(inputs))
+	for _, input := range inputs {
+		kind, version, err := usecase.DetectImportFormat(input.Probe)
+		if err != nil {
+			return nil, err
+		}
+		detected = append(detected, input.Detected(kind, version))
 	}
-	switch input.Kind {
-	case importkind.PostmanCollection:
+	read := entity.NewImportReadout(len(detected))
+	for _, input := range detected {
+		if err := i.read(ctx, input, &read); err != nil {
+			return nil, err
+		}
+	}
+	source := entity.NewImportSource(idutils.NewUlid(), detected, tempDirs, timeutils.Now()).WithItems(read.Items).WithSourceWarnings(read.Warnings).WithEncryptedSecrets(read.EncryptedSecrets)
+	return &source, nil
+}
+
+func (i importReaders) read(ctx context.Context, input entity.ImportInput, read *entity.ImportReadout) error {
+	switch {
+	case input.IsPostmanV3():
+		return i.postmanV3(ctx, input, read)
+	case input.IsPostmanCollection():
 		return i.collection(ctx, input.Document(), read)
-	case importkind.PostmanEnvironment:
+	case input.IsPostmanEnvironment():
 		return i.variables(ctx, input.Document(), importitemkind.Environment, read)
-	case importkind.PostmanGlobals:
+	case input.IsPostmanGlobals():
 		return i.variables(ctx, input.Document(), importitemkind.Globals, read)
-	case importkind.PostmanDump:
+	case input.IsPostmanDump():
 		return i.dump(ctx, input, read)
-	case importkind.BrunoBru, importkind.BrunoYaml:
+	case input.IsBruno():
 		return i.bruno(ctx, input, read)
-	case importkind.XenonWorkspaceZip, importkind.XenonWorkspaceFolder, importkind.XenonBundle, importkind.XenonZip, importkind.XenonRequest, importkind.XenonEnvironment:
+	case input.IsXenon():
 		return i.xenon(ctx, input, read)
 	default:
 		return i.curl(ctx, input, read)
 	}
 }
 
-func (i importReaders) collection(ctx context.Context, document entity.ImportDocument, read *importRead) error {
+func (i importReaders) collection(ctx context.Context, document entity.ImportDocument, read *entity.ImportReadout) error {
 	collection, err := i.readPostmanCollection.ReadCollection(ctx, document)
 	if err != nil {
 		return err
 	}
-	read.addCollection(importitemkind.Collection, *collection)
+	read.Append(withPmUsages(collection.ImportItem(read.NextKey(), importitemkind.Collection)))
 	return nil
 }
 
-func (i importReaders) postmanV3(ctx context.Context, input entity.ImportInput, read *importRead) error {
+func (i importReaders) postmanV3(ctx context.Context, input entity.ImportInput, read *entity.ImportReadout) error {
 	source, err := i.readPostmanV3.ReadPostmanV3(ctx, input)
 	if err != nil {
 		return err
 	}
 	for _, collection := range source.Collections {
-		read.addCollection(importitemkind.Collection, collection)
+		read.Append(withPmUsages(collection.ImportItem(read.NextKey(), importitemkind.Collection)))
 	}
-	if source.Request != nil {
-		read.addCollection(importitemkind.Request, *source.Request)
+	if source.HasRequest() {
+		read.Append(withPmUsages(source.Request.ImportItem(read.NextKey(), importitemkind.Request)))
 	}
 	for _, environment := range source.Environments {
-		read.addVariables(importitemkind.Environment, environment)
+		read.Append(environment.ImportItem(read.NextKey(), importitemkind.Environment))
 	}
-	if source.Globals != nil {
-		read.addVariables(importitemkind.Globals, *source.Globals)
+	if source.HasGlobals() {
+		read.Append(source.Globals.ImportItem(read.NextKey(), importitemkind.Globals))
 	}
-	read.warnings = append(read.warnings, source.Warnings...)
-	read.warnings = append(read.warnings, source.SkippedWarnings()...)
+	read.Warn(source.SkippedWarnings())
 	return nil
 }
 
-func (i importReaders) bruno(ctx context.Context, input entity.ImportInput, read *importRead) error {
+func (i importReaders) bruno(ctx context.Context, input entity.ImportInput, read *entity.ImportReadout) error {
 	collection, err := i.readBrunoCollection.ReadCollection(ctx, input)
 	if err != nil {
 		return err
 	}
 	scripts, warnings := translateBrunoScripts(collection.Scripts)
-	read.addTree(importitemkind.Collection, collection.Root.WithScripts(scripts), append(collection.Warnings, warnings...))
+	read.Append(withPmUsages(entity.NewImportItem(read.NextKey(), importitemkind.Collection, collection.Root.WithScripts(scripts), append(collection.Warnings, warnings...))))
 	for _, environment := range collection.Environments {
-		read.items = append(read.items, entity.NewVariablesImportItem(read.nextKey(), importitemkind.Environment, environment))
+		read.Append(entity.NewVariablesImportItem(read.NextKey(), importitemkind.Environment, environment))
 	}
 	return nil
 }
 
-func (i importReaders) curl(ctx context.Context, input entity.ImportInput, read *importRead) error {
-	parsed, err := i.readCurlCommand.ReadCommand(ctx, input.Probe.Text)
+func (i importReaders) curl(ctx context.Context, input entity.ImportInput, read *entity.ImportReadout) error {
+	parsed, err := i.readCurlCommand.ReadCommand(ctx, input.PastedText())
 	if err != nil {
 		return err
 	}
 	request := usecase.DeriveParamsFromUrl(parsed.Request)
 	request = request.Identified(idutils.NewUlid(), usecase.DeriveCurlRequestName(request))
-	read.addTree(importitemkind.Request, entity.NewRequestImportNode(request), []entity.ImportWarning{})
+	read.Append(withPmUsages(entity.NewImportItem(read.NextKey(), importitemkind.Request, entity.NewRequestImportNode(request), []entity.ImportWarning{})))
 	return nil
 }
 
-func (i importReaders) variables(ctx context.Context, document entity.ImportDocument, kind enums.ImportItemKind, read *importRead) error {
+func (i importReaders) variables(ctx context.Context, document entity.ImportDocument, kind enums.ImportItemKind, read *entity.ImportReadout) error {
 	variables, err := i.readPostmanEnvironment.ReadEnvironment(ctx, document)
 	if err != nil {
 		return err
 	}
-	read.items = append(read.items, entity.NewVariablesImportItem(read.nextKey(), kind, *variables))
+	read.Append(entity.NewVariablesImportItem(read.NextKey(), kind, *variables))
 	return nil
 }
 
-func (i importReaders) dump(ctx context.Context, input entity.ImportInput, read *importRead) error {
+func (i importReaders) dump(ctx context.Context, input entity.ImportInput, read *entity.ImportReadout) error {
 	dump, err := i.readPostmanDump.ReadDump(ctx, input)
 	if err != nil {
 		return err
@@ -122,27 +139,34 @@ func (i importReaders) dump(ctx context.Context, input entity.ImportInput, read 
 			return err
 		}
 	}
-	read.warnings = append(read.warnings, dump.SkippedWarnings()...)
+	read.Warn(dump.SkippedWarnings())
 	return nil
 }
 
-func (i importReaders) xenon(ctx context.Context, input entity.ImportInput, read *importRead) error {
+func (i importReaders) xenon(ctx context.Context, input entity.ImportInput, read *entity.ImportReadout) error {
 	exported, err := i.readXenonExport.ReadXenonExport(ctx, input)
 	if err != nil {
 		return err
 	}
-	read.secrets = exported.Secrets
+	read.KeepEncryptedSecrets(exported.Secrets)
 	switch {
 	case exported.IsWorkspace():
-		read.items = append(read.items, entity.NewWorkspaceImportItem(read.nextKey(), *exported.Workspace))
+		read.Append(entity.NewWorkspaceImportItem(read.NextKey(), *exported.Workspace))
 	case exported.IsEnvironment():
 		environment := exported.Environment.Duplicated(idutils.NewUlid(), exported.Environment.Name)
-		item := entity.NewVariablesImportItem(read.nextKey(), importitemkind.Environment, entity.NewImportVariables(environment, nil))
-		read.items = append(read.items, item.FromSource(exported.Environment.ID))
+		item := entity.NewVariablesImportItem(read.NextKey(), importitemkind.Environment, entity.NewImportVariables(environment, nil))
+		read.Append(item.FromSource(exported.Environment.ID))
 	default:
-		read.addSourcedTree(*exported.Root, exported.Root.Reidentified(idutils.NewUlid))
+		root := exported.Root.Reidentified(idutils.NewUlid)
+		item := entity.NewImportItem(read.NextKey(), entity.ImportItemKindOf(root), root, []entity.ImportWarning{})
+		read.Append(withPmUsages(item).FromSource(exported.Root.ID()))
 	}
 	return nil
+}
+
+func withPmUsages(item entity.ImportItem) entity.ImportItem {
+	usages := usecase.ScanPmUsage(item.Scripts())
+	return item.WithPmUsages(usages).WithWarnings(usecase.ListPmUsageWarnings(usages))
 }
 
 func translateBrunoScripts(sources []entity.BrunoScripts) (map[string]entity.Scripts, []entity.ImportWarning) {

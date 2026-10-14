@@ -8,6 +8,10 @@ type KeyValue struct {
 	Disabled    bool           `yaml:"disabled"`
 }
 
+func NewKeyValue(key string, value any) KeyValue {
+	return KeyValue{Key: key, Value: value}
+}
+
 func (k *KeyValue) toPostmanV21() map[string]any {
 	row := copied(k.Extra)
 	row["key"] = k.Key

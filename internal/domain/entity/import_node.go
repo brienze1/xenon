@@ -85,7 +85,6 @@ func (i ImportNode) AsCollection() ImportNode {
 	return i
 }
 
-// Reidentified gives the node, its examples and its children new ids from newID.
 func (i ImportNode) Reidentified(newID func() string) ImportNode {
 	if i.IsRequest() {
 		request := i.Request.Identified(newID(), i.Request.Name)
@@ -223,7 +222,6 @@ func JoinImportPath(parent, name string) string {
 	return strings.Join([]string{parent, name}, importPathSeparator)
 }
 
-// WithoutLiteralTokens moves typed-in OAuth 2.0 access tokens out of the node and its children, owned by their items.
 func (i ImportNode) WithoutLiteralTokens() (ImportNode, []OAuth2Token) {
 	tokens := make([]OAuth2Token, 0)
 	if i.IsRequest() {

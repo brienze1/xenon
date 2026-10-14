@@ -3,7 +3,6 @@ package dto
 import (
 	"cmp"
 	"math"
-	"strings"
 )
 
 type Child struct {
@@ -40,8 +39,5 @@ func compareChildren(a, b Child) int {
 	if byOrder := cmp.Compare(a.Order, b.Order); byOrder != 0 {
 		return byOrder
 	}
-	if byName := strings.Compare(strings.ToLower(a.SortName), strings.ToLower(b.SortName)); byName != 0 {
-		return byName
-	}
-	return strings.Compare(a.SortName, b.SortName)
+	return compareFold(a.SortName, b.SortName)
 }

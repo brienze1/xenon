@@ -1,6 +1,9 @@
 package entity
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/warningcode"
 	"github.com/brienze1/xenon/internal/domain/enums/warningseverity"
@@ -27,6 +30,23 @@ func NewImportWarning(code enums.WarningCode, message, itemId, path string) Impo
 		}
 	}
 	return warning
+}
+
+func NewUnsupportedRequestWarning(name, kind, parentPath string) ImportWarning {
+	return NewImportWarning(warningcode.UnsupportedRequestType, name+" is a "+kind+" request, which Xenon does not support; it was skipped", "", parentPath)
+}
+
+func NewMultiAuthWarning(owner, path string, authTypes []string) ImportWarning {
+	message := "Postman multi-auth on " + owner + " lists " + strconv.Itoa(len(authTypes)) + " auths; Xenon imported the first (" + authTypes[0] + ") and kept " + strings.Join(authTypes[1:], ", ") + " for export only"
+	return NewImportWarning(warningcode.UnsupportedAuth, message, "", path)
+}
+
+func NewProtocolScriptWarning(scriptType, owner, protocol, path string) ImportWarning {
+	return NewImportWarning(warningcode.ProtocolScript, "The "+scriptType+" script on "+owner+" runs only for "+protocol+" requests in Postman; it is kept for export and Xenon does not run it", "", path)
+}
+
+func NewLinkedSecretWarning(key, path string) ImportWarning {
+	return NewImportWarning(warningcode.LinkedSecret, key+" is linked to a Postman vault secret; enter its value in Xenon", "", path)
 }
 
 func (i ImportWarning) Relocated(move ImportRelocation) ImportWarning {

@@ -29,7 +29,7 @@ func Decode(document entity.ImportDocument, target any) error {
 	}
 	if err := yaml.Unmarshal(data, target); err != nil {
 		if isJson {
-			return DecodeError{Path: document.Path, Reason: wrongTypeReason}
+			return NewWrongTypeDecodeError(document.Path)
 		}
 		return NewDecodeError(document.Path, err)
 	}

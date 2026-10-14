@@ -3,7 +3,11 @@ package entity
 import (
 	"path"
 	"slices"
+	"strconv"
 	"strings"
+
+	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
+	"github.com/brienze1/xenon/internal/domain/enums/variablescope"
 )
 
 const (
@@ -20,12 +24,11 @@ const (
 	v3GlobalsDir       = "globals"
 	v3ResourcesDir     = ".resources"
 	v3DefinitionFile   = "definition.yaml"
-	v3CollectionKind   = "collection"
+	v3ExampleSuffix    = ".example.yaml"
+	v3ExamplesDir      = "examples"
 	v3HttpRequestKind  = "http-request"
 	dumpMarker         = "archive.json"
 	brunoMarker        = "bruno.json"
-	environmentScope   = "environment"
-	globalsScope       = "globals"
 	postmanV21         = "2.1"
 	postmanV20         = "2.0"
 	xenonBundleKind    = "bundle"
@@ -76,11 +79,11 @@ func (i ImportProbe) IsPastedCurl() bool {
 }
 
 func (i ImportProbe) IsPostmanV3Request() bool {
-	return !i.IsFolder && (isPostmanV3Name(i.Name) || i.PostmanKind == v3HttpRequestKind)
+	return !i.IsFolder && (IsPostmanV3RequestName(i.Name) || i.PostmanKind == v3HttpRequestKind)
 }
 
 func (i ImportProbe) IsPostmanV3Collection() bool {
-	return !i.IsFolder && i.Schema == "" && i.PostmanKind == v3CollectionKind
+	return !i.IsFolder && i.Schema == "" && itemkind.Collection.Equals(i.PostmanKind)
 }
 
 func (i ImportProbe) IsPostmanV3Variables() bool {
@@ -147,11 +150,11 @@ func (i ImportProbe) IsPostmanV1() bool {
 }
 
 func (i ImportProbe) IsEnvironment() bool {
-	return i.Scope == environmentScope
+	return variablescope.Environment.Equals(i.Scope)
 }
 
 func (i ImportProbe) IsGlobals() bool {
-	return i.Scope == globalsScope
+	return variablescope.Globals.Equals(i.Scope)
 }
 
 func (i ImportProbe) topLevelEntries() []string {
@@ -173,12 +176,33 @@ func (i ImportProbe) hasEntryWithExtension(extensions ...string) bool {
 	return false
 }
 
-func isPostmanV3Name(name string) bool {
-	return strings.HasSuffix(strings.ToLower(name), postmanV3Suffix)
+func IsPostmanV3RequestName(name string) bool {
+	return hasSuffixFold(name, postmanV3Suffix)
+}
+
+func IsPostmanV3ExampleName(name string) bool {
+	return hasSuffixFold(name, v3ExampleSuffix)
+}
+
+func PostmanV3ExamplesDir(requestName string) string {
+	stem := requestName[:len(requestName)-len(postmanV3Suffix)]
+	return path.Join(v3ResourcesDir, stem+v3ResourcesDir, v3ExamplesDir)
+}
+
+func PostmanV3WorkspaceFolder() string {
+	return postmanV3Folder
+}
+
+func PostmanV3WorkspaceDirectories() []string {
+	return slices.Clone(v3WorkspaceDirectories)
+}
+
+func IsPostmanV3ResourcesDir(segment string) bool {
+	return segment == v3ResourcesDir
 }
 
 func isPostmanV3Entry(entry string) bool {
-	return isPostmanV3Name(entry) || strings.HasSuffix(entry, v3ResourcesDir+"/"+v3DefinitionFile)
+	return IsPostmanV3RequestName(entry) || strings.HasSuffix(entry, v3ResourcesDir+"/"+v3DefinitionFile)
 }
 
 func isPostmanV3WorkspaceEntry(entry string) bool {
@@ -221,4 +245,24 @@ func (i ImportProbe) IsXenonBundle() bool {
 
 func (i ImportProbe) IsXenonExport() bool {
 	return i.XenonKind == xenonExportKind
+}
+
+func (i ImportProbe) IsXenonWorkspaceExport() bool {
+	return i.IsXenonExport() && itemkind.Workspace.Equals(i.XenonRoot)
+}
+
+func (i ImportProbe) IsXenonWorkspaceFolder() bool {
+	return itemkind.Workspace.Equals(i.XenonKind) && i.IsFolder
+}
+
+func (i ImportProbe) IsXenonRequest() bool {
+	return itemkind.Request.Equals(i.XenonKind) && !i.IsFolder
+}
+
+func (i ImportProbe) IsXenonEnvironment() bool {
+	return itemkind.Environment.Equals(i.XenonKind) && !i.IsFolder
+}
+
+func (i ImportProbe) XenonVersion() string {
+	return strconv.Itoa(i.XenonFormat)
 }

@@ -22,10 +22,10 @@ func (a *Auth) UnmarshalYAML(node *yaml.Node) error {
 		return node.Decode(&a.Entries)
 	case yaml.ScalarNode:
 		if node.Tag != yamlNullTag {
-			return WrongTypeError{Line: node.Line}
+			return NewWrongTypeError(node.Line)
 		}
 	default:
-		return WrongTypeError{Line: node.Line}
+		return NewWrongTypeError(node.Line)
 	}
 	return nil
 }

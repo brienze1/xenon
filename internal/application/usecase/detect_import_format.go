@@ -2,12 +2,10 @@ package usecase
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/importkind"
-	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
 	"github.com/brienze1/xenon/pkg/errs"
 )
 
@@ -31,13 +29,13 @@ func DetectImportFormat(probe entity.ImportProbe) (enums.ImportKind, string, err
 	case probe.IsPostmanV3Request():
 		return importkind.PostmanRequest, entity.PostmanV3Version, nil
 	case probe.IsMalformed:
-		return "", "", invalidImportError(probe.Name + invalidJsonMsg)
+		return importkind.Unknown, "", invalidImportError(probe.Name + invalidJsonMsg)
 	case probe.IsJson:
 		return detectJson(probe)
 	case probe.IsYaml:
 		return detectPostmanV3(probe)
 	default:
-		return "", "", unsupportedImportError(probe.Name + unsupportedFormatMsg)
+		return importkind.Unknown, "", unsupportedImportError(probe.Name + unsupportedFormatMsg)
 	}
 }
 
@@ -46,7 +44,7 @@ func detectFolder(probe entity.ImportProbe) (enums.ImportKind, string, error) {
 	case probe.IsPostmanDump():
 		return importkind.PostmanDump, "", nil
 	case probe.MixesBrunoFormats():
-		return "", "", unsupportedImportError(probe.Name + mixedBrunoFormatsMsg)
+		return importkind.Unknown, "", unsupportedImportError(probe.Name + mixedBrunoFormatsMsg)
 	case probe.IsBrunoBru():
 		return importkind.BrunoBru, "", nil
 	case probe.IsBrunoYaml():
@@ -56,29 +54,29 @@ func detectFolder(probe entity.ImportProbe) (enums.ImportKind, string, error) {
 	case probe.IsPostmanV3CollectionFolder():
 		return importkind.PostmanCollection, entity.PostmanV3Version, nil
 	default:
-		return "", "", unsupportedImportError(probe.Name + unsupportedFormatMsg)
+		return importkind.Unknown, "", unsupportedImportError(probe.Name + unsupportedFormatMsg)
 	}
 }
 
 func detectXenon(probe entity.ImportProbe) (enums.ImportKind, string, error) {
-	version := strconv.Itoa(probe.XenonFormat)
+	version := probe.XenonVersion()
 	switch {
 	case probe.IsNewerXenon():
-		return "", "", errs.UnprocessableEntityError(probe.Name+newerXenonMsg+version+updateXenonMsg, "IMP-42422")
-	case probe.IsXenonExport() && itemkind.Workspace.Equals(probe.XenonRoot):
+		return importkind.Unknown, "", errs.UnprocessableEntityError(probe.Name+newerXenonMsg+version+updateXenonMsg, "IMP-42422")
+	case probe.IsXenonWorkspaceExport():
 		return importkind.XenonWorkspaceZip, version, nil
 	case probe.IsXenonExport():
 		return importkind.XenonZip, version, nil
 	case probe.IsXenonBundle():
 		return importkind.XenonBundle, version, nil
-	case itemkind.Workspace.Equals(probe.XenonKind) && probe.IsFolder:
+	case probe.IsXenonWorkspaceFolder():
 		return importkind.XenonWorkspaceFolder, version, nil
-	case itemkind.Request.Equals(probe.XenonKind) && !probe.IsFolder:
+	case probe.IsXenonRequest():
 		return importkind.XenonRequest, version, nil
-	case itemkind.Environment.Equals(probe.XenonKind) && !probe.IsFolder:
+	case probe.IsXenonEnvironment():
 		return importkind.XenonEnvironment, version, nil
 	default:
-		return "", "", unsupportedImportError(probe.Name + unsupportedFormatMsg)
+		return importkind.Unknown, "", unsupportedImportError(probe.Name + unsupportedFormatMsg)
 	}
 }
 
@@ -88,7 +86,7 @@ func detectJson(probe entity.ImportProbe) (enums.ImportKind, string, error) {
 	}
 	switch {
 	case probe.IsPostmanV1():
-		return "", "", invalidImportError(postmanV1Msg)
+		return importkind.Unknown, "", invalidImportError(postmanV1Msg)
 	case probe.IsEnvironment():
 		return importkind.PostmanEnvironment, "", nil
 	case probe.IsGlobals():
@@ -107,7 +105,7 @@ func detectPostmanV3(probe entity.ImportProbe) (enums.ImportKind, string, error)
 	case probe.IsPostmanV3Variables():
 		return importkind.PostmanEnvironment, entity.PostmanV3Version, nil
 	default:
-		return "", "", unsupportedImportError(probe.Name + unsupportedFormatMsg)
+		return importkind.Unknown, "", unsupportedImportError(probe.Name + unsupportedFormatMsg)
 	}
 }
 

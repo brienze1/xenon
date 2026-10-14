@@ -36,7 +36,6 @@ func readPostmanCollection(document entity.ImportDocument) (*entity.ImportCollec
 		return nil, errs.BadRequestError(document.Path+" is not a valid Postman collection: "+err.Error(), "IMP-33400")
 	}
 	conversion := dto.NewConversion(idutils.NewUlid)
-	root, secrets := collection.ToEntity(conversion)
-	imported := entity.NewImportCollection(root, conversion.Warnings(), secrets)
+	imported := collection.ToEntity(conversion)
 	return &imported, nil
 }

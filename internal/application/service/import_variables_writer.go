@@ -57,7 +57,9 @@ func (w importVariablesWriter) environment(ctx context.Context, workspace entity
 		}
 	}
 	if _, err := w.saveEnvironment.Save(ctx, workspace.Path, *write.Environment); err != nil {
-		w.restoreReplaced(ctx, workspace.Path, write.Replaced)
+		if write.ReplacesEnvironment() {
+			w.restoreReplaced(ctx, workspace.Path, *write.Replaced)
+		}
 		w.vaults.restore(ctx, vault, write.Scope(), nil)
 		return err
 	}
@@ -103,11 +105,8 @@ func (w importVariablesWriter) storeSecrets(ctx context.Context, localId string,
 	return w.vaults.write(ctx, *vault, scope, secrets)
 }
 
-func (w importVariablesWriter) restoreReplaced(ctx context.Context, root string, replaced *entity.Environment) {
-	if replaced == nil {
-		return
-	}
-	if _, err := w.saveEnvironment.Save(ctx, root, *replaced); err != nil {
+func (w importVariablesWriter) restoreReplaced(ctx context.Context, root string, replaced entity.Environment) {
+	if _, err := w.saveEnvironment.Save(ctx, root, replaced); err != nil {
 		logger.Error(ctx, err, "The replaced environment could not be restored after a failed import", map[string]any{"root": root})
 	}
 }

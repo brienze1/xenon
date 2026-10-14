@@ -16,8 +16,8 @@ var rawLanguages = []string{"json", "text", "xml", "html", "javascript"}
 
 type Body struct {
 	Extra   map[string]any `yaml:",inline"`
-	Content yaml.Node      `yaml:"content"`
 	Type    string         `yaml:"type"`
+	Content yaml.Node      `yaml:"content"`
 }
 
 func (b *Body) toPostmanV21() (map[string]any, error) {

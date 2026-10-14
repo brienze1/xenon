@@ -1,21 +1,21 @@
 package dto
 
-func urlToPostmanV21(raw string, query, variables KeyValues) any {
-	if query == nil && variables == nil {
-		return raw
-	}
-	url := map[string]any{"raw": raw}
-	setIfPresent(url, "query", query.toPostmanV21())
-	setIfPresent(url, "variable", pathVariablesToPostmanV21(variables))
-	return url
+type URL struct {
+	Raw       string
+	Query     KeyValues
+	Variables KeyValues
 }
 
-func pathVariablesToPostmanV21(variables KeyValues) []any {
-	rows := make([]any, 0, len(variables))
-	for index := range variables {
-		row := variables[index].toPostmanV21()
-		delete(row, "disabled")
-		rows = append(rows, row)
+func NewURL(raw string, query, variables KeyValues) URL {
+	return URL{Raw: raw, Query: query, Variables: variables}
+}
+
+func (u URL) toPostmanV21() any {
+	if u.Query == nil && u.Variables == nil {
+		return u.Raw
 	}
-	return rows
+	url := map[string]any{"raw": u.Raw}
+	setIfPresent(url, "query", u.Query.toPostmanV21())
+	setIfPresent(url, "variable", u.Variables.toPathVariables())
+	return url
 }

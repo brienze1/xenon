@@ -13,7 +13,7 @@ func (e *ExampleRequest) toPostmanV21() (map[string]any, error) {
 	request := copied(e.Extra)
 	request["method"] = e.Method
 	request["header"] = e.Headers.toPostmanV21()
-	request["url"] = urlToPostmanV21(e.URL, e.QueryParams, nil)
+	request["url"] = NewURL(e.URL, e.QueryParams, nil).toPostmanV21()
 	body, err := e.Body.toPostmanV21()
 	if err != nil {
 		return nil, err

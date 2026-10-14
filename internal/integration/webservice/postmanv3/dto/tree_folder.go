@@ -5,3 +5,7 @@ type TreeFolder struct {
 	Subfolders []string
 	Requests   []TreeDocument
 }
+
+func NewTreeFolder() *TreeFolder {
+	return &TreeFolder{}
+}

@@ -4,12 +4,10 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
 )
 
-const (
-	collectionKind = "collection"
-	v21Schema      = "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-)
+const v21Schema = "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 
 type Collection struct {
 	Extra       map[string]any `yaml:",inline"`
@@ -20,20 +18,23 @@ type Collection struct {
 	Name        string         `yaml:"name"`
 	Items       []yaml.Node    `yaml:"items"`
 	Variables   []Variable     `yaml:"variables"`
-	Scripts     []Script       `yaml:"scripts"`
+	Scripts     Scripts        `yaml:"scripts"`
 	Auth        Auth           `yaml:"auth"`
 	Children    []Child        `yaml:"-"`
 }
 
-func NewNamedCollection(name string) *Collection {
-	return &Collection{Name: name, Children: []Child{}}
-}
-
-func (c *Collection) WithFallbackName(name string) *Collection {
-	if c.Name == "" {
-		c.Name = name
+func NewFolderCollection(definition *TreeDocument, fallbackName string) (*Collection, error) {
+	collection := &Collection{}
+	if definition != nil {
+		if err := Decode(definition.Document, collection); err != nil {
+			return nil, err
+		}
 	}
-	return c
+	if collection.Name == "" {
+		collection.Name = fallbackName
+	}
+	collection.Children = []Child{}
+	return collection, nil
 }
 
 func (c *Collection) ResolveItems() error {
@@ -49,15 +50,12 @@ func (c *Collection) ResolveItems() error {
 }
 
 func resolveItem(node *yaml.Node) (Child, error) {
-	var head struct {
-		Kind string `yaml:"$kind"`
-		Name string `yaml:"name"`
-	}
+	var head ItemHead
 	if err := node.Decode(&head); err != nil {
 		return Child{}, err
 	}
 	switch {
-	case head.Kind == collectionKind:
+	case head.Kind == itemkind.Collection.String():
 		var folder Collection
 		if err := node.Decode(&folder); err != nil {
 			return Child{}, err
@@ -69,12 +67,11 @@ func resolveItem(node *yaml.Node) (Child, error) {
 			return Child{}, err
 		}
 		examples, err := request.inlineExamples()
-		request.examples = examples
-		return NewRequestChild(&request, request.Name), err
+		return NewRequestChild(request.withExamples(examples), request.Name), err
 	case IsRequestKind(head.Kind):
 		return NewSkippedChild(head.Name, head.Kind, head.Name, nil), nil
 	default:
-		return Child{}, UnknownKindError{Kind: head.Kind}
+		return Child{}, NewUnknownKindError(head.Kind)
 	}
 }
 
@@ -86,7 +83,7 @@ func (c *Collection) ToPostmanV21(conversion *Conversion) (map[string]any, error
 	setIfPresent(info, "description", c.Description)
 	document["info"] = info
 	setIfPresent(document, "auth", c.Auth.toPostmanV21(conversion, c.Name, c.Name, extensions))
-	setIfPresent(document, "event", scriptsToPostmanV21(c.Scripts, conversion, c.Name, c.Name, extensions))
+	setIfPresent(document, "event", c.Scripts.toPostmanV21(conversion, c.Name, c.Name, extensions))
 	setIfPresent(document, "variable", c.variablesToPostmanV21())
 	items, err := c.childrenToPostmanV21(conversion, c.Name)
 	if err != nil {
@@ -105,7 +102,7 @@ func (c *Collection) folderToPostmanV21(conversion *Conversion, parentPath strin
 	setIfPresent(folder, "id", c.ID)
 	setIfPresent(folder, "description", c.Description)
 	setIfPresent(folder, "auth", c.Auth.toPostmanV21(conversion, c.Name, path, extensions))
-	setIfPresent(folder, "event", scriptsToPostmanV21(c.Scripts, conversion, c.Name, path, extensions))
+	setIfPresent(folder, "event", c.Scripts.toPostmanV21(conversion, c.Name, path, extensions))
 	setIfPresent(folder, "variable", c.variablesToPostmanV21())
 	items, err := c.childrenToPostmanV21(conversion, path)
 	if err != nil {

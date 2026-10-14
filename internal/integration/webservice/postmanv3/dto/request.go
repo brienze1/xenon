@@ -17,25 +17,25 @@ const (
 )
 
 type Request struct {
+	ID            any            `yaml:"id"`
+	Description   any            `yaml:"description"`
 	Extra         map[string]any `yaml:",inline"`
 	Settings      map[string]any `yaml:"settings"`
 	Body          *Body          `yaml:"body"`
 	Order         *float64       `yaml:"order"`
-	ID            any            `yaml:"id"`
-	Description   any            `yaml:"description"`
-	Examples      yaml.Node      `yaml:"examples"`
-	Variables     yaml.Node      `yaml:"variables"`
 	Kind          string         `yaml:"$kind"`
 	Name          string         `yaml:"name"`
 	URL           string         `yaml:"url"`
 	Method        string         `yaml:"method"`
 	Query         string         `yaml:"query"`
+	Auth          Auth           `yaml:"auth"`
 	Headers       KeyValues      `yaml:"headers"`
 	QueryParams   KeyValues      `yaml:"queryParams"`
 	PathVariables KeyValues      `yaml:"pathVariables"`
-	Scripts       []Script       `yaml:"scripts"`
-	Auth          Auth           `yaml:"auth"`
+	Scripts       Scripts        `yaml:"scripts"`
 	examples      []Example
+	Examples      yaml.Node `yaml:"examples"`
+	Variables     yaml.Node `yaml:"variables"`
 }
 
 func IsSupportedRequestKind(kind string) bool {
@@ -44,6 +44,11 @@ func IsSupportedRequestKind(kind string) bool {
 
 func IsRequestKind(kind string) bool {
 	return strings.HasSuffix(kind, requestKindSuffix)
+}
+
+func (r *Request) withExamples(examples []Example) *Request {
+	r.examples = examples
+	return r
 }
 
 func (r *Request) inlineExamples() ([]Example, error) {
@@ -73,8 +78,8 @@ func (r *Request) toPostmanV21(conversion *Conversion, parentPath string) (map[s
 		return nil, err
 	}
 	item["request"] = request
-	setIfPresent(item, "event", scriptsToPostmanV21(r.Scripts, conversion, r.Name, path, extensions))
-	setIfPresent(item, "protocolProfileBehavior", settingsToPostmanV21(r.Settings))
+	setIfPresent(item, "event", r.Scripts.toPostmanV21(conversion, r.Name, path, extensions))
+	setIfPresent(item, "protocolProfileBehavior", r.settingsToPostmanV21())
 	if r.Kind == httpRequestKind && r.Variables.Kind == yaml.SequenceNode {
 		var variables KeyValues
 		if err := r.Variables.Decode(&variables); err != nil {
@@ -96,7 +101,7 @@ func (r *Request) toPostmanV21(conversion *Conversion, parentPath string) (map[s
 }
 
 func (r *Request) requestToPostmanV21(conversion *Conversion, path string, extensions map[string]any) (map[string]any, error) {
-	request := map[string]any{"method": r.Method, "header": r.Headers.toPostmanV21(), "url": urlToPostmanV21(r.URL, r.QueryParams, r.PathVariables)}
+	request := map[string]any{"method": r.Method, "header": r.Headers.toPostmanV21(), "url": NewURL(r.URL, r.QueryParams, r.PathVariables).toPostmanV21()}
 	body, err := r.Body.toPostmanV21()
 	if err != nil {
 		return nil, err
@@ -118,9 +123,9 @@ func (r *Request) graphqlVariables() string {
 	return text(variables)
 }
 
-func settingsToPostmanV21(settings map[string]any) map[string]any {
+func (r *Request) settingsToPostmanV21() map[string]any {
 	behavior := map[string]any{}
-	for key, value := range settings {
+	for key, value := range r.Settings {
 		setIfPresent(behavior, key, value)
 	}
 	return behavior

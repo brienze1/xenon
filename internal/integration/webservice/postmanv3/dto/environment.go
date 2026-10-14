@@ -2,6 +2,7 @@ package dto
 
 import (
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums/variablescope"
 )
 
 const variableScopeKey = "_postman_variable_scope"
@@ -12,7 +13,15 @@ type Environment struct {
 	Values []Variable     `yaml:"values"`
 }
 
-func (e *Environment) ToPostmanV21(scope, fallbackName string, conversion *Conversion) map[string]any {
+func (e *Environment) ToEnvironmentV21(path string, conversion *Conversion) map[string]any {
+	return e.toPostmanV21(variablescope.Environment.String(), stemOf(path), conversion)
+}
+
+func (e *Environment) ToGlobalsV21(path string, conversion *Conversion) map[string]any {
+	return e.toPostmanV21(variablescope.Globals.String(), stemOf(path), conversion)
+}
+
+func (e *Environment) toPostmanV21(scope, fallbackName string, conversion *Conversion) map[string]any {
 	document := copied(e.Extra)
 	name := e.Name
 	if name == "" {

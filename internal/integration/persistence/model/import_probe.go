@@ -26,12 +26,6 @@ func (i *ImportProbe) ToEntity(name string) entity.ImportProbe {
 	return probe
 }
 
-func (i *ImportProbe) ToYamlEntity(name string) entity.ImportProbe {
-	probe := i.postmanProbe(name)
-	probe.IsYaml = true
-	return probe
-}
-
 func (i *ImportProbe) postmanProbe(name string) entity.ImportProbe {
 	probe := entity.ImportProbe{Name: name, Scope: i.Scope, PostmanKind: i.Kind, HasWorkspaceField: i.Workspace != nil}
 	if i.Info != nil {

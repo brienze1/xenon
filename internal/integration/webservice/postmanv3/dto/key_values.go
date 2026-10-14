@@ -21,13 +21,13 @@ func (k *KeyValues) UnmarshalYAML(node *yaml.Node) error {
 			if err := node.Content[index+1].Decode(&value); err != nil {
 				return err
 			}
-			rows = append(rows, KeyValue{Key: node.Content[index].Value, Value: value})
+			rows = append(rows, NewKeyValue(node.Content[index].Value, value))
 		}
 		*k = rows
 	case node.Kind == yaml.ScalarNode && node.Tag == yamlNullTag:
 		*k = KeyValues{}
 	default:
-		return WrongTypeError{Line: node.Line}
+		return NewWrongTypeError(node.Line)
 	}
 	return nil
 }
@@ -36,6 +36,16 @@ func (k KeyValues) toPostmanV21() []any {
 	rows := make([]any, 0, len(k))
 	for index := range k {
 		rows = append(rows, k[index].toPostmanV21())
+	}
+	return rows
+}
+
+func (k KeyValues) toPathVariables() []any {
+	rows := make([]any, 0, len(k))
+	for index := range k {
+		row := k[index].toPostmanV21()
+		delete(row, "disabled")
+		rows = append(rows, row)
 	}
 	return rows
 }

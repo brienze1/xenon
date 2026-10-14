@@ -26,6 +26,10 @@ func NewDecodeError(path string, err error) DecodeError {
 	return DecodeError{Path: path, Reason: decodeReason(err)}
 }
 
+func NewWrongTypeDecodeError(path string) DecodeError {
+	return DecodeError{Path: path, Reason: wrongTypeReason}
+}
+
 func (d DecodeError) Error() string {
 	return d.Path + " is not a valid Postman v3 file: " + d.Reason
 }

@@ -1,8 +1,8 @@
 package dto
 
 import (
-	"math"
 	"path"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -23,14 +23,22 @@ type tree struct {
 }
 
 func NewTree(documents []entity.ImportDocument, prefix, name string) (*Collection, error) {
-	built := tree{folders: map[string]*TreeFolder{"": {}}, examples: map[string][]TreeDocument{}}
+	built := tree{folders: map[string]*TreeFolder{"": NewTreeFolder()}, examples: map[string][]TreeDocument{}}
 	for _, document := range documents {
 		relative, found := strings.CutPrefix(document.Path, prefix)
 		if found {
-			built.add(TreeDocument{Document: document, Relative: relative})
+			built.add(NewTreeDocument(document, relative))
 		}
 	}
 	return built.collection("", name)
+}
+
+func NewFolderTree(documents []entity.ImportDocument, root string) (*Collection, error) {
+	return NewTree(documents, "", filepath.Base(root))
+}
+
+func NewWorkspaceTree(documents []entity.ImportDocument, prefix string) (*Collection, error) {
+	return NewTree(documents, prefix, collectionName(prefix))
 }
 
 func (t tree) add(document TreeDocument) {
@@ -53,7 +61,7 @@ func (t tree) folder(dir string) *TreeFolder {
 	if folder, found := t.folders[dir]; found {
 		return folder
 	}
-	folder := &TreeFolder{}
+	folder := NewTreeFolder()
 	t.folders[dir] = folder
 	parent := t.folder(parentDir(dir))
 	parent.Subfolders = append(parent.Subfolders, dir)
@@ -62,13 +70,10 @@ func (t tree) folder(dir string) *TreeFolder {
 
 func (t tree) collection(dir, name string) (*Collection, error) {
 	folder := t.folders[dir]
-	collection := NewNamedCollection("")
-	if folder.Definition != nil {
-		if err := Decode(folder.Definition.Document, collection); err != nil {
-			return nil, err
-		}
+	collection, err := NewFolderCollection(folder.Definition, name)
+	if err != nil {
+		return nil, err
 	}
-	collection.WithFallbackName(name).Children = []Child{}
 	for _, sub := range folder.Subfolders {
 		child, err := t.collection(sub, path.Base(sub))
 		if err != nil {
@@ -100,12 +105,11 @@ func (t tree) request(dir string, document TreeDocument) (Child, error) {
 	switch {
 	case IsSupportedRequestKind(request.Kind):
 		examples, err := t.requestExamples(dir, stem, request.examplesPath())
-		request.examples = examples
-		return NewRequestChild(&request, base), err
+		return NewRequestChild(request.withExamples(examples), base), err
 	case IsRequestKind(request.Kind):
 		return NewSkippedChild(request.Name, request.Kind, base, request.Order), nil
 	default:
-		return Child{}, NewDecodeError(document.Document.Path, UnknownKindError{Kind: request.Kind})
+		return Child{}, NewDecodeError(document.Document.Path, NewUnknownKindError(request.Kind))
 	}
 }
 
@@ -127,19 +131,8 @@ func (t tree) requestExamples(dir, stem, examplesPath string) ([]Example, error)
 		}
 		examples = append(examples, example)
 	}
-	slices.SortStableFunc(examples, compareExamples)
+	slices.SortStableFunc(examples, func(a, b Example) int { return compareChildren(a.sortKey(), b.sortKey()) })
 	return examples, nil
-}
-
-func compareExamples(a, b Example) int {
-	return compareChildren(Child{SortName: a.Name, Order: orderOf(a.Order)}, Child{SortName: b.Name, Order: orderOf(b.Order)})
-}
-
-func orderOf(order *float64) float64 {
-	if order == nil {
-		return math.MaxFloat64
-	}
-	return *order
 }
 
 func parentDir(dir string) string {
@@ -148,8 +141,4 @@ func parentDir(dir string) string {
 		return ""
 	}
 	return parent
-}
-
-func hasSuffixFold(name, suffix string) bool {
-	return strings.HasSuffix(strings.ToLower(name), suffix)
 }

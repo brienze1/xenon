@@ -28,6 +28,10 @@ type Workspace struct {
 	Skipped      []entity.PostmanDumpPart
 }
 
+func (w Workspace) ToEntity() entity.PostmanV3Source {
+	return entity.NewPostmanV3Source().WithSkipped(w.Skipped)
+}
+
 func NewWorkspace(documents []entity.ImportDocument, entries []string) Workspace {
 	base := workspaceBase(entries)
 	if base == "" && !slices.ContainsFunc(entries, isWorkspacePartEntry) {
@@ -37,9 +41,9 @@ func NewWorkspace(documents []entity.ImportDocument, entries []string) Workspace
 	for _, document := range documents {
 		dir, file := path.Split(document.Path)
 		switch {
-		case dir == base+environmentsDir+"/" && hasAnySuffixFold(file, environmentSuffixes):
+		case dir == base+environmentsDir+"/" && hasSuffixFold(file, environmentSuffixes...):
 			workspace.Environments = append(workspace.Environments, document)
-		case dir == base+globalsDir+"/" && hasAnySuffixFold(file, globalsSuffixes):
+		case dir == base+globalsDir+"/" && hasSuffixFold(file, globalsSuffixes...):
 			workspace.Globals = append(workspace.Globals, document)
 		}
 	}
@@ -100,11 +104,11 @@ func skippedParts(entries []string, base string) []entity.PostmanDumpPart {
 	return parts
 }
 
-func CollectionName(prefix string) string {
+func collectionName(prefix string) string {
 	return path.Base(strings.TrimSuffix(prefix, "/"))
 }
 
-func StemOf(documentPath string) string {
+func stemOf(documentPath string) string {
 	base := path.Base(documentPath)
 	for _, suffix := range append(slices.Clone(environmentSuffixes), globalsSuffixes...) {
 		if hasSuffixFold(base, suffix) {
@@ -116,15 +120,4 @@ func StemOf(documentPath string) string {
 
 func isV3Entry(relative string) bool {
 	return hasSuffixFold(relative, requestSuffix) || strings.HasSuffix(relative, resourcesDir+"/"+definitionFile)
-}
-
-func hasAnySuffixFold(name string, suffixes []string) bool {
-	return slices.ContainsFunc(suffixes, func(suffix string) bool { return hasSuffixFold(name, suffix) })
-}
-
-func compareFold(a, b string) int {
-	if byFold := strings.Compare(strings.ToLower(a), strings.ToLower(b)); byFold != 0 {
-		return byFold
-	}
-	return strings.Compare(a, b)
 }
