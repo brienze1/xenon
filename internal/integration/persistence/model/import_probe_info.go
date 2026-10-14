@@ -1,5 +1,5 @@
 package model
 
 type ImportProbeInfo struct {
-	Schema string `json:"schema"`
+	Schema string `json:"schema" yaml:"schema"`
 }

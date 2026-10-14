@@ -14,6 +14,14 @@ const (
 	postmanV20Marker   = "/collection/v2.0"
 	postmanV1Marker    = "/collection/v1"
 	postmanV3Suffix    = ".request.yaml"
+	postmanV3Folder    = "postman"
+	v3CollectionsDir   = "collections"
+	v3EnvironmentsDir  = "environments"
+	v3GlobalsDir       = "globals"
+	v3ResourcesDir     = ".resources"
+	v3DefinitionFile   = "definition.yaml"
+	v3CollectionKind   = "collection"
+	v3HttpRequestKind  = "http-request"
 	dumpMarker         = "archive.json"
 	brunoMarker        = "bruno.json"
 	environmentScope   = "environment"
@@ -23,28 +31,37 @@ const (
 	xenonBundleKind    = "bundle"
 	xenonExportKind    = "export"
 	LatestXenonFormat  = 1
+	PostmanV3Version   = "3"
 )
 
 var (
-	openCollectionMarkers = []string{"opencollection.yml", "opencollection.yaml"}
-	yamlFileExtensions    = []string{".yml", ".yaml"}
+	openCollectionMarkers  = []string{"opencollection.yml", "opencollection.yaml"}
+	yamlFileExtensions     = []string{".yml", ".yaml"}
+	v3EnvironmentSuffixes  = []string{".environment.yaml", ".environment.yml", ".environment.json"}
+	v3GlobalsSuffixes      = []string{".globals.yaml", ".globals.yml", ".globals.json"}
+	v3WorkspaceDirectories = []string{v3CollectionsDir, v3EnvironmentsDir, v3GlobalsDir}
 )
 
 type ImportProbe struct {
-	XenonKind   string
-	XenonRoot   string
-	Name        string
-	Text        string
-	Schema      string
-	Scope       string
-	Entries     []string
-	XenonFormat int
-	IsFolder    bool
-	IsPasted    bool
-	IsJson      bool
-	IsMalformed bool
-	HasItems    bool
-	HasV1Shape  bool
+	XenonKind         string
+	XenonRoot         string
+	Name              string
+	Text              string
+	Schema            string
+	Scope             string
+	PostmanKind       string
+	DocumentID        string
+	Entries           []string
+	XenonFormat       int
+	IsFolder          bool
+	IsPasted          bool
+	IsJson            bool
+	IsYaml            bool
+	IsMalformed       bool
+	HasItems          bool
+	HasV1Shape        bool
+	HasValues         bool
+	HasWorkspaceField bool
 }
 
 func (i ImportProbe) Pasted(text string) ImportProbe {
@@ -58,12 +75,41 @@ func (i ImportProbe) IsPastedCurl() bool {
 	return i.IsPasted && (strings.HasPrefix(command, curlPrefix) || strings.HasPrefix(command, curlExePrefix))
 }
 
-func (i ImportProbe) IsPostmanV3File() bool {
-	return isPostmanV3Name(i.Name)
+func (i ImportProbe) IsPostmanV3Request() bool {
+	return !i.IsFolder && (isPostmanV3Name(i.Name) || i.PostmanKind == v3HttpRequestKind)
 }
 
-func (i ImportProbe) HasPostmanV3Entry() bool {
-	return slices.ContainsFunc(i.Entries, isPostmanV3Name)
+func (i ImportProbe) IsPostmanV3Collection() bool {
+	return !i.IsFolder && i.Schema == "" && i.PostmanKind == v3CollectionKind
+}
+
+func (i ImportProbe) IsPostmanV3Variables() bool {
+	return !i.IsFolder && i.HasValues && i.Scope == "" && i.Schema == "" && i.PostmanKind == ""
+}
+
+func (i ImportProbe) IsPostmanV3Globals() bool {
+	return hasSuffixFold(i.Name, v3GlobalsSuffixes...) || i.HasWorkspaceField || hasSuffixFold(i.DocumentID, v3GlobalsSuffixes...)
+}
+
+func (i ImportProbe) IsPostmanV3CollectionFolder() bool {
+	return i.IsFolder && slices.ContainsFunc(i.Entries, isPostmanV3Entry)
+}
+
+func (i ImportProbe) IsPostmanV3Workspace() bool {
+	if !i.IsFolder {
+		return false
+	}
+	if strings.EqualFold(i.Name, v3CollectionsDir) && !slices.ContainsFunc(i.topLevelV3Entries(), isPostmanV3Entry) {
+		return slices.ContainsFunc(i.Entries, isPostmanV3Entry)
+	}
+	return slices.ContainsFunc(i.Entries, isPostmanV3WorkspaceEntry)
+}
+
+func (i ImportProbe) topLevelV3Entries() []string {
+	return slices.DeleteFunc(slices.Clone(i.Entries), func(entry string) bool {
+		segments := strings.Split(entry, "/")
+		return len(segments) > 1 && !(len(segments) == 2 && segments[0] == v3ResourcesDir)
+	})
 }
 
 func (i ImportProbe) IsPostmanDump() bool {
@@ -129,6 +175,32 @@ func (i ImportProbe) hasEntryWithExtension(extensions ...string) bool {
 
 func isPostmanV3Name(name string) bool {
 	return strings.HasSuffix(strings.ToLower(name), postmanV3Suffix)
+}
+
+func isPostmanV3Entry(entry string) bool {
+	return isPostmanV3Name(entry) || strings.HasSuffix(entry, v3ResourcesDir+"/"+v3DefinitionFile)
+}
+
+func isPostmanV3WorkspaceEntry(entry string) bool {
+	segments := strings.Split(entry, "/")
+	if len(segments) > 1 && segments[0] == postmanV3Folder && slices.Contains(v3WorkspaceDirectories, segments[1]) {
+		segments = segments[1:]
+	}
+	switch {
+	case len(segments) >= 3 && segments[0] == v3CollectionsDir:
+		return isPostmanV3Entry(entry)
+	case len(segments) == 2 && segments[0] == v3EnvironmentsDir:
+		return hasSuffixFold(segments[1], v3EnvironmentSuffixes...)
+	case len(segments) == 2 && segments[0] == v3GlobalsDir:
+		return hasSuffixFold(segments[1], v3GlobalsSuffixes...)
+	default:
+		return false
+	}
+}
+
+func hasSuffixFold(name string, suffixes ...string) bool {
+	lower := strings.ToLower(name)
+	return slices.ContainsFunc(suffixes, func(suffix string) bool { return strings.HasSuffix(lower, suffix) })
 }
 
 func isHiddenEntry(entry string) bool {

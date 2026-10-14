@@ -39,6 +39,11 @@ func (i ImportWarning) AtLine(location string) ImportWarning {
 	return i
 }
 
+func (i ImportWarning) OnItem(id string) ImportWarning {
+	i.ItemID = id
+	return i
+}
+
 func (i ImportWarning) ForItem(key string) ImportWarning {
 	i.ItemKey = key
 	return i

@@ -19,6 +19,10 @@ func (i ImportInput) Detected(kind enums.ImportKind, version string) ImportInput
 	return i
 }
 
+func (i ImportInput) IsPostmanV3() bool {
+	return i.Version == PostmanV3Version
+}
+
 func (i ImportInput) IsPostmanCollection() bool {
 	return i.Kind == importkind.PostmanCollection
 }

@@ -23,7 +23,7 @@ them reaches a workspace file, a log line or an error.
 |---|---|---|
 | `native-git/` | the smallest v3 collection folder (`Get users.request.yaml` and `.resources/definition.yaml`) | hand-authored (XEN-003); moved here from `postman/v3/` |
 | `rich-v2.1.json` | ground truth: every mapped field, in the canonical v2.1 form the v3 translator emits (ids everywhere, `url` as `{raw, query, variable}`, auth rows typed `string`, `_postman_previewlanguage` on examples, events without ids) | hand-authored |
-| `rich/` | the same collection as a git-native folder | `postman collection migrate rich-v2.1.json -o rich` (Postman CLI 1.73.0), unchanged |
+| `rich/` | the same collection as a git-native folder | `postman collection migrate rich-v2.1.json -o rich` (Postman CLI 1.73.0), plus one hand fix: `migrate` drops collection-variable descriptions, so `description: Default page` was added back to `.resources/definition.yaml` |
 | `rich.json` | the same collection in the shape `postman collection get <id> --json` prints | generated from `rich-v2.1.json` by the script below |
 | `extras/` | v3-only cases: map and list headers and credentials, a 2-entry multi-auth list, a `graphql:` collection script, secret and masked collection variables, `graphql`/`grpc`/`websocket`/unknown `-request` kinds, missing and tied `order`, `name:` differing from the file name, folder variables, `settings.maxRedirects`, example files with `order` | hand-authored; `postman collection lint` passes apart from the deliberately unknown `carrier-pigeon-request` |
 | `env/` | v3 environment and globals YAML (`type: secret`, `secret: true`, a vault-linked `source`, a missing `name`) and the JSON the CLI prints (a masked `********` secret; cloud globals with `workspace`; local globals with an `id` path) | hand-authored after real CLI output, values replaced |
@@ -109,8 +109,8 @@ def item(i):
         q["auth"] = auth(r["auth"], False)
     q["scripts"] = scripts(i.get("event"), "")
     q["settings"] = dict(i["protocolProfileBehavior"]) if "protocolProfileBehavior" in i else {"disabledSystemHeaders": []}
-    if "description" in r:
-        q["description"] = r["description"]
+    if "description" in i:
+        q["description"] = i["description"]
     q["examples"] = [example(x) for x in i.get("response", [])]
     return q
 

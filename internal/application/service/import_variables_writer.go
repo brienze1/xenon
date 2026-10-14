@@ -14,6 +14,7 @@ type importVariablesWriter struct {
 	saveEnvironment      usecase.SaveEnvironment
 	deleteEnvironment    usecase.DeleteEnvironment
 	saveWorkspaceFile    usecase.SaveWorkspaceFile
+	loadWorkspace        usecase.LoadWorkspace
 	values               scopeValues
 	vaults               vaultWriter
 	publishVariableEvent usecase.PublishVariableEvent
@@ -70,12 +71,16 @@ func (w importVariablesWriter) environment(ctx context.Context, workspace entity
 
 func (w importVariablesWriter) globals(ctx context.Context, target importTarget, resolution enums.ClashResolution) (*entity.ImportVariablesWrite, error) {
 	scope := entity.NewGlobalsScopeRef()
-	vault, err := vaultFor(ctx, w.values.findVault, target.workspace.LocalID, target.globals.Variables, target.item.Variables.Rows())
+	globals, err := w.loadWorkspace.Load(ctx, target.workspace.Path)
+	if err != nil {
+		return nil, err
+	}
+	vault, err := vaultFor(ctx, w.values.findVault, target.workspace.LocalID, globals.Variables, target.item.Variables.Rows())
 	if err != nil {
 		return nil, err
 	}
 	current := vault.SecretsFor(scope)
-	write := usecase.PlanGlobalsImport(*target.item.Variables, *target.globals, current, resolution)
+	write := usecase.PlanGlobalsImport(*target.item.Variables, *globals, current, resolution)
 	written, err := w.storeSecrets(ctx, target.workspace.LocalID, scope, write.Globals.Variables, current, write.Secrets)
 	if err != nil {
 		return nil, err

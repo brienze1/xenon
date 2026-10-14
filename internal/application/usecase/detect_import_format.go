@@ -15,7 +15,6 @@ const (
 	unsupportedFormatMsg = " is not a Xenon, Postman, Bruno or cURL export"
 	invalidJsonMsg       = " is not valid JSON"
 	mixedBrunoFormatsMsg = " mixes Bruno .bru and YAML files"
-	postmanV3Msg         = "Postman v3 YAML is not supported yet; export the collection as v2.1 JSON"
 	postmanV1Msg         = "Postman v1 collections are not supported; export the collection as v2.1"
 	newerXenonMsg        = " was written by a newer Xenon (format "
 	updateXenonMsg       = "); update Xenon to import it"
@@ -29,12 +28,14 @@ func DetectImportFormat(probe entity.ImportProbe) (enums.ImportKind, string, err
 		return detectXenon(probe)
 	case probe.IsFolder:
 		return detectFolder(probe)
-	case probe.IsPostmanV3File():
-		return "", "", unsupportedImportError(postmanV3Msg)
+	case probe.IsPostmanV3Request():
+		return importkind.PostmanRequest, entity.PostmanV3Version, nil
 	case probe.IsMalformed:
 		return "", "", invalidImportError(probe.Name + invalidJsonMsg)
 	case probe.IsJson:
 		return detectJson(probe)
+	case probe.IsYaml:
+		return detectPostmanV3(probe)
 	default:
 		return "", "", unsupportedImportError(probe.Name + unsupportedFormatMsg)
 	}
@@ -50,8 +51,10 @@ func detectFolder(probe entity.ImportProbe) (enums.ImportKind, string, error) {
 		return importkind.BrunoBru, "", nil
 	case probe.IsBrunoYaml():
 		return importkind.BrunoYaml, "", nil
-	case probe.HasPostmanV3Entry():
-		return "", "", unsupportedImportError(postmanV3Msg)
+	case probe.IsPostmanV3Workspace():
+		return importkind.PostmanWorkspace, entity.PostmanV3Version, nil
+	case probe.IsPostmanV3CollectionFolder():
+		return importkind.PostmanCollection, entity.PostmanV3Version, nil
 	default:
 		return "", "", unsupportedImportError(probe.Name + unsupportedFormatMsg)
 	}
@@ -90,6 +93,19 @@ func detectJson(probe entity.ImportProbe) (enums.ImportKind, string, error) {
 		return importkind.PostmanEnvironment, "", nil
 	case probe.IsGlobals():
 		return importkind.PostmanGlobals, "", nil
+	default:
+		return detectPostmanV3(probe)
+	}
+}
+
+func detectPostmanV3(probe entity.ImportProbe) (enums.ImportKind, string, error) {
+	switch {
+	case probe.IsPostmanV3Collection():
+		return importkind.PostmanCollection, entity.PostmanV3Version, nil
+	case probe.IsPostmanV3Variables() && probe.IsPostmanV3Globals():
+		return importkind.PostmanGlobals, entity.PostmanV3Version, nil
+	case probe.IsPostmanV3Variables():
+		return importkind.PostmanEnvironment, entity.PostmanV3Version, nil
 	default:
 		return "", "", unsupportedImportError(probe.Name + unsupportedFormatMsg)
 	}

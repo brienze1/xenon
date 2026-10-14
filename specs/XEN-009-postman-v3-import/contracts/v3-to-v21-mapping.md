@@ -53,7 +53,7 @@ existing passthrough keeps them for export (R6). `{…}` means "same object, tra
 | `auth` absent | no `auth` key (→ Inherit) |
 | `auth {type: noauth}` | `request.auth {type: "noauth"}` |
 | `auth {type, credentials}` | `request.auth` (see Auth) |
-| `description` | `request.description` |
+| `description` | item `description` (where the v2.1 reader takes a request's description from) |
 | `scripts[]` | `event[]` |
 | `settings {followRedirects, strictSSL, maxRedirects, protocolVersion, disabledSystemHeaders, …}` | `protocolProfileBehavior {…}` (same keys, empty values dropped; omitted when empty) |
 | `examples[]` (JSON inline) / example files (YAML) | `response[]` (see Example). A YAML `examples` path is relative to the request file and uses `/`; `./` and a trailing `/` are optional. |

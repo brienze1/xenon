@@ -15,12 +15,16 @@ type importReaders struct {
 	readPostmanCollection  usecase.ReadPostmanCollection
 	readPostmanEnvironment usecase.ReadPostmanEnvironment
 	readPostmanDump        usecase.ReadPostmanDump
+	readPostmanV3          usecase.ReadPostmanV3
 	readBrunoCollection    usecase.ReadBrunoCollection
 	readCurlCommand        usecase.ReadCurlCommand
 	readXenonExport        usecase.ReadXenonExport
 }
 
 func (i importReaders) read(ctx context.Context, input entity.ImportInput, read *importRead) error {
+	if input.IsPostmanV3() {
+		return i.postmanV3(ctx, input, read)
+	}
 	switch input.Kind {
 	case importkind.PostmanCollection:
 		return i.collection(ctx, input.Document(), read)
@@ -40,11 +44,33 @@ func (i importReaders) read(ctx context.Context, input entity.ImportInput, read 
 }
 
 func (i importReaders) collection(ctx context.Context, document entity.ImportDocument, read *importRead) error {
-	root, warnings, err := i.readPostmanCollection.ReadCollection(ctx, document)
+	collection, err := i.readPostmanCollection.ReadCollection(ctx, document)
 	if err != nil {
 		return err
 	}
-	read.addTree(importitemkind.Collection, *root, warnings)
+	read.addCollection(importitemkind.Collection, *collection)
+	return nil
+}
+
+func (i importReaders) postmanV3(ctx context.Context, input entity.ImportInput, read *importRead) error {
+	source, err := i.readPostmanV3.ReadPostmanV3(ctx, input)
+	if err != nil {
+		return err
+	}
+	for _, collection := range source.Collections {
+		read.addCollection(importitemkind.Collection, collection)
+	}
+	if source.Request != nil {
+		read.addCollection(importitemkind.Request, *source.Request)
+	}
+	for _, environment := range source.Environments {
+		read.addVariables(importitemkind.Environment, environment)
+	}
+	if source.Globals != nil {
+		read.addVariables(importitemkind.Globals, *source.Globals)
+	}
+	read.warnings = append(read.warnings, source.Warnings...)
+	read.warnings = append(read.warnings, source.SkippedWarnings()...)
 	return nil
 }
 

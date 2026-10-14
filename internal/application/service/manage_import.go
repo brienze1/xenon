@@ -33,6 +33,7 @@ func NewManageImportService(
 	readPostmanCollection usecase.ReadPostmanCollection,
 	readPostmanEnvironment usecase.ReadPostmanEnvironment,
 	readPostmanDump usecase.ReadPostmanDump,
+	readPostmanV3 usecase.ReadPostmanV3,
 	readBrunoCollection usecase.ReadBrunoCollection,
 	readCurlCommand usecase.ReadCurlCommand,
 	readXenonExport usecase.ReadXenonExport,
@@ -84,6 +85,7 @@ func NewManageImportService(
 			readPostmanCollection:  readPostmanCollection,
 			readPostmanEnvironment: readPostmanEnvironment,
 			readPostmanDump:        readPostmanDump,
+			readPostmanV3:          readPostmanV3,
 			readBrunoCollection:    readBrunoCollection,
 			readCurlCommand:        readCurlCommand,
 			readXenonExport:        readXenonExport,
@@ -115,6 +117,7 @@ func NewManageImportService(
 				saveEnvironment:   saveEnvironment,
 				deleteEnvironment: deleteEnvironment,
 				saveWorkspaceFile: saveWorkspaceFile,
+				loadWorkspace:     loadWorkspace,
 				values: scopeValues{
 					findLocalVariables: findLocalVariables,
 					saveLocalVariables: saveLocalVariables,

@@ -6,6 +6,8 @@ const KIND_LABELS: Readonly<Record<string, string>> = {
   postman_environment: 'Postman environment',
   postman_globals: 'Postman globals',
   postman_dump: 'Postman data dump',
+  postman_request: 'Postman request',
+  postman_workspace: 'Postman workspace',
   bruno_bru: 'Bruno collection (.bru)',
   bruno_yaml: 'Bruno collection (YAML)',
   curl: 'cURL command',

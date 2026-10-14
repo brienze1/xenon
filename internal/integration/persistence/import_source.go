@@ -31,6 +31,10 @@ const (
 	zipExtension      = ".zip"
 	jsonExtension     = ".json"
 	importTempPattern = "xenon-import-"
+	resourcesDir      = ".resources"
+	v3RequestSuffix   = ".request.yaml"
+	v3ExampleSuffix   = ".example.yaml"
+	postmanFolder     = "postman"
 )
 
 var (
@@ -39,6 +43,7 @@ var (
 	utf8ByteOrderMark        = []byte{0xEF, 0xBB, 0xBF}
 	skippedImportDirs        = []string{"node_modules", ".git"}
 	importDocumentExtensions = []string{jsonExtension, ".bru", ".yml", ".yaml"}
+	postmanWorkspaceParts    = []string{"collections", "environments", "globals"}
 )
 
 type importSourcePersistence struct {
@@ -176,12 +181,53 @@ func readImportFile(path, name string, size int64) (*entity.ImportInput, error) 
 	}
 	probe := probeDocument(name, data, strings.EqualFold(filepath.Ext(name), jsonExtension))
 	if slices.Contains(yamlExtensions, strings.ToLower(filepath.Ext(name))) {
-		probe = probeXenon(probe, data)
+		probe = probeXenon(probeYaml(probe, data), data)
 	}
-	return &entity.ImportInput{Root: path, Probe: probe, Documents: []entity.ImportDocument{{Path: name, Data: data}}}, nil
+	documents := []entity.ImportDocument{{Path: name, Data: data}}
+	if strings.HasSuffix(strings.ToLower(name), v3RequestSuffix) {
+		examples, err := readRequestExamples(filepath.Dir(path), name)
+		if err != nil {
+			return nil, err
+		}
+		documents = append(documents, examples...)
+	}
+	return &entity.ImportInput{Root: path, Probe: probe, Documents: documents}, nil
+}
+
+func readRequestExamples(dir, name string) ([]entity.ImportDocument, error) {
+	stem := name[:len(name)-len(v3RequestSuffix)]
+	relative := filepath.Join(resourcesDir, stem+resourcesDir, "examples")
+	listing := readEntries(filepath.Join(dir, relative))
+	documents := make([]entity.ImportDocument, 0, len(listing))
+	for _, entry := range listing {
+		if !entry.Type().IsRegular() || !strings.HasSuffix(strings.ToLower(entry.Name()), v3ExampleSuffix) {
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return nil, errs.FileError(err, "IMP-22500")
+		}
+		path := filepath.ToSlash(filepath.Join(relative, entry.Name()))
+		data, err := readImportDocument(filepath.Join(dir, relative, entry.Name()), path, info.Size())
+		if err != nil {
+			return nil, err
+		}
+		documents = append(documents, entity.ImportDocument{Path: path, Data: data})
+	}
+	return documents, nil
+}
+
+func postmanWorkspaceRoot(root string) string {
+	for _, part := range postmanWorkspaceParts {
+		if info, err := os.Stat(filepath.Join(root, postmanFolder, part)); err == nil && info.IsDir() {
+			return filepath.Join(root, postmanFolder)
+		}
+	}
+	return root
 }
 
 func readImportFolder(root, name string) (*entity.ImportInput, error) {
+	root = postmanWorkspaceRoot(root)
 	entries := []string{}
 	documents := []entity.ImportDocument{}
 	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
@@ -244,6 +290,14 @@ func probeDocument(name string, data []byte, isJsonFile bool) entity.ImportProbe
 	return document.ToEntity(name)
 }
 
+func probeYaml(probe entity.ImportProbe, data []byte) entity.ImportProbe {
+	var document model.ImportProbe
+	if err := yaml.Unmarshal(data, &document); err != nil {
+		return probe
+	}
+	return document.ToYamlEntity(probe.Name)
+}
+
 func probeXenon(probe entity.ImportProbe, data []byte) entity.ImportProbe {
 	var header model.XenonHeader
 	if err := yaml.Unmarshal(data, &header); err != nil {
@@ -284,7 +338,7 @@ func isSkippedImportDir(name string) bool {
 }
 
 func isImportDocument(relative string) bool {
-	if slices.ContainsFunc(strings.Split(relative, "/"), func(segment string) bool { return strings.HasPrefix(segment, ".") }) {
+	if slices.ContainsFunc(strings.Split(relative, "/"), func(segment string) bool { return strings.HasPrefix(segment, ".") && segment != resourcesDir }) {
 		return false
 	}
 	return slices.Contains(importDocumentExtensions, strings.ToLower(filepath.Ext(relative)))

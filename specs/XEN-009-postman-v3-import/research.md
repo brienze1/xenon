@@ -204,7 +204,7 @@ skipped parts do. Warnings raised by the reused v2.1 conversion keep their item 
   - `line <n>: <message>` for a yaml.v3 syntax error, with the `yaml: line <n>: ` prefix stripped (syntax messages
     never quote values);
   - `byte <offset>: invalid JSON` for a `json.SyntaxError`;
-  - `field <json field path> has the wrong type` for a `json.UnmarshalTypeError`;
+  - `a value has the wrong type` for a JSON document whose value has the wrong type (JSON is re-encoded as YAML before decoding, so its line numbers would be meaningless);
   - `unknown $kind "<k>"`.
 
   This keeps secret values out of error text, logs and the MCP output (constitution II).

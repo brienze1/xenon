@@ -7,6 +7,8 @@ const (
 	PostmanEnvironment   enums.ImportKind = "postman_environment"
 	PostmanGlobals       enums.ImportKind = "postman_globals"
 	PostmanDump          enums.ImportKind = "postman_dump"
+	PostmanRequest       enums.ImportKind = "postman_request"
+	PostmanWorkspace     enums.ImportKind = "postman_workspace"
 	BrunoBru             enums.ImportKind = "bruno_bru"
 	BrunoYaml            enums.ImportKind = "bruno_yaml"
 	Curl                 enums.ImportKind = "curl"

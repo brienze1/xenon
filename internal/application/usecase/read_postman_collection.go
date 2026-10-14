@@ -7,5 +7,5 @@ import (
 )
 
 type ReadPostmanCollection interface {
-	ReadCollection(ctx context.Context, document entity.ImportDocument) (*entity.ImportNode, []entity.ImportWarning, error)
+	ReadCollection(ctx context.Context, document entity.ImportDocument) (*entity.ImportCollection, error)
 }

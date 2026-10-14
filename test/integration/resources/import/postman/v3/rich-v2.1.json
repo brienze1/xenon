@@ -121,8 +121,7 @@
                   "description": "User id"
                 }
               ]
-            },
-            "description": "Request docs"
+            }
           },
           "event": [
             {
@@ -157,7 +156,8 @@
               ],
               "body": "{\"id\":42}"
             }
-          ]
+          ],
+          "description": "Request docs"
         },
         {
           "id": "c0000000-0000-4000-8000-000000000002",

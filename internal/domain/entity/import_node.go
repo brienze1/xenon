@@ -203,6 +203,19 @@ func (i ImportNode) ChildNames() []string {
 	return names
 }
 
+func (i ImportNode) IDsByPath(parentPath string) map[string]string {
+	path := JoinImportPath(parentPath, i.Name())
+	ids := map[string]string{path: i.ID()}
+	for _, child := range i.Children {
+		for childPath, id := range child.IDsByPath(path) {
+			if _, taken := ids[childPath]; !taken {
+				ids[childPath] = id
+			}
+		}
+	}
+	return ids
+}
+
 func JoinImportPath(parent, name string) string {
 	if parent == "" {
 		return name

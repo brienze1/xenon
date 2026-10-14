@@ -13,6 +13,7 @@ variables:
   - key: page
     value: "1"
     secret: false
+    description: Default page
 scripts:
   - type: http:beforeRequest
     code: pm.environment.set("ts", Date.now());
