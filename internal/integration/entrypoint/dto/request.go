@@ -18,7 +18,7 @@ type Request struct {
 	Params         []KeyValue      `json:"params"`
 	PathVariables  []PathVariable  `json:"path_variables"`
 	Headers        []KeyValue      `json:"headers"`
-	Aliases        []RequestAlias  `json:"aliases"`
+	Aliases        []RequestAlias  `json:"aliases" schema:"-"`
 }
 
 func NewRequest(request entity.Request) Request {
