@@ -154,7 +154,7 @@ domain → application → integration → infra → frontend.
 
 **Independent Test**: export to Postman and Xenon YAML, import, duplicate, move, commit/pull, apply a documentation tab.
 
-- [ ] T043 [P] [US6] Write `test/integration/features/aliases/alias_boundaries.feature` (`@aliases`): Postman export has `Login` then `Login (test-user)`, `Login (mx-test-user)` with alias content, examples only on `Login`, no secret value; Xenon YAML export → import keeps aliases; Postman, Bruno and cURL imports produce requests whose files have no `aliases` key; duplicate and move carry aliases; Save As with alias content creates a request without aliases and leaves the original unchanged; commit + push + pull of an alias change reaches the other clone; the collection documentation is generated from Defaults and applying it leaves aliases unchanged; prove red (scenarios that pass without code — Xenon export, imports, duplicate, move, git, documentation, Save As — are lock-in scenarios: note in the feature that they guard existing behaviour and confirm they pass once T006 lands)
+- [ ] T043 [P] [US6] Write `test/integration/features/aliases/alias_boundaries.feature` (`@aliases`): Postman export has `Login` then `Login (test-user)`, `Login (mx-test-user)` with alias content, examples only on `Login`, no secret value; Xenon YAML export → import keeps aliases; Postman, Bruno and cURL imports produce requests whose files have no `aliases` key; duplicate and move carry aliases; Save As with alias content creates a request without aliases and leaves the original unchanged; the collection documentation is generated from Defaults and applying it leaves aliases unchanged; prove red (scenarios that pass without code — Xenon export, imports, duplicate, move, git, documentation, Save As — are lock-in scenarios: note in the feature that they guard existing behaviour and confirm they pass once T006 lands)
 - [ ] T044 [US6] Implement `ExportNode.WithAliasesAsRequests()` in `internal/domain/entity/export_node.go` (unit test in `internal/domain/entity/export_test.go`) and apply it to `node` as the first statement of `postmanExport.collection` in `internal/application/service/export_postman.go` (before `EffectiveExportRoot`, `FindPostmanDrops` and `FindLiteralCredentials`, so warnings cover alias auth); add a literal-credential-in-alias-auth case to T043 — T043 Postman scenarios green
 - [ ] T045 [US6] Save As from an alias in `frontend/src/features/request-builder/store.ts`: `saveAs` sends the shown draft (already the case) — add a Vitest case asserting the shown alias draft is what `SaveAs` receives and the new tab starts on Default
 
@@ -205,7 +205,8 @@ domain → application → integration → infra → frontend.
 | FR-016 | T024 | T024 |
 | FR-017 | T039, T040 | T041, T042 |
 | FR-018 | T043 | T044 |
-| FR-019–FR-022a | T043 | T006 (model), no other code (lock-in scenarios) |
+| FR-019, FR-020, FR-022, FR-022a | T043 | T006 (model), no other code (lock-in scenarios) |
+| FR-021 | existing `test/integration/features/git/*.feature` (request files are synced as whole files; aliases are bytes in them, no sync code changes) | — |
 | FR-023–FR-025 | T046 | T047–T050 |
 | FR-026 | — | T051 |
 | SC-001–SC-006 | covered by the scenarios above | T052, T053 |
