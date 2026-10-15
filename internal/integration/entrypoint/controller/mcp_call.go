@@ -57,7 +57,7 @@ func (m *mcpCall) Call(mcpCtx context.Context, call dto.MCPCall, tool adapter.MC
 	definition := tool.Tool()
 	spec := definition.ToEntity()
 	toolCall, result, err := m.run(ctx, call, spec, tool)
-	text, failure := m.respond(ctx, toolCall.LocalId, result, err)
+	text, failure := m.respond(ctx, definition, toolCall, result, err)
 	code := codeOf(failure)
 	outcome := entity.AIActivityOutcomeOf(code).String()
 	localId := m.recordedWorkspace(ctx, spec, toolCall.LocalId)
@@ -152,26 +152,26 @@ func (m *mcpCall) action(call dto.MCPCall, spec entity.AITool) (string, error) {
 	return action, nil
 }
 
-func (m *mcpCall) respond(ctx context.Context, localId string, result dto.MCPToolResult, err error) (string, errs.BaseError) {
+func (m *mcpCall) respond(ctx context.Context, definition dto.MCPTool, toolCall dto.MCPToolCall, result dto.MCPToolResult, err error) (string, errs.BaseError) {
 	if err == nil {
 		text, encodeErr := dto.EncodeMCPText(result.Payload)
 		if encodeErr == nil {
-			return m.guard(ctx, localId, text), nil
+			return m.guard(ctx, toolCall.LocalId, text), nil
 		}
 		err = m.errorHandler.Handle(ctx, mcpErrors.FailUnknownAICall(encodeErr), result)
 	}
 	failure := failureOf(err)
-	text, encodeErr := dto.EncodeMCPText(dto.NewMCPToolError(failure))
+	text, encodeErr := dto.EncodeMCPText(dto.NewMCPToolError(failure, definition, toolCall.Action))
 	if encodeErr != nil {
 		m.errorHandler.Handle(ctx, mcpErrors.FailUnknownAICall(encodeErr), result)
 		return mcpErrors.UnguardedAIOutputText, failure
 	}
-	return m.guard(ctx, localId, text), failure
+	return m.guard(ctx, toolCall.LocalId, text), failure
 }
 
 func (m *mcpCall) panicked(ctx context.Context, call any, recovered any) dto.MCPOutcome {
 	failure := failureOf(m.errorHandler.Handle(ctx, handlePanic(ctx, call, recovered), call))
-	text, err := dto.EncodeMCPText(dto.NewMCPToolError(failure))
+	text, err := dto.EncodeMCPText(dto.NewMCPToolError(failure, dto.MCPTool{}, ""))
 	if err != nil {
 		m.errorHandler.Handle(ctx, mcpErrors.FailUnknownAICall(err), call)
 		return dto.NewMCPOutcome(mcpErrors.UnguardedAIOutputText, true)
