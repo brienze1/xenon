@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
@@ -63,6 +63,16 @@ async function renderTable(rows: VariableRow[]) {
 }
 
 const user = userEvent
+
+/** Saves the table the way its tab does on Cmd/Ctrl+S. */
+async function saveFromTab() {
+  await act(() => useEnvironmentsStore.getState().saveDraft(SCOPE))
+}
+
+/** Discards the table's edits the way its tab does on "Don't Save". */
+function discardFromTab() {
+  act(() => useEnvironmentsStore.getState().discardDraft(SCOPE))
+}
 
 describe('VariableTable', () => {
   beforeEach(() => {
@@ -157,7 +167,7 @@ describe('VariableTable', () => {
     await user.type(screen.getByRole('textbox', { name: 'Description of base_url' }), '!')
     expect(screen.getByRole('button', { name: 'Reset base_url' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Persist All' })).toBeDisabled()
-    await user.click(screen.getByRole('button', { name: 'Discard Changes' }))
+    discardFromTab()
     expect(screen.getByRole('button', { name: 'Reset base_url' })).toBeEnabled()
     expect(screen.getByRole('textbox', { name: 'Description of base_url' })).toHaveValue('API root')
   })
@@ -167,33 +177,24 @@ describe('VariableTable', () => {
     expect(dirtyScopes()).toEqual([])
     await user.type(screen.getByRole('textbox', { name: 'Description of base_url' }), '!')
     expect(dirtyScopes()).toEqual([SCOPE])
-    await user.click(screen.getByRole('button', { name: 'Discard Changes' }))
+    discardFromTab()
     expect(dirtyScopes()).toEqual([])
     await user.type(screen.getByRole('textbox', { name: 'Description of base_url' }), '!')
     vi.mocked(variables.saveVariableTable).mockResolvedValue(tableOf([plain({ description: 'API root!' })]))
-    await user.click(screen.getByRole('button', { name: 'Save Variables' }))
+    await saveFromTab()
     expect(await screen.findByRole('textbox', { name: 'Description of base_url' })).toHaveValue('API root!')
     expect(dirtyScopes()).toEqual([])
   })
 
-  it('clears its unsaved-edits flag when it closes', async () => {
+  it('keeps unsaved edits through an unmount', async () => {
     vi.mocked(variables.getVariableTable).mockResolvedValue(tableOf([plain()]))
     const { unmount } = render(<VariableTable scope={SCOPE} label="dev variables" />)
     await user.type(await screen.findByRole('textbox', { name: 'Description of base_url' }), '!')
-    expect(dirtyScopes()).toEqual([SCOPE])
-    unmount()
-    expect(dirtyScopes()).toEqual([])
-  })
-
-  it('keeps unsaved edits through an unmount when they live as long as the workspace (environment tabs)', async () => {
-    vi.mocked(variables.getVariableTable).mockResolvedValue(tableOf([plain()]))
-    const { unmount } = render(<VariableTable scope={SCOPE} label="dev variables" draftLifetime="workspace" />)
-    await user.type(await screen.findByRole('textbox', { name: 'Description of base_url' }), '!')
     unmount()
     expect(dirtyScopes()).toEqual([SCOPE])
-    render(<VariableTable scope={SCOPE} label="dev variables" draftLifetime="workspace" />)
+    render(<VariableTable scope={SCOPE} label="dev variables" />)
     expect(await screen.findByRole('textbox', { name: 'Description of base_url' })).toHaveValue('API root!')
-    expect(screen.getByRole('button', { name: 'Discard Changes' })).toBeEnabled()
+    expect(dirtyScopes()).toEqual([SCOPE])
   })
 
   it('adds, renames and removes rows, then saves the whole table', async () => {
@@ -210,7 +211,7 @@ describe('VariableTable', () => {
     await user.type(screen.getByRole('textbox', { name: 'Initial value of user' }), 'ana')
     await user.click(screen.getByRole('checkbox', { name: 'Enable user' }))
     vi.mocked(variables.saveVariableTable).mockResolvedValue(tableOf([plain({ key: 'base_url', initialValue: 'A', currentValue: 'AB', hasCurrentOverride: true })]))
-    await user.click(screen.getByRole('button', { name: 'Save Variables' }))
+    await saveFromTab()
     expect(variables.saveVariableTable).toHaveBeenCalledWith(
       'A',
       SCOPE,
@@ -220,9 +221,9 @@ describe('VariableTable', () => {
       ],
       false,
     )
-    expect(await screen.findByRole('button', { name: 'Save Variables' })).toBeEnabled()
+    await screen.findByRole('textbox', { name: 'Name of base_url' })
     expect(screen.getAllByRole('row')).toHaveLength(3)
-    await user.click(screen.getByRole('button', { name: 'Save Variables' }))
+    await saveFromTab()
     expect(variables.saveVariableTable).toHaveBeenCalledTimes(1)
   })
 
@@ -230,17 +231,19 @@ describe('VariableTable', () => {
     await renderTable([plain()])
     await user.type(screen.getByRole('textbox', { name: 'Name of base_url' }), '{{')
     vi.mocked(variables.saveVariableTable).mockRejectedValue(new AppError('VAR-00400', 'the variable name is invalid'))
-    await user.click(screen.getByRole('button', { name: 'Save Variables' }))
+    await saveFromTab()
     expect(await screen.findByRole('alert')).toHaveTextContent('the variable name is invalid')
     expect(screen.getByText('Invalid name')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Save Variables' })).toBeEnabled()
+    expect(useEnvironmentsStore.getState().drafts[SCOPE]?.dirty).toBe(true)
   })
 
   it('moves focus to the first invalid name after a failed save', async () => {
-    await renderTable([plain({ key: 'ok' }), plain({ key: 'other' })])
+    await renderTable([plain({ key: 'ok' }), plain({ key: 'other', initialValue: 'x', currentValue: 'x' })])
     await user.type(screen.getByRole('textbox', { name: 'Name of other' }), '{{')
+    await user.click(screen.getByRole('button', { name: 'Secret other{' }))
+    await saveFromTab()
     vi.mocked(variables.saveVariableTable).mockRejectedValue(new AppError('VAR-00400', 'the variable name is invalid'))
-    await user.click(screen.getByRole('button', { name: 'Save Variables' }))
+    await user.click(screen.getByRole('button', { name: 'Make Secret' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('the variable name is invalid')
     expect(screen.getByRole('textbox', { name: 'Name of other{' })).toHaveFocus()
   })
@@ -290,7 +293,7 @@ describe('VariableTable', () => {
     expect(vault.revealSecret).not.toHaveBeenCalled()
     expect(screen.getByLabelText('Value of api_key')).toHaveValue('n3w')
     vi.mocked(variables.saveVariableTable).mockResolvedValue(tableOf([secret('api_key', 'set'), secret('token', 'locked')]))
-    await user.click(screen.getByRole('button', { name: 'Save Variables' }))
+    await saveFromTab()
     expect(variables.saveVariableTable).toHaveBeenCalledWith(
       'A',
       SCOPE,
@@ -305,12 +308,12 @@ describe('VariableTable', () => {
   it('warns about git history before making a row secret and after the save says so', async () => {
     await renderTable([plain({ key: 'password', initialValue: 'hunter2', currentValue: 'hunter2' })])
     await user.click(screen.getByRole('button', { name: 'Secret password' }))
-    await user.click(screen.getByRole('button', { name: 'Save Variables' }))
+    await saveFromTab()
     expect(variables.saveVariableTable).not.toHaveBeenCalled()
     expect(screen.getByRole('status')).toHaveTextContent('may still be in git history')
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(screen.queryByText(/may still be in git history/)).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Save Variables' }))
+    await saveFromTab()
     vi.mocked(variables.saveVariableTable).mockResolvedValue(tableOf([secret('password', 'set')], ['git_history']))
     await user.click(screen.getByRole('button', { name: 'Make Secret' }))
     expect(variables.saveVariableTable).toHaveBeenCalledWith('A', SCOPE, [expect.objectContaining({ key: 'password', secret: true })], false)
@@ -323,7 +326,7 @@ describe('VariableTable', () => {
     await renderTable([secret('token', 'set')])
     expect(screen.getByRole('button', { name: 'Secret token' })).toHaveAttribute('aria-pressed', 'true')
     await user.click(screen.getByRole('button', { name: 'Secret token' }))
-    await user.click(screen.getByRole('button', { name: 'Save Variables' }))
+    await saveFromTab()
     expect(screen.getByText(/will be written to the workspace files/)).toBeInTheDocument()
     vi.mocked(variables.saveVariableTable).mockResolvedValue(tableOf([plain({ key: 'token', initialValue: 'abc', currentValue: 'abc' })]))
     await user.click(screen.getByRole('button', { name: 'Write Values to Files' }))
@@ -335,7 +338,7 @@ describe('VariableTable', () => {
     await renderTable([plain()])
     await user.type(screen.getByRole('textbox', { name: 'Description of base_url' }), '!')
     vi.mocked(variables.saveVariableTable).mockRejectedValueOnce(new AppError('VAR-01409', 'confirm the reveal'))
-    await user.click(screen.getByRole('button', { name: 'Save Variables' }))
+    await saveFromTab()
     expect(await screen.findByText(/will be written to the workspace files/)).toBeInTheDocument()
     vi.mocked(variables.saveVariableTable).mockResolvedValue(tableOf([plain({ description: 'API root!' })]))
     await user.click(screen.getByRole('button', { name: 'Write Values to Files' }))

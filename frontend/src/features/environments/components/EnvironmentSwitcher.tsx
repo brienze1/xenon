@@ -4,10 +4,10 @@ import { withNextStep } from '@/shared/lib/next-step'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
 import { Dropdown } from '@/shared/ui/dropdown/Dropdown'
+import { IconButton } from '@/shared/ui/icon-button/IconButton'
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import styles from './EnvironmentSwitcher.module.css'
-import { QuickLook } from './QuickLook'
 
 export const NO_ENVIRONMENT_LABEL = 'No environment'
 
@@ -23,14 +23,27 @@ const BROKEN_NEXT_STEP = 'Fix or remove the file in the workspace folder.'
 
 const MENU_SEPARATOR = <hr className={styles.separator} />
 
+const EYE_GLYPH = (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.icon}>
+    <path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+)
+
+const OPEN_ENVIRONMENT_LABEL = 'Open environment'
+
+const OPEN_GLOBALS_LABEL = 'Open globals'
+
 interface EnvironmentSwitcherProps {
   /** Opens the globals in a main-area tab. */
   onOpenGlobals: () => void
+  /** Opens one environment in a main-area tab. */
+  onOpenEnvironment: (environmentId: string) => void
   /** Shows the environments in the sidebar, where they are created, renamed and opened. */
   onManage: () => void
 }
 
-export function EnvironmentSwitcher({ onOpenGlobals, onManage }: EnvironmentSwitcherProps) {
+export function EnvironmentSwitcher({ onOpenGlobals, onOpenEnvironment, onManage }: EnvironmentSwitcherProps) {
   const { environments, activeId, switcherOpen, setActive, setSwitcherOpen } = useEnvironmentsStore(
     useShallow((state) => ({
       environments: state.environments,
@@ -91,7 +104,12 @@ export function EnvironmentSwitcher({ onOpenGlobals, onManage }: EnvironmentSwit
           <Dropdown.Item onSelect={onManage}>Manage Environments…</Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown.Root>
-      <QuickLook />
+      <IconButton
+        label={active ? OPEN_ENVIRONMENT_LABEL : OPEN_GLOBALS_LABEL}
+        onClick={() => (active ? onOpenEnvironment(active.id) : onOpenGlobals())}
+      >
+        {EYE_GLYPH}
+      </IconButton>
       {error ? (
         <Banner.Root tone="error" className={styles.error}>
           <Banner.Message>

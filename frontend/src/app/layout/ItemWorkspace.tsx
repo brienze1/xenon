@@ -16,7 +16,7 @@ function scriptsEditor(slot: ItemScriptsSlot) {
 }
 
 function collectionVariables(collectionId: string) {
-  return <VariableTable scope={collectionScope(collectionId)} label="Collection variables" draftLifetime="workspace" savedByTab />
+  return <VariableTable scope={collectionScope(collectionId)} label="Collection variables" />
 }
 
 function documentation(itemId: string, kind: ContainerKind) {

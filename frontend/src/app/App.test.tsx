@@ -444,9 +444,9 @@ describe('App', () => {
     it('opens the active environment in a pinned, focused tab and never twice', async () => {
       await renderWithActiveEnvironment()
       await userEvent.click(screen.getByRole('button', { name: 'Open environment' }))
-      const region = await screen.findByRole('region', { name: 'dev environment' })
+      await screen.findByRole('region', { name: 'dev environment' })
       expect(environmentTabs()).toHaveLength(1)
-      const [tab] = environmentTabs()
+      const tab = environmentTabs()[0]!
       expect(tab.pinned).toBe(true)
       expect(useTabsStore.getState().activeTabId).toBe(tab.id)
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -458,7 +458,7 @@ describe('App', () => {
       expect(useTabsStore.getState().activeTabId).toBe(tab.id)
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
-      await userEvent.type(within(region).getByRole('textbox', { name: 'Add variable' }), 'x')
+      await userEvent.type(within(screen.getByRole('region', { name: 'dev environment' })).getByRole('textbox', { name: 'Add variable' }), 'x')
       focusGlobals()
       await userEvent.click(screen.getByRole('button', { name: 'Open environment' }))
       expect(useTabsStore.getState().activeTabId).toBe(tab.id)
@@ -472,7 +472,7 @@ describe('App', () => {
       focusGlobals()
       await userEvent.click(screen.getByRole('button', { name: 'Open environment' }))
       expect(environmentTabs()).toHaveLength(1)
-      const [tab] = environmentTabs()
+      const tab = environmentTabs()[0]!
       expect(tab.pinned).toBe(true)
       expect(useTabsStore.getState().previewTabId).not.toBe(tab.id)
       expect(useTabsStore.getState().activeTabId).toBe(tab.id)
@@ -483,7 +483,7 @@ describe('App', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Open globals' }))
       expect(await screen.findByRole('region', { name: 'Globals' })).toBeInTheDocument()
       expect(globalsTabs()).toHaveLength(1)
-      const [tab] = globalsTabs()
+      const tab = globalsTabs()[0]!
       expect(tab.pinned).toBe(true)
       expect(useTabsStore.getState().activeTabId).toBe(tab.id)
       const count = useTabsStore.getState().tabs.length
