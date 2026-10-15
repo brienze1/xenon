@@ -29,11 +29,11 @@ For a loose folder:
 - When no file is importable:
 
   ```json
-  { "error": { "code": "IMP-00415",
+  { "error": { "code": "IMP-55415",
     "description": "<folder> has no file Xenon can import; pass a Postman v3 workspace or collection folder, a Postman data dump (archive.json), a Bruno collection (bruno.json or opencollection.yml), a Xenon workspace folder, or a folder of standalone export files" } }
   ```
 
-  Over MCP this is `{"code":"IMP-00415","message":"<same text>"}`.
+  Over MCP this is `{"code":"IMP-55415","message":"<same text>"}`.
 
 ## Top-level `kind` / `version`
 

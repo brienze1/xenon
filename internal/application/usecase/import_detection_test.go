@@ -96,7 +96,7 @@ func TestRejectUnimportableFolderListsTheAcceptedLayouts(t *testing.T) {
 	err := RejectUnimportableFolder("x")
 	custom, isCustom := err.(errs.BaseError)
 	want := "x has no file Xenon can import; pass a Postman v3 workspace or collection folder, a Postman data dump (archive.json), a Bruno collection (bruno.json or opencollection.yml), a Xenon workspace folder, or a folder of standalone export files"
-	if !isCustom || custom.Code() != "IMP-00415" || custom.StatusCode() != http.StatusUnsupportedMediaType || custom.Description() != want {
+	if !isCustom || custom.Code() != "IMP-55415" || custom.StatusCode() != http.StatusUnsupportedMediaType || custom.Description() != want {
 		t.Errorf("got %v", err)
 	}
 }

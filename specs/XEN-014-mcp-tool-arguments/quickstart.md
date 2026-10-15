@@ -15,7 +15,7 @@
 - `collections-only/`:
   - `a.json` and `b.json`, two v2.1 collections with distinct names (copies of
     `postman/full-v2.1.json` with `info.name` changed).
-- `with-extras/`: everything in `mixed/` plus `notes.txt`, `.DS_Store` and `sub/readme.md`.
+- `with-extras/`: everything in `mixed/` plus `notes.txt`, a hidden `.hidden-copy.json` collection (`.DS_Store` is git-ignored) and `sub/readme.md`.
 - `nothing/`: `notes.txt` and `sub/readme.md`.
 
 ## Run
@@ -47,8 +47,8 @@ make validate                  # final gate
 4. **Loose folder**:
    - `ImportService.Detect {paths: [<loose>/mixed]}` returns 3 items, no warnings and kind `mixed`.
    - `with-extras` gives 3 items and one `skipped_part` warning naming `notes.txt` and `sub`
-     (not `.DS_Store`).
-   - `nothing` fails with `IMP-00415` and the layout message.
+     (not the hidden `.hidden-copy.json`).
+   - `nothing` fails with `IMP-55415` and the layout message.
    - `collections-only` reports kind `postman_collection` / `2.1`.
 
    See [contracts/import-detect.md](contracts/import-detect.md).

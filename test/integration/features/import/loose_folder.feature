@@ -74,7 +74,7 @@ Feature: Import a folder of standalone export files
       """
       { "paths": ["{{resources}}/import/loose/nothing"] }
       """
-    Then the call should fail with code "IMP-00415"
+    Then the call should fail with code "IMP-55415"
     And the error should contain the field "error.description" equal to "nothing has no file Xenon can import; pass a Postman v3 workspace or collection folder, a Postman data dump (archive.json), a Bruno collection (bruno.json or opencollection.yml), a Xenon workspace folder, or a folder of standalone export files"
     And the workspace folder "acme/collections" should contain the entries ""
 

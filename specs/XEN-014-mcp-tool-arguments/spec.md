@@ -162,7 +162,7 @@ globals file, then a folder holding only unrelated files, and read the preview o
    the 3 export files are listed, and one source warning names what was skipped (`notes.txt`, the
    subfolder).
 3. **Given** a folder whose top level holds only files that are not importable on their own,
-   **When** it is detected, **Then** detection fails with code `IMP-00415` and a message that names
+   **When** it is detected, **Then** detection fails with code `IMP-55415` and a message that names
    the folder and lists the accepted layouts: a git-native Postman v3 workspace or collection
    folder, a Postman data dump (`archive.json`), a Bruno collection (`bruno.json` or
    `opencollection.yml`), a Xenon workspace folder, or a folder of standalone export files.
@@ -193,7 +193,7 @@ globals file, then a folder holding only unrelated files, and read the preview o
 - A loose folder file that is read but is not importable on its own (malformed JSON, a Postman v1
   collection, an unrelated JSON or YAML file, a zip whose extraction is refused) is skipped. The
   warning names it with its reason, and the rest still import. If every file is skipped, detection
-  fails with the `IMP-00415` layout error.
+  fails with the `IMP-55415` layout error.
 - The per-file safety limits are unchanged for every folder: a document file over the single-file
   limit (200 MB) or not UTF-8. The folder is read before its layout is known, so such a file still
   fails the whole detect with its existing error, exactly as it does for a recognised layout today.
@@ -265,7 +265,7 @@ globals file, then a folder holding only unrelated files, and read the preview o
   and the preview MUST carry one source warning that names each skipped entry (with the reason, for
   files that failed to read).
 - **FR-015**: When no top-level file of such a folder is importable, detection MUST fail with code
-  `IMP-00415` and a message that names the folder and lists every accepted folder layout.
+  `IMP-55415` and a message that names the folder and lists every accepted folder layout.
 - **FR-016**: Folders with a recognised layout MUST be detected and read exactly as before.
 - **FR-017**: A detected batch whose inputs all share one kind and version MUST report that kind and
   version. Any other batch MUST report the kind `mixed` with an empty version.

@@ -169,12 +169,12 @@ type ReadImportFolderFiles interface {
   entry with the error description. The size and encoding limits of documents were already
   enforced by the initial folder walk, so in practice this concerns `.zip` files and non-document
   files.
-- The error is only for failures to list the folder itself: `IMP-08404` when it is gone, a
+- The error is only for failures to list the folder itself: `IMP-54404` when it is gone, a
   file error otherwise.
 
 ### `usecase.RejectUnimportableFolder(name string) error` (new, `detect_import_format.go`)
 
-`ClientError` `IMP-00415`, HTTP 415, with the R9 message.
+`ClientError` `IMP-55415`, HTTP 415, with the R9 message.
 
 ### State flow of a detect call
 
@@ -183,7 +183,7 @@ paths ─► Read (persistence) ─► inputs
 inputs ─► DetectImportFormat each ─► Folder? ──yes──► ReadFolderFiles ─► DetectImportFormat each file
                                      │                                   ├─ ok → expanded inputs (in place)
                                      │                                   └─ fail → skipped entry
-                                     │                   none ok ─► RejectUnimportableFolder (IMP-00415)
+                                     │                   none ok ─► RejectUnimportableFolder (IMP-55415)
                                      └─no──► input
 expanded inputs ─► readers.read ─► items (+ skipped_part warning) ─► NewImportSource (shared kind | mixed)
 ```

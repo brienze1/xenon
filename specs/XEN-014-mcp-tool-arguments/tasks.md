@@ -34,7 +34,7 @@ cover the pure pieces.
   - `mixed/globals.json` (copy of `postman/globals.json`);
   - `collections-only/a.json` and `collections-only/b.json` (copies of `mixed/collection.json`
     with `info.name` "Loose A" and "Loose B" and distinct `_postman_id`s);
-  - `with-extras/` = the three `mixed/` files plus `notes.txt`, `.DS_Store` and `sub/readme.md`;
+  - `with-extras/` = the three `mixed/` files plus `notes.txt`, a hidden `.hidden-copy.json` collection and `sub/readme.md`;
   - `nothing/notes.txt` and `nothing/sub/readme.md`.
 
   Add a line for `loose/` to `test/integration/resources/import/README.md`.
@@ -318,8 +318,8 @@ or `mixed`.
     - `warnings.0.code` = `skipped_part`;
     - `warnings.0.message` containing `notes.txt (not a Xenon, Postman, Bruno or cURL export)`;
     - `warnings.0.message` containing `sub (folder)`;
-    - the response not containing `.DS_Store`.
-  - **@nothing.** `nothing` → `the call should fail with code "IMP-00415"` and
+    - the response not containing `hidden-copy` or `Hidden Copy`.
+  - **@nothing.** `nothing` → `the call should fail with code "IMP-55415"` and
     `error.description` = `nothing has no file Xenon can import; pass a Postman v3 workspace or collection folder, a Postman data dump (archive.json), a Bruno collection (bruno.json or opencollection.yml), a Xenon workspace folder, or a folder of standalone export files`.
   - **@kind.** `collections-only` → `kind` = `postman_collection`, `version` = `2.1`.
   - **@kind @mixed_paths.** `{ "paths": ["{{resources}}/import/postman/globals.json", "{{resources}}/import/postman/full-v2.1.json"] }`
@@ -330,10 +330,10 @@ or `mixed`.
   Prove them red.
 - [x] T023 [P] [US3] Update `test/integration/features/import/postman_v3_workspace.feature`
   @nothing: the expected `error.description` becomes `specs-only has no file Xenon can import; pass a Postman v3 workspace or collection folder, a Postman data dump (archive.json), a Bruno collection (bruno.json or opencollection.yml), a Xenon workspace folder, or a folder of standalone export files`,
-  with code `IMP-00415` unchanged. Prove it red.
+  with code `IMP-55415`. Prove it red.
 - [x] T024 [P] [US3] Update `internal/application/usecase/import_detection_test.go`:
   - the folder cases `specs only` and `empty dir` expect `(importkind.Folder, "", nil)`;
-  - add a case for `RejectUnimportableFolder("x")` (code `IMP-00415`, the layout message).
+  - add a case for `RejectUnimportableFolder("x")` (code `IMP-55415`, the layout message).
 
   Prove the tests red.
 - [x] T025 [P] [US3] Write `internal/domain/entity/import_source_test.go` cases for
@@ -367,7 +367,7 @@ or `mixed`.
   Make T025 green.
 - [x] T029 [US3] In `internal/application/usecase/detect_import_format.go`:
   - `detectFolder` default → `return importkind.Folder, "", nil`;
-  - add `RejectUnimportableFolder(name string) error` (`errs.ClientError`, `IMP-00415`,
+  - add `RejectUnimportableFolder(name string) error` (`errs.ClientError`, `IMP-55415`,
     `http.StatusUnsupportedMediaType`, the message from contracts/import-detect.md).
 
   Make T024 green.
@@ -382,7 +382,7 @@ or `mixed`.
   - directories → `ImportSkippedEntry{Name, "folder"}`;
   - regular files → `i.readPath(filepath.Join(root, name))`, collecting temp dirs;
   - a read error → `ImportSkippedEntry{Name, <BaseError description>}`;
-  - a failure to list the folder → `errs.NotFoundError(name+" cannot be found", "IMP-08404")`.
+  - a failure to list the folder → `errs.NotFoundError(name+" cannot be found", "IMP-54404") when it is gone, `errs.FileError(err, "IMP-56500")` otherwise`.
 
   Log Started/Finished per persistence.md.
 - [x] T032 [US3] In `internal/application/service/import_readers.go`:

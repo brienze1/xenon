@@ -47,7 +47,7 @@ Three fixes to the MCP surface and to import detection.
      (implemented by `importSourcePersistence`), reads the folder's top-level files one by one.
      Each file is detected as if passed alone. Failures and subfolders become one `skipped_part`
      source warning.
-   - A folder with no importable file fails with a new `IMP-00415` layout message.
+   - A folder with no importable file fails with a new `IMP-55415` layout message.
    - `entity.NewImportSource` reports the shared kind and version, or the new `importkind.Mixed`
      (`mixed`) with an empty version.
    - The window labels `mixed` "Multiple sources".
@@ -169,7 +169,7 @@ internal/domain/
 
 internal/application/
 ├── usecase/detect_import_format.go               ← detectFolder default → importkind.Folder, nil;
-│                                                   RejectUnimportableFolder(name) (IMP-00415)
+│                                                   RejectUnimportableFolder(name) (IMP-55415)
 ├── usecase/read_import_folder_files.go           ← new port: ReadFolderFiles(ctx, input) ([]ImportInput, []string, []ImportSkippedEntry, error)
 └── service/import_readers.go                     ← detected(): expand Folder inputs in place
     service/manage_import.go                      ← wire readImportFolderFiles into importReaders

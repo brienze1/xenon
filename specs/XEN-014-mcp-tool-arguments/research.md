@@ -217,7 +217,7 @@ Clarifications). Nothing is open.
      - a file that is itself `Folder` cannot occur, because only regular files are read.
 
      If no input survives, it returns `usecase.RejectUnimportableFolder(name)`: `ClientError`
-     `IMP-00415`, HTTP 415, message
+     `IMP-55415`, HTTP 415, message
      `<name> has no file Xenon can import; pass a Postman v3 workspace or collection folder, a Postman data dump (archive.json), a Bruno collection (bruno.json or opencollection.yml), a Xenon workspace folder, or a folder of standalone export files`.
      Temp dirs from the expansion join the source's temp dirs, so `Discard` removes them.
   4. When there are skipped entries, one source warning is added with code `skipped_part`
@@ -244,7 +244,7 @@ Clarifications). Nothing is open.
 ## R11 — Existing scenarios whose expectation changes
 
 - `import/postman_v3_workspace.feature` @nothing: the `specs-only` folder has only a subfolder,
-  so its description becomes the R9 layout message. The code stays `IMP-00415`.
+  so its description becomes the R9 layout message. Its code becomes `IMP-55415`, unique to this error (error-handler skill rule 6).
 - `application/usecase/import_detection_test.go`: the folder cases `specs only` and `empty dir`
   expect `(importkind.Folder, nil)`. `req folder` and `env folder` are Xenon probes and are
   unchanged.

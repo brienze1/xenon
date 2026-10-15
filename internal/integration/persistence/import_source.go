@@ -85,8 +85,11 @@ func (i *importSourcePersistence) ReadFolderFiles(ctx context.Context, folder en
 	logger.Debug(ctx, "Started", folder)
 
 	listing, err := os.ReadDir(folder.Path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil, nil, errs.NotFoundError(folder.Name()+" cannot be found", "IMP-54404")
+	}
 	if err != nil {
-		return nil, nil, nil, errs.NotFoundError(folder.Name()+" cannot be found", "IMP-08404")
+		return nil, nil, nil, errs.FileError(err, "IMP-56500")
 	}
 	inputs := make([]entity.ImportInput, 0, len(listing))
 	tempDirs := make([]string, 0)
