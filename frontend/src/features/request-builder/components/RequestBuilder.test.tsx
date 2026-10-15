@@ -1,4 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
@@ -205,6 +205,26 @@ describe('RequestBuilder', () => {
     saved.unmount()
     render(<RequestBuilder tabId={tabId} mode="example" />)
     expect(screen.queryByRole('button', { name: /^Aliases:/ })).not.toBeInTheDocument()
+  })
+
+  it('switching to an alias with another body does not mark it as edited', async () => {
+    const body = { ...emptyDraft().body, mode: 'raw' as const, raw: { language: 'json' as const, content: '{"user":"luis"}' } }
+    const saved = { ...emptyDraft(), id: 'r1', name: 'Login', method: 'POST', body }
+    vi.mocked(requests.getRequest).mockResolvedValue({
+      draft: saved,
+      revision: 'rev-1',
+      aliases: [{ id: 'a1', name: 'mx', draft: { ...saved, name: 'mx', body: { ...body, raw: { language: 'json', content: '{"user":"mx"}' } } } }],
+    })
+    await act(() => useRequestBuilderStore.getState().openSaved(tabId, 'r1'))
+    act(() => useRequestBuilderStore.getState().setSubTab(tabId, 'body'))
+    render(<RequestBuilder tabId={tabId} />)
+    await screen.findByLabelText('Raw body')
+    act(() => useRequestBuilderStore.getState().selectVersion(tabId, 'a1'))
+    await waitFor(() => expect(screen.getByLabelText('Raw body')).toHaveTextContent('{"user":"mx"}'))
+    expect(useRequestBuilderStore.getState().tabs[tabId]!.dirty).toBe(false)
+    act(() => useRequestBuilderStore.getState().selectVersion(tabId, null))
+    await waitFor(() => expect(screen.getByLabelText('Raw body')).toHaveTextContent('{"user":"luis"}'))
+    expect(useRequestBuilderStore.getState().tabs[tabId]!.dirty).toBe(false)
   })
 
   it('sends with Enter in the URL field', async () => {

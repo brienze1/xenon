@@ -1,7 +1,7 @@
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { foldGutter, foldKeymap } from '@codemirror/language'
 import { highlightSelectionMatches, openSearchPanel, searchKeymap } from '@codemirror/search'
-import { Compartment, EditorState } from '@codemirror/state'
+import { Annotation, Compartment, EditorState } from '@codemirror/state'
 import { EditorView, drawSelection, keymap, lineNumbers } from '@codemirror/view'
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from 'react'
 import { cn } from '@/shared/lib/cn'
@@ -21,6 +21,9 @@ import {
   type EditorDiagnostic,
 } from './editor-extensions'
 import { loadLanguage, type CodeLanguage } from './languages'
+
+/** Marks value updates coming from props, so they are not echoed back through onChange. */
+const fromProps = Annotation.define<boolean>()
 
 /** Imperative access for toolbars next to the editor (e.g. a snippets menu). */
 export interface CodeEditorHandle {
@@ -108,7 +111,7 @@ export function CodeEditor({
           EditorView.editable.of(!readOnly),
           EditorView.contentAttributes.of({ 'aria-label': label }),
           EditorView.updateListener.of((update) => {
-            if (update.docChanged) {
+            if (update.docChanged && !update.transactions.some((transaction) => transaction.annotation(fromProps))) {
               onChangeRef.current?.(update.state.doc.toString())
             }
           }),
@@ -128,7 +131,7 @@ export function CodeEditor({
   useEffect(() => {
     const view = viewRef.current
     if (view && view.state.doc.toString() !== value) {
-      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: value } })
+      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: value }, annotations: fromProps.of(true) })
     }
   }, [value])
 
