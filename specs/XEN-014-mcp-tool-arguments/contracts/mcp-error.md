@@ -57,7 +57,7 @@ Only the wording changes. A nested field's `attribute` is its JSON path (`variab
 | `email` | `must be an email address` |
 | `absolute_path` | `must be an absolute path` |
 | `has_id` | `must have an id` |
-| `variable_scope` | `must be a variable scope (globals, collection:<id> or environment:<id>)` |
+| `variable_scope` | `must be a variable scope (globals, env:<id> or collection:<id>)` |
 | `import_input` | `needs at least one path or some pasted text` |
 | `safe_subfolder` | `must be a folder inside the workspace` |
 | anything else | `is not valid` |

@@ -26,7 +26,7 @@ cover the pure pieces.
 
 **Purpose**: Fixtures shared by the BDD scenarios.
 
-- [ ] T001 [P] Create the loose-folder fixtures:
+- [x] T001 [P] Create the loose-folder fixtures:
   - `test/integration/resources/import/loose/mixed/collection.json`: a minimal Postman v2.1
     collection, `info.name` "Loose Mixed", one `GET https://api.test/ping` request, no auth,
     scripts or variables, so it detects with zero warnings;
@@ -46,7 +46,7 @@ cover the pure pieces.
 **Purpose**: The standalone schema reflector. US1 builds on it; US2 reuses the argument metadata
 it reads.
 
-- [ ] T002 [P] Write the unit tests in `pkg/jsonschema/properties_test.go`. Cover:
+- [x] T002 [P] Write the unit tests in `pkg/jsonschema/properties_test.go`. Cover:
   - string / bool / int / float / pointer / slice / slice-of-struct / nested struct / map;
   - `json:"-"`, `schema:"-"`, `schema:"integer|string"` on a `json.RawMessage`;
   - `json.RawMessage` without a `schema` tag → error;
@@ -57,7 +57,7 @@ it reads.
     `RequiredFor`/`UsedBy`/`ValidatedAs`/`SchemaFor`.
 
   Prove the tests red.
-- [ ] T003 Implement `pkg/jsonschema/property.go` (type `Property` per data-model.md, with
+- [x] T003 Implement `pkg/jsonschema/property.go` (type `Property` per data-model.md, with
   `Map() map[string]any`) and `pkg/jsonschema/properties.go`
   (`Properties(t reflect.Type) (map[string]Property, error)`). Use only the stdlib, with no
   `internal/` or other `pkg/` import (pkg-generic). Make T002 green.
@@ -77,7 +77,7 @@ collection.
 
 ### Tests for User Story 1 (write first, prove red)
 
-- [ ] T004 [US1] Write `test/integration/features/mcp/tool_arguments.feature` with tags
+- [x] T004 [US1] Write `test/integration/features/mcp/tool_arguments.feature` with tags
   `@all @xen_014 @mcp @mcp_tool_arguments`, Background `Given the workspace "Acme" exists`, and
   the following `@xen_014_schema` scenarios:
   - **@schema workspace_edit.** `When I list the MCP tools`, then the existing step
@@ -111,7 +111,7 @@ collection.
 
   Run `make bdd TAG=@xen_014_schema` and record that the schema scenarios fail. `@import_array`
   already passes and is the FR-007 regression guard.
-- [ ] T005 [P] [US1] Write `internal/integration/entrypoint/dto/mcp_tool_test.go` with the
+- [x] T005 [P] [US1] Write `internal/integration/entrypoint/dto/mcp_tool_test.go` with the
   `InputSchema()` unit tests for:
   - union of two registrations sharing a field (type agrees; Used by and Required for are
     unions);
@@ -127,7 +127,7 @@ collection.
     → unchanged).
 
   Prove the tests red.
-- [ ] T006 [P] [US1] Write `internal/integration/entrypoint/controller/mcp_tool_arguments_test.go`
+- [x] T006 [P] [US1] Write `internal/integration/entrypoint/controller/mcp_tool_arguments_test.go`
   (research.md R6):
   1. **AST drift test.** Parse `controller/mcp_*.go` (non-test), group methods by receiver type,
      and collect decoded DTO types (`var arguments dto.X` followed by `call.Decode(&arguments)`)
@@ -142,10 +142,10 @@ collection.
 
 ### Implementation for User Story 1
 
-- [ ] T007 [US1] Create `internal/integration/entrypoint/dto/mcp_tool_arguments.go`:
+- [x] T007 [US1] Create `internal/integration/entrypoint/dto/mcp_tool_arguments.go`:
   - `type MCPToolArguments struct { Actions []string; Shape reflect.Type }`;
   - `func NewMCPToolArguments[T any](actions ...string) MCPToolArguments`.
-- [ ] T008 [US1] Change `internal/integration/entrypoint/dto/mcp_tool.go`:
+- [x] T008 [US1] Change `internal/integration/entrypoint/dto/mcp_tool.go`:
   - add ``Arguments []MCPToolArguments `json:"-"` ``;
   - change the constructor to `NewMCPTool(tool entity.AITool, arguments ...MCPToolArguments)`;
   - rewrite `InputSchema()` to merge `jsonschema.Properties` of every registration per
@@ -154,14 +154,14 @@ collection.
     applies `@action` qualifiers).
 
   Make T005 green.
-- [ ] T009 [P] [US1] Tag the argument DTOs exactly as listed in data-model.md Appendix A (rows
+- [x] T009 [P] [US1] Tag the argument DTOs exactly as listed in data-model.md Appendix A (rows
   console … export) in `internal/integration/entrypoint/dto/`: `mcp_console_list.go`,
   `mcp_console_get.go`, `mcp_cookies_list.go`, `mcp_cookie_upsert.go`,
   `mcp_cookie_allowlist.go`, `mcp_delete.go`, `mcp_docs_input.go`, `mcp_env_scope.go`,
   `mcp_env_inspect.go`, `mcp_env_edit.go`, `mcp_env_activation.go`, `mcp_env_variable.go`,
   `mcp_env_variables.go`, `mcp_variable_row.go`, `mcp_export.go`, `mcp_export_target.go`,
   `mcp_save_response_body.go`.
-- [ ] T010 [P] [US1] Tag the remaining argument DTOs exactly as listed in data-model.md
+- [x] T010 [P] [US1] Tag the remaining argument DTOs exactly as listed in data-model.md
   Appendix A (rows git_edit … workspace_edit): `mcp_git_link.go`, `mcp_git_settings.go`,
   `mcp_git_commit.go`, `mcp_git_resolve.go`, `mcp_git_resolution.go`, `mcp_history_list.go`,
   `mcp_history_get.go`, `mcp_import.go`, `mcp_response_body.go`, `mcp_script_check.go`,
@@ -173,7 +173,7 @@ collection.
   Nested shared request DTOs (`Request`, `Body`, `Auth`, `Scripts`, `KeyValue`,
   `ExampleResponseEdit`) need no tags. Their fields are reflected by type, and a nested
   `description` is optional (research.md R5).
-- [ ] T011 [US1] Register the decoded DTOs in each controller's `Tool()` in
+- [x] T011 [US1] Register the decoded DTOs in each controller's `Tool()` in
   `internal/integration/entrypoint/controller/`. Pass
   `dto.NewMCPTool(<tool>AITool, dto.NewMCPToolArguments[dto.X](actions…)…)` with the
   registrations from data-model.md Appendix A, column "Registration", in:
@@ -185,7 +185,7 @@ collection.
   `mcp_workspace.go` (none), `mcp_workspace_edit.go`.
 
   Make T006 green.
-- [ ] T012 [US1] Run `make bdd TAG=@xen_014_schema` until green, then `make bdd TAG=@mcp`. The
+- [x] T012 [US1] Run `make bdd TAG=@xen_014_schema` until green, then `make bdd TAG=@mcp`. The
   existing `environment_reorder.feature` @listing (`inputSchema.properties.action.enum.3`) and
   `stdio_bridge.feature` must stay green.
 
@@ -205,7 +205,7 @@ a relative path, with nothing, and `switch` without `id` all return readable fie
 
 ### Tests for User Story 2 (write first, prove red)
 
-- [ ] T013 [US2] Add `@xen_014_errors @validation` scenarios to
+- [x] T013 [US2] Add `@xen_014_errors @validation` scenarios to
   `test/integration/features/mcp/tool_arguments.feature`:
   - **missing path.** `I call the MCP tool "workspace_edit" with { "action": "create", "name": "Payments" }`:
     - `the call should fail with code "WKS-00400"`;
@@ -224,7 +224,7 @@ a relative path, with nothing, and `switch` without `id` all return readable fie
     gives `IMP-13400` and `error.details.0.field` = `on_clash`.
 
   Prove them red.
-- [ ] T014 [P] [US2] Extend `test/integration/features/workspaces/create_workspace.feature` with
+- [x] T014 [P] [US2] Extend `test/integration/features/workspaces/create_workspace.feature` with
   `@xen_014 @xen_014_errors` steps on the existing @validation scenarios:
   - **relative folder path** adds:
     - `the error should contain the field "error.error_details.0.messages.0" equal to "must be an absolute path"`;
@@ -232,7 +232,7 @@ a relative path, with nothing, and `switch` without `id` all return readable fie
   - **blank name** adds `"error.error_details.0.messages.0"` = `must not be blank`.
 
   Prove them red.
-- [ ] T015 [P] [US2] Rewrite `internal/integration/entrypoint/validator/custom_test.go`'s wording
+- [x] T015 [P] [US2] Rewrite `internal/integration/entrypoint/validator/custom_test.go`'s wording
   assertions to the new contract. Add one table case per rule in contracts/mcp-error.md
   "Problem wording":
   - `required`, `required_if`, `required_unless`, `not_blank`, `oneof`;
@@ -246,7 +246,7 @@ a relative path, with nothing, and `switch` without `id` all return readable fie
   - the description join (`invalid request: name must not be blank; path must be an absolute path`).
 
   Prove the tests red.
-- [ ] T016 [P] [US2] Write `internal/integration/entrypoint/dto/mcp_tool_error_test.go`:
+- [x] T016 [P] [US2] Write `internal/integration/entrypoint/dto/mcp_tool_error_test.go`:
   - a validation `BadRequestError` with details `local_id`/`[is required]` through a tool whose
     `id` has `validated_as:"local_id"` → `{field: id, problem: is required}` and message
     `invalid request: id is required`;
@@ -258,18 +258,18 @@ a relative path, with nothing, and `switch` without `id` all return readable fie
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] Create `internal/integration/entrypoint/validator/problem.go` with
+- [x] T017 [US2] Create `internal/integration/entrypoint/validator/problem.go` with
   `problemOf(fieldError validator.FieldError) string`, implementing the wording table in
   contracts/mcp-error.md. Pick the string/slice variant by `fieldError.Kind()`, join the `oneof`
   params with `, `, and fall back to `is not valid`.
-- [ ] T018 [US2] Change `internal/integration/entrypoint/validator/custom.go` `Struct`:
+- [x] T018 [US2] Change `internal/integration/entrypoint/validator/custom.go` `Struct`:
   - `Attribute` = `fieldError.Namespace()` without its first segment (JSON names are already
     registered through `jsonName`);
   - `Messages` = `[problemOf(fieldError)]`;
   - description = `invalid request: ` + `<attribute> <problem>` joined by `; `.
 
   Make T015 green.
-- [ ] T019 [US2] Create `internal/integration/entrypoint/dto/mcp_tool_error_detail.go`
+- [x] T019 [US2] Create `internal/integration/entrypoint/dto/mcp_tool_error_detail.go`
   (`MCPToolErrorDetail{Field string json:"field"; Problem string json:"problem"}`). Change
   `internal/integration/entrypoint/dto/mcp_tool_error.go`:
   - add ``Details []MCPToolErrorDetail `json:"details,omitempty"` ``;
@@ -279,11 +279,11 @@ a relative path, with nothing, and `switch` without `id` all return readable fie
     details.
 
   Make T016 green.
-- [ ] T020 [US2] In `internal/integration/entrypoint/controller/mcp_call.go`, pass `definition`
+- [x] T020 [US2] In `internal/integration/entrypoint/controller/mcp_call.go`, pass `definition`
   and `toolCall.Action` into `respond(...)` and on to `dto.NewMCPToolError`. In `panicked(...)`,
   pass `dto.MCPTool{}` and `""` (panics carry no details). Update
   `internal/integration/entrypoint/controller/mcp_call_test.go` call sites.
-- [ ] T021 [US2] Run `make bdd TAG=@xen_014_errors`, then `make bdd TAG=@workspaces` and
+- [x] T021 [US2] Run `make bdd TAG=@xen_014_errors`, then `make bdd TAG=@workspaces` and
   `make bdd TAG=@mcp`, until green.
 
 **Checkpoint**: US2 is shippable on its own. Its schema-dependent part (`id` → `local_id`
@@ -301,7 +301,7 @@ or `mixed`.
 
 ### Tests for User Story 3 (write first, prove red)
 
-- [ ] T022 [US3] Write `test/integration/features/import/loose_folder.feature` with tags
+- [x] T022 [US3] Write `test/integration/features/import/loose_folder.feature` with tags
   `@all @xen_014 @import @xen_014_loose` and Background `Given the workspace "Acme" exists`:
   - **@expand.** `ImportService.Detect { "paths": ["{{resources}}/import/loose/mixed"] }`:
     - succeeds;
@@ -328,15 +328,15 @@ or `mixed`.
     → succeeds, `kind` = `mixed`, `items` length 3.
 
   Prove them red.
-- [ ] T023 [P] [US3] Update `test/integration/features/import/postman_v3_workspace.feature`
+- [x] T023 [P] [US3] Update `test/integration/features/import/postman_v3_workspace.feature`
   @nothing: the expected `error.description` becomes `specs-only has no file Xenon can import; pass a Postman v3 workspace or collection folder, a Postman data dump (archive.json), a Bruno collection (bruno.json or opencollection.yml), a Xenon workspace folder, or a folder of standalone export files`,
   with code `IMP-00415` unchanged. Prove it red.
-- [ ] T024 [P] [US3] Update `internal/application/usecase/import_detection_test.go`:
+- [x] T024 [P] [US3] Update `internal/application/usecase/import_detection_test.go`:
   - the folder cases `specs only` and `empty dir` expect `(importkind.Folder, "", nil)`;
   - add a case for `RejectUnimportableFolder("x")` (code `IMP-00415`, the layout message).
 
   Prove the tests red.
-- [ ] T025 [P] [US3] Write `internal/domain/entity/import_source_test.go` cases for
+- [x] T025 [P] [US3] Write `internal/domain/entity/import_source_test.go` cases for
   `NewImportSource`:
   - same kind and version → that kind;
   - same kind, different version → `mixed`/"";
@@ -346,14 +346,14 @@ or `mixed`.
 
   Write `NewSkippedEntriesWarning` message cases in
   `internal/domain/entity/import_warning_test.go`. Prove the tests red.
-- [ ] T026 [P] [US3] Add `mixed → "Multiple sources"` and `sourceLabel('mixed', '')` cases to
+- [x] T026 [P] [US3] Add `mixed → "Multiple sources"` and `sourceLabel('mixed', '')` cases to
   `frontend/src/features/import-export/lib/labels.test.ts`. Prove the test red.
 
 ### Implementation for User Story 3
 
-- [ ] T027 [P] [US3] Add `Folder enums.ImportKind = "folder"` and
+- [x] T027 [P] [US3] Add `Folder enums.ImportKind = "folder"` and
   `Mixed enums.ImportKind = "mixed"` to `internal/domain/enums/importkind/value.go`.
-- [ ] T028 [US3] Domain changes:
+- [x] T028 [US3] Domain changes:
   - `internal/domain/entity/import_input.go`: new field `Path` and `IsLooseFolder()`.
     `internal/integration/persistence/import_source.go` `readPath` sets `input.Path = path` on
     every returned input.
@@ -365,16 +365,16 @@ or `mixed`.
     version, or `importkind.Mixed`/"".
 
   Make T025 green.
-- [ ] T029 [US3] In `internal/application/usecase/detect_import_format.go`:
+- [x] T029 [US3] In `internal/application/usecase/detect_import_format.go`:
   - `detectFolder` default → `return importkind.Folder, "", nil`;
   - add `RejectUnimportableFolder(name string) error` (`errs.ClientError`, `IMP-00415`,
     `http.StatusUnsupportedMediaType`, the message from contracts/import-detect.md).
 
   Make T024 green.
-- [ ] T030 [US3] Create the port `internal/application/usecase/read_import_folder_files.go`
+- [x] T030 [US3] Create the port `internal/application/usecase/read_import_folder_files.go`
   (`ReadImportFolderFiles` interface, per data-model.md). Embed it in the persistence adapter
   interface `internal/integration/adapter/import_source_persistence.go`.
-- [ ] T031 [US3] Implement `ReadFolderFiles` in
+- [x] T031 [US3] Implement `ReadFolderFiles` in
   `internal/integration/persistence/import_source.go`:
   - `os.ReadDir(folder.Path)` (already name-sorted);
   - hidden entries (leading `.`) and non-regular, non-directory entries such as symbolic links
@@ -385,7 +385,7 @@ or `mixed`.
   - a failure to list the folder → `errs.NotFoundError(name+" cannot be found", "IMP-08404")`.
 
   Log Started/Finished per persistence.md.
-- [ ] T032 [US3] In `internal/application/service/import_readers.go`:
+- [x] T032 [US3] In `internal/application/service/import_readers.go`:
   - add `readImportFolderFiles usecase.ReadImportFolderFiles` to `importReaders`;
   - in `detected`, after `DetectImportFormat`, replace each `IsLooseFolder()` input in place with
     its expanded files, each detected with `DetectImportFormat` (failures become skipped entries
@@ -399,9 +399,9 @@ or `mixed`.
   (`NewManageImportService` gets `readImportFolderFiles`) and in the DI container
   (`internal/infra/dependency/application/manage_import.go`: pass one more
   `integration.GetImportSourcePersistence()` argument, in the constructor's new parameter position).
-- [ ] T033 [P] [US3] Add `mixed: 'Multiple sources'` to `KIND_LABELS` in
+- [x] T033 [P] [US3] Add `mixed: 'Multiple sources'` to `KIND_LABELS` in
   `frontend/src/features/import-export/lib/labels.ts`. Make T026 green.
-- [ ] T034 [US3] Run `make bdd TAG=@xen_014_loose`, `make bdd TAG=@import` and
+- [x] T034 [US3] Run `make bdd TAG=@xen_014_loose`, `make bdd TAG=@import` and
   `go test ./internal/...` until green.
 
 **Checkpoint**: All three stories work.
@@ -410,9 +410,9 @@ or `mixed`.
 
 ## Phase 6: Polish & Cross-Cutting
 
-- [ ] T035 Run `make sort-imports`, then the full `make bdd` (every pre-existing scenario green),
+- [x] T035 Run `make sort-imports`, then the full `make bdd` (every pre-existing scenario green),
   `cd frontend && npx vitest run`, and `make validate`. Fix anything they report.
-- [ ] T036 [P] Add a short "MCP tool arguments" note to `docs/prd/xenon-mvp-prd.md` under the MCP
+- [x] T036 [P] Add a short "MCP tool arguments" note to `docs/prd/xenon-mvp-prd.md` under the MCP
   section, recording:
   - tool schemas declare every argument;
   - validation errors name the argument and rule;
@@ -420,7 +420,7 @@ or `mixed`.
   - `mixed` source kind.
 
   These are the user decisions in spec.md Clarifications.
-- [ ] T037 Run quickstart.md "Expected outcomes" 1–4 against the BDD run output, and confirm:
+- [x] T037 Run quickstart.md "Expected outcomes" 1–4 against the BDD run output, and confirm:
   - SC-001: T006 green;
   - SC-003: T013–T015 green;
   - SC-004: T022 @expand green, a folder giving the same 3 items and 0 warnings as its three

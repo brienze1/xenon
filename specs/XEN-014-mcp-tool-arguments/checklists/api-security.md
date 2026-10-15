@@ -66,7 +66,7 @@ and the fix is named.
 ## Non-Functional, Dependencies & Assumptions
 
 - [x] CHK037 Is the cost of building schemas addressed? [Non-Functional, plan Performance Goals] They are built once at tool registration, and `tools/list` costs nothing extra per call.
-- [x] CHK038 Is the growth of `tools/list` from fully declared nested objects acknowledged as a decision? [Assumption, Spec §Assumptions] **Fixed during checklist**: recorded as a deliberate trade-off with no size cap.
+- [x] CHK038 Is the growth of `tools/list` from fully declared nested objects acknowledged as a decision? [Assumption, Spec §Assumptions] **Fixed during checklist**: recorded as a deliberate trade-off. **Revised during implementation**: the size collided with XEN-008's 24,000-character budget, and the user raised it to 36,000 (spec Clarifications).
 - [x] CHK039 Are new dependencies avoided or justified? [Dependency, plan Technical Context, research.md R1] There is no new dependency; a stdlib reflector lives in `pkg/jsonschema`.
 - [x] CHK040 Is the assumption that clients send declared types without coercion stated? [Assumption, Spec §Assumptions, contracts/mcp-tool-schema.md] Yes.
 - [x] CHK041 Is stdio-bridge parity established from the code rather than assumed? [Dependency, Spec §Clarifications] Yes; the bridge only pumps JSON-RPC (`stdio_bridge.feature`).

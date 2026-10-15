@@ -17,7 +17,7 @@ Feature: AI clients connect to Xenon's MCP server
     When I list the MCP tools
     Then the last call should have taken less than 1000 ms
     And the response should contain the field "" array length equal to 24
-    And the response should have at most 24000 characters
+    And the response should have at most 36000 characters
     And every item of the response field "" should have the field "description" matching "^[A-Z][^.]*\.$"
     And every item of the response field "" should have the field "name" matching "^[a-z]+(_[a-z]+)?$"
 

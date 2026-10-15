@@ -307,6 +307,9 @@ Export is on the right-click menu of every item, and in File → Export for the 
 - A `postman workspace pull` folder (collections, environments and globals, each assigned to a workspace).
 - Postman full data dump (Settings → Export data), mapped to one Xenon workspace per Postman workspace if possible.
 - A cURL command pasted into the URL bar or the import dialog.
+- A plain folder of any of the standalone files above. Each file at its top level is imported as if picked on its
+  own; anything else in it is skipped and listed in a warning (XEN-014). A selection that mixes kinds is shown as
+  "Multiple sources".
 
 Import asks which workspace and which collection or folder to put things in. Name clashes ask to replace, keep both, or skip.
 
@@ -377,6 +380,11 @@ Cursor and similar) can work with everything in Xenon on the user's behalf. Adde
   shows up in the open window at once.
 - Responses are compact: lists give ids and names, 100 per page; text bodies are capped at 16 KB and paged; binary
   bodies are never inlined.
+- Every tool declares every argument its actions read, with its type, a one-sentence description and the actions that
+  use or require it, so a client calls it right the first time. The whole tool list stays within about 9,000 tokens
+  (XEN-014).
+- A failed call answers a code, a message and, when there are any, the failing arguments: a validation error reads
+  `invalid request: path is required` and names the argument the client sent (XEN-014).
 
 **Secrets are write-only for AI**
 

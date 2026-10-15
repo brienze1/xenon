@@ -66,6 +66,9 @@ workspace through Xenon's MCP server from Claude Code. Verified against the code
   `omitempty` are modifiers, not rules.
 - Q: How does a detail with several messages (e.g. `missing_secrets`) become `{field, problem}`? →
   A: `problem` is its messages joined with `, `.
+- Q: (implementation) The full schemas make `tools/list` 34,505 characters, over XEN-008's
+  24,000-character budget. Trim or raise? → A: **Raise the budget to 36,000 characters** and keep
+  the full nested schemas.
 - Q: Can per-action requirements be expressed as conditional schema? → A: No. Claude's tool-use API
   rejects `oneOf`/`anyOf`/`allOf` at the top level of an input schema, so per-action requirements go
   in descriptions (FR-006).
@@ -320,8 +323,11 @@ globals file, then a folder holding only unrelated files, and read the preview o
 - There is no cap on the number of files in a loose folder beyond the existing per-file and
   archive limits. This matches today's folder import, which has none either.
 - Nested argument objects (e.g. a full `Request` with its auth, body and scripts) are declared with
-  all their fields, so `tools/list` grows. Correct, complete arguments are worth more to clients
-  than a smaller listing, and no per-tool size limit is imposed.
+  all their fields, so `tools/list` grows from about 5,000 to about 34,500 characters.
+  - XEN-008 set a `tools/list` budget of 24,000 characters (about 6,000 tokens, its SC-005).
+  - The user decided (2026-10-15, during implementation) to raise that budget to **36,000
+    characters (about 9,000 tokens)** rather than trim the nested schemas.
+  - `test/integration/features/mcp/connect.feature` @tool_list asserts the new budget.
 - The `mixed` kind adds no new import behaviour. Every item imports exactly as it would on its own.
 - The window's import dialog needs only the new label; no layout change.
 - Out of scope: new MCP tools or actions, renaming existing arguments, rejecting unknown

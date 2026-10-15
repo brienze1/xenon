@@ -141,7 +141,7 @@ Clarifications). Nothing is open.
     | `email` | `must be an email address` |
     | `absolute_path` | `must be an absolute path` |
     | `has_id` | `must have an id` |
-    | `variable_scope` | `must be a variable scope (globals, collection:<id> or environment:<id>)` |
+    | `variable_scope` | `must be a variable scope (globals, env:<id> or collection:<id>)` |
     | `import_input` | `needs at least one path or some pasted text` |
     | `safe_subfolder` | `must be a folder inside the workspace` |
     | any other rule | `is not valid` |
