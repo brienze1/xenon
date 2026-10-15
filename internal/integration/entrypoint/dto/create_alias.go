@@ -6,3 +6,7 @@ type CreateAlias struct {
 	BaseRevision string `json:"base_revision"`
 	Name         string `json:"name"`
 }
+
+func NewCreateAlias(localId, requestId, name string) CreateAlias {
+	return CreateAlias{LocalId: localId, RequestId: requestId, Name: name}
+}

@@ -40,8 +40,7 @@ func (m *mcpTreeEdit) createAlias(ctx context.Context, call dto.MCPToolCall, ent
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
-	created := saved.Aliases[len(saved.Aliases)-1]
-	return m.aliasEdited(ctx, call, entry, dto.NewRequest(*saved), created.ID), nil
+	return m.aliasEdited(ctx, call, entry, dto.NewRequest(*saved), saved.NewestAliasID()), nil
 }
 
 func (m *mcpTreeEdit) saveAlias(ctx context.Context, call dto.MCPToolCall, entry entity.TreeEntry, arguments dto.MCPTreeEdit) (dto.MCPToolResult, error) {

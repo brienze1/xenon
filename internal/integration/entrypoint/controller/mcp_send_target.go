@@ -55,5 +55,5 @@ func resolveMCPSendTarget(
 	if err != nil {
 		return dto.Request{}, entry.Target(), err
 	}
-	return dto.NewRequest(saved.Version(target.AliasId)), entry.Target(), nil
+	return dto.NewRequestVersion(*saved, target.AliasId), entry.Target(), nil
 }

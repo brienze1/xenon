@@ -224,9 +224,8 @@ func (s *sendRequest) scriptOwners(ctx context.Context, root string, request ent
 	return request.WithScriptsOf(stored.Version(aliasId)).ScriptOwners(ancestors), nil
 }
 
-// alias is the saved alias a send uses; none when the send is not of an alias.
 func (s *sendRequest) alias(ctx context.Context, root, requestId, aliasId string) (entity.RequestAlias, error) {
-	if aliasId == "" {
+	if entity.IsDefaultAliasID(aliasId) {
 		return entity.RequestAlias{}, nil
 	}
 	stored, err := s.findRequest.Find(ctx, root, requestId)

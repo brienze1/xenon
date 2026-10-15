@@ -13,3 +13,11 @@ func NewRequestAliases(aliases []entity.RequestAlias) []RequestAlias {
 	}
 	return result
 }
+
+func NewEmptyRequestAlias(id string) RequestAlias {
+	return RequestAlias{Id: id}
+}
+
+func NewEditedRequestAlias(alias RequestAlias, edit *MCPTreeEdit) RequestAlias {
+	return RequestAlias{Id: edit.Id, Name: overridden(edit.Name, alias.Name), Request: NewEditedRequest(alias.Request, edit)}
+}

@@ -17,7 +17,7 @@ func (m *MCPDelete) OwnerItemId() string {
 }
 
 func (m *MCPDelete) AliasReference(localId, requestId string) AliasReference {
-	return AliasReference{LocalId: localId, RequestId: requestId, AliasId: m.Id}
+	return NewAliasReference(localId, requestId, m.Id)
 }
 
 func (m *MCPDelete) MovesToTrash() bool {

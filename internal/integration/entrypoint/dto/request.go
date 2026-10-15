@@ -46,6 +46,10 @@ func NewRequest(request entity.Request) Request {
 	return result
 }
 
+func NewRequestVersion(request entity.Request, aliasId string) Request {
+	return NewRequest(request.Version(aliasId))
+}
+
 func (r *Request) ToEntity() entity.Request {
 	request := entity.NewRequest(r.Id, r.Name)
 	request.Description = r.Description
@@ -81,5 +85,5 @@ func (r Request) AliasOrEmpty(id string) RequestAlias {
 			return alias
 		}
 	}
-	return RequestAlias{Id: id}
+	return NewEmptyRequestAlias(id)
 }

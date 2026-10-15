@@ -58,7 +58,7 @@ func (m *manageAlias) Create(ctx context.Context, localId, requestId, name, base
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "requestId": requestId, "name": name, "result": *saved})
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "requestId": requestId, "name": name, "baseRevision": baseRevision, "force": force, "result": *saved})
 	return saved, nil
 }
 
@@ -79,7 +79,7 @@ func (m *manageAlias) Save(ctx context.Context, localId, requestId string, alias
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "requestId": requestId, "alias": alias, "result": *saved})
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "requestId": requestId, "alias": alias, "baseRevision": baseRevision, "force": force, "result": *saved})
 	return saved, nil
 }
 
@@ -101,7 +101,7 @@ func (m *manageAlias) Delete(ctx context.Context, localId, requestId, aliasId, b
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "requestId": requestId, "aliasId": aliasId, "result": *saved})
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "requestId": requestId, "aliasId": aliasId, "baseRevision": baseRevision, "force": force, "result": *saved})
 	return saved, nil
 }
 
@@ -125,8 +125,13 @@ func (m *manageAlias) load(ctx context.Context, localId, requestId, baseRevision
 }
 
 func (m *manageAlias) save(ctx context.Context, loaded loadedRequest, alias entity.RequestAlias, updated entity.Request) (*entity.Request, error) {
-	if err := usecase.CheckAliasName(updated, alias); err != nil {
-		return nil, err
+	switch {
+	case !alias.HasValidName():
+		return nil, usecase.RejectInvalidAliasName()
+	case alias.HasReservedName():
+		return nil, usecase.RejectReservedAliasName()
+	case updated.HasAliasNamed(alias.Name, alias.ID):
+		return nil, usecase.RejectTakenAliasName()
 	}
 	return m.saveRequestAliases.SaveAliases(ctx, loaded.root, updated)
 }

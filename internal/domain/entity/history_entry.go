@@ -56,7 +56,6 @@ func NewActionHistoryEntry(id string, at time.Time, client string, activity AIAc
 	}
 }
 
-// ForAlias records the alias a send used.
 func (h HistoryEntry) ForAlias(alias RequestAlias) HistoryEntry {
 	h.AliasID = alias.ID
 	h.AliasName = alias.Name

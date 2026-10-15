@@ -65,7 +65,7 @@ func (p postmanExport) collection(ctx context.Context, node entity.ExportNode, a
 	documents.add(postmanCollectionsFolder, node.Name(), postmanCollectionSuffix, data)
 	drops := make([]entity.ExportDrop, 0)
 	credentials := make([]entity.ExportWarning, 0)
-	for _, scanned := range append([]entity.ExportNode{node.WithAliasesAsRequests()}, node.AliasRequests()...) {
+	for _, scanned := range node.WithAliasRequests() {
 		drops = append(drops, usecase.FindPostmanDrops(scanned)...)
 		credentials = append(credentials, usecase.FindLiteralCredentials(scanned)...)
 	}

@@ -282,6 +282,26 @@ func (r Request) Alias(id string) (RequestAlias, bool) {
 	return r.Aliases[index], true
 }
 
+func IsDefaultAliasID(id string) bool {
+	return id == ""
+}
+
+// HasVersion is true for the Default or a saved alias.
+func (r Request) HasVersion(aliasId string) bool {
+	if IsDefaultAliasID(aliasId) {
+		return true
+	}
+	_, found := r.Alias(aliasId)
+	return found
+}
+
+func (r Request) NewestAliasID() string {
+	if len(r.Aliases) == 0 {
+		return ""
+	}
+	return r.Aliases[len(r.Aliases)-1].ID
+}
+
 // HasAliasNamed is true when another alias than exceptId has the name, ignoring case and surrounding spaces.
 func (r Request) HasAliasNamed(name, exceptId string) bool {
 	return slices.ContainsFunc(r.Aliases, func(alias RequestAlias) bool { return alias.ID != exceptId && alias.HasName(name) })

@@ -18,7 +18,7 @@ func NewRequestAlias(id, name string, of Request) RequestAlias {
 	return RequestAlias{ID: id, Name: strings.TrimSpace(name), Version: Request{}.SendableOf(of)}
 }
 
-// AliasAuthOwner is the owner id of an alias's own auth, so its OAuth 2.0 token never replaces the Default's.
+// AliasAuthOwner is the owner id of an alias's own auth, distinct from the Default's.
 func AliasAuthOwner(requestId, aliasId string) string {
 	return requestId + aliasOwnerSeparator + aliasId
 }

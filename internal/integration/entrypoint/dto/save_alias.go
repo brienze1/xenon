@@ -10,6 +10,10 @@ type SaveAlias struct {
 	Force        bool         `json:"force"`
 }
 
+func NewSaveAlias(localId, requestId, baseRevision string, alias RequestAlias, force bool) SaveAlias {
+	return SaveAlias{LocalId: localId, RequestId: requestId, BaseRevision: baseRevision, Alias: alias, Force: force}
+}
+
 func (s *SaveAlias) ToEntity() entity.RequestAlias {
 	return s.Alias.ToEntity()
 }

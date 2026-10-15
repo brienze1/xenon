@@ -121,9 +121,9 @@ func (e EffectiveRequest) SendsJarCookies() bool {
 	return !e.IsAutoHeaderDisabled(HeaderCookie)
 }
 
-// ForAlias moves an alias's own auth to the alias's owner id, so its OAuth 2.0 token is not the Default's.
+// ForAlias moves an alias's own auth to the alias's owner id.
 func (e EffectiveRequest) ForAlias(requestId, aliasId string) EffectiveRequest {
-	if aliasId != "" && e.AuthOwner == requestId {
+	if !IsDefaultAliasID(aliasId) && e.AuthOwner == requestId {
 		e.AuthOwner = AliasAuthOwner(requestId, aliasId)
 	}
 	return e

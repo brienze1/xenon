@@ -117,11 +117,14 @@ func (e ExportNode) WithAliasesAsRequests() ExportNode {
 	}
 	children := make([]ExportNode, 0, len(e.Children))
 	for _, child := range e.Children {
-		children = append(children, child.WithAliasesAsRequests())
-		children = append(children, child.AliasRequests()...)
+		children = append(children, child.WithAliasRequests()...)
 	}
 	e.Children = children
 	return e
+}
+
+func (e ExportNode) WithAliasRequests() []ExportNode {
+	return append([]ExportNode{e.WithAliasesAsRequests()}, e.AliasRequests()...)
 }
 
 // AliasRequests are a request's aliases as requests named "<request> (<alias>)", without examples.
