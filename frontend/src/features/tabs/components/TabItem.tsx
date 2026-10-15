@@ -4,7 +4,7 @@ import type { KeyboardEvent, MouseEvent } from 'react'
 import { isScopeDirty, useEnvironmentsStore } from '@/features/environments/store'
 import { useExamplesStore } from '@/features/examples/store'
 import { isItemDirty, useItemSettingsStore } from '@/features/item-settings/store'
-import { useRequestBuilderStore } from '@/features/request-builder/store'
+import { selectDirtyHiddenVersions, useRequestBuilderStore } from '@/features/request-builder/store'
 import { isSettingsDirty, useSettingsStore } from '@/features/settings/store'
 import { collectionScope } from '@/platform/mappers/variable'
 import { cn } from '@/shared/lib/cn'
@@ -56,7 +56,7 @@ export function TabItem({ tabId }: TabItemProps) {
   const kind = useTabsStore((state) => state.tabs.find((tab) => tab.id === tabId)?.kind)
   const scope = useTabsStore((state) => environmentTabScope(state.tabs.find((tab) => tab.id === tabId)))
   const method = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.method ?? 'GET')
-  const draftDirty = useRequestBuilderStore((state) => state.tabs[tabId]?.dirty === true)
+  const draftDirty = useRequestBuilderStore((state) => state.tabs[tabId]?.dirty === true || selectDirtyHiddenVersions(state, tabId).length > 0)
   const responseDirty = useExamplesStore((state) => state.tabs[tabId]?.dirty === true)
   const variablesDirty = useEnvironmentsStore((state) => scope !== null && isScopeDirty(state, scope))
   const environmentId = useTabsStore((state) => state.tabs.find((tab) => tab.id === tabId)?.environmentId ?? null)

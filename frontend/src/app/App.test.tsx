@@ -237,7 +237,7 @@ describe('App', () => {
     press('Enter')
     const tabId = useTabsStore.getState().activeTabId
     expect(requests.sendRequest).toHaveBeenCalledTimes(1)
-    expect(requests.sendRequest).toHaveBeenCalledWith('A', tabId, expect.objectContaining({ method: 'GET' }), { confirmedEnvironmentId: '', missingSecrets: false, expiredToken: false })
+    expect(requests.sendRequest).toHaveBeenCalledWith('A', tabId, expect.objectContaining({ method: 'GET' }), { confirmedEnvironmentId: '', missingSecrets: false, expiredToken: false }, null)
   })
 
   it('opens, saves and closes tabs with the keyboard', async () => {
@@ -359,7 +359,7 @@ describe('App', () => {
       requestName = name
       return { ...treeNow()[0]!.children[0]!, id }
     })
-    vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: { ...emptyDraft(), id, name: requestName }, revision: `rev-${requestName}` }))
+    vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: { ...emptyDraft(), id, name: requestName }, revision: `rev-${requestName}`, aliases: [] }))
     vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: 'A' })
     vi.mocked(services.activateWorkspace).mockResolvedValue({
       summary: acme,

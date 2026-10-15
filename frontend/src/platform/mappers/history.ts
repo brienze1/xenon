@@ -49,6 +49,8 @@ export interface HistoryEntry {
   totalMs: number
   sizeBytes: number
   sourceRequestId: string | null
+  /** The alias the send used; null for the Default or an unsaved request. */
+  aliasName: string | null
   activity: HistoryActivity | null
 }
 
@@ -115,6 +117,7 @@ export function toHistoryEntry(dto: HistoryEntryDto): HistoryEntry {
     totalMs: dto.total_ms,
     sizeBytes: dto.size_bytes,
     sourceRequestId: dto.source_request_id ? dto.source_request_id : null,
+    aliasName: orNull(dto.alias_name ?? ''),
     activity: dto.activity ? toActivity(dto.activity) : null,
   }
 }

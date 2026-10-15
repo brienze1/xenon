@@ -7,6 +7,7 @@ import type {
   KeyValue as KeyValueDto,
   PathVariable as PathVariableDto,
   Request as RequestDto,
+  RequestAlias as RequestAliasDto,
   ScriptError as ScriptErrorDto,
   Scripts as ScriptsDto,
   SendResult as SendResultDto,
@@ -406,9 +407,17 @@ function toFormDataRow(dto: FormDataRowDto): FormDataRow {
   return { ...toKeyValueRow(dto), type: dto.type === 'file' ? 'file' : 'text', src: dto.src, srcState: toFileState(dto.src_state) }
 }
 
+/** A named version of a saved request: its draft carries the request's id and the alias's name. */
+export interface SavedAlias {
+  id: string
+  name: string
+  draft: RequestDraft
+}
+
 export interface SavedRequest {
   draft: RequestDraft
   revision: string
+  aliases: SavedAlias[]
 }
 
 const GRANT_SET: ReadonlySet<string> = new Set(OAUTH2_GRANTS)
@@ -554,7 +563,20 @@ export function toAuthDto(auth: RequestAuth): AuthDto {
 }
 
 export function toSavedRequest(dto: RequestDto): SavedRequest {
-  return { draft: toRequestDraft(dto), revision: dto.revision }
+  return { draft: toRequestDraft(dto), revision: dto.revision, aliases: (dto.aliases ?? []).map((alias) => toSavedAlias(dto.id, alias)) }
+}
+
+function toSavedAlias(requestId: string, dto: RequestAliasDto): SavedAlias {
+  return { id: dto.id, name: dto.name, draft: { ...toRequestDraft(dto.request), id: requestId, name: dto.name } }
+}
+
+/** The owner of an alias's own auth (its OAuth 2.0 token), as Go names it: `<request id>:<alias id>`. */
+export function aliasAuthOwner(requestId: string, aliasId: string): string {
+  return `${requestId}:${aliasId}`
+}
+
+export function toRequestAliasDto(aliasId: string, draft: RequestDraft): RequestAliasDto {
+  return { id: aliasId, name: draft.name, request: toRequestDto(draft) }
 }
 
 export function toRequestDraft(dto: RequestDto): RequestDraft {
@@ -598,6 +620,7 @@ export function toRequestDto(draft: RequestDraft): RequestDto {
     method: draft.method,
     url: draft.url,
     revision: '',
+    aliases: [],
     params: draft.params.map(toKeyValueDto),
     path_variables: draft.pathVariables.map(({ key, value, description }) => ({ key, value, description })),
     headers: draft.headers.map(toKeyValueDto),

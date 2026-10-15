@@ -195,12 +195,24 @@ describe('RequestBuilder', () => {
     expect(useResponseViewerStore.getState().entries[tabId]?.result?.error?.kind).toBe('cancelled')
   })
 
+  it('shows the Aliases menu only for a saved request, never for an unsaved one or an example', () => {
+    const { unmount } = render(<RequestBuilder tabId={tabId} />)
+    expect(screen.queryByRole('button', { name: /^Aliases:/ })).not.toBeInTheDocument()
+    unmount()
+    useRequestBuilderStore.getState().loadDraft(tabId, { ...emptyDraft(), id: 'r1', name: 'Saved' }, 'rev-1', false, 'Saved')
+    const saved = render(<RequestBuilder tabId={tabId} />)
+    expect(screen.getByRole('button', { name: 'Aliases: Default' })).toBeInTheDocument()
+    saved.unmount()
+    render(<RequestBuilder tabId={tabId} mode="example" />)
+    expect(screen.queryByRole('button', { name: /^Aliases:/ })).not.toBeInTheDocument()
+  })
+
   it('sends with Enter in the URL field', async () => {
     const user = userEvent.setup()
     vi.mocked(requests.sendRequest).mockReturnValue({ result: new Promise(() => undefined), cancel: vi.fn() })
     render(<RequestBuilder tabId={tabId} />)
     await user.type(screen.getByRole('textbox', { name: 'Request URL' }), 'https://api.test{Enter}')
-    expect(requests.sendRequest).toHaveBeenCalledWith('ws', tabId, expect.objectContaining({ url: 'https://api.test' }), { confirmedEnvironmentId: '', missingSecrets: false, expiredToken: false })
+    expect(requests.sendRequest).toHaveBeenCalledWith('ws', tabId, expect.objectContaining({ url: 'https://api.test' }), { confirmedEnvironmentId: '', missingSecrets: false, expiredToken: false }, null)
   })
 
   it('replaces the request with a pasted cURL command as one change that can be undone', async () => {
@@ -479,8 +491,8 @@ describe('RequestBuilder saving', () => {
     render(<RequestBuilder tabId={tabId} />)
     expect(screen.getByRole('button', { name: 'Send' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
-    vi.mocked(requests.getRequest).mockResolvedValue({ draft: saved, revision: 'rev-1' })
-    vi.mocked(requests.saveRequest).mockResolvedValue({ draft: saved, revision: 'rev-2' })
+    vi.mocked(requests.getRequest).mockResolvedValue({ draft: saved, revision: 'rev-1', aliases: [] })
+    vi.mocked(requests.saveRequest).mockResolvedValue({ draft: saved, revision: 'rev-2', aliases: [] })
     await act(() => useRequestBuilderStore.getState().openSaved(tabId, 'r1'))
     expect(screen.getByRole('textbox', { name: 'Request URL' })).toHaveTextContent('https://x/ping')
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
@@ -490,13 +502,13 @@ describe('RequestBuilder saving', () => {
 
   it('asks whether to keep my version when the file changed on disk', async () => {
     const tabId = 'tab-1'
-    vi.mocked(requests.getRequest).mockResolvedValue({ draft: saved, revision: 'rev-1' })
+    vi.mocked(requests.getRequest).mockResolvedValue({ draft: saved, revision: 'rev-1', aliases: [] })
     vi.mocked(requests.saveRequest).mockRejectedValueOnce(new AppError('REQ-02409', 'changed'))
     render(<RequestBuilder tabId={tabId} />)
     await act(() => useRequestBuilderStore.getState().openSaved(tabId, 'r1'))
     await act(() => useRequestBuilderStore.getState().save(tabId))
     expect(screen.getByRole('status')).toHaveTextContent('changed on disk')
-    vi.mocked(requests.saveRequest).mockResolvedValue({ draft: saved, revision: 'rev-2' })
+    vi.mocked(requests.saveRequest).mockResolvedValue({ draft: saved, revision: 'rev-2', aliases: [] })
     await userEvent.click(screen.getByRole('button', { name: 'Keep Your Version' }))
     expect(requests.saveRequest).toHaveBeenLastCalledWith('ws', saved, 'rev-1', true)
     expect(screen.queryByText(/changed on disk/)).not.toBeInTheDocument()

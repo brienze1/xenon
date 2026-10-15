@@ -9,18 +9,26 @@ export const UNTITLED_REQUEST = 'Untitled Request'
 export const GLOBALS_TITLE = 'Globals'
 export const SETTINGS_TITLE = 'Settings'
 const UNKNOWN_ENVIRONMENT = 'Environment'
+/** Between a request's name and the alias a tab shows: `Login · mx-test-user`. */
+export const ALIAS_SEPARATOR = ' · '
 const UNKNOWN_COLLECTION = 'Collection'
 const UNKNOWN_FOLDER = 'Folder'
 
 /**
  * The name a tab shows: the saved name of its request, example, environment, collection or folder (a name being
- * edited shows only once it is saved), "Globals" or "Settings"; a request never saved shows its draft name.
+ * edited shows only once it is saved), "Globals" or "Settings"; a request never saved shows its draft name, and a request
+ * showing an alias adds the alias's saved name.
  */
 export function useTabTitle(tabId: string | null): string {
   const kind = useTabsStore((state) => state.tabs.find((tab) => tab.id === tabId)?.kind)
   const environmentId = useTabsStore((state) => state.tabs.find((tab) => tab.id === tabId)?.environmentId ?? null)
   const draftName = useRequestBuilderStore((state) => (tabId ? state.tabs[tabId]?.draft.name : null) || UNTITLED_REQUEST)
   const loadedName = useRequestBuilderStore((state) => (tabId ? (state.tabs[tabId]?.savedName ?? null) : null))
+  const defaultName = useRequestBuilderStore((state) => (tabId ? (state.tabs[tabId]?.savedDefault?.name ?? null) : null))
+  const aliasName = useRequestBuilderStore((state) => {
+    const tab = tabId ? state.tabs[tabId] : undefined
+    return tab?.aliasId ? (tab.aliases.find((alias) => alias.id === tab.aliasId)?.name ?? null) : null
+  })
   const environmentName = useEnvironmentsStore((state) =>
     environmentId === null ? null : (state.environments.find((environment) => environment.id === environmentId)?.name ?? null),
   )
@@ -45,6 +53,9 @@ export function useTabTitle(tabId: string | null): string {
   }
   if (kind === 'example') {
     return savedExampleName ?? draftName
+  }
+  if (aliasName !== null) {
+    return `${savedRequestName ?? defaultName ?? UNTITLED_REQUEST}${ALIAS_SEPARATOR}${aliasName}`
   }
   return savedRequestName ?? loadedName ?? draftName
 }

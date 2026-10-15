@@ -110,7 +110,7 @@ describe('collection and folder tabs', () => {
     useEnvironmentsStore.getState().reset()
     vi.mocked(requests.autoHeaders).mockResolvedValue([])
     vi.mocked(requests.releaseResponse).mockResolvedValue()
-    vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: { ...emptyDraft(), id, name: `Request ${id}` }, revision: `rev-${id}` }))
+    vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: { ...emptyDraft(), id, name: `Request ${id}` }, revision: `rev-${id}`, aliases: [] }))
     vi.mocked(tree.getItemSettings).mockImplementation(async (_localId, id) => settingsOf(id))
     vi.mocked(tree.saveItemSettings).mockImplementation(async (_localId, settings) => settings)
     vi.mocked(variables.getVariableTable).mockImplementation(async (_localId, scope) => ({ scope, rows: [ROW], warnings: [] }))

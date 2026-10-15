@@ -22,8 +22,8 @@ describe('history service', () => {
     const entries = await listHistory('L1', { query: 'post', limit: 50, beforeId: 'h9' })
     expect(HistoryService.List).toHaveBeenCalledWith({ local_id: 'L1', source: 'all', query: 'post', limit: 50, before_id: 'h9' })
     expect(entries).toEqual([
-      { id: 'h2', sentAt: '2026-10-09T10:00:00Z', kind: 'send', source: 'user', client: null, method: 'POST', url: 'https://x/users', outcome: 'sent', statusCode: 201, errorKind: null, totalMs: 12, sizeBytes: 40, sourceRequestId: 'r1', activity: null },
-      { id: 'h1', sentAt: '2026-10-09T09:00:00Z', kind: 'send', source: 'user', client: null, method: 'GET', url: '', outcome: 'error', statusCode: null, errorKind: 'invalid_url', totalMs: 0, sizeBytes: 0, sourceRequestId: null, activity: null },
+      { id: 'h2', sentAt: '2026-10-09T10:00:00Z', kind: 'send', source: 'user', client: null, method: 'POST', url: 'https://x/users', outcome: 'sent', statusCode: 201, errorKind: null, totalMs: 12, sizeBytes: 40, sourceRequestId: 'r1', aliasName: null, activity: null },
+      { id: 'h1', sentAt: '2026-10-09T09:00:00Z', kind: 'send', source: 'user', client: null, method: 'GET', url: '', outcome: 'error', statusCode: null, errorKind: 'invalid_url', totalMs: 0, sizeBytes: 0, sourceRequestId: null, aliasName: null, activity: null },
       expect.objectContaining({ id: 'h0', errorKind: 'other', outcome: 'stopped_by_script_error' }),
     ])
   })

@@ -30,6 +30,10 @@ export interface TabState {
   pinned: boolean
   baseRevision: string | null
   draft: RequestDraft | null
+  /** The alias a request tab shows; absent or null for the Default. */
+  aliasId?: string | null
+  /** Unsaved drafts of the versions a request tab does not show, keyed by alias id (`''` for the Default). */
+  versionDrafts?: Record<string, RequestDraft>
 }
 
 export interface SidebarUIState {
@@ -135,6 +139,10 @@ function toTabState(dto: TabDto): TabState {
     pinned: dto.pinned,
     baseRevision: orNull(dto.base_revision),
     draft: dto.draft ? toRequestDraft(dto.draft) : null,
+    aliasId: orNull(dto.alias_id ?? ''),
+    versionDrafts: Object.fromEntries(
+      Object.entries(dto.version_drafts ?? {}).flatMap(([aliasId, draft]) => (draft ? [[aliasId, toRequestDraft(draft)]] : [])),
+    ),
   }
 }
 
@@ -184,6 +192,10 @@ function toTabDto(tab: TabState): TabDto {
     pinned: tab.pinned,
     base_revision: tab.baseRevision ?? '',
     ...(tab.draft ? { draft: toRequestDto(tab.draft) } : {}),
+    ...(tab.aliasId ? { alias_id: tab.aliasId } : {}),
+    ...(tab.versionDrafts && Object.keys(tab.versionDrafts).length > 0
+      ? { version_drafts: Object.fromEntries(Object.entries(tab.versionDrafts).map(([aliasId, draft]) => [aliasId, toRequestDto(draft)])) }
+      : {}),
   }
 }
 

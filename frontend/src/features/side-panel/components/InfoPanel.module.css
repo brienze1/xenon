@@ -59,3 +59,10 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
+
+.plainName {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+}

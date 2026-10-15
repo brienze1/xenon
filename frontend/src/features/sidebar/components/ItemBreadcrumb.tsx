@@ -18,12 +18,14 @@ interface ItemBreadcrumbProps {
   name: string
   /** The open item's own name, last in the trail: the tab's editable name, which the tab saves. */
   nameEditor: ReactNode
+  /** Set while the tab shows an alias: the request's name is then plain text and this, the alias's name, comes last. */
+  aliasEditor?: ReactNode
   onOpenItem: (id: string, kind: ContainerKind, mode: OpenMode) => void
   onOpenRequest: (id: string) => void
 }
 
 /** Where the open request or example lives: its collection and folders, then its own (editable) name. */
-export function ItemBreadcrumb({ itemId, name, nameEditor, onOpenItem, onOpenRequest }: ItemBreadcrumbProps) {
+export function ItemBreadcrumb({ itemId, name, nameEditor, aliasEditor, onOpenItem, onOpenRequest }: ItemBreadcrumbProps) {
   const tree = useSidebarStore((state) => state.tree)
   const trail = useMemo(() => (itemId === null ? [] : breadcrumbTrail(tree, itemId)), [tree, itemId])
   const ancestors = trail.slice(0, -1)
@@ -47,9 +49,21 @@ export function ItemBreadcrumb({ itemId, name, nameEditor, onOpenItem, onOpenReq
             {SEPARATOR}
           </li>
         ))}
-        <li className={styles.current} aria-current="page">
-          {nameEditor}
-        </li>
+        {aliasEditor ? (
+          <>
+            <li className={styles.ancestor}>
+              <span className={styles.plain}>{trail.at(-1)?.name ?? name}</span>
+              {SEPARATOR}
+            </li>
+            <li className={styles.current} aria-current="page">
+              {aliasEditor}
+            </li>
+          </>
+        ) : (
+          <li className={styles.current} aria-current="page">
+            {nameEditor}
+          </li>
+        )}
       </ol>
     </nav>
   )

@@ -32,7 +32,11 @@ interface InfoPanelProps {
 export function InfoPanel({ tabId }: InfoPanelProps) {
   const requestId = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.id ?? '')
   const name = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.name ?? '')
-  const description = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.description ?? '')
+  const aliasShown = useRequestBuilderStore((state) => (state.tabs[tabId]?.aliasId ?? null) !== null)
+  const requestName = useRequestBuilderStore((state) => state.tabs[tabId]?.savedDefault?.name ?? '')
+  const ownDescription = useRequestBuilderStore((state) => state.tabs[tabId]?.draft.description ?? '')
+  const defaultDescription = useRequestBuilderStore((state) => state.tabs[tabId]?.savedDefault?.description ?? '')
+  const description = aliasShown ? defaultDescription : ownDescription
   const setDescription = useRequestBuilderStore((state) => state.setDescription)
   const location = useSidebarStore(useShallow((state) => (requestId ? selectLocation(state.tree, requestId).slice(0, -1) : [])))
   const nameError = useTabsStore((state) => selectNameErrorText(state, tabId))
@@ -46,13 +50,17 @@ export function InfoPanel({ tabId }: InfoPanelProps) {
       {INFO_HEADING}
       <div className={styles.field}>
         {NAME_LABEL}
-        <EditableName
-          value={name}
-          label="Rename request"
-          error={nameError}
-          onChange={(next) => editTabName(tabId, next)}
-          onCancel={() => cancelTabName(tabId)}
-        />
+        {aliasShown ? (
+          <span className={styles.plainName}>{requestName}</span>
+        ) : (
+          <EditableName
+            value={name}
+            label="Rename request"
+            error={nameError}
+            onChange={(next) => editTabName(tabId, next)}
+            onCancel={() => cancelTabName(tabId)}
+          />
+        )}
       </div>
       <div className={styles.field}>
         {LOCATION_LABEL}
@@ -73,11 +81,13 @@ export function InfoPanel({ tabId }: InfoPanelProps) {
           ) : (
             DESCRIPTION_LABEL
           )}
-          <Button variant="ghost" size="sm" onClick={() => setEditing((current) => !current)}>
-            {editing ? 'Done Editing' : 'Edit Description'}
-          </Button>
+          {aliasShown ? null : (
+            <Button variant="ghost" size="sm" onClick={() => setEditing((current) => !current)}>
+              {editing ? 'Done Editing' : 'Edit Description'}
+            </Button>
+          )}
         </div>
-        {editing ? (
+        {editing && !aliasShown ? (
           <textarea
             id={descriptionId}
             name="description"

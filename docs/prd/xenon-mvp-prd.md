@@ -540,6 +540,18 @@ Stages 4 (scripts) and the OAuth 2.0 part of 5 carry most of the risk. Everythin
   - **Off and offline:** with Update automatically off, the startup check only shows "Update available" in the
     footer. Being offline or rate-limited is a quiet "Couldn't check for updates".
 
+- [x] **Request aliases** (XEN-016, GitHub issue #19). User decision: Postman has no equivalent, so this goes past
+  Postman parity on purpose. An alias is a named, **full and independent copy** of a request's sendable content
+  (method, URL, params, path variables, headers, auth, body, scripts, settings), stored in the request's own file
+  under `aliases:`; a request without aliases is written exactly as before, and the sidebar still shows one row per
+  request. The request tab's top-right **Aliases** dropdown lists Default, the aliases and **Create new alias…** (a
+  copy of the saved Default); each alias has a ⋯ to delete it. With an alias shown, the tab title reads
+  `Login · mx-test-user` and the breadcrumb ends with the alias name, renamed in place like any tab name. One tab per
+  request switches versions in place; each version keeps its own unsaved edits, and the tab remembers its alias across
+  restarts. Send uses the version on screen and runs its own scripts; an alias with its own OAuth 2.0 auth has its own
+  token. History records the alias. A Postman export writes each alias as its own request, `Login (mx-test-user)`;
+  the collection's OpenAPI document shows Defaults only. AI clients list, edit and send aliases over MCP.
+
 **Open questions**
 
 - [ ] Open-source Xenon once it replaces Postman, or keep it private? (Not needed for the MVP.)

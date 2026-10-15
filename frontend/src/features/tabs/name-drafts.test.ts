@@ -202,10 +202,11 @@ describe('name drafts in tabs', () => {
     vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({
       draft: { ...emptyDraft(), id, name: names[id]!, url: `https://x/${id}` },
       revision: `rev-${id}-${revision}`,
+      aliases: [],
     }))
     vi.mocked(requests.saveRequest).mockImplementation(async (_localId, sent) => {
       revision += 1
-      return { draft: sent, revision: `rev-${sent.id}-${revision}` }
+      return { draft: sent, revision: `rev-${sent.id}-${revision}`, aliases: [] }
     })
     vi.mocked(treeService.getTree).mockImplementation(async () => diskTree())
     vi.mocked(treeService.searchTree).mockResolvedValue({ matchIds: [], ancestorIds: [] })

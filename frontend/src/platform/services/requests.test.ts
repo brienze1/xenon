@@ -122,6 +122,7 @@ describe('request service', () => {
     expect(RequestService.Send).toHaveBeenCalledWith({
       local_id: 'ws',
       tab_id: 'tab',
+      alias_id: '',
       request: toRequestDto(emptyDraft()),
       acknowledge_missing_secrets: false,
       confirmed_environment_id: '',
