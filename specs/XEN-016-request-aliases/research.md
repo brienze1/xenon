@@ -123,7 +123,7 @@ Every decision below was settled against `origin/main` at `06d0d82` (2026-10-15)
   - `tree_edit` — new `kind: "alias"` with `request_id`: `create` (name), `update` (id + any of
     method/url/params/headers/body/auth/scripts), `rename` (id + name). Same rules and codes as the
     UI; recorded as AI activity with `aichangekind.Tree`.
-  - `delete` — new action `alias` with `id` (alias id) and `owner_id` (request id).
+  - `delete` — new target `alias` with `id` (alias id) and `owner_id` (request id).
   - `send` — `request_id` + optional `alias_id`; `alias_id` without `request_id` is refused as
     invalid arguments.
 - **Rationale**: examples are already handled this way (`mcp_tree_edit_example.go`,

@@ -15,7 +15,7 @@ Delete), `RequestService.Get` returns aliases, `Send` takes an `alias_id` (scrip
 alias; History records the alias). The request tab gets an Aliases dropdown (top-right), per-version
 drafts in the request-builder store, an extra alias crumb (XEN-012 rename) and a `Request · alias`
 title. Postman export expands aliases into sibling requests `Request (alias)`; MCP gets alias reads,
-`tree_edit kind:"alias"`, `delete` action `alias` and `send alias_id`. See [research.md](./research.md).
+`tree_edit kind:"alias"`, `delete` target `alias` and `send alias_id`. See [research.md](./research.md).
 
 ## Technical Context
 

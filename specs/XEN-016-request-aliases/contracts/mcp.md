@@ -23,14 +23,14 @@ Requests without aliases return `"aliases": []`.
 | `update` | `request_id`, `id`, any of `method`, `url`, `params`, `headers`, `body`, `auth`, `scripts` | Patches only the given fields of that alias; returns it. Default and other aliases untouched. |
 | `rename` | `request_id`, `id`, `name` | Renames; returns it. |
 
-Errors: unknown `request_id` → existing missing-item error; unknown `id` → `ALS-01404`; name rules →
+Errors: unknown `request_id` → existing missing-item error (`MCP-08404`); unknown `id` → `ALS-01404`; name rules →
 `ALS-03400` / `ALS-04400` / `ALS-05409`; other actions (`move`, `duplicate`, `save_settings`, token
-actions) with `kind: "alias"` → invalid arguments. Each successful call records AI activity with the
+actions) with `kind: "alias"` → invalid arguments (`MCP-07400`). Each successful call records AI activity with the
 request as target and change kind `tree`.
 
-## `delete` — action `alias`
+## `delete` — target `alias`
 
-Arguments: `id` (alias id), `owner_id` (request id). Removes the alias; result is the usual deleted
+Arguments: `"target": "alias"`, `id` (alias id), `owner_id` (request id). Removes the alias; result is the usual deleted
 result with the request as target and change kind `tree`. Unknown → `ALS-01404`.
 
 ## `send`

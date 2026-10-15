@@ -16,7 +16,10 @@ Thin adapter over `adapter.AliasManageController`
 | `Save(ctx, dto.SaveAlias)` | `{local_id*, request_id*, base_revision, force, alias: dto.RequestAlias*}` | `dto.Request` | Replaces the alias with `alias.id` (name + sendable content). Unknown id → `ALS-01404`. Name rules as above (a clash ignores the alias itself). Stale → `REQ-02409` unless `force`. Never touches the Default or other aliases. |
 | `Delete(ctx, dto.AliasReference)` | `{local_id*, request_id*, alias_id*, base_revision}` | `dto.Request` | Removes the alias. Unknown id → `ALS-01404`. Stale → `REQ-02409`. When the last alias goes, the `aliases` key is removed from the file. |
 
-`*` = `validate:"required,not_blank"`; `name` also `max=200`.
+`*` = `validate:"required,not_blank"` on `local_id`, `request_id`, `alias_id` and `alias.id`. `name` has no DTO
+validation (as for examples): blank or longer than 200 characters after trimming is the domain rule `ALS-03400`.
+DTO validation failures: `ALS-06400` (Create), `ALS-07400` (Save), `ALS-08400` (Delete). An unknown request is the
+existing `REQ-01404`.
 
 ### `dto.RequestAlias`
 
@@ -61,3 +64,6 @@ alias's token.
 | `ALS-03400` | bad request | the alias name must have 1 to 200 characters |
 | `ALS-04400` | bad request | "Default" is reserved; choose another alias name |
 | `ALS-05409` | conflict | this request already has an alias with that name |
+| `ALS-06400` | bad request | invalid create-alias payload |
+| `ALS-07400` | bad request | invalid save-alias payload |
+| `ALS-08400` | bad request | invalid delete-alias payload |

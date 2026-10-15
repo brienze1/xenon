@@ -162,14 +162,14 @@ domain → application → integration → infra → frontend.
 
 ## Phase 9: User Story 7 — AI clients work with aliases (P3)
 
-**Goal**: MCP reads, `tree_edit kind:"alias"`, `delete` action `alias`, `send alias_id` (contracts/mcp.md).
+**Goal**: MCP reads, `tree_edit kind:"alias"`, `delete` target `alias`, `send alias_id` (contracts/mcp.md).
 
 **Independent Test**: list, create, update, rename, delete and send an alias through MCP; check the file and History.
 
-- [ ] T046 [P] [US7] Write `test/integration/features/mcp/aliases.feature` (`@aliases`): `tree` request read shows `aliases` (secrets masked like the Default); `tree_edit` `kind: alias` `create`/`update`/`rename` with each error (`ALS-01404`, `ALS-03400`, `ALS-04400`, `ALS-05409`, unsupported action → invalid arguments); `delete` action `alias`; `send` with `request_id` + `alias_id` (History source AI + alias), `alias_id` alone → invalid arguments, unknown alias → `ALS-01404` and nothing sent; each change recorded as AI activity; prove red
+- [ ] T046 [P] [US7] Write `test/integration/features/mcp/aliases.feature` (`@aliases`): `tree` request read shows `aliases` (secrets masked like the Default); `tree_edit` `kind: alias` `create`/`update`/`rename` with each error (`ALS-01404`, `ALS-03400`, `ALS-04400`, `ALS-05409`, unsupported action → invalid arguments); `delete` target `alias`; `send` with `request_id` + `alias_id` (History source AI + alias), `alias_id` alone → invalid arguments, unknown alias → `ALS-01404` and nothing sent; each change recorded as AI activity; prove red
 - [ ] T047 [US7] Include aliases in the MCP request read in `internal/integration/entrypoint/controller/mcp_tree.go` / its DTO, through the existing leak guard
 - [ ] T048 [US7] Add `internal/integration/entrypoint/controller/mcp_tree_edit_alias.go` (create / update / rename via `ManageAliasService`) and route `kind: "alias"` in `mcp_tree_edit.go`; reject other actions for that kind
-- [ ] T049 [US7] Add the `alias` action to `internal/integration/entrypoint/controller/mcp_delete.go` (`id` + `owner_id`)
+- [ ] T049 [US7] Add the `alias` target to `internal/integration/entrypoint/controller/mcp_delete.go` (`id` + `owner_id`)
 - [ ] T050 [US7] Add `AliasId` to `internal/integration/entrypoint/dto/mcp_send_target.go` and pass it from `resolveMCPSendTarget` (`mcp_send_target.go`) into the send; refuse `alias_id` without `request_id`; update the tool descriptions/schemas for `tree_edit`, `delete` and `send` — T046 green
 
 ---
