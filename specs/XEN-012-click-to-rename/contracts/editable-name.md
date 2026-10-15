@@ -14,12 +14,12 @@ interface EditableNameProps {
   onChange: (value: string) => void
   /** Escape while editing: the caller drops the draft so `value` becomes the saved name again. */
   onCancel: () => void
-  /** Inline error under the name (already-formatted message node), or null. */
-  error?: ReactNode | null
+  /** Shown instead of an empty value, e.g. "Untitled Request" for a never-saved request; never part of the value. */
+  placeholder?: string
+  /** Inline error under the name (already-formatted message), or null. */
+  error?: string | null
   /** Upper bound on characters; default 200 (`maxItemNameLength`). */
   maxLength?: number
-  /** Class for the display text (lets a heading or a breadcrumb crumb keep its own typography). */
-  className?: string
 }
 ```
 

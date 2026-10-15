@@ -57,19 +57,27 @@ All findings below were verified against `origin/main` at `93f5381` on 2026-10-1
 
 ## R5. Where the saved name comes from
 
-- **Decision**: the saved name is the sidebar tree's name for requests, examples, collections
-  and folders (`selectLocation(tree, id).at(-1)`, or the example under `findExampleRequest`), and
-  `environments[].name` for environments. A request missing from the tree (never saved) has no
-  saved name.
-- **Rationale**:
-  - The tree is already what the sidebar, the breadcrumb ancestors and the collection/folder tab
-    title show (`useTabTitle`), so FR-009 follows directly.
-  - The tree is reloaded after every rename (`sidebar.rename` → `refresh`), after a sidebar F2
-    rename and after a git sync, so FR-014 needs no extra event wiring.
-  - A request draft restored from UI state after a restart may carry a pending name. A per-tab
-    `savedName` field could not be rebuilt for it, but the tree can.
-- **Change**: `useTabTitle` returns the tree name for a saved request and the tree example name
-  for an example tab. It falls back to the draft name only when a request has no tree node. Today it returns `draft.name`, which would show
+- **Decision**: each tab's saved name comes from the store that owns its draft and loaded it:
+  - request-builder `savedName`, a new field on the builder tab;
+  - the examples store's `example.name`;
+  - the item-settings `base.name`;
+  - `environments[].name`.
+
+  The sidebar tree is the fallback when that store doesn't know it, e.g. a draft restored from
+  the UI state. A request with no `requestId` (never saved) has no saved name.
+- **Rationale**: the draft and its saved name are loaded together, so they cannot disagree.
+  - The tree first plan (tree name as the saved name) was rejected while implementing it. A
+    git-sync rename can land in the tree before the request's changed-on-disk reload, which would
+    make a clean tab look renamed. That marks it dirty, and the reload is then skipped.
+  - For collections and folders, the item settings' base and the tree can also disagree
+    briefly, e.g. test fixtures, or a load that lags the tree.
+  - Renames made elsewhere still reach every store:
+    - `adoptRename` (requests, examples) updates `savedName`, or the example;
+    - a tree change reloads every open item (`refreshAll` in `app/bootstrap.ts`);
+    - the environment list reloads after a rename.
+- **Change**: `useTabTitle` returns the tree name for a saved request, falling back to the
+  builder's `savedName`, and the tree example name for an example tab. It returns the draft name
+  only for a request the tree doesn't have. Today it returns `draft.name`, which would show
   unsaved names in the tab label.
 
 ## R6. Dirty flags

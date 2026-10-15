@@ -22,10 +22,11 @@ Cmd/Ctrl+S and the close prompt's Save. It runs in this order:
 3. **Rename** through the existing operation (`TreeService.Rename`, `ExampleService.Rename`,
    `EnvironmentService.Update`). If it fails, its error shows inline and the name stays pending.
 
-The **saved name** is always what the sidebar tree (requests, examples, collections, folders) or
-the environment list (environments) shows. So the tab label, the breadcrumb ancestors and the
-sidebar change only after a successful save (FR-009). A rename made elsewhere moves the saved
-name under a pending draft without touching the draft (FR-014).
+The **saved name** is the one the draft's own store loaded or last saved: the request builder's
+`savedName`, the example, the item settings' base, or the environment list. The sidebar tree is
+the fallback (data-model.md). The tab label, the breadcrumb ancestors and the sidebar show the
+tree, so they change only after a successful save (FR-009). A rename made elsewhere moves the
+saved name under a pending draft without touching the draft (FR-014).
 
 There is no backend change. The Go rename, save and validation code is untouched (FR-015).
 
@@ -152,10 +153,10 @@ previous name), `features/workspaces/components/RenameWorkspaceDialog.tsx`
 
 | Tab | Editor | Draft owner | Saved name source | Rename call |
 | --- | --- | --- | --- | --- |
-| Request (saved) | Breadcrumb last crumb + Info panel | `request-builder` `draft.name` | sidebar tree node | `sidebar.rename` |
+| Request (saved) | Breadcrumb last crumb + Info panel | `request-builder` `draft.name` | builder `savedName` (fallback tree node) | `sidebar.rename` |
 | Request (never saved) | Breadcrumb last crumb + Info panel | `request-builder` `draft.name` | none (draft is the name) | none; Save dialog proposes it |
-| Example | Breadcrumb last crumb | `request-builder` `draft.name` of the example tab | tree example under its request | `sidebar.renameExample` |
-| Collection / folder | Heading (`ItemTab`) | `item-settings` `draft.name` | sidebar tree node (fallback `base.name`) | `sidebar.rename` |
+| Example | Breadcrumb last crumb | `request-builder` `draft.name` of the example tab | examples `example.name` (fallback tree example) | `sidebar.renameExample` |
+| Collection / folder | Heading (`ItemTab`) | `item-settings` `draft.name` | item `base.name` (fallback tree node) | `sidebar.rename` |
 | Environment | Heading (`EnvironmentTab`) | `environments` `nameDrafts[id]` | `environments[].name` | `environments.renameEnvironment` |
 
 ### BDD / test files that lock each requirement

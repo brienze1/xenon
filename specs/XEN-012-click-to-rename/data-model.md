@@ -11,14 +11,23 @@ Frontend state only. No Go entity, DTO or file format changes.
 | Collection / folder | `item-settings` `items[itemId].draft.name` (existing field, now editable through `editName`) | loaded container name | the item entry: `items().drop(itemId)` on close / discard / preview reuse |
 | Environment | `environments` `nameDrafts[environmentId]` (**new** `Record<string, string>`) | absent = no draft | until `dropName(id)` (close, discard, successful rename), environment deleted, or `reset()` on workspace switch |
 
-**Saved name**: the name the sidebar shows.
+**Saved name**: the name the store that owns the draft loaded or last saved, so the draft and
+the saved name always move together. The sidebar tree is the fallback only when that store doesn't
+know it.
 
-- Request: `selectLocation(sidebar.tree, requestId).at(-1)`, or `null` when the request has no
-  tree node (never saved).
-- Example: the name of `exampleId` under `findExampleRequest(tree, exampleId)`.
-- Collection / folder: the tree node's name, falling back to `items[itemId].base.name` while the
-  tree has not loaded.
+- Request: `request-builder` `tabs[tabId].savedName` (**new** field, set by `openSaved`, `save`,
+  `saveAs`, `adoptRename` and `duplicateTab`; null for a never-saved request or a draft restored
+  from the UI state), falling back to the tree node's name. `null` for a request never saved.
+- Example: `examples` `tabs[tabId].example.name`, falling back to the tree example's name.
+- Collection / folder: `item-settings` `items[itemId].base.name`, falling back to the tree node's
+  name. A tree change reloads every open item (`refreshAll`), so the base follows renames made
+  elsewhere.
 - Environment: `environments.find(id).name`.
+
+The tree alone would race: a git-sync rename can change the tree before the request's
+changed-on-disk reload, which would make a clean tab look renamed for a moment, and dirty enough
+to skip that reload. The logic lives once, in `tabs/lib/tab-name.ts` (`tabNameOf`). The tabs store
+reads it through `getState()`; `use-name-pending.ts` reads it through narrow selectors.
 
 **Derived: name pending** (`tabs/lib/name-draft.ts`):
 

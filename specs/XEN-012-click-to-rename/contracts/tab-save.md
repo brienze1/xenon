@@ -8,7 +8,7 @@
 | --- | --- |
 | `setName(tabId, name)` | Unchanged: a content edit that sets `dirty`. Used only for a never-saved request, whose name is part of the content the Save dialog writes. |
 | `editName(tabId, name)` | **New.** Patches `draft.name` without touching `dirty` or `curlPaste`. Used for saved requests and example tabs, whose pending name is derived against the tree (an example tab's draft also has `id === ''`, so the draft can't tell the two cases apart itself). |
-| `dropName(tabId, savedName)` | **New.** Sets `draft.name = savedName`. Leaves `dirty` alone. |
+| `TabDraft.savedName` | **New** field: the request's name on disk, set by `openSaved`, `save`, `saveAs`, `adoptRename`, and `loadDraft`'s optional fifth argument (`duplicateTab` passes it on); null for a never-saved request or a draft restored from the UI state. |
 | `save(tabId, force?, options?: { name?: string })` | Same as today, but when `options.name` is given the request is sent with `draft.name` replaced by it. The tab's `draft.name` in the store is not changed by the save. |
 | `adoptRename(requestId, previousName)` | Re-reads the request. For each tab on it: always takes `baseRevision`; replaces `draft.name` with the new saved name only when `draft.name.trim() === previousName`. |
 
@@ -23,8 +23,9 @@
 | Action | Contract |
 | --- | --- |
 | `editName(itemId, name)` | **New.** Sets `draft.name`. Does not set `dirty` (pending is derived). |
-| `dropName(itemId, savedName)` | **New.** Sets `draft.name = savedName`. |
 | `load(itemId)` | Same as today, except it keeps `draft.name` when it was pending against the previous `base.name`. |
+| `save(itemId)` | Same as today, but writes `base.name` (the saved name) and keeps the draft's name afterwards. |
+| `isItemNamePending(state, itemId)` | **New** selector: `draft.name.trim() !== base.name`. The tab's Save button uses it. |
 | `adoptName` | **Deleted** (its only caller, the Overview Name field, is removed). |
 
 ### `features/environments/store.ts`
@@ -42,8 +43,9 @@
 | Member | Contract |
 | --- | --- |
 | `nameErrors: Record<string, NameError>` | **New** (see data-model.md). |
+| `selectNameErrorText(state, tabId)`, `selectItemTabId(state, itemId)`, `selectEnvironmentTabId(state, environmentId)`, `isTabDirty(tabId)` | **New** exported selectors. Other features may use a store, never its `lib/` or `hooks/`, so the item, environment and side-panel editors read the error text and their tab id through these. |
 | `editTabName(tabId, name)` | **New.** Routes by tab type: a never-saved request → `builder.setName`; a saved request or an example → `builder.editName`; a collection/folder → `items.editName`; an environment → `environments.editName`. Clears `nameErrors[tabId]`. |
-| `cancelTabName(tabId)` | **New.** Routes to the owning store's `dropName` with the saved name and clears `nameErrors[tabId]`. |
+| `cancelTabName(tabId)` | **New.** Puts the saved name back: `editName(…, savedName)` on the request builder or the item settings, `dropName(environmentId)` on the environments store. Clears `nameErrors[tabId]`. |
 | `isDirty(tabId)` (internal) | Today's rule OR the tab's name is pending. Every caller uses it: close prompt, bulk close, preview reuse, and `handleChangedOnDisk`'s decision whether to reload or to show the "changed on disk" notice. |
 | `save(tabId?)` | Calls `saveTabChanges(tab)`. Unsaved requests still open the Save dialog. Settings and Globals tabs are unchanged (no name). |
 | `resolveClose('save')` | Calls `saveTabChanges(tab)`. On `ok:false` it shows `closeError`; on `value:false` it keeps the tab open and focused (today's behaviour). On success it closes the tab and prompts for the next. |
