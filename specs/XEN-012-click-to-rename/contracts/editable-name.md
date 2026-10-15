@@ -8,7 +8,7 @@ A domain-free shared component. It doesn't know about stores, tabs or saving.
 interface EditableNameProps {
   /** The name to show: the tab's draft name (falls back to the saved name when there is no draft). */
   value: string
-  /** Accessible name of the display button and the input, e.g. "Rename request", "Rename environment". */
+  /** What is renamed, e.g. "Rename request". The input's accessible name; the display button is "<label>: <value>" so the name itself is still announced. */
   label: string
   /** Called on every keystroke with the raw input value (not trimmed). */
   onChange: (value: string) => void
@@ -27,7 +27,7 @@ interface EditableNameProps {
 
 | Situation | Result |
 | --- | --- |
-| Not editing | `<button type="button" aria-label={label} title="Click to rename">` showing `value` (`translate="no"`), one line with `text-overflow: ellipsis`, pointer cursor, a hover background and a visible focus ring from the tokens (the look of today's `ItemBreadcrumb` `.rename` crumb). The `title` is "Click to rename" plus the full name when it is cut. No `<input>` in the DOM. |
+| Not editing | `<button type="button" aria-label={`${label}: ${value}`} title="Click to rename">` (the label alone would hide the name from screen readers and from the heading's accessible name) showing `value` (`translate="no"`), one line with `text-overflow: ellipsis`, pointer cursor, a hover background and a visible focus ring from the tokens (the look of today's `ItemBreadcrumb` `.rename` crumb). The `title` is "Click to rename" plus the full name when it is cut. No `<input>` in the DOM. |
 | Click the button, or focus it and press Enter or Space | Renders `<input aria-label={label} maxLength={maxLength} value={value} spellCheck={false}>` in place. It is focused with the whole text selected. |
 | Type | `onChange(next)` on every change. The input is controlled by `value`. |
 | Enter | `stopPropagation`; the input closes (back to the button showing `value`) and focus returns to the button. `onChange` and `onCancel` are not called and nothing is saved. |

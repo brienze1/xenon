@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
@@ -22,6 +22,7 @@ const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { useSidebarStore } = await import('@/features/sidebar/store')
 const { useItemSettingsStore } = await import('@/features/item-settings/store')
 const { useDocumentationStore } = await import('@/features/documentation/store')
+const { useTabsStore } = await import('@/features/tabs/store')
 const { ItemTab } = await import('./ItemTab')
 
 function node(id: string, kind: TreeNode['kind'], name: string, children: TreeNode[] = []): TreeNode {
@@ -121,6 +122,14 @@ describe('ItemTab', () => {
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
     useSidebarStore.setState({ tree: [node('c1', 'collection', 'Billing', [node('f1', 'folder', 'Invoices')])], status: 'ready' })
     vi.mocked(tree.saveItemSettings).mockImplementation(async (_localId, settings) => settings)
+    useTabsStore.setState({
+      tabs: [
+        { id: 'tc', requestId: null, pinned: true, kind: 'collection', itemId: 'c1' },
+        { id: 'tf', requestId: null, pinned: true, kind: 'folder', itemId: 'f1' },
+      ],
+      activeTabId: 'tc',
+      nameErrors: {},
+    })
   })
 
   it('opens on the Overview with the name and the description rendered as markdown', async () => {
@@ -128,7 +137,9 @@ describe('ItemTab', () => {
     const tab = await screen.findByRole('region', { name: 'Billing collection' })
     expect(within(tab).getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true')
     expect(within(tab).getAllByRole('tab').map((item) => item.textContent)).toEqual(['Overview', 'Authorization', 'Headers', 'Scripts', 'Variables', 'Documentation'])
-    expect(within(tab).getByRole('textbox', { name: 'Name' })).toHaveValue('Billing')
+    expect(within(tab).getByRole('heading', { level: 2 })).toHaveTextContent('Billing')
+    expect(within(tab).getByRole('button', { name: /^Rename collection/ })).toHaveTextContent('Billing')
+    expect(within(tab).queryByRole('textbox', { name: /name/i })).not.toBeInTheDocument()
     expect(await within(tab).findByText('billing', { selector: 'strong' })).toBeInTheDocument()
     expect(within(tab).getByRole('button', { name: 'Save' })).toBeDisabled()
   })
@@ -147,26 +158,43 @@ describe('ItemTab', () => {
     expect(onSave).toHaveBeenCalled()
   })
 
-  it('renames the item from the Overview like the sidebar does', async () => {
-    vi.mocked(tree.renameItem).mockResolvedValue(undefined as never)
-    vi.mocked(tree.getTree).mockResolvedValue([node('c1', 'collection', 'Payments')])
-    renderTab(collection)
-    const name = await screen.findByRole('textbox', { name: 'Name' })
-    await userEvent.clear(name)
-    await userEvent.type(name, 'Payments{Enter}')
-    await waitFor(() => expect(tree.renameItem).toHaveBeenCalledWith('ws', 'c1', 'Payments'))
-    await waitFor(() => expect(store().items.c1?.draft?.name).toBe('Payments'))
+  it('edits the collection name in place from its heading as a draft, and enables Save', async () => {
+    const onSave = renderTab(collection)
+    const tab = await screen.findByRole('region', { name: 'Billing collection' })
+    await userEvent.click(within(tab).getByRole('button', { name: /^Rename collection/ }))
+    const input = within(tab).getByRole('textbox', { name: 'Rename collection' }) as HTMLInputElement
+    expect([input.selectionStart, input.selectionEnd]).toEqual([0, 'Billing'.length])
+    await userEvent.clear(input)
+    await userEvent.type(input, 'Payments{Enter}')
+    expect(store().items.c1?.draft?.name).toBe('Payments')
     expect(store().items.c1?.dirty).toBe(false)
+    expect(tree.renameItem).not.toHaveBeenCalled()
+    expect(within(tab).getByRole('button', { name: /^Rename collection/ })).toHaveTextContent('Payments')
+    expect(within(tab).getByRole('button', { name: 'Save' })).toBeEnabled()
+    await userEvent.click(within(tab).getByRole('button', { name: 'Save' }))
+    expect(onSave).toHaveBeenCalledTimes(1)
   })
 
-  it('shows why a rename failed under the name', async () => {
-    vi.mocked(tree.renameItem).mockRejectedValue(new AppError('TRE-03409', 'An item with that name already exists'))
+  it('edits a folder name in place from the keyboard, and Escape restores it', async () => {
+    renderTab(folder)
+    const tab = await screen.findByRole('region', { name: 'Invoices folder' })
+    within(tab).getByRole('button', { name: /^Rename folder/ }).focus()
+    await userEvent.keyboard('{Enter}')
+    const input = within(tab).getByRole('textbox', { name: 'Rename folder' })
+    expect(input).toHaveFocus()
+    await userEvent.type(input, ' 2024')
+    expect(store().items.f1?.draft?.name).toBe('Invoices 2024')
+    await userEvent.keyboard('{Escape}')
+    expect(store().items.f1?.draft?.name).toBe('Invoices')
+    expect(within(tab).getByRole('button', { name: /^Rename folder/ })).toHaveFocus()
+  })
+
+  it('shows a name error under the heading', async () => {
+    useTabsStore.setState({ nameErrors: { tc: { kind: 'failed', error: new AppError('TRE-05500', 'The folder is read-only') } } })
     renderTab(collection)
-    const name = await screen.findByRole('textbox', { name: 'Name' })
-    await userEvent.clear(name)
-    await userEvent.type(name, 'Taken{Enter}')
-    expect(await screen.findByRole('alert')).toHaveTextContent('An item with that name already exists. Choose another name')
-    expect(name).toHaveAttribute('aria-invalid', 'true')
+    const tab = await screen.findByRole('region', { name: 'Billing collection' })
+    expect(within(tab).getByRole('alert')).toHaveTextContent('The folder is read-only. Choose another name, then save.')
+    expect(within(tab).getByRole('button', { name: /^Rename collection/ })).toHaveAttribute('aria-invalid', 'true')
   })
 
   it('edits the authorization through the composed editor', async () => {

@@ -75,7 +75,7 @@ All findings below were verified against `origin/main` at `93f5381` on 2026-10-1
 ## R6. Dirty flags
 
 - **Decision**:
-  - `request-builder` `setName` stops setting `dirty` for a saved request or an example (`draft.id !== ''`); it only patches `draft.name`. For a never-saved request (`draft.id === ''`) it keeps setting `dirty`, because that request has no saved name to compare against and its name is part of the content that the Save dialog writes. A pending
+  - `request-builder` gains `editName`, which patches `draft.name` without setting `dirty`; it is used for saved requests and example tabs. `setName` stays the content edit that sets `dirty`, used only by never-saved requests: they have no saved name to compare against, and the name is part of what the Save dialog writes. An example tab's draft also has `id === ''`, so the draft can't tell the cases apart; the tabs store, which knows the tab type, picks the action. A pending
     name is derived: `isNamePending(draftName, savedName)` is
     `savedName !== null && draftName.trim() !== savedName`. That way Escape, or typing back to
     the saved name, clears the dot without a flag to reset (FR-006, edge case "unchanged after
@@ -134,7 +134,7 @@ All findings below were verified against `origin/main` at `93f5381` on 2026-10-1
   - `ItemBreadcrumb` (sidebar feature) stops calling `rename` and `renameExample` and drops
     `RenameInput`. It takes a `nameEditor: ReactNode` prop rendered as the current crumb.
   - `app/layout/TabBreadcrumb.tsx` builds that editor from `request-builder` (draft name,
-    `setName`) and `tabs` (`nameErrors`), and passes `EditableName`.
+    `editTabName`/`cancelTabName`) and `tabs` (`nameErrors`), and passes `EditableName`.
   - The `onRenamed` prop goes away.
 - **Rationale**: the frontend-architecture rule "only `app/` composes several features". The
   sidebar feature must not depend on the request-builder draft for its own breadcrumb.
