@@ -1,8 +1,8 @@
 package dto
 
 type MCPEnvInspect struct {
-	Text      string `json:"text"`
-	RequestId string `json:"request_id"`
+	Text      string `json:"text" description:"Text whose {{variables}} to inspect when no request_id is given."`
+	RequestId string `json:"request_id" description:"Saved request whose variables to inspect." validated_as:"id"`
 }
 
 func (m *MCPEnvInspect) HasRequest() bool {

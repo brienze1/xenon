@@ -3,11 +3,11 @@ package dto
 import "github.com/brienze1/xenon/internal/domain/entity"
 
 type MCPEnvEdit struct {
-	ConfirmBeforeSend *bool   `json:"confirm_before_send"`
-	Name              *string `json:"name"`
-	Color             *string `json:"color"`
-	Index             *int    `json:"index"`
-	Id                string  `json:"id"`
+	ConfirmBeforeSend *bool   `json:"confirm_before_send" description:"Ask before sending with this environment." used_by:"create,update"`
+	Name              *string `json:"name" description:"Environment name." used_by:"create,update" required_for:"create"`
+	Color             *string `json:"color" description:"Environment color." used_by:"create,update" enum:"none,green,cyan,magenta,yellow,red"`
+	Index             *int    `json:"index" description:"New 0-based position in the environment list." used_by:"reorder" required_for:"reorder"`
+	Id                string  `json:"id" description:"Environment id." used_by:"update,duplicate,reorder" required_for:"update,duplicate,reorder"`
 }
 
 func (m *MCPEnvEdit) EnvironmentName() string {

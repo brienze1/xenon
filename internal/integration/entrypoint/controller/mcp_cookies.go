@@ -36,7 +36,7 @@ func NewMCPCookies(errorHandler adapter.ErrorHandler, manageCookiesService appAd
 }
 
 func (m *mcpCookies) Tool() dto.MCPTool {
-	return dto.NewMCPTool(cookiesAITool)
+	return dto.NewMCPTool(cookiesAITool, dto.NewMCPToolArguments[dto.MCPCookiesList](mcpCookiesListAction))
 }
 
 func (m *mcpCookies) Handle(toolCtx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {

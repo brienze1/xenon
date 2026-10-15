@@ -1,8 +1,8 @@
 package dto
 
 type MCPGitCommit struct {
-	Message string   `json:"message"`
-	ItemIds []string `json:"item_ids"`
+	Message string   `json:"message" description:"Commit message." required_for:"commit"`
+	ItemIds []string `json:"item_ids" description:"Ids of the changed items to commit; omitted commits every change."`
 }
 
 func (m *MCPGitCommit) HasItemIds() bool {

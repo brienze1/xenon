@@ -1,7 +1,7 @@
 package dto
 
 type MCPScriptCheck struct {
-	Text string `json:"text"`
+	Text string `json:"text" description:"Script source to check."`
 }
 
 func (m *MCPScriptCheck) CheckScript() CheckScript {

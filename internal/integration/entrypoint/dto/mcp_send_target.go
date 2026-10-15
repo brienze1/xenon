@@ -3,8 +3,8 @@ package dto
 import "github.com/brienze1/xenon/internal/domain/entity"
 
 type MCPSendTarget struct {
-	Request   *Request `json:"request"`
-	RequestId string   `json:"request_id"`
+	Request   *Request `json:"request" description:"Ad-hoc request to use; pass exactly one of request or request_id."`
+	RequestId string   `json:"request_id" description:"Saved request id; pass exactly one of request or request_id." validated_as:"id"`
 }
 
 func (m *MCPSendTarget) IsAmbiguous() bool {

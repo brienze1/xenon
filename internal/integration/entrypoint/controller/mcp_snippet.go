@@ -49,7 +49,7 @@ func NewMCPSnippet(
 }
 
 func (m *mcpSnippet) Tool() dto.MCPTool {
-	return dto.NewMCPTool(snippetAITool)
+	return dto.NewMCPTool(snippetAITool, dto.NewMCPToolArguments[dto.MCPSnippetInput](mcpSnippetGenerateAction))
 }
 
 func (m *mcpSnippet) Handle(toolCtx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {

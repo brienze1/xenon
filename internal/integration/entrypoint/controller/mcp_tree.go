@@ -69,7 +69,13 @@ func NewMCPTree(
 }
 
 func (m *mcpTree) Tool() dto.MCPTool {
-	return dto.NewMCPTool(treeAITool)
+	return dto.NewMCPTool(
+		treeAITool,
+		dto.NewMCPToolArguments[dto.MCPTreeList](mcpTreeListAction),
+		dto.NewMCPToolArguments[dto.MCPTreeSearch](mcpTreeSearchAction),
+		dto.NewMCPToolArguments[dto.MCPTreeTokenOwner](mcpTreeTokenAction),
+		dto.NewMCPToolArguments[dto.MCPTreeItem](mcpTreeGetAction, mcpTreeSettingsAction),
+	)
 }
 
 func (m *mcpTree) Handle(toolCtx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {

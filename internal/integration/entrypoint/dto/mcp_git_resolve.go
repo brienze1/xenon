@@ -1,7 +1,7 @@
 package dto
 
 type MCPGitResolve struct {
-	Items []MCPGitResolution `json:"items"`
+	Items []MCPGitResolution `json:"items" description:"One resolution per conflict of the open pull."`
 }
 
 func (m *MCPGitResolve) ResolveSyncConflicts(sessionId string) []ResolveSyncConflict {

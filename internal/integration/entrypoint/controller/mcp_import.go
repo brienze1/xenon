@@ -38,7 +38,7 @@ func NewMCPImport(errorHandler adapter.ErrorHandler, manageImportService appAdap
 }
 
 func (m *mcpImport) Tool() dto.MCPTool {
-	return dto.NewMCPTool(importAITool)
+	return dto.NewMCPTool(importAITool, dto.NewMCPToolArguments[dto.MCPImport](importAITool.Actions...))
 }
 
 func (m *mcpImport) Handle(toolCtx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {

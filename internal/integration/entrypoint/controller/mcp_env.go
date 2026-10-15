@@ -55,7 +55,11 @@ func NewMCPEnv(
 }
 
 func (m *mcpEnv) Tool() dto.MCPTool {
-	return dto.NewMCPTool(envAITool)
+	return dto.NewMCPTool(
+		envAITool,
+		dto.NewMCPToolArguments[dto.MCPEnvScope](mcpEnvGetAction),
+		dto.NewMCPToolArguments[dto.MCPEnvInspect](mcpEnvInspectAction),
+	)
 }
 
 func (m *mcpEnv) Handle(toolCtx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {

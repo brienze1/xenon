@@ -36,7 +36,7 @@ func NewMCPSettingsEdit(errorHandler adapter.ErrorHandler, manageAppSettingsServ
 }
 
 func (m *mcpSettingsEdit) Tool() dto.MCPTool {
-	return dto.NewMCPTool(settingsEditAITool)
+	return dto.NewMCPTool(settingsEditAITool, dto.NewMCPToolArguments[dto.MCPSettingsSave](mcpSettingsEditSaveAction))
 }
 
 func (m *mcpSettingsEdit) Handle(toolCtx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {

@@ -87,7 +87,7 @@ func NewMCPTreeEdit(
 }
 
 func (m *mcpTreeEdit) Tool() dto.MCPTool {
-	return dto.NewMCPTool(treeEditAITool)
+	return dto.NewMCPTool(treeEditAITool, dto.NewMCPToolArguments[dto.MCPTreeEdit](treeEditAITool.Actions...))
 }
 
 func (m *mcpTreeEdit) Handle(toolCtx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {

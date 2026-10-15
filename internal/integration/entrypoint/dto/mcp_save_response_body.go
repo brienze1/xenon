@@ -7,7 +7,7 @@ import (
 )
 
 type MCPSaveResponseBody struct {
-	Path string `json:"path"`
+	Path string `json:"path" description:"Absolute path to write to." required_for:"response_body"`
 }
 
 func (m *MCPSaveResponseBody) HasAbsolutePath() bool {

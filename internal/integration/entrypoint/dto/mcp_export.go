@@ -8,11 +8,11 @@ import (
 const mcpXenonExportFormat = "xenon"
 
 type MCPExport struct {
-	Target           MCPExportTarget `json:"target"`
-	Format           string          `json:"format"`
-	Path             string          `json:"path"`
-	CurrentAsInitial bool            `json:"current_as_initial"`
-	IncludeSecrets   bool            `json:"include_secrets"`
+	Target           MCPExportTarget `json:"target" description:"What to export; id is not needed for workspace or globals." used_by:"options,run" required_for:"options,run"`
+	Format           string          `json:"format" description:"Export format." used_by:"run" required_for:"run" enum:"xenon,xenon_yaml,postman"`
+	Path             string          `json:"path" description:"Absolute path to write to." used_by:"run" required_for:"run" validated_as:"target_path"`
+	CurrentAsInitial bool            `json:"current_as_initial" description:"Export current values as the initial values." used_by:"run"`
+	IncludeSecrets   bool            `json:"include_secrets" description:"Refused over MCP: only a human can export secrets." used_by:"run"`
 }
 
 func (m *MCPExport) RequestsSecrets() bool {

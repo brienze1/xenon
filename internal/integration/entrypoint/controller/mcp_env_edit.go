@@ -63,7 +63,13 @@ func NewMCPEnvEdit(
 }
 
 func (m *mcpEnvEdit) Tool() dto.MCPTool {
-	return dto.NewMCPTool(envEditAITool)
+	return dto.NewMCPTool(
+		envEditAITool,
+		dto.NewMCPToolArguments[dto.MCPEnvEdit](mcpEnvEditCreateAction, mcpEnvEditUpdateAction, mcpEnvEditDuplicateAction, mcpEnvEditReorderAction),
+		dto.NewMCPToolArguments[dto.MCPEnvActivation](mcpEnvEditSetActiveAction),
+		dto.NewMCPToolArguments[dto.MCPEnvVariable](entity.AIEnvEditAddVarAction, entity.AIEnvEditSetCurrentAction, mcpEnvEditResetAction, mcpEnvEditPersistAction),
+		dto.NewMCPToolArguments[dto.MCPEnvVariables](mcpEnvEditSetVarsAction),
+	)
 }
 
 func (m *mcpEnvEdit) Handle(toolCtx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {

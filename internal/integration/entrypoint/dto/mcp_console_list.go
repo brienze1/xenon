@@ -19,9 +19,9 @@ var mcpConsoleFilters = map[string]string{
 }
 
 type MCPConsoleList struct {
-	Type   string `json:"type"`
-	Query  string `json:"query"`
-	Cursor string `json:"cursor"`
+	Type   string `json:"type" description:"Entry kind to list; empty lists every kind." enum:"request,log,error" validated_as:"filter"`
+	Query  string `json:"query" description:"Text the entries must contain."`
+	Cursor string `json:"cursor" description:"Cursor from the previous page."`
 }
 
 // ListConsole reads up to the whole console buffer; false means the type is not request, log or error.

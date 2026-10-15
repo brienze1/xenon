@@ -36,7 +36,11 @@ func NewMCPHistory(errorHandler adapter.ErrorHandler, manageHistoryService appAd
 }
 
 func (m *mcpHistory) Tool() dto.MCPTool {
-	return dto.NewMCPTool(historyAITool)
+	return dto.NewMCPTool(
+		historyAITool,
+		dto.NewMCPToolArguments[dto.MCPHistoryList](mcpHistoryListAction),
+		dto.NewMCPToolArguments[dto.MCPHistoryGet](mcpHistoryGetAction),
+	)
 }
 
 func (m *mcpHistory) Handle(toolCtx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {

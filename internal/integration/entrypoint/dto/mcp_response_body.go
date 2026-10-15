@@ -3,8 +3,8 @@ package dto
 import "github.com/brienze1/xenon/internal/domain/entity"
 
 type MCPResponseBody struct {
-	Offset int `json:"offset"`
-	Length int `json:"length"`
+	Offset int `json:"offset" description:"Character offset to read the body from."`
+	Length int `json:"length" description:"Characters to read, at most 65536."`
 }
 
 // ReadLength caps the requested length at the most one read may return.

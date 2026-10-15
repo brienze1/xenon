@@ -56,7 +56,7 @@ func NewMCPSend(
 }
 
 func (m *mcpSend) Tool() dto.MCPTool {
-	return dto.NewMCPTool(sendAITool)
+	return dto.NewMCPTool(sendAITool, dto.NewMCPToolArguments[dto.MCPSend]())
 }
 
 func (m *mcpSend) Handle(toolCtx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {
