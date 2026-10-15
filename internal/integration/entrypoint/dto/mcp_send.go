@@ -9,5 +9,5 @@ type MCPSend struct {
 }
 
 func (m *MCPSend) SendRequest(client, localId, tabId, confirmedEnvironmentId string, request Request) SendRequest {
-	return NewSendRequest(NewSendOrigin(historysource.AI, client), localId, tabId, confirmedEnvironmentId, request, m.SendUnresolved, m.SendExpiredToken)
+	return NewSendRequest(NewSendOrigin(historysource.AI, client), localId, tabId, confirmedEnvironmentId, request, m.SendUnresolved, m.SendExpiredToken).WithAlias(m.AliasId)
 }

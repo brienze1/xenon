@@ -18,6 +18,7 @@ type Request struct {
 	Params         []KeyValue      `json:"params"`
 	PathVariables  []PathVariable  `json:"path_variables"`
 	Headers        []KeyValue      `json:"headers"`
+	Aliases        []RequestAlias  `json:"aliases" schema:"-"`
 }
 
 func NewRequest(request entity.Request) Request {
@@ -37,11 +38,16 @@ func NewRequest(request entity.Request) Request {
 		Settings:       NewRequestSettings(request.Settings),
 		Scripts:        NewScripts(request.Scripts),
 		InheritScripts: &request.InheritScripts,
+		Aliases:        NewRequestAliases(request.Aliases),
 	}
 	for _, variable := range request.PathVariables {
 		result.PathVariables = append(result.PathVariables, NewPathVariable(variable))
 	}
 	return result
+}
+
+func NewRequestVersion(request entity.Request, aliasId string) Request {
+	return NewRequest(request.Version(aliasId))
 }
 
 func (r *Request) ToEntity() entity.Request {
@@ -71,4 +77,13 @@ func (r *Request) ToEntity() entity.Request {
 
 func (r Request) LogValue() any {
 	return map[string]any{"id": r.Id, "method": r.Method, "url": r.Url}
+}
+
+func (r Request) AliasOrEmpty(id string) RequestAlias {
+	for _, alias := range r.Aliases {
+		if alias.Id == id {
+			return alias
+		}
+	}
+	return NewEmptyRequestAlias(id)
 }

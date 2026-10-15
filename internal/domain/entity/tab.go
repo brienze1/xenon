@@ -7,6 +7,7 @@ import (
 
 type Tab struct {
 	Draft         *Request
+	VersionDrafts map[string]Request
 	Kind          enums.TabKind
 	TabID         string
 	RequestID     string
@@ -14,6 +15,7 @@ type Tab struct {
 	EnvironmentID string
 	ItemID        string
 	BaseRevision  string
+	AliasID       string
 	Pinned        bool
 }
 
@@ -45,7 +47,7 @@ func (t Tab) HasID(id string) bool {
 }
 
 func (t Tab) LogValue() any {
-	value := map[string]any{"tabId": t.TabID, "kind": t.Kind, "requestId": t.RequestID, "exampleId": t.ExampleID, "environmentId": t.EnvironmentID, "itemId": t.ItemID, "baseRevision": t.BaseRevision, "pinned": t.Pinned}
+	value := map[string]any{"tabId": t.TabID, "kind": t.Kind, "requestId": t.RequestID, "exampleId": t.ExampleID, "environmentId": t.EnvironmentID, "itemId": t.ItemID, "baseRevision": t.BaseRevision, "aliasId": t.AliasID, "pinned": t.Pinned}
 	if t.Draft != nil {
 		value["draft"] = t.Draft.LogValue()
 	}

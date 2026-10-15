@@ -22,10 +22,10 @@ type MCPTreeEdit struct {
 	Response         *ExampleResponseEdit `json:"response" description:"Saved response of an example." used_by:"update" validated_as:"example.response"`
 	Variables        *[]MCPVariableRow    `json:"variables" description:"Collection variables; collections only." used_by:"save_settings"`
 	Index            *int                 `json:"index" description:"New 0-based position among the siblings." used_by:"move"`
-	Id               string               `json:"id" description:"Id of the item to change." used_by:"update,rename,move,duplicate,save_settings" required_for:"update,rename,move,duplicate,save_settings" validated_as:"example_id"`
-	Kind             string               `json:"kind" description:"Kind of item to create." used_by:"create" required_for:"create" enum:"collection,folder,request,example"`
+	Id               string               `json:"id" description:"Id of the item, or of the alias with kind alias, to change." used_by:"update,rename,move,duplicate,save_settings" required_for:"update,rename,move,duplicate,save_settings" validated_as:"example_id"`
+	Kind             string               `json:"kind" description:"Kind of item to create; alias creates, updates or renames an alias of request_id." used_by:"create,update,rename" required_for:"create" enum:"collection,folder,request,example,alias"`
 	ParentId         string               `json:"parent_id" description:"Parent collection or folder; required to create a folder or request." used_by:"create,move"`
-	RequestId        string               `json:"request_id" description:"Request the example belongs to; required to create an example." used_by:"create"`
+	RequestId        string               `json:"request_id" description:"Request the example or alias belongs to; required to create an example and for every alias action." used_by:"create,update,rename"`
 	OwnerId          string               `json:"owner_id" description:"Id of the item that owns the OAuth token." used_by:"get_token,refresh_token,use_token" required_for:"get_token,refresh_token,use_token"`
 	Use              string               `json:"use" description:"Which token to use." used_by:"use_token" required_for:"use_token" enum:"access_token,id_token" validated_as:"use_token"`
 	FromLastResponse bool                 `json:"from_last_response" description:"Create the example from the last response of the request." used_by:"create"`

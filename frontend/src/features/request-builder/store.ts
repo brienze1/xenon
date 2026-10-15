@@ -14,6 +14,7 @@ import {
   type RequestBody,
   type RequestDraft,
   type RequestSettings,
+  type SavedRequest,
   type ScriptSet,
   type SendAcknowledgement,
 } from '@/platform/mappers/request'
@@ -33,6 +34,7 @@ import {
   sendRequest,
   type PendingSend,
 } from '@/platform/services/requests'
+import { createAlias, deleteAlias, saveAlias } from '@/platform/services/aliases'
 import { pickFile } from '@/platform/services/dialogs'
 import { inspectVariables, suggestVariables } from '@/platform/services/variables'
 import { keepRowIds } from '@/shared/lib/rows'
@@ -40,7 +42,8 @@ import type { Result } from '@/shared/types/result'
 import { withPastedRequest } from './lib/curl'
 import { fieldText, withFieldText } from './lib/draft-fields'
 import { rowsOf, withRows, withSavedRows } from './lib/draft-rows'
-import type { BulkTable, FieldSelection, SubTab, TabDraft } from './model'
+import { DEFAULT_VERSION, isVersionDirty, versionKey } from './lib/versions'
+import type { BulkTable, FieldSelection, SubTab, TabDraft, VersionState } from './model'
 
 interface SaveOptions {
   name?: string
@@ -56,7 +59,18 @@ interface RequestBuilderState {
   urlFocusTick: number
   focusUrl: () => void
   ensureTab: (tabId: string) => void
-  openSaved: (tabId: string, requestId: string) => Promise<boolean>
+  /** Opens the saved request on `aliasId` (default: the alias the tab shows when it already shows this request, else the Default). */
+  openSaved: (tabId: string, requestId: string, aliasId?: string | null) => Promise<boolean>
+  /** Shows another version of the request in the tab; the version on screen keeps its unsaved edits aside. */
+  selectVersion: (tabId: string, aliasId: string | null) => void
+  /** Creates an alias as a copy of the saved Default and shows it; returns why it could not, or null. */
+  createAlias: (tabId: string, name: string) => Promise<AppError | null>
+  /** Deletes an alias and its unsaved edits; a tab showing it goes back to the Default. Returns why it could not, or null. */
+  deleteAlias: (tabId: string, aliasId: string) => Promise<AppError | null>
+  /** Puts back, after a restart, the alias a tab showed and the drafts of its other versions, then reads its aliases. */
+  restoreVersions: (tabId: string, aliasId: string | null, versionDrafts: Record<string, RequestDraft>) => Promise<void>
+  /** Gives a duplicated tab the versions of the tab it copies. */
+  copyVersions: (fromTabId: string, toTabId: string) => void
   loadDraft: (tabId: string, draft: RequestDraft, baseRevision: string | null, dirty: boolean, savedName?: string | null) => void
   dropTab: (tabId: string) => void
   detach: (tabId: string) => void
@@ -145,7 +159,44 @@ function newTab(): TabDraft {
     conflict: false,
     saving: false,
     dirty: false,
+    aliasId: null,
+    aliases: [],
+    savedDefault: null,
+    versions: {},
   }
+}
+
+/** What the tab knows about the request on disk after Go returned it. */
+function fromDisk(saved: SavedRequest): Pick<TabDraft, 'baseRevision' | 'aliases' | 'savedDefault'> {
+  return { baseRevision: saved.revision, aliases: saved.aliases, savedDefault: saved.draft }
+}
+
+/** A version as it is on disk; null for an alias the request no longer has or a Default never read. */
+function savedVersion(current: TabDraft, aliasId: string | null): VersionState | null {
+  if (aliasId === null) {
+    return current.savedDefault === null ? null : { draft: current.savedDefault, savedName: current.savedDefault.name, dirty: false }
+  }
+  const alias = current.aliases.find((candidate) => candidate.id === aliasId)
+  return alias ? { draft: alias.draft, savedName: alias.name, dirty: false } : null
+}
+
+/** The versions with the Default kept aside taking a rename made elsewhere, as the Default on screen would. */
+function renamedDefault(versions: Record<string, VersionState>, previousName: string, name: string): Record<string, VersionState> {
+  const stashed = versions[DEFAULT_VERSION]
+  if (!stashed) {
+    return versions
+  }
+  const draft = stashed.draft.name.trim() === previousName ? { ...stashed.draft, name } : stashed.draft
+  return { ...versions, [DEFAULT_VERSION]: { ...stashed, draft, savedName: name } }
+}
+
+/** The versions kept aside that still exist on disk, without the one on screen. */
+function keptVersions(versions: Record<string, VersionState>, saved: SavedRequest, shown: string | null): Record<string, VersionState> {
+  return Object.fromEntries(
+    Object.entries(versions).filter(
+      ([key]) => key !== versionKey(shown) && (key === DEFAULT_VERSION || saved.aliases.some((alias) => alias.id === key)),
+    ),
+  )
 }
 
 export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) => {
@@ -208,6 +259,29 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
     })
   }
 
+  /** Saves the alias on screen, its name included; the Default and the other aliases stay as they are on disk. */
+  async function saveShownAlias(tabId: string, localId: string, aliasId: string, force: boolean): Promise<Result<boolean, AppError>> {
+    try {
+      const current = tab(tabId)
+      const saved = await saveAlias(localId, aliasId, current.draft, current.baseRevision ?? '', force)
+      const stored = saved.aliases.find((alias) => alias.id === aliasId)
+      const latest = tab(tabId)
+      patchTab(tabId, {
+        ...fromDisk(saved),
+        draft: stored ? { ...withSavedRows(latest.draft, stored.draft), name: latest.draft.name } : latest.draft,
+        savedName: stored?.name ?? latest.savedName,
+        conflict: false,
+        error: null,
+        dirty: false,
+      })
+      return { ok: true, value: true }
+    } catch (error) {
+      const appError = toAppError(error)
+      patchTab(tabId, appError.code === SAVE_CONFLICT_CODE ? { conflict: true } : { error: appError })
+      return { ok: false, error: appError }
+    }
+  }
+
   function setRows(tabId: string, table: BulkTable, rows: KeyValueRow[]) {
     patchDraft(tabId, (draft) => withRows(draft, table, rows))
     if (table === 'params') {
@@ -225,20 +299,128 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
       }
     },
 
-    openSaved: async (tabId, requestId) => {
+    openSaved: async (tabId, requestId, aliasId) => {
       const localId = useWorkspacesStore.getState().activeLocalId
       if (!localId) {
         return false
       }
       try {
         const saved = await getRequest(localId, requestId)
-        patchTab(tabId, { ...newTab(), subTab: tab(tabId).subTab, draft: saved.draft, baseRevision: saved.revision, savedName: saved.draft.name })
+        const current = tab(tabId)
+        const same = current.draft.id === requestId
+        const wanted = aliasId !== undefined ? aliasId : same ? current.aliasId : null
+        const shown = saved.aliases.find((alias) => alias.id === wanted) ?? null
+        patchTab(tabId, {
+          ...newTab(),
+          ...fromDisk(saved),
+          subTab: current.subTab,
+          draft: shown ? shown.draft : saved.draft,
+          savedName: shown ? shown.name : saved.draft.name,
+          aliasId: shown?.id ?? null,
+          versions: same ? keptVersions(current.versions, saved, shown?.id ?? null) : {},
+        })
         void get().refreshAutoHeaders(tabId)
         return true
       } catch (error) {
         fail(tabId, error)
         return false
       }
+    },
+
+    selectVersion: (tabId, aliasId) => {
+      const current = tab(tabId)
+      if (current.aliasId === aliasId) {
+        return
+      }
+      const versions = { ...current.versions, [versionKey(current.aliasId)]: { draft: current.draft, savedName: current.savedName, dirty: current.dirty } }
+      const target = versions[versionKey(aliasId)] ?? savedVersion(current, aliasId)
+      if (!target) {
+        return
+      }
+      delete versions[versionKey(aliasId)]
+      patchTab(tabId, { aliasId, draft: target.draft, savedName: target.savedName, dirty: target.dirty, versions, curlPaste: null, selection: null, error: null, conflict: false })
+      void get().refreshAutoHeaders(tabId)
+    },
+
+    createAlias: async (tabId, name) => {
+      const localId = useWorkspacesStore.getState().activeLocalId
+      const current = tab(tabId)
+      if (!localId || current.draft.id === '') {
+        return null
+      }
+      try {
+        const saved = await createAlias(localId, current.draft.id, name, current.baseRevision ?? '')
+        patchTab(tabId, fromDisk(saved))
+        const created = saved.aliases.at(-1)
+        if (created) {
+          get().selectVersion(tabId, created.id)
+        }
+        return null
+      } catch (error) {
+        const appError = toAppError(error)
+        if (appError.code === SAVE_CONFLICT_CODE) {
+          patchTab(tabId, { conflict: true })
+        }
+        return appError
+      }
+    },
+
+    deleteAlias: async (tabId, aliasId) => {
+      const localId = useWorkspacesStore.getState().activeLocalId
+      const current = tab(tabId)
+      if (!localId || current.draft.id === '') {
+        return null
+      }
+      try {
+        const saved = await deleteAlias(localId, current.draft.id, aliasId, current.baseRevision ?? '')
+        const latest = tab(tabId)
+        const versions = { ...latest.versions }
+        delete versions[aliasId]
+        if (latest.aliasId !== aliasId) {
+          patchTab(tabId, { ...fromDisk(saved), versions })
+          return null
+        }
+        const fallback = versions[DEFAULT_VERSION] ?? { draft: saved.draft, savedName: saved.draft.name, dirty: false }
+        delete versions[DEFAULT_VERSION]
+        patchTab(tabId, { ...fromDisk(saved), aliasId: null, draft: fallback.draft, savedName: fallback.savedName, dirty: fallback.dirty, versions, error: null, conflict: false })
+        void get().refreshAutoHeaders(tabId)
+        return null
+      } catch (error) {
+        const appError = toAppError(error)
+        if (appError.code === SAVE_CONFLICT_CODE) {
+          patchTab(tabId, { conflict: true })
+        }
+        return appError
+      }
+    },
+
+    restoreVersions: async (tabId, aliasId, versionDrafts) => {
+      const restored = Object.fromEntries(
+        Object.entries(versionDrafts).map(([key, draft]) => [key, { draft, savedName: null, dirty: true }]),
+      )
+      patchTab(tabId, { aliasId, versions: { ...tab(tabId).versions, ...restored } })
+      const localId = useWorkspacesStore.getState().activeLocalId
+      const requestId = tab(tabId).draft.id
+      if (!localId || requestId === '') {
+        return
+      }
+      try {
+        const saved = await getRequest(localId, requestId)
+        const current = tab(tabId)
+        const known = current.aliasId === null || saved.aliases.some((alias) => alias.id === current.aliasId)
+        patchTab(tabId, { aliases: saved.aliases, savedDefault: saved.draft, versions: keptVersions(current.versions, saved, known ? current.aliasId : null) })
+        if (!known) {
+          const fallback = current.versions[DEFAULT_VERSION] ?? { draft: saved.draft, savedName: saved.draft.name, dirty: false }
+          patchTab(tabId, { aliasId: null, draft: fallback.draft, savedName: fallback.savedName, dirty: fallback.dirty })
+        }
+      } catch (error) {
+        fail(tabId, error)
+      }
+    },
+
+    copyVersions: (fromTabId, toTabId) => {
+      const source = tab(fromTabId)
+      patchTab(toTabId, { aliasId: source.aliasId, aliases: source.aliases, savedDefault: source.savedDefault, versions: structuredClone(source.versions) })
     },
 
     loadDraft: (tabId, draft, baseRevision, dirty, savedName = null) => {
@@ -257,7 +439,17 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
     },
 
     detach: (tabId) =>
-      patchTab(tabId, { draft: { ...tab(tabId).draft, id: '' }, baseRevision: null, savedName: null, conflict: false, dirty: true }),
+      patchTab(tabId, {
+        draft: { ...tab(tabId).draft, id: '' },
+        baseRevision: null,
+        savedName: null,
+        conflict: false,
+        dirty: true,
+        aliasId: null,
+        aliases: [],
+        savedDefault: null,
+        versions: {},
+      }),
 
     save: async (tabId, force = false, options = {}) => {
       const localId = useWorkspacesStore.getState().activeLocalId
@@ -267,12 +459,15 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
       }
       patchTab(tabId, { saving: true })
       try {
+        if (current.aliasId !== null) {
+          return await saveShownAlias(tabId, localId, current.aliasId, force)
+        }
         const sent = options.name === undefined ? current.draft : { ...current.draft, name: options.name }
         const saved = await saveRequest(localId, sent, current.baseRevision, force)
         const draftName = tab(tabId).draft.name
         patchTab(tabId, {
+          ...fromDisk(saved),
           draft: { ...withSavedRows(tab(tabId).draft, saved.draft), name: options.name === undefined ? saved.draft.name : draftName },
-          baseRevision: saved.revision,
           savedName: saved.draft.name,
           conflict: false,
           error: null,
@@ -323,9 +518,14 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
       try {
         const saved = await getRequest(localId, requestId)
         for (const tabId of tabIds) {
-          const draft = tab(tabId).draft
+          const current = tab(tabId)
+          if (current.aliasId !== null) {
+            patchTab(tabId, { ...fromDisk(saved), versions: renamedDefault(current.versions, previousName, saved.draft.name) })
+            continue
+          }
+          const draft = current.draft
           const keepsOwnName = draft.name.trim() !== previousName
-          patchTab(tabId, { draft: keepsOwnName ? draft : { ...draft, name: saved.draft.name }, baseRevision: saved.revision, savedName: saved.draft.name })
+          patchTab(tabId, { ...fromDisk(saved), draft: keepsOwnName ? draft : { ...draft, name: saved.draft.name }, savedName: saved.draft.name })
         }
       } catch (error) {
         for (const tabId of tabIds) {
@@ -475,7 +675,7 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
       const responses = useResponseViewerStore.getState()
       let pending: PendingSend
       try {
-        pending = sendRequest(localId, tabId, tab(tabId).draft, acknowledged)
+        pending = sendRequest(localId, tabId, tab(tabId).draft, acknowledged, tab(tabId).aliasId)
       } catch (error) {
         responses.setFailure(tabId, toAppError(error))
         return
@@ -582,3 +782,15 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
     },
   }
 })
+
+/** The versions a tab keeps aside with unsaved edits, Default first then aliases in file order (null is the Default). */
+export function selectDirtyHiddenVersions(state: Pick<RequestBuilderState, 'tabs'>, tabId: string): (string | null)[] {
+  const current = state.tabs[tabId]
+  if (!current) {
+    return []
+  }
+  return [null, ...current.aliases.map((alias) => alias.id)].filter((aliasId) => {
+    const version = current.versions[versionKey(aliasId)]
+    return version !== undefined && isVersionDirty(version)
+  })
+}

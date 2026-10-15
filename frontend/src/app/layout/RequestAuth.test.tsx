@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emptyAuth } from '@/platform/mappers/request'
+import { emptyAuth, emptyDraft } from '@/platform/mappers/request'
 
 vi.mock('@/platform/services/oauth', () => ({
   getNewToken: vi.fn(),
@@ -38,6 +38,13 @@ describe('auth composition', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: 'Auth type' }), 'oauth2')
     expect(useRequestBuilderStore.getState().tabs['tab-9']!.draft.auth.type).toBe('oauth2')
     await vi.waitFor(() => expect(oauth.getToken).toHaveBeenCalledWith('ws', 'tab-9'))
+  })
+
+  it('keeps the token of an alias shown in the tab by the alias', async () => {
+    useRequestBuilderStore.getState().loadDraft('tab-9', { ...emptyDraft(), id: 'r1', auth: { ...emptyAuth(), type: 'oauth2' } }, 'rev-1', false)
+    useRequestBuilderStore.setState((state) => ({ tabs: { ...state.tabs, 'tab-9': { ...state.tabs['tab-9']!, aliasId: 'a1' } } }))
+    render(<RequestAuth tabId="tab-9" />)
+    await vi.waitFor(() => expect(oauth.getToken).toHaveBeenCalledWith('ws', 'r1:a1'))
   })
 
   it('edits a collection auth owned by the collection', async () => {

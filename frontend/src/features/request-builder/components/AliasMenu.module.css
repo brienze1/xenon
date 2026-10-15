@@ -1,0 +1,49 @@
+.root {
+  flex: none;
+}
+
+.trigger {
+  max-width: 240px;
+  border: 1px solid var(--color-border);
+}
+
+.caption {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.shown {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu {
+  right: 0;
+  left: auto;
+  max-height: min(420px, 60vh);
+  overflow-y: auto;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.name {
+  flex: 1;
+}
+
+.more {
+  width: auto;
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.separator {
+  height: 1px;
+  margin: var(--space-2) 0;
+  background: var(--color-border);
+}

@@ -146,10 +146,12 @@ export function autoHeaders(localId: string, draft: RequestDraft): Promise<AutoH
   return call(async () => (await RequestService.AutoHeaders({ local_id: localId, request: toRequestDto(draft) }) ?? []).map(toAutoHeader))
 }
 
-export function sendRequest(localId: string, tabId: string, draft: RequestDraft, acknowledgement: SendAcknowledgement): PendingSend {
+/** Sends the draft; `aliasId` names the alias it is a version of, so Go runs that alias's scripts and records it. */
+export function sendRequest(localId: string, tabId: string, draft: RequestDraft, acknowledgement: SendAcknowledgement, aliasId: string | null = null): PendingSend {
   const pending = RequestService.Send({
     local_id: localId,
     tab_id: tabId,
+    alias_id: aliasId ?? '',
     request: toRequestDto(draft),
     acknowledge_missing_secrets: acknowledgement.missingSecrets,
     confirmed_environment_id: acknowledgement.confirmedEnvironmentId,

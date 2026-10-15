@@ -59,7 +59,7 @@ describe('workspace service', () => {
     expect(WorkspaceService.Activate).toHaveBeenCalledWith({ local_id: 'L1' })
     expect(snapshot.summary.name).toBe('Acme')
     expect(snapshot.tree[0]).toMatchObject({ id: 'c1', name: 'Billing', children: [] })
-    expect(snapshot.uiState.tabs).toEqual([{ tabId: 't1', kind: 'request', requestId: 'r1', exampleId: null, environmentId: null, itemId: null, pinned: true, baseRevision: 'rev', draft: null }])
+    expect(snapshot.uiState.tabs).toEqual([{ tabId: 't1', kind: 'request', requestId: 'r1', exampleId: null, environmentId: null, itemId: null, pinned: true, baseRevision: 'rev', draft: null, aliasId: null, versionDrafts: {} }])
     expect(snapshot.uiState.activeTabId).toBe('t1')
     expect(snapshot.uiState.previewTabId).toBeNull()
   })

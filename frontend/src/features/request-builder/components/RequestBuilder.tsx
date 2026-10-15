@@ -7,6 +7,7 @@ import { DecorationCardContext, type RenderDecorationCard } from '@/shared/ui/co
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import type { RequestBuilderMode } from '@/features/request-builder/model'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
+import { AliasMenu } from './AliasMenu'
 import { ConfirmSendDialog } from './ConfirmSendDialog'
 import { CurlPasteNotice } from './CurlPasteNotice'
 import { ExpiredTokenDialog } from './ExpiredTokenDialog'
@@ -38,6 +39,7 @@ interface RequestBuilderProps {
 export function RequestBuilder({ tabId, scripts, auth, breadcrumb, mode = 'request' }: RequestBuilderProps) {
   const error = useRequestBuilderStore((state) => state.tabs[tabId]?.error ?? null)
   const conflict = useRequestBuilderStore((state) => state.tabs[tabId]?.conflict === true)
+  const isSaved = useRequestBuilderStore((state) => (state.tabs[tabId]?.draft.id ?? '') !== '')
   const save = useRequestBuilderStore((state) => state.save)
   const openSaved = useRequestBuilderStore((state) => state.openSaved)
   const headingId = useId()
@@ -54,7 +56,10 @@ export function RequestBuilder({ tabId, scripts, auth, breadcrumb, mode = 'reque
         <h2 id={headingId} className="visually-hidden">
           {mode === 'example' ? 'Example Request' : 'Request'}
         </h2>
-        {breadcrumb}
+        <div className={styles.header}>
+          {breadcrumb}
+          {mode === 'request' && isSaved ? <AliasMenu tabId={tabId} /> : null}
+        </div>
         <RequestBar tabId={tabId} mode={mode} />
         {mode === 'request' ? <CurlPasteNotice tabId={tabId} /> : null}
         {mode === 'request' && conflict ? (

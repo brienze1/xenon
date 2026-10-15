@@ -75,7 +75,7 @@ describe('environment tabs', () => {
     environments().reset()
     vi.mocked(requests.autoHeaders).mockResolvedValue([])
     vi.mocked(requests.releaseResponse).mockResolvedValue()
-    vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: { ...emptyDraft(), id, name: `Request ${id}` }, revision: `rev-${id}` }))
+    vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: { ...emptyDraft(), id, name: `Request ${id}` }, revision: `rev-${id}`, aliases: [] }))
     vi.mocked(variables.getVariableTable).mockImplementation(async (_localId, scope) => ({ scope, rows: [ROW], warnings: [] }))
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
     useEnvironmentsStore.setState({ environments: [dev, hml], activeId: 'e1', status: 'ready' })

@@ -38,7 +38,7 @@ describe('ExpiredTokenDialog', () => {
     expect(useRequestBuilderStore.getState().tabs[TAB]!.expiredTokenOwner).toBe('c1')
     vi.mocked(requests.sendRequest).mockReturnValueOnce({ result: new Promise(() => undefined), cancel: vi.fn() })
     await user.click(screen.getByRole('button', { name: 'Send Anyway' }))
-    expect(requests.sendRequest).toHaveBeenLastCalledWith('ws', TAB, expect.any(Object), { confirmedEnvironmentId: '', missingSecrets: false, expiredToken: true })
+    expect(requests.sendRequest).toHaveBeenLastCalledWith('ws', TAB, expect.any(Object), { confirmedEnvironmentId: '', missingSecrets: false, expiredToken: true }, null)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 

@@ -121,6 +121,14 @@ func (e EffectiveRequest) SendsJarCookies() bool {
 	return !e.IsAutoHeaderDisabled(HeaderCookie)
 }
 
+// ForAlias moves an alias's own auth to the alias's owner id.
+func (e EffectiveRequest) ForAlias(requestId, aliasId string) EffectiveRequest {
+	if !IsDefaultAliasID(aliasId) && e.AuthOwner == requestId {
+		e.AuthOwner = AliasAuthOwner(requestId, aliasId)
+	}
+	return e
+}
+
 func (e EffectiveRequest) WithAuthOwner(owner string) EffectiveRequest {
 	if e.AuthOwner == "" {
 		e.AuthOwner = owner

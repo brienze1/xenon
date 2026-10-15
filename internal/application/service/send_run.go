@@ -19,6 +19,7 @@ type sendRun struct {
 	token      *entity.OAuth2Token
 	localId    string
 	tabId      string
+	aliasId    string
 	root       string
 	appVersion string
 	sendId     string
@@ -63,7 +64,7 @@ func (r sendRun) runScripts(ctx context.Context, execution *entity.SendExecution
 func (r sendRun) send(ctx context.Context, tabId string, request entity.Request, ancestors []entity.Collection, execution *entity.SendExecution) error {
 	resolved, resolvedAncestors := usecase.ResolveRequestVariables(execution.Request, ancestors, r.variables(execution), r.dynamic(ctx))
 	effective := usecase.ResolveEffectiveRequest(resolved, resolvedAncestors, r.root).WithCookieJar(r.localId)
-	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, r.appVersion, r.service.cookies.header(ctx, r.localId, effective))).WithAuthOwner(r.tabId)
+	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, r.appVersion, r.service.cookies.header(ctx, r.localId, effective))).ForAlias(resolved.ID, r.aliasId).WithAuthOwner(r.tabId)
 	effective, err := r.authorize(ctx, effective)
 	if err != nil {
 		return err

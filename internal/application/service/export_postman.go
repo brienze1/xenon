@@ -53,7 +53,7 @@ func (p postmanExport) item(ctx context.Context, root string, request entity.Exp
 }
 
 func (p postmanExport) collection(ctx context.Context, node entity.ExportNode, ancestors []entity.Collection, request entity.ExportRequest, local entity.LocalVariables, documents *exportDocuments) error {
-	exported := usecase.EffectiveExportRoot(node, ancestors)
+	exported := usecase.EffectiveExportRoot(node, ancestors).WithAliasesAsRequests()
 	if request.CurrentValuesAsInitial {
 		current := local.CurrentValues(exported.ScopeRefWithin(ancestors))
 		exported.Container = exported.Container.WithVariables(usecase.ApplyCurrentValuesAsInitial(exported.Container.Variables, current))
@@ -63,8 +63,14 @@ func (p postmanExport) collection(ctx context.Context, node entity.ExportNode, a
 		return err
 	}
 	documents.add(postmanCollectionsFolder, node.Name(), postmanCollectionSuffix, data)
-	drops := append(usecase.FindPostmanDrops(node), usecase.FindPostmanSecretVariableDrops(exported.Container.Variables, exported.Path)...)
-	documents.summary = documents.summary.With(exported.Counts(), drops, usecase.FindLiteralCredentials(node))
+	drops := make([]entity.ExportDrop, 0)
+	credentials := make([]entity.ExportWarning, 0)
+	for _, scanned := range node.WithAliasRequests() {
+		drops = append(drops, usecase.FindPostmanDrops(scanned)...)
+		credentials = append(credentials, usecase.FindLiteralCredentials(scanned)...)
+	}
+	drops = append(drops, usecase.FindPostmanSecretVariableDrops(exported.Container.Variables, exported.Path)...)
+	documents.summary = documents.summary.With(exported.Counts(), drops, credentials)
 	return nil
 }
 

@@ -66,6 +66,22 @@ describe('CodePanel', () => {
     await waitFor(() => expect(screen.getByRole('textbox', { name: 'cURL snippet' })).toHaveTextContent('curl: https://api.test/orders'))
   })
 
+  it('follows the alias shown in the tab', async () => {
+    useRequestBuilderStore.setState((state) => ({
+      tabs: {
+        ...state.tabs,
+        [tabId]: {
+          ...state.tabs[tabId]!,
+          aliases: [{ id: 'a1', name: 'v2', draft: { ...emptyDraft(), url: 'https://api.test/v2/users' } }],
+        },
+      },
+    }))
+    render(<CodePanel tabId={tabId} />)
+    expect(await screen.findByRole('textbox', { name: 'cURL snippet' })).toHaveTextContent('curl: https://api.test/users')
+    act(() => useRequestBuilderStore.getState().selectVersion(tabId, 'a1'))
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'cURL snippet' })).toHaveTextContent('curl: https://api.test/v2/users'))
+  })
+
   it('switches language and remembers the options per language', async () => {
     render(<CodePanel tabId={tabId} />)
     await screen.findByRole('textbox', { name: 'cURL snippet' })

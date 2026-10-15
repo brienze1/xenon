@@ -11,7 +11,7 @@ import { ClockArt } from '@/shared/ui/empty-state/illustrations/ClockArt'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
 import { aiTag } from '@/features/sidebar/lib/history-labels'
 import { historyRows, sentTime } from '@/features/sidebar/lib/history-rows'
-import { useSidebarStore } from '@/features/sidebar/store'
+import { selectLocation, useSidebarStore } from '@/features/sidebar/store'
 import { ClearHistoryDialog } from './ClearHistoryDialog'
 import { HistoryActionRow } from './HistoryActionRow'
 import { HistorySourceFilter } from './HistorySourceFilter'
@@ -61,13 +61,20 @@ interface HistoryEntryButtonProps {
 function HistoryEntryButton({ entry, onOpen }: HistoryEntryButtonProps) {
   const result = outcome(entry)
   const time = sentTime(entry.sentAt)
+  const requestName = useSidebarStore((state) => (entry.sourceRequestId ? (selectLocation(state.tree, entry.sourceRequestId).at(-1) ?? null) : null))
+  const version = entry.aliasName === null ? null : `${requestName ?? 'Request'} · ${entry.aliasName}`
   return (
     <button
       type="button"
       className={styles.entry}
-      aria-label={`${entry.source === 'ai' ? `${aiTag(entry.client)} — ` : ''}${entry.method} ${entry.url || 'no URL'}, ${result.label}, ${time}`}
+      aria-label={`${entry.source === 'ai' ? `${aiTag(entry.client)} — ` : ''}${version ? `${version}, ` : ''}${entry.method} ${entry.url || 'no URL'}, ${result.label}, ${time}`}
       onClick={() => onOpen(entry.id)}
     >
+      {version ? (
+        <span className={styles.version} translate="no">
+          {version}
+        </span>
+      ) : null}
       <span className={styles.line}>
         {entry.source === 'ai' ? (
           <span className={styles.aiTag} translate="no">

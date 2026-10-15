@@ -69,7 +69,7 @@ describe('ConfirmSendDialog', () => {
     vi.mocked(requests.sendRequest).mockReturnValue({ result: new Promise(() => undefined), cancel: vi.fn() })
     render(<ConfirmSendDialog tabId={TAB} />)
     await userEvent.click(screen.getByRole('button', { name: 'Send to prod' }))
-    expect(requests.sendRequest).toHaveBeenCalledWith('ws', TAB, expect.any(Object), { confirmedEnvironmentId: '01P', missingSecrets: true, expiredToken: false })
+    expect(requests.sendRequest).toHaveBeenCalledWith('ws', TAB, expect.any(Object), { confirmedEnvironmentId: '01P', missingSecrets: true, expiredToken: false }, null)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })

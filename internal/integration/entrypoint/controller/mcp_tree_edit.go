@@ -25,7 +25,7 @@ const (
 	mcpTreeEditRefreshTokenAction = "refresh_token"
 	mcpTreeEditUseTokenAction     = "use_token"
 
-	mcpTreeEditKindReason      = "kind must be collection, folder, request or example"
+	mcpTreeEditKindReason      = "kind must be collection, folder, request, example or alias"
 	mcpTreeEditMoveReason      = "an example cannot be moved"
 	mcpTreeEditUpdateReason    = "update edits a request or an example; use rename or save_settings for a collection or folder"
 	mcpTreeEditVariablesReason = "only a collection has variables"
@@ -34,7 +34,7 @@ const (
 
 var treeEditAITool = entity.AITool{
 	Name:        "tree_edit",
-	Description: "Create, update, rename, move or duplicate items, edit collection/folder settings, and manage OAuth tokens.",
+	Description: "Create, update, rename, move or duplicate items, create, update or rename request aliases (kind alias with request_id), edit collection/folder settings, and manage OAuth tokens.",
 	Actions: []string{
 		mcpTreeEditCreateAction, mcpTreeEditUpdateAction, mcpTreeEditRenameAction, mcpTreeEditMoveAction, mcpTreeEditDuplicateAction,
 		mcpTreeEditSaveSettingsAction, mcpTreeEditGetTokenAction, mcpTreeEditRefreshTokenAction, mcpTreeEditUseTokenAction,
@@ -51,6 +51,7 @@ type mcpTreeEdit struct {
 	saveRequestService         appAdapter.SaveRequestService
 	autoSyncService            appAdapter.AutoSyncService
 	manageExampleService       appAdapter.ManageExampleService
+	manageAliasService         appAdapter.ManageAliasService
 	manageResponseService      appAdapter.ManageResponseService
 	guardAIOutputService       appAdapter.GuardAIOutputService
 	manageItemSettingsService  appAdapter.ManageItemSettingsService
@@ -65,6 +66,7 @@ func NewMCPTreeEdit(
 	saveRequestService appAdapter.SaveRequestService,
 	autoSyncService appAdapter.AutoSyncService,
 	manageExampleService appAdapter.ManageExampleService,
+	manageAliasService appAdapter.ManageAliasService,
 	manageResponseService appAdapter.ManageResponseService,
 	guardAIOutputService appAdapter.GuardAIOutputService,
 	manageItemSettingsService appAdapter.ManageItemSettingsService,
@@ -78,6 +80,7 @@ func NewMCPTreeEdit(
 		saveRequestService:         saveRequestService,
 		autoSyncService:            autoSyncService,
 		manageExampleService:       manageExampleService,
+		manageAliasService:         manageAliasService,
 		manageResponseService:      manageResponseService,
 		guardAIOutputService:       guardAIOutputService,
 		manageItemSettingsService:  manageItemSettingsService,
@@ -120,6 +123,9 @@ func (m *mcpTreeEdit) Handle(toolCtx context.Context, call dto.MCPToolCall) (res
 }
 
 func (m *mcpTreeEdit) edit(ctx context.Context, call dto.MCPToolCall, arguments dto.MCPTreeEdit) (dto.MCPToolResult, error) {
+	if arguments.EditsAlias() {
+		return m.editAlias(ctx, call, arguments)
+	}
 	switch call.Action {
 	case mcpTreeEditCreateAction:
 		return m.create(ctx, call, arguments)

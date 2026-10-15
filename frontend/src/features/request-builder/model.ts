@@ -1,6 +1,6 @@
 import type { AppError } from '@/platform/errors'
 import type { VariableInspection } from '@/platform/mappers/inspection'
-import type { AutoHeader, RequestDraft, SendAcknowledgement } from '@/platform/mappers/request'
+import type { AutoHeader, RequestDraft, SavedAlias, SendAcknowledgement } from '@/platform/mappers/request'
 import type { MissingSecrets, PendingSend, SendConfirmation } from '@/platform/services/requests'
 
 export type SubTab = 'params' | 'auth' | 'headers' | 'body' | 'scripts' | 'settings'
@@ -36,6 +36,21 @@ export interface TabDraft {
   savedName: string | null
   conflict: boolean
   saving: boolean
+  dirty: boolean
+  /** The alias the tab shows; null for the Default. `draft`, `savedName` and `dirty` are that version's. */
+  aliasId: string | null
+  /** The request's aliases as last read from disk, in file order. */
+  aliases: SavedAlias[]
+  /** The request's Default as last read from disk; null when the tab never read the request. */
+  savedDefault: RequestDraft | null
+  /** The versions not on screen that the tab touched, keyed by alias id (`''` for the Default). */
+  versions: Record<string, VersionState>
+}
+
+/** One version of a request kept aside while another is on screen. */
+export interface VersionState {
+  draft: RequestDraft
+  savedName: string | null
   dirty: boolean
 }
 

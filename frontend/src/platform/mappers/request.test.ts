@@ -10,6 +10,7 @@ const dto: RequestDto = {
   description: 'd',
   method: 'POST',
   url: 'https://h/:id?a=1',
+  aliases: [],
   revision: 'r',
   params: [{ key: 'a', value: '1', description: '', enabled: true }, { key: 'b', value: '2', description: 'x', enabled: false }],
   path_variables: [{ key: 'id', value: '7', description: '' }],

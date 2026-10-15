@@ -16,7 +16,7 @@ import (
 
 var sendAITool = entity.AITool{
 	Name:            "send",
-	Description:     "Send a saved or ad-hoc request with the active environment and return the response.",
+	Description:     "Send a saved request (or one of its aliases, with alias_id) or an ad-hoc request with the active environment and return the response.",
 	Effect:          aitooleffect.Destructive,
 	OpenWorld:       true,
 	WorkspaceScoped: true,
@@ -146,7 +146,7 @@ func (m *mcpSend) sendRequest(ctx context.Context, request dto.SendRequest) (dto
 		return dto.SendResult{}, err
 	}
 
-	sent, err := m.sendRequestService.Send(ctx, request.WorkspaceId(), request.TargetTabId(), request.ToEntity(), properties.Properties().Application.Version, request.ToAcknowledgement(), request.ToSendOrigin())
+	sent, err := m.sendRequestService.Send(ctx, request.WorkspaceId(), request.TargetTabId(), request.AliasId, request.ToEntity(), properties.Properties().Application.Version, request.ToAcknowledgement(), request.ToSendOrigin())
 	if err != nil {
 		return dto.SendResult{}, err
 	}

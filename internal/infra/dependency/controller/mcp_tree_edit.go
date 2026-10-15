@@ -21,6 +21,7 @@ func GetMCPTreeEditController() adapter.MCPToolController {
 				application.GetSaveRequestService(),
 				application.GetAutoSyncService(),
 				application.GetManageExampleService(),
+				application.GetManageAliasService(),
 				application.GetManageResponseService(),
 				application.GetGuardAIOutputService(),
 				application.GetManageItemSettingsService(),

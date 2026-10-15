@@ -457,7 +457,7 @@ describe('bootstrap', () => {
   it('pins an edited preview tab and saves the UI state after edits', async () => {
     vi.useFakeTimers()
     vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
-    vi.mocked(requests.getRequest).mockResolvedValue({ draft: { ...(await import('@/platform/mappers/request')).emptyDraft(), id: 'r1' }, revision: 'rev' })
+    vi.mocked(requests.getRequest).mockResolvedValue({ draft: { ...(await import('@/platform/mappers/request')).emptyDraft(), id: 'r1' }, revision: 'rev', aliases: [] })
     const cleanup = bootstrap()
     await vi.advanceTimersByTimeAsync(0)
     useWorkspacesStore.setState({ activeLocalId: 'A' })
@@ -552,7 +552,7 @@ describe('bootstrap', () => {
     })
     vi.mocked(tree.getTree).mockResolvedValue([])
     vi.mocked(tree.getItemSettings).mockResolvedValue({ id: 'c1' } as never)
-    vi.mocked(requests.getRequest).mockResolvedValue({ draft: { ...(await import('@/platform/mappers/request')).emptyDraft(), id: 'r1', name: 'Renamed' }, revision: 'rev-2' })
+    vi.mocked(requests.getRequest).mockResolvedValue({ draft: { ...(await import('@/platform/mappers/request')).emptyDraft(), id: 'r1', name: 'Renamed' }, revision: 'rev-2', aliases: [] })
     await useItemSettingsStore.getState().open('c1')
     vi.mocked(tree.getItemSettings).mockClear()
     const item = { folder: '', method: 'GET', path: '' }

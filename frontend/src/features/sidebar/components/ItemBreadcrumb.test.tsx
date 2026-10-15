@@ -54,6 +54,19 @@ describe('ItemBreadcrumb', () => {
     expect(screen.getByRole('button', { name: 'Ads' })).not.toHaveAttribute('aria-current')
   })
 
+  it('with an alias shown, ends with the alias name editor after the request name as plain text', () => {
+    const aliasEditor = (
+      <button type="button" aria-label="Rename alias">
+        mx-test-user
+      </button>
+    )
+    render(<ItemBreadcrumb itemId="r1" name="Create ad · mx-test-user" nameEditor={null} aliasEditor={aliasEditor} {...actions} />)
+    expect(crumbs().map((item) => item.textContent)).toEqual(['Campaign Manager/', 'Ads/', 'CRUD/', 'Create ad/', 'mx-test-user'])
+    expect(crumbs().at(-1)).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('button', { name: 'Rename alias' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Create ad' })).not.toBeInTheDocument()
+  })
+
   it('opens a collection or folder like the sidebar does', () => {
     render(<ItemBreadcrumb itemId="r1" name="Create ad" nameEditor={EDITOR} {...actions} />)
     fireEvent.click(screen.getByRole('button', { name: 'Campaign Manager' }))

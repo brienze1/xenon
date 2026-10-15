@@ -42,7 +42,7 @@ describe('ui state service', () => {
     expect(restored.tabs[0]!.draft?.url).toBe('https://u')
     expect(dto.tabs?.[1]).toMatchObject({ kind: 'request', example_id: '' })
     expect(dto.tabs?.[2]).toMatchObject({ kind: 'example', request_id: 'r2', example_id: 'e1' })
-    expect(restored.tabs[1]).toEqual({ tabId: 't2', kind: 'request', requestId: 'r2', exampleId: null, environmentId: null, itemId: null, pinned: false, baseRevision: 'rev', draft: null })
+    expect(restored.tabs[1]).toEqual({ tabId: 't2', kind: 'request', requestId: 'r2', exampleId: null, environmentId: null, itemId: null, pinned: false, baseRevision: 'rev', draft: null, aliasId: null, versionDrafts: {} })
     expect(restored.tabs[2]).toMatchObject({ tabId: 't3', kind: 'example', requestId: 'r2', exampleId: 'e1' })
     expect(restored).toMatchObject({ activeTabId: 't1', previewTabId: 't2', sidebar: state.sidebar, layout: state.layout })
   })

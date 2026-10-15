@@ -63,7 +63,7 @@ describe('TabStrip', () => {
   beforeEach(() => {
     resetWorkspaceStores()
     vi.clearAllMocks()
-    vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: { ...emptyDraft(), id, name: `Request ${id}`, method: 'POST' }, revision: 'rev' }))
+    vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: { ...emptyDraft(), id, name: `Request ${id}`, method: 'POST' }, revision: 'rev', aliases: [] }))
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
     useTabsStore.getState().hydrate('ws', defaultUIState())
   })
@@ -212,7 +212,7 @@ describe('TabStrip', () => {
         },
       ],
     })
-    vi.mocked(requests.saveRequestAs).mockResolvedValue({ draft: { ...emptyDraft(), id: 'N', name: 'Users' }, revision: 'rev-N' })
+    vi.mocked(requests.saveRequestAs).mockResolvedValue({ draft: { ...emptyDraft(), id: 'N', name: 'Users' }, revision: 'rev-N', aliases: [] })
     renderStrip()
     await act(() => useTabsStore.getState().save())
     const dialog = screen.getByRole('dialog', { name: 'Save Request' })
@@ -232,7 +232,7 @@ describe('TabStrip', () => {
     })
     let finish: () => void = () => undefined
     vi.mocked(requests.saveRequestAs).mockImplementation(
-      () => new Promise((resolve) => (finish = () => resolve({ draft: { ...emptyDraft(), id: 'N', name: 'Users' }, revision: 'rev-N' }))),
+      () => new Promise((resolve) => (finish = () => resolve({ draft: { ...emptyDraft(), id: 'N', name: 'Users' }, revision: 'rev-N', aliases: [] }))),
     )
     renderStrip()
     await act(() => useTabsStore.getState().save())
@@ -304,7 +304,7 @@ describe('TabNotice', () => {
   beforeEach(() => {
     resetWorkspaceStores()
     vi.clearAllMocks()
-    vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: { ...emptyDraft(), id, name: 'Disk' }, revision: 'rev-disk' }))
+    vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: { ...emptyDraft(), id, name: 'Disk' }, revision: 'rev-disk', aliases: [] }))
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
     useTabsStore.getState().hydrate('ws', defaultUIState())
   })
@@ -318,7 +318,7 @@ describe('TabNotice', () => {
     await act(() => useTabsStore.getState().handleChangedOnDisk({ localId: 'ws', requestId: 'A', deleted: false, revision: 'new' }))
     render(<TabNotice tabId={tabId} />)
     expect(screen.getByRole('status')).toHaveTextContent('changed on disk')
-    vi.mocked(requests.saveRequest).mockResolvedValue({ draft: { ...emptyDraft(), id: 'A' }, revision: 'rev-2' })
+    vi.mocked(requests.saveRequest).mockResolvedValue({ draft: { ...emptyDraft(), id: 'A' }, revision: 'rev-2', aliases: [] })
     await userEvent.click(screen.getByRole('button', { name: 'Keep Your Version' }))
     expect(requests.saveRequest).toHaveBeenCalledWith('ws', expect.anything(), 'rev-disk', true)
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
@@ -367,7 +367,7 @@ describe('TabContextMenu', () => {
   beforeEach(() => {
     resetWorkspaceStores()
     vi.clearAllMocks()
-    vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: { ...emptyDraft(), id, name: `Request ${id}`, method: 'POST' }, revision: 'rev' }))
+    vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: { ...emptyDraft(), id, name: `Request ${id}`, method: 'POST' }, revision: 'rev', aliases: [] }))
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
     useTabsStore.getState().hydrate('ws', defaultUIState())
   })

@@ -84,6 +84,19 @@ func (r *requestPersistence) SaveExamples(ctx context.Context, root string, requ
 	return saved, nil
 }
 
+func (r *requestPersistence) SaveAliases(ctx context.Context, root string, request entity.Request) (*entity.Request, error) {
+	logger.Debug(ctx, "Started", request, map[string]any{"root": root, "aliases": len(request.Aliases)})
+
+	stored := model.NewRequest(request)
+	saved, err := r.write(ctx, root, request.ID, stored.FieldsWithAliases())
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Debug(ctx, "Finished", saved)
+	return saved, nil
+}
+
 func (r *requestPersistence) write(ctx context.Context, root, id string, fields []yamlnode.Field) (*entity.Request, error) {
 	r.index.Lock(ctx)
 	defer r.index.Unlock(ctx)

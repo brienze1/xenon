@@ -82,6 +82,26 @@ describe('InfoPanel', () => {
     expect(await screen.findByText('draft')).toContainHTML('strong')
   })
 
+  it('with an alias shown, shows the request name and description read-only', async () => {
+    loadDraft('r1', 'mx-test-user')
+    useRequestBuilderStore.setState((state) => ({
+      tabs: {
+        ...state.tabs,
+        [tabId()]: {
+          ...state.tabs[tabId()]!,
+          aliasId: 'a1',
+          aliases: [{ id: 'a1', name: 'mx-test-user', draft: { ...emptyDraft(), id: 'r1', name: 'mx-test-user' } }],
+          savedDefault: { ...emptyDraft(), id: 'r1', name: 'Create invoice', description: 'Creates an invoice' },
+        },
+      },
+    }))
+    render(<InfoPanel tabId={tabId()} />)
+    expect(screen.getByText('Create invoice')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Rename request/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Edit Description' })).not.toBeInTheDocument()
+    expect(await screen.findByText('Creates an invoice')).toBeInTheDocument()
+  })
+
   it('follows the location when the tree changes', () => {
     loadDraft('r1', 'Create invoice')
     render(<InfoPanel tabId={tabId()} />)

@@ -6,4 +6,5 @@ type RequestPersistence interface {
 	usecase.FindRequest
 	usecase.SaveRequest
 	usecase.SaveRequestExamples
+	usecase.SaveRequestAliases
 }

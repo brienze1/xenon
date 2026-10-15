@@ -3,7 +3,7 @@ import { isDocumentationDirty, useDocumentationStore } from '@/features/document
 import { findNameClash, isScopeDirty, useEnvironmentsStore } from '@/features/environments/store'
 import { useExamplesStore } from '@/features/examples/store'
 import { isItemDirty, useItemSettingsStore } from '@/features/item-settings/store'
-import { useRequestBuilderStore } from '@/features/request-builder/store'
+import { selectDirtyHiddenVersions, useRequestBuilderStore } from '@/features/request-builder/store'
 import { isSettingsDirty, useSettingsStore } from '@/features/settings/store'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
@@ -269,7 +269,16 @@ function isContentDirty(tab: TabMeta | undefined, tabId: string): boolean {
     const variables = collectionVariablesScope(tab)
     return isItemDirty(items(), tab!.itemId!) || (variables !== null && isScopeDirty(environments(), variables)) || isDocumentationTabDirty(tab)
   }
-  return (builder().tabs[tabId]?.dirty ?? false) || examples().isDirty(tabId)
+  return (builder().tabs[tabId]?.dirty ?? false) || selectDirtyHiddenVersions(builder(), tabId).length > 0 || examples().isDirty(tabId)
+}
+
+/** The unsaved drafts of the versions a request tab keeps aside, kept across a restart. */
+function hiddenVersionDrafts(tabId: string): Record<string, RequestDraft> {
+  const draft = builder().tabs[tabId]
+  if (!draft) {
+    return {}
+  }
+  return Object.fromEntries(selectDirtyHiddenVersions(builder(), tabId).map((aliasId) => [aliasId ?? '', draft.versions[aliasId ?? '']!.draft]))
 }
 
 /** What stops a pending name from being saved, checked before anything of the tab is written. */
@@ -601,7 +610,22 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       pinned: tab.pinned,
       baseRevision: draft?.baseRevision ?? null,
       draft: keepDraft && draft ? draft.draft : null,
+      aliasId: draft?.aliasId ?? null,
+      versionDrafts: hiddenVersionDrafts(tab.id),
     }
+  }
+
+  /** Saves the version on screen, then every other version with unsaved edits; any failure stops it on that version. */
+  async function saveAllVersions(tab: TabMeta): Promise<Result<boolean, AppError>> {
+    let saved = await saveTabChanges(tab)
+    for (const aliasId of selectDirtyHiddenVersions(builder(), tab.id)) {
+      if (!saved.ok || !saved.value) {
+        return saved
+      }
+      builder().selectVersion(tab.id, aliasId)
+      saved = await saveTabChanges(tab)
+    }
+    return saved
   }
 
   return {
@@ -633,9 +657,15 @@ export const useTabsStore = create<TabsState>()((set, get) => {
           void examples().open(tab.tabId, tab.requestId, tab.exampleId)
         } else if (tab.draft) {
           builder().loadDraft(tab.tabId, tab.draft, tab.baseRevision, tab.requestId !== null || !isPristine(tab.draft))
+          if (tab.requestId !== null) {
+            void builder().restoreVersions(tab.tabId, tab.aliasId ?? null, tab.versionDrafts ?? {})
+          }
         } else if (tab.requestId) {
+          const versionDrafts = tab.versionDrafts ?? {}
           builder().ensureTab(tab.tabId)
-          void builder().openSaved(tab.tabId, tab.requestId)
+          void builder()
+            .openSaved(tab.tabId, tab.requestId, tab.aliasId ?? null)
+            .then((opened) => (opened && Object.keys(versionDrafts).length > 0 ? builder().restoreVersions(tab.tabId, builder().tabs[tab.tabId]!.aliasId, versionDrafts) : undefined))
         } else {
           builder().ensureTab(tab.tabId)
         }
@@ -886,7 +916,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         return
       }
       set({ closeError: null })
-      const saved = await saveTabChanges(tab)
+      const saved = await saveAllVersions(tab)
       if (!saved.ok) {
         set((state) => (state.closePrompt === tabId ? { closeError: saved.error } : state))
         return
@@ -961,6 +991,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       const id = newTabId()
       addTab({ id, requestId: source.requestId, pinned: true }, tabId)
       builder().loadDraft(id, structuredClone(draft.draft), draft.baseRevision, draft.dirty, draft.savedName)
+      builder().copyVersions(tabId, id)
       return id
     },
 

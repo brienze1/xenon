@@ -67,7 +67,7 @@ describe('MissingSecretsDialog', () => {
     expect(screen.queryByText('In a Locked Vault')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Unlock Vault' })).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Send Anyway' }))
-    expect(requests.sendRequest).toHaveBeenCalledWith('ws', TAB, expect.any(Object), { confirmedEnvironmentId: '', missingSecrets: true, expiredToken: false })
+    expect(requests.sendRequest).toHaveBeenCalledWith('ws', TAB, expect.any(Object), { confirmedEnvironmentId: '', missingSecrets: true, expiredToken: false }, null)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 

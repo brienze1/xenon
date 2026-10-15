@@ -38,6 +38,7 @@ function toExampleRequestDraft(name: string, dto: ExampleRequestDto): RequestDra
     method: dto.method,
     url: dto.url,
     revision: '',
+    aliases: [],
     params: dto.params,
     path_variables: dto.path_variables,
     headers: dto.headers,
