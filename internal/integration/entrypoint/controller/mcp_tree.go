@@ -269,11 +269,7 @@ func (m *mcpTree) search(ctx context.Context, call dto.MCPToolCall) (dto.MCPTool
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
-	tree, err := loadMCPTree(ctx, m.searchTreeService, call.LocalId)
-	if err != nil {
-		return dto.MCPToolResult{}, err
-	}
-	return dto.NewMCPToolResult(dto.NewMCPTreeSearchList(tree.Search(arguments.SearchQuery(), search.MatchIDs, arguments.ResultLimit()))), nil
+	return dto.NewMCPToolResult(dto.NewMCPTreeSearchList(search.Tree.Search(arguments.SearchQuery(), search.MatchIDs, arguments.ResultLimit()))), nil
 }
 
 func (m *mcpTree) token(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolResult, error) {

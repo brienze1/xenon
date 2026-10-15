@@ -31,11 +31,12 @@ type fsFileWatcher struct {
 	reported map[string][sha256.Size]byte
 	onChange func(path string, removed bool)
 	root     string
+	debounce time.Duration
 	mu       sync.Mutex
 }
 
 func NewFileWatcher() adapter.FileWatcher {
-	return &fsFileWatcher{pending: map[string]*time.Timer{}, reported: map[string][sha256.Size]byte{}}
+	return &fsFileWatcher{pending: map[string]*time.Timer{}, reported: map[string][sha256.Size]byte{}, debounce: watchDebounce}
 }
 
 func (f *fsFileWatcher) Watch(_ context.Context, root string, onChange func(path string, removed bool)) error {
@@ -117,10 +118,10 @@ func (f *fsFileWatcher) schedule(watcher *fsnotify.Watcher, path string) {
 		return
 	}
 	if timer, found := f.pending[path]; found {
-		timer.Reset(watchDebounce)
+		timer.Reset(f.debounce)
 		return
 	}
-	f.pending[path] = time.AfterFunc(watchDebounce, func() { f.fire(watcher, path) })
+	f.pending[path] = time.AfterFunc(f.debounce, func() { f.fire(watcher, path) })
 }
 
 func (f *fsFileWatcher) fire(watcher *fsnotify.Watcher, path string) {
