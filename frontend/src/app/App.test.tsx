@@ -79,6 +79,7 @@ const tree = await import('@/platform/services/tree')
 const environmentServices = await import('@/platform/services/environments')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
 const { useTabsStore } = await import('@/features/tabs/store')
+const { useEnvironmentsStore } = await import('@/features/environments/store')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
 const { useSidebarStore } = await import('@/features/sidebar/store')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
@@ -418,5 +419,77 @@ describe('App', () => {
     press('s')
     await vi.waitFor(() => expect(environmentServices.updateEnvironment).toHaveBeenCalledWith('A', expect.objectContaining({ id: 'e1', name: 'local' })))
   })
-})
 
+  describe('the eye next to the environment switcher', () => {
+    const dev = { id: 'e1', name: 'dev', description: '', color: 'cyan' as const, confirmBeforeSend: false, variables: [] }
+
+    function environmentTabs() {
+      return useTabsStore.getState().tabs.filter((tab) => tab.kind === 'environment' && tab.environmentId === 'e1')
+    }
+
+    function globalsTabs() {
+      return useTabsStore.getState().tabs.filter((tab) => tab.kind === 'globals')
+    }
+
+    function focusGlobals() {
+      act(() => useTabsStore.getState().openEnvironmentTab({ kind: 'globals' }, 'pinned'))
+    }
+
+    async function renderWithActiveEnvironment() {
+      vi.mocked(environmentServices.getEnvironment).mockResolvedValue(dev)
+      await renderWorkspace()
+      act(() => useEnvironmentsStore.setState({ activeId: 'e1' }))
+    }
+
+    it('opens the active environment in a pinned, focused tab and never twice', async () => {
+      await renderWithActiveEnvironment()
+      await userEvent.click(screen.getByRole('button', { name: 'Open environment' }))
+      const region = await screen.findByRole('region', { name: 'dev environment' })
+      expect(environmentTabs()).toHaveLength(1)
+      const [tab] = environmentTabs()
+      expect(tab.pinned).toBe(true)
+      expect(useTabsStore.getState().activeTabId).toBe(tab.id)
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+      focusGlobals()
+      const count = useTabsStore.getState().tabs.length
+      await userEvent.click(screen.getByRole('button', { name: 'Open environment' }))
+      expect(useTabsStore.getState().tabs).toHaveLength(count)
+      expect(useTabsStore.getState().activeTabId).toBe(tab.id)
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+      await userEvent.type(within(region).getByRole('textbox', { name: 'Add variable' }), 'x')
+      focusGlobals()
+      await userEvent.click(screen.getByRole('button', { name: 'Open environment' }))
+      expect(useTabsStore.getState().activeTabId).toBe(tab.id)
+      expect(useEnvironmentsStore.getState().drafts['env:e1']?.dirty).toBe(true)
+      expect(within(await screen.findByRole('region', { name: 'dev environment' })).getByRole('textbox', { name: 'Name of x' })).toBeInTheDocument()
+    })
+
+    it('pins an environment tab that was open as a preview', async () => {
+      await renderWithActiveEnvironment()
+      act(() => useTabsStore.getState().openEnvironmentTab({ kind: 'environment', environmentId: 'e1' }, 'preview'))
+      focusGlobals()
+      await userEvent.click(screen.getByRole('button', { name: 'Open environment' }))
+      expect(environmentTabs()).toHaveLength(1)
+      const [tab] = environmentTabs()
+      expect(tab.pinned).toBe(true)
+      expect(useTabsStore.getState().previewTabId).not.toBe(tab.id)
+      expect(useTabsStore.getState().activeTabId).toBe(tab.id)
+    })
+
+    it('opens the globals in a pinned, focused tab when no environment is active', async () => {
+      await renderWorkspace()
+      await userEvent.click(screen.getByRole('button', { name: 'Open globals' }))
+      expect(await screen.findByRole('region', { name: 'Globals' })).toBeInTheDocument()
+      expect(globalsTabs()).toHaveLength(1)
+      const [tab] = globalsTabs()
+      expect(tab.pinned).toBe(true)
+      expect(useTabsStore.getState().activeTabId).toBe(tab.id)
+      const count = useTabsStore.getState().tabs.length
+      await userEvent.click(screen.getByRole('button', { name: 'Open globals' }))
+      expect(useTabsStore.getState().tabs).toHaveLength(count)
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+  })
+})
