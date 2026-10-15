@@ -6,13 +6,13 @@ import (
 )
 
 type MCPGitLink struct {
-	UseRepoWorkspace *bool  `json:"use_repo_workspace"`
-	Url              string `json:"url"`
-	Branch           string `json:"branch"`
-	Subfolder        string `json:"subfolder"`
-	AccountId        string `json:"account_id"`
-	Path             string `json:"path"`
-	Name             string `json:"name"`
+	UseRepoWorkspace *bool  `json:"use_repo_workspace" description:"Use the workspace already in the repository instead of replacing it with this one." used_by:"link" validated_as:"mode"`
+	Url              string `json:"url" description:"Repository URL." required_for:"link,clone" validated_as:"repository"`
+	Branch           string `json:"branch" description:"Branch to sync." required_for:"link"`
+	Subfolder        string `json:"subfolder" description:"Folder inside the repository that holds the workspace."`
+	AccountId        string `json:"account_id" description:"Git account id, from the Sync settings." required_for:"link,clone"`
+	Path             string `json:"path" description:"Absolute folder to clone into." validated_as:"clone_path"`
+	Name             string `json:"name" description:"Name of the cloned workspace, at most 200 characters." used_by:"clone"`
 }
 
 func (m *MCPGitLink) LinkRepository(localId string) LinkRepository {

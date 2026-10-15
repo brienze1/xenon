@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	appAdapter "github.com/brienze1/xenon/internal/application/adapter"
-	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/aitooleffect"
 	"github.com/brienze1/xenon/internal/integration/adapter"
@@ -69,7 +68,13 @@ func NewMCPTree(
 }
 
 func (m *mcpTree) Tool() dto.MCPTool {
-	return dto.NewMCPTool(treeAITool)
+	return dto.NewMCPTool(
+		treeAITool,
+		dto.NewMCPToolArguments[dto.MCPTreeList](mcpTreeListAction),
+		dto.NewMCPToolArguments[dto.MCPTreeSearch](mcpTreeSearchAction),
+		dto.NewMCPToolArguments[dto.MCPTreeTokenOwner](mcpTreeTokenAction),
+		dto.NewMCPToolArguments[dto.MCPTreeItem](mcpTreeGetAction, mcpTreeSettingsAction),
+	)
 }
 
 func (m *mcpTree) Handle(toolCtx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {
@@ -302,7 +307,7 @@ func (m *mcpTree) token(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolR
 		return dto.MCPToolResult{}, err
 	}
 	if token == nil {
-		return dto.MCPToolResult{}, usecase.RejectMissingOAuthToken()
+		return dto.MCPToolResult{}, mcpErrors.RejectMissingAIToken()
 	}
 	return dto.NewMCPToolResult(dto.NewMCPTreeToken(dto.NewTokenInfo(*token, timeutils.Now()))).WithTarget(owner.Target()), nil
 }

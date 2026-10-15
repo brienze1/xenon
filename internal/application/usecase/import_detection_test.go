@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"net/http"
 	"reflect"
 	"testing"
 
@@ -48,6 +49,8 @@ func TestDetectImportFormatRecognisesEverySupportedSource(t *testing.T) {
 		"v3 pulled":        {entity.ImportProbe{Name: "repo", IsFolder: true, Entries: []string{"postman/environments/dev.environment.yaml"}}, importkind.PostmanWorkspace, "3"},
 		"v3 globals only":  {entity.ImportProbe{Name: "p", IsFolder: true, Entries: []string{"globals/workspace.globals.yaml"}}, importkind.PostmanWorkspace, "3"},
 		"v3 collections":   {entity.ImportProbe{Name: "collections", IsFolder: true, Entries: []string{"A/x.request.yaml", "B/.resources/definition.yaml"}}, importkind.PostmanWorkspace, "3"},
+		"specs only":       {entity.ImportProbe{Name: "s", IsFolder: true, Entries: []string{"postman/specs/a.yaml"}}, importkind.Folder, ""},
+		"empty dir":        {entity.ImportProbe{Name: "empty", IsFolder: true, Entries: []string{"sub/archive.json", "sub/bruno.json"}}, importkind.Folder, ""},
 	}
 	for name, tc := range cases {
 		kind, version, err := DetectImportFormat(tc.probe)
@@ -67,10 +70,8 @@ func TestDetectImportFormatRefusesWithAReason(t *testing.T) {
 		"v1 shape":    {entity.ImportProbe{Name: "v1.json", IsJson: true, HasV1Shape: true}, "IMP-01400", "Postman v1 collections are not supported; export the collection as v2.1"},
 		"v1 schema":   {entity.ImportProbe{Name: "v1.json", IsJson: true, Schema: "https://schema.getpostman.com/json/collection/v1.0.0/collection.json"}, "IMP-01400", "Postman v1 collections are not supported; export the collection as v2.1"},
 		"other yaml":  {entity.ImportProbe{Name: "notes.yaml", IsYaml: true}, "IMP-00415", "notes.yaml is not a Xenon, Postman, Bruno or cURL export"},
-		"specs only":  {entity.ImportProbe{Name: "s", IsFolder: true, Entries: []string{"postman/specs/a.yaml"}}, "IMP-00415", "s is not a Xenon, Postman, Bruno or cURL export"},
 		"malformed":   {entity.ImportProbe{Name: "a.json", IsMalformed: true}, "IMP-01400", "a.json is not valid JSON"},
 		"random json": {entity.ImportProbe{Name: "r.json", IsJson: true, Scope: "other"}, "IMP-00415", "r.json is not a Xenon, Postman, Bruno or cURL export"},
-		"empty dir":   {entity.ImportProbe{Name: "empty", IsFolder: true, Entries: []string{"sub/archive.json", "sub/bruno.json"}}, "IMP-00415", "empty is not a Xenon, Postman, Bruno or cURL export"},
 		"mixed":       {entity.ImportProbe{Name: "mixed", IsFolder: true, Entries: []string{"bruno.json", "opencollection.yml"}}, "IMP-00415", "mixed mixes Bruno .bru and YAML files"},
 		"newer":       {entity.ImportProbe{Name: "n.yaml", XenonFormat: 2, XenonKind: "request"}, "IMP-42422", "n.yaml was written by a newer Xenon (format 2); update Xenon to import it"},
 		"ws file":     {entity.ImportProbe{Name: "workspace.yaml", XenonFormat: 1, XenonKind: "workspace"}, "IMP-00415", "workspace.yaml is not a Xenon, Postman, Bruno or cURL export"},
@@ -88,6 +89,15 @@ func TestDetectImportFormatRefusesWithAReason(t *testing.T) {
 	}
 	if _, _, err := DetectImportFormat(entity.ImportProbe{Name: "x", IsPasted: false, Text: "curl https://x"}); err == nil {
 		t.Error("only pasted text is checked for a cURL command")
+	}
+}
+
+func TestRejectUnimportableFolderListsTheAcceptedLayouts(t *testing.T) {
+	err := RejectUnimportableFolder("x")
+	custom, isCustom := err.(errs.BaseError)
+	want := "x has no file Xenon can import; pass a Postman v3 workspace or collection folder, a Postman data dump (archive.json), a Bruno collection (bruno.json or opencollection.yml), a Xenon workspace folder, or a folder of standalone export files"
+	if !isCustom || custom.Code() != "IMP-55415" || custom.StatusCode() != http.StatusUnsupportedMediaType || custom.Description() != want {
+		t.Errorf("got %v", err)
 	}
 }
 

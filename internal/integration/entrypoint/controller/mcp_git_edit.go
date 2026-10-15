@@ -77,7 +77,13 @@ func NewMCPGitEdit(
 }
 
 func (m *mcpGitEdit) Tool() dto.MCPTool {
-	return dto.NewMCPTool(gitEditAITool)
+	return dto.NewMCPTool(
+		gitEditAITool,
+		dto.NewMCPToolArguments[dto.MCPGitLink](mcpGitEditLinkAction, mcpGitEditCloneAction),
+		dto.NewMCPToolArguments[dto.MCPGitSettings](mcpGitEditSettingsAction),
+		dto.NewMCPToolArguments[dto.MCPGitCommit](mcpGitEditCommitAction),
+		dto.NewMCPToolArguments[dto.MCPGitResolve](mcpGitEditResolveAction),
+	)
 }
 
 func (m *mcpGitEdit) Handle(toolCtx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {

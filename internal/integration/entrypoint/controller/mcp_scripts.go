@@ -37,7 +37,7 @@ func NewMCPScripts(errorHandler adapter.ErrorHandler, scriptToolsService appAdap
 }
 
 func (m *mcpScripts) Tool() dto.MCPTool {
-	return dto.NewMCPTool(scriptsAITool)
+	return dto.NewMCPTool(scriptsAITool, dto.NewMCPToolArguments[dto.MCPScriptCheck](mcpScriptsCheckAction))
 }
 
 func (m *mcpScripts) Handle(toolCtx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {

@@ -93,7 +93,7 @@ func NewMCPDelete(
 }
 
 func (m *mcpDelete) Tool() dto.MCPTool {
-	return dto.NewMCPTool(deleteAITool)
+	return dto.NewMCPTool(deleteAITool, dto.NewMCPToolArguments[dto.MCPDelete](deleteAITool.Actions...))
 }
 
 func (m *mcpDelete) Handle(toolCtx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {

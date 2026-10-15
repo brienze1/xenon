@@ -9,8 +9,8 @@ import (
 const mcpTreeSearchDefaultLimit = 50
 
 type MCPTreeSearch struct {
-	Query string `json:"query"`
-	Limit int    `json:"limit"`
+	Query string `json:"query" description:"Text to search names, URLs and descriptions for." required_for:"search"`
+	Limit int    `json:"limit" description:"Most results to return, 0 to 100."`
 }
 
 func (m *MCPTreeSearch) HasQuery() bool {

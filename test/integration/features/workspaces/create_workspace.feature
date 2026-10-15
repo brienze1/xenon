@@ -104,7 +104,7 @@ Feature: Create a workspace
       | empty    |      |
       | too long | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
 
-  @validation
+  @validation @xen_014 @xen_014_errors
   Scenario: A blank name is rejected
     When I call "WorkspaceService.Create" with
       """
@@ -112,6 +112,8 @@ Feature: Create a workspace
       """
     Then the call should fail with code "WKS-00400"
     And the error should contain the field "error.error_details.0.attribute" equal to "name"
+    And the error should contain the field "error.error_details.0.messages.0" equal to "must not be blank"
+    And the error should contain the field "error.description" equal to "invalid request: name must not be blank"
 
   @validation
   Scenario: A name of exactly 200 characters is accepted
@@ -121,7 +123,7 @@ Feature: Create a workspace
       """
     Then the call should succeed
 
-  @validation
+  @validation @xen_014 @xen_014_errors
   Scenario: A relative folder path is rejected
     When I call "WorkspaceService.Create" with
       """
@@ -129,6 +131,8 @@ Feature: Create a workspace
       """
     Then the call should fail with code "WKS-00400"
     And the error should contain the field "error.error_details.0.attribute" equal to "path"
+    And the error should contain the field "error.error_details.0.messages.0" equal to "must be an absolute path"
+    And the error should contain the field "error.description" equal to "invalid request: path must be an absolute path"
 
   @conflict
   Scenario: A folder that is not empty is refused

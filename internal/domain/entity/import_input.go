@@ -13,6 +13,7 @@ type ImportInput struct {
 	Kind      enums.ImportKind
 	Version   string
 	Root      string
+	Path      string
 	Documents []ImportDocument
 	Probe     ImportProbe
 }
@@ -57,6 +58,10 @@ func (i ImportInput) IsBruno() bool {
 
 func (i ImportInput) IsXenon() bool {
 	return slices.Contains(xenonImportKinds, i.Kind)
+}
+
+func (i ImportInput) IsLooseFolder() bool {
+	return i.Kind == importkind.Folder
 }
 
 func (i ImportInput) IsFolder() bool {

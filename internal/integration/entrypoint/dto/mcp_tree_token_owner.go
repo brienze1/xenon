@@ -1,7 +1,7 @@
 package dto
 
 type MCPTreeTokenOwner struct {
-	OwnerId string `json:"owner_id"`
+	OwnerId string `json:"owner_id" description:"Id of the item that owns the OAuth token." required_for:"token"`
 }
 
 func (m *MCPTreeTokenOwner) HasOwner() bool {

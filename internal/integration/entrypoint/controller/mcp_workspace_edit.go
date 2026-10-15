@@ -56,7 +56,10 @@ func NewMCPWorkspaceEdit(
 }
 
 func (m *mcpWorkspaceEdit) Tool() dto.MCPTool {
-	return dto.NewMCPTool(workspaceEditAITool)
+	return dto.NewMCPTool(
+		workspaceEditAITool,
+		dto.NewMCPToolArguments[dto.MCPWorkspaceEdit](workspaceEditAITool.Actions...),
+	)
 }
 
 func (m *mcpWorkspaceEdit) Handle(toolCtx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {

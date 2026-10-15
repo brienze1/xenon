@@ -54,7 +54,7 @@ func detectFolder(probe entity.ImportProbe) (enums.ImportKind, string, error) {
 	case probe.IsPostmanV3CollectionFolder():
 		return importkind.PostmanCollection, entity.PostmanV3Version, nil
 	default:
-		return importkind.Unknown, "", unsupportedImportError(probe.Name + unsupportedFormatMsg)
+		return importkind.Folder, "", nil
 	}
 }
 

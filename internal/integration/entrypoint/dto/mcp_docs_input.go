@@ -1,9 +1,9 @@
 package dto
 
 type MCPDocsInput struct {
-	CollectionId   string `json:"collection_id"`
-	Yaml           string `json:"yaml"`
-	ConfirmDeletes bool   `json:"confirm_deletes"`
+	CollectionId   string `json:"collection_id" description:"Collection id." required_for:"get,plan,apply" validated_as:"id"`
+	Yaml           string `json:"yaml" description:"The edited OpenAPI document as YAML." used_by:"plan,apply"`
+	ConfirmDeletes bool   `json:"confirm_deletes" description:"Delete the requests the document no longer lists." schema_for:"docs_edit"`
 }
 
 func (m *MCPDocsInput) DocumentationReference(localId string) TreeItemReference {

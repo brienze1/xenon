@@ -12,6 +12,13 @@ import (
 	"github.com/brienze1/xenon/pkg/errs"
 )
 
+const (
+	invalidRequestPrefix = "invalid request: "
+	namespaceSeparator   = "."
+	fieldJoiner          = "; "
+	problemJoiner        = ", "
+)
+
 type Validate interface {
 	Struct(code string, s any) error
 }
@@ -43,12 +50,25 @@ func (c *customValidator) Struct(code string, s any) error {
 	}
 	details := make([]errs.ErrorDetails, 0, len(validationErrors))
 	for _, fieldError := range validationErrors {
-		details = append(details, errs.ErrorDetails{
-			Attribute: fieldError.Field(),
-			Messages:  []string{"failed on the '" + fieldError.Tag() + "' rule"},
-		})
+		details = append(details, errs.ErrorDetails{Attribute: fieldPath(fieldError), Messages: []string{problemOf(fieldError)}})
 	}
-	return errs.BadRequestError("invalid request", code, details...)
+	return errs.BadRequestError(invalidRequestDescription(details), code, details...)
+}
+
+func invalidRequestDescription(details []errs.ErrorDetails) string {
+	problems := make([]string, 0, len(details))
+	for _, detail := range details {
+		problems = append(problems, detail.Attribute+" "+strings.Join(detail.Messages, problemJoiner))
+	}
+	return invalidRequestPrefix + strings.Join(problems, fieldJoiner)
+}
+
+func fieldPath(fieldError validator.FieldError) string {
+	_, path, found := strings.Cut(fieldError.Namespace(), namespaceSeparator)
+	if !found {
+		return fieldError.Field()
+	}
+	return path
 }
 
 func notBlank(field validator.FieldLevel) bool {

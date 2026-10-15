@@ -1,8 +1,8 @@
 package dto
 
 type MCPCookieUpsert struct {
-	Domain string `json:"domain"`
-	Raw    string `json:"raw"`
+	Domain string `json:"domain" description:"Domain the cookie belongs to." required_for:"upsert"`
+	Raw    string `json:"raw" description:"The cookie as a Set-Cookie header value." required_for:"upsert"`
 }
 
 func (m *MCPCookieUpsert) UpsertCookie(localId string) UpsertCookie {

@@ -25,6 +25,7 @@ type manageImport struct {
 
 func NewManageImportService(
 	readImportSource usecase.ReadImportSource,
+	readImportFolderFiles usecase.ReadImportFolderFiles,
 	saveImportSource usecase.SaveImportSource,
 	findImportSource usecase.FindImportSource,
 	discardImportSource usecase.DiscardImportSource,
@@ -87,6 +88,7 @@ func NewManageImportService(
 			readBrunoCollection:    readBrunoCollection,
 			readCurlCommand:        readCurlCommand,
 			readXenonExport:        readXenonExport,
+			readImportFolderFiles:  readImportFolderFiles,
 		},
 		targets: importTargets{
 			findWorkspaceRegistry:  findWorkspaceRegistry,
@@ -141,10 +143,11 @@ func (m *manageImport) Detect(ctx context.Context, request entity.ImportRequest)
 	if err != nil {
 		return nil, err
 	}
-	source, err := m.readers.detected(ctx, inputs, tempDirs)
+	source, expandedDirs, err := m.readers.detected(ctx, inputs, tempDirs)
 	if err != nil {
-		if discardErr := m.discardImportSource.DiscardFiles(ctx, tempDirs); discardErr != nil {
-			logger.Error(ctx, discardErr, "The unread import files could not be discarded", map[string]any{"tempDirs": tempDirs})
+		unreadDirs := append(append([]string{}, tempDirs...), expandedDirs...)
+		if discardErr := m.discardImportSource.DiscardFiles(ctx, unreadDirs); discardErr != nil {
+			logger.Error(ctx, discardErr, "The unread import files could not be discarded", map[string]any{"tempDirs": unreadDirs})
 		}
 		return nil, err
 	}

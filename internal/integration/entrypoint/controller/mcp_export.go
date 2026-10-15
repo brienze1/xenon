@@ -52,7 +52,11 @@ func NewMCPExport(
 }
 
 func (m *mcpExport) Tool() dto.MCPTool {
-	return dto.NewMCPTool(exportAITool)
+	return dto.NewMCPTool(
+		exportAITool,
+		dto.NewMCPToolArguments[dto.MCPExport](mcpExportOptionsAction, mcpExportRunAction),
+		dto.NewMCPToolArguments[dto.MCPSaveResponseBody](mcpExportResponseBodyAction),
+	)
 }
 
 func (m *mcpExport) Handle(toolCtx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {

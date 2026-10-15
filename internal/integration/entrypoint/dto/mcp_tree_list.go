@@ -10,9 +10,9 @@ const (
 )
 
 type MCPTreeList struct {
-	ParentId string          `json:"parent_id"`
-	Cursor   string          `json:"cursor"`
-	Depth    json.RawMessage `json:"depth"`
+	ParentId string          `json:"parent_id" description:"Collection or folder to list; omitted lists the collections."`
+	Cursor   string          `json:"cursor" description:"Cursor from the previous page."`
+	Depth    json.RawMessage `json:"depth" description:"Levels to list: an integer of 1 or more, or \"all\"; default 1." schema:"integer|string"`
 }
 
 // ListDepth reads depth as absent/null (1 level), "all" (every level) or an integer of 1 or more; false means invalid.

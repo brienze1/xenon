@@ -7,9 +7,9 @@ import (
 )
 
 type MCPGitSettings struct {
-	AutoPull  *bool  `json:"auto_pull"`
-	AutoPush  *bool  `json:"auto_push"`
-	AccountId string `json:"account_id"`
+	AutoPull  *bool  `json:"auto_pull" description:"Pull automatically; omitted keeps the stored value."`
+	AutoPush  *bool  `json:"auto_push" description:"Push automatically; omitted keeps the stored value."`
+	AccountId string `json:"account_id" description:"Git account id, from the Sync settings."`
 }
 
 // SaveSyncSettings keeps every stored option the arguments leave out.

@@ -48,7 +48,7 @@ func NewMCPResponse(
 }
 
 func (m *mcpResponse) Tool() dto.MCPTool {
-	return dto.NewMCPTool(responseAITool)
+	return dto.NewMCPTool(responseAITool, dto.NewMCPToolArguments[dto.MCPResponseBody](mcpResponseBodyAction))
 }
 
 func (m *mcpResponse) Handle(toolCtx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {

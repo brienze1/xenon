@@ -528,8 +528,9 @@ there are unsaved edits, and that Save calls the settings service with every fie
 - **SC-004**: Across the BDD leak suite (every tool that returns data × raw, URL-encoded, JSON-escaped and base64
   forms × variables, history, console, snippets, exports, tests, errors, echoed response headers and body), 0 results
   contain a secret's plaintext.
-- **SC-005**: The full tool list, names plus descriptions plus input schemas, fits in 6,000 tokens or fewer. A top-level
-  tree listing of a 1,000-request workspace stays under 2,000 tokens.
+- **SC-005**: The full tool list, names plus descriptions plus input schemas, fits in 6,000 tokens or fewer. XEN-014
+  raised this budget to 9,000 tokens (36,000 characters) when every tool started declaring its full arguments. A
+  top-level tree listing of a 1,000-request workspace stays under 2,000 tokens.
 - **SC-006**: Non-send tool calls on a 1,000-request workspace answer within 200 ms. A send to a local target that
   answers instantly completes, end to end through MCP, within 100 ms.
 - **SC-007**: 100% of destructive tools carry the destructive hint, and 100% of read-only tools carry the read-only

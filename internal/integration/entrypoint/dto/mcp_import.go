@@ -6,10 +6,10 @@ import (
 )
 
 type MCPImport struct {
-	SourceId   string   `json:"source_id"`
-	OnClash    string   `json:"on_clash"`
-	Passphrase string   `json:"passphrase"`
-	Paths      []string `json:"paths"`
+	SourceId   string   `json:"source_id" description:"Source id returned by detect; omitted means nothing to discard." used_by:"discard"`
+	OnClash    string   `json:"on_clash" description:"How to settle a name clash; default keep_both on run." used_by:"clashes,run" enum:"keep_both,replace,skip" validated_as:"apply_to_all,items[].resolution"`
+	Passphrase string   `json:"passphrase" description:"Passphrase of an export with encrypted secrets." used_by:"clashes,run"`
+	Paths      []string `json:"paths" description:"Absolute paths of the files or folders to import." used_by:"detect,clashes,run" required_for:"detect,clashes,run" validated_as:"text"`
 }
 
 func (m *MCPImport) DetectImport() DetectImport {

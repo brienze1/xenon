@@ -10,25 +10,25 @@ import (
 const mcpTreeEditLastPosition = math.MaxInt32
 
 type MCPTreeEdit struct {
-	Name             *string              `json:"name"`
-	Method           *string              `json:"method"`
-	Url              *string              `json:"url"`
-	Description      *string              `json:"description"`
-	Params           *[]KeyValue          `json:"params"`
-	Headers          *[]KeyValue          `json:"headers"`
-	Body             *Body                `json:"body"`
-	Auth             *Auth                `json:"auth"`
-	Scripts          *Scripts             `json:"scripts"`
-	Response         *ExampleResponseEdit `json:"response"`
-	Variables        *[]MCPVariableRow    `json:"variables"`
-	Index            *int                 `json:"index"`
-	Id               string               `json:"id"`
-	Kind             string               `json:"kind"`
-	ParentId         string               `json:"parent_id"`
-	RequestId        string               `json:"request_id"`
-	OwnerId          string               `json:"owner_id"`
-	Use              string               `json:"use"`
-	FromLastResponse bool                 `json:"from_last_response"`
+	Name             *string              `json:"name" description:"Item name; required to create a collection, folder or request." used_by:"create,update,rename" required_for:"rename"`
+	Method           *string              `json:"method" description:"HTTP method of the request." used_by:"create,update"`
+	Url              *string              `json:"url" description:"URL of the request." used_by:"create,update"`
+	Description      *string              `json:"description" description:"Item description." used_by:"create,update,save_settings"`
+	Params           *[]KeyValue          `json:"params" description:"Query parameters of the request." used_by:"create,update"`
+	Headers          *[]KeyValue          `json:"headers" description:"Headers of the request, collection or folder." used_by:"create,update,save_settings"`
+	Body             *Body                `json:"body" description:"Request body." used_by:"create,update" validated_as:"request.body,example.request.body"`
+	Auth             *Auth                `json:"auth" description:"Auth of the request, collection or folder." used_by:"create,update,save_settings" validated_as:"request.auth,example.request.auth"`
+	Scripts          *Scripts             `json:"scripts" description:"Pre-request and post-response scripts." used_by:"create,update,save_settings" validated_as:"request.scripts,example.request.scripts"`
+	Response         *ExampleResponseEdit `json:"response" description:"Saved response of an example." used_by:"update" validated_as:"example.response"`
+	Variables        *[]MCPVariableRow    `json:"variables" description:"Collection variables; collections only." used_by:"save_settings"`
+	Index            *int                 `json:"index" description:"New 0-based position among the siblings." used_by:"move"`
+	Id               string               `json:"id" description:"Id of the item to change." used_by:"update,rename,move,duplicate,save_settings" required_for:"update,rename,move,duplicate,save_settings" validated_as:"example_id"`
+	Kind             string               `json:"kind" description:"Kind of item to create." used_by:"create" required_for:"create" enum:"collection,folder,request,example"`
+	ParentId         string               `json:"parent_id" description:"Parent collection or folder; required to create a folder or request." used_by:"create,move"`
+	RequestId        string               `json:"request_id" description:"Request the example belongs to; required to create an example." used_by:"create"`
+	OwnerId          string               `json:"owner_id" description:"Id of the item that owns the OAuth token." used_by:"get_token,refresh_token,use_token" required_for:"get_token,refresh_token,use_token"`
+	Use              string               `json:"use" description:"Which token to use." used_by:"use_token" required_for:"use_token" enum:"access_token,id_token" validated_as:"use_token"`
+	FromLastResponse bool                 `json:"from_last_response" description:"Create the example from the last response of the request." used_by:"create"`
 }
 
 // ItemKind matches kind exactly (case-sensitive, untrimmed); anything else is unknown.

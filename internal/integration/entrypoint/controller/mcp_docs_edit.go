@@ -45,7 +45,7 @@ func NewMCPDocsEdit(
 }
 
 func (m *mcpDocsEdit) Tool() dto.MCPTool {
-	return dto.NewMCPTool(docsEditAITool)
+	return dto.NewMCPTool(docsEditAITool, dto.NewMCPToolArguments[dto.MCPDocsInput](mcpDocsEditApplyAction))
 }
 
 func (m *mcpDocsEdit) Handle(toolCtx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {

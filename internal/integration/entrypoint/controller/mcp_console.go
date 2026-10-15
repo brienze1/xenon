@@ -37,7 +37,11 @@ func NewMCPConsole(errorHandler adapter.ErrorHandler, manageConsoleService appAd
 }
 
 func (m *mcpConsole) Tool() dto.MCPTool {
-	return dto.NewMCPTool(consoleAITool)
+	return dto.NewMCPTool(
+		consoleAITool,
+		dto.NewMCPToolArguments[dto.MCPConsoleList](mcpConsoleListAction),
+		dto.NewMCPToolArguments[dto.MCPConsoleGet](mcpConsoleGetAction),
+	)
 }
 
 func (m *mcpConsole) Handle(toolCtx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {

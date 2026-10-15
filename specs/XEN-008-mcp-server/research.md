@@ -85,7 +85,9 @@ Every decision below is final. Facts come from this repository (paths cited) or 
   - Lists default to 100 rows with a `next` cursor (an opaque offset).
 - **Tool descriptions**: one sentence each. The input schema describes `action` as an enum, so the AI picks on the
   first try. SC-005 is asserted by a BDD step that counts the `tools/list` payload size: 6,000 tokens or fewer, at
-  roughly 4 characters per token, so 24,000 characters or fewer.
+  roughly 4 characters per token, so 24,000 characters or fewer. XEN-014 raised the budget to 36,000 characters
+  (about 9,000 tokens) when every tool started declaring its full arguments; see
+  `specs/XEN-014-mcp-tool-arguments/spec.md`.
 - **Body cap**: text bodies inline up to 16,384 bytes of the masked text, with `truncated: true` and `size` (masked size; raw byte count for binary).
   `response {action: "body", offset, length≤65536}` reads more. Binary bodies, as classified by the existing response
   model, are never inlined; `export {action: "response_body", path}` saves them.

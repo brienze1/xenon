@@ -137,7 +137,7 @@ Feature: Import a whole `postman workspace pull` folder
     And the error should contain the field "error.description" equal to "environments/bad.environment.yaml is not a valid Postman v3 file: line 2: a value has the wrong type"
     And the workspace folder "acme" should contain the entries ".gitignore, collections, environments, workspace.yaml"
 
-  @nothing
+  @nothing @xen_014 @xen_014_loose
   Scenario: A postman folder with nothing importable is not a Postman workspace
     Given the file "specs-only/postman/specs/openapi.yaml" exists with content
       """
@@ -147,5 +147,5 @@ Feature: Import a whole `postman workspace pull` folder
       """
       { "paths": ["{{temp_root}}/specs-only"] }
       """
-    Then the call should fail with code "IMP-00415"
-    And the error should contain the field "error.description" equal to "specs-only is not a Xenon, Postman, Bruno or cURL export"
+    Then the call should fail with code "IMP-55415"
+    And the error should contain the field "error.description" equal to "specs-only has no file Xenon can import; pass a Postman v3 workspace or collection folder, a Postman data dump (archive.json), a Bruno collection (bruno.json or opencollection.yml), a Xenon workspace folder, or a folder of standalone export files"

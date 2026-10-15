@@ -3,8 +3,8 @@ package dto
 import "github.com/brienze1/xenon/internal/domain/entity"
 
 type MCPCookiesList struct {
-	Domain string `json:"domain"`
-	Cursor string `json:"cursor"`
+	Domain string `json:"domain" description:"Only list cookies for this domain."`
+	Cursor string `json:"cursor" description:"Cursor from the previous page."`
 }
 
 // Page filters the jar by the domain argument and pages it from the cursor; false means an unknown cursor.

@@ -19,6 +19,7 @@ func GetManageImportService() adapter.ManageImportService {
 				integration.GetImportSourcePersistence(),
 				integration.GetImportSourcePersistence(),
 				integration.GetImportSourcePersistence(),
+				integration.GetImportSourcePersistence(),
 				integration.GetPostmanWebservice(),
 				integration.GetPostmanWebservice(),
 				integration.GetPostmanWebservice(),

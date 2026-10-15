@@ -3,13 +3,13 @@ package dto
 import "github.com/brienze1/xenon/internal/domain/entity"
 
 type MCPDelete struct {
-	MoveToTrash *bool  `json:"move_to_trash"`
-	Id          string `json:"id"`
-	Domain      string `json:"domain"`
-	Name        string `json:"name"`
-	Path        string `json:"path"`
-	OwnerId     string `json:"owner_id"`
-	Source      string `json:"source"`
+	MoveToTrash *bool  `json:"move_to_trash" description:"Move the workspace folder to the trash; default true." used_by:"workspace"`
+	Id          string `json:"id" description:"Id of the item, environment or workspace to delete." used_by:"item,environment,workspace" required_for:"item,environment,workspace" validated_as:"local_id@workspace,example_id@item"`
+	Domain      string `json:"domain" description:"Cookie domain." used_by:"cookie,cookie_domain" required_for:"cookie,cookie_domain"`
+	Name        string `json:"name" description:"Cookie name." used_by:"cookie" required_for:"cookie"`
+	Path        string `json:"path" description:"Cookie path, or the absolute folder of the git link." used_by:"cookie,git_link" required_for:"git_link" validated_as:"target_folder@git_link"`
+	OwnerId     string `json:"owner_id" description:"Id of the item that owns the OAuth token." used_by:"token" required_for:"token"`
+	Source      string `json:"source" description:"History entries to clear; default all." used_by:"history" enum:"all,user,ai"`
 }
 
 func (m *MCPDelete) MovesToTrash() bool {

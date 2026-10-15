@@ -1,7 +1,7 @@
 package dto
 
 type MCPTreeItem struct {
-	Id string `json:"id"`
+	Id string `json:"id" description:"Item id, from tree list or search." required_for:"get,settings" validated_as:"example_id"`
 }
 
 func (m *MCPTreeItem) HasId() bool {
