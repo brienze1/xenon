@@ -273,7 +273,7 @@ Feature: Sending an alias sends that version, runs its own scripts and uses its 
         "local_id": "{{Acme.local_id}}", "tab_id": "tab-1",
         "request": {
           "id": "{{login}}", "name": "Login", "method": "GET", "url": "{{api}}/me",
-          "auth": { "type": "oauth2", "oauth2": { "grant_type": "client_credentials", "access_token_url": "{{oauth}}/token", "client_id": "xenon", "client_secret": "s3cret", "scope": "api" } }
+          "auth": { "type": "oauth2", "oauth2": { "grant_type": "client_credentials", "access_token_url": "{{oauth}}/token", "client_id": "xenon", "client_secret": "s3cret", "scope": "api", "header_prefix": "Bearer", "add_token_to": "header" } }
         }
       }
       """
@@ -285,7 +285,7 @@ Feature: Sending an alias sends that version, runs its own scripts and uses its 
         "local_id": "{{Acme.local_id}}", "tab_id": "tab-1", "alias_id": "{{mx}}",
         "request": {
           "id": "{{login}}", "name": "Login", "method": "GET", "url": "{{api}}/me",
-          "auth": { "type": "oauth2", "oauth2": { "grant_type": "client_credentials", "access_token_url": "{{oauth}}/token", "client_id": "mx", "client_secret": "mx-s3cret", "scope": "api" } }
+          "auth": { "type": "oauth2", "oauth2": { "grant_type": "client_credentials", "access_token_url": "{{oauth}}/token", "client_id": "mx", "client_secret": "mx-s3cret", "scope": "api", "header_prefix": "Bearer", "add_token_to": "header" } }
         }
       }
       """

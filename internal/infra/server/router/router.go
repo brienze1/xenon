@@ -26,6 +26,7 @@ type router struct {
 	vault        *binding.VaultService
 	importer     *binding.ImportService
 	example      *binding.ExampleService
+	alias        *binding.AliasService
 	settings     *binding.SettingsService
 	console      *binding.ConsoleService
 	script       *binding.ScriptService
@@ -53,6 +54,7 @@ func NewRouter(
 	vault *binding.VaultService,
 	importer *binding.ImportService,
 	example *binding.ExampleService,
+	alias *binding.AliasService,
 	settings *binding.SettingsService,
 	console *binding.ConsoleService,
 	script *binding.ScriptService,
@@ -79,6 +81,7 @@ func NewRouter(
 		vault:        vault,
 		importer:     importer,
 		example:      example,
+		alias:        alias,
 		settings:     settings,
 		console:      console,
 		script:       script,
@@ -157,6 +160,7 @@ func (r *router) registerServices() []wails.Service {
 		r.registerImportRoutes(),
 		r.registerExportRoutes(),
 		r.registerExampleRoutes(),
+		r.registerAliasRoutes(),
 		r.registerSettingsRoutes(),
 		r.registerConsoleRoutes(),
 		r.registerScriptRoutes(),

@@ -37,7 +37,7 @@ func (l *logBuffer) String() string {
 
 type echoSendService struct{}
 
-func (echoSendService) Send(_ context.Context, _, _ string, request entity.Request, _ string, _ entity.SendAcknowledgement, _ entity.SendOrigin) (*entity.SendExecution, error) {
+func (echoSendService) Send(_ context.Context, _, _, _ string, request entity.Request, _ string, _ entity.SendAcknowledgement, _ entity.SendOrigin) (*entity.SendExecution, error) {
 	headers := []entity.KeyValue{entity.NewKeyValue("Set-Cookie", "session="+secretToken)}
 	execution := entity.NewSendExecution("send")
 	execution.RecordResponse(entity.EffectiveRequest{}, entity.NewResponse(200, "OK", "HTTP/1.1", headers, []byte(request.Auth.Bearer.Token), 10, entity.Timings{}))

@@ -35,6 +35,7 @@ func (o oauthOwners) config(ctx context.Context, localId, root, owner string, dr
 }
 
 func (o oauthOwners) owner(ctx context.Context, root, owner string) (entity.Auth, []entity.Collection, bool) {
+	owner, aliasId := entity.SplitAuthOwner(owner)
 	node, err := o.findTreeItem.FindNode(ctx, root, owner)
 	if err != nil {
 		return entity.Auth{}, []entity.Collection{}, false
@@ -48,7 +49,10 @@ func (o oauthOwners) owner(ctx context.Context, root, owner string) (entity.Auth
 		if err != nil {
 			return entity.Auth{}, ancestors, false
 		}
-		return request.Auth, ancestors, true
+		if _, found := request.Alias(aliasId); aliasId != "" && !found {
+			return entity.Auth{}, ancestors, false
+		}
+		return request.Version(aliasId).Auth, ancestors, true
 	}
 	container, err := o.findTreeItem.FindContainer(ctx, root, owner)
 	if err != nil {

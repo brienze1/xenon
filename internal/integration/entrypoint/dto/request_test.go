@@ -108,7 +108,7 @@ func TestCommandLogValues(t *testing.T) {
 	}{
 		{decodeDTO[ApplyRequest](t, `{"request": {"id": "1", "method": "GET", "url": "u"}}`).LogValue(), request.LogValue()},
 		{decodeDTO[AutoHeadersRequest](t, `{"local_id": "ws", "request": {"id": "1", "method": "GET", "url": "u"}}`).LogValue(), map[string]any{"local_id": "ws", "request": request.LogValue()}},
-		{NewSendRequest(NewSendOrigin(historysource.AI, "Claude"), "ws", "t", "env", request, true, false).LogValue(), map[string]any{"local_id": "ws", "tab_id": "t", "request": request.LogValue(), "acknowledge_missing_secrets": true, "confirmed_environment_id": "env", "origin": "ai", "client": "Claude"}},
+		{NewSendRequest(NewSendOrigin(historysource.AI, "Claude"), "ws", "t", "env", request, true, false).WithAlias("al").LogValue(), map[string]any{"local_id": "ws", "tab_id": "t", "alias_id": "al", "request": request.LogValue(), "acknowledge_missing_secrets": true, "confirmed_environment_id": "env", "origin": "ai", "client": "Claude"}},
 		{NewBulkText("abc").LogValue(), map[string]any{"length": 3}},
 		{NewBulkRows([]entity.KeyValue{{}, {}}).LogValue(), map[string]any{"rows": 2}},
 		{NewAutoHeaderList([]entity.AutoHeader{{Key: "A"}}).LogValue(), map[string]any{"headers": 1}},

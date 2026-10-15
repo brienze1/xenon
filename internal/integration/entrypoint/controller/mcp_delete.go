@@ -26,15 +26,18 @@ const (
 	mcpDeleteGitLinkTarget      = "git_link"
 	mcpDeleteHistoryTarget      = "history"
 	mcpDeleteConsoleTarget      = "console"
+	mcpDeleteAliasTarget        = "alias"
+	mcpDeleteAliasReason        = "owner_id must be the request the alias belongs to"
 	mcpUnlinkPathReason         = "path (an empty folder that keeps the workspace files) is required to unlink"
 )
 
 var deleteAITool = entity.AITool{
 	Name:        "delete",
-	Description: "Delete an item, environment, cookie(s), workspace, OAuth token, git link, History or the console.",
+	Description: "Delete an item, a request alias (id + owner_id), environment, cookie(s), workspace, OAuth token, git link, History or the console.",
 	Selector:    mcpDeleteSelector,
 	Actions: []string{
 		mcpDeleteItemTarget,
+		mcpDeleteAliasTarget,
 		mcpDeleteEnvironmentTarget,
 		mcpDeleteCookieTarget,
 		mcpDeleteCookieDomainTarget,
@@ -55,6 +58,7 @@ type mcpDelete struct {
 	searchTreeService        appAdapter.SearchTreeService
 	manageTreeItemService    appAdapter.ManageTreeItemService
 	manageExampleService     appAdapter.ManageExampleService
+	manageAliasService       appAdapter.ManageAliasService
 	manageEnvironmentService appAdapter.ManageEnvironmentService
 	manageCookiesService     appAdapter.ManageCookiesService
 	removeWorkspaceService   appAdapter.RemoveWorkspaceService
@@ -69,6 +73,7 @@ func NewMCPDelete(
 	searchTreeService appAdapter.SearchTreeService,
 	manageTreeItemService appAdapter.ManageTreeItemService,
 	manageExampleService appAdapter.ManageExampleService,
+	manageAliasService appAdapter.ManageAliasService,
 	manageEnvironmentService appAdapter.ManageEnvironmentService,
 	manageCookiesService appAdapter.ManageCookiesService,
 	removeWorkspaceService appAdapter.RemoveWorkspaceService,
@@ -82,6 +87,7 @@ func NewMCPDelete(
 		searchTreeService:        searchTreeService,
 		manageTreeItemService:    manageTreeItemService,
 		manageExampleService:     manageExampleService,
+		manageAliasService:       manageAliasService,
 		manageEnvironmentService: manageEnvironmentService,
 		manageCookiesService:     manageCookiesService,
 		removeWorkspaceService:   removeWorkspaceService,
@@ -118,6 +124,8 @@ func (m *mcpDelete) Handle(toolCtx context.Context, call dto.MCPToolCall) (resul
 	switch call.Action {
 	case mcpDeleteItemTarget:
 		result, err = m.item(ctx, call, arguments)
+	case mcpDeleteAliasTarget:
+		result, err = m.alias(ctx, call, arguments)
 	case mcpDeleteEnvironmentTarget:
 		result, err = m.environment(ctx, call, arguments)
 	case mcpDeleteCookieTarget:
@@ -159,6 +167,26 @@ func (m *mcpDelete) item(ctx context.Context, call dto.MCPToolCall, arguments dt
 		err = m.deleteTreeItem(ctx, call, entry)
 	}
 	if err != nil {
+		return dto.MCPToolResult{}, err
+	}
+	return newMCPDeletedResult(call, entry.Target(), aichangekind.Tree), nil
+}
+
+func (m *mcpDelete) alias(ctx context.Context, call dto.MCPToolCall, arguments dto.MCPDelete) (dto.MCPToolResult, error) {
+	entry, err := findMCPTreeEntry(ctx, m.searchTreeService, call.LocalId, arguments.OwnerItemId())
+	if err != nil {
+		return dto.MCPToolResult{}, err
+	}
+	if !entry.IsRequest() {
+		return dto.MCPToolResult{}, mcpErrors.RejectInvalidArguments(call.Tool, mcpDeleteAliasReason)
+	}
+
+	request := arguments.AliasReference(call.LocalId, entry.ID())
+	err = validateDeleteAlias(&request)
+	if err != nil {
+		return dto.MCPToolResult{}, err
+	}
+	if _, err = m.manageAliasService.Delete(ctx, request.LocalId, request.RequestId, request.AliasId, request.BaseRevision, true); err != nil {
 		return dto.MCPToolResult{}, err
 	}
 	return newMCPDeletedResult(call, entry.Target(), aichangekind.Tree), nil

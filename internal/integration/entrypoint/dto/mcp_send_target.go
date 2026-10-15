@@ -5,10 +5,16 @@ import "github.com/brienze1/xenon/internal/domain/entity"
 type MCPSendTarget struct {
 	Request   *Request `json:"request" description:"Ad-hoc request to use; pass exactly one of request or request_id."`
 	RequestId string   `json:"request_id" description:"Saved request id; pass exactly one of request or request_id." validated_as:"id"`
+	AliasId   string   `json:"alias_id" description:"Alias of the saved request to send instead of its Default (ids from tree get); needs request_id." validated_as:"id"`
 }
 
 func (m *MCPSendTarget) IsAmbiguous() bool {
 	return m.RequestId != "" && m.Request != nil
+}
+
+// HasStrayAlias is an alias named without the saved request it belongs to.
+func (m *MCPSendTarget) HasStrayAlias() bool {
+	return m.AliasId != "" && (m.RequestId == "" || m.Request != nil)
 }
 
 func (m *MCPSendTarget) IsAdHoc() bool {

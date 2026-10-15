@@ -22,6 +22,8 @@ type HistoryEntry struct {
 	Source          string         `json:"source,omitempty"`
 	Client          string         `json:"client,omitempty"`
 	SourceRequestId string         `json:"source_request_id,omitempty"`
+	AliasId         string         `json:"alias_id,omitempty"`
+	AliasName       string         `json:"alias_name,omitempty"`
 	Outcome         string         `json:"outcome,omitempty"`
 	Version         int            `json:"version"`
 }
@@ -43,6 +45,8 @@ func NewHistoryEntry(entry entity.HistoryEntry) HistoryEntry {
 	request := NewRequest(entry.Request)
 	result := NewHistoryResult(entry.Result)
 	model.SourceRequestId = entry.SourceRequestID
+	model.AliasId = entry.AliasID
+	model.AliasName = entry.AliasName
 	model.Outcome = entry.Outcome.String()
 	model.Request = &request
 	model.Result = &result
@@ -57,6 +61,8 @@ func (h *HistoryEntry) ToEntity() entity.HistoryEntry {
 		Source:          entity.HistoryOrigin(historysource.GetHistorySource(h.Source)),
 		Client:          h.Client,
 		SourceRequestID: h.SourceRequestId,
+		AliasID:         h.AliasId,
+		AliasName:       h.AliasName,
 		Outcome:         historyOutcome(h.Outcome),
 	}
 	if h.Activity != nil {

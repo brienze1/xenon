@@ -142,6 +142,7 @@ func (t *testUtils) startApp() {
 		binding.GetVaultService(),
 		binding.GetImportService(),
 		binding.GetExampleService(),
+		binding.GetAliasService(),
 		binding.GetSettingsService(),
 		binding.GetConsoleService(),
 		binding.GetScriptService(),

@@ -12,6 +12,14 @@ type MCPDelete struct {
 	Source      string `json:"source" description:"History entries to clear; default all." used_by:"history" enum:"all,user,ai"`
 }
 
+func (m *MCPDelete) OwnerItemId() string {
+	return m.OwnerId
+}
+
+func (m *MCPDelete) AliasReference(localId, requestId string) AliasReference {
+	return AliasReference{LocalId: localId, RequestId: requestId, AliasId: m.Id}
+}
+
 func (m *MCPDelete) MovesToTrash() bool {
 	return m.MoveToTrash == nil || *m.MoveToTrash
 }

@@ -1,5 +1,7 @@
 package entity
 
+import "strings"
+
 type ExportNode struct {
 	Request          *Request
 	Path             string
@@ -103,4 +105,39 @@ func ExportableChildren(node TreeNode) []TreeNode {
 		}
 	}
 	return children
+}
+
+// WithAliasesAsRequests writes every request's aliases as requests right after it, since Postman has no aliases.
+func (e ExportNode) WithAliasesAsRequests() ExportNode {
+	if e.IsRequest() {
+		request := *e.Request
+		request.Aliases = nil
+		e.Request = &request
+		return e
+	}
+	children := make([]ExportNode, 0, len(e.Children))
+	for _, child := range e.Children {
+		children = append(children, child.WithAliasesAsRequests())
+		children = append(children, child.AliasRequests()...)
+	}
+	e.Children = children
+	return e
+}
+
+// AliasRequests are a request's aliases as requests named "<request> (<alias>)", without examples.
+func (e ExportNode) AliasRequests() []ExportNode {
+	if !e.IsRequest() {
+		return []ExportNode{}
+	}
+	nodes := make([]ExportNode, 0, len(e.Request.Aliases))
+	parent := strings.TrimSuffix(e.Path, e.Request.Name)
+	for _, alias := range e.Request.Aliases {
+		version := e.Request.Version(alias.ID)
+		name := version.Name + " (" + alias.Name + ")"
+		version = version.Identified(version.ID+"-"+alias.ID, name)
+		version.Examples = nil
+		version.Aliases = nil
+		nodes = append(nodes, ExportNode{Request: &version, Path: parent + name, Children: []ExportNode{}, InheritedScripts: e.InheritedScripts})
+	}
+	return nodes
 }

@@ -133,8 +133,8 @@ func NewSendRequestService(
 	}
 }
 
-func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request entity.Request, appVersion string, acknowledgement entity.SendAcknowledgement, origin entity.SendOrigin) (*entity.SendExecution, error) {
-	logger.Info(ctx, "Started", origin, map[string]any{"localId": localId, "tabId": tabId, "request": request, "appVersion": appVersion, "acknowledgement": acknowledgement})
+func (s *sendRequest) Send(ctx context.Context, localId, tabId, aliasId string, request entity.Request, appVersion string, acknowledgement entity.SendAcknowledgement, origin entity.SendOrigin) (*entity.SendExecution, error) {
+	logger.Info(ctx, "Started", origin, map[string]any{"localId": localId, "tabId": tabId, "aliasId": aliasId, "request": request, "appVersion": appVersion, "acknowledgement": acknowledgement})
 
 	workspace, err := s.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
@@ -144,7 +144,11 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 	if err != nil {
 		return nil, err
 	}
-	effective := usecase.ResolveEffectiveRequest(request, scopes.ancestors, workspace.Path).WithAuthOwner(tabId)
+	alias, err := s.alias(ctx, workspace.Path, request.ID, aliasId)
+	if err != nil {
+		return nil, err
+	}
+	effective := usecase.ResolveEffectiveRequest(request, scopes.ancestors, workspace.Path).ForAlias(request.ID, aliasId).WithAuthOwner(tabId)
 	preflight := usecase.CheckSendPreflight(request.Inheriting(effective), scopes.context, scopes.environment)
 	if preflight.AwaitsConfirmation(acknowledgement) {
 		return nil, usecase.RejectUnconfirmedSend(preflight)
@@ -156,7 +160,7 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 	if err != nil {
 		return nil, err
 	}
-	owners, err := s.scriptOwners(ctx, workspace.Path, request, scopes.ancestors)
+	owners, err := s.scriptOwners(ctx, workspace.Path, request, aliasId, scopes.ancestors)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +177,7 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 	sentAt := timeutils.Now()
 	execution := entity.NewSendExecution(idutils.NewUlid())
 	execution.Start(request, scopes.scripts, scopes.vault)
-	run := sendRun{service: s, scopes: scopes, token: token, localId: localId, tabId: tabId, root: workspace.Path, appVersion: appVersion, sendId: execution.ID, secrets: secrets, settings: *settings}
+	run := sendRun{service: s, scopes: scopes, token: token, localId: localId, tabId: tabId, aliasId: aliasId, root: workspace.Path, appVersion: appVersion, sendId: execution.ID, secrets: secrets, settings: *settings}
 	if err := run.execute(ctx, tabId, request, scopes.ancestors, owners, &execution); err != nil {
 		return nil, err
 	}
@@ -181,14 +185,14 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId string, request e
 		return nil, err
 	}
 	s.registerKnownSecrets.Register(ctx, append(secrets, execution.DerivedSecrets(secrets)...)...)
-	if err := s.saveHistoryEntry.Save(ctx, localId, entity.NewHistoryEntry(idutils.NewUlid(), sentAt, request, execution, origin), settings.HistoryCaps()); err != nil {
+	if err := s.saveHistoryEntry.Save(ctx, localId, entity.NewHistoryEntry(idutils.NewUlid(), sentAt, request, execution, origin).ForAlias(alias), settings.HistoryCaps()); err != nil {
 		return nil, err
 	}
 	if err := s.publishAIEvent.HistoryChanged(ctx, localId); err != nil {
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", origin, map[string]any{"localId": localId, "tabId": tabId, "request": request, "appVersion": appVersion, "acknowledgement": acknowledgement, "result": &execution})
+	logger.Info(ctx, "Finished", origin, map[string]any{"localId": localId, "tabId": tabId, "aliasId": aliasId, "request": request, "appVersion": appVersion, "acknowledgement": acknowledgement, "result": &execution})
 	return &execution, nil
 }
 
@@ -209,7 +213,7 @@ func (s *sendRequest) oauthToken(ctx context.Context, localId string, effective 
 	return token, nil
 }
 
-func (s *sendRequest) scriptOwners(ctx context.Context, root string, request entity.Request, ancestors []entity.Collection) ([]entity.ScriptOwner, error) {
+func (s *sendRequest) scriptOwners(ctx context.Context, root string, request entity.Request, aliasId string, ancestors []entity.Collection) ([]entity.ScriptOwner, error) {
 	if request.UsesOwnScripts() {
 		return request.ScriptOwners(ancestors), nil
 	}
@@ -217,5 +221,21 @@ func (s *sendRequest) scriptOwners(ctx context.Context, root string, request ent
 	if err != nil {
 		return nil, err
 	}
-	return request.WithScriptsOf(*stored).ScriptOwners(ancestors), nil
+	return request.WithScriptsOf(stored.Version(aliasId)).ScriptOwners(ancestors), nil
+}
+
+// alias is the saved alias a send uses; none when the send is not of an alias.
+func (s *sendRequest) alias(ctx context.Context, root, requestId, aliasId string) (entity.RequestAlias, error) {
+	if aliasId == "" {
+		return entity.RequestAlias{}, nil
+	}
+	stored, err := s.findRequest.Find(ctx, root, requestId)
+	if err != nil {
+		return entity.RequestAlias{}, err
+	}
+	alias, err := usecase.ResolveAlias(*stored, aliasId)
+	if err != nil {
+		return entity.RequestAlias{}, err
+	}
+	return *alias, nil
 }

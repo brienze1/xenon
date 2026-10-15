@@ -28,6 +28,7 @@ type Request struct {
 	Headers             []KeyValue
 	DisabledAutoHeaders []string
 	Examples            []SavedExample
+	Aliases             []RequestAlias
 	Auth                Auth
 	Settings            RequestSettings
 	InheritScripts      bool
@@ -243,4 +244,68 @@ func (r Request) WithoutExample(id string) Request {
 
 func (r Request) exampleIndex(id string) int {
 	return slices.IndexFunc(r.Examples, func(example SavedExample) bool { return example.ID == id })
+}
+
+// SendableOf copies the content a send uses (method, URL, params, path variables, headers, auto-headers, body, auth,
+// scripts and settings) from source, keeping everything that identifies the request.
+func (r Request) SendableOf(source Request) Request {
+	r.Method = source.Method
+	r.URL = source.URL
+	r.Params = slices.Clone(source.Params)
+	r.PathVariables = slices.Clone(source.PathVariables)
+	r.Headers = slices.Clone(source.Headers)
+	r.DisabledAutoHeaders = slices.Clone(source.DisabledAutoHeaders)
+	r.Body = source.Body
+	r.Auth = source.Auth
+	r.Scripts = source.Scripts
+	r.InheritScripts = source.InheritScripts
+	r.Settings = source.Settings
+	return r
+}
+
+// Version is the request as one of its versions: itself for the Default (""), or with an alias's sendable content.
+func (r Request) Version(aliasId string) Request {
+	alias, found := r.Alias(aliasId)
+	if !found {
+		return r
+	}
+	version := r.SendableOf(alias.Version)
+	version.ScriptsEdited = false
+	return version
+}
+
+func (r Request) Alias(id string) (RequestAlias, bool) {
+	index := r.aliasIndex(id)
+	if index < 0 {
+		return RequestAlias{}, false
+	}
+	return r.Aliases[index], true
+}
+
+// HasAliasNamed is true when another alias than exceptId has the name, ignoring case and surrounding spaces.
+func (r Request) HasAliasNamed(name, exceptId string) bool {
+	return slices.ContainsFunc(r.Aliases, func(alias RequestAlias) bool { return alias.ID != exceptId && alias.HasName(name) })
+}
+
+func (r Request) WithAliasAppended(alias RequestAlias) Request {
+	r.Aliases = append(slices.Clone(r.Aliases), alias)
+	return r
+}
+
+func (r Request) WithAlias(alias RequestAlias) Request {
+	aliases := slices.Clone(r.Aliases)
+	if index := r.aliasIndex(alias.ID); index >= 0 {
+		aliases[index] = alias
+	}
+	r.Aliases = aliases
+	return r
+}
+
+func (r Request) WithoutAlias(id string) Request {
+	r.Aliases = slices.DeleteFunc(slices.Clone(r.Aliases), func(alias RequestAlias) bool { return alias.ID == id })
+	return r
+}
+
+func (r Request) aliasIndex(id string) int {
+	return slices.IndexFunc(r.Aliases, func(alias RequestAlias) bool { return alias.ID == id })
 }

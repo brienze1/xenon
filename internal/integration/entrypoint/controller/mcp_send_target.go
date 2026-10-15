@@ -12,6 +12,7 @@ import (
 const (
 	mcpSendTargetConflictReason = "pass request_id or request, not both"
 	mcpSendTargetMissingReason  = "request_id or request is required"
+	mcpSendTargetAliasReason    = "alias_id needs request_id"
 )
 
 func resolveMCPSendTarget(
@@ -23,6 +24,9 @@ func resolveMCPSendTarget(
 ) (dto.Request, entity.AIActivityTarget, error) {
 	if target.IsAmbiguous() {
 		return dto.Request{}, entity.AIActivityTarget{}, mcpErrors.RejectInvalidArguments(call.Tool, mcpSendTargetConflictReason)
+	}
+	if target.HasStrayAlias() {
+		return dto.Request{}, entity.AIActivityTarget{}, mcpErrors.RejectInvalidArguments(call.Tool, mcpSendTargetAliasReason)
 	}
 	if target.IsAdHoc() {
 		return target.AdHocRequest(), target.AdHocTarget(), nil
@@ -51,5 +55,5 @@ func resolveMCPSendTarget(
 	if err != nil {
 		return dto.Request{}, entry.Target(), err
 	}
-	return dto.NewRequest(*saved), entry.Target(), nil
+	return dto.NewRequest(saved.Version(target.AliasId)), entry.Target(), nil
 }

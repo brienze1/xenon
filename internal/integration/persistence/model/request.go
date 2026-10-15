@@ -24,6 +24,7 @@ type Request struct {
 	Headers        []KeyValue     `yaml:"headers" json:"headers"`
 	AutoHeaders    AutoHeaders    `yaml:"autoHeaders" json:"auto_headers"`
 	Examples       []Example      `yaml:"examples" json:"-"`
+	Aliases        []RequestAlias `yaml:"aliases" json:"-"`
 	Auth           Auth           `yaml:"auth" json:"auth"`
 	Xenon          int            `yaml:"xenon" json:"xenon"`
 	ScriptsEdited  bool           `yaml:"-" json:"-"`
@@ -49,6 +50,7 @@ func NewRequest(request entity.Request) Request {
 		InheritScripts: &request.InheritScripts,
 		ScriptsEdited:  request.ScriptsEdited,
 		Examples:       newExamples(request.Examples),
+		Aliases:        newRequestAliases(request.Aliases),
 		Postman:        request.Postman,
 		Bruno:          request.Bruno,
 	}
@@ -78,6 +80,7 @@ func (r *Request) ToEntity() entity.Request {
 	request.Scripts = r.Scripts.ToEntity()
 	request.InheritScripts = inheritsScripts(r.InheritScripts)
 	request.Examples = examplesToEntity(r.Examples)
+	request.Aliases = requestAliasesToEntity(r.Aliases)
 	request.Postman = sourceFieldsToEntity(r.Postman)
 	request.Bruno = sourceFieldsToEntity(r.Bruno)
 	return request
@@ -91,14 +94,18 @@ func (r *Request) ToStoredEntity(id, revision string) entity.Request {
 }
 
 func (r *Request) Fields() []yamlnode.Field {
-	return r.fields(optionalExamples(r.Examples))
+	return r.fields(optionalExamples(r.Examples), optionalAliases(r.Aliases))
 }
 
 func (r *Request) FieldsWithExamples() []yamlnode.Field {
-	return r.fields(examplesField(r.Examples))
+	return r.fields(examplesField(r.Examples), optionalAliases(r.Aliases))
 }
 
-func (r *Request) fields(examples []yamlnode.Field) []yamlnode.Field {
+func (r *Request) FieldsWithAliases() []yamlnode.Field {
+	return r.fields(optionalExamples(r.Examples), aliasesField(r.Aliases))
+}
+
+func (r *Request) fields(examples, aliases []yamlnode.Field) []yamlnode.Field {
 	fields := append(headerFields(itemkind.Request.String(), r.Id, r.Name, r.Description),
 		yamlnode.String("method", r.Method),
 		yamlnode.String("url", r.Url),
@@ -113,6 +120,7 @@ func (r *Request) fields(examples []yamlnode.Field) []yamlnode.Field {
 		scriptsReserved(yamlnode.Reserved("inheritScripts", inheritScriptsNode(r.InheritScripts)), r.ScriptsEdited),
 	)
 	fields = append(fields, examples...)
+	fields = append(fields, aliases...)
 	fields = append(fields, sourceFieldsReserved(postmanKey, r.Postman))
 	return append(fields, optionalSourceFields(brunoKey, r.Bruno)...)
 }

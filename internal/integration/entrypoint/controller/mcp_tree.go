@@ -30,7 +30,7 @@ const (
 
 var treeAITool = entity.AITool{
 	Name:            "tree",
-	Description:     "Browse, read and search collections, folders, requests and examples.",
+	Description:     "Browse, read and search collections, folders, requests (with their aliases) and examples.",
 	Actions:         []string{mcpTreeListAction, mcpTreeGetAction, mcpTreeSettingsAction, mcpTreeSearchAction, mcpTreeTokenAction},
 	Effect:          aitooleffect.ReadOnly,
 	Idempotent:      true,

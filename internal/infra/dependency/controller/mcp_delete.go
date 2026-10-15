@@ -19,6 +19,7 @@ func GetMCPDeleteController() adapter.MCPToolController {
 				application.GetSearchTreeService(),
 				application.GetManageTreeItemService(),
 				application.GetManageExampleService(),
+				application.GetManageAliasService(),
 				application.GetManageEnvironmentService(),
 				application.GetManageCookiesService(),
 				application.GetRemoveWorkspaceService(),
