@@ -3,12 +3,12 @@ package dto
 import (
 	"strings"
 
+	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/pkg/errs"
 )
 
 const (
 	invalidRequestPrefix = "invalid request: "
-	detailProblemJoiner  = ", "
 	detailFieldJoiner    = "; "
 )
 
@@ -25,7 +25,7 @@ func NewMCPToolError(failure errs.BaseError, tool MCPTool, action string) MCPToo
 	toolError := MCPToolError{Code: failure.Code(), Message: failure.Description()}
 	problems := make([]string, 0, len(details))
 	for _, detail := range details {
-		mapped := MCPToolErrorDetail{Field: tool.ArgumentOf(action, detail.Attribute), Problem: strings.Join(detail.Messages, detailProblemJoiner)}
+		mapped := NewMCPToolErrorDetail(tool.ArgumentOf(action, detail.Attribute), detail.Messages)
 		toolError.Details = append(toolError.Details, mapped)
 		problems = append(problems, mapped.Field+" "+mapped.Problem)
 	}
@@ -33,4 +33,8 @@ func NewMCPToolError(failure errs.BaseError, tool MCPTool, action string) MCPToo
 		toolError.Message = invalidRequestPrefix + strings.Join(problems, detailFieldJoiner)
 	}
 	return toolError
+}
+
+func NewMCPPanicToolError(failure errs.BaseError) MCPToolError {
+	return NewMCPToolError(failure, NewMCPTool(entity.AITool{}), "")
 }

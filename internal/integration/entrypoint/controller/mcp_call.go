@@ -171,7 +171,7 @@ func (m *mcpCall) respond(ctx context.Context, definition dto.MCPTool, toolCall 
 
 func (m *mcpCall) panicked(ctx context.Context, call any, recovered any) dto.MCPOutcome {
 	failure := failureOf(m.errorHandler.Handle(ctx, handlePanic(ctx, call, recovered), call))
-	text, err := dto.EncodeMCPText(dto.NewMCPToolError(failure, dto.MCPTool{}, ""))
+	text, err := dto.EncodeMCPText(dto.NewMCPPanicToolError(failure))
 	if err != nil {
 		m.errorHandler.Handle(ctx, mcpErrors.FailUnknownAICall(err), call)
 		return dto.NewMCPOutcome(mcpErrors.UnguardedAIOutputText, true)

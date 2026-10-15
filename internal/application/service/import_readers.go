@@ -53,25 +53,25 @@ func (i importReaders) expanded(ctx context.Context, inputs []entity.ImportInput
 			expanded = append(expanded, input)
 			continue
 		}
-		files, dirs, skipped, err := i.looseFolder(ctx, input)
+		listing, dirs, err := i.looseFolder(ctx, input)
 		tempDirs = append(tempDirs, dirs...)
 		if err != nil {
 			return nil, tempDirs, nil, err
 		}
-		expanded = append(expanded, files...)
-		if len(skipped) > 0 {
-			warnings = append(warnings, entity.NewSkippedEntriesWarning(input.Name(), skipped))
+		expanded = append(expanded, listing.Inputs...)
+		if listing.HasSkipped() {
+			warnings = append(warnings, listing.SkippedWarning())
 		}
 	}
 	return expanded, tempDirs, warnings, nil
 }
 
-func (i importReaders) looseFolder(ctx context.Context, folder entity.ImportInput) ([]entity.ImportInput, []string, []entity.ImportSkippedEntry, error) {
+func (i importReaders) looseFolder(ctx context.Context, folder entity.ImportInput) (*entity.ImportFolderListing, []string, error) {
 	files, tempDirs, skipped, err := i.readImportFolderFiles.ReadFolderFiles(ctx, folder)
 	if err != nil {
-		return nil, tempDirs, nil, err
+		return nil, tempDirs, err
 	}
-	detected := make([]entity.ImportInput, 0, len(files))
+	listing := entity.NewImportFolderListing(folder.Name(), skipped)
 	for _, file := range files {
 		kind, version, err := usecase.DetectImportFormat(file.Probe)
 		file = file.Detected(kind, version)
@@ -79,15 +79,15 @@ func (i importReaders) looseFolder(ctx context.Context, folder entity.ImportInpu
 			err = usecase.RejectUnimportableFolder(file.Name())
 		}
 		if err != nil {
-			skipped = append(skipped, entity.NewImportSkippedEntry(file.Name(), err))
+			listing.Skip(file.Name(), err)
 			continue
 		}
-		detected = append(detected, file)
+		listing.Add(file)
 	}
-	if len(detected) == 0 {
-		return nil, tempDirs, nil, usecase.RejectUnimportableFolder(folder.Name())
+	if listing.IsEmpty() {
+		return nil, tempDirs, usecase.RejectUnimportableFolder(folder.Name())
 	}
-	return detected, tempDirs, skipped, nil
+	return &listing, tempDirs, nil
 }
 
 func (i importReaders) read(ctx context.Context, input entity.ImportInput, read *entity.ImportReadout) error {

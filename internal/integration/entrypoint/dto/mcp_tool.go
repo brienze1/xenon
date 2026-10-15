@@ -40,19 +40,6 @@ type MCPTool struct {
 	WorkspaceScoped bool               `json:"workspace_scoped"`
 }
 
-type mcpToolArgument struct {
-	property    jsonschema.Property
-	usedBy      []string
-	requiredFor []string
-	always      bool
-}
-
-type mcpArgumentAlias struct {
-	prefix   string
-	argument string
-	actions  []string
-}
-
 func NewMCPTool(tool entity.AITool, arguments ...MCPToolArguments) MCPTool {
 	return MCPTool{
 		Name:            tool.Name,
@@ -134,7 +121,7 @@ func (m MCPTool) ArgumentProperties() (map[string]jsonschema.Property, error) {
 // ArgumentOf maps a validation attribute of a request DTO back to the argument the client sent for the action.
 func (m MCPTool) ArgumentOf(action, attribute string) string {
 	normalised := attributeIndex.ReplaceAllString(attribute, arrayItems)
-	best := mcpArgumentAlias{}
+	var best MCPArgumentAlias
 	for _, alias := range m.aliases() {
 		if !alias.appliesTo(action) || !hasPathPrefix(normalised, alias.prefix) || len(alias.prefix) <= len(best.prefix) {
 			continue
@@ -147,8 +134,8 @@ func (m MCPTool) ArgumentOf(action, attribute string) string {
 	return best.argument + normalised[len(best.prefix):]
 }
 
-func (m MCPTool) arguments() (map[string]mcpToolArgument, error) {
-	arguments := map[string]mcpToolArgument{}
+func (m MCPTool) arguments() (map[string]MCPToolArgument, error) {
+	arguments := map[string]MCPToolArgument{}
 	var problems []string
 	for _, registration := range m.Arguments {
 		properties, err := jsonschema.Properties(registration.Shape)
@@ -173,10 +160,7 @@ func (m MCPTool) arguments() (map[string]mcpToolArgument, error) {
 				problems = append(problems, fmt.Sprintf("%s: %v conflicts with %v", name, existing.property.Types, argument.property.Types))
 				continue
 			}
-			existing.usedBy = append(existing.usedBy, argument.usedBy...)
-			existing.requiredFor = append(existing.requiredFor, argument.requiredFor...)
-			existing.always = existing.always || argument.always
-			arguments[name] = existing
+			arguments[name] = existing.mergedWith(argument)
 		}
 	}
 	if len(problems) > 0 {
@@ -186,28 +170,16 @@ func (m MCPTool) arguments() (map[string]mcpToolArgument, error) {
 	return arguments, nil
 }
 
-func (m MCPTool) argument(registration MCPToolArguments, property jsonschema.Property) (mcpToolArgument, string) {
-	argument := mcpToolArgument{property: property, usedBy: registration.Actions}
+func (m MCPTool) argument(registration MCPToolArguments, property jsonschema.Property) (MCPToolArgument, string) {
+	argument := NewMCPToolArgument(property, registration.Actions)
 	problem := ""
-	if len(property.UsedBy) > 0 {
-		argument.usedBy = intersect(property.UsedBy, registration.Actions)
-		if len(intersect(property.UsedBy, m.Actions)) == 0 && len(argument.usedBy) == 0 {
-			problem = fmt.Sprintf("used_by %v names no action of the tool", property.UsedBy)
-		}
-	}
-	for _, action := range property.RequiredFor {
-		if action == alwaysRequired {
-			argument.always = true
-			continue
-		}
-		if slices.Contains(registration.Actions, action) {
-			argument.requiredFor = append(argument.requiredFor, action)
-		}
+	if len(property.UsedBy) > 0 && len(intersect(property.UsedBy, m.Actions)) == 0 && len(argument.usedBy) == 0 {
+		problem = fmt.Sprintf("used_by %v names no action of the tool", property.UsedBy)
 	}
 	return argument, problem
 }
 
-func (m MCPTool) describe(argument mcpToolArgument) jsonschema.Property {
+func (m MCPTool) describe(argument MCPToolArgument) jsonschema.Property {
 	description := argument.property.Description
 	if len(m.Actions) > 1 {
 		description += sentence(usedByPrefix, m.inActionOrder(argument.usedBy))
@@ -226,8 +198,8 @@ func (m MCPTool) inActionOrder(actions []string) []string {
 	return ordered
 }
 
-func (m MCPTool) aliases() []mcpArgumentAlias {
-	aliases := make([]mcpArgumentAlias, 0)
+func (m MCPTool) aliases() []MCPArgumentAlias {
+	aliases := make([]MCPArgumentAlias, 0)
 	for _, registration := range m.Arguments {
 		properties, err := jsonschema.Properties(registration.Shape)
 		if err != nil {
@@ -240,15 +212,15 @@ func (m MCPTool) aliases() []mcpArgumentAlias {
 	return aliases
 }
 
-func propertyAliases(path string, property jsonschema.Property, actions []string) []mcpArgumentAlias {
-	aliases := make([]mcpArgumentAlias, 0)
+func propertyAliases(path string, property jsonschema.Property, actions []string) []MCPArgumentAlias {
+	aliases := make([]MCPArgumentAlias, 0)
 	for _, entry := range property.ValidatedAs {
 		prefix, qualifier, qualified := strings.Cut(entry, actionQualifier)
 		scope := actions
 		if qualified {
 			scope = intersect(strings.Split(qualifier, actionAlternatives), actions)
 		}
-		aliases = append(aliases, mcpArgumentAlias{prefix: prefix, argument: path, actions: scope})
+		aliases = append(aliases, NewMCPArgumentAlias(prefix, path, scope))
 	}
 	if property.Items != nil {
 		aliases = append(aliases, propertyAliases(path+arrayItems, *property.Items, actions)...)
@@ -257,10 +229,6 @@ func propertyAliases(path string, property jsonschema.Property, actions []string
 		aliases = append(aliases, propertyAliases(path+pathSeparator+name, nested, actions)...)
 	}
 	return aliases
-}
-
-func (a mcpArgumentAlias) appliesTo(action string) bool {
-	return len(a.actions) == 0 || slices.Contains(a.actions, action)
 }
 
 func hasPathPrefix(attribute, prefix string) bool {

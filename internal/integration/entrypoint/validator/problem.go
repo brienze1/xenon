@@ -9,7 +9,6 @@ import (
 
 const (
 	invalidProblem     = "is not valid"
-	oneOfSeparator     = " "
 	oneOfJoiner        = ", "
 	charactersSuffix   = " characters"
 	itemsSuffix        = " items"
@@ -50,7 +49,6 @@ var fixedProblems = map[string]string{
 	safeSubfolderRule:  "must be a folder inside the workspace",
 }
 
-// problemOf describes the broken rule in plain English, never echoing the submitted value.
 func problemOf(fieldError validator.FieldError) string {
 	if problem, found := fixedProblems[fieldError.Tag()]; found {
 		return problem

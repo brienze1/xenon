@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	appAdapter "github.com/brienze1/xenon/internal/application/adapter"
-	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/aitooleffect"
 	"github.com/brienze1/xenon/internal/integration/adapter"
@@ -308,7 +307,7 @@ func (m *mcpTree) token(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolR
 		return dto.MCPToolResult{}, err
 	}
 	if token == nil {
-		return dto.MCPToolResult{}, usecase.RejectMissingOAuthToken()
+		return dto.MCPToolResult{}, mcpErrors.RejectMissingAIToken()
 	}
 	return dto.NewMCPToolResult(dto.NewMCPTreeToken(dto.NewTokenInfo(*token, timeutils.Now()))).WithTarget(owner.Target()), nil
 }

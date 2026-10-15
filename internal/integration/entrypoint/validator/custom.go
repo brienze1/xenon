@@ -55,7 +55,6 @@ func (c *customValidator) Struct(code string, s any) error {
 	return errs.BadRequestError(invalidRequestDescription(details), code, details...)
 }
 
-// invalidRequestDescription names every failing field and its problem: "invalid request: path is required; …".
 func invalidRequestDescription(details []errs.ErrorDetails) string {
 	problems := make([]string, 0, len(details))
 	for _, detail := range details {
