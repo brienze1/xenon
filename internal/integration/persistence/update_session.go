@@ -15,7 +15,7 @@ type updateSessionPersistence struct {
 	mu       sync.Mutex
 }
 
-// NewUpdateSessionPersistence keeps the update session in memory, one per app-data folder, so each app run starts idle.
+// NewUpdateSessionPersistence keeps one in-memory update session per app-data folder.
 func NewUpdateSessionPersistence() adapter.UpdateSessionPersistence {
 	return &updateSessionPersistence{sessions: map[string]entity.UpdateSession{}}
 }

@@ -14,7 +14,7 @@ var updateWebserviceInstance adapter.UpdateWebservice
 func GetUpdateWebservice() adapter.UpdateWebservice {
 	if updateWebserviceInstance == nil {
 		updateWebserviceOnce.Do(func() {
-			updateWebserviceInstance = webservice.NewUpdateWebservice(external.GetHttpClientFactory(), external.GetBrowser())
+			updateWebserviceInstance = webservice.NewUpdateWebservice(external.GetHttpClientFactory())
 		})
 	}
 	return updateWebserviceInstance

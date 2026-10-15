@@ -18,6 +18,10 @@ type UpdateStatus struct {
 	Automatic      bool
 }
 
+func (u UpdateStatus) HasState() bool {
+	return u.State != updatestate.None
+}
+
 func (u UpdateStatus) IsBusy() bool {
 	return u.State == updatestate.Checking || u.State == updatestate.Downloading || u.State == updatestate.Installing
 }

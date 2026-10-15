@@ -18,7 +18,7 @@ func (r Release) Checksums() (ReleaseAsset, bool) {
 
 func (r Release) asset(name string) (ReleaseAsset, bool) {
 	for _, asset := range r.Assets {
-		if asset.Name == name {
+		if asset.IsNamed(name) {
 			return asset, true
 		}
 	}

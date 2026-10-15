@@ -64,7 +64,7 @@ type application struct {
 	Version         string
 	TempDir         string
 	Executable      string
-	Packaged        bool
+	RestartAfterPid string
 }
 
 type imports struct {
@@ -88,7 +88,7 @@ func Properties() *properties {
 			Version:         withDefault(os.Getenv("XENON_VERSION"), withDefault(version, defaultVersion)),
 			TempDir:         os.TempDir(),
 			Executable:      executable,
-			Packaged:        version != "",
+			RestartAfterPid: os.Getenv("XENON_RESTART_AFTER_PID"),
 			MCPPortOverride: portOrNil(os.Getenv("XENON_MCP_PORT")),
 		},
 		Vault: &vault{

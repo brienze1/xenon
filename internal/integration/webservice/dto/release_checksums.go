@@ -8,9 +8,11 @@ import (
 
 const checksumFields = 2
 
-func NewReleaseChecksums(content string) entity.ReleaseChecksums {
+type ReleaseChecksums string
+
+func (r ReleaseChecksums) ToEntity() entity.ReleaseChecksums {
 	checksums := entity.ReleaseChecksums{}
-	for _, line := range strings.Split(content, "\n") {
+	for _, line := range strings.Split(string(r), "\n") {
 		fields := strings.Fields(line)
 		if len(fields) != checksumFields {
 			continue

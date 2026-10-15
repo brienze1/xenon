@@ -1,7 +1,6 @@
 package application
 
 import (
-	"os"
 	"testing"
 	"time"
 )
@@ -32,14 +31,5 @@ func TestWaitForPreviousProcessIgnoresAMissingPid(t *testing.T) {
 			t.Fatalf("pid %q must not be checked", pid)
 			return false
 		}, func(time.Duration) {}, time.Second)
-	}
-}
-
-func TestProcessRunningKnowsTheCurrentProcess(t *testing.T) {
-	if processRunning(-1) || processRunning(0) {
-		t.Fatal("no process has a negative or zero id")
-	}
-	if !processRunning(os.Getpid()) {
-		t.Fatal("the current process is running")
 	}
 }

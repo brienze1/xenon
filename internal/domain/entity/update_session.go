@@ -14,7 +14,7 @@ type UpdateSession struct {
 
 func (u UpdateSession) For(installation Installation) UpdateSession {
 	u.Status.CurrentVersion = installation.Version
-	if u.Status.State == "" {
+	if !u.Status.HasState() {
 		u.Status.State = updatestate.Idle
 	}
 	return u

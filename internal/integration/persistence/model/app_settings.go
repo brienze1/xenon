@@ -27,7 +27,10 @@ func (a *AppSettings) ToEntity() entity.AppSettings {
 		HistoryUserCap:  a.HistoryUserCap,
 		HistoryAICap:    a.HistoryAICap,
 		AIAccess:        entity.DefaultAIAccessSettings(),
-		AutoUpdate:      a.AutoUpdate == nil || *a.AutoUpdate,
+		AutoUpdate:      entity.DefaultAppSettings().AutoUpdate,
+	}
+	if a.AutoUpdate != nil {
+		settings.AutoUpdate = *a.AutoUpdate
 	}
 	if a.AIAccess != nil {
 		settings.AIAccess = a.AIAccess.ToEntity()

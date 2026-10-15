@@ -18,13 +18,13 @@ type Version struct {
 func ParseVersion(text string) (Version, error) {
 	parts := strings.Split(strings.TrimPrefix(strings.TrimSpace(text), "v"), ".")
 	if len(parts) != versionParts {
-		return Version{}, invalidVersion(text)
+		return Version{}, errs.UnprocessableEntityError("the version "+text+" is not a release version", "UPD-01422")
 	}
 	numbers := make([]int, versionParts)
 	for index, part := range parts {
 		number, err := strconv.Atoi(part)
 		if err != nil || number < 0 || strconv.Itoa(number) != part {
-			return Version{}, invalidVersion(text)
+			return Version{}, errs.UnprocessableEntityError("the version "+text+" is not a release version", "UPD-02422")
 		}
 		numbers[index] = number
 	}
@@ -43,8 +43,4 @@ func (v Version) NewerThan(other Version) bool {
 
 func (v Version) String() string {
 	return strconv.Itoa(v.Major) + "." + strconv.Itoa(v.Minor) + "." + strconv.Itoa(v.Patch)
-}
-
-func invalidVersion(text string) error {
-	return errs.BadRequestError("the version "+text+" is not a release version", "UPD-01422")
 }

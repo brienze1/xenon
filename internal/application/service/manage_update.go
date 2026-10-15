@@ -24,38 +24,41 @@ type manageUpdate struct {
 	findAppSettings       usecase.FindAppSettings
 }
 
-type UpdateUseCases struct {
-	FindUpdateSession     usecase.FindUpdateSession
-	SaveUpdateSession     usecase.SaveUpdateSession
-	PublishUpdateStatus   usecase.PublishUpdateStatus
-	FindLatestRelease     usecase.FindLatestRelease
-	FindReleaseChecksums  usecase.FindReleaseChecksums
-	DownloadUpdatePackage usecase.DownloadUpdatePackage
-	InstallUpdate         usecase.InstallUpdate
-	CleanUpdateLeftovers  usecase.CleanUpdateLeftovers
-	RestartApp            usecase.RestartApp
-	OpenReleasePage       usecase.OpenReleasePage
-	FindAppSettings       usecase.FindAppSettings
-}
-
-func NewManageUpdateService(useCases UpdateUseCases) adapter.ManageUpdateService {
+func NewManageUpdateService(
+	findUpdateSession usecase.FindUpdateSession,
+	saveUpdateSession usecase.SaveUpdateSession,
+	publishUpdateStatus usecase.PublishUpdateStatus,
+	findLatestRelease usecase.FindLatestRelease,
+	findReleaseChecksums usecase.FindReleaseChecksums,
+	downloadUpdatePackage usecase.DownloadUpdatePackage,
+	installUpdate usecase.InstallUpdate,
+	cleanUpdateLeftovers usecase.CleanUpdateLeftovers,
+	restartApp usecase.RestartApp,
+	openReleasePage usecase.OpenReleasePage,
+	findAppSettings usecase.FindAppSettings,
+) adapter.ManageUpdateService {
 	return &manageUpdate{
-		findUpdateSession:     useCases.FindUpdateSession,
-		saveUpdateSession:     useCases.SaveUpdateSession,
-		publishUpdateStatus:   useCases.PublishUpdateStatus,
-		findLatestRelease:     useCases.FindLatestRelease,
-		findReleaseChecksums:  useCases.FindReleaseChecksums,
-		downloadUpdatePackage: useCases.DownloadUpdatePackage,
-		installUpdate:         useCases.InstallUpdate,
-		cleanUpdateLeftovers:  useCases.CleanUpdateLeftovers,
-		restartApp:            useCases.RestartApp,
-		openReleasePage:       useCases.OpenReleasePage,
-		findAppSettings:       useCases.FindAppSettings,
+		findUpdateSession:     findUpdateSession,
+		saveUpdateSession:     saveUpdateSession,
+		publishUpdateStatus:   publishUpdateStatus,
+		findLatestRelease:     findLatestRelease,
+		findReleaseChecksums:  findReleaseChecksums,
+		downloadUpdatePackage: downloadUpdatePackage,
+		installUpdate:         installUpdate,
+		cleanUpdateLeftovers:  cleanUpdateLeftovers,
+		restartApp:            restartApp,
+		openReleasePage:       openReleasePage,
+		findAppSettings:       findAppSettings,
 	}
 }
 
 func (m *manageUpdate) Status(ctx context.Context, installation entity.Installation) entity.UpdateStatus {
-	return m.findUpdateSession.FindUpdateSession(ctx).For(installation).Status
+	logger.Info(ctx, "Started", installation)
+
+	status := m.current(ctx, installation)
+
+	logger.Info(ctx, "Finished", installation, status)
+	return status
 }
 
 func (m *manageUpdate) Check(ctx context.Context, installation entity.Installation) entity.UpdateStatus {
@@ -66,23 +69,31 @@ func (m *manageUpdate) Check(ctx context.Context, installation entity.Installati
 		session = m.check(ctx, installation, session)
 	}
 
-	logger.Info(ctx, "Finished", session.Status)
+	logger.Info(ctx, "Finished", installation, session.Status)
 	return session.Status
 }
 
-func (m *manageUpdate) CheckOnStartup(ctx context.Context, installation entity.Installation) entity.UpdateStatus {
+func (m *manageUpdate) CheckOnStartup(ctx context.Context, installation entity.Installation) (entity.UpdateStatus, error) {
 	logger.Info(ctx, "Started", installation)
 
 	session, started := m.change(ctx, installation, entity.UpdateSession.StartingUp)
 	if !started {
-		logger.Info(ctx, "Finished - already checked", session.Status)
-		return session.Status
+		logger.Info(ctx, "Finished - already checked", installation, session.Status)
+		return session.Status, nil
 	}
 	m.cleanUpdateLeftovers.CleanUpdateLeftovers(ctx, installation)
 	session = m.check(ctx, installation, session)
-	if !session.Status.IsAvailable() || !m.updatesAutomatically(ctx) {
-		logger.Info(ctx, "Finished", session.Status)
-		return session.Status
+	if !session.Status.IsAvailable() {
+		logger.Info(ctx, "Finished", installation, session.Status)
+		return session.Status, nil
+	}
+	settings, err := m.findAppSettings.FindAppSettings(ctx)
+	if err != nil {
+		return session.Status, err
+	}
+	if !settings.UpdatesAutomatically() {
+		logger.Info(ctx, "Finished", installation, session.Status)
+		return session.Status, nil
 	}
 	session, started = m.change(ctx, installation, func(current entity.UpdateSession) (entity.UpdateSession, bool) {
 		return current.Downloading(true)
@@ -91,8 +102,8 @@ func (m *manageUpdate) CheckOnStartup(ctx context.Context, installation entity.I
 		go m.download(context.WithoutCancel(ctx), installation, session)
 	}
 
-	logger.Info(ctx, "Finished - downloading in the background", session.Status)
-	return session.Status
+	logger.Info(ctx, "Finished - downloading in the background", installation, session.Status)
+	return session.Status, nil
 }
 
 func (m *manageUpdate) Download(ctx context.Context, installation entity.Installation) entity.UpdateStatus {
@@ -105,7 +116,7 @@ func (m *manageUpdate) Download(ctx context.Context, installation entity.Install
 		session = m.download(ctx, installation, session)
 	}
 
-	logger.Info(ctx, "Finished", session.Status)
+	logger.Info(ctx, "Finished", installation, session.Status)
 	return session.Status
 }
 
@@ -114,7 +125,7 @@ func (m *manageUpdate) Restart(ctx context.Context, installation entity.Installa
 
 	session, started := m.change(ctx, installation, entity.UpdateSession.Installing)
 	if !started {
-		logger.Info(ctx, "Finished - no update ready", session.Status)
+		logger.Info(ctx, "Finished - no update ready", installation, session.Status)
 		return session.Status
 	}
 	session, installed := m.install(ctx, installation, session)
@@ -124,7 +135,7 @@ func (m *manageUpdate) Restart(ctx context.Context, installation entity.Installa
 		}
 	}
 
-	logger.Info(ctx, "Finished", session.Status)
+	logger.Info(ctx, "Finished", installation, session.Status)
 	return session.Status
 }
 
@@ -136,21 +147,25 @@ func (m *manageUpdate) InstallOnQuit(ctx context.Context, installation entity.In
 		session, _ = m.install(ctx, installation, session)
 	}
 
-	logger.Info(ctx, "Finished", session.Status)
+	logger.Info(ctx, "Finished", installation, session.Status)
 }
 
-func (m *manageUpdate) OpenReleasePage(ctx context.Context, installation entity.Installation) entity.UpdateStatus {
+func (m *manageUpdate) OpenReleasePage(ctx context.Context, installation entity.Installation) (entity.UpdateStatus, error) {
 	logger.Info(ctx, "Started", installation)
 
-	status := m.Status(ctx, installation)
+	status := m.current(ctx, installation)
 	if status.HasReleasePage() {
 		if err := m.openReleasePage.OpenReleasePage(ctx, status.ReleaseURL); err != nil {
-			logger.Warn(ctx, err, "Release page not opened", status)
+			return status, err
 		}
 	}
 
-	logger.Info(ctx, "Finished", status)
-	return status
+	logger.Info(ctx, "Finished", installation, status)
+	return status, nil
+}
+
+func (m *manageUpdate) current(ctx context.Context, installation entity.Installation) entity.UpdateStatus {
+	return m.findUpdateSession.FindUpdateSession(ctx).For(installation).Status
 }
 
 func (m *manageUpdate) check(ctx context.Context, installation entity.Installation, session entity.UpdateSession) entity.UpdateSession {
@@ -198,15 +213,6 @@ func (m *manageUpdate) install(ctx context.Context, installation entity.Installa
 	return session, true
 }
 
-func (m *manageUpdate) updatesAutomatically(ctx context.Context) bool {
-	settings, err := m.findAppSettings.FindAppSettings(ctx)
-	if err != nil {
-		logger.Warn(ctx, err, "App settings unavailable, not updating automatically")
-		return false
-	}
-	return settings.UpdatesAutomatically()
-}
-
 func (m *manageUpdate) fail(ctx context.Context, session entity.UpdateSession, failure *entity.UpdateFailure) entity.UpdateSession {
 	logger.Warn(ctx, failure, "Update failed", session.Status)
 	return m.store(ctx, session.Failed(failure))
@@ -229,7 +235,5 @@ func (m *manageUpdate) store(ctx context.Context, session entity.UpdateSession) 
 }
 
 func (m *manageUpdate) publish(ctx context.Context, status entity.UpdateStatus) {
-	if err := m.publishUpdateStatus.PublishUpdateStatus(ctx, status); err != nil {
-		logger.Warn(ctx, err, "Update status not published", status)
-	}
+	m.publishUpdateStatus.PublishUpdateStatus(ctx, status)
 }

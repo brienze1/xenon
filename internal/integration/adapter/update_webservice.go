@@ -6,5 +6,4 @@ type UpdateWebservice interface {
 	usecase.FindLatestRelease
 	usecase.FindReleaseChecksums
 	usecase.DownloadUpdatePackage
-	usecase.OpenReleasePage
 }

@@ -7,5 +7,5 @@ import (
 )
 
 type PublishUpdateStatus interface {
-	PublishUpdateStatus(ctx context.Context, status entity.UpdateStatus) error
+	PublishUpdateStatus(ctx context.Context, status entity.UpdateStatus)
 }

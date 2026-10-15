@@ -1,14 +1,20 @@
 package entity
 
-import "path/filepath"
+import (
+	"path/filepath"
+	"strings"
+)
 
 const (
 	bundleExecutableFolder = "Contents/MacOS"
 	bundleExecutableName   = "xenon"
+	bundleSuffix           = ".app"
 	updateOldSuffix        = ".xenon-old"
 	updateExtractSuffix    = ".xenon-update"
 	updateProbeSuffix      = ".xenon-update-probe"
 )
+
+var plainExecutables = map[string]bool{"xenon": true, "xenon.exe": true}
 
 type Installation struct {
 	Version     string
@@ -46,6 +52,13 @@ func (i Installation) Executable() string {
 		return filepath.Join(i.Path, filepath.FromSlash(bundleExecutableFolder), bundleExecutableName)
 	}
 	return i.Path
+}
+
+func (i Installation) AcceptsPackageEntry(name string, isDir, isRegular bool) bool {
+	if i.Platform.IsBundle() {
+		return isDir && strings.HasSuffix(name, bundleSuffix)
+	}
+	return isRegular && plainExecutables[name]
 }
 
 func (i Installation) PreviousPath() string {

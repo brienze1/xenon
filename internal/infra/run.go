@@ -6,14 +6,15 @@ import (
 	"time"
 
 	"github.com/brienze1/xenon/internal/infra/mcpbridge"
+	"github.com/brienze1/xenon/internal/infra/properties"
 	"github.com/brienze1/xenon/pkg/logger"
+	"github.com/brienze1/xenon/pkg/process"
 )
 
 const (
-	mcpCommand              = "mcp"
-	restartAfterPidVariable = "XENON_RESTART_AFTER_PID"
-	restartWaitLimit        = 15 * time.Second
-	restartWaitInterval     = 100 * time.Millisecond
+	mcpCommand          = "mcp"
+	restartWaitLimit    = 15 * time.Second
+	restartWaitInterval = 100 * time.Millisecond
 )
 
 func Run() {
@@ -21,11 +22,10 @@ func Run() {
 		logger.SetOutput(os.Stderr)
 		os.Exit(mcpbridge.Run(os.Stdin, os.Stdout, os.Stderr))
 	}
-	waitForPreviousProcess(os.Getenv(restartAfterPidVariable), processRunning, time.Sleep, restartWaitLimit)
+	waitForPreviousProcess(properties.Properties().Application.RestartAfterPid, process.Running, time.Sleep, restartWaitLimit)
 	Start()
 }
 
-// waitForPreviousProcess lets an updated Xenon start only once the Xenon it replaces has exited and released the single-instance lock.
 func waitForPreviousProcess(pid string, running func(int) bool, sleep func(time.Duration), limit time.Duration) {
 	previous, err := strconv.Atoi(pid)
 	if err != nil || previous <= 0 {

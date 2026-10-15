@@ -34,11 +34,10 @@ const (
 
 type updateWebservice struct {
 	newClient httpClient.ClientFactory
-	browser   adapter.Browser
 }
 
-func NewUpdateWebservice(newClient httpClient.ClientFactory, browser adapter.Browser) adapter.UpdateWebservice {
-	return &updateWebservice{newClient: newClient, browser: browser}
+func NewUpdateWebservice(newClient httpClient.ClientFactory) adapter.UpdateWebservice {
+	return &updateWebservice{newClient: newClient}
 }
 
 func (u *updateWebservice) FindLatestRelease(ctx context.Context) (*entity.Release, error) {
@@ -46,7 +45,7 @@ func (u *updateWebservice) FindLatestRelease(ctx context.Context) (*entity.Relea
 
 	response, err := u.get(ctx, properties.Properties().Update.ApiURL+"/releases/latest", gitHubAccept, updateCheckTimeout)
 	if err != nil {
-		return nil, errs.ServiceUnavailableError(err, "UPD-02503", "GitHub could not be reached")
+		return nil, err
 	}
 	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode != http.StatusOK {
@@ -74,24 +73,24 @@ func (u *updateWebservice) FindReleaseChecksums(ctx context.Context, asset entit
 	}
 	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode != http.StatusOK {
-		return nil, entity.NewUpdateFailure(updatefailure.DownloadFailed, errors.New("checksums answered "+response.Status))
+		return nil, entity.NewUpdateFailure(updatefailure.DownloadFailed, errs.ServerError("The release checksums "+asset.Name+" answered "+response.Status, "UPD-09502", http.StatusBadGateway))
 	}
 	content, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, entity.NewUpdateFailure(updatefailure.DownloadFailed, err)
+		return nil, entity.NewUpdateFailure(updatefailure.DownloadFailed, errs.ServiceUnavailableError(err, "UPD-10503", "The release checksums "+asset.Name+" could not be read"))
 	}
-	checksums := dto.NewReleaseChecksums(string(content))
+	checksums := dto.ReleaseChecksums(content).ToEntity()
 
-	logger.Debug(ctx, "Finished", asset, map[string]any{"checksums": len(checksums)})
+	logger.Debug(ctx, "Finished", asset, map[string]any{"checksums": checksums})
 	return checksums, nil
 }
 
 func (u *updateWebservice) DownloadUpdatePackage(ctx context.Context, asset entity.ReleaseAsset, checksums entity.ReleaseChecksums, progress func(received, total int64)) (string, error) {
-	logger.Debug(ctx, "Started", asset)
+	logger.Debug(ctx, "Started", asset, map[string]any{"checksums": checksums})
 
 	folder := filepath.Join(properties.Properties().Application.DataDir, updateFolder)
 	if err := os.MkdirAll(folder, updateFolderMode); err != nil {
-		return "", entity.NewUpdateFailure(updatefailure.DownloadFailed, err)
+		return "", entity.NewUpdateFailure(updatefailure.DownloadFailed, errs.InternalServerError(err, "UPD-11500", "The update download folder could not be created"))
 	}
 	target := filepath.Join(folder, filepath.Base(asset.Name))
 	part := target + updatePartSuffix
@@ -102,26 +101,15 @@ func (u *updateWebservice) DownloadUpdatePackage(ctx context.Context, asset enti
 	}
 	if !checksums.Matches(asset.Name, digest) {
 		_ = os.Remove(part)
-		return "", entity.NewUpdateFailure(updatefailure.Unverified, errors.New(asset.Name+" does not match its checksum"))
+		return "", entity.NewUpdateFailure(updatefailure.Unverified, errs.UnprocessableEntityError("The update package "+asset.Name+" does not match its checksum", "UPD-13422"))
 	}
 	if err := os.Rename(part, target); err != nil {
 		_ = os.Remove(part)
-		return "", entity.NewUpdateFailure(updatefailure.DownloadFailed, err)
+		return "", entity.NewUpdateFailure(updatefailure.DownloadFailed, errs.InternalServerError(err, "UPD-14500", "The update package "+asset.Name+" could not be moved into place"))
 	}
 
-	logger.Debug(ctx, "Finished", asset, map[string]any{"path": target})
+	logger.Debug(ctx, "Finished", asset, map[string]any{"checksums": checksums, "path": target})
 	return target, nil
-}
-
-func (u *updateWebservice) OpenReleasePage(ctx context.Context, url string) error {
-	logger.Debug(ctx, "Started", map[string]any{"url": url})
-
-	if err := u.browser.OpenURL(url); err != nil {
-		return errs.ServiceUnavailableError(err, "UPD-06503", "The release page could not be opened")
-	}
-
-	logger.Debug(ctx, "Finished", map[string]any{"url": url})
-	return nil
 }
 
 func (u *updateWebservice) fetch(ctx context.Context, asset entity.ReleaseAsset, part string, progress func(received, total int64)) (string, error) {
@@ -131,24 +119,24 @@ func (u *updateWebservice) fetch(ctx context.Context, asset entity.ReleaseAsset,
 	}
 	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode != http.StatusOK {
-		return "", errors.New(asset.Name + " answered " + response.Status)
+		return "", errs.ServerError("The update package "+asset.Name+" answered "+response.Status, "UPD-20502", http.StatusBadGateway)
 	}
 	file, err := os.Create(part)
 	if err != nil {
-		return "", err
+		return "", errs.InternalServerError(err, "UPD-21500", "The update package "+asset.Name+" could not be created")
 	}
 	defer func() { _ = file.Close() }()
-	total := response.ContentLength
-	if total <= 0 {
-		total = asset.Size
-	}
+	total := asset.ExpectedSize(response.ContentLength)
 	hash := sha256.New()
 	received, err := copyWithProgress(io.MultiWriter(file, hash), response.Body, total, progress)
 	if err != nil {
 		return "", err
 	}
 	progress(received, total)
-	return hex.EncodeToString(hash.Sum(nil)), file.Close()
+	if err := file.Close(); err != nil {
+		return "", errs.InternalServerError(err, "UPD-24500", "The update package "+asset.Name+" could not be saved")
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
 func copyWithProgress(target io.Writer, source io.Reader, total int64, progress func(received, total int64)) (int64, error) {
@@ -160,7 +148,7 @@ func copyWithProgress(target io.Writer, source io.Reader, total int64, progress 
 		read, err := source.Read(buffer)
 		if read > 0 {
 			if _, writeErr := target.Write(buffer[:read]); writeErr != nil {
-				return received, writeErr
+				return received, errs.InternalServerError(writeErr, "UPD-22500", "The update package could not be written")
 			}
 			received += int64(read)
 			if time.Since(reported) >= updateProgressEvery {
@@ -172,7 +160,7 @@ func copyWithProgress(target io.Writer, source io.Reader, total int64, progress 
 			return received, nil
 		}
 		if err != nil {
-			return received, err
+			return received, errs.ServiceUnavailableError(err, "UPD-23503", "The update download was interrupted")
 		}
 	}
 }
@@ -180,10 +168,14 @@ func copyWithProgress(target io.Writer, source io.Reader, total int64, progress 
 func (u *updateWebservice) get(ctx context.Context, target, accept string, timeout time.Duration) (*http.Response, error) {
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 	if err != nil {
-		return nil, err
+		return nil, errs.InternalServerError(err, "UPD-18500", "The update request could not be built")
 	}
 	if accept != "" {
 		request.Header.Set("Accept", accept)
 	}
-	return u.newClient.Build(httpClient.Options{Timeout: timeout, FollowRedirects: true, VerifySsl: true}).Do(ctx, request)
+	response, err := u.newClient.Build(httpClient.Options{Timeout: timeout, FollowRedirects: true, VerifySsl: true}).Do(ctx, request)
+	if err != nil {
+		return nil, errs.ServiceUnavailableError(err, "UPD-19503", "The update server could not be reached")
+	}
+	return response, nil
 }

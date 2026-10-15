@@ -40,6 +40,5 @@ func (u *UpdateService) OpenReleasePage(ctx context.Context) (*dto.UpdateStatus,
 }
 
 func (u *UpdateService) ServiceShutdown() error {
-	u.update.InstallOnQuit(context.Background())
-	return nil
+	return u.update.InstallOnQuit(context.Background())
 }

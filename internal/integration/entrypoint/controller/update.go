@@ -20,46 +20,7 @@ func NewUpdate(errorHandler adapter.ErrorHandler, manageUpdateService appAdapter
 	return &update{errorHandler: errorHandler, manageUpdateService: manageUpdateService}
 }
 
-func (u *update) GetStatus(bindingCtx context.Context) (*dto.UpdateStatus, error) {
-	return u.run(bindingCtx, u.manageUpdateService.Status)
-}
-
-func (u *update) Check(bindingCtx context.Context) (*dto.UpdateStatus, error) {
-	return u.run(bindingCtx, u.manageUpdateService.Check)
-}
-
-func (u *update) CheckOnStartup(bindingCtx context.Context) (*dto.UpdateStatus, error) {
-	return u.run(bindingCtx, u.manageUpdateService.CheckOnStartup)
-}
-
-func (u *update) Update(bindingCtx context.Context) (*dto.UpdateStatus, error) {
-	return u.run(bindingCtx, u.manageUpdateService.Download)
-}
-
-func (u *update) Restart(bindingCtx context.Context) (*dto.UpdateStatus, error) {
-	return u.run(bindingCtx, u.manageUpdateService.Restart)
-}
-
-func (u *update) OpenReleasePage(bindingCtx context.Context) (*dto.UpdateStatus, error) {
-	return u.run(bindingCtx, u.manageUpdateService.OpenReleasePage)
-}
-
-func (u *update) InstallOnQuit(bindingCtx context.Context) {
-	ctx := logger.GetContext(bindingCtx)
-	logger.Info(ctx, "Started")
-
-	defer func(ctx context.Context) {
-		if recovered := recover(); recovered != nil {
-			_ = u.errorHandler.Handle(ctx, handlePanic(ctx, nil, recovered), nil)
-		}
-	}(ctx)
-
-	u.manageUpdateService.InstallOnQuit(ctx, currentInstallation())
-
-	logger.Info(ctx, "Finished")
-}
-
-func (u *update) run(bindingCtx context.Context, action func(context.Context, entity.Installation) entity.UpdateStatus) (response *dto.UpdateStatus, err error) {
+func (u *update) GetStatus(bindingCtx context.Context) (response *dto.UpdateStatus, err error) {
 	ctx := logger.GetContext(bindingCtx)
 	logger.Info(ctx, "Started")
 
@@ -72,10 +33,132 @@ func (u *update) run(bindingCtx context.Context, action func(context.Context, en
 		}
 	}(ctx)
 
-	result := dto.NewUpdateStatus(action(ctx, currentInstallation()))
+	result := dto.NewUpdateStatus(u.manageUpdateService.Status(ctx, currentInstallation()))
 
 	logger.Info(ctx, "Finished", result)
 	return &result, nil
+}
+
+func (u *update) Check(bindingCtx context.Context) (response *dto.UpdateStatus, err error) {
+	ctx := logger.GetContext(bindingCtx)
+	logger.Info(ctx, "Started")
+
+	defer func(ctx context.Context) {
+		if recovered := recover(); recovered != nil {
+			err = handlePanic(ctx, nil, recovered)
+		}
+		if err != nil {
+			response, err = nil, u.errorHandler.Handle(ctx, err, nil)
+		}
+	}(ctx)
+
+	result := dto.NewUpdateStatus(u.manageUpdateService.Check(ctx, currentInstallation()))
+
+	logger.Info(ctx, "Finished", result)
+	return &result, nil
+}
+
+func (u *update) CheckOnStartup(bindingCtx context.Context) (response *dto.UpdateStatus, err error) {
+	ctx := logger.GetContext(bindingCtx)
+	logger.Info(ctx, "Started")
+
+	defer func(ctx context.Context) {
+		if recovered := recover(); recovered != nil {
+			err = handlePanic(ctx, nil, recovered)
+		}
+		if err != nil {
+			response, err = nil, u.errorHandler.Handle(ctx, err, nil)
+		}
+	}(ctx)
+
+	status, err := u.manageUpdateService.CheckOnStartup(ctx, currentInstallation())
+	if err != nil {
+		return nil, err
+	}
+	result := dto.NewUpdateStatus(status)
+
+	logger.Info(ctx, "Finished", result)
+	return &result, nil
+}
+
+func (u *update) Update(bindingCtx context.Context) (response *dto.UpdateStatus, err error) {
+	ctx := logger.GetContext(bindingCtx)
+	logger.Info(ctx, "Started")
+
+	defer func(ctx context.Context) {
+		if recovered := recover(); recovered != nil {
+			err = handlePanic(ctx, nil, recovered)
+		}
+		if err != nil {
+			response, err = nil, u.errorHandler.Handle(ctx, err, nil)
+		}
+	}(ctx)
+
+	result := dto.NewUpdateStatus(u.manageUpdateService.Download(ctx, currentInstallation()))
+
+	logger.Info(ctx, "Finished", result)
+	return &result, nil
+}
+
+func (u *update) Restart(bindingCtx context.Context) (response *dto.UpdateStatus, err error) {
+	ctx := logger.GetContext(bindingCtx)
+	logger.Info(ctx, "Started")
+
+	defer func(ctx context.Context) {
+		if recovered := recover(); recovered != nil {
+			err = handlePanic(ctx, nil, recovered)
+		}
+		if err != nil {
+			response, err = nil, u.errorHandler.Handle(ctx, err, nil)
+		}
+	}(ctx)
+
+	result := dto.NewUpdateStatus(u.manageUpdateService.Restart(ctx, currentInstallation()))
+
+	logger.Info(ctx, "Finished", result)
+	return &result, nil
+}
+
+func (u *update) OpenReleasePage(bindingCtx context.Context) (response *dto.UpdateStatus, err error) {
+	ctx := logger.GetContext(bindingCtx)
+	logger.Info(ctx, "Started")
+
+	defer func(ctx context.Context) {
+		if recovered := recover(); recovered != nil {
+			err = handlePanic(ctx, nil, recovered)
+		}
+		if err != nil {
+			response, err = nil, u.errorHandler.Handle(ctx, err, nil)
+		}
+	}(ctx)
+
+	status, err := u.manageUpdateService.OpenReleasePage(ctx, currentInstallation())
+	if err != nil {
+		return nil, err
+	}
+	result := dto.NewUpdateStatus(status)
+
+	logger.Info(ctx, "Finished", result)
+	return &result, nil
+}
+
+func (u *update) InstallOnQuit(bindingCtx context.Context) (err error) {
+	ctx := logger.GetContext(bindingCtx)
+	logger.Info(ctx, "Started")
+
+	defer func(ctx context.Context) {
+		if recovered := recover(); recovered != nil {
+			err = handlePanic(ctx, nil, recovered)
+		}
+		if err != nil {
+			err = u.errorHandler.Handle(ctx, err, nil)
+		}
+	}(ctx)
+
+	u.manageUpdateService.InstallOnQuit(ctx, currentInstallation())
+
+	logger.Info(ctx, "Finished")
+	return nil
 }
 
 func currentInstallation() entity.Installation {

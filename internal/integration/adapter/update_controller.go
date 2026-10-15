@@ -13,5 +13,5 @@ type UpdateController interface {
 	Update(ctx context.Context) (*dto.UpdateStatus, error)
 	Restart(ctx context.Context) (*dto.UpdateStatus, error)
 	OpenReleasePage(ctx context.Context) (*dto.UpdateStatus, error)
-	InstallOnQuit(ctx context.Context)
+	InstallOnQuit(ctx context.Context) error
 }

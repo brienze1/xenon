@@ -1,12 +1,13 @@
 //go:build windows
 
-package application
+package process
 
 import "golang.org/x/sys/windows"
 
 const stillActive = 259
 
-func processRunning(pid int) bool {
+// Running reports whether a process with the given id is alive.
+func Running(pid int) bool {
 	if pid <= 0 {
 		return false
 	}

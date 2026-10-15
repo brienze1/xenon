@@ -173,7 +173,7 @@ func TestVersionComesFromTheBuildWhenNotOverridden(t *testing.T) {
 	t.Cleanup(func() { version = previous })
 	version = "0.3.2"
 	application := Properties().Application
-	if application.Version != "0.3.2" || !application.Packaged {
+	if application.Version != "0.3.2" {
 		t.Fatalf("unexpected application %+v", application)
 	}
 	if !Properties().Update.Installable {

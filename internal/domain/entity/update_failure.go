@@ -5,6 +5,7 @@ import (
 
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/updatefailure"
+	"github.com/brienze1/xenon/pkg/errs"
 )
 
 type UpdateFailure struct {
@@ -40,4 +41,33 @@ func (u *UpdateFailure) Error() string {
 
 func (u *UpdateFailure) Unwrap() error {
 	return u.Cause
+}
+
+func (u *UpdateFailure) Code() string {
+	if coded, ok := u.codedCause(); ok {
+		return coded.Code()
+	}
+	return ""
+}
+
+func (u *UpdateFailure) Description() string {
+	if coded, ok := u.codedCause(); ok {
+		return coded.Description()
+	}
+	return string(u.Reason)
+}
+
+func (u *UpdateFailure) StatusCode() int {
+	if coded, ok := u.codedCause(); ok {
+		return coded.StatusCode()
+	}
+	return 0
+}
+
+func (u *UpdateFailure) codedCause() (errs.BaseError, bool) {
+	var coded errs.BaseError
+	if u.Cause == nil || !errors.As(u.Cause, &coded) {
+		return nil, false
+	}
+	return coded, true
 }

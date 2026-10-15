@@ -17,11 +17,10 @@ func NewUpdateStatus(eventEmitter adapter.EventEmitter) adapter.UpdateStatusPubl
 	return &updateStatusPublisher{eventEmitter: eventEmitter}
 }
 
-func (u *updateStatusPublisher) PublishUpdateStatus(ctx context.Context, status entity.UpdateStatus) error {
+func (u *updateStatusPublisher) PublishUpdateStatus(ctx context.Context, status entity.UpdateStatus) {
 	logger.Debug(ctx, "Started", status)
 
 	u.eventEmitter.Emit(dto.UpdateStatusEvent, dto.NewUpdateStatus(status))
 
 	logger.Debug(ctx, "Finished", status)
-	return nil
 }
