@@ -22,7 +22,7 @@ task id, e.g. `xen-008`; see `.claude/skills/github-issues.md`):
 
 ```
 /research-task → /spec-task → /create-tests → /implement-task
-  (issue desc)     (specs/)     (red .feature)   (green code → push)
+  (issue desc)     (specs/)     (red .feature)   (green code → push → PR → merge on green CI)
 ```
 
 ## Non-negotiable rules
@@ -350,3 +350,7 @@ what it blocks — an honest gap is recoverable, a gap buried under "done" is no
 The user wants the task flow to run end to end without being asked. Once the Step 7 gate passed and the spec is
 pushed, invoke `/create-tests <XEN-ID>` yourself (Skill tool) on the same branch — do not stop and wait. Stop
 instead only if something is genuinely open (a gap you could not close), and say so.
+
+The chain always ends merged: `/create-tests` invokes `/implement-task`, whose last phase opens the pull request
+into `main` and merges it once every GitHub Actions check passes (fixing and re-pushing until they do). This
+command itself only pushes the spec — the PR covers spec, tests and implementation together.
