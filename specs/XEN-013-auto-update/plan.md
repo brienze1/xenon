@@ -244,6 +244,20 @@ Vitest locks the UI contract (`contracts/ui.md`):
 - other lines' tags are ignored;
 - an invalid `VERSION` fails.
 
+## Implementation notes (deviations found while building)
+
+- **One application service instead of four.** The service skill forbids one service calling another, but
+  startup needs check and download together. So `CheckForUpdates`, `DownloadUpdate`, `ApplyUpdate` and
+  `StartupUpdate` became a single `ManageUpdateService` (`internal/application/service/manage_update.go`), one
+  service for the update process. It has `Status`, `Check`, `CheckOnStartup`, `Download`, `Restart`,
+  `InstallOnQuit` and `OpenReleasePage`, the same shape as `ManageAppSettingsService`. Every state decision lives
+  on `entity.UpdateSession`.
+- **Contracts are unchanged.** The in-memory state is an `entity.UpdateSession`, holding the status, the release,
+  the staged package and the startup flag. It is stored by `persistence/update_session.go` and changed atomically
+  through `SaveUpdateSession.ChangeUpdateSession`, which is the busy guard. The controller builds an
+  `entity.Installation`, holding the version, path, platform and whether it is installable, from `properties`. The
+  plan called this `UpdateTarget`.
+
 ## Complexity Tracking
 
 None. The Constitution Check has no violations.

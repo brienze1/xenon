@@ -516,6 +516,21 @@ Stages 4 (scripts) and the OAuth 2.0 part of 5 carry most of the risk. Everythin
   is on. Tools are resource tools with an action. AI activity goes into History, with a source filter and per-source
   caps. Settings becomes a tab. See "AI access (MCP)".
 
+**Decisions (Oct 15, 2026)**
+
+- [x] **Xenon updates itself from GitHub Releases** (XEN-013, GitHub issue #14).
+  - **Publishing:** every merge to `main` publishes a release. The `VERSION` file holds `major.minor` and CI adds
+    the next patch. Each release carries a macOS universal `.app` (ad-hoc signed, not notarized), Windows x64 and
+    Linux x64 portable executables, plus `checksums.txt`.
+  - **Settings:** an "About & Updates" section shows the running and latest versions, with Check for updates and
+    Update. Update downloads the package, checks its SHA-256, swaps the app in place and restarts. No admin
+    prompt: an unwritable folder is refused with a message.
+  - **Update automatically** is on by default. With it on, Xenon downloads at startup and asks before restarting:
+    a bottom-left toast offers Restart now / Later, and the footer shows "Update ready — Restart". Later installs
+    on the next quit.
+  - **Off and offline:** with Update automatically off, the startup check only shows "Update available" in the
+    footer. Being offline or rate-limited is a quiet "Couldn't check for updates".
+
 **Open questions**
 
 - [ ] Open-source Xenon once it replaces Postman, or keep it private? (Not needed for the MVP.)
