@@ -426,15 +426,53 @@ describe('request builder store - saved requests', () => {
     await state().openSaved(tabId, 'r1')
     state().setUrl(tabId, 'https://edited')
     vi.mocked(requests.getRequest).mockResolvedValue({ draft: { ...savedDraft, name: 'Pong' }, revision: 'rev-9' })
-    await state().adoptRename('r1')
+    await state().adoptRename('r1', 'Ping')
     expect(activeTab().draft.name).toBe('Pong')
     expect(activeTab().draft.url).toBe('https://edited')
     expect(activeTab().baseRevision).toBe('rev-9')
-    await state().adoptRename('unknown')
+    await state().adoptRename('unknown', 'Ping')
     expect(requests.getRequest).toHaveBeenCalledTimes(2)
     vi.mocked(requests.getRequest).mockRejectedValue(new AppError('REQ-01404', 'gone'))
-    await state().adoptRename('r1')
+    await state().adoptRename('r1', 'Pong')
     expect(activeTab().error?.code).toBe('REQ-01404')
+  })
+
+  it('keeps a pending name when the request is renamed elsewhere, taking only the revision', async () => {
+    vi.mocked(requests.getRequest).mockResolvedValue({ draft: savedDraft, revision: 'rev-1' })
+    await state().openSaved(TAB, 'r1')
+    state().editName(TAB, 'Mine')
+    vi.mocked(requests.getRequest).mockResolvedValue({ draft: { ...savedDraft, name: 'Theirs' }, revision: 'rev-9' })
+    await state().adoptRename('r1', 'Ping')
+    expect(activeTab().draft.name).toBe('Mine')
+    expect(activeTab().baseRevision).toBe('rev-9')
+  })
+
+  it('edits the name of a saved request without marking its content dirty', async () => {
+    vi.mocked(requests.getRequest).mockResolvedValue({ draft: savedDraft, revision: 'rev-1' })
+    await state().openSaved(TAB, 'r1')
+    state().editName(TAB, 'Pong')
+    expect(activeTab().draft.name).toBe('Pong')
+    expect(activeTab().dirty).toBe(false)
+    state().editName(TAB, 'Ping')
+    expect(activeTab().draft.name).toBe('Ping')
+    expect(activeTab().dirty).toBe(false)
+  })
+
+  it('still marks a never-saved request dirty when its name changes', () => {
+    state().setName(TAB, 'Pong')
+    expect(activeTab().dirty).toBe(true)
+  })
+
+  it('saves under another name when asked, keeping the draft name', async () => {
+    vi.mocked(requests.getRequest).mockResolvedValue({ draft: savedDraft, revision: 'rev-1' })
+    vi.mocked(requests.saveRequest).mockImplementation(async (_localId, sent) => ({ draft: sent, revision: 'rev-2' }))
+    await state().openSaved(TAB, 'r1')
+    state().setUrl(TAB, 'https://x/v2')
+    state().editName(TAB, 'Pong')
+    await state().save(TAB, false, { name: 'Ping' })
+    expect(requests.saveRequest).toHaveBeenCalledWith('ws', expect.objectContaining({ name: 'Ping', url: 'https://x/v2' }), 'rev-1', false)
+    expect(activeTab().draft.name).toBe('Pong')
+    expect(activeTab().dirty).toBe(false)
   })
 
   it('edits the name and the description', () => {

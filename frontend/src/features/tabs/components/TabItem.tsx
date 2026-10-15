@@ -9,6 +9,7 @@ import { isSettingsDirty, useSettingsStore } from '@/features/settings/store'
 import { collectionScope } from '@/platform/mappers/variable'
 import { cn } from '@/shared/lib/cn'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
+import { useNamePending } from '@/features/tabs/hooks/use-name-pending'
 import { useTabTitle } from '@/features/tabs/hooks/use-tab-title'
 import { environmentTabScope, useTabsStore } from '@/features/tabs/store'
 import { TabContextMenu } from './TabContextMenu'
@@ -66,7 +67,8 @@ export function TabItem({ tabId }: TabItemProps) {
     (state) => state.environments.find((environment) => environment.id === environmentId)?.color ?? 'none',
   )
   const appSettingsDirty = useSettingsStore((state) => kind === 'settings' && isSettingsDirty(state))
-  const dirty = draftDirty || responseDirty || variablesDirty || settingsDirty || collectionVariablesDirty || appSettingsDirty
+  const namePending = useNamePending(tabId)
+  const dirty = draftDirty || responseDirty || variablesDirty || settingsDirty || collectionVariablesDirty || appSettingsDirty || namePending
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({ id: tabId, attributes: { role: 'tab' } })
   // Only a pointer drag makes the moving tab inert: during a keyboard drag the tab must keep
   // focus so the arrow keys keep moving it and assistive tech keeps announcing it.

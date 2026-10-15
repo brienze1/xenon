@@ -20,7 +20,8 @@ export interface TreeItemActions {
   /** Opens a collection or folder in a main-area tab (a single click previews, a double click pins). */
   onOpenItem: (id: string, kind: ContainerKind, mode: OpenMode) => void
   onDelete: (node: TreeNode) => void
-  onRenamed: (id: string) => void
+  /** A row was renamed; `previousName` lets open tabs tell a pending name of their own from the old one. */
+  onRenamed: (id: string, previousName: string) => void
 }
 
 const ERROR_MARK = (
@@ -126,12 +127,13 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenEx
   }
 
   async function commitRename(name: string) {
+    const previousName = node.name
     const renamed = isExample ? await renameExample(node.id, name) : await rename(node.id, name)
     if (!renamed.ok) {
       return renamed.error
     }
     if (renamed.value) {
-      onRenamed(node.id)
+      onRenamed(node.id, previousName)
     }
     return null
   }

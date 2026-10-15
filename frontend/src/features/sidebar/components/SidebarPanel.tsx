@@ -23,7 +23,7 @@ interface SidebarPanelProps {
   onPinExample: (requestId: string, exampleId: string) => void
   onExampleDeleted: (exampleId: string) => void
   onRequestsDeleted: (ids: string[]) => void
-  onRenamed: (id: string) => void
+  onRenamed: (id: string, previousName: string) => void
   onOpenHistoryEntry: (request: RequestDraft) => void
   /** Opens the globals or an environment in a main-area tab. */
   onOpenVariables: (item: VariablesItem, mode: OpenMode) => void

@@ -136,11 +136,11 @@ describe('tabs store', () => {
     await tabs().openPinned('A')
     const tabId = tabs().activeTabId!
     expect(dirty(tabId)).toBe(false)
-    builder().setName(tabId, 'Renamed')
+    builder().setUrl(tabId, 'https://x/edited')
     expect(dirty(tabId)).toBe(true)
-    vi.mocked(requests.saveRequest).mockResolvedValue({ draft: { ...saved('A', 'Renamed') }, revision: 'rev-2' })
+    vi.mocked(requests.saveRequest).mockResolvedValue({ draft: { ...saved('A', 'Request A'), url: 'https://x/edited' }, revision: 'rev-2' })
     await tabs().save()
-    expect(requests.saveRequest).toHaveBeenCalledWith('ws', expect.objectContaining({ name: 'Renamed' }), 'rev-A', false)
+    expect(requests.saveRequest).toHaveBeenCalledWith('ws', expect.objectContaining({ name: 'Request A', url: 'https://x/edited' }), 'rev-A', false)
     expect(dirty(tabId)).toBe(false)
   })
 

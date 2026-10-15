@@ -25,7 +25,8 @@ interface ExamplesState {
   setBody: (tabId: string, body: string) => void
   loadRoutedBody: (tabId: string) => Promise<void>
   save: (tabId: string, force?: boolean) => Promise<Result<boolean, AppError>>
-  adoptRename: (exampleId: string) => Promise<void>
+  /** Takes a rename made elsewhere; a tab whose name was still `previousName` takes the new name too. */
+  adoptRename: (exampleId: string, previousName: string) => Promise<void>
   openSaveDialog: (tabId: string, requestId: string) => void
   closeSaveDialog: () => void
   /** Creates an example from the dialog's tab response; resolves to the new example id. */
@@ -174,7 +175,9 @@ export const useExamplesStore = create<ExamplesState>()((set, get) => {
       patchTab(tabId, { saving: true })
       try {
         const saved = await saveExample(localId, tab.requestId, { ...tab.example, request, response: tab.response }, tab.example.revision, force)
+        const draftName = builder().tabs[tabId]?.draft.name ?? saved.name
         loaded(tabId, saved)
+        builder().editName(tabId, draftName)
         void useSidebarStore.getState().load()
         return { ok: true, value: true }
       } catch (error) {
@@ -186,7 +189,7 @@ export const useExamplesStore = create<ExamplesState>()((set, get) => {
       }
     },
 
-    adoptRename: async (exampleId) => {
+    adoptRename: async (exampleId, previousName) => {
       const localId = activeLocalId()
       const renaming = Object.entries(get().tabs).filter(([, tab]) => tab.exampleId === exampleId)
       if (!localId) {
@@ -196,9 +199,11 @@ export const useExamplesStore = create<ExamplesState>()((set, get) => {
         renaming.map(async ([tabId, tab]) => {
           try {
             const renamed = await getExample(localId, tab.requestId, exampleId)
-            if (get().isDirty(tabId)) {
+            const draftName = builder().tabs[tabId]?.draft.name ?? renamed.name
+            const keepsOwnName = draftName.trim() !== previousName
+            if (get().isDirty(tabId) || keepsOwnName) {
               patchTab(tabId, { example: tab.example ? { ...tab.example, name: renamed.name, revision: renamed.revision } : renamed })
-              builder().setName(tabId, renamed.name)
+              builder().editName(tabId, keepsOwnName ? draftName : renamed.name)
             } else {
               loaded(tabId, renamed)
             }

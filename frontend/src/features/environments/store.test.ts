@@ -35,7 +35,7 @@ vi.mock('@/platform/services/vault', () => ({
 const services = await import('@/platform/services/environments')
 const variables = await import('@/platform/services/variables')
 const vault = await import('@/platform/services/vault')
-const { isScopeDirty, useEnvironmentsStore } = await import('./store')
+const { findNameClash, isScopeDirty, useEnvironmentsStore } = await import('./store')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 
 const dev = { id: 'e1', name: 'dev', color: 'green', confirmBeforeSend: false, error: null } as const
@@ -181,6 +181,30 @@ describe('environments store', () => {
     expect(services.deleteEnvironment).toHaveBeenCalledWith('A', 'e1')
     expect(Object.keys(store().tables)).toEqual(['globals'])
     expect(services.listEnvironments).toHaveBeenCalledTimes(4)
+  })
+
+  it('keeps a name draft per environment until it is dropped, deleted or reset', async () => {
+    useEnvironmentsStore.setState({ environments: [dev, prod], activeId: 'e1', status: 'ready' })
+    store().editName('e1', 'local')
+    store().editName('e2', 'live')
+    expect(store().nameDrafts).toEqual({ e1: 'local', e2: 'live' })
+    store().dropName('e1')
+    expect(store().nameDrafts).toEqual({ e2: 'live' })
+    vi.mocked(services.listEnvironments).mockResolvedValue({ environments: [dev], activeId: 'e1' })
+    vi.mocked(services.deleteEnvironment).mockResolvedValue(null)
+    await store().deleteEnvironment('e2')
+    expect(store().nameDrafts).toEqual({})
+    store().editName('e1', 'local')
+    store().reset()
+    expect(store().nameDrafts).toEqual({})
+  })
+
+  it('finds another environment with the same name, ignoring case and surrounding spaces', () => {
+    useEnvironmentsStore.setState({ environments: [dev, prod], activeId: 'e1', status: 'ready' })
+    expect(findNameClash(store(), 'e2', '  DEV ')).toEqual(dev)
+    expect(findNameClash(store(), 'e1', 'Prod')).toEqual(prod)
+    expect(findNameClash(store(), 'e1', 'DEV')).toBeNull()
+    expect(findNameClash(store(), 'e1', 'local')).toBeNull()
   })
 
   it('returns environment errors without reloading', async () => {

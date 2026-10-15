@@ -1,7 +1,7 @@
 import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { emptyAuth } from '@/platform/mappers/request'
+import { emptyAuth, emptyDraft } from '@/platform/mappers/request'
 import { defaultUIState } from '@/platform/mappers/ui-state'
 
 vi.mock('./bootstrap', async (importOriginal) => ({
@@ -16,6 +16,8 @@ vi.mock('@/platform/events', () => ({
 vi.mock('@/platform/services/environments', () => ({
   listEnvironments: vi.fn(async () => ({ environments: [{ id: 'e1', name: 'dev', color: 'cyan', confirmBeforeSend: false, error: null }], activeId: null })),
   setActiveEnvironment: vi.fn(async () => null),
+  getEnvironment: vi.fn(),
+  updateEnvironment: vi.fn(),
 }))
 vi.mock('@/platform/services/variables', () => ({
   CONFIRM_REVEAL_REQUIRED: 'VAR-01409',
@@ -35,6 +37,8 @@ vi.mock('@/platform/services/tree', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/platform/services/tree')>()),
   getItemSettings: vi.fn(),
   saveItemSettings: vi.fn(),
+  renameItem: vi.fn(),
+  getTree: vi.fn(),
 }))
 vi.mock('@/platform/services/settings', () => ({
   SCRIPT_TIMEOUT_OUT_OF_RANGE: 'SCR-01400',
@@ -71,6 +75,7 @@ vi.mock('@/platform/services/requests', () => ({
 const services = await import('@/platform/services/workspaces')
 const requests = await import('@/platform/services/requests')
 const tree = await import('@/platform/services/tree')
+const environmentServices = await import('@/platform/services/environments')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
 const { useTabsStore } = await import('@/features/tabs/store')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
@@ -226,10 +231,10 @@ describe('App', () => {
   })
   it('shows an empty side panel once the last tab is closed', async () => {
     await renderWorkspace()
-    expect(screen.getByRole('textbox', { name: 'Name' })).toBeInTheDocument()
+    const sidePanel = screen.getByRole('complementary', { name: 'Side panel' })
+    expect(within(sidePanel).getByRole('button', { name: /^Rename request/ })).toBeInTheDocument()
     act(() => useTabsStore.getState().requestClose())
     expect(screen.queryByRole('complementary', { name: 'Side panel' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('textbox', { name: 'Name' })).not.toBeInTheDocument()
   })
 
   it('reaches the stage-5 shortcuts: search, tab cycling and reopening, sidebar and URL focus', async () => {
@@ -313,6 +318,78 @@ describe('App', () => {
     press('s')
     await vi.waitFor(() => expect(tree.saveItemSettings).toHaveBeenCalledWith('A', expect.objectContaining({ id: 'c1', description: 'Billing API' })))
     await vi.waitFor(() => expect(within(openTabs()[1]!).queryByRole('img', { name: 'Unsaved changes' })).not.toBeInTheDocument())
+  })
+  it('renames a request from its breadcrumb and saves the name with Cmd/Ctrl+S', async () => {
+    let requestName = 'Ping'
+    const treeNow = () => [
+      { id: 'c1', kind: 'collection' as const, name: 'Billing', method: null, url: null, error: null, warning: null, children: [
+        { id: 'r1', kind: 'request' as const, name: requestName, method: 'GET', url: null, error: null, warning: null, children: [] },
+      ] },
+    ]
+    vi.mocked(tree.getTree).mockImplementation(async () => treeNow())
+    vi.mocked(tree.renameItem).mockImplementation(async (_localId, id, name) => {
+      requestName = name
+      return { ...treeNow()[0]!.children[0]!, id }
+    })
+    vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: { ...emptyDraft(), id, name: requestName }, revision: `rev-${requestName}` }))
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: 'A' })
+    vi.mocked(services.activateWorkspace).mockResolvedValue({
+      summary: acme,
+      tree: treeNow(),
+      uiState: { ...defaultUIState(), tabs: [{ tabId: 't1', requestId: 'r1', pinned: true, baseRevision: null, draft: null }], activeTabId: 't1' },
+    })
+    await renderApp()
+    const breadcrumb = await screen.findByRole('navigation', { name: 'Breadcrumb' })
+    await userEvent.click(await within(breadcrumb).findByRole('button', { name: /^Rename request/ }))
+    const input = within(breadcrumb).getByRole('textbox', { name: 'Rename request' })
+    await userEvent.clear(input)
+    await userEvent.type(input, 'Pong')
+    expect(within(openTabs()[0]!).getByRole('img', { name: 'Unsaved changes' })).toBeInTheDocument()
+    expect(openTabs()[0]).toHaveTextContent('Ping')
+    press('s')
+    await vi.waitFor(() => expect(tree.renameItem).toHaveBeenCalledWith('A', 'r1', 'Pong'))
+    expect(requests.saveRequest).not.toHaveBeenCalled()
+    await vi.waitFor(() => expect(within(openTabs()[0]!).queryByRole('img', { name: 'Unsaved changes' })).not.toBeInTheDocument())
+    expect(openTabs()[0]).toHaveTextContent('Pong')
+  })
+
+  it('renames a collection from its heading and saves it with its settings on Cmd/Ctrl+S', async () => {
+    let collectionName = 'Billing'
+    const billing = () => ({ id: 'c1', kind: 'collection' as const, name: collectionName, method: null, url: null, error: null, warning: null, children: [] })
+    const settings = { id: 'c1', kind: 'collection' as const, name: 'Billing', description: '', auth: { ...emptyAuth(), type: 'inherit' as const }, headers: [], scripts: { preRequest: '', postResponse: '', disabled: [] }, inheritScripts: null }
+    vi.mocked(tree.getItemSettings).mockResolvedValue(settings)
+    vi.mocked(tree.saveItemSettings).mockImplementation(async (_localId, saved) => saved)
+    vi.mocked(tree.getTree).mockImplementation(async () => [billing()])
+    vi.mocked(tree.renameItem).mockImplementation(async (_localId, _id, name) => {
+      collectionName = name
+      return billing()
+    })
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: 'A' })
+    vi.mocked(services.activateWorkspace).mockResolvedValue({ summary: acme, tree: [billing()], uiState: defaultUIState() })
+    await renderApp()
+    act(() => useTabsStore.getState().openItemTab({ kind: 'collection', itemId: 'c1' }, 'pinned'))
+    const tab = await screen.findByRole('region', { name: 'Billing collection' })
+    await userEvent.type(within(tab).getByRole('textbox', { name: 'Description' }), 'Billing API')
+    await userEvent.click(within(tab).getByRole('button', { name: /^Rename collection/ }))
+    await userEvent.clear(within(tab).getByRole('textbox', { name: 'Rename collection' }))
+    await userEvent.type(within(tab).getByRole('textbox', { name: 'Rename collection' }), 'Payments{Enter}')
+    press('s')
+    await vi.waitFor(() => expect(tree.renameItem).toHaveBeenCalledWith('A', 'c1', 'Payments'))
+    expect(tree.saveItemSettings).toHaveBeenCalledWith('A', expect.objectContaining({ id: 'c1', name: 'Billing', description: 'Billing API' }))
+    expect(vi.mocked(tree.saveItemSettings).mock.invocationCallOrder.at(-1)!).toBeLessThan(vi.mocked(tree.renameItem).mock.invocationCallOrder.at(-1)!)
+  })
+
+  it('renames an environment from its heading and saves it with Cmd/Ctrl+S', async () => {
+    vi.mocked(environmentServices.getEnvironment).mockResolvedValue({ id: 'e1', name: 'dev', description: '', color: 'cyan', confirmBeforeSend: false, variables: [] })
+    vi.mocked(environmentServices.updateEnvironment).mockImplementation(async (_localId, update) => ({ ...update, variables: [] }))
+    await renderWorkspace()
+    act(() => useTabsStore.getState().openEnvironmentTab({ kind: 'environment', environmentId: 'e1' }, 'pinned'))
+    const tab = await screen.findByRole('region', { name: 'dev environment' })
+    await userEvent.click(within(tab).getByRole('button', { name: /^Rename environment/ }))
+    await userEvent.clear(within(tab).getByRole('textbox', { name: 'Rename environment' }))
+    await userEvent.type(within(tab).getByRole('textbox', { name: 'Rename environment' }), 'local{Enter}')
+    press('s')
+    await vi.waitFor(() => expect(environmentServices.updateEnvironment).toHaveBeenCalledWith('A', expect.objectContaining({ id: 'e1', name: 'local' })))
   })
 })
 

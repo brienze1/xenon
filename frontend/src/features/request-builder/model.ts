@@ -32,6 +32,8 @@ export interface TabDraft {
   /** Set after a cURL command replaced the request from the URL bar, so that one change can be undone. */
   curlPaste: CurlPaste | null
   baseRevision: string | null
+  /** The request's name on disk, against which a name draft is pending; null when never saved or not known (a restored draft). */
+  savedName: string | null
   conflict: boolean
   saving: boolean
   dirty: boolean

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { isDocumentationDirty, useDocumentationStore } from '@/features/documentation/store'
-import { isScopeDirty, useEnvironmentsStore } from '@/features/environments/store'
+import { findNameClash, isScopeDirty, useEnvironmentsStore } from '@/features/environments/store'
 import { useExamplesStore } from '@/features/examples/store'
 import { isItemDirty, useItemSettingsStore } from '@/features/item-settings/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
@@ -8,7 +8,7 @@ import { isSettingsDirty, useSettingsStore } from '@/features/settings/store'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
-import type { AppError } from '@/platform/errors'
+import { AppError } from '@/platform/errors'
 import type { RequestChangedOnDisk } from '@/platform/events'
 import { emptyDraft, type RequestDraft } from '@/platform/mappers/request'
 import type { TreeNode } from '@/platform/mappers/tree'
@@ -20,10 +20,15 @@ import { saveUIState } from '@/platform/services/ui-state'
 import { sameDraftContent } from './lib/draft'
 import { withoutNotice } from './lib/notices'
 import { latestClosedTabs } from './lib/closed'
+import { isNamePending, nameErrorMessage, type NameError } from './lib/name-draft'
+import { namedTreeId, tabNameOf, treeExampleName, treeNodeName, type TabName } from './lib/tab-name'
 import { moveTab, neighbourOf, positionAt, tabsAfter, tabsBefore, wrappedNeighbour } from './lib/order'
 import type { CloseChoice, EnvironmentTabTarget, ItemTabTarget, OpenMode, SaveDialogState, TabMeta, TabNotice } from './model'
 
 export const PERSIST_DELAY_MS = 300
+
+/** The code of the error a save returns when the tab's name is empty or taken (shown in the close prompt). */
+export const INVALID_NAME = 'TAB-01400'
 
 interface TabsState {
   localId: string | null
@@ -42,6 +47,8 @@ interface TabsState {
   closedTabs: ClosedTabState[]
   /** The options last used per snippet language, the last entry being the language last used. */
   snippetOptions: SnippetOptionsState[]
+  /** Why a tab's pending name was not saved, by tab id; cleared when the name is edited again. */
+  nameErrors: Record<string, NameError>
   hydrate: (localId: string, state: UIState) => void
   newTab: () => string
   openDraft: (draft: RequestDraft) => string
@@ -82,6 +89,11 @@ interface TabsState {
   activateIndex: (position: number) => void
   cycle: (step: 1 | -1) => void
   setSnippetOptions: (language: string, options: Record<string, string>) => void
+  /** Edits the name of the item the tab shows, as a draft the tab saves with its other changes. */
+  editTabName: (tabId: string, name: string) => void
+  /** Drops the tab's name draft (Escape): the tab shows the saved name again. */
+  cancelTabName: (tabId: string) => void
+  /** Saves the tab: the name first checked, then the other changes, then the rename; any failure stops it. */
   save: (tabId?: string) => Promise<void>
   saveAs: (tabId?: string) => void
   confirmSave: (parentId: string, name: string) => Promise<AppError | null>
@@ -147,6 +159,11 @@ function hasNoRequestDraft(tab: TabMeta | undefined): boolean {
   return isEnvironmentTab(tab) || isItemTab(tab) || isAppSettingsTab(tab)
 }
 
+/** A request tab never saved: saving it asks where to put it (the Save dialog). */
+function needsSaveDialog(tab: TabMeta): boolean {
+  return !hasNoRequestDraft(tab) && !isExampleTab(tab) && tab.requestId === null
+}
+
 function appSettings() {
   return useSettingsStore.getState()
 }
@@ -192,8 +209,55 @@ function environmentTabMeta(id: string, target: EnvironmentTabTarget, pinned: bo
   return { id, requestId: null, pinned, kind: target.kind, exampleId: null, environmentId: target.kind === 'environment' ? target.environmentId : null }
 }
 
-function isDirty(tabId: string): boolean {
+/** The name the tab edits, read from the stores that own its draft and its saved name. */
+function tabName(tab: TabMeta | undefined): TabName | null {
+  if (!tab) {
+    return null
+  }
+  const tree = useSidebarStore.getState().tree
+  const treeId = namedTreeId(tab)
+  const entry = tab.itemId ? items().items[tab.itemId] : undefined
+  const environmentId = tab.kind === 'environment' ? tab.environmentId : null
+  return tabNameOf(tab, {
+    builderName: builder().tabs[tab.id]?.draft.name,
+    builderSavedName: builder().tabs[tab.id]?.savedName ?? null,
+    treeName: treeId === null ? null : isExampleTab(tab) ? treeExampleName(tree, treeId) : treeNodeName(tree, treeId),
+    itemDraft: entry?.draft?.name,
+    itemBase: entry?.base?.name ?? null,
+    exampleName: examples().tabs[tab.id]?.example?.name ?? null,
+    environmentDraft: environmentId ? environments().nameDrafts[environmentId] : undefined,
+    environmentName: environments().environments.find((environment) => environment.id === environmentId)?.name ?? null,
+  })
+}
+
+function isTabNamePending(tab: TabMeta | undefined): boolean {
+  const name = tabName(tab)
+  return name !== null && isNamePending(name.draft, name.saved)
+}
+
+/** The message of the tab's name error (empty, taken, or what the rename returned); null when there is none. */
+export function selectNameErrorText(state: Pick<TabsState, 'nameErrors'>, tabId: string | null): string | null {
+  const error = tabId === null ? undefined : state.nameErrors[tabId]
+  return error ? nameErrorMessage(error) : null
+}
+
+/** The tab showing a collection or folder (one tab per item). */
+export function selectItemTabId(state: Pick<TabsState, 'tabs'>, itemId: string): string | null {
+  return state.tabs.find((tab) => isItemTab(tab) && tab.itemId === itemId)?.id ?? null
+}
+
+/** The tab showing an environment (one tab per environment). */
+export function selectEnvironmentTabId(state: Pick<TabsState, 'tabs'>, environmentId: string): string | null {
+  return state.tabs.find((tab) => tab.kind === 'environment' && tab.environmentId === environmentId)?.id ?? null
+}
+
+/** Whether the tab has unsaved changes, its name included: closing it asks first. */
+export function isTabDirty(tabId: string): boolean {
   const tab = useTabsStore.getState().tabs.find((candidate) => candidate.id === tabId)
+  return isContentDirty(tab, tabId) || isTabNamePending(tab)
+}
+
+function isContentDirty(tab: TabMeta | undefined, tabId: string): boolean {
   const scope = environmentTabScope(tab)
   if (scope !== null) {
     return isScopeDirty(environments(), scope)
@@ -206,6 +270,17 @@ function isDirty(tabId: string): boolean {
     return isItemDirty(items(), tab!.itemId!) || (variables !== null && isScopeDirty(environments(), variables)) || isDocumentationTabDirty(tab)
   }
   return (builder().tabs[tabId]?.dirty ?? false) || examples().isDirty(tabId)
+}
+
+/** What stops a pending name from being saved, checked before anything of the tab is written. */
+function nameProblem(tab: TabMeta, name: TabName, wanted: string): NameError | null {
+  if (wanted === '') {
+    return { kind: 'required', subject: name.subject }
+  }
+  if (tab.kind === 'environment' && tab.environmentId && findNameClash(environments(), tab.environmentId, wanted) !== null) {
+    return { kind: 'clash', name: name.draft ?? wanted }
+  }
+  return null
 }
 
 function isPristine(draft: RequestDraft): boolean {
@@ -246,6 +321,7 @@ const initialState = {
   recent: [] as string[],
   closedTabs: [] as ClosedTabState[],
   snippetOptions: [] as SnippetOptionsState[],
+  nameErrors: {} as Record<string, NameError>,
 }
 
 export const useTabsStore = create<TabsState>()((set, get) => {
@@ -294,7 +370,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
   function closeMany(tabIds: string[], force: boolean) {
     const dirtyIds: string[] = []
     for (const tabId of tabIds) {
-      if (!force && isDirty(tabId)) {
+      if (!force && isTabDirty(tabId)) {
         dirtyIds.push(tabId)
         continue
       }
@@ -320,30 +396,13 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       if (sibling.id === tabId || sibling.requestId !== savedTab.requestId || isExampleTab(sibling) || builder().tabs[sibling.id]?.baseRevision === revision) {
         continue
       }
-      if (isDirty(sibling.id)) {
+      if (isTabDirty(sibling.id)) {
         set((state) => ({ notices: { ...state.notices, [sibling.id]: 'changed' } }))
       } else {
         reloads.push(builder().openSaved(sibling.id, savedTab.requestId))
       }
     }
     await Promise.all(reloads)
-  }
-
-  async function saveEnvironmentAndClose(tabId: string, scope: string) {
-    set({ closeError: null })
-    const saved = await environments().saveDraft(scope)
-    if (!saved.ok) {
-      set((state) => (state.closePrompt === tabId ? { closeError: saved.error } : state))
-      return
-    }
-    if (!saved.value) {
-      set({ closePrompt: null, closeQueue: [] })
-      focus(tabId)
-      return
-    }
-    set({ closePrompt: null })
-    get().closeTab(tabId)
-    promptNext()
   }
 
   /**
@@ -374,39 +433,114 @@ export const useTabsStore = create<TabsState>()((set, get) => {
     return documented
   }
 
-  /** Saves the Settings form; an invalid field keeps the tab open and focused with its inline error. */
-  async function saveAppSettingsAndClose(tabId: string) {
-    set({ closeError: null })
-    const saved = await appSettings().save()
-    if (!saved.ok) {
-      set((state) => (state.closePrompt === tabId ? { closeError: saved.error } : state))
-      return
-    }
-    if (!saved.value) {
-      set({ closePrompt: null, closeQueue: [] })
-      focus(tabId)
-      return
-    }
-    set({ closePrompt: null })
-    get().closeTab(tabId)
-    promptNext()
+  /** Tabs whose save is running; a second save of the same tab waits for nothing and writes nothing. */
+  const saving = new Set<string>()
+
+  function setNameError(tabId: string, error: NameError | null) {
+    set((state) => {
+      if (error === null && !(tabId in state.nameErrors)) {
+        return state
+      }
+      const nameErrors = { ...state.nameErrors }
+      if (error === null) {
+        delete nameErrors[tabId]
+      } else {
+        nameErrors[tabId] = error
+      }
+      return { nameErrors }
+    })
   }
 
-  async function saveItemAndClose(tab: TabMeta) {
-    set({ closeError: null })
-    const saved = await saveItemTab(tab)
-    if (!saved.ok) {
-      set((state) => (state.closePrompt === tab.id ? { closeError: saved.error } : state))
-      return
+  /** Saves everything the tab edits except its name; `savedName` is what a request must keep writing as its name. */
+  async function saveContent(tab: TabMeta, namePending: boolean, savedName: string | null): Promise<Result<boolean, AppError>> {
+    const scope = environmentTabScope(tab)
+    if (scope !== null) {
+      return environments().saveDraft(scope)
     }
-    if (!saved.value) {
-      set({ closePrompt: null, closeQueue: [] })
-      focus(tab.id)
-      return
+    if (isItemTab(tab)) {
+      return saveItemTab(tab)
     }
-    set({ closePrompt: null })
-    get().closeTab(tab.id)
-    promptNext()
+    if (isAppSettingsTab(tab)) {
+      return appSettings().save()
+    }
+    if (namePending && !isContentDirty(tab, tab.id)) {
+      return { ok: true, value: true }
+    }
+    if (isExampleTab(tab)) {
+      return examples().save(tab.id)
+    }
+    const saved = await builder().save(tab.id, false, savedName === null ? {} : { name: savedName })
+    if (saved.ok && saved.value) {
+      await syncSiblings(tab.id)
+    }
+    return saved
+  }
+
+  /** Writes the tab's new name through the item's rename operation and lets every view take it. */
+  async function rename(tab: TabMeta, wanted: string, previous: string): Promise<Result<boolean, AppError>> {
+    if (tab.kind === 'environment' && tab.environmentId) {
+      const failure = await environments().renameEnvironment(tab.environmentId, wanted)
+      if (failure !== null) {
+        return { ok: false, error: failure }
+      }
+      if (environments().nameDrafts[tab.environmentId]?.trim() === wanted) {
+        environments().dropName(tab.environmentId)
+      }
+      return { ok: true, value: true }
+    }
+    const sidebar = useSidebarStore.getState()
+    const treeId = namedTreeId(tab)!
+    const renamed = isExampleTab(tab) ? await sidebar.renameExample(treeId, wanted) : await sidebar.rename(treeId, wanted)
+    if (!renamed.ok) {
+      return renamed
+    }
+    if (isItemTab(tab)) {
+      if (items().items[treeId]?.draft?.name.trim() === wanted) {
+        items().editName(treeId, wanted)
+      }
+      await items().load(treeId)
+      return { ok: true, value: true }
+    }
+    if (builder().tabs[tab.id]?.draft.name.trim() === wanted) {
+      builder().editName(tab.id, wanted)
+    }
+    if (isExampleTab(tab)) {
+      await examples().adoptRename(treeId, previous)
+    } else {
+      await builder().adoptRename(treeId, previous)
+    }
+    return { ok: true, value: true }
+  }
+
+  /** The save order of every tab: check the name, save the other changes, then rename; any failure stops it. */
+  async function saveTabChanges(tab: TabMeta): Promise<Result<boolean, AppError>> {
+    if (saving.has(tab.id)) {
+      return { ok: true, value: false }
+    }
+    saving.add(tab.id)
+    try {
+      const name = tabName(tab)
+      const pending = name !== null && isNamePending(name.draft, name.saved)
+      const wanted = pending ? name!.draft!.trim() : ''
+      const problem = pending ? nameProblem(tab, name!, wanted) : null
+      if (problem !== null) {
+        setNameError(tab.id, problem)
+        return { ok: false, error: new AppError(INVALID_NAME, nameErrorMessage(problem)) }
+      }
+      const content = await saveContent(tab, pending, name?.saved ?? null)
+      if (!content.ok || !content.value || !pending) {
+        return content
+      }
+      const renamed = await rename(tab, wanted, name!.saved!)
+      if (!renamed.ok) {
+        setNameError(tab.id, { kind: 'failed', error: renamed.error })
+        return renamed
+      }
+      setNameError(tab.id, null)
+      return { ok: true, value: true }
+    } finally {
+      saving.delete(tab.id)
+    }
   }
 
   /** Clears what a preview tab showed before it is reused for something else. */
@@ -460,7 +594,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       return { tabId: tab.id, kind: 'example', requestId: tab.requestId, exampleId: tab.exampleId ?? null, pinned: tab.pinned, baseRevision: null, draft: null }
     }
     const draft = builder().tabs[tab.id]
-    const keepDraft = tab.requestId === null || (draft?.dirty ?? false)
+    const keepDraft = tab.requestId === null || (draft?.dirty ?? false) || isTabNamePending(tab)
     return {
       tabId: tab.id,
       requestId: tab.requestId,
@@ -538,7 +672,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         return
       }
       const preview = get().previewTabId
-      if (preview !== null && !isDirty(preview)) {
+      if (preview !== null && !isTabDirty(preview)) {
         const replaced = tabById(preview)
         if (isItemTab(replaced)) {
           dropItem(replaced!)
@@ -576,7 +710,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         return
       }
       const preview = get().previewTabId
-      if (preview !== null && !isDirty(preview)) {
+      if (preview !== null && !isTabDirty(preview)) {
         const replaced = tabById(preview)
         if (isItemTab(replaced)) {
           dropItem(replaced!)
@@ -616,7 +750,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         return
       }
       const preview = get().previewTabId
-      if (mode === 'preview' && preview !== null && !isDirty(preview)) {
+      if (mode === 'preview' && preview !== null && !isTabDirty(preview)) {
         releasePreview(preview)
         patchTab(preview, environmentTabMeta(preview, target, false))
         set({ notices: withoutNotice(get().notices, preview) })
@@ -665,7 +799,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         return
       }
       const preview = get().previewTabId
-      if (mode === 'preview' && preview !== null && !isDirty(preview)) {
+      if (mode === 'preview' && preview !== null && !isTabDirty(preview)) {
         releasePreview(preview)
         patchTab(preview, itemTabMeta(preview, target, false))
         set({ notices: withoutNotice(get().notices, preview) })
@@ -710,7 +844,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
 
     pinIfEdited: () => {
       const preview = get().previewTabId
-      if (preview !== null && isDirty(preview)) {
+      if (preview !== null && isTabDirty(preview)) {
         get().pin(preview)
       }
     },
@@ -722,7 +856,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       if (target === null) {
         return
       }
-      if (isDirty(target)) {
+      if (isTabDirty(target)) {
         set({ closePrompt: target, closeError: null })
         return
       }
@@ -743,34 +877,27 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         return
       }
       const tab = tabById(tabId)
-      const scope = environmentTabScope(tab)
-      if (scope !== null) {
-        await saveEnvironmentAndClose(tabId, scope)
+      if (!tab) {
+        promptNext()
         return
       }
-      if (isItemTab(tab)) {
-        await saveItemAndClose(tab!)
-        return
-      }
-      if (isAppSettingsTab(tab)) {
-        await saveAppSettingsAndClose(tabId)
-        return
-      }
-      if (!tab?.requestId) {
+      if (needsSaveDialog(tab)) {
         set({ closePrompt: null, closeError: null, saveDialog: { tabId, mode: 'save', closeAfter: true } })
         return
       }
       set({ closeError: null })
-      const saved = isExampleTab(tab) ? await examples().save(tabId) : await builder().save(tabId)
+      const saved = await saveTabChanges(tab)
       if (!saved.ok) {
         set((state) => (state.closePrompt === tabId ? { closeError: saved.error } : state))
         return
       }
-      set({ closePrompt: null })
-      if (saved.value) {
-        await syncSiblings(tabId)
-        get().closeTab(tabId)
+      if (!saved.value) {
+        set({ closePrompt: null, closeQueue: [] })
+        focus(tabId)
+        return
       }
+      set({ closePrompt: null })
+      get().closeTab(tabId)
       promptNext()
     },
 
@@ -786,9 +913,13 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         notices: withoutNotice(state.notices, tabId),
         recent: state.recent.filter((id) => id !== tabId),
       }))
+      setNameError(tabId, null)
       const scope = environmentTabScope(closing)
       if (scope !== null) {
         environments().discardDraft(scope)
+        if (closing?.environmentId) {
+          environments().dropName(closing.environmentId)
+        }
         return
       }
       if (isItemTab(closing)) {
@@ -829,7 +960,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       }
       const id = newTabId()
       addTab({ id, requestId: source.requestId, pinned: true }, tabId)
-      builder().loadDraft(id, structuredClone(draft.draft), draft.baseRevision, draft.dirty)
+      builder().loadDraft(id, structuredClone(draft.draft), draft.baseRevision, draft.dirty, draft.savedName)
       return id
     },
 
@@ -909,35 +1040,47 @@ export const useTabsStore = create<TabsState>()((set, get) => {
       set((state) => ({ snippetOptions: [...state.snippetOptions.filter((saved) => saved.language !== language), { language, options }] })),
 
     save: async (tabId) => {
-      const target = activeOr(tabId)
-      const tab = tabById(target)
+      const tab = tabById(activeOr(tabId))
       if (!tab) {
         return
       }
-      const scope = environmentTabScope(tab)
-      if (scope !== null) {
-        await environments().saveDraft(scope)
-        return
-      }
-      if (isItemTab(tab)) {
-        await saveItemTab(tab)
-        return
-      }
-      if (isAppSettingsTab(tab)) {
-        await appSettings().save()
-        return
-      }
-      if (isExampleTab(tab)) {
-        await examples().save(tab.id)
-        return
-      }
-      if (tab.requestId === null) {
+      if (needsSaveDialog(tab)) {
         set({ saveDialog: { tabId: tab.id, mode: 'save', closeAfter: false } })
         return
       }
-      const saved = await builder().save(tab.id)
-      if (saved.ok && saved.value) {
-        await syncSiblings(tab.id)
+      await saveTabChanges(tab)
+    },
+
+    editTabName: (tabId, name) => {
+      const tab = tabById(tabId)
+      if (!tab) {
+        return
+      }
+      if (isItemTab(tab)) {
+        items().editName(tab.itemId!, name)
+      } else if (tab.kind === 'environment' && tab.environmentId) {
+        environments().editName(tab.environmentId, name)
+      } else if (isExampleTab(tab) || tab.requestId !== null) {
+        builder().editName(tabId, name)
+      } else {
+        builder().setName(tabId, name)
+      }
+      setNameError(tabId, null)
+    },
+
+    cancelTabName: (tabId) => {
+      const tab = tabById(tabId)
+      const saved = tabName(tab)?.saved ?? null
+      setNameError(tabId, null)
+      if (!tab || saved === null) {
+        return
+      }
+      if (isItemTab(tab)) {
+        items().editName(tab.itemId!, saved)
+      } else if (tab.kind === 'environment' && tab.environmentId) {
+        environments().dropName(tab.environmentId)
+      } else {
+        builder().editName(tabId, saved)
       }
     },
 
@@ -975,14 +1118,13 @@ export const useTabsStore = create<TabsState>()((set, get) => {
 
     handleDeleted: (requestIds) => {
       const deleted = new Set(requestIds)
-      const drafts = builder().tabs
       for (const tab of get().tabs) {
         if (tab.requestId === null || !deleted.has(tab.requestId)) {
           continue
         }
         if (isExampleTab(tab)) {
           get().closeTab(tab.id, false)
-        } else if (drafts[tab.id]?.dirty ?? false) {
+        } else if (isTabDirty(tab.id)) {
           set((state) => ({ notices: { ...state.notices, [tab.id]: 'deleted' } }))
         } else {
           get().closeTab(tab.id, false)
@@ -1007,7 +1149,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         }
         if (isExampleTab(tab)) {
           const loaded = examples().tabs[tab.id]
-          if (loaded?.example?.revision !== event.revision && !isDirty(tab.id) && tab.exampleId) {
+          if (loaded?.example?.revision !== event.revision && !isTabDirty(tab.id) && tab.exampleId) {
             reloads.push(examples().open(tab.id, event.requestId, tab.exampleId))
           }
           continue
@@ -1015,7 +1157,7 @@ export const useTabsStore = create<TabsState>()((set, get) => {
         if (draft?.baseRevision === event.revision) {
           continue
         }
-        if (draft?.dirty ?? false) {
+        if (isTabDirty(tab.id)) {
           set((state) => ({ notices: { ...state.notices, [tab.id]: 'changed' } }))
         } else {
           reloads.push(builder().openSaved(tab.id, event.requestId))

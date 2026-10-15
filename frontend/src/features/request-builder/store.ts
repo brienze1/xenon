@@ -42,6 +42,10 @@ import { fieldText, withFieldText } from './lib/draft-fields'
 import { rowsOf, withRows, withSavedRows } from './lib/draft-rows'
 import type { BulkTable, FieldSelection, SubTab, TabDraft } from './model'
 
+interface SaveOptions {
+  name?: string
+}
+
 export const SYNC_DELAY_MS = 150
 /** Highlighting and the Variables panel follow typing after this pause (SC-004: within 100 ms of Inspect). */
 export const INSPECT_DELAY_MS = 120
@@ -53,13 +57,18 @@ interface RequestBuilderState {
   focusUrl: () => void
   ensureTab: (tabId: string) => void
   openSaved: (tabId: string, requestId: string) => Promise<boolean>
-  loadDraft: (tabId: string, draft: RequestDraft, baseRevision: string | null, dirty: boolean) => void
+  loadDraft: (tabId: string, draft: RequestDraft, baseRevision: string | null, dirty: boolean, savedName?: string | null) => void
   dropTab: (tabId: string) => void
   detach: (tabId: string) => void
-  save: (tabId: string, force?: boolean) => Promise<Result<boolean, AppError>>
+  /** Saves the draft; `options.name` replaces the name written (a pending name goes through a rename instead). */
+  save: (tabId: string, force?: boolean, options?: SaveOptions) => Promise<Result<boolean, AppError>>
   saveAs: (tabId: string, parentId: string, name: string) => Promise<Result<string | null, AppError>>
-  adoptRename: (requestId: string) => Promise<void>
+  /** Takes the revision of a rename made elsewhere; tabs whose name was still `previousName` take the new name too. */
+  adoptRename: (requestId: string, previousName: string) => Promise<void>
+  /** A content edit of the name, for a request that was never saved. */
   setName: (tabId: string, name: string) => void
+  /** Edits the name draft of a saved request or an example; whether it is pending is derived from the saved name. */
+  editName: (tabId: string, name: string) => void
   setDescription: (tabId: string, description: string) => void
   setMethod: (tabId: string, method: string) => void
   setUrl: (tabId: string, url: string) => void
@@ -132,6 +141,7 @@ function newTab(): TabDraft {
     error: null,
     curlPaste: null,
     baseRevision: null,
+    savedName: null,
     conflict: false,
     saving: false,
     dirty: false,
@@ -222,7 +232,7 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
       }
       try {
         const saved = await getRequest(localId, requestId)
-        patchTab(tabId, { ...newTab(), subTab: tab(tabId).subTab, draft: saved.draft, baseRevision: saved.revision })
+        patchTab(tabId, { ...newTab(), subTab: tab(tabId).subTab, draft: saved.draft, baseRevision: saved.revision, savedName: saved.draft.name })
         void get().refreshAutoHeaders(tabId)
         return true
       } catch (error) {
@@ -231,8 +241,8 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
       }
     },
 
-    loadDraft: (tabId, draft, baseRevision, dirty) => {
-      patchTab(tabId, { ...newTab(), draft, baseRevision, dirty })
+    loadDraft: (tabId, draft, baseRevision, dirty, savedName = null) => {
+      patchTab(tabId, { ...newTab(), draft, baseRevision, dirty, savedName })
       void get().refreshAutoHeaders(tabId)
     },
 
@@ -247,9 +257,9 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
     },
 
     detach: (tabId) =>
-      patchTab(tabId, { draft: { ...tab(tabId).draft, id: '' }, baseRevision: null, conflict: false, dirty: true }),
+      patchTab(tabId, { draft: { ...tab(tabId).draft, id: '' }, baseRevision: null, savedName: null, conflict: false, dirty: true }),
 
-    save: async (tabId, force = false) => {
+    save: async (tabId, force = false, options = {}) => {
       const localId = useWorkspacesStore.getState().activeLocalId
       const current = tab(tabId)
       if (!localId || current.draft.id === '' || current.baseRevision === null || current.saving) {
@@ -257,10 +267,13 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
       }
       patchTab(tabId, { saving: true })
       try {
-        const saved = await saveRequest(localId, current.draft, current.baseRevision, force)
+        const sent = options.name === undefined ? current.draft : { ...current.draft, name: options.name }
+        const saved = await saveRequest(localId, sent, current.baseRevision, force)
+        const draftName = tab(tabId).draft.name
         patchTab(tabId, {
-          draft: withSavedRows(tab(tabId).draft, saved.draft),
+          draft: { ...withSavedRows(tab(tabId).draft, saved.draft), name: options.name === undefined ? saved.draft.name : draftName },
           baseRevision: saved.revision,
+          savedName: saved.draft.name,
           conflict: false,
           error: null,
           dirty: false,
@@ -287,6 +300,7 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
         patchTab(tabId, {
           draft: withSavedRows(tab(tabId).draft, saved.draft),
           baseRevision: saved.revision,
+          savedName: saved.draft.name,
           conflict: false,
           error: null,
           dirty: false,
@@ -300,7 +314,7 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
       }
     },
 
-    adoptRename: async (requestId) => {
+    adoptRename: async (requestId, previousName) => {
       const localId = useWorkspacesStore.getState().activeLocalId
       const tabIds = Object.keys(get().tabs).filter((tabId) => tab(tabId).draft.id === requestId)
       if (!localId || tabIds.length === 0) {
@@ -309,7 +323,9 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
       try {
         const saved = await getRequest(localId, requestId)
         for (const tabId of tabIds) {
-          patchTab(tabId, { draft: { ...tab(tabId).draft, name: saved.draft.name }, baseRevision: saved.revision })
+          const draft = tab(tabId).draft
+          const keepsOwnName = draft.name.trim() !== previousName
+          patchTab(tabId, { draft: keepsOwnName ? draft : { ...draft, name: saved.draft.name }, baseRevision: saved.revision, savedName: saved.draft.name })
         }
       } catch (error) {
         for (const tabId of tabIds) {
@@ -321,6 +337,12 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
     setName: (tabId, name) => {
       if (tabId !== '') {
         patchDraft(tabId, (draft) => ({ ...draft, name }))
+      }
+    },
+
+    editName: (tabId, name) => {
+      if (tabId !== '') {
+        patchTab(tabId, { draft: { ...tab(tabId).draft, name } })
       }
     },
 

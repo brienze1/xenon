@@ -178,9 +178,19 @@ describe('examples store', () => {
   it('adopts a rename of an open example', async () => {
     vi.mocked(examples.getExample).mockResolvedValueOnce(example()).mockResolvedValueOnce(example({ name: 'Renamed', revision: 'rev3' }))
     await act(() => store().open('tab-1', 'r1', 'e1'))
-    await act(() => store().adoptRename('e1'))
+    await act(() => store().adoptRename('e1', 'Created'))
     expect(useRequestBuilderStore.getState().tabs['tab-1']?.draft.name).toBe('Renamed')
     expect(store().tabs['tab-1']?.example?.revision).toBe('rev3')
+  })
+
+  it('keeps a pending example name when the example is renamed elsewhere', async () => {
+    vi.mocked(examples.getExample).mockResolvedValueOnce(example()).mockResolvedValueOnce(example({ name: 'Renamed', revision: 'rev3' }))
+    await act(() => store().open('tab-1', 'r1', 'e1'))
+    act(() => useRequestBuilderStore.getState().editName('tab-1', 'Mine'))
+    expect(store().isDirty('tab-1')).toBe(false)
+    await act(() => store().adoptRename('e1', 'Created'))
+    expect(useRequestBuilderStore.getState().tabs['tab-1']?.draft.name).toBe('Mine')
+    expect(store().tabs['tab-1']?.example).toMatchObject({ name: 'Renamed', revision: 'rev3' })
   })
 
   it('opens example tabs with preview and pin rules and routes save and close', async () => {

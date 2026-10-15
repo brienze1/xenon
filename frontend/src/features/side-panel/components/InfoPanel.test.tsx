@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
@@ -27,6 +27,7 @@ const tree = await import('@/platform/services/tree')
 const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { useSidebarStore } = await import('@/features/sidebar/store')
 const { useRequestBuilderStore } = await import('@/features/request-builder/store')
+const { useTabsStore } = await import('@/features/tabs/store')
 const { InfoPanel } = await import('./InfoPanel')
 await import('@/shared/ui/markdown/MarkdownView')
 
@@ -49,6 +50,7 @@ function loadDraft(id: string, name: string, description = '') {
   useRequestBuilderStore.setState((state) => ({
     tabs: { ...state.tabs, [tabId()]: { ...state.tabs[tabId()]!, draft: { ...emptyDraft(), id, name, description }, baseRevision: id ? 'rev' : null } },
   }))
+  useTabsStore.setState({ tabs: [{ id: tabId(), requestId: id || null, pinned: true }], activeTabId: tabId(), nameErrors: {} })
 }
 
 describe('InfoPanel', () => {
@@ -60,13 +62,15 @@ describe('InfoPanel', () => {
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
     useRequestBuilderStore.getState().ensureTab('tab-1')
     useSidebarStore.setState({ tree: sample })
+    useTabsStore.setState({ tabs: [{ id: tabId(), requestId: null, pinned: true }], activeTabId: tabId(), nameErrors: {} })
   })
 
   afterEach(() => resetStores())
 
   it('shows an unsaved request', () => {
     render(<InfoPanel tabId={tabId()} />)
-    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Untitled Request')
+    expect(screen.queryByRole('textbox', { name: /name/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Rename request/ })).toHaveTextContent('Untitled Request')
     expect(screen.getByText('Not saved yet')).toBeInTheDocument()
     expect(screen.getByText('No description')).toBeInTheDocument()
   })
@@ -105,52 +109,48 @@ describe('InfoPanel', () => {
 
   it('renames an unsaved request in its draft', async () => {
     render(<InfoPanel tabId={tabId()} />)
-    const input = screen.getByRole('textbox', { name: 'Name' })
+    await userEvent.click(screen.getByRole('button', { name: /^Rename request/ }))
+    const input = screen.getByRole('textbox', { name: 'Rename request' })
     await userEvent.clear(input)
     await userEvent.type(input, 'Ping{Enter}')
     expect(useRequestBuilderStore.getState().tabs[tabId()]!.draft.name).toBe('Ping')
+    expect(screen.getByRole('button', { name: /^Rename request/ })).toHaveTextContent('Ping')
     expect(tree.renameItem).not.toHaveBeenCalled()
   })
 
-  it('renames a saved request on disk and adopts the new revision', async () => {
+  it('edits the name of a saved request as a draft and never renames it on blur', async () => {
     loadDraft('r1', 'Create invoice')
-    vi.mocked(tree.renameItem).mockResolvedValue(node('r1', 'request', 'Create draft'))
-    vi.mocked(tree.getTree).mockResolvedValue(sample)
-    vi.mocked(requests.getRequest).mockResolvedValue({ draft: { ...emptyDraft(), id: 'r1', name: 'Create draft' }, revision: 'rev-2' })
     render(<InfoPanel tabId={tabId()} />)
-    const input = screen.getByRole('textbox', { name: 'Name' })
+    await userEvent.click(screen.getByRole('button', { name: /^Rename request/ }))
+    const input = screen.getByRole('textbox', { name: 'Rename request' })
     await userEvent.clear(input)
     await userEvent.type(input, 'Create draft')
-    await act(async () => input.blur())
-    await waitFor(() => expect(useRequestBuilderStore.getState().tabs[tabId()]!.baseRevision).toBe('rev-2'))
-    expect(tree.renameItem).toHaveBeenCalledWith('ws', 'r1', 'Create draft')
+    await userEvent.tab()
+    expect(screen.queryByRole('textbox', { name: 'Rename request' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Rename request/ })).toHaveTextContent('Create draft')
     expect(useRequestBuilderStore.getState().tabs[tabId()]!.draft.name).toBe('Create draft')
-  })
-
-  it('ignores blank or unchanged names', async () => {
-    loadDraft('r1', 'Create invoice')
-    render(<InfoPanel tabId={tabId()} />)
-    const input = screen.getByRole('textbox', { name: 'Name' })
-    await userEvent.clear(input)
-    await act(async () => input.blur())
+    expect(useRequestBuilderStore.getState().tabs[tabId()]!.dirty).toBe(false)
     expect(tree.renameItem).not.toHaveBeenCalled()
   })
 
-  it('shows a failed rename under the name and keeps the rejected text', async () => {
+  it('shows the same draft name the breadcrumb edits', () => {
     loadDraft('r1', 'Create invoice')
-    vi.mocked(tree.renameItem).mockRejectedValue(new AppError('TRE-03409', 'A request with that name already exists'))
     render(<InfoPanel tabId={tabId()} />)
-    const input = screen.getByRole('textbox', { name: 'Name' })
-    await userEvent.clear(input)
-    await userEvent.type(input, 'Taken')
-    await act(async () => input.blur())
-    const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent('A request with that name already exists. Choose another name, then press Enter.')
-    expect(input).toHaveValue('Taken')
-    expect(input).toHaveAttribute('aria-invalid', 'true')
-    expect(input).toHaveAccessibleDescription(alert.textContent ?? '')
-    expect(useSidebarStore.getState().error).toBeNull()
-    await userEvent.type(input, '!')
+    act(() => useTabsStore.getState().editTabName(tabId(), 'From the breadcrumb'))
+    expect(screen.getByRole('button', { name: /^Rename request/ })).toHaveTextContent('From the breadcrumb')
+  })
+
+  it('shows a failed rename under the name until the name is edited again', async () => {
+    loadDraft('r1', 'Taken')
+    useTabsStore.setState({ nameErrors: { [tabId()]: { kind: 'failed', error: new AppError('TRE-03409', 'A request with that name already exists') } } })
+    render(<InfoPanel tabId={tabId()} />)
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent('A request with that name already exists. Choose another name, then save.')
+    const name = screen.getByRole('button', { name: /^Rename request/ })
+    expect(name).toHaveAttribute('aria-invalid', 'true')
+    expect(name).toHaveAccessibleDescription(alert.textContent ?? '')
+    await userEvent.click(name)
+    await userEvent.type(screen.getByRole('textbox', { name: 'Rename request' }), '!')
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })
