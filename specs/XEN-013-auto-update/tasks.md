@@ -107,11 +107,11 @@ needed by every story.
 
 **Goal**: CI publishes a versioned release with packages and checksums on each merge to `main`.
 
-**Independent Test**: `node --test tools/release/` passes; after merge, `gh release view v0.1.0` lists the four assets.
+**Independent Test**: `node --test tools/release/next-version.test.mjs` passes; after merge, `gh release view v0.1.0` lists the four assets.
 
 - [x] T034 [P] [US4] Write `tools/release/next-version.test.mjs` (`node --test`): no tags → `0.1.0`; tags `v0.1.0,v0.1.1` → `0.1.2`; `VERSION` `0.2` with `v0.1.x` tags → `0.2.0`; tags of other lines ignored; non-`v` tags ignored; `VERSION` `abc` → exit code 1. Run and record red
 - [x] T035 [US4] Implement `tools/release/next-version.mjs` (reads `VERSION`, takes tags from stdin one per line, prints the version) with a `tools/release/package.json` (`"type": "module"`, no dependencies)
-- [x] T036 [US4] Add the `release-check` target (`node --test tools/release/`) to `Makefile`, include it in `.PHONY`, and call it from `validate`
+- [x] T036 [US4] Add the `release-check` target (`node --test tools/release/next-version.test.mjs`) to `Makefile`, include it in `.PHONY`, and call it from `validate`
 - [x] T037 [US4] Create `.github/workflows/release.yml` per design decision R3 and contracts/release-assets.md: jobs `version` → `build` (matrix, `fail-fast: true`, `XENON_VERSION` passed to the Taskfile builds; macOS universal package, `plutil -replace CFBundleShortVersionString/CFBundleVersion`, ad-hoc re-sign, `tar -czf` with top entry `Xenon.app`; Windows `xenon.exe` zipped with PowerShell `Compress-Archive` (built into the runner); Linux `xenon` tar.gz) → `publish` (`sha256sum` → `checksums.txt`, notes with the macOS first-install paragraph, `gh release create v<v> --target $GITHUB_SHA`), `permissions: contents: write`, `concurrency: release` without cancel
 - [x] T038 [US4] Run `make release-check` (green) and lint the workflow with `go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 .github/workflows/release.yml` (zero findings); the real publish is verified after merge per quickstart.md §2
 

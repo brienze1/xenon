@@ -260,7 +260,7 @@ frontend-check:
 	cd frontend && npm run lint && npm run typecheck && npm test
 
 release-check:
-	node --test tools/release/
+	node --test tools/release/next-version.test.mjs
 
 sandbox-assets:
 	@echo "Rebuilding the sandbox assets (postman-sandbox 6.7.4 libraries)..."

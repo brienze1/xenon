@@ -6,7 +6,7 @@
 make bindings
 make bdd TAG=@xen_013          # check / install / auto-update scenarios (GitHub + downloads faked)
 cd frontend && npm test -- updates settings toast   # Vitest: section, toast, footer, store, mappers
-node --test tools/release/     # next-version rules
+node --test tools/release/next-version.test.mjs  # next-version rules
 make validate                  # full gate (includes release-check)
 ```
 
