@@ -6,6 +6,9 @@ describe('import labels', () => {
     expect(sourceLabel('postman_collection', '2.1')).toBe('Postman collection v2.1')
     expect(sourceLabel('bruno_bru', '')).toBe('Bruno collection (.bru)')
     expect(sourceLabel('other', '')).toBe('other')
+    expect(sourceLabel('postman_collection', '3')).toBe('Postman collection v3')
+    expect(sourceLabel('postman_request', '3')).toBe('Postman request v3')
+    expect(sourceLabel('postman_workspace', '3')).toBe('Postman workspace v3')
   })
 
   it('lists the non-zero counts with singular and plural words', () => {

@@ -1,0 +1,4 @@
+values:
+  - key: region
+    value: eu-west-1
+    enabled: true

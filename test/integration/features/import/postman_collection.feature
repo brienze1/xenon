@@ -457,3 +457,51 @@ Feature: Import a Postman collection (v2.1)
       { "local_id": "{{Acme.local_id}}", "owner_id": "{{token_collection}}", "which": "access" }
       """
     Then the response should contain the field "value" equal to "imported-t0ken-value"
+
+  @variables @secrets @xen_009
+  Scenario: A collection variable Postman marks as secret goes to the vault, never to the collection file
+    Given the keychain is available
+    And the log output is captured
+    And the file "secret-vars.json" exists with content
+      """
+      {
+        "info": { "_postman_id": "5ec4e700-0000-4000-8000-000000000001", "name": "Secret Vars", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
+        "variable": [
+          { "key": "plain", "value": "visible" },
+          { "key": "apiSecret", "value": "s3cr3t-fixture-v21", "type": "secret" },
+          { "key": "emptySecret", "value": "", "type": "secret" }
+        ],
+        "item": [ { "name": "Ping", "request": { "method": "GET", "url": "https://secret-vars.test/ping" } } ]
+      }
+      """
+    When I call "ImportService.Detect" with
+      """
+      { "paths": ["{{temp_root}}/secret-vars.json"] }
+      """
+    And I save the response field "source_id" as "secret_source"
+    And I call "ImportService.Import" with
+      """
+      { "source_id": "{{secret_source}}", "items": [ { "key": "0", "include": true, "target_local_id": "{{Acme.local_id}}" } ] }
+      """
+    Then the call should succeed
+    And the response should not contain "s3cr3t-fixture-v21"
+    And I save the response field "items.0.id" as "secret_vars"
+    And the workspace file "acme/collections/secret-vars/collection.yaml" should contain the field "variables.0.value" equal to "visible"
+    And the workspace file "acme/collections/secret-vars/collection.yaml" should contain the field "variables.1.key" equal to "apiSecret"
+    And the workspace file "acme/collections/secret-vars/collection.yaml" should contain the field "variables.1.secret" equal to "true"
+    And the workspace file "acme/collections/secret-vars/collection.yaml" should not contain the field "variables.1.value"
+    And the workspace file "acme/collections/secret-vars/collection.yaml" should contain the field "variables.2.secret" equal to "true"
+    And no file under the workspace folder should contain "s3cr3t-fixture-v21"
+    And the log output should not contain "s3cr3t-fixture-v21"
+    When I call "VaultService.Reveal" with
+      """
+      { "local_id": "{{Acme.local_id}}", "scope": "collection:{{secret_vars}}", "key": "apiSecret" }
+      """
+    Then the call should succeed
+    And the response should contain the field "value" equal to "s3cr3t-fixture-v21"
+    When I call "VariableService.GetTable" with
+      """
+      { "local_id": "{{Acme.local_id}}", "scope": "collection:{{secret_vars}}" }
+      """
+    Then the response should contain the field "rows.1.secret_state" equal to "set"
+    And the response should contain the field "rows.2.secret_state" equal to "missing"

@@ -42,8 +42,13 @@ func (k *KeyValue) ToPathVariable() entity.PathVariable {
 	return entity.PathVariable{Key: text(k.Key), Value: text(k.Value), Description: k.Description.Content}
 }
 
+func (k *KeyValue) IsSecret() bool {
+	return k.Type == secretVariableType
+}
+
 func (k *KeyValue) ToVariableRow() entity.VariableRow {
 	row := entity.NewVariableRow(text(k.Key), text(k.Value))
+	row.Secret = k.IsSecret()
 	row.Enabled = !k.Disabled
 	row.Description = k.Description.Content
 	if passthrough := k.Passthrough(); len(passthrough) > 0 {

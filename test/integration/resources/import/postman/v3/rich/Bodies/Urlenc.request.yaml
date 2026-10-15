@@ -1,0 +1,13 @@
+$kind: http-request
+id: c0000000-0000-4000-8000-000000000017
+url: "{{baseUrl}}/urlenc"
+method: POST
+body:
+  type: urlencoded
+  content:
+    - key: a
+      value: "1"
+    - key: b
+      value: "2"
+      disabled: true
+order: 7000

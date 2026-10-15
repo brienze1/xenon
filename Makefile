@@ -17,7 +17,8 @@ SANDBOX_ASSETS_DIR := internal/integration/webservice/sandbox/assets
 PARITY_EXPECTED_DIR := test/integration/resources/scripts/corpus/expected
 SNIPPET_EXPECTED_DIR := test/integration/resources/snippets/expected
 
-GO_FILES = $(shell find . -name '*.go' -not -path './frontend/*' -not -path './build/*' -not -path './tools/*' -not -path './.git/*')
+# A find command, not the file list: the full list overflows the Linux per-argument limit inside a recipe
+FIND_GO_FILES = find . -name '*.go' -not -path './frontend/*' -not -path './build/*' -not -path './tools/*' -not -path './.git/*'
 # A flag, not the package list: the full list overflows the Windows command line inside a recipe
 HAS_INTERNAL_PACKAGES = $(if $(shell go list ./internal/... 2>/dev/null),yes,)
 NO_INTERNAL_NOTE := "No packages under internal/ yet - skipping (the gate enforces once backend code exists)."
@@ -97,7 +98,7 @@ vet: ensure-dist
 
 sort-imports:
 	@echo "Sorting imports..."
-	@goimports -local github.com/brienze1/xenon -w $(GO_FILES)
+	@$(FIND_GO_FILES) -print0 | xargs -0 goimports -local github.com/brienze1/xenon -w
 	@echo "Imports sorted!"
 
 fix-struct-alignment: ensure-dist

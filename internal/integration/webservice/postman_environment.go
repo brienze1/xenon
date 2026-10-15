@@ -14,12 +14,20 @@ import (
 func (p *postmanWebservice) ReadEnvironment(ctx context.Context, document entity.ImportDocument) (*entity.ImportVariables, error) {
 	logger.Debug(ctx, "Started", map[string]any{"path": document.Path, "bytes": len(document.Data)})
 
+	variables, err := readPostmanEnvironment(document)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Debug(ctx, "Finished", map[string]any{"path": document.Path, "result": variables})
+	return variables, nil
+}
+
+func readPostmanEnvironment(document entity.ImportDocument) (*entity.ImportVariables, error) {
 	var environment dto.Environment
 	if err := json.Unmarshal(document.Data, &environment); err != nil {
 		return nil, errs.BadRequestError(document.Path+" is not a valid Postman environment: "+err.Error(), "IMP-34400")
 	}
 	variables := environment.ToEntity(idutils.NewUlid)
-
-	logger.Debug(ctx, "Finished", map[string]any{"path": document.Path, "result": variables})
 	return &variables, nil
 }

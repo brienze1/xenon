@@ -6,9 +6,7 @@ import (
 	"github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
-	"github.com/brienze1/xenon/pkg/idutils"
 	"github.com/brienze1/xenon/pkg/logger"
-	"github.com/brienze1/xenon/pkg/timeutils"
 )
 
 const importPickerTitle = "Choose files, folders or zips to import"
@@ -33,6 +31,7 @@ func NewManageImportService(
 	readPostmanCollection usecase.ReadPostmanCollection,
 	readPostmanEnvironment usecase.ReadPostmanEnvironment,
 	readPostmanDump usecase.ReadPostmanDump,
+	readPostmanV3 usecase.ReadPostmanV3,
 	readBrunoCollection usecase.ReadBrunoCollection,
 	readCurlCommand usecase.ReadCurlCommand,
 	readXenonExport usecase.ReadXenonExport,
@@ -84,6 +83,7 @@ func NewManageImportService(
 			readPostmanCollection:  readPostmanCollection,
 			readPostmanEnvironment: readPostmanEnvironment,
 			readPostmanDump:        readPostmanDump,
+			readPostmanV3:          readPostmanV3,
 			readBrunoCollection:    readBrunoCollection,
 			readCurlCommand:        readCurlCommand,
 			readXenonExport:        readXenonExport,
@@ -115,6 +115,7 @@ func NewManageImportService(
 				saveEnvironment:   saveEnvironment,
 				deleteEnvironment: deleteEnvironment,
 				saveWorkspaceFile: saveWorkspaceFile,
+				loadWorkspace:     loadWorkspace,
 				values: scopeValues{
 					findLocalVariables: findLocalVariables,
 					saveLocalVariables: saveLocalVariables,
@@ -135,7 +136,7 @@ func (m *manageImport) Detect(ctx context.Context, request entity.ImportRequest)
 	if err != nil {
 		return nil, err
 	}
-	source, err := m.detected(ctx, inputs, tempDirs)
+	source, err := m.readers.detected(ctx, inputs, tempDirs)
 	if err != nil {
 		if discardErr := m.discardImportSource.DiscardFiles(ctx, tempDirs); discardErr != nil {
 			logger.Error(ctx, discardErr, "The unread import files could not be discarded", map[string]any{"tempDirs": tempDirs})
@@ -218,25 +219,6 @@ func (m *manageImport) Discard(ctx context.Context, sourceId string) error {
 
 	logger.Info(ctx, "Finished", map[string]any{"sourceId": sourceId})
 	return nil
-}
-
-func (m *manageImport) detected(ctx context.Context, inputs []entity.ImportInput, tempDirs []string) (*entity.ImportSource, error) {
-	detected := make([]entity.ImportInput, 0, len(inputs))
-	for _, input := range inputs {
-		kind, version, err := usecase.DetectImportFormat(input.Probe)
-		if err != nil {
-			return nil, err
-		}
-		detected = append(detected, input.Detected(kind, version))
-	}
-	read := importRead{items: make([]entity.ImportItem, 0, len(detected)), warnings: []entity.ImportWarning{}}
-	for _, input := range detected {
-		if err := m.readers.read(ctx, input, &read); err != nil {
-			return nil, err
-		}
-	}
-	source := entity.NewImportSource(idutils.NewUlid(), detected, tempDirs, timeutils.Now()).WithItems(read.items).WithSourceWarnings(read.warnings).WithEncryptedSecrets(read.secrets)
-	return &source, nil
 }
 
 func unresolvedClashes(plan entity.ImportPlan, targets []importTarget) []entity.Clash {

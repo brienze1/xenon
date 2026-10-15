@@ -12,7 +12,7 @@ import { WorkspacePicker } from './WorkspacePicker'
 import styles from './ImportDialog.module.css'
 
 const NEW_COLLECTION = ''
-const DUMP_KIND = 'postman_dump'
+const ASSIGNMENT_KINDS: ReadonlySet<string> = new Set(['postman_dump', 'postman_workspace'])
 
 const VARIABLES_PLACES: Readonly<Record<string, string>> = {
   environment: 'Environments',
@@ -193,8 +193,8 @@ export function ImportPreviewStep() {
     <>
       <Dialog.Body>
         <p className={styles.source}>{sourceLabel(preview.kind, preview.version)}</p>
-        {preview.kind === DUMP_KIND ? <DumpAssignment preview={preview} /> : null}
-        {preview.kind !== DUMP_KIND && preview.items.length > 0 ? <ItemTable preview={preview} /> : null}
+        {ASSIGNMENT_KINDS.has(preview.kind) ? <DumpAssignment preview={preview} /> : null}
+        {!ASSIGNMENT_KINDS.has(preview.kind) && preview.items.length > 0 ? <ItemTable preview={preview} /> : null}
         {preview.items.length === 0 ? <p className={styles.status}>There is nothing to import in this source.</p> : null}
         <ImportErrorBanner />
       </Dialog.Body>

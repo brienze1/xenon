@@ -1,0 +1,5 @@
+$kind: http-request
+id: f0000000-0000-4000-8000-000000000002
+url: "{{billingUrl}}/invoices"
+method: GET
+order: 1000

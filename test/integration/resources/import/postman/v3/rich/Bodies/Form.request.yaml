@@ -1,0 +1,18 @@
+$kind: http-request
+id: c0000000-0000-4000-8000-000000000016
+url: "{{baseUrl}}/form"
+method: POST
+body:
+  type: formdata
+  content:
+    - type: text
+      key: name
+      value: x
+    - type: text
+      key: off
+      value: y
+      disabled: true
+    - type: file
+      key: file
+      src: /nonexistent/xenon-fixture/a.png
+order: 6000

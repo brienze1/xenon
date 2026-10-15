@@ -1,0 +1,29 @@
+$kind: collection
+id: a0000000-0000-4000-8000-000000000001
+name: Rich API
+description: The **Rich** API
+variables:
+  - key: baseUrl
+    value: https://api.rich.test
+    secret: false
+  - key: off
+    value: x
+    disabled: true
+    secret: false
+  - key: page
+    value: "1"
+    secret: false
+    description: Default page
+scripts:
+  - type: http:beforeRequest
+    code: pm.environment.set("ts", Date.now());
+    language: text/javascript
+  - type: http:afterResponse
+    code: pm.test("status ok", () => pm.response.to.have.status(200));
+    language: text/javascript
+auth:
+  - id: 9ae8e034-2522-4d2a-b9c5-9dc39012e466
+    type: bearer
+    name: bearer auth
+    credentials:
+      token: "{{token}}"

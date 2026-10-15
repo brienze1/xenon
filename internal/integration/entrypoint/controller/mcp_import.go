@@ -22,7 +22,7 @@ const (
 
 var importAITool = entity.AITool{
 	Name:            "import",
-	Description:     "Import Postman, Bruno or Xenon files from paths into the workspace.",
+	Description:     "Import Postman v2 or v3 files and folders, Bruno or Xenon files from paths into the workspace.",
 	Actions:         []string{mcpImportDetectAction, mcpImportClashesAction, mcpImportRunAction, mcpImportDiscardAction},
 	Effect:          aitooleffect.Destructive,
 	WorkspaceScoped: true,

@@ -1,0 +1,6 @@
+$kind: collection
+id: e0000000-0000-4000-8000-000000000002
+order: 1000
+variables:
+  - key: folderVar
+    value: v

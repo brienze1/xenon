@@ -1,0 +1,8 @@
+$kind: http-request
+id: c0000000-0000-4000-8000-000000000014
+url: "{{baseUrl}}/html"
+method: POST
+body:
+  type: html
+  content: <p>hi</p>
+order: 4000

@@ -4,9 +4,10 @@
 @all @xen_003 @import @format_detection
 Feature: Detect the format of an import source
   The Import dialog hands Go the picked or dropped paths, or pasted text. Go works out what it is
-  (Postman collection v2.0/v2.1, environment, globals or data dump as a zip or a folder, Bruno
-  .bru or YAML collection, cURL) and refuses anything else before anything is written, naming the
-  problem. Archives and files are untrusted: zip entries with absolute paths, ".." segments or
+  (Postman collection v2.0/v2.1, environment, globals or data dump as a zip or a folder; Postman v3
+  JSON, git-native folders, request files, environments, globals and `postman workspace pull`
+  folders; Bruno .bru or YAML collection; cURL) and refuses anything else before anything is
+  written, naming the problem. Archives and files are untrusted: zip entries with absolute paths, ".." segments or
   symbolic links are refused, archives may not unpack to more than the archive limit (1 GB) and
   single files may not exceed the file limit (200 MB); input must be UTF-8.
 
@@ -35,6 +36,35 @@ Feature: Detect the format of an import source
       | misc/zip-nested.zip                   | postman_dump        |         |
       | bruno/bru-collection                  | bruno_bru           |         |
       | bruno/yaml-collection                 | bruno_yaml          |         |
+
+  @detect @xen_009 @postman_v3_detect
+  Scenario Outline: Postman v3 sources are detected with version 3 - <source>
+    When I call "ImportService.Detect" with
+      """
+      { "paths": ["{{resources}}/import/<source>"] }
+      """
+    Then the call should succeed
+    And the response should contain the field "kind" equal to "<kind>"
+    And the response should contain the field "version" equal to "3"
+    And the response should contain the field "source_id" matching "^[0-9A-HJKMNP-TV-Z]{26}$"
+
+    Examples:
+      | source                                         | kind                |
+      | postman/v3/native-git                          | postman_collection  |
+      | postman/v3/native-git/Get users.request.yaml   | postman_request     |
+      | postman/v3/rich.json                           | postman_collection  |
+      | postman/v3/rich                                | postman_collection  |
+      | postman/v3/extras                              | postman_collection  |
+      | postman/v3/large-1000-v3.zip                   | postman_collection  |
+      | postman/v3/env/staging.environment.yaml        | postman_environment |
+      | postman/v3/env/cli-environment.json            | postman_environment |
+      | postman/v3/env/workspace.globals.yaml          | postman_globals     |
+      | postman/v3/env/cloud-globals.json              | postman_globals     |
+      | postman/v3/env/local-globals.json              | postman_globals     |
+      | postman/v3/workspace                           | postman_workspace   |
+      | postman/v3/workspace/postman                   | postman_workspace   |
+      | postman/v3/workspace/postman/collections       | postman_workspace   |
+      | postman/v3/workspace.zip                       | postman_workspace   |
 
   @detect @collection
   Scenario: A Postman collection lists its single item with counts
@@ -91,8 +121,6 @@ Feature: Detect the format of an import source
     Examples:
       | case                | source                 | code       | message                                                                       |
       | postman v1          | postman/v1.json        | IMP-01400  | Postman v1 collections are not supported; export the collection as v2.1        |
-      | postman v3 folder   | postman/v3             | IMP-00415  | Postman v3 YAML is not supported yet; export the collection as v2.1 JSON       |
-      | postman v3 file     | postman/v3/Get users.request.yaml | IMP-00415 | Postman v3 YAML is not supported yet; export the collection as v2.1 JSON |
       | random JSON         | misc/random.json       | IMP-00415  | random.json is not a Xenon, Postman, Bruno or cURL export                           |
       | other YAML          | misc/notes.yaml        | IMP-00415  | notes.yaml is not a Xenon, Postman, Bruno or cURL export                            |
       | malformed JSON      | misc/malformed.json    | IMP-01400  | malformed.json is not valid JSON                                              |

@@ -54,6 +54,43 @@ Feature: AI clients use import, export, snippets, cookies, the console, scripts 
       | keep_both | acme-api, acme-api-(imported)    |
       | skip      | acme-api                         |
 
+  @import @xen_009 @mcp_import_v3
+  Scenario: Importing a Postman v3 workspace folder by path gives the dialog's preview and imports every item
+    When I list the MCP tools
+    Then the response field "" should contain an item with "name" equal to "import" and "description" equal to "Import Postman v2 or v3 files and folders, Bruno or Xenon files from paths into the workspace."
+    When I call the MCP tool "import" with
+      """
+      { "action": "detect", "paths": ["{{resources}}/import/postman/v3/workspace"] }
+      """
+    Then the call should succeed
+    And the response should contain the field "kind" equal to "postman_workspace"
+    And the response should contain the field "version" equal to "3"
+    And the response should contain the field "items" array length equal to 5
+    And the response field "warnings" should contain 2 items with "code" equal to "skipped_part"
+    And the response should not contain "s3cr3t-fixture-workspace"
+    When I call the MCP tool "import" with
+      """
+      { "action": "run", "paths": ["{{resources}}/import/postman/v3/workspace"] }
+      """
+    Then the call should succeed
+    And the response should not contain "s3cr3t-fixture-workspace"
+    And the workspace folder "acme/collections" should contain the entries "billing-api, users"
+    And the workspace folder "acme/environments" should contain the entries "prod.yaml, staging.yaml"
+    And the workspace file "acme/workspace.yaml" should contain the field "variables.0.key" equal to "tenant"
+    And no file under the workspace folder should contain "s3cr3t-fixture-workspace"
+
+  @import @xen_009 @mcp_import_v3
+  Scenario: Importing a v3 collection JSON by path reports the same kind and version as the dialog
+    When I call the MCP tool "import" with
+      """
+      { "action": "detect", "paths": ["{{resources}}/import/postman/v3/rich.json"] }
+      """
+    Then the call should succeed
+    And the response should contain the field "kind" equal to "postman_collection"
+    And the response should contain the field "version" equal to "3"
+    And the response should contain the field "items.0.name" equal to "Rich API"
+    And the response field "warnings" should contain 2 items with "code" equal to "missing_file"
+
   @export
   Scenario Outline: Exporting a collection to a path, as <format>
     Given I call the MCP tool "tree_edit" with

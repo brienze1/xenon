@@ -18,5 +18,7 @@ const (
 	WrappedInFolder        enums.WarningCode = "wrapped_in_folder"
 	VariableKept           enums.WarningCode = "variable_kept"
 	LiteralCredential      enums.WarningCode = "literal_credential"
+	ProtocolScript         enums.WarningCode = "protocol_script"
+	LinkedSecret           enums.WarningCode = "linked_secret"
 	Unknown                enums.WarningCode = "unknown"
 )

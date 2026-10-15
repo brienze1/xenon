@@ -1,0 +1,14 @@
+$kind: http-example
+id: e0000000-0000-4000-8000-000000000021
+request:
+  url: "{{host}}/map"
+  method: POST
+response:
+  statusCode: 400
+  statusText: Bad Request
+  headers:
+    Content-Type: text/plain
+  body:
+    type: text
+    content: bad
+order: 2000

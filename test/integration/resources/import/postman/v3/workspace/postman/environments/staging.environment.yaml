@@ -1,0 +1,9 @@
+name: staging
+values:
+  - key: host
+    value: https://staging.acme.test
+    enabled: true
+  - key: stagingKey
+    value: s3cr3t-fixture-workspace-env
+    enabled: true
+    type: secret

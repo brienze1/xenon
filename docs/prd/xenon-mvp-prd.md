@@ -301,8 +301,9 @@ Export is on the right-click menu of every item, and in File → Export for the 
 **What can be imported**
 
 - Xenon YAML: a workspace .zip or folder, a collection, a folder, or a single request.
-- Postman collection v2.1 JSON (with its scripts, auth, variables and folder order).
-- Postman environment JSON.
+- Postman collection v2.1 JSON and v3 (the JSON `postman collection get` prints, git-native `postman/collections` folders, single `*.request.yaml`), with its scripts, auth, variables and folder order.
+- Postman environment and globals JSON, and v3 environment and globals YAML.
+- A `postman workspace pull` folder (collections, environments and globals, each assigned to a workspace).
 - Postman full data dump (Settings → Export data), mapped to one Xenon workspace per Postman workspace if possible.
 - A cURL command pasted into the URL bar or the import dialog.
 
@@ -492,7 +493,7 @@ Stages 4 (scripts) and the OAuth 2.0 part of 5 carry most of the risk. Everythin
 - [x] Request history? **Added to stage 1**: a sidebar History view per workspace (last 1,000 sends, local only, never synced), re-openable in a tab. Since XEN-008 the cap is set per source (user / AI) in Settings and AI activity is recorded too.
 - [x] Folder variables? **No** — only collections and globals, as in Postman.
 - [x] Variables? **Postman's initial + current values**, full list of **Postman dynamic variables**; keychain unavailable → **passphrase fallback**.
-- [x] Import scope (stage 3): **Postman v2.0/v2.1 JSON**, environments, globals and data dump (each item assigned to a workspace, since dumps carry no workspace membership); **Bruno .bru and OpenCollection YAML** with bru→pm script translation; **cURL**. Xenon YAML import ships with export (stage 6). Postman v3 YAML is not in the MVP.
+- [x] Import scope (stage 3): **Postman v2.0/v2.1 JSON**, environments, globals and data dump (each item assigned to a workspace, since dumps carry no workspace membership); **Bruno .bru and OpenCollection YAML** with bru→pm script translation; **cURL**. Xenon YAML import ships with export (stage 6). Postman v3 (JSON, git-native YAML and workspace folders) is imported through the v2.1 mapping (XEN-009); export stays v2.1.
 - [x] **Saved examples** (Postman "examples") are a Xenon feature from stage 3: listed under their request, open in a tab, "Save response as example", round-trip with Postman.
 - [x] Scripts (stage 4): the **full `pm` API** (runner-only calls such as `setNextRequest` exist as no-ops), **every library Postman's sandbox ships** via `require()`/globals, and a **legacy API shim** (`postman.*`, `tests[...]`, `responseBody`…). This widens the PRD's original `pm` subset.
 - [x] Stage 5: OAuth 2.0 authorization-code login in the **system browser with a loopback redirect** (RFC 8252); tokens are **secrets in the vault, auto-refreshed** when expired; the **cookie jar persists** across restarts, **encrypted** with the workspace vault key.

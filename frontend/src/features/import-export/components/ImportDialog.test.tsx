@@ -117,6 +117,39 @@ describe('ImportDialog', () => {
     expect(await screen.findByRole('option', { name: 'Into Main / Target' })).toBeInTheDocument()
   })
 
+  it('assigns each item of a Postman v3 workspace folder to a workspace and lists the parts it skips', async () => {
+    render(<ImportDialog />)
+    act(() => useImportStore.getState().open())
+    vi.mocked(service.detectImport).mockResolvedValueOnce({
+      ...preview,
+      kind: 'postman_workspace',
+      version: '3',
+      items: [
+        { key: '0', kind: 'collection', name: 'Billing API', counts, warningsCount: 0 },
+        { key: '1', kind: 'globals', name: 'Globals', counts: { ...counts, collections: 0, folders: 0, requests: 0, examples: 0, scripts: 0, variables: 1 }, warningsCount: 0 },
+      ],
+      warnings: [
+        {
+          code: 'skipped_part',
+          severity: 'warning',
+          message: "The workspace's specs part (1 file) is not a collection, an environment or globals and was skipped",
+          itemKey: '',
+          itemId: '',
+          localId: '',
+          path: 'specs',
+          location: '',
+        },
+      ],
+    })
+    await userEvent.type(screen.getByRole('textbox', { name: 'Or paste Postman JSON or a cURL command' }), 'workspace')
+    await userEvent.click(screen.getByRole('button', { name: 'Read Pasted Text' }))
+    expect(await screen.findByText('Postman workspace v3')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Workspace for the included items' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Workspace for Billing API' })).toHaveValue('A')
+    expect(screen.getByRole('combobox', { name: 'Workspace for Globals' })).toHaveValue('A')
+    expect(screen.getByRole('region', { name: 'Not Imported' })).toHaveTextContent("The workspace's specs part (1 file)")
+  })
+
   it('imports into the chosen location, asks about clashes and shows the summary with links', async () => {
     const openItem = vi.spyOn(useImportStore.getState(), 'openItem').mockResolvedValue()
     useImportStore.setState({ step: 'preview', preview, targets: { '0': { include: true, localId: 'A', parentId: '' } } })

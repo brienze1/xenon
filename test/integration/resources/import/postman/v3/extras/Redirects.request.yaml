@@ -1,0 +1,9 @@
+$kind: http-request
+id: e0000000-0000-4000-8000-000000000015
+url: "{{host}}/redirects"
+method: GET
+settings:
+  followRedirects: false
+  maxRedirects: 3
+  disabledSystemHeaders: []
+order: 5000

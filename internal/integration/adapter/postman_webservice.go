@@ -6,5 +6,6 @@ type PostmanWebservice interface {
 	usecase.ReadPostmanCollection
 	usecase.ReadPostmanEnvironment
 	usecase.ReadPostmanDump
+	usecase.ReadPostmanV3
 	usecase.WritePostmanExport
 }

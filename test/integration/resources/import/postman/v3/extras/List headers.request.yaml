@@ -1,0 +1,15 @@
+$kind: http-request
+id: e0000000-0000-4000-8000-000000000011
+url: "{{host}}/list"
+method: POST
+headers:
+  - key: Content-Type
+    value: application/json
+  - key: X-Trace
+    value: "1"
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: "{{listToken}}"
+order: 2000

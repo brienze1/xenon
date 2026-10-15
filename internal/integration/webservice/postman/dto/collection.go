@@ -26,13 +26,18 @@ func (c *Collection) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (c *Collection) ToEntity(conversion *Conversion) entity.ImportNode {
+func (c *Collection) ToEntity(conversion *Conversion) entity.ImportCollection {
 	collection := entity.NewCollection(conversion.newId(), c.Info.Name)
 	collection.Description = c.Info.Description.Content
 	collection.Auth = c.Auth.ToEntity()
 	collection.Scripts = scriptsToEntity(c.Event)
+	secrets := map[string]string{}
 	for index := range c.Variable {
-		collection.Variables = append(collection.Variables, c.Variable[index].ToVariableRow())
+		row := c.Variable[index].ToVariableRow()
+		if row.HasStraySecretValue() {
+			secrets[row.Key] = row.InitialValue
+		}
+		collection.Variables = append(collection.Variables, row.WithoutSecretValue())
 	}
 	collection.Postman = c.Passthrough()
 	conversion.checkAuth(c.Auth, collection.ID, collection.Name)
@@ -40,7 +45,7 @@ func (c *Collection) ToEntity(conversion *Conversion) entity.ImportNode {
 	for index := range c.Items {
 		children = append(children, c.Items[index].ToEntity(conversion, collection.Name))
 	}
-	return entity.NewContainerImportNode(collection, children)
+	return entity.NewImportCollection(entity.NewContainerImportNode(collection, children), conversion.Warnings(), secrets)
 }
 
 func (c *Collection) Passthrough() map[string]any {

@@ -1,0 +1,10 @@
+$kind: http-request
+id: c0000000-0000-4000-8000-000000000018
+url: "{{baseUrl}}/graphql"
+method: POST
+body:
+  type: graphql
+  content:
+    query: query { me { id } }
+    variables: '{"x":1}'
+order: 8000

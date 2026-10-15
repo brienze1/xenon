@@ -1,12 +1,24 @@
 package entity
 
+import "github.com/brienze1/xenon/internal/domain/enums"
+
 type ImportVariables struct {
 	Secrets     map[string]string
+	Warnings    []ImportWarning
 	Environment Environment
 }
 
 func NewImportVariables(environment Environment, secrets map[string]string) ImportVariables {
 	return ImportVariables{Environment: environment, Secrets: copyValues(secrets)}
+}
+
+func (i ImportVariables) WithWarnings(warnings []ImportWarning) ImportVariables {
+	i.Warnings = warnings
+	return i
+}
+
+func (i ImportVariables) ImportItem(key string, kind enums.ImportItemKind) ImportItem {
+	return NewVariablesImportItem(key, kind, i).WithWarnings(i.Warnings)
 }
 
 func (i ImportVariables) Rows() []VariableRow {

@@ -1,0 +1,32 @@
+$kind: collection
+id: e0000000-0000-4000-8000-000000000001
+name: Extras
+description: Every v3-only case
+variables:
+  - key: host
+    value: https://extras.test
+  - key: apiSecret
+    value: s3cr3t-fixture-collection
+    secret: true
+  - key: masked
+    value: "********"
+    secret: true
+scripts:
+  - type: http:beforeRequest
+    code: console.log("extras pre");
+    language: text/javascript
+  - type: graphql:beforeQuery
+    code: console.log("graphql only");
+    language: text/javascript
+auth:
+  - id: auth-1
+    name: primary
+    type: bearer
+    credentials:
+      token: "{{primaryToken}}"
+  - id: auth-2
+    name: fallback
+    type: basic
+    credentials:
+      username: u
+      password: "{{fallbackPass}}"

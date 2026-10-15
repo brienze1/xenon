@@ -1,0 +1,15 @@
+$kind: http-request
+id: e0000000-0000-4000-8000-000000000010
+url: "{{host}}/map"
+method: POST
+headers:
+  Content-Type: application/json
+  X-Trace: "1"
+auth:
+  type: bearer
+  credentials:
+    token: "{{mapToken}}"
+settings:
+  disabledSystemHeaders: []
+examples: ./.resources/Map headers.resources/examples
+order: 2000

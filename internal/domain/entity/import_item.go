@@ -55,6 +55,13 @@ func (i ImportItem) WithSecrets(bundle SecretBundle) ImportItem {
 	return i
 }
 
+func (i ImportItem) WithCollectionSecrets(secrets map[string]string) ImportItem {
+	if len(secrets) > 0 {
+		i.CollectionSecrets = secrets
+	}
+	return i
+}
+
 func (i ImportItem) HasCollectionSecrets() bool {
 	return len(i.CollectionSecrets) > 0
 }
@@ -214,6 +221,7 @@ func (i ImportItem) CompletedVariables(write ImportVariablesWrite, localId strin
 	if outcome.Replaced {
 		outcome.Item.Status = importstatus.Replaced
 	}
+	outcome.Warnings = append(outcome.Warnings, i.Warnings...)
 	for _, row := range write.KeptVariables {
 		outcome.Warnings = append(outcome.Warnings, NewImportWarning(warningcode.VariableKept, keptVariableMessage(row), id, path).ForItem(i.Key))
 	}

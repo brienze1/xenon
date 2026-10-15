@@ -14,6 +14,7 @@ type importVariablesWriter struct {
 	saveEnvironment      usecase.SaveEnvironment
 	deleteEnvironment    usecase.DeleteEnvironment
 	saveWorkspaceFile    usecase.SaveWorkspaceFile
+	loadWorkspace        usecase.LoadWorkspace
 	values               scopeValues
 	vaults               vaultWriter
 	publishVariableEvent usecase.PublishVariableEvent
@@ -56,7 +57,9 @@ func (w importVariablesWriter) environment(ctx context.Context, workspace entity
 		}
 	}
 	if _, err := w.saveEnvironment.Save(ctx, workspace.Path, *write.Environment); err != nil {
-		w.restoreReplaced(ctx, workspace.Path, write.Replaced)
+		if write.ReplacesEnvironment() {
+			w.restoreReplaced(ctx, workspace.Path, *write.Replaced)
+		}
 		w.vaults.restore(ctx, vault, write.Scope(), nil)
 		return err
 	}
@@ -70,12 +73,16 @@ func (w importVariablesWriter) environment(ctx context.Context, workspace entity
 
 func (w importVariablesWriter) globals(ctx context.Context, target importTarget, resolution enums.ClashResolution) (*entity.ImportVariablesWrite, error) {
 	scope := entity.NewGlobalsScopeRef()
-	vault, err := vaultFor(ctx, w.values.findVault, target.workspace.LocalID, target.globals.Variables, target.item.Variables.Rows())
+	globals, err := w.loadWorkspace.Load(ctx, target.workspace.Path)
+	if err != nil {
+		return nil, err
+	}
+	vault, err := vaultFor(ctx, w.values.findVault, target.workspace.LocalID, globals.Variables, target.item.Variables.Rows())
 	if err != nil {
 		return nil, err
 	}
 	current := vault.SecretsFor(scope)
-	write := usecase.PlanGlobalsImport(*target.item.Variables, *target.globals, current, resolution)
+	write := usecase.PlanGlobalsImport(*target.item.Variables, *globals, current, resolution)
 	written, err := w.storeSecrets(ctx, target.workspace.LocalID, scope, write.Globals.Variables, current, write.Secrets)
 	if err != nil {
 		return nil, err
@@ -98,11 +105,8 @@ func (w importVariablesWriter) storeSecrets(ctx context.Context, localId string,
 	return w.vaults.write(ctx, *vault, scope, secrets)
 }
 
-func (w importVariablesWriter) restoreReplaced(ctx context.Context, root string, replaced *entity.Environment) {
-	if replaced == nil {
-		return
-	}
-	if _, err := w.saveEnvironment.Save(ctx, root, *replaced); err != nil {
+func (w importVariablesWriter) restoreReplaced(ctx context.Context, root string, replaced entity.Environment) {
+	if _, err := w.saveEnvironment.Save(ctx, root, replaced); err != nil {
 		logger.Error(ctx, err, "The replaced environment could not be restored after a failed import", map[string]any{"root": root})
 	}
 }

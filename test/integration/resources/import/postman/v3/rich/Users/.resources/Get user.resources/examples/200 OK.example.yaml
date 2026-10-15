@@ -1,0 +1,14 @@
+$kind: http-example
+id: d0000000-0000-4000-8000-000000000001
+request:
+  url: "{{baseUrl}}/users/42"
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: '{"id":42}'
+order: 1000

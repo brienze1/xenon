@@ -1,0 +1,5 @@
+name: Globals
+values:
+  - key: tenant
+    value: acme
+    enabled: true

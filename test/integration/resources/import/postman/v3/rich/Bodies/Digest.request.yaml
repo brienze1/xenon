@@ -1,0 +1,10 @@
+$kind: http-request
+id: c0000000-0000-4000-8000-000000000021
+url: "{{baseUrl}}/digest"
+method: GET
+auth:
+  type: digest
+  credentials:
+    username: u
+    password: "{{pass}}"
+order: 11000

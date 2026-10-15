@@ -1,0 +1,492 @@
+{
+  "info": {
+    "_postman_id": "a0000000-0000-4000-8000-000000000001",
+    "name": "Rich API",
+    "description": "The **Rich** API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.environment.set(\"ts\", Date.now());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test(\"status ok\", () => pm.response.to.have.status(200));"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api.rich.test"
+    },
+    {
+      "key": "off",
+      "value": "x",
+      "disabled": true
+    },
+    {
+      "key": "page",
+      "value": "1",
+      "description": "Default page"
+    }
+  ],
+  "item": [
+    {
+      "id": "b0000000-0000-4000-8000-000000000001",
+      "name": "Users",
+      "description": "Users docs",
+      "auth": {
+        "type": "basic",
+        "basic": [
+          {
+            "key": "username",
+            "value": "{{user}}",
+            "type": "string"
+          },
+          {
+            "key": "password",
+            "value": "{{pass}}",
+            "type": "string"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "console.log(\"users folder\");"
+            ]
+          }
+        }
+      ],
+      "item": [
+        {
+          "id": "c0000000-0000-4000-8000-000000000001",
+          "name": "Get user",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Off",
+                "value": "1",
+                "disabled": true,
+                "description": "off header"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/:id?page=1&skip=2",
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page"
+                },
+                {
+                  "key": "skip",
+                  "value": "2",
+                  "disabled": true
+                }
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "42",
+                  "description": "User id"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "id": "d0000000-0000-4000-8000-000000000001",
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users/42"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\"id\":42}"
+            }
+          ],
+          "description": "Request docs"
+        },
+        {
+          "id": "c0000000-0000-4000-8000-000000000002",
+          "name": "Inherit auth",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/inherit"
+            }
+          }
+        },
+        {
+          "id": "c0000000-0000-4000-8000-000000000003",
+          "name": "No auth",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/noauth"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000002",
+      "name": "Bodies",
+      "item": [
+        {
+          "id": "c0000000-0000-4000-8000-000000000011",
+          "name": "JSON",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/json"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"amount\":1000}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "c0000000-0000-4000-8000-000000000012",
+          "name": "Text",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/text"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "hello",
+              "options": {
+                "raw": {
+                  "language": "text"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "c0000000-0000-4000-8000-000000000013",
+          "name": "XML",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/xml"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "<a/>",
+              "options": {
+                "raw": {
+                  "language": "xml"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "c0000000-0000-4000-8000-000000000014",
+          "name": "HTML",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/html"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "<p>hi</p>",
+              "options": {
+                "raw": {
+                  "language": "html"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "c0000000-0000-4000-8000-000000000015",
+          "name": "JavaScript",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/js"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "let a = 1;",
+              "options": {
+                "raw": {
+                  "language": "javascript"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "c0000000-0000-4000-8000-000000000016",
+          "name": "Form",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/form"
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "x",
+                  "type": "text"
+                },
+                {
+                  "key": "off",
+                  "value": "y",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/nonexistent/xenon-fixture/a.png"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "c0000000-0000-4000-8000-000000000017",
+          "name": "Urlenc",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/urlenc"
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "a",
+                  "value": "1"
+                },
+                {
+                  "key": "b",
+                  "value": "2",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "c0000000-0000-4000-8000-000000000018",
+          "name": "GraphQL",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/graphql"
+            },
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query { me { id } }",
+                "variables": "{\"x\":1}"
+              }
+            }
+          }
+        },
+        {
+          "id": "c0000000-0000-4000-8000-000000000019",
+          "name": "Binary",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bin"
+            },
+            "body": {
+              "mode": "file",
+              "file": {
+                "src": "/nonexistent/xenon-fixture/blob.bin"
+              }
+            }
+          }
+        },
+        {
+          "id": "c0000000-0000-4000-8000-000000000020",
+          "name": "ApiKey",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/key"
+            },
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                {
+                  "key": "key",
+                  "value": "X-Key",
+                  "type": "string"
+                },
+                {
+                  "key": "value",
+                  "value": "{{apiKey}}",
+                  "type": "string"
+                },
+                {
+                  "key": "in",
+                  "value": "header",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "c0000000-0000-4000-8000-000000000021",
+          "name": "Digest",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/digest"
+            },
+            "auth": {
+              "type": "digest",
+              "digest": [
+                {
+                  "key": "username",
+                  "value": "u",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{pass}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "c0000000-0000-4000-8000-000000000022",
+          "name": "Hawk",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/hawk"
+            },
+            "auth": {
+              "type": "hawk",
+              "hawk": [
+                {
+                  "key": "authId",
+                  "value": "id",
+                  "type": "string"
+                },
+                {
+                  "key": "authKey",
+                  "value": "{{hawkKey}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "c0000000-0000-4000-8000-000000000023",
+          "name": "Redirects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/redirects"
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false,
+            "strictSSL": false,
+            "maxRedirects": 3
+          }
+        }
+      ]
+    }
+  ]
+}
