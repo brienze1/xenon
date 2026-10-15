@@ -38,6 +38,7 @@ var envEditAITool = entity.AITool{
 type mcpEnvEdit struct {
 	errorHandler                adapter.ErrorHandler
 	manageEnvironmentService    appAdapter.ManageEnvironmentService
+	reorderEnvironmentService   appAdapter.ReorderEnvironmentService
 	autoSyncService             appAdapter.AutoSyncService
 	setActiveEnvironmentService appAdapter.SetActiveEnvironmentService
 	manageVariableTableService  appAdapter.ManageVariableTableService
@@ -46,6 +47,7 @@ type mcpEnvEdit struct {
 func NewMCPEnvEdit(
 	errorHandler adapter.ErrorHandler,
 	manageEnvironmentService appAdapter.ManageEnvironmentService,
+	reorderEnvironmentService appAdapter.ReorderEnvironmentService,
 	autoSyncService appAdapter.AutoSyncService,
 	setActiveEnvironmentService appAdapter.SetActiveEnvironmentService,
 	manageVariableTableService appAdapter.ManageVariableTableService,
@@ -53,6 +55,7 @@ func NewMCPEnvEdit(
 	return &mcpEnvEdit{
 		errorHandler:                errorHandler,
 		manageEnvironmentService:    manageEnvironmentService,
+		reorderEnvironmentService:   reorderEnvironmentService,
 		autoSyncService:             autoSyncService,
 		setActiveEnvironmentService: setActiveEnvironmentService,
 		manageVariableTableService:  manageVariableTableService,
@@ -200,7 +203,7 @@ func (m *mcpEnvEdit) reorder(ctx context.Context, call dto.MCPToolCall) (dto.MCP
 		return dto.MCPToolResult{}, err
 	}
 
-	list, err := m.manageEnvironmentService.Reorder(ctx, request.LocalId, request.Id, request.Index)
+	list, err := m.reorderEnvironmentService.Reorder(ctx, request.LocalId, request.Id, request.Index)
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}

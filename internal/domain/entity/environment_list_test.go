@@ -76,6 +76,8 @@ func TestEnvironmentListOrderOperations(t *testing.T) {
 		{name: "append a listed id", got: list.OrderAppending("b"), want: []string{"a", "b", "d", "g"}},
 		{name: "replace in place", got: list.OrderReplacing("b", "n"), want: []string{"a", "n", "d", "g"}},
 		{name: "replace an absent id", got: list.OrderReplacing("gone", "n"), want: []string{"a", "b", "d", "g", "n"}},
+		{name: "import replacing", got: list.OrderAfterImport(ImportVariablesWrite{Environment: &Environment{ID: "n"}, Replaced: &Environment{ID: "b"}}), want: []string{"a", "n", "d", "g"}},
+		{name: "import appending", got: list.OrderAfterImport(ImportVariablesWrite{Environment: &Environment{ID: "n"}}), want: []string{"a", "b", "d", "g", "n"}},
 		{name: "remove", got: list.OrderRemoving("d"), want: []string{"a", "b", "g"}},
 		{name: "remove an absent id", got: list.OrderRemoving("gone"), want: []string{"a", "b", "d", "g"}},
 	}

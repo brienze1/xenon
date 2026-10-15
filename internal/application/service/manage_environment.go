@@ -14,12 +14,10 @@ import (
 
 type manageEnvironment struct {
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry
-	listEnvironments      usecase.ListEnvironments
 	findEnvironment       usecase.FindEnvironment
 	saveEnvironment       usecase.SaveEnvironment
 	deleteEnvironment     usecase.DeleteEnvironment
-	loadWorkspace         usecase.LoadWorkspace
-	saveWorkspaceFile     usecase.SaveWorkspaceFile
+	orders                environmentOrders
 	values                scopeValues
 	publishVariableEvent  usecase.PublishVariableEvent
 }
@@ -40,12 +38,14 @@ func NewManageEnvironmentService(
 ) adapter.ManageEnvironmentService {
 	return &manageEnvironment{
 		findWorkspaceRegistry: findWorkspaceRegistry,
-		listEnvironments:      listEnvironments,
 		findEnvironment:       findEnvironment,
 		saveEnvironment:       saveEnvironment,
 		deleteEnvironment:     deleteEnvironment,
-		loadWorkspace:         loadWorkspace,
-		saveWorkspaceFile:     saveWorkspaceFile,
+		orders: environmentOrders{
+			listEnvironments:  listEnvironments,
+			loadWorkspace:     loadWorkspace,
+			saveWorkspaceFile: saveWorkspaceFile,
+		},
 		values: scopeValues{
 			findLocalVariables: findLocalVariables,
 			saveLocalVariables: saveLocalVariables,
@@ -67,7 +67,7 @@ func (m *manageEnvironment) List(ctx context.Context, localId string) (*entity.E
 	if err != nil {
 		return nil, err
 	}
-	list, err := m.list(ctx, workspace.Path, local.ActiveEnvironmentID)
+	list, err := m.orders.list(ctx, workspace.Path, local.ActiveEnvironmentID)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (m *manageEnvironment) Create(ctx context.Context, localId, name string) (*
 	if err != nil {
 		return nil, err
 	}
-	list, err := m.list(ctx, workspace.Path, "")
+	list, err := m.orders.list(ctx, workspace.Path, "")
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (m *manageEnvironment) Create(ctx context.Context, localId, name string) (*
 	if err != nil {
 		return nil, err
 	}
-	if err := m.writeOrder(ctx, workspace.Path, list.OrderAppending(saved.ID)); err != nil {
+	if err := m.orders.write(ctx, workspace.Path, list.OrderAppending(saved.ID)); err != nil {
 		return nil, err
 	}
 	details, err := m.announced(ctx, localId, *saved)
@@ -147,7 +147,7 @@ func (m *manageEnvironment) Duplicate(ctx context.Context, localId, id string) (
 	if err != nil {
 		return nil, err
 	}
-	list, err := m.list(ctx, root, "")
+	list, err := m.orders.list(ctx, root, "")
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func (m *manageEnvironment) Duplicate(ctx context.Context, localId, id string) (
 	if err != nil {
 		return nil, err
 	}
-	if err := m.writeOrder(ctx, root, list.OrderAppending(saved.ID)); err != nil {
+	if err := m.orders.write(ctx, root, list.OrderAppending(saved.ID)); err != nil {
 		return nil, err
 	}
 	if err := m.values.copy(ctx, localId, source.ScopeRef(), saved.ScopeRef(), source.Variables); err != nil {
@@ -177,19 +177,19 @@ func (m *manageEnvironment) Delete(ctx context.Context, localId, id string) (str
 	if err != nil {
 		return "", err
 	}
-	workspace, err := m.loadWorkspace.Load(ctx, root)
+	listed, err := m.orders.lists(ctx, root, id)
 	if err != nil {
 		return "", err
 	}
-	list, err := m.list(ctx, root, "")
+	list, err := m.orders.list(ctx, root, "")
 	if err != nil {
 		return "", err
 	}
 	if err := m.deleteEnvironment.Delete(ctx, root, id); err != nil {
 		return "", err
 	}
-	if workspace.ListsEnvironment(id) {
-		if err := m.writeOrder(ctx, root, list.OrderRemoving(id)); err != nil {
+	if listed {
+		if err := m.orders.write(ctx, root, list.OrderRemoving(id)); err != nil {
 			return "", err
 		}
 	}
@@ -205,42 +205,6 @@ func (m *manageEnvironment) Delete(ctx context.Context, localId, id string) (str
 	return activeId, nil
 }
 
-func (m *manageEnvironment) Reorder(ctx context.Context, localId, id string, index int) (*entity.EnvironmentList, error) {
-	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id, "index": index})
-
-	workspace, err := m.findWorkspaceRegistry.FindWorkspace(ctx, localId)
-	if err != nil {
-		return nil, err
-	}
-	list, err := m.list(ctx, workspace.Path, "")
-	if err != nil {
-		return nil, err
-	}
-	if !list.Contains(id) {
-		return nil, errs.NotFoundError("the environment does not exist", "ENV-01404")
-	}
-	order := list.OrderMoving(id, index)
-	if !list.IsOrderedAs(order) {
-		if err := m.writeOrder(ctx, workspace.Path, order); err != nil {
-			return nil, err
-		}
-	}
-	if err := m.publishVariableEvent.VariablesChanged(ctx, localId, []entity.ScopeRef{entity.NewEnvironmentScopeRef(id)}, ""); err != nil {
-		return nil, err
-	}
-	local, err := m.values.local(ctx, localId)
-	if err != nil {
-		return nil, err
-	}
-	reordered, err := m.list(ctx, workspace.Path, local.ActiveEnvironmentID)
-	if err != nil {
-		return nil, err
-	}
-
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "id": id, "index": index, "result": *reordered})
-	return reordered, nil
-}
-
 func (m *manageEnvironment) environment(ctx context.Context, localId, id string) (string, *entity.Environment, error) {
 	workspace, err := m.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
@@ -253,29 +217,8 @@ func (m *manageEnvironment) environment(ctx context.Context, localId, id string)
 	return workspace.Path, environment, nil
 }
 
-func (m *manageEnvironment) list(ctx context.Context, root, activeId string) (*entity.EnvironmentList, error) {
-	environments, err := m.listEnvironments.List(ctx, root)
-	if err != nil {
-		return nil, err
-	}
-	workspace, err := m.loadWorkspace.Load(ctx, root)
-	if err != nil {
-		return nil, err
-	}
-	list := entity.NewEnvironmentList(environments, workspace.EnvironmentOrder, activeId)
-	return &list, nil
-}
-
-func (m *manageEnvironment) writeOrder(ctx context.Context, root string, order []string) error {
-	workspace, err := m.loadWorkspace.Load(ctx, root)
-	if err != nil {
-		return err
-	}
-	return m.saveWorkspaceFile.Save(ctx, root, workspace.WithEnvironmentOrder(order))
-}
-
 func (m *manageEnvironment) saveNamed(ctx context.Context, root string, environment entity.Environment) (*entity.Environment, error) {
-	list, err := m.list(ctx, root, "")
+	list, err := m.orders.list(ctx, root, "")
 	if err != nil {
 		return nil, err
 	}

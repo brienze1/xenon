@@ -1,11 +1,11 @@
 package model
 
 import (
+	"go.yaml.in/yaml/v3"
+
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
 	"github.com/brienze1/xenon/pkg/yamlnode"
-
-	"go.yaml.in/yaml/v3"
 )
 
 const environmentOrderKey = "order"

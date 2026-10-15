@@ -14,7 +14,7 @@ var environmentManageControllerInstance adapter.EnvironmentManageController
 func GetEnvironmentManageController() adapter.EnvironmentManageController {
 	if environmentManageControllerInstance == nil {
 		environmentManageControllerOnce.Do(func() {
-			environmentManageControllerInstance = controller.NewEnvironmentManage(GetErrorHandler(), application.GetManageEnvironmentService(), application.GetAutoSyncService())
+			environmentManageControllerInstance = controller.NewEnvironmentManage(GetErrorHandler(), application.GetManageEnvironmentService(), application.GetReorderEnvironmentService(), application.GetAutoSyncService())
 		})
 	}
 	return environmentManageControllerInstance

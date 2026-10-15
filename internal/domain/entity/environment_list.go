@@ -86,6 +86,13 @@ func (e EnvironmentList) OrderReplacing(previous, id string) []string {
 	return order
 }
 
+func (e EnvironmentList) OrderAfterImport(write ImportVariablesWrite) []string {
+	if write.ReplacesEnvironment() {
+		return e.OrderReplacing(write.Replaced.ID, write.Environment.ID)
+	}
+	return e.OrderAppending(write.Environment.ID)
+}
+
 func (e EnvironmentList) OrderRemoving(id string) []string {
 	return slices.DeleteFunc(e.IDs(), func(listed string) bool { return listed == id })
 }

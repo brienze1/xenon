@@ -17,6 +17,7 @@ func GetMCPEnvEditController() adapter.MCPToolController {
 			mcpEnvEditControllerInstance = controller.NewMCPEnvEdit(
 				GetErrorHandler(),
 				application.GetManageEnvironmentService(),
+				application.GetReorderEnvironmentService(),
 				application.GetAutoSyncService(),
 				application.GetSetActiveEnvironmentService(),
 				application.GetManageVariableTableService(),

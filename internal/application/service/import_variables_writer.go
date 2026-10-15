@@ -11,11 +11,11 @@ import (
 )
 
 type importVariablesWriter struct {
-	listEnvironments     usecase.ListEnvironments
 	saveEnvironment      usecase.SaveEnvironment
 	deleteEnvironment    usecase.DeleteEnvironment
 	saveWorkspaceFile    usecase.SaveWorkspaceFile
 	loadWorkspace        usecase.LoadWorkspace
+	orders               environmentOrders
 	values               scopeValues
 	vaults               vaultWriter
 	publishVariableEvent usecase.PublishVariableEvent
@@ -47,10 +47,11 @@ func (w importVariablesWriter) written(ctx context.Context, target importTarget,
 }
 
 func (w importVariablesWriter) environment(ctx context.Context, workspace entity.RegisteredWorkspace, write entity.ImportVariablesWrite) error {
-	order, err := w.environmentOrder(ctx, workspace.Path, write)
+	list, err := w.orders.list(ctx, workspace.Path, "")
 	if err != nil {
 		return err
 	}
+	order := list.OrderAfterImport(write)
 	vault, err := w.storeSecrets(ctx, workspace.LocalID, write.Scope(), write.Environment.Variables, map[string]string{}, write.Secrets)
 	if err != nil {
 		return err
@@ -68,7 +69,7 @@ func (w importVariablesWriter) environment(ctx context.Context, workspace entity
 		w.vaults.restore(ctx, vault, write.Scope(), nil)
 		return err
 	}
-	if err := w.writeEnvironmentOrder(ctx, workspace.Path, order); err != nil {
+	if err := w.orders.write(ctx, workspace.Path, order); err != nil {
 		return err
 	}
 	if write.ReplacesEnvironment() {
@@ -77,30 +78,6 @@ func (w importVariablesWriter) environment(ctx context.Context, workspace entity
 		}
 	}
 	return nil
-}
-
-func (w importVariablesWriter) environmentOrder(ctx context.Context, root string, write entity.ImportVariablesWrite) ([]string, error) {
-	environments, err := w.listEnvironments.List(ctx, root)
-	if err != nil {
-		return nil, err
-	}
-	stored, err := w.loadWorkspace.Load(ctx, root)
-	if err != nil {
-		return nil, err
-	}
-	list := entity.NewEnvironmentList(environments, stored.EnvironmentOrder, "")
-	if write.ReplacesEnvironment() {
-		return list.OrderReplacing(write.Replaced.ID, write.Environment.ID), nil
-	}
-	return list.OrderAppending(write.Environment.ID), nil
-}
-
-func (w importVariablesWriter) writeEnvironmentOrder(ctx context.Context, root string, order []string) error {
-	stored, err := w.loadWorkspace.Load(ctx, root)
-	if err != nil {
-		return err
-	}
-	return w.saveWorkspaceFile.Save(ctx, root, stored.WithEnvironmentOrder(order))
 }
 
 func (w importVariablesWriter) globals(ctx context.Context, target importTarget, resolution enums.ClashResolution) (*entity.ImportVariablesWrite, error) {
