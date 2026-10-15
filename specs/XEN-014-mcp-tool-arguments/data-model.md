@@ -19,6 +19,9 @@
 - `Properties(t reflect.Type) (map[string]Property, error)` reads the exported fields of struct
   `t` by their `json` names.
   - It skips `json:"-"` and `schema:"-"` fields.
+  - An anonymous embedded struct without a `json` name (e.g. `MCPSendTarget` inside `MCPSend` and
+    `MCPSnippetInput`) is flattened: its fields become top-level properties, as `encoding/json`
+    decodes them.
   - It returns an error for a `json.RawMessage` field (`[]byte` named `RawMessage`) without a
     `schema` tag, and for an unsupported kind (chan, func, interface without a `schema` tag).
 - `Property.Map() map[string]any` renders standard JSON Schema: `type`, `items`, `properties`,
