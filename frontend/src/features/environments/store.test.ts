@@ -12,6 +12,7 @@ vi.mock('@/platform/services/environments', () => ({
   updateEnvironment: vi.fn(),
   duplicateEnvironment: vi.fn(),
   deleteEnvironment: vi.fn(),
+  reorderEnvironment: vi.fn(),
 }))
 vi.mock('@/platform/services/variables', () => ({
   CONFIRM_REVEAL_REQUIRED: 'VAR-01409',
@@ -192,6 +193,36 @@ describe('environments store', () => {
     vi.mocked(services.deleteEnvironment).mockRejectedValue(new AppError('ENV-01404', 'gone'))
     await expect(store().deleteEnvironment('e9')).resolves.toMatchObject({ code: 'ENV-01404' })
     expect(services.listEnvironments).not.toHaveBeenCalled()
+  })
+
+  it('reorders at once, then keeps the order the backend returns', async () => {
+    const qa = { id: 'e3', name: 'qa', color: 'none', confirmBeforeSend: false, error: null } as const
+    useEnvironmentsStore.setState({ environments: [dev, prod, qa], activeId: 'e1', status: 'ready' })
+    const saved = deferred<EnvironmentList>()
+    vi.mocked(services.reorderEnvironment).mockReturnValue(saved.promise)
+    const reordering = store().reorderEnvironment('e3', 0)
+    expect(store().environments.map((environment) => environment.id)).toEqual(['e3', 'e1', 'e2'])
+    expect(services.reorderEnvironment).toHaveBeenCalledWith('A', 'e3', 0)
+    saved.resolve({ environments: [qa, dev, prod], activeId: 'e2' })
+    await expect(reordering).resolves.toBeNull()
+    expect(store().environments).toEqual([qa, dev, prod])
+    expect(store().activeId).toBe('e2')
+  })
+
+  it('restores the previous order and returns the error when the reorder fails', async () => {
+    useEnvironmentsStore.setState({ environments: [dev, prod], activeId: 'e1', status: 'ready' })
+    const failure = new AppError('WKS-26500', 'permission denied')
+    vi.mocked(services.reorderEnvironment).mockRejectedValue(failure)
+    await expect(store().reorderEnvironment('e2', 0)).resolves.toEqual(failure)
+    expect(store().environments).toEqual([dev, prod])
+  })
+
+  it('does not call the backend for a move that changes nothing', async () => {
+    useEnvironmentsStore.setState({ environments: [dev, prod], activeId: 'e1', status: 'ready' })
+    await expect(store().reorderEnvironment('e1', 0)).resolves.toBeNull()
+    await expect(store().reorderEnvironment('unknown', 1)).resolves.toBeNull()
+    expect(services.reorderEnvironment).not.toHaveBeenCalled()
+    expect(store().environments).toEqual([dev, prod])
   })
 
   it('keeps a draft per loaded table and only marks it dirty on an edit', async () => {

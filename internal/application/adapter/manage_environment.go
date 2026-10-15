@@ -13,4 +13,5 @@ type ManageEnvironmentService interface {
 	Update(ctx context.Context, localId string, settings entity.Environment) (*entity.EnvironmentDetails, error)
 	Duplicate(ctx context.Context, localId, id string) (*entity.EnvironmentDetails, error)
 	Delete(ctx context.Context, localId, id string) (string, error)
+	Reorder(ctx context.Context, localId, id string, index int) (*entity.EnvironmentList, error)
 }

@@ -74,3 +74,8 @@ export function deleteEnvironment(localId: string, id: string): Promise<string |
     return active?.active_id ? active.active_id : null
   })
 }
+
+/** Moves the environment to `index` among the readable environments and returns the new list. */
+export function reorderEnvironment(localId: string, id: string, index: number): Promise<EnvironmentList> {
+  return call(async () => toEnvironmentList(await EnvironmentService.Reorder({ local_id: localId, id, index })))
+}

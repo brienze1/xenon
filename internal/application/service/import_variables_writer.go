@@ -11,6 +11,7 @@ import (
 )
 
 type importVariablesWriter struct {
+	listEnvironments     usecase.ListEnvironments
 	saveEnvironment      usecase.SaveEnvironment
 	deleteEnvironment    usecase.DeleteEnvironment
 	saveWorkspaceFile    usecase.SaveWorkspaceFile
@@ -46,6 +47,10 @@ func (w importVariablesWriter) written(ctx context.Context, target importTarget,
 }
 
 func (w importVariablesWriter) environment(ctx context.Context, workspace entity.RegisteredWorkspace, write entity.ImportVariablesWrite) error {
+	order, err := w.environmentOrder(ctx, workspace.Path, write)
+	if err != nil {
+		return err
+	}
 	vault, err := w.storeSecrets(ctx, workspace.LocalID, write.Scope(), write.Environment.Variables, map[string]string{}, write.Secrets)
 	if err != nil {
 		return err
@@ -63,12 +68,39 @@ func (w importVariablesWriter) environment(ctx context.Context, workspace entity
 		w.vaults.restore(ctx, vault, write.Scope(), nil)
 		return err
 	}
+	if err := w.writeEnvironmentOrder(ctx, workspace.Path, order); err != nil {
+		return err
+	}
 	if write.ReplacesEnvironment() {
 		if _, err := w.values.drop(ctx, workspace.LocalID, *write.Replaced); err != nil {
 			logger.Error(ctx, err, "The replaced environment's local and secret values could not be removed", map[string]any{"localId": workspace.LocalID})
 		}
 	}
 	return nil
+}
+
+func (w importVariablesWriter) environmentOrder(ctx context.Context, root string, write entity.ImportVariablesWrite) ([]string, error) {
+	environments, err := w.listEnvironments.List(ctx, root)
+	if err != nil {
+		return nil, err
+	}
+	stored, err := w.loadWorkspace.Load(ctx, root)
+	if err != nil {
+		return nil, err
+	}
+	list := entity.NewEnvironmentList(environments, stored.EnvironmentOrder, "")
+	if write.ReplacesEnvironment() {
+		return list.OrderReplacing(write.Replaced.ID, write.Environment.ID), nil
+	}
+	return list.OrderAppending(write.Environment.ID), nil
+}
+
+func (w importVariablesWriter) writeEnvironmentOrder(ctx context.Context, root string, order []string) error {
+	stored, err := w.loadWorkspace.Load(ctx, root)
+	if err != nil {
+		return err
+	}
+	return w.saveWorkspaceFile.Save(ctx, root, stored.WithEnvironmentOrder(order))
 }
 
 func (w importVariablesWriter) globals(ctx context.Context, target importTarget, resolution enums.ClashResolution) (*entity.ImportVariablesWrite, error) {

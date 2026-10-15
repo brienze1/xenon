@@ -112,6 +112,7 @@ func NewManageImportService(
 				vaults:                vaults,
 			},
 			variables: importVariablesWriter{
+				listEnvironments:  listEnvironments,
 				saveEnvironment:   saveEnvironment,
 				deleteEnvironment: deleteEnvironment,
 				saveWorkspaceFile: saveWorkspaceFile,

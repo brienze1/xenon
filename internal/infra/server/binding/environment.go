@@ -44,3 +44,7 @@ func (e *EnvironmentService) Duplicate(ctx context.Context, request dto.Environm
 func (e *EnvironmentService) Delete(ctx context.Context, request dto.EnvironmentReference) (*dto.ActiveEnvironment, error) {
 	return e.manage.Delete(ctx, request)
 }
+
+func (e *EnvironmentService) Reorder(ctx context.Context, request dto.ReorderEnvironment) (*dto.EnvironmentList, error) {
+	return e.manage.Reorder(ctx, request)
+}

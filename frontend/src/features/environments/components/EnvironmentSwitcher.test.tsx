@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
 
-vi.mock('@/platform/services/environments', () => ({ listEnvironments: vi.fn(), setActiveEnvironment: vi.fn() }))
+vi.mock('@/platform/services/environments', () => ({ listEnvironments: vi.fn(), setActiveEnvironment: vi.fn(), reorderEnvironment: vi.fn() }))
 vi.mock('@/platform/services/variables', () => ({ getVariableTable: vi.fn() }))
 vi.mock('@/platform/services/vault', () => ({
   PASSPHRASE_SETUP_REQUIRED: 'VLT-05409',
@@ -48,6 +48,16 @@ describe('EnvironmentSwitcher', () => {
     expect(services.setActiveEnvironment).toHaveBeenCalledWith('A', 'e2')
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Environment: hml' })).toHaveTextContent('hml')
+  })
+
+  it('lists the environments in the order they were reordered into, not alphabetically', async () => {
+    vi.mocked(services.reorderEnvironment).mockResolvedValue({ environments: [prod, dev, hml, broken], activeId: null })
+    await act(async () => {
+      await useEnvironmentsStore.getState().reorderEnvironment('e3', 0)
+    })
+    render(<EnvironmentSwitcher onOpenGlobals={onOpenGlobals} onManage={onManage} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Environment: No environment' }))
+    expect(screen.getAllByRole('menuitemradio').map((item) => item.textContent)).toEqual(['No environment', 'prod', 'dev', 'hml'])
   })
 
   it('goes back to "No environment"', async () => {

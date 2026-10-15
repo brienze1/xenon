@@ -64,7 +64,8 @@ Feature: Create, rename, duplicate and delete environments
       { "local_id": "{{Acme.local_id}}" }
       """
     Then the response should contain the field "environments" array length equal to 2
-    And the response should contain the field "environments.0.name" equal to "dev"
+    And the response should contain the field "environments.0.name" equal to "hml"
+    And the response should contain the field "environments.1.name" equal to "dev"
 
   @create @defaults
   Scenario Outline: A new environment named like production defaults to red with confirmation - <name>
@@ -332,7 +333,7 @@ Feature: Create, rename, duplicate and delete environments
       { "local_id": "{{Acme.local_id}}" }
       """
     Then the response field "environments" should contain an item with "name" equal to "broken.yaml" and "id" equal to "error:broken.yaml"
-    And the response should contain the field "environments.0.error" containing "broken.yaml"
+    And the response should contain the field "environments.1.error" containing "broken.yaml"
     When I call "EnvironmentService.Get" with
       """
       { "local_id": "{{Acme.local_id}}", "id": "error:broken.yaml" }

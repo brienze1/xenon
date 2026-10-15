@@ -17,6 +17,7 @@ const (
 	mcpEnvEditCreateAction    = "create"
 	mcpEnvEditUpdateAction    = "update"
 	mcpEnvEditDuplicateAction = "duplicate"
+	mcpEnvEditReorderAction   = "reorder"
 	mcpEnvEditSetActiveAction = "set_active"
 	mcpEnvEditSetVarsAction   = "set_vars"
 	mcpEnvEditResetAction     = "reset"
@@ -25,10 +26,10 @@ const (
 
 var envEditAITool = entity.AITool{
 	Name:        entity.AIEnvEditToolName,
-	Description: "Create or update environments, switch the active one, and edit variables (secret values are write-only).",
+	Description: "Create, update or reorder environments, switch the active one, and edit variables (secret values are write-only).",
 	Actions: []string{
-		mcpEnvEditCreateAction, mcpEnvEditUpdateAction, mcpEnvEditDuplicateAction, mcpEnvEditSetActiveAction, entity.AIEnvEditAddVarAction,
-		mcpEnvEditSetVarsAction, entity.AIEnvEditSetCurrentAction, mcpEnvEditResetAction, mcpEnvEditPersistAction,
+		mcpEnvEditCreateAction, mcpEnvEditUpdateAction, mcpEnvEditDuplicateAction, mcpEnvEditReorderAction, mcpEnvEditSetActiveAction,
+		entity.AIEnvEditAddVarAction, mcpEnvEditSetVarsAction, entity.AIEnvEditSetCurrentAction, mcpEnvEditResetAction, mcpEnvEditPersistAction,
 	},
 	Effect:          aitooleffect.Destructive,
 	WorkspaceScoped: true,
@@ -82,6 +83,8 @@ func (m *mcpEnvEdit) Handle(toolCtx context.Context, call dto.MCPToolCall) (resu
 		result, err = m.update(ctx, call)
 	case mcpEnvEditDuplicateAction:
 		result, err = m.duplicate(ctx, call)
+	case mcpEnvEditReorderAction:
+		result, err = m.reorder(ctx, call)
 	case mcpEnvEditSetActiveAction:
 		result, err = m.setActive(ctx, call)
 	case entity.AIEnvEditAddVarAction:
@@ -182,6 +185,26 @@ func (m *mcpEnvEdit) duplicate(ctx context.Context, call dto.MCPToolCall) (dto.M
 		return dto.MCPToolResult{}, err
 	}
 	return editedEnvironment(duplicated.Environment), nil
+}
+
+func (m *mcpEnvEdit) reorder(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolResult, error) {
+	var arguments dto.MCPEnvEdit
+	err := call.Decode(&arguments)
+	if err != nil {
+		return dto.MCPToolResult{}, err
+	}
+
+	request := arguments.ReorderEnvironment(call.LocalId)
+	err = validateReorderEnvironment(&request)
+	if err != nil {
+		return dto.MCPToolResult{}, err
+	}
+
+	list, err := m.manageEnvironmentService.Reorder(ctx, request.LocalId, request.Id, request.Index)
+	if err != nil {
+		return dto.MCPToolResult{}, err
+	}
+	return dto.NewMCPToolResult(dto.NewMCPEnvList(*list)), nil
 }
 
 func (m *mcpEnvEdit) setActive(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolResult, error) {

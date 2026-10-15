@@ -18,6 +18,8 @@ type manageEnvironment struct {
 	findEnvironment       usecase.FindEnvironment
 	saveEnvironment       usecase.SaveEnvironment
 	deleteEnvironment     usecase.DeleteEnvironment
+	loadWorkspace         usecase.LoadWorkspace
+	saveWorkspaceFile     usecase.SaveWorkspaceFile
 	values                scopeValues
 	publishVariableEvent  usecase.PublishVariableEvent
 }
@@ -28,6 +30,8 @@ func NewManageEnvironmentService(
 	findEnvironment usecase.FindEnvironment,
 	saveEnvironment usecase.SaveEnvironment,
 	deleteEnvironment usecase.DeleteEnvironment,
+	loadWorkspace usecase.LoadWorkspace,
+	saveWorkspaceFile usecase.SaveWorkspaceFile,
 	findLocalVariables usecase.FindLocalVariables,
 	saveLocalVariables usecase.SaveLocalVariables,
 	findVault usecase.FindVault,
@@ -40,6 +44,8 @@ func NewManageEnvironmentService(
 		findEnvironment:       findEnvironment,
 		saveEnvironment:       saveEnvironment,
 		deleteEnvironment:     deleteEnvironment,
+		loadWorkspace:         loadWorkspace,
+		saveWorkspaceFile:     saveWorkspaceFile,
 		values: scopeValues{
 			findLocalVariables: findLocalVariables,
 			saveLocalVariables: saveLocalVariables,
@@ -93,9 +99,16 @@ func (m *manageEnvironment) Create(ctx context.Context, localId, name string) (*
 	if err != nil {
 		return nil, err
 	}
+	list, err := m.list(ctx, workspace.Path, "")
+	if err != nil {
+		return nil, err
+	}
 	created := entity.NewEnvironment(idutils.NewUlid(), name)
 	saved, err := m.saveNamed(ctx, workspace.Path, created)
 	if err != nil {
+		return nil, err
+	}
+	if err := m.writeOrder(ctx, workspace.Path, list.OrderAppending(saved.ID)); err != nil {
 		return nil, err
 	}
 	details, err := m.announced(ctx, localId, *saved)
@@ -142,6 +155,9 @@ func (m *manageEnvironment) Duplicate(ctx context.Context, localId, id string) (
 	if err != nil {
 		return nil, err
 	}
+	if err := m.writeOrder(ctx, root, list.OrderAppending(saved.ID)); err != nil {
+		return nil, err
+	}
 	if err := m.values.copy(ctx, localId, source.ScopeRef(), saved.ScopeRef(), source.Variables); err != nil {
 		return nil, err
 	}
@@ -161,8 +177,21 @@ func (m *manageEnvironment) Delete(ctx context.Context, localId, id string) (str
 	if err != nil {
 		return "", err
 	}
+	workspace, err := m.loadWorkspace.Load(ctx, root)
+	if err != nil {
+		return "", err
+	}
+	list, err := m.list(ctx, root, "")
+	if err != nil {
+		return "", err
+	}
 	if err := m.deleteEnvironment.Delete(ctx, root, id); err != nil {
 		return "", err
+	}
+	if workspace.ListsEnvironment(id) {
+		if err := m.writeOrder(ctx, root, list.OrderRemoving(id)); err != nil {
+			return "", err
+		}
 	}
 	activeId, err := m.values.drop(ctx, localId, *environment)
 	if err != nil {
@@ -174,6 +203,42 @@ func (m *manageEnvironment) Delete(ctx context.Context, localId, id string) (str
 
 	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "id": id, "result": activeId})
 	return activeId, nil
+}
+
+func (m *manageEnvironment) Reorder(ctx context.Context, localId, id string, index int) (*entity.EnvironmentList, error) {
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id, "index": index})
+
+	workspace, err := m.findWorkspaceRegistry.FindWorkspace(ctx, localId)
+	if err != nil {
+		return nil, err
+	}
+	list, err := m.list(ctx, workspace.Path, "")
+	if err != nil {
+		return nil, err
+	}
+	if !list.Contains(id) {
+		return nil, errs.NotFoundError("the environment does not exist", "ENV-01404")
+	}
+	order := list.OrderMoving(id, index)
+	if !list.IsOrderedAs(order) {
+		if err := m.writeOrder(ctx, workspace.Path, order); err != nil {
+			return nil, err
+		}
+	}
+	if err := m.publishVariableEvent.VariablesChanged(ctx, localId, []entity.ScopeRef{entity.NewEnvironmentScopeRef(id)}, ""); err != nil {
+		return nil, err
+	}
+	local, err := m.values.local(ctx, localId)
+	if err != nil {
+		return nil, err
+	}
+	reordered, err := m.list(ctx, workspace.Path, local.ActiveEnvironmentID)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "id": id, "index": index, "result": *reordered})
+	return reordered, nil
 }
 
 func (m *manageEnvironment) environment(ctx context.Context, localId, id string) (string, *entity.Environment, error) {
@@ -193,8 +258,20 @@ func (m *manageEnvironment) list(ctx context.Context, root, activeId string) (*e
 	if err != nil {
 		return nil, err
 	}
-	list := entity.NewEnvironmentList(environments, activeId)
+	workspace, err := m.loadWorkspace.Load(ctx, root)
+	if err != nil {
+		return nil, err
+	}
+	list := entity.NewEnvironmentList(environments, workspace.EnvironmentOrder, activeId)
 	return &list, nil
+}
+
+func (m *manageEnvironment) writeOrder(ctx context.Context, root string, order []string) error {
+	workspace, err := m.loadWorkspace.Load(ctx, root)
+	if err != nil {
+		return err
+	}
+	return m.saveWorkspaceFile.Save(ctx, root, workspace.WithEnvironmentOrder(order))
 }
 
 func (m *manageEnvironment) saveNamed(ctx context.Context, root string, environment entity.Environment) (*entity.Environment, error) {
