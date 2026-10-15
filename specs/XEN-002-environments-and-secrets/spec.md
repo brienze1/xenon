@@ -129,7 +129,7 @@ match), restart and send a request that uses them (works without typing anything
 2. **Given** the app restarts, **When** Luis sends a request using `{{api_key}}`, **Then**
    `s3cr3t` is sent without him typing a password (the vault unlocks through the OS keychain).
 3. **Given** a secret row, **Then** its value shows as dots everywhere it is displayed
-   (environment editor, quick look, Variables panel, URL hover); the eye reveals it for that row;
+   (environment and Globals tabs, Variables panel, URL hover); the eye reveals it for that row;
    copy puts the real value on the clipboard.
 4. **Given** a plain variable, **When** Luis switches it to secret, **Then** its current value
    moves into the vault, its initial value is removed from the file, and he is told the old
@@ -181,7 +181,7 @@ the highlighting, hovers, suggestions and the Variables panel, including editing
 
 Each environment can have a neon colour; `prod` gets red by default, so the switcher glows red
 when prod is active. An environment can require confirmation before every send. An eye button
-next to the switcher opens a quick look at the active environment's variables, editable in place.
+next to the switcher opens the active environment's tab (the Globals tab when none is active).
 
 **Why this priority**: Prevents sending to production by accident; matters once environments
 exist.
@@ -199,9 +199,9 @@ send", send a request and cancel at the prompt.
 3. **Given** an environment with "Confirm before send" on, **When** Luis sends any request,
    **Then** he must confirm in a prompt naming the environment before anything is sent; Cancel
    sends nothing (and records nothing in History).
-4. **Given** the eye button next to the switcher, **When** he opens it, **Then** a quick-look
-   popover lists the active environment's variables (and globals below) with initial and current
-   values, editable in place, secrets masked.
+4. **Given** the eye button next to the switcher, **When** he clicks it, **Then** the active
+   environment's tab opens pinned in the main area (or is focused if already open); with no
+   active environment the Globals tab opens instead (XEN-015).
 
 ---
 
@@ -348,8 +348,8 @@ each value's format.
   (entered twice) when the first vault needs a key, then asked once per app start when a vault
   must be unlocked. The passphrase is never stored. While locked, secrets are shown as locked and
   treated as missing for sending.
-- **FR-020**: Secret values MUST be masked (`•••••`) wherever displayed — environment editor,
-  quick look, Variables panel, hovers — with a per-row reveal and a copy button that copies the
+- **FR-020**: Secret values MUST be masked (`•••••`) wherever displayed — environment and Globals
+  tabs, Variables panel, hovers — with a per-row reveal and a copy button that copies the
   real value. (Console and code-snippet masking arrive with stages 4–5 and MUST use the same
   rule.)
 - **FR-021**: Changing a row from plain to secret MUST move its current value into the vault,
@@ -383,8 +383,8 @@ each value's format.
   collection / globals".
 - **FR-028**: An environment switcher MUST always be visible at the top right with the active
   environment (colour + glow) and a "No environment" option; Cmd/Ctrl+Shift+E MUST open it with
-  focus. An eye button next to it MUST open a quick look of the active environment and globals,
-  editable in place.
+  focus. An eye button next to it MUST open the active environment's tab
+  (the Globals tab when none is active).
 - **FR-029**: Changes to environment files and `workspace.yaml` made outside Xenon MUST be picked
   up live (XEN-001 FR-017 behaviour), keeping local current values and secrets.
 

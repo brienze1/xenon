@@ -82,41 +82,24 @@ const LOADING = (
   </p>
 );
 
-/**
- * How long unsaved edits live: `view` drops them when the table unmounts (dialogs guard before
- * closing); `workspace` keeps them in the store until saved or discarded (environment tabs).
- */
-export type DraftLifetime = "view" | "workspace";
-
 interface VariableTableProps {
   scope: string;
   label: string;
-  draftLifetime?: DraftLifetime;
-  /** In a main-area tab the tab saves (Mod+S, close prompt) and shows the unsaved dot, so the table has no save buttons. */
-  savedByTab?: boolean;
 }
 
 export function VariableTable({
   scope,
   label,
-  draftLifetime = "view",
-  savedByTab = false,
 }: VariableTableProps) {
   const table = useEnvironmentsStore((state) => state.tables[scope]);
   const hasDraft = useEnvironmentsStore(
     (state) => state.drafts[scope] !== undefined,
   );
   const loadTable = useEnvironmentsStore((state) => state.loadTable);
-  const discardDraft = useEnvironmentsStore((state) => state.discardDraft);
 
   useEffect(() => {
     void loadTable(scope);
   }, [scope, loadTable]);
-
-  useEffect(
-    () => (draftLifetime === "view" ? () => discardDraft(scope) : undefined),
-    [scope, draftLifetime, discardDraft],
-  );
 
   if (!table || (table.status !== "ready" && table.rows.length === 0)) {
     return LOADING;
@@ -145,7 +128,6 @@ export function VariableTable({
       scope={scope}
       label={label}
       table={table}
-      savedByTab={savedByTab}
     />
   ) : (
     LOADING
@@ -170,19 +152,15 @@ interface VariableTableEditorProps {
   scope: string;
   label: string;
   table: TableState;
-  savedByTab: boolean;
 }
 
 function VariableTableEditor({
   scope,
   label,
   table,
-  savedByTab,
 }: VariableTableEditorProps) {
   const draft = useEnvironmentsStore((state) => state.drafts[scope]);
   const editDraft = useEnvironmentsStore((state) => state.editDraft);
-  const discardDraft = useEnvironmentsStore((state) => state.discardDraft);
-  const saveDraft = useEnvironmentsStore((state) => state.saveDraft);
   const confirmDraftSave = useEnvironmentsStore(
     (state) => state.confirmDraftSave,
   );
@@ -277,23 +255,10 @@ function VariableTableEditor({
     );
   }
 
-  function discard() {
-    setActionFailure(null);
-    discardDraft(scope);
-  }
-
   function afterSave(saved: Result<boolean, AppError>) {
     if (!saved.ok) {
       focusFirstInvalidName();
     }
-  }
-
-  function requestSave() {
-    if (!draft?.dirty) {
-      return;
-    }
-    setActionFailure(null);
-    startAction(async () => afterSave(await saveDraft(scope)));
   }
 
   function confirmSave() {
@@ -392,26 +357,6 @@ function VariableTableEditor({
           </Banner.Message>
         </Banner.Root>
       ) : null}
-      {savedByTab ? null : (
-        <div className={styles.footer}>
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={!draft.dirty || busy}
-            onClick={discard}
-          >
-            Discard Changes
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            disabled={busy || confirming !== null}
-            onClick={requestSave}
-          >
-            {busy ? "Saving…" : "Save Variables"}
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

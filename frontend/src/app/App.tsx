@@ -63,6 +63,10 @@ function openGlobals() {
   openEnvironmentTab({ kind: 'globals' }, 'pinned')
 }
 
+function openEnvironment(environmentId: string) {
+  openEnvironmentTab({ kind: 'environment', environmentId }, 'pinned')
+}
+
 /** "Manage Environments…": the environments live in the sidebar's Environments view. */
 function manageEnvironments() {
   useSidebarStore.getState().setView('environments')
@@ -72,7 +76,7 @@ function manageEnvironments() {
   }
 }
 
-const ENVIRONMENT_SWITCHER = <EnvironmentSwitcher onOpenGlobals={openGlobals} onManage={manageEnvironments} />
+const ENVIRONMENT_SWITCHER = <EnvironmentSwitcher onOpenGlobals={openGlobals} onOpenEnvironment={openEnvironment} onManage={manageEnvironments} />
 
 const PASSPHRASE_DIALOG = <PassphraseDialog />
 

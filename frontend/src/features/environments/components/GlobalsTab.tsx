@@ -18,7 +18,7 @@ export function GlobalsTab() {
     <section className={styles.tab} aria-label="Globals">
       {GLOBALS_HEADER}
       {GLOBALS_INTRO}
-      <VariableTable scope={GLOBALS_SCOPE} label="Global variables" draftLifetime="workspace" savedByTab />
+      <VariableTable scope={GLOBALS_SCOPE} label="Global variables" />
     </section>
   )
 }
