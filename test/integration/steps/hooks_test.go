@@ -34,6 +34,7 @@ func (t *testUtils) before() error {
 	t.fileManager.Reset()
 	t.sshAgent.Reset()
 	t.window.Reset()
+	t.process.Reset()
 	t.sshKeys = map[string]*mock.SshKey{}
 	if err := t.git.Reset(); err != nil {
 		return err

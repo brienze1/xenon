@@ -45,6 +45,7 @@ type testUtils struct {
 	git           *mock.GitServers
 	sshAgent      *mock.SshAgent
 	window        *mock.WindowFocuser
+	process       *mock.AppProcess
 	mcpSessions   map[string]*mcp.ClientSession
 	bridge        *bridgeRun
 	sshKeys       map[string]*mock.SshKey
@@ -111,6 +112,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 			git:         mock.NewGitServers(),
 			sshAgent:    mock.NewSshAgent(),
 			window:      mock.NewWindowFocuser(),
+			process:     mock.NewAppProcess(),
 		}
 		if os.Getenv("LOG_LEVEL") == "" {
 			_ = os.Setenv("LOG_LEVEL", "off")
@@ -177,6 +179,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	test.registerFileWatcherSteps(ctx)
 	test.registerGivenKeychainSteps(ctx)
 	test.registerGivenAppSteps(ctx)
+	test.registerAppProcessSteps(ctx)
 	test.registerGivenEnvSteps(ctx)
 	test.registerGivenLogSteps(ctx)
 	test.registerGivenOAuthSteps(ctx)
