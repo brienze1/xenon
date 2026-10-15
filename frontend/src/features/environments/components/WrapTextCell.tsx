@@ -1,4 +1,5 @@
-import { useLayoutEffect, useRef } from 'react'
+import { useRef } from 'react'
+import { useFitHeight } from '@/shared/hooks/use-fit-height'
 import { cn } from '@/shared/lib/cn'
 import styles from './WrapTextCell.module.css'
 
@@ -16,23 +17,7 @@ interface WrapTextCellProps {
 export function WrapTextCell({ name, label, value, onChange, description, className, translate }: WrapTextCellProps) {
   const ref = useRef<HTMLTextAreaElement>(null)
 
-  // Fits the height to the wrapped text, again whenever the column width changes.
-  useLayoutEffect(() => {
-    const node = ref.current
-    if (!node) {
-      return undefined
-    }
-    function fit() {
-      if (node) {
-        node.style.height = 'auto'
-        node.style.height = `${node.scrollHeight}px`
-      }
-    }
-    fit()
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(fit)
-    observer?.observe(node)
-    return () => observer?.disconnect()
-  }, [value])
+  useFitHeight(ref, value)
 
   return (
     <textarea
