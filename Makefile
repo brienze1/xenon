@@ -29,7 +29,7 @@ endif
 
 .PHONY: setup dev bindings build package ensure-dist sort-imports fix-struct-alignment vet \
 	check-dead-code dependency-check tests bdd validate-coverage mutation-test \
-	validate-mutation-coverage validate-test-efficacy validate-mutation frontend-check validate \
+	validate-mutation-coverage validate-test-efficacy validate-mutation frontend-check release-check validate \
 	sandbox-assets parity-oracle parity-diff parity script-reference snippet-golden newman
 
 setup:
@@ -79,6 +79,8 @@ validate:
 	$(MAKE) validate-coverage
 	@echo "Running frontend checks..."
 	$(MAKE) frontend-check
+	@echo "Running release tooling tests..."
+	$(MAKE) release-check
 	@echo "Validation completed!"
 
 # Mutation testing takes hours, so it is not part of validate - run it now and then
@@ -256,6 +258,9 @@ validate-test-efficacy:
 
 frontend-check:
 	cd frontend && npm run lint && npm run typecheck && npm test
+
+release-check:
+	node --test tools/release/
 
 sandbox-assets:
 	@echo "Rebuilding the sandbox assets (postman-sandbox 6.7.4 libraries)..."

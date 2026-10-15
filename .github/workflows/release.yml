@@ -1,0 +1,160 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+# Merges release in order: a running release is never cancelled by the next merge
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: version
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Compute the next version (VERSION major.minor + next patch from the v* tags)
+        id: next
+        run: |
+          set -euo pipefail
+          version=$(git tag -l 'v*' | node tools/release/next-version.mjs)
+          echo "Next release: v${version}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: build (${{ matrix.os }})
+    needs: version
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      V: ${{ needs.version.outputs.version }}
+      XENON_GITHUB_CLIENT_ID: ${{ vars.XENON_GITHUB_CLIENT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Linux webview dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+
+      - name: Ensure make is available
+        if: runner.os == 'Windows'
+        run: command -v make || choco install make -y
+
+      - name: Setup tools and frontend dependencies
+        run: make setup
+
+      - name: Generate bindings
+        run: make bindings
+
+      - name: Package macOS (universal .app)
+        if: runner.os == 'macOS'
+        run: |
+          set -euo pipefail
+          wails3 task darwin:package:universal XENON_VERSION="$V" XENON_GITHUB_CLIENT_ID="$XENON_GITHUB_CLIENT_ID"
+          plutil -replace CFBundleShortVersionString -string "$V" bin/xenon.app/Contents/Info.plist
+          plutil -replace CFBundleVersion -string "$V" bin/xenon.app/Contents/Info.plist
+          xattr -cr bin/xenon.app
+          codesign --force --deep --sign - bin/xenon.app
+          codesign --verify --deep --strict bin/xenon.app
+          stage="$RUNNER_TEMP/xenon-stage"
+          rm -rf "$stage"
+          mkdir -p "$stage"
+          ditto bin/xenon.app "$stage/Xenon.app"
+          tar -czf "xenon-$V-darwin-universal.tar.gz" -C "$stage" Xenon.app
+
+      - name: Package Windows (xenon.exe)
+        if: runner.os == 'Windows'
+        run: |
+          set -euo pipefail
+          wails3 task windows:build XENON_VERSION="$V" XENON_GITHUB_CLIENT_ID="$XENON_GITHUB_CLIENT_ID"
+          pwsh -NoProfile -Command "Compress-Archive -Path bin/xenon.exe -DestinationPath xenon-$V-windows-amd64.zip"
+
+      - name: Package Linux (xenon)
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          wails3 task linux:build XENON_VERSION="$V" XENON_GITHUB_CLIENT_ID="$XENON_GITHUB_CLIENT_ID"
+          chmod 755 bin/xenon
+          tar -czf "xenon-$V-linux-amd64.tar.gz" -C bin xenon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xenon-${{ matrix.os }}
+          path: |
+            xenon-*.tar.gz
+            xenon-*.zip
+          if-no-files-found: error
+
+  publish:
+    name: publish
+    needs: [version, build]
+    runs-on: ubuntu-24.04
+    env:
+      V: ${{ needs.version.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Write checksums.txt
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          sha256sum xenon-* > checksums.txt
+          cat checksums.txt
+
+      - name: Write the release notes
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          gh api "repos/${{ github.repository }}/releases/generate-notes" \
+            -f tag_name="v$V" -f target_commitish="$GITHUB_SHA" --jq .body > notes.md
+          cat >> notes.md <<'NOTES'
+
+          **First install on macOS.** Xenon is not notarized. After downloading it in a browser, open it
+          with right-click → Open the first time, or run
+          `xattr -dr com.apple.quarantine /path/to/Xenon.app`. Updates installed by Xenon itself do not
+          need this.
+          NOTES
+
+      - name: Publish the release
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          gh release create "v$V" --repo "${{ github.repository }}" --target "$GITHUB_SHA" \
+            --title "Xenon $V" --notes-file notes.md xenon-* checksums.txt
