@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { TreeNode } from '@/platform/mappers/tree'
 
@@ -24,7 +24,13 @@ function sampleTree(requestName = 'Create ad'): TreeNode[] {
   ]
 }
 
-const actions = { onOpenItem: vi.fn(), onOpenRequest: vi.fn(), onRenamed: vi.fn() }
+const actions = { onOpenItem: vi.fn(), onOpenRequest: vi.fn() }
+
+const EDITOR = (
+  <button type="button" aria-label="Rename request">
+    Draft name
+  </button>
+)
 
 function crumbs() {
   return within(screen.getByRole('navigation', { name: 'Breadcrumb' })).getAllByRole('listitem')
@@ -38,81 +44,44 @@ describe('ItemBreadcrumb', () => {
     useWorkspacesStore.setState({ activeLocalId: 'L1' })
   })
 
-  it('shows the path from the collection down to the request', () => {
-    render(<ItemBreadcrumb itemId="r1" name="Create ad" {...actions} />)
+  it('shows the path from the collection down to the request, with the name editor last', () => {
+    render(<ItemBreadcrumb itemId="r1" name="Create ad" nameEditor={EDITOR} {...actions} />)
     const nav = screen.getByRole('navigation', { name: 'Breadcrumb' })
     expect(within(nav).getByRole('list').tagName).toBe('OL')
-    expect(crumbs().map((item) => item.firstElementChild?.textContent)).toEqual(['Campaign Manager', 'Ads', 'CRUD', 'Create ad'])
+    expect(crumbs().map((item) => item.textContent)).toEqual(['Campaign Manager/', 'Ads/', 'CRUD/', 'Draft name'])
     expect(nav).toHaveAttribute('title', 'Campaign Manager / Ads / CRUD / Create ad')
-    expect(screen.getByRole('button', { name: 'Create ad' })).toHaveAttribute('aria-current', 'page')
+    expect(crumbs().at(-1)).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('button', { name: 'Ads' })).not.toHaveAttribute('aria-current')
   })
 
   it('opens a collection or folder like the sidebar does', () => {
-    render(<ItemBreadcrumb itemId="r1" name="Create ad" {...actions} />)
+    render(<ItemBreadcrumb itemId="r1" name="Create ad" nameEditor={EDITOR} {...actions} />)
     fireEvent.click(screen.getByRole('button', { name: 'Campaign Manager' }))
     expect(actions.onOpenItem).toHaveBeenCalledWith('c1', 'collection', 'preview')
     fireEvent.click(screen.getByRole('button', { name: 'CRUD' }))
     expect(actions.onOpenItem).toHaveBeenCalledWith('f2', 'folder', 'preview')
   })
 
-  it('renames the request through the sidebar and tells the app', async () => {
-    vi.mocked(treeService.renameItem).mockResolvedValue(undefined as never)
-    vi.mocked(treeService.getTree).mockResolvedValue(sampleTree('Create campaign ad'))
-    render(<ItemBreadcrumb itemId="r1" name="Create ad" {...actions} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Create ad' }))
-    const input = screen.getByRole('textbox', { name: 'Name' })
-    expect(input).toHaveValue('Create ad')
-    fireEvent.change(input, { target: { value: 'Create campaign ad' } })
-    fireEvent.keyDown(input, { key: 'Enter' })
-    await waitFor(() => expect(actions.onRenamed).toHaveBeenCalledWith('r1'))
-    expect(treeService.renameItem).toHaveBeenCalledWith('L1', 'r1', 'Create campaign ad')
-    expect(screen.queryByRole('textbox', { name: 'Name' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Create campaign ad' })).toHaveAttribute('aria-current', 'page')
-  })
-
-  it('keeps the old name when the edit is cancelled or left empty', async () => {
-    render(<ItemBreadcrumb itemId="r1" name="Create ad" {...actions} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Create ad' }))
-    fireEvent.change(screen.getByRole('textbox', { name: 'Name' }), { target: { value: 'Other' } })
-    fireEvent.keyDown(screen.getByRole('textbox', { name: 'Name' }), { key: 'Escape' })
-    expect(screen.getByRole('button', { name: 'Create ad' })).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Create ad' }))
-    const input = screen.getByRole('textbox', { name: 'Name' })
-    fireEvent.change(input, { target: { value: '   ' } })
-    fireEvent.blur(input)
-    await waitFor(() => expect(screen.queryByRole('textbox', { name: 'Name' })).not.toBeInTheDocument())
-    expect(screen.getByRole('button', { name: 'Create ad' })).toBeInTheDocument()
+  it('never renames by itself: the name editor it is given does', () => {
+    render(<ItemBreadcrumb itemId="r1" name="Create ad" nameEditor={EDITOR} {...actions} />)
+    fireEvent.click(screen.getByRole('button', { name: /^Rename request/ }))
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
     expect(treeService.renameItem).not.toHaveBeenCalled()
-    expect(actions.onRenamed).not.toHaveBeenCalled()
-  })
-
-  it('leaves the sidebar row out of rename mode', () => {
-    render(<ItemBreadcrumb itemId="r1" name="Create ad" {...actions} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Create ad' }))
+    expect(examplesService.renameExample).not.toHaveBeenCalled()
     expect(useSidebarStore.getState().renamingId).toBeNull()
   })
 
-  it('shows an example under its request and renames the example', async () => {
-    vi.mocked(examplesService.renameExample).mockResolvedValue({} as never)
-    vi.mocked(treeService.getTree).mockResolvedValue(sampleTree())
-    render(<ItemBreadcrumb itemId="x1" name="Created" {...actions} />)
-    expect(crumbs().map((item) => item.firstElementChild?.textContent)).toEqual(['Campaign Manager', 'Ads', 'CRUD', 'Create ad', 'Created'])
+  it('shows an example under its request', () => {
+    render(<ItemBreadcrumb itemId="x1" name="Created" nameEditor={EDITOR} {...actions} />)
+    expect(crumbs().map((item) => item.textContent)).toEqual(['Campaign Manager/', 'Ads/', 'CRUD/', 'Create ad/', 'Draft name'])
     fireEvent.click(screen.getByRole('button', { name: 'Create ad' }))
     expect(actions.onOpenRequest).toHaveBeenCalledWith('r1')
-    fireEvent.click(screen.getByRole('button', { name: 'Created' }))
-    const input = screen.getByRole('textbox', { name: 'Name' })
-    fireEvent.change(input, { target: { value: 'Created OK' } })
-    fireEvent.keyDown(input, { key: 'Enter' })
-    await waitFor(() => expect(actions.onRenamed).toHaveBeenCalledWith('x1'))
-    expect(examplesService.renameExample).toHaveBeenCalledWith('L1', 'r1', 'x1', 'Created OK')
   })
 
-  it('shows only the name of an unsaved request, which the tree cannot rename', () => {
-    render(<ItemBreadcrumb itemId={null} name="New Request" {...actions} />)
-    expect(crumbs().map((item) => item.firstElementChild?.textContent)).toEqual(['New Request'])
-    expect(screen.queryByRole('button')).not.toBeInTheDocument()
-    expect(screen.getByText('New Request')).toHaveAttribute('aria-current', 'page')
+  it('shows only the name editor of an unsaved request', () => {
+    render(<ItemBreadcrumb itemId={null} name="New Request" nameEditor={EDITOR} {...actions} />)
+    expect(crumbs().map((item) => item.textContent)).toEqual(['Draft name'])
+    expect(crumbs()[0]).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveAttribute('title', 'New Request')
   })
 })

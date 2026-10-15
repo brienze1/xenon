@@ -27,14 +27,12 @@
 
 .current {
   display: flex;
-  flex: 0 1 auto;
-  min-width: 6ch;
-}
-
-.editing {
-  display: flex;
   flex: 1 1 auto;
-  min-width: 12ch;
+  min-width: 6ch;
+  height: 22px;
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+  line-height: 20px;
 }
 
 .separator {
@@ -44,9 +42,7 @@
   user-select: none;
 }
 
-.link,
-.rename,
-.name {
+.link {
   min-width: 0;
   max-width: 100%;
   height: 22px;
@@ -59,9 +55,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.link {
   color: var(--color-text-muted);
   cursor: pointer;
   transition: color var(--duration-fast), background-color var(--duration-fast);
@@ -72,30 +65,13 @@
   background: var(--color-surface-raised);
 }
 
-.rename,
-.name {
-  color: var(--color-text);
-  font-weight: var(--font-weight-semibold);
-}
-
-.rename {
-  cursor: text;
-  transition: background-color var(--duration-fast);
-}
-
-.rename:hover {
-  background: var(--color-surface-raised);
-}
-
-.link:focus-visible,
-.rename:focus-visible {
+.link:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .link,
-  .rename {
+  .link {
     transition: none;
   }
 }

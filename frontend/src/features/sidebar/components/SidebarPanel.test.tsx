@@ -222,7 +222,7 @@ describe('SidebarPanel', () => {
     const input = screen.getByRole('textbox', { name: 'Name' })
     await userEvent.clear(input)
     await userEvent.type(input, 'Payments{Enter}')
-    await waitFor(() => expect(actions.onRenamed).toHaveBeenCalledWith('c1'))
+    await waitFor(() => expect(actions.onRenamed).toHaveBeenCalledWith('c1', 'Billing'))
     expect(tree.renameItem).toHaveBeenCalledWith('ws', 'c1', 'Payments')
   })
 

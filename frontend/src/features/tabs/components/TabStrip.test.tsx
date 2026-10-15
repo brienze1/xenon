@@ -497,4 +497,63 @@ describe('TabContextMenu', () => {
     expect(within(strip()).queryByRole('tab', { name: /Settings/ })).not.toBeInTheDocument()
     expect(useSettingsStore.getState().draft.historyAiCap).toBe('1000')
   })
+  it('shows the dot for a name-only change while the tab keeps its saved name', async () => {
+    const request = { id: 'A', kind: 'request' as const, name: 'Request A', method: 'POST', url: null, error: null, warning: null, children: [] }
+    useSidebarStore.setState({ tree: [{ id: 'c1', kind: 'collection', name: 'Billing', method: null, url: null, error: null, warning: null, children: [request] }], status: 'ready' })
+    await act(() => useTabsStore.getState().openPinned('A'))
+    const tabId = useTabsStore.getState().activeTabId!
+    renderStrip()
+    const tab = within(strip()).getByRole('tab', { name: /Request A/ })
+    expect(within(tab).queryByRole('img', { name: 'Unsaved changes' })).not.toBeInTheDocument()
+    act(() => useTabsStore.getState().editTabName(tabId, 'Renamed A'))
+    expect(within(tab).getByRole('img', { name: 'Unsaved changes' })).toBeInTheDocument()
+    expect(tab).toHaveTextContent('Request A')
+    expect(tab).not.toHaveTextContent('Renamed A')
+    act(() => useTabsStore.getState().cancelTabName(tabId))
+    expect(within(tab).queryByRole('img', { name: 'Unsaved changes' })).not.toBeInTheDocument()
+  })
+
+  it('shows the dot for a name-only change of a collection and an environment', async () => {
+    useSidebarStore.setState({ tree: [{ id: 'c1', kind: 'collection', name: 'Billing', method: null, url: null, error: null, warning: null, children: [] }], status: 'ready' })
+    useEnvironmentsStore.setState({ environments: [{ id: 'e1', name: 'dev', color: 'green', confirmBeforeSend: false, error: null }], status: 'ready' })
+    const settings = { id: 'c1', kind: 'collection' as const, name: 'Billing', description: '', auth: { type: 'inherit' }, headers: [], scripts: { preRequest: '', postResponse: '', disabled: [] }, inheritScripts: null } as never
+    useItemSettingsStore.setState({
+      items: { c1: { status: 'ready', loadError: null, base: settings, draft: settings, bulkText: null, dirty: false, saving: false, failure: null, stale: false, section: 'overview' } },
+    })
+    act(() => useTabsStore.getState().openItemTab({ kind: 'collection', itemId: 'c1' }, 'pinned'))
+    const collectionTabId = useTabsStore.getState().activeTabId!
+    act(() => useTabsStore.getState().openEnvironmentTab({ kind: 'environment', environmentId: 'e1' }, 'pinned'))
+    const environmentTabId = useTabsStore.getState().activeTabId!
+    renderStrip()
+    const collectionTab = within(strip()).getByRole('tab', { name: /Billing/ })
+    const environmentTab = within(strip()).getByRole('tab', { name: /dev/ })
+    act(() => useTabsStore.getState().editTabName(collectionTabId, 'Payments'))
+    act(() => useTabsStore.getState().editTabName(environmentTabId, 'local'))
+    expect(within(collectionTab).getByRole('img', { name: 'Unsaved changes' })).toBeInTheDocument()
+    expect(within(environmentTab).getByRole('img', { name: 'Unsaved changes' })).toBeInTheDocument()
+    expect(collectionTab).toHaveTextContent('Billing')
+    expect(environmentTab).toHaveTextContent('dev')
+    useEnvironmentsStore.getState().reset()
+    useItemSettingsStore.getState().reset()
+  })
+
+  it('labels an example tab with its saved name while its draft name differs', () => {
+    const request = {
+      id: 'A',
+      kind: 'request' as const,
+      name: 'Request A',
+      method: 'POST',
+      url: null,
+      error: null,
+      warning: null,
+      children: [],
+      examples: [{ id: 'x1', name: 'Created', code: 201 }],
+    }
+    useSidebarStore.setState({ tree: [{ id: 'c1', kind: 'collection', name: 'Billing', method: null, url: null, error: null, warning: null, children: [request] }], status: 'ready' })
+    useTabsStore.setState({ tabs: [{ id: 'tx', requestId: 'A', pinned: true, kind: 'example', exampleId: 'x1' }], activeTabId: 'tx' })
+    useRequestBuilderStore.getState().loadDraft('tx', { ...emptyDraft(), name: 'Created OK' }, null, false)
+    renderStrip()
+    const tab = within(strip()).getByRole('tab', { name: /Created/ })
+    expect(tab).toHaveAttribute('title', 'Created')
+  })
 })

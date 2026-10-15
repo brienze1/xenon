@@ -31,8 +31,8 @@ interface ItemSettingsState {
   save: (itemId: string) => Promise<Result<boolean, AppError>>
   /** Drops the edits and shows what is on disk. */
   discard: (itemId: string) => void
-  /** Takes a rename made elsewhere (the sidebar or the Overview) without touching the edits. */
-  adoptName: (itemId: string, name: string) => void
+  /** Edits the name draft; whether it is pending is derived from the saved name, so it does not mark the settings dirty. */
+  editName: (itemId: string, name: string) => void
   /** Stops tracking an item (its tab closed). */
   drop: (itemId: string) => void
   reset: () => void
@@ -41,6 +41,15 @@ interface ItemSettingsState {
 /** Whether the open collection or folder has unsaved edits. */
 export function isItemDirty(state: Pick<ItemSettingsState, 'items'>, itemId: string): boolean {
   return state.items[itemId]?.dirty === true
+}
+
+/** Whether the item's name was edited in its tab and not saved yet; compared with the name it was loaded with. */
+export function isItemNamePending(state: Pick<ItemSettingsState, 'items'>, itemId: string): boolean {
+  return hasPendingName(state.items[itemId])
+}
+
+function hasPendingName(entry: ItemEntry | undefined): boolean {
+  return entry?.draft != null && entry.base != null && entry.draft.name.trim() !== entry.base.name
 }
 
 function activeLocalId(): string | null {
@@ -84,13 +93,19 @@ export const useItemSettingsStore = create<ItemSettingsState>()((set, get) => {
     return failure
   }
 
+  /** A name typed in the tab survives a reload; otherwise the draft takes the loaded name. */
+  function nameAfterLoad(entry: ItemEntry, loaded: ItemSettings): string {
+    return hasPendingName(entry) ? entry.draft!.name : loaded.name
+  }
+
   function applyLoaded(entry: ItemEntry, loaded: ItemSettings): Partial<ItemEntry> {
+    const name = nameAfterLoad(entry, loaded)
     if (!entry.dirty || !entry.draft) {
       const unchanged = entry.base !== null && sameSettings(entry.base, loaded)
-      return { status: 'ready', loadError: null, base: loaded, draft: loaded, bulkText: unchanged ? entry.bulkText : null, stale: false }
+      return { status: 'ready', loadError: null, base: loaded, draft: { ...loaded, name }, bulkText: unchanged ? entry.bulkText : null, stale: false }
     }
     const changed = entry.base === null || !sameSettings(entry.base, loaded)
-    return { status: 'ready', loadError: null, base: loaded, draft: { ...entry.draft, name: loaded.name }, stale: entry.stale || changed }
+    return { status: 'ready', loadError: null, base: loaded, draft: { ...entry.draft, name }, stale: entry.stale || changed }
   }
 
   return {
@@ -164,22 +179,19 @@ export const useItemSettingsStore = create<ItemSettingsState>()((set, get) => {
       if (!headers.ok) {
         return { ok: false, error: fail(itemId, headers.error, BULK_NEXT_STEP).error }
       }
-      const saved = await inWorkspace((localId) => saveItemSettings(localId, { ...draft, headers: headers.value }))
+      const name = entry.base?.name ?? draft.name
+      const saved = await inWorkspace((localId) => saveItemSettings(localId, { ...draft, name, headers: headers.value }))
       if (!saved.ok) {
         return { ok: false, error: fail(itemId, saved.error, SAVE_NEXT_STEP).error }
       }
       const edited = get().items[itemId]?.draft !== draft
-      patch(itemId, edited ? { saving: false, base: saved.value, stale: false } : { saving: false, base: saved.value, draft: saved.value, dirty: false, stale: false })
+      patch(itemId, edited ? { saving: false, base: saved.value, stale: false } : { saving: false, base: saved.value, draft: { ...saved.value, name: draft.name }, dirty: false, stale: false })
       return { ok: true, value: true }
     },
 
     discard: (itemId) => patch(itemId, (entry) => ({ draft: entry.base, dirty: false, stale: false, bulkText: null, failure: null })),
 
-    adoptName: (itemId, name) =>
-      patch(itemId, (entry) => ({
-        base: entry.base ? { ...entry.base, name } : null,
-        draft: entry.draft ? { ...entry.draft, name } : null,
-      })),
+    editName: (itemId, name) => patch(itemId, (entry) => (entry.draft ? { draft: { ...entry.draft, name } } : {})),
 
     drop: (itemId) =>
       set((state) => {

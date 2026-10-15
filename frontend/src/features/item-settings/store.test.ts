@@ -108,8 +108,37 @@ describe('item settings store', () => {
     vi.mocked(tree.getItemSettings).mockResolvedValue({ ...billing, name: 'Payments' })
     await store().load('c1')
     expect(store().items.c1).toMatchObject({ stale: false, draft: { name: 'Payments', description: 'Mine' } })
-    store().adoptName('c1', 'Finance')
+  })
+
+  it('edits the name as a draft without marking the settings dirty, and drops it again', async () => {
+    await store().open('c1')
+    store().editName('c1', 'Finance')
+    expect(store().items.c1).toMatchObject({ base: { name: billing.name }, draft: { name: 'Finance' }, dirty: false })
+    expect(isItemDirty(store(), 'c1')).toBe(false)
+    store().editName('c1', billing.name)
+    expect(store().items.c1?.draft?.name).toBe(billing.name)
+    expect('adoptName' in store()).toBe(false)
+  })
+
+  it('keeps a pending name when the item reloads, and takes the loaded name otherwise', async () => {
+    await store().open('c1')
+    store().editName('c1', 'Mine')
+    vi.mocked(tree.getItemSettings).mockResolvedValue({ ...billing, name: 'Payments' })
+    await store().load('c1')
+    expect(store().items.c1).toMatchObject({ base: { name: 'Payments' }, draft: { name: 'Mine' } })
+    store().editName('c1', 'Payments')
+    vi.mocked(tree.getItemSettings).mockResolvedValue({ ...billing, name: 'Finance' })
+    await store().load('c1')
     expect(store().items.c1).toMatchObject({ base: { name: 'Finance' }, draft: { name: 'Finance' } })
+  })
+
+  it('saves the settings without the name', async () => {
+    await store().open('c1')
+    store().edit('c1', { description: 'Edited' })
+    store().editName('c1', 'Finance')
+    await store().save('c1')
+    expect(tree.saveItemSettings).toHaveBeenCalledWith('ws', expect.objectContaining({ name: billing.name, description: 'Edited' }))
+    expect(store().items.c1?.draft?.name).toBe('Finance')
   })
 
   it('shows a load failure and forgets an item once its tab closes', async () => {

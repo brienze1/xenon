@@ -5,12 +5,14 @@ import { collectionScope } from '@/platform/mappers/variable'
 import { withNextStep } from '@/shared/lib/next-step'
 import { Banner } from '@/shared/ui/banner/Banner'
 import { Button } from '@/shared/ui/button/Button'
+import { EditableName } from '@/shared/ui/editable-name/EditableName'
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { Tabs } from '@/shared/ui/tabs/Tabs'
 import type { ItemAuthSlot, ItemScriptsSlot, ItemSection } from '@/features/item-settings/model'
 import { isDocumentationDirty, useDocumentationStore } from '@/features/documentation/store'
 import { isScopeDirty, useEnvironmentsStore } from '@/features/environments/store'
-import { isItemDirty, useItemSettingsStore } from '@/features/item-settings/store'
+import { isItemDirty, isItemNamePending, useItemSettingsStore } from '@/features/item-settings/store'
+import { selectItemTabId, selectNameErrorText, useTabsStore } from '@/features/tabs/store'
 import { ItemHeaders } from './ItemHeaders'
 import { ItemOverview } from './ItemOverview'
 import styles from './ItemTab.module.css'
@@ -117,7 +119,13 @@ function ItemEditor({ settings, kind, onSave, authEditor, scriptsEditor, collect
   const settingsDirty = useItemSettingsStore((state) => isItemDirty(state, itemId))
   const variablesDirty = useEnvironmentsStore((state) => kind === 'collection' && isScopeDirty(state, collectionScope(itemId)))
   const documentationDirty = useDocumentationStore((state) => isDocumentationDirty(state, itemId))
-  const dirty = settingsDirty || variablesDirty || documentationDirty
+  const namePending = useItemSettingsStore((state) => isItemNamePending(state, itemId))
+  const savedName = useItemSettingsStore((state) => state.items[itemId]?.base?.name ?? settings.name)
+  const tabId = useTabsStore((state) => selectItemTabId(state, itemId))
+  const nameError = useTabsStore((state) => selectNameErrorText(state, tabId))
+  const editTabName = useTabsStore((state) => state.editTabName)
+  const cancelTabName = useTabsStore((state) => state.cancelTabName)
+  const dirty = settingsDirty || variablesDirty || documentationDirty || namePending
   const stale = useItemSettingsStore((state) => state.items[itemId]?.stale === true)
   const failure = useItemSettingsStore((state) => state.items[itemId]?.failure ?? null)
   const edit = useItemSettingsStore((state) => state.edit)
@@ -129,10 +137,16 @@ function ItemEditor({ settings, kind, onSave, authEditor, scriptsEditor, collect
   const shown: ItemSection = (section === 'variables' && variables === null) || (section === 'documentation' && docs === null) ? 'overview' : section
 
   return (
-    <section className={styles.tab} aria-label={`${settings.name} ${label.toLowerCase()}`}>
+    <section className={styles.tab} aria-label={`${savedName} ${label.toLowerCase()}`}>
       <header className={styles.header}>
-        <h2 className={styles.title} translate="no" title={settings.name}>
-          {settings.name}
+        <h2 className={styles.title}>
+          <EditableName
+            value={settings.name}
+            label={`Rename ${label.toLowerCase()}`}
+            error={nameError}
+            onChange={(name) => tabId !== null && editTabName(tabId, name)}
+            onCancel={() => tabId !== null && cancelTabName(tabId)}
+          />
         </h2>
         <span className={styles.kind}>{label}</span>
         <div className={styles.actions}>

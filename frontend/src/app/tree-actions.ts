@@ -14,8 +14,8 @@ export function openRequestPreview(requestId: string) {
   void useTabsStore.getState().openPreview(requestId)
 }
 
-/** A request or example was renamed in the tree: the tabs showing it take the new name. */
-export function adoptTreeRename(id: string) {
-  void useRequestBuilderStore.getState().adoptRename(id)
-  void useExamplesStore.getState().adoptRename(id)
+/** A request or example was renamed in the tree: its tabs take the new name, unless they hold a name of their own. */
+export function adoptTreeRename(id: string, previousName: string) {
+  void useRequestBuilderStore.getState().adoptRename(id, previousName)
+  void useExamplesStore.getState().adoptRename(id, previousName)
 }
