@@ -46,6 +46,8 @@ interface EnvironmentsState {
   tables: Record<string, TableState>
   /** The edits of every loaded variable table, kept here so an environment tab keeps them while hidden. */
   drafts: Record<string, VariableDraft>
+  /** Names typed in environment tabs and not saved yet, by environment id. */
+  nameDrafts: Record<string, string>
   vault: VaultStatus
   passphrasePrompt: PassphrasePrompt | null
   dismissedPrompts: PassphrasePrompt[]
@@ -56,6 +58,8 @@ interface EnvironmentsState {
   clearError: () => void
   createEnvironment: (name: string) => Promise<Result<Environment, AppError>>
   renameEnvironment: (id: string, name: string) => Promise<AppError | null>
+  editName: (id: string, name: string) => void
+  dropName: (id: string) => void
   updateEnvironmentLook: (id: string, look: EnvironmentLook) => Promise<AppError | null>
   duplicateEnvironment: (id: string) => Promise<Result<Environment, AppError>>
   deleteEnvironment: (id: string) => Promise<AppError | null>
@@ -96,6 +100,7 @@ const INITIAL_STATE = {
   switcherOpen: false,
   tables: {},
   drafts: {},
+  nameDrafts: {},
   passphrasePrompt: null,
 } satisfies Partial<EnvironmentsState>
 
@@ -103,6 +108,18 @@ const EMPTY_TABLE: TableState = { rows: [], warnings: [], status: 'idle', error:
 
 function draftOf(rows: VariableRow[]): VariableDraft {
   return { base: rows, rows: toDraftRows(rows), dirty: false, confirming: null, failure: null, saving: false }
+}
+
+/** Another environment already named `name`, compared like Go's `Environment.HasName`: ignoring case and surrounding spaces. */
+export function findNameClash(state: Pick<EnvironmentsState, 'environments'>, id: string, name: string): EnvironmentSummary | null {
+  const wanted = name.trim().toLowerCase()
+  return state.environments.find((environment) => environment.id !== id && environment.name.trim().toLowerCase() === wanted) ?? null
+}
+
+function withoutName(nameDrafts: Record<string, string>, id: string): Record<string, string> {
+  const rest = { ...nameDrafts }
+  delete rest[id]
+  return rest
 }
 
 /** Whether the variable table of `scope` has unsaved edits. */
@@ -295,6 +312,10 @@ export const useEnvironmentsStore = create<EnvironmentsState>()((set, get) => {
       return null
     },
 
+    editName: (id, name) => set((state) => ({ nameDrafts: { ...state.nameDrafts, [id]: name } })),
+
+    dropName: (id) => set((state) => ({ nameDrafts: withoutName(state.nameDrafts, id) })),
+
     updateEnvironmentLook: async (id, look) => {
       const updated = await inWorkspace(async (localId) => {
         const current = await getEnvironment(localId, id)
@@ -325,7 +346,7 @@ export const useEnvironmentsStore = create<EnvironmentsState>()((set, get) => {
         const drafts = { ...state.drafts }
         delete tables[environmentScope(id)]
         delete drafts[environmentScope(id)]
-        return { activeId: deleted.value, tables, drafts }
+        return { activeId: deleted.value, tables, drafts, nameDrafts: withoutName(state.nameDrafts, id) }
       })
       await get().load()
       return null

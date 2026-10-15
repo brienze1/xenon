@@ -50,6 +50,7 @@ function loadDraft(id: string, name: string, description = '') {
   useRequestBuilderStore.setState((state) => ({
     tabs: { ...state.tabs, [tabId()]: { ...state.tabs[tabId()]!, draft: { ...emptyDraft(), id, name, description }, baseRevision: id ? 'rev' : null } },
   }))
+  useTabsStore.setState({ tabs: [{ id: tabId(), requestId: id || null, pinned: true }], activeTabId: tabId(), nameErrors: {} })
 }
 
 describe('InfoPanel', () => {

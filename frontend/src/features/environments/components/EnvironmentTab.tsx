@@ -1,22 +1,20 @@
-import { useId, useRef, useState, useTransition, type FormEvent } from 'react'
+import { useState, useTransition } from 'react'
 import type { AppError } from '@/platform/errors'
 import { ENVIRONMENT_COLORS, type EnvironmentColor, type EnvironmentSummary } from '@/platform/mappers/environment'
 import { environmentScope } from '@/platform/mappers/variable'
-import { DUPLICATE_ENVIRONMENT_NAME } from '@/platform/services/environments'
 import { withNextStep } from '@/shared/lib/next-step'
 import { Banner } from '@/shared/ui/banner/Banner'
-import { Button } from '@/shared/ui/button/Button'
+import { EditableName } from '@/shared/ui/editable-name/EditableName'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { useEnvironmentsStore } from '@/features/environments/store'
+import { selectEnvironmentTabId, selectNameErrorText, useTabsStore } from '@/features/tabs/store'
 import { VariableTable } from './VariableTable'
 import styles from './EnvironmentTab.module.css'
 
 const ENVIRONMENT_NEXT_STEP = 'Check that the workspace folder exists and is writable, then try again.'
 
 const BROKEN_NEXT_STEP = 'Fix or remove the file in the workspace folder.'
-
-const NAME_REQUIRED = 'Type a name for the environment.'
 
 const COLOR_NAMES: Record<EnvironmentColor, string> = {
   none: 'No colour',
@@ -44,10 +42,7 @@ const MISSING = (
   </EmptyState.Root>
 )
 
-function errorText(error: AppError, name: string): string {
-  if (error.code === DUPLICATE_ENVIRONMENT_NAME) {
-    return `An environment named “${name.trim()}” already exists. Choose another name.`
-  }
+function errorText(error: AppError): string {
   return withNextStep(error.description || error.code, ENVIRONMENT_NEXT_STEP)
 }
 
@@ -55,7 +50,7 @@ interface EnvironmentTabProps {
   environmentId: string
 }
 
-/** The main-area tab of one environment: its name, colour, "Confirm before send" and variables. */
+/** The main-area tab of one environment: its name (edited in place, saved with the tab), colour, "Confirm before send" and variables. */
 export function EnvironmentTab({ environmentId }: EnvironmentTabProps) {
   const environment = useEnvironmentsStore((state) => state.environments.find((candidate) => candidate.id === environmentId) ?? null)
   const loaded = useEnvironmentsStore((state) => state.status === 'ready')
@@ -84,33 +79,14 @@ interface EnvironmentEditorProps {
 }
 
 function EnvironmentEditor({ environment, active }: EnvironmentEditorProps) {
-  const renameEnvironment = useEnvironmentsStore((state) => state.renameEnvironment)
   const updateEnvironmentLook = useEnvironmentsStore((state) => state.updateEnvironmentLook)
-  const [name, setName] = useState(environment.name)
+  const name = useEnvironmentsStore((state) => state.nameDrafts[environment.id] ?? environment.name)
+  const tabId = useTabsStore((state) => selectEnvironmentTabId(state, environment.id))
+  const nameError = useTabsStore((state) => selectNameErrorText(state, tabId))
+  const editTabName = useTabsStore((state) => state.editTabName)
+  const cancelTabName = useTabsStore((state) => state.cancelTabName)
   const [error, setError] = useState<AppError | null>(null)
-  const [nameRequired, setNameRequired] = useState(false)
   const [busy, startAction] = useTransition()
-  const nameRef = useRef<HTMLInputElement>(null)
-  const nameErrorId = useId()
-  const [syncedName, setSyncedName] = useState(environment.name)
-
-  if (environment.name !== syncedName) {
-    setSyncedName(environment.name)
-    setName(environment.name)
-  }
-
-  function rename(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (name.trim() === '') {
-      setNameRequired(true)
-      nameRef.current?.focus()
-      return
-    }
-    if (name === environment.name) {
-      return
-    }
-    startAction(async () => setError(await renameEnvironment(environment.id, name)))
-  }
 
   function changeLook(color: EnvironmentColor, confirmBeforeSend: boolean) {
     startAction(async () => setError(await updateEnvironmentLook(environment.id, { color, confirmBeforeSend })))
@@ -120,38 +96,17 @@ function EnvironmentEditor({ environment, active }: EnvironmentEditorProps) {
     <section className={styles.tab} aria-label={`${environment.name} environment`}>
       <header className={styles.header}>
         <span className={styles.swatch} data-color={environment.color} aria-hidden="true" />
-        <h2 className={styles.title} translate="no" title={environment.name}>
-          {environment.name}
+        <h2 className={styles.title}>
+          <EditableName
+            value={name}
+            label="Rename environment"
+            error={nameError}
+            onChange={(next) => tabId !== null && editTabName(tabId, next)}
+            onCancel={() => tabId !== null && cancelTabName(tabId)}
+          />
         </h2>
         {active ? ACTIVE_MARK : null}
       </header>
-      <div className={styles.detailBar}>
-        <form className={styles.rename} noValidate onSubmit={rename}>
-          <input
-            ref={nameRef}
-            name="name"
-            autoComplete="off"
-            aria-label="Environment name"
-            aria-invalid={nameRequired ? true : undefined}
-            aria-describedby={nameRequired ? nameErrorId : undefined}
-            className={styles.input}
-            translate="no"
-            value={name}
-            onChange={(event) => {
-              setName(event.target.value)
-              setNameRequired(false)
-            }}
-          />
-          <Button type="submit" variant="secondary" size="sm" disabled={busy}>
-            Rename
-          </Button>
-        </form>
-      </div>
-      {nameRequired ? (
-        <p id={nameErrorId} role="alert" className={styles.fieldError}>
-          {NAME_REQUIRED}
-        </p>
-      ) : null}
       <div className={styles.look}>
         <fieldset className={styles.colors}>
           {COLOR_LEGEND}
@@ -184,7 +139,7 @@ function EnvironmentEditor({ environment, active }: EnvironmentEditorProps) {
       {error ? (
         <Banner.Root tone="error">
           <Banner.Message>
-            <NoTranslateText text={errorText(error, name)} terms={[error.code]} />
+            <NoTranslateText text={errorText(error)} terms={[error.code]} />
           </Banner.Message>
         </Banner.Root>
       ) : null}

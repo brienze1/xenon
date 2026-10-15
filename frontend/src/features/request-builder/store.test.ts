@@ -453,7 +453,7 @@ describe('request builder store - saved requests', () => {
     state().editName(TAB, 'Pong')
     expect(activeTab().draft.name).toBe('Pong')
     expect(activeTab().dirty).toBe(false)
-    state().dropName(TAB, 'Ping')
+    state().editName(TAB, 'Ping')
     expect(activeTab().draft.name).toBe('Ping')
     expect(activeTab().dirty).toBe(false)
   })

@@ -346,7 +346,7 @@ describe('App', () => {
     await userEvent.type(input, 'Pong')
     expect(within(openTabs()[0]!).getByRole('img', { name: 'Unsaved changes' })).toBeInTheDocument()
     expect(openTabs()[0]).toHaveTextContent('Ping')
-    press('s', { metaKey: true, ctrlKey: false })
+    press('s')
     await vi.waitFor(() => expect(tree.renameItem).toHaveBeenCalledWith('A', 'r1', 'Pong'))
     expect(requests.saveRequest).not.toHaveBeenCalled()
     await vi.waitFor(() => expect(within(openTabs()[0]!).queryByRole('img', { name: 'Unsaved changes' })).not.toBeInTheDocument())

@@ -71,7 +71,7 @@ const { useItemSettingsStore } = await import('@/features/item-settings/store')
 const { useDocumentationStore } = await import('@/features/documentation/store')
 const { useSidebarStore } = await import('@/features/sidebar/store')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
-const { useTabsStore } = await import('./store')
+const { isTabDirty, useTabsStore } = await import('./store')
 
 function node(id: string, kind: TreeNode['kind'], name: string, children: TreeNode[] = [], examples: TreeNode['examples'] = []): TreeNode {
   return { id, kind, name, method: kind === 'request' ? 'POST' : null, url: null, error: null, warning: null, children, examples }
@@ -166,14 +166,9 @@ function deferred<T>() {
   return { promise, resolve }
 }
 
-/** Whether closing the tab asks first; answers the prompt with Cancel so the tab stays as it was. */
-async function asksBeforeClosing(tabId: string): Promise<boolean> {
-  tabs().requestClose(tabId)
-  const asked = tabs().closePrompt === tabId
-  if (asked) {
-    await tabs().resolveClose('cancel')
-  }
-  return asked
+/** Whether the tab has unsaved changes, so closing it would ask first. */
+function asksBeforeClosing(tabId: string): boolean {
+  return isTabDirty(tabId)
 }
 
 function isOpen(tabId: string): boolean {
@@ -256,17 +251,17 @@ describe('name drafts in tabs', () => {
   describe('request tabs', () => {
     it('marks the tab dirty while the name differs from the saved one, and clean again after Escape', async () => {
       const tabId = await openRequest()
-      expect(await asksBeforeClosing(tabId)).toBe(false)
+      expect(asksBeforeClosing(tabId)).toBe(false)
       tabs().editTabName(tabId, 'Create draft invoice')
       expect(builder().tabs[tabId]!.draft.name).toBe('Create draft invoice')
       expect(builder().tabs[tabId]!.dirty).toBe(false)
-      expect(await asksBeforeClosing(tabId)).toBe(true)
+      expect(asksBeforeClosing(tabId)).toBe(true)
       tabs().editTabName(tabId, 'Create invoice  ')
-      expect(await asksBeforeClosing(tabId)).toBe(false)
+      expect(asksBeforeClosing(tabId)).toBe(false)
       tabs().editTabName(tabId, 'Something else')
       tabs().cancelTabName(tabId)
       expect(builder().tabs[tabId]!.draft.name).toBe('Create invoice')
-      expect(await asksBeforeClosing(tabId)).toBe(false)
+      expect(asksBeforeClosing(tabId)).toBe(false)
     })
 
     it('keeps the saved name everywhere outside the name editor until the save', async () => {
@@ -285,7 +280,7 @@ describe('name drafts in tabs', () => {
       expect(builder().tabs[tabId]!.draft.name).toBe('Create draft invoice')
       expect(builder().tabs[tabId]!.baseRevision).toBe('rev-r1-1')
       expect(tabs().nameErrors[tabId]).toBeUndefined()
-      expect(await asksBeforeClosing(tabId)).toBe(false)
+      expect(asksBeforeClosing(tabId)).toBe(false)
     })
 
     it('saves the other edits under the saved name first, then renames', async () => {
@@ -296,7 +291,7 @@ describe('name drafts in tabs', () => {
       expect(requests.saveRequest).toHaveBeenCalledWith('ws', expect.objectContaining({ name: 'Create invoice', url: 'https://changed' }), 'rev-r1-0', false)
       expect(treeService.renameItem).toHaveBeenCalledWith('ws', 'r1', 'Create draft invoice')
       expect(vi.mocked(requests.saveRequest).mock.invocationCallOrder[0]!).toBeLessThan(vi.mocked(treeService.renameItem).mock.invocationCallOrder[0]!)
-      expect(await asksBeforeClosing(tabId)).toBe(false)
+      expect(asksBeforeClosing(tabId)).toBe(false)
     })
 
     it('stops the whole save on an empty name', async () => {
@@ -320,7 +315,7 @@ describe('name drafts in tabs', () => {
       await tabs().save()
       expect(treeService.renameItem).not.toHaveBeenCalled()
       expect(builder().tabs[tabId]!.draft.name).toBe('Create draft invoice')
-      expect(await asksBeforeClosing(tabId)).toBe(true)
+      expect(asksBeforeClosing(tabId)).toBe(true)
     })
 
     it('shows a failed rename under the name and keeps it pending', async () => {
@@ -333,7 +328,7 @@ describe('name drafts in tabs', () => {
       expect(requests.saveRequest).toHaveBeenCalledTimes(1)
       expect(tabs().nameErrors[tabId]).toEqual({ kind: 'failed', error: failure })
       expect(builder().tabs[tabId]!.dirty).toBe(false)
-      expect(await asksBeforeClosing(tabId)).toBe(true)
+      expect(asksBeforeClosing(tabId)).toBe(true)
     })
 
     it('ignores a second save while one is running, and keeps a name typed meanwhile pending', async () => {
@@ -353,7 +348,7 @@ describe('name drafts in tabs', () => {
       expect(treeService.renameItem).toHaveBeenCalledTimes(1)
       expect(treeService.renameItem).toHaveBeenCalledWith('ws', 'r1', 'First')
       expect(builder().tabs[tabId]!.draft.name).toBe('Second')
-      expect(await asksBeforeClosing(tabId)).toBe(true)
+      expect(asksBeforeClosing(tabId)).toBe(true)
     })
 
     it('keeps a pending name when the request is renamed elsewhere, and updates tabs without one', async () => {
@@ -365,8 +360,8 @@ describe('name drafts in tabs', () => {
       expect(builder().tabs[mine]!.draft.name).toBe('Mine')
       expect(builder().tabs[sibling]!.draft.name).toBe('Theirs')
       expect(builder().tabs[mine]!.baseRevision).toBe(builder().tabs[sibling]!.baseRevision)
-      expect(await asksBeforeClosing(mine)).toBe(true)
-      expect(await asksBeforeClosing(sibling)).toBe(false)
+      expect(asksBeforeClosing(mine)).toBe(true)
+      expect(asksBeforeClosing(sibling)).toBe(false)
     })
 
     it('stops treating the draft as pending once the saved name catches up with it', async () => {
@@ -374,7 +369,7 @@ describe('name drafts in tabs', () => {
       tabs().editTabName(tabId, 'Theirs')
       await useSidebarStore.getState().rename('r1', 'Theirs')
       await builder().adoptRename('r1', 'Create invoice')
-      expect(await asksBeforeClosing(tabId)).toBe(false)
+      expect(asksBeforeClosing(tabId)).toBe(false)
     })
 
     it('keeps a name-only draft in the saved UI state', async () => {
@@ -415,10 +410,10 @@ describe('name drafts in tabs', () => {
       const tabId = await openItem(itemId)
       tabs().editTabName(tabId, 'Renamed')
       expect(useItemSettingsStore.getState().items[itemId]!.draft!.name).toBe('Renamed')
-      expect(await asksBeforeClosing(tabId)).toBe(true)
+      expect(asksBeforeClosing(tabId)).toBe(true)
       tabs().cancelTabName(tabId)
       expect(useItemSettingsStore.getState().items[itemId]!.draft!.name).toBe(names[itemId])
-      expect(await asksBeforeClosing(tabId)).toBe(false)
+      expect(asksBeforeClosing(tabId)).toBe(false)
     })
 
     it('saves the settings first, then renames the collection', async () => {
@@ -431,7 +426,7 @@ describe('name drafts in tabs', () => {
       expect(vi.mocked(treeService.saveItemSettings).mock.invocationCallOrder[0]!).toBeLessThan(
         vi.mocked(treeService.renameItem).mock.invocationCallOrder[0]!,
       )
-      expect(await asksBeforeClosing(tabId)).toBe(false)
+      expect(asksBeforeClosing(tabId)).toBe(false)
     })
 
     it('renames a folder with only a name change', async () => {
@@ -440,7 +435,7 @@ describe('name drafts in tabs', () => {
       await tabs().save()
       expect(treeService.renameItem).toHaveBeenCalledWith('ws', 'f1', 'Receipts')
       expect(treeService.saveItemSettings).not.toHaveBeenCalled()
-      expect(await asksBeforeClosing(tabId)).toBe(false)
+      expect(asksBeforeClosing(tabId)).toBe(false)
     })
 
     it('does not rename while the collection variables wait for a confirmation', async () => {
@@ -452,7 +447,7 @@ describe('name drafts in tabs', () => {
       await tabs().save()
       expect(environments().drafts[scope]?.confirming).not.toBeNull()
       expect(treeService.renameItem).not.toHaveBeenCalled()
-      expect(await asksBeforeClosing(tabId)).toBe(true)
+      expect(asksBeforeClosing(tabId)).toBe(true)
     })
 
     it('does not rename when the collection variables fail to save', async () => {
@@ -485,7 +480,7 @@ describe('name drafts in tabs', () => {
       tabs().editTabName(tabId, 'Mine')
       await useItemSettingsStore.getState().load('c1')
       expect(useItemSettingsStore.getState().items.c1!.draft!.name).toBe('Mine')
-      expect(await asksBeforeClosing(tabId)).toBe(true)
+      expect(asksBeforeClosing(tabId)).toBe(true)
     })
   })
 
@@ -580,10 +575,10 @@ describe('name drafts in tabs', () => {
       const tabId = openEnvironment()
       tabs().editTabName(tabId, 'local')
       expect(environments().nameDrafts.e1).toBe('local')
-      expect(await asksBeforeClosing(tabId)).toBe(true)
+      expect(asksBeforeClosing(tabId)).toBe(true)
       tabs().cancelTabName(tabId)
       expect(environments().nameDrafts.e1).toBeUndefined()
-      expect(await asksBeforeClosing(tabId)).toBe(false)
+      expect(asksBeforeClosing(tabId)).toBe(false)
     })
 
     it('saves the variables first, then renames, then forgets the draft', async () => {
@@ -599,7 +594,7 @@ describe('name drafts in tabs', () => {
       )
       expect(environments().nameDrafts.e1).toBeUndefined()
       expect(environments().environments.find((environment) => environment.id === 'e1')?.name).toBe('local')
-      expect(await asksBeforeClosing(tabId)).toBe(false)
+      expect(asksBeforeClosing(tabId)).toBe(false)
     })
 
     it('stops the whole save when another environment has the name, ignoring case and spaces', async () => {
@@ -611,7 +606,7 @@ describe('name drafts in tabs', () => {
       expect(tabs().nameErrors[tabId]).toEqual({ kind: 'clash', name: '  DEV ' })
       expect(variables.saveVariableTable).not.toHaveBeenCalled()
       expect(environmentServices.updateEnvironment).not.toHaveBeenCalled()
-      expect(await asksBeforeClosing(tabId)).toBe(true)
+      expect(asksBeforeClosing(tabId)).toBe(true)
     })
 
     it('lets an environment change only the case of its own name', async () => {
@@ -672,10 +667,10 @@ describe('name drafts in tabs', () => {
       const tabId = await openExample()
       tabs().editTabName(tabId, 'Created OK')
       expect(builder().tabs[tabId]!.draft.name).toBe('Created OK')
-      expect(await asksBeforeClosing(tabId)).toBe(true)
+      expect(asksBeforeClosing(tabId)).toBe(true)
       tabs().cancelTabName(tabId)
       expect(builder().tabs[tabId]!.draft.name).toBe('Created')
-      expect(await asksBeforeClosing(tabId)).toBe(false)
+      expect(asksBeforeClosing(tabId)).toBe(false)
     })
 
     it('saves the example under its saved name first, then renames it', async () => {
@@ -688,7 +683,7 @@ describe('name drafts in tabs', () => {
       expect(vi.mocked(exampleServices.saveExample).mock.invocationCallOrder[0]!).toBeLessThan(
         vi.mocked(exampleServices.renameExample).mock.invocationCallOrder[0]!,
       )
-      expect(await asksBeforeClosing(tabId)).toBe(false)
+      expect(asksBeforeClosing(tabId)).toBe(false)
     })
 
     it('does not rename when the example fails to save', async () => {
