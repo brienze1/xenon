@@ -207,6 +207,7 @@ func (m *mcpEnvEdit) reorder(ctx context.Context, call dto.MCPToolCall) (dto.MCP
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
+	scheduleAutoSync(ctx, m.errorHandler, m.autoSyncService.Saved, request.LocalId)
 	return dto.NewMCPToolResult(dto.NewMCPEnvList(*list)), nil
 }
 
