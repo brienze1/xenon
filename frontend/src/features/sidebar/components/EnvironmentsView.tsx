@@ -1,4 +1,6 @@
-import { useState, useTransition, type KeyboardEvent, type ReactNode } from 'react'
+import { closestCenter, DndContext, type DraggableAttributes, type DraggableSyntheticListeners } from '@dnd-kit/core'
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { useState, useTransition, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
 import { AppError } from '@/platform/errors'
 import type { EnvironmentSummary } from '@/platform/mappers/environment'
 import { DUPLICATE_ENVIRONMENT_NAME } from '@/platform/services/environments'
@@ -13,6 +15,7 @@ import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import { useImportStore } from '@/features/import-export/store'
 import { useExportStore } from '@/features/export/store'
+import { useEnvironmentReorder } from '@/features/sidebar/hooks/use-environment-reorder'
 import type { OpenMode, VariablesItem } from '@/features/sidebar/model'
 import { RenameInput } from './RenameInput'
 import { SidebarErrorText } from './SidebarErrorText'
@@ -92,6 +95,10 @@ export function EnvironmentsView({ selected, onOpen }: EnvironmentsViewProps) {
   const searching = query.trim() !== ''
   const shown = searching ? environments.filter((environment) => matches(environment.name, query)) : environments
   const showGlobals = !searching || matches('Globals', query)
+  const readable = environments.filter((environment) => environment.error === null)
+  const sortableIds = readable.filter((environment) => environment.id !== renamingId).map((environment) => environment.id)
+  const reorderDisabled = searching || creating
+  const reorder = useEnvironmentReorder(readable, setError)
 
   return (
     <div className={styles.view}>
@@ -127,41 +134,53 @@ export function EnvironmentsView({ selected, onOpen }: EnvironmentsViewProps) {
         </Banner.Root>
       ) : null}
       <div className={styles.scroll}>
-        <ul aria-label="Environments" className={styles.list}>
-          {showGlobals ? (
-            <li>
-            <ItemButton item={GLOBALS} label="Globals" selected={isSelected(selected, GLOBALS)} onOpen={onOpen}>
-              <span className={styles.globalsMark} aria-hidden="true">
-                ◎
-              </span>
-              <span className={styles.name}>Globals</span>
-            </ItemButton>
-            </li>
-          ) : null}
-          {creating ? (
-            <li className={styles.editing}>
-              <RenameInput name={NEW_ENVIRONMENT_NAME} onCommit={create} onCancel={() => setCreating(false)} />
-            </li>
-          ) : null}
-          {shown.map((environment) => (
-            <li key={environment.id}>
-              {environment.error !== null ? (
-                <BrokenItem environment={environment} />
-              ) : renamingId === environment.id ? (
-                <RenameItem environment={environment} onDone={() => setRenamingId(null)} />
-              ) : (
-                <EnvironmentItem
-                  environment={environment}
-                  selected={isSelected(selected, environmentItem(environment.id))}
-                  onOpen={onOpen}
-                  onRename={() => setRenamingId(environment.id)}
-                  onDelete={() => setDeleting(environment)}
-                  onError={setError}
-                />
-              )}
-            </li>
-          ))}
-        </ul>
+        <DndContext
+          sensors={reorder.sensors}
+          collisionDetection={closestCenter}
+          accessibility={reorder.accessibility}
+          onDragStart={reorder.onDragStart}
+          onDragEnd={(event) => void reorder.onDragEnd(event)}
+          onDragCancel={reorder.onDragCancel}
+        >
+          <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+            <ul aria-label="Environments" className={styles.list}>
+              {showGlobals ? (
+                <li>
+                  <ItemButton item={GLOBALS} label="Globals" selected={isSelected(selected, GLOBALS)} onOpen={onOpen}>
+                    <span className={styles.globalsMark} aria-hidden="true">
+                      ◎
+                    </span>
+                    <span className={styles.name}>Globals</span>
+                  </ItemButton>
+                </li>
+              ) : null}
+              {creating ? (
+                <li className={styles.editing}>
+                  <RenameInput name={NEW_ENVIRONMENT_NAME} onCommit={create} onCancel={() => setCreating(false)} />
+                </li>
+              ) : null}
+              {shown.map((environment) => (
+                <li key={environment.id}>
+                  {environment.error !== null ? (
+                    <BrokenItem environment={environment} />
+                  ) : renamingId === environment.id ? (
+                    <RenameItem environment={environment} onDone={() => setRenamingId(null)} />
+                  ) : (
+                    <EnvironmentItem
+                      environment={environment}
+                      reorderDisabled={reorderDisabled}
+                      selected={isSelected(selected, environmentItem(environment.id))}
+                      onOpen={onOpen}
+                      onRename={() => setRenamingId(environment.id)}
+                      onDelete={() => setDeleting(environment)}
+                      onError={setError}
+                    />
+                  )}
+                </li>
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
         {status === 'ready' && environments.length === 0 && !creating ? NO_ENVIRONMENTS : null}
         {searching && environments.length > 0 && shown.length === 0 && !showGlobals ? (
           <p className={styles.note}>No environments match “{query.trim()}”.</p>
@@ -172,31 +191,62 @@ export function EnvironmentsView({ selected, onOpen }: EnvironmentsViewProps) {
   )
 }
 
+/** What a sortable row hands its button so it can be dragged by pointer or keyboard. */
+interface RowDrag {
+  setNodeRef: (element: HTMLElement | null) => void
+  attributes: DraggableAttributes | undefined
+  listeners: DraggableSyntheticListeners
+  style: CSSProperties
+  dragging: boolean
+}
+
 interface ItemButtonProps {
   item: VariablesItem
   /** The accessible name; the visible text can carry marks such as "Active". */
   label: string
   selected: boolean
   onOpen: (item: VariablesItem, mode: OpenMode) => void
+  drag?: RowDrag
   children: ReactNode
 }
 
-function ItemButton({ item, label, selected, onOpen, children }: ItemButtonProps) {
+function ItemButton({ item, label, selected, onOpen, drag, children }: ItemButtonProps) {
+  const pickUp = drag?.listeners?.onKeyDown
+
   function onKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    if (event.key === ' ' && pickUp) {
+      // Space picks the row up (dnd-kit KeyboardSensor) instead of opening it; the sensor ignores
+      // events that were already default-prevented, so it runs first.
+      pickUp(event)
+      event.preventDefault()
+      return
+    }
     if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
       event.preventDefault()
       onOpen(item, 'pinned')
     }
   }
+
+  function onKeyUp(event: KeyboardEvent<HTMLButtonElement>) {
+    if (event.key === ' ' && pickUp) {
+      event.preventDefault()
+    }
+  }
+
   return (
     <button
+      ref={drag?.setNodeRef}
+      {...drag?.attributes}
+      {...drag?.listeners}
       type="button"
       aria-label={label}
       aria-current={selected ? 'true' : undefined}
-      className={cn(styles.item, selected && styles.selected)}
+      className={cn(styles.item, selected && styles.selected, drag?.dragging && styles.dragging)}
+      style={drag?.style}
       onClick={() => onOpen(item, 'preview')}
       onDoubleClick={() => onOpen(item, 'pinned')}
       onKeyDown={onKeyDown}
+      onKeyUp={onKeyUp}
     >
       {children}
     </button>
@@ -205,6 +255,8 @@ function ItemButton({ item, label, selected, onOpen, children }: ItemButtonProps
 
 interface EnvironmentItemProps {
   environment: EnvironmentSummary
+  /** True while the list is filtered or a new environment is being named. */
+  reorderDisabled: boolean
   selected: boolean
   onOpen: (item: VariablesItem, mode: OpenMode) => void
   onRename: () => void
@@ -212,8 +264,17 @@ interface EnvironmentItemProps {
   onError: (error: AppError | null) => void
 }
 
-function EnvironmentItem({ environment, selected, onOpen, onRename, onDelete, onError }: EnvironmentItemProps) {
+function EnvironmentItem({ environment, reorderDisabled, selected, onOpen, onRename, onDelete, onError }: EnvironmentItemProps) {
   const active = useEnvironmentsStore((state) => state.activeId === environment.id)
+  const sortable = useSortable({ id: environment.id, disabled: reorderDisabled })
+  const drag: RowDrag = {
+    setNodeRef: sortable.setNodeRef,
+    // A disabled row stays a plain, clickable button: no drag instructions and never aria-disabled.
+    attributes: reorderDisabled ? undefined : sortable.attributes,
+    listeners: sortable.listeners,
+    style: { transform: sortable.transform ? `translate3d(0, ${sortable.transform.y}px, 0)` : undefined, transition: sortable.transition },
+    dragging: sortable.isDragging,
+  }
   const setActive = useEnvironmentsStore((state) => state.setActive)
   const duplicateEnvironment = useEnvironmentsStore((state) => state.duplicateEnvironment)
   const item = environmentItem(environment.id)
@@ -231,7 +292,7 @@ function EnvironmentItem({ environment, selected, onOpen, onRename, onDelete, on
   return (
     <ContextMenu.Root>
       <ContextMenu.Trigger>
-        <ItemButton item={item} label={active ? `${environment.name}, active` : environment.name} selected={selected} onOpen={onOpen}>
+        <ItemButton item={item} label={active ? `${environment.name}, active` : environment.name} selected={selected} onOpen={onOpen} drag={drag}>
           <span className={styles.swatch} data-color={environment.color} aria-hidden="true" />
           <span className={styles.name} translate="no" title={environment.name}>
             {environment.name}

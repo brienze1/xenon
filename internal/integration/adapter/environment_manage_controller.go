@@ -12,4 +12,5 @@ type EnvironmentManageController interface {
 	Update(ctx context.Context, request dto.UpdateEnvironment) (*dto.Environment, error)
 	Duplicate(ctx context.Context, request dto.EnvironmentReference) (*dto.Environment, error)
 	Delete(ctx context.Context, request dto.EnvironmentReference) (*dto.ActiveEnvironment, error)
+	Reorder(ctx context.Context, request dto.ReorderEnvironment) (*dto.EnvironmentList, error)
 }

@@ -27,7 +27,7 @@ func PlanEnvironmentImport(imported entity.ImportVariables, existing []entity.En
 }
 
 func withEnvironmentFileName(environment entity.Environment, existing []entity.Environment) entity.Environment {
-	siblings := entity.NewEnvironmentList(existing, "").SiblingFileNames(environment)
+	siblings := entity.NewEnvironmentList(existing, nil, "").SiblingFileNames(environment)
 	return environment.WithFileName(DeriveFileName(environment.Name, itemkind.Environment, siblings))
 }
 

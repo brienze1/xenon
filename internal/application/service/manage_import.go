@@ -116,6 +116,11 @@ func NewManageImportService(
 				deleteEnvironment: deleteEnvironment,
 				saveWorkspaceFile: saveWorkspaceFile,
 				loadWorkspace:     loadWorkspace,
+				orders: environmentOrders{
+					listEnvironments:  listEnvironments,
+					loadWorkspace:     loadWorkspace,
+					saveWorkspaceFile: saveWorkspaceFile,
+				},
 				values: scopeValues{
 					findLocalVariables: findLocalVariables,
 					saveLocalVariables: saveLocalVariables,

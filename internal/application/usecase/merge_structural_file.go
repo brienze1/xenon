@@ -9,12 +9,15 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
 )
 
-const orderField = "order"
+const (
+	orderField            = "order"
+	environmentOrderField = "environments.order"
+)
 
 var knownStructuralFields = map[string]bool{
 	"xenon": true, "kind": true, "id": true, "name": true, "description": true, "order": true, "auth": true,
 	"headers": true, "scripts": true, "variables": true, "settings": true, "sync": true, "docs": true,
-	"color": true, "confirmBeforeSend": true, "": true,
+	"color": true, "confirmBeforeSend": true, "environments": true, "": true,
 }
 
 type structuralMerger struct {
@@ -41,7 +44,7 @@ func (s *structuralMerger) value(path string, base, mine, theirs *entity.Documen
 	case mine.IsMapping() && theirs.IsMapping() && (base == nil || base.IsMapping()):
 		return s.mapping(path, base, mine, theirs)
 	}
-	if path == orderField {
+	if path == orderField || path == environmentOrderField {
 		if merged, ok := mergeOrder(base, mine, theirs); ok {
 			return merged
 		}

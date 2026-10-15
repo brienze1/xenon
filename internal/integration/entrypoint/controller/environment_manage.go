@@ -11,13 +11,24 @@ import (
 )
 
 type environmentManage struct {
-	errorHandler             adapter.ErrorHandler
-	manageEnvironmentService appAdapter.ManageEnvironmentService
-	autoSyncService          appAdapter.AutoSyncService
+	errorHandler              adapter.ErrorHandler
+	manageEnvironmentService  appAdapter.ManageEnvironmentService
+	reorderEnvironmentService appAdapter.ReorderEnvironmentService
+	autoSyncService           appAdapter.AutoSyncService
 }
 
-func NewEnvironmentManage(errorHandler adapter.ErrorHandler, manageEnvironmentService appAdapter.ManageEnvironmentService, autoSyncService appAdapter.AutoSyncService) adapter.EnvironmentManageController {
-	return &environmentManage{errorHandler: errorHandler, manageEnvironmentService: manageEnvironmentService, autoSyncService: autoSyncService}
+func NewEnvironmentManage(
+	errorHandler adapter.ErrorHandler,
+	manageEnvironmentService appAdapter.ManageEnvironmentService,
+	reorderEnvironmentService appAdapter.ReorderEnvironmentService,
+	autoSyncService appAdapter.AutoSyncService,
+) adapter.EnvironmentManageController {
+	return &environmentManage{
+		errorHandler:              errorHandler,
+		manageEnvironmentService:  manageEnvironmentService,
+		reorderEnvironmentService: reorderEnvironmentService,
+		autoSyncService:           autoSyncService,
+	}
 }
 
 func (e *environmentManage) Get(bindingCtx context.Context, request dto.EnvironmentReference) (response *dto.Environment, err error) {
@@ -33,7 +44,7 @@ func (e *environmentManage) Get(bindingCtx context.Context, request dto.Environm
 		}
 	}(ctx, request)
 
-	err = validator.CustomValidator().Struct("ENV-13400", &request)
+	err = validateGetEnvironment(&request)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +72,7 @@ func (e *environmentManage) Create(bindingCtx context.Context, request dto.Creat
 		}
 	}(ctx, request)
 
-	err = validator.CustomValidator().Struct("ENV-11400", &request)
+	err = validateCreateEnvironment(&request)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +100,7 @@ func (e *environmentManage) Update(bindingCtx context.Context, request dto.Updat
 		}
 	}(ctx, request)
 
-	err = validator.CustomValidator().Struct("ENV-12400", &request)
+	err = validateUpdateEnvironment(&request)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +129,7 @@ func (e *environmentManage) Duplicate(bindingCtx context.Context, request dto.En
 		}
 	}(ctx, request)
 
-	err = validator.CustomValidator().Struct("ENV-14400", &request)
+	err = validateDuplicateEnvironment(&request)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +157,7 @@ func (e *environmentManage) Delete(bindingCtx context.Context, request dto.Envir
 		}
 	}(ctx, request)
 
-	err = validator.CustomValidator().Struct("ENV-15400", &request)
+	err = validateDeleteEnvironment(&request)
 	if err != nil {
 		return nil, err
 	}
@@ -156,6 +167,35 @@ func (e *environmentManage) Delete(bindingCtx context.Context, request dto.Envir
 		return nil, err
 	}
 	result := dto.NewActiveEnvironment(activeId)
+
+	logger.Info(ctx, "Finished", result)
+	return &result, nil
+}
+
+func (e *environmentManage) Reorder(bindingCtx context.Context, request dto.ReorderEnvironment) (response *dto.EnvironmentList, err error) {
+	ctx := logger.GetContext(bindingCtx)
+	logger.Info(ctx, "Started", request)
+
+	defer func(ctx context.Context, request any) {
+		if recovered := recover(); recovered != nil {
+			err = handlePanic(ctx, request, recovered)
+		}
+		if err != nil {
+			response, err = nil, e.errorHandler.Handle(ctx, err, request)
+		}
+	}(ctx, request)
+
+	err = validator.CustomValidator().Struct("ENV-17400", &request)
+	if err != nil {
+		return nil, err
+	}
+
+	list, err := e.reorderEnvironmentService.Reorder(ctx, request.LocalId, request.Id, request.Index)
+	if err != nil {
+		return nil, err
+	}
+	triggerAutoSync(ctx, e.autoSyncService.Saved, request.LocalId)
+	result := dto.NewEnvironmentList(*list)
 
 	logger.Info(ctx, "Finished", result)
 	return &result, nil

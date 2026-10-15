@@ -1,17 +1,21 @@
 package entity
 
-import "strings"
+import (
+	"slices"
+	"strings"
+)
 
 const postmanGlobalsKey = "globals"
 
 type Workspace struct {
-	Postman     SourceFields
-	Sync        SyncSettings
-	ID          string
-	Name        string
-	Description string
-	Order       []string
-	Variables   []VariableRow
+	Postman          SourceFields
+	Sync             SyncSettings
+	ID               string
+	Name             string
+	Description      string
+	Order            []string
+	EnvironmentOrder []string
+	Variables        []VariableRow
 }
 
 func NewWorkspace(id, name string) Workspace {
@@ -55,6 +59,15 @@ func (w Workspace) WithOrder(order []string) Workspace {
 	return w
 }
 
+func (w Workspace) WithEnvironmentOrder(order []string) Workspace {
+	w.EnvironmentOrder = append([]string{}, order...)
+	return w
+}
+
+func (w Workspace) ListsEnvironment(id string) bool {
+	return slices.Contains(w.EnvironmentOrder, id)
+}
+
 func (w Workspace) LogValue() any {
-	return map[string]any{"id": w.ID, "name": w.Name, "order": w.Order, "variables": len(w.Variables)}
+	return map[string]any{"id": w.ID, "name": w.Name, "order": w.Order, "environmentOrder": len(w.EnvironmentOrder), "variables": len(w.Variables)}
 }

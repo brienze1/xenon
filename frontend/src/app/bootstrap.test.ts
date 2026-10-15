@@ -144,6 +144,7 @@ vi.mock('@/platform/services/variables', () => ({ getVariableTable: vi.fn() }))
 vi.mock('@/platform/services/environments', () => ({
   listEnvironments: vi.fn(async () => ({ environments: [], activeId: null })),
   setActiveEnvironment: vi.fn(async () => null),
+  reorderEnvironment: vi.fn(),
 }))
 vi.mock('@/platform/services/workspaces', () => ({
   listWorkspaces: vi.fn(),
@@ -187,7 +188,7 @@ const { useUpdatesStore } = await import('@/features/updates/store')
 const { useAIAccessStore } = await import('@/features/ai-access/store')
 const { useSettingsStore } = await import('@/features/settings/store')
 const { useSyncStore } = await import('@/features/sync/store')
-const { useEnvironmentsStore } = await import('@/features/environments/store')
+const { isScopeDirty, useEnvironmentsStore } = await import('@/features/environments/store')
 const { useItemSettingsStore } = await import('@/features/item-settings/store')
 const { useDocumentationStore } = await import('@/features/documentation/store')
 const { useResponseViewerStore } = await import('@/features/response-viewer/store')
@@ -489,6 +490,26 @@ describe('bootstrap', () => {
     expect(useTabsStore.getState().tabs.some((tab) => tab.id === tabId)).toBe(true)
     useEnvironmentsStore.setState({ environments: [], status: 'ready' })
     expect(useTabsStore.getState().tabs.some((tab) => tab.id === tabId)).toBe(false)
+    useEnvironmentsStore.getState().reset()
+    cleanup()
+  })
+
+  it('keeps open environment tabs open and clean when the environments are reordered', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
+    const cleanup = await started()
+    useWorkspacesStore.setState({ activeLocalId: 'A' })
+    useTabsStore.getState().hydrate('A', defaultUIState())
+    const dev = { id: 'e1', name: 'dev', color: 'none', confirmBeforeSend: false, error: null } as const
+    const prod = { id: 'e2', name: 'prod', color: 'red', confirmBeforeSend: true, error: null } as const
+    useEnvironmentsStore.setState({ environments: [dev, prod], activeId: 'e1', status: 'ready' })
+    useTabsStore.getState().openEnvironmentTab({ kind: 'environment', environmentId: 'e1' }, 'pinned')
+    useTabsStore.getState().openEnvironmentTab({ kind: 'environment', environmentId: 'e2' }, 'pinned')
+    const tabIds = useTabsStore.getState().tabs.map((tab) => tab.id)
+    vi.mocked(environments.reorderEnvironment).mockResolvedValue({ environments: [prod, dev], activeId: 'e1' })
+    await expect(useEnvironmentsStore.getState().reorderEnvironment('e2', 0)).resolves.toBeNull()
+    expect(useTabsStore.getState().tabs.map((tab) => tab.id)).toEqual(tabIds)
+    expect(isScopeDirty(useEnvironmentsStore.getState(), 'env:e1')).toBe(false)
+    expect(isScopeDirty(useEnvironmentsStore.getState(), 'env:e2')).toBe(false)
     useEnvironmentsStore.getState().reset()
     cleanup()
   })

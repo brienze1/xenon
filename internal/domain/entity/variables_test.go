@@ -218,12 +218,12 @@ func TestNewEnvironmentListSortsAndChecksTheActiveId(t *testing.T) {
 	sameNameLater := Environment{ID: "c", Name: "same", FileName: "z.yaml"}
 	broken := NewMalformedEnvironment("broken.yaml", "bad")
 	input := []Environment{prod, sameNameLater, twinA, twinB, broken, dev}
-	list := NewEnvironmentList(input, "d")
+	list := NewEnvironmentList(input, nil, "d")
 	ids := make([]string, 0, len(list.Environments))
 	for _, environment := range list.Environments {
 		ids = append(ids, environment.ID)
 	}
-	if want := []string{"error:broken.yaml", "d", "p", "a", "b", "c"}; !reflect.DeepEqual(ids, want) {
+	if want := []string{"d", "p", "a", "b", "c", "error:broken.yaml"}; !reflect.DeepEqual(ids, want) {
 		t.Errorf("order = %v, want %v", ids, want)
 	}
 	if input[0].ID != "p" {
@@ -233,7 +233,7 @@ func TestNewEnvironmentListSortsAndChecksTheActiveId(t *testing.T) {
 		t.Errorf("list = %+v", list)
 	}
 	for _, active := range []string{"", "missing", broken.ID} {
-		if got := NewEnvironmentList(input, active).ActiveID; got != "" {
+		if got := NewEnvironmentList(input, nil, active).ActiveID; got != "" {
 			t.Errorf("active %q must be dropped, got %q", active, got)
 		}
 	}

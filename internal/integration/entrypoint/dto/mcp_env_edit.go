@@ -6,6 +6,7 @@ type MCPEnvEdit struct {
 	ConfirmBeforeSend *bool   `json:"confirm_before_send"`
 	Name              *string `json:"name"`
 	Color             *string `json:"color"`
+	Index             *int    `json:"index"`
 	Id                string  `json:"id"`
 }
 
@@ -36,4 +37,11 @@ func (m *MCPEnvEdit) EnvironmentReference(localId string) EnvironmentReference {
 
 func (m *MCPEnvEdit) UpdateEnvironment(localId string, stored entity.Environment) UpdateEnvironment {
 	return NewUpdateEnvironment(localId, stored, m)
+}
+
+func (m *MCPEnvEdit) ReorderEnvironment(localId string) ReorderEnvironment {
+	if m.Index == nil {
+		return NewReorderEnvironment(localId, m.Id, -1)
+	}
+	return NewReorderEnvironment(localId, m.Id, *m.Index)
 }
