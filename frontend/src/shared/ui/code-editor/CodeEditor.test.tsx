@@ -22,6 +22,14 @@ describe('CodeEditor', () => {
     await waitFor(() => expect(screen.getByLabelText('Response body')).toHaveTextContent('{"b":2}'))
   })
 
+  it('does not echo a new value from its props back through onChange', async () => {
+    const onChange = vi.fn()
+    const { rerender } = render(<CodeEditor value={'{"user":"luis"}'} language="json" label="Raw body" onChange={onChange} />)
+    rerender(<CodeEditor value={'{"user":"mx"}'} language="json" label="Raw body" onChange={onChange} />)
+    await waitFor(() => expect(screen.getByLabelText('Raw body')).toHaveTextContent('{"user":"mx"}'))
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
   it('is editable when it has an onChange handler', () => {
     render(<CodeEditor value="" language="text" label="Body" onChange={vi.fn()} />)
     expect(screen.getByLabelText('Body')).toHaveAttribute('contenteditable', 'true')
