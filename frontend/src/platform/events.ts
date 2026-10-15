@@ -2,6 +2,7 @@ import { Events } from '@wailsio/runtime'
 import { toAIAccessRuntime, toPendingApproval, type AIAccessRuntime, type PendingApproval } from './mappers/ai-access'
 import { toConsoleEntriesEvent, type ConsoleEntriesEvent } from './mappers/console'
 import { toSyncStatus, type SyncStatus } from './mappers/sync'
+import { toUpdateStatus, type UpdateStatus } from './mappers/update-status'
 import { toVaultStatus, type VaultStatus } from './mappers/vault'
 
 export const WORKSPACE_TREE_CHANGED = 'workspace:tree-changed'
@@ -26,6 +27,7 @@ export const AI_APPROVAL_REQUESTED = 'ai:approval-requested'
 export const AI_APPROVAL_RESOLVED = 'ai:approval-resolved'
 export const HISTORY_CHANGED = 'history:changed'
 export const WORKSPACES_CHANGED = 'workspaces:changed'
+export const UPDATE_STATUS = 'update:status'
 
 export interface WorkspaceTreeChanged {
   localId: string
@@ -229,5 +231,12 @@ export function onConsoleEntries(callback: (event: ConsoleEntriesEvent) => void)
 export function onCookiesChanged(callback: (localId: string) => void): Unsubscribe {
   return Events.On(COOKIES_CHANGED, (event) => {
     callback(event.data.local_id)
+  })
+}
+
+/** The auto-update status changed (every state change, and download progress at most every 250 ms). */
+export function onUpdateStatus(callback: (status: UpdateStatus) => void): Unsubscribe {
+  return Events.On(UPDATE_STATUS, (event) => {
+    callback(toUpdateStatus(event.data))
   })
 }

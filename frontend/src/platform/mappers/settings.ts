@@ -25,6 +25,8 @@ export interface AppSettings {
   historyUserCap: number
   historyAiCap: number
   aiAccess: AIAccessSettings
+  /** Download a newer release in the background after the startup check (on by default). */
+  autoUpdate: boolean
 }
 
 export function defaultAppSettings(): AppSettings {
@@ -33,6 +35,7 @@ export function defaultAppSettings(): AppSettings {
     historyUserCap: DEFAULT_HISTORY_CAP,
     historyAiCap: DEFAULT_HISTORY_CAP,
     aiAccess: { enabled: true, port: DEFAULT_AI_PORT, skipApprovals: false },
+    autoUpdate: true,
   }
 }
 
@@ -50,6 +53,7 @@ export function toAppSettings(dto: AppSettingsDto | null): AppSettings {
       port: dto.ai_access?.port ?? defaults.aiAccess.port,
       skipApprovals: dto.ai_access?.skip_approvals ?? defaults.aiAccess.skipApprovals,
     },
+    autoUpdate: dto.auto_update ?? defaults.autoUpdate,
   }
 }
 
@@ -63,5 +67,6 @@ export function toAppSettingsDto(settings: AppSettings): AppSettingsDto {
       port: settings.aiAccess.port,
       skip_approvals: settings.aiAccess.skipApprovals,
     },
+    auto_update: settings.autoUpdate,
   }
 }

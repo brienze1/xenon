@@ -14,6 +14,7 @@ import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { STATUS_REFRESH_MS, useSyncStore } from '@/features/sync/store'
 import { useTabsStore } from '@/features/tabs/store'
+import { useUpdatesStore } from '@/features/updates/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import {
   onAIAccessStatusChanged,
@@ -30,6 +31,7 @@ import {
   onImportFilesDropped,
   onImportProgress,
   onImportRequested,
+  onUpdateStatus,
   onRequestChangedOnDisk,
   onVariablesChanged,
   onVaultStatusChanged,
@@ -100,6 +102,7 @@ export function bootstrap(): () => void {
     onImportRequested(() => openImport()),
     onExportProgress((progress) => useExportStore.getState().applyProgress(progress)),
     onExportRequested(() => void useExportStore.getState().openWorkspace()),
+    onUpdateStatus((status) => useUpdatesStore.getState().applyEvent(status)),
     onImportFilesDropped((paths) => {
       if (openImport()) {
         void useImportStore.getState().detect({ paths })
@@ -194,11 +197,18 @@ export function bootstrap(): () => void {
   void useEnvironmentsStore.getState().loadVault()
   void useAIAccessStore.getState().load()
   void openLastWorkspace()
+  void checkForUpdatesOnStartup()
   return () => {
     for (const unsubscribe of unsubscribers) {
       unsubscribe()
     }
   }
+}
+
+/** Reads the update status (the running version), then runs the once-per-run startup check. */
+async function checkForUpdatesOnStartup(): Promise<void> {
+  await useUpdatesStore.getState().load()
+  await useUpdatesStore.getState().checkOnStartup()
 }
 
 /** Opens the Import dialog when a workspace is active (imports need a target); returns whether it did. */

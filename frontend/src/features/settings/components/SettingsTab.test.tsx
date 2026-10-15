@@ -31,7 +31,7 @@ const { useTabsStore } = await import('@/features/tabs/store')
 const { SettingsTab } = await import('./SettingsTab')
 const { SettingsButton } = await import('./SettingsButton')
 
-const saved: AppSettings = { scriptTimeoutMs: 3000, historyUserCap: 5000, historyAiCap: 200, aiAccess: { enabled: true, port: 47821, skipApprovals: false } }
+const saved: AppSettings = { scriptTimeoutMs: 3000, historyUserCap: 5000, historyAiCap: 200, aiAccess: { enabled: true, port: 47821, skipApprovals: false }, autoUpdate: true }
 
 const SHORTCUTS = [{ label: 'Search requests', combos: ['Mod+K'] }]
 
@@ -71,7 +71,7 @@ describe('SettingsTab', () => {
   it('holds the Scripts, History, AI access, Git accounts and Shortcuts sections with the saved values', async () => {
     await renderTab()
     expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument()
-    for (const section of ['Scripts', 'History', 'AI access (MCP)', 'Git accounts']) {
+    for (const section of ['About & Updates', 'Scripts', 'History', 'AI access (MCP)', 'Git accounts']) {
       expect(screen.getByRole('group', { name: section })).toBeInTheDocument()
     }
     expect(screen.getByRole('heading', { name: 'Shortcuts' })).toBeInTheDocument()
@@ -80,6 +80,22 @@ describe('SettingsTab', () => {
     expect(field(/User Cap/)).toHaveValue(5000)
     expect(field(/AI Cap/)).toHaveValue(200)
     expect(field(/Port/)).toHaveValue(47821)
+  })
+
+  it('opens on About & Updates, the first section, with Update automatically on by default and saved with the form', async () => {
+    vi.mocked(service.getSettings).mockResolvedValue(saved)
+    vi.mocked(service.saveSettings).mockImplementation(async (value) => value)
+    await renderTab()
+    const sections = screen.getAllByRole('group').map((group) => group.querySelector('legend')?.textContent)
+    expect(sections[0]).toBe('About & Updates')
+    const toggle = screen.getByRole('switch', { name: 'Update automatically' })
+    expect(toggle).toBeChecked()
+    await userEvent.click(toggle)
+    expect(service.saveSettings).not.toHaveBeenCalled()
+    expect(isSettingsDirty(useSettingsStore.getState())).toBe(true)
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(service.saveSettings).toHaveBeenCalledWith({ ...saved, autoUpdate: false })
+    expect(isSettingsDirty(useSettingsStore.getState())).toBe(false)
   })
 
   it('validates every field on Save, shows each error inline, focuses the first and saves nothing', async () => {
@@ -116,7 +132,7 @@ describe('SettingsTab', () => {
     expect(isSettingsDirty(useSettingsStore.getState())).toBe(true)
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(service.saveSettings).toHaveBeenCalledTimes(1)
-    expect(service.saveSettings).toHaveBeenCalledWith({ scriptTimeoutMs: 30000, historyUserCap: 10000, historyAiCap: 100, aiAccess: { enabled: false, port: 50000, skipApprovals: true } })
+    expect(service.saveSettings).toHaveBeenCalledWith({ scriptTimeoutMs: 30000, historyUserCap: 10000, historyAiCap: 100, aiAccess: { enabled: false, port: 50000, skipApprovals: true }, autoUpdate: true })
     expect(isSettingsDirty(useSettingsStore.getState())).toBe(false)
   })
 

@@ -202,3 +202,74 @@
     transition: none;
   }
 }
+
+.version {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.updateStatus {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.updateStatus:empty {
+  display: none;
+}
+
+.updateMessage {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  text-wrap: pretty;
+}
+
+.progress {
+  width: 240px;
+  max-width: 100%;
+  height: 4px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-raised);
+  overflow: hidden;
+  appearance: none;
+}
+
+.progress::-webkit-progress-bar {
+  background: var(--color-surface-raised);
+}
+
+.progress::-webkit-progress-value {
+  background: var(--neon-cyan);
+}
+
+.progress::-moz-progress-bar {
+  background: var(--neon-cyan);
+}
+
+.link {
+  padding: 0;
+  border-radius: var(--radius-sm);
+  color: var(--neon-cyan);
+  font-size: var(--font-size-sm);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.link:hover {
+  filter: brightness(1.12);
+}
+
+.link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.updateActions {
+  display: flex;
+  gap: var(--space-2);
+}

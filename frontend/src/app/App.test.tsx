@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { emptyAuth, emptyDraft } from '@/platform/mappers/request'
 import { defaultUIState } from '@/platform/mappers/ui-state'
+import { idleUpdateStatus } from '@/platform/mappers/update-status'
 
 vi.mock('./bootstrap', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./bootstrap')>()),
@@ -45,7 +46,7 @@ vi.mock('@/platform/services/settings', () => ({
   HISTORY_USER_CAP_OUT_OF_RANGE: 'SET-02400',
   HISTORY_AI_CAP_OUT_OF_RANGE: 'SET-03400',
   AI_PORT_OUT_OF_RANGE: 'SET-04400',
-  getSettings: vi.fn(async () => ({ scriptTimeoutMs: 10000, historyUserCap: 1000, historyAiCap: 1000, aiAccess: { enabled: true, port: 47821, skipApprovals: false } })),
+  getSettings: vi.fn(async () => ({ scriptTimeoutMs: 10000, historyUserCap: 1000, historyAiCap: 1000, aiAccess: { enabled: true, port: 47821, skipApprovals: false }, autoUpdate: true })),
   saveSettings: vi.fn(),
 }))
 vi.mock('@/platform/services/ai-access', () => ({
@@ -84,6 +85,7 @@ const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const { useSearchStore } = await import('@/features/search/store')
 const { useSettingsStore } = await import('@/features/settings/store')
 const { useAIAccessStore } = await import('@/features/ai-access/store')
+const { useUpdatesStore } = await import('@/features/updates/store')
 const { bootstrap, openLastWorkspace } = await import('./bootstrap')
 const { App } = await import('./App')
 
@@ -173,6 +175,31 @@ describe('App', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Settings' }))
     expect(openTabs()).toHaveLength(2)
     expect(useTabsStore.getState().activeTabId).toBe(settingsTabId)
+  })
+
+  it('shows the update notice in the footer with no workspace open, opening the full-page Settings', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [], activeLocalId: null })
+    await renderApp()
+    await screen.findByRole('form', { name: 'Create workspace' })
+    act(() => useUpdatesStore.setState({ status: { ...idleUpdateStatus(), state: 'available', currentVersion: '0.1.4', latestVersion: '0.1.7' } }))
+    await userEvent.click(within(screen.getByRole('contentinfo')).getByRole('button', { name: 'Update available' }))
+    expect(await screen.findByRole('group', { name: 'About & Updates' })).toBeInTheDocument()
+    act(() => {
+      useSettingsStore.getState().closePage()
+      useUpdatesStore.setState({ status: idleUpdateStatus() })
+    })
+  })
+
+  it('shows the update notice in the footer next to the workspace items, opening the Settings tab', async () => {
+    await renderWorkspace()
+    const footer = screen.getByRole('contentinfo')
+    expect(within(footer).queryByRole('button', { name: 'Update available' })).not.toBeInTheDocument()
+    act(() => useUpdatesStore.setState({ status: { ...idleUpdateStatus(), state: 'available', currentVersion: '0.1.4', latestVersion: '0.1.7' } }))
+    expect(within(footer).getByText('/work/acme')).toBeInTheDocument()
+    await userEvent.click(within(footer).getByRole('button', { name: 'Update available' }))
+    expect(openTabs()).toHaveLength(2)
+    expect(await screen.findByRole('group', { name: 'About & Updates' })).toBeInTheDocument()
+    act(() => useUpdatesStore.setState({ status: idleUpdateStatus() }))
   })
 
   it('mounts the AI approval prompt', async () => {

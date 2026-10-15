@@ -6,6 +6,7 @@ import { IconButton } from '@/shared/ui/icon-button/IconButton'
 import { FIELD_ORDER } from '@/features/settings/lib/settings-form'
 import type { SettingsField, ShortcutEntry } from '@/features/settings/model'
 import { useSettingsStore } from '@/features/settings/store'
+import { AboutUpdatesSection } from './AboutUpdatesSection'
 import { AI_PORT_FIELD, AiAccessSection } from './AiAccessSection'
 import { GitAccounts } from './GitAccounts'
 import { HISTORY_AI_CAP_FIELD, HISTORY_USER_CAP_FIELD, HistorySection } from './HistorySection'
@@ -24,6 +25,7 @@ const NO_SHORTCUTS: readonly ShortcutEntry[] = []
 
 const SECTIONS = (
   <>
+    <AboutUpdatesSection />
     <ScriptsSection />
     <HistorySection />
     <AiAccessSection />
