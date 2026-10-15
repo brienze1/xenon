@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -16,10 +17,17 @@ const (
 	defaultOAuthCallbackMs    = 5 * 60 * 1000
 	defaultGitHubApiURL       = "https://api.github.com"
 	defaultGitHubLoginURL     = "https://github.com"
+	defaultUpdateApiURL       = "https://api.github.com/repos/brienze1/xenon"
+	darwinUniversalPlatform   = "darwin-universal"
+	bundleExecutableMarker    = ".app/Contents/MacOS/"
+	bundleExecutableDepth     = 3
 	maxPort                   = 65535
 )
 
-var gitHubClientID = ""
+var (
+	gitHubClientID = ""
+	version        = ""
+)
 
 type properties struct {
 	Application *application
@@ -27,6 +35,14 @@ type properties struct {
 	Import      *imports
 	OAuth       *oauth
 	Git         *git
+	Update      *update
+}
+
+type update struct {
+	ApiURL      string
+	Platform    string
+	InstallPath string
+	Installable bool
 }
 
 type git struct {
@@ -48,6 +64,7 @@ type application struct {
 	Version         string
 	TempDir         string
 	Executable      string
+	Packaged        bool
 }
 
 type imports struct {
@@ -61,14 +78,17 @@ type vault struct {
 }
 
 func Properties() *properties {
+	executable := executablePath(os.Executable)
+	configuredInstallPath := os.Getenv("XENON_INSTALL_PATH")
 	return &properties{
 		Application: &application{
 			DataDir:         dataDir(os.Getenv("XENON_DATA_DIR"), runtime.GOOS, os.UserConfigDir),
 			LogLevel:        os.Getenv("LOG_LEVEL"),
 			Env:             os.Getenv("XENON_ENV"),
-			Version:         withDefault(os.Getenv("XENON_VERSION"), defaultVersion),
+			Version:         withDefault(os.Getenv("XENON_VERSION"), withDefault(version, defaultVersion)),
 			TempDir:         os.TempDir(),
-			Executable:      executablePath(os.Executable),
+			Executable:      executable,
+			Packaged:        version != "",
 			MCPPortOverride: portOrNil(os.Getenv("XENON_MCP_PORT")),
 		},
 		Vault: &vault{
@@ -87,6 +107,12 @@ func Properties() *properties {
 			GitHubApiURL:   withDefault(os.Getenv("XENON_GITHUB_API_URL"), defaultGitHubApiURL),
 			GitHubLoginURL: withDefault(os.Getenv("XENON_GITHUB_LOGIN_URL"), defaultGitHubLoginURL),
 			SshAuthSock:    os.Getenv("SSH_AUTH_SOCK"),
+		},
+		Update: &update{
+			ApiURL:      withDefault(os.Getenv("XENON_UPDATE_API_URL"), defaultUpdateApiURL),
+			Platform:    withDefault(os.Getenv("XENON_UPDATE_PLATFORM"), updatePlatform(runtime.GOOS, runtime.GOARCH)),
+			InstallPath: withDefault(configuredInstallPath, installPath(executable)),
+			Installable: version != "" || configuredInstallPath != "",
 		},
 	}
 }
@@ -115,6 +141,25 @@ func executablePath(executable func() (string, error)) string {
 		return appFolderName(runtime.GOOS)
 	}
 	return path
+}
+
+func updatePlatform(goos, goarch string) string {
+	if goos == "darwin" {
+		return darwinUniversalPlatform
+	}
+	return goos + "-" + goarch
+}
+
+func installPath(executable string) string {
+	slashed := filepath.ToSlash(executable)
+	if !strings.Contains(slashed, bundleExecutableMarker) {
+		return executable
+	}
+	bundle := executable
+	for range bundleExecutableDepth {
+		bundle = filepath.Dir(bundle)
+	}
+	return bundle
 }
 
 func portOrNil(value string) *int {

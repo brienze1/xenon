@@ -1,0 +1,69 @@
+package entity
+
+import "path/filepath"
+
+const (
+	bundleExecutableFolder = "Contents/MacOS"
+	bundleExecutableName   = "xenon"
+	updateOldSuffix        = ".xenon-old"
+	updateExtractSuffix    = ".xenon-update"
+	updateProbeSuffix      = ".xenon-update-probe"
+)
+
+type Installation struct {
+	Version     string
+	Path        string
+	Platform    UpdatePlatform
+	Installable bool
+}
+
+func (i Installation) RunningVersion() Version {
+	version, err := ParseVersion(i.Version)
+	if err != nil {
+		return Version{}
+	}
+	return version
+}
+
+func (i Installation) CanBeReplaced() bool {
+	return i.Installable && i.Path != ""
+}
+
+func (i Installation) HasPath() bool {
+	return i.Path != ""
+}
+
+func (i Installation) Folder() string {
+	return filepath.Dir(i.Path)
+}
+
+func (i Installation) Name() string {
+	return filepath.Base(i.Path)
+}
+
+func (i Installation) Executable() string {
+	if i.Platform.IsBundle() {
+		return filepath.Join(i.Path, filepath.FromSlash(bundleExecutableFolder), bundleExecutableName)
+	}
+	return i.Path
+}
+
+func (i Installation) PreviousPath() string {
+	return i.sidePath(updateOldSuffix)
+}
+
+func (i Installation) ExtractionPath() string {
+	return i.sidePath(updateExtractSuffix)
+}
+
+func (i Installation) ProbePath() string {
+	return i.sidePath(updateProbeSuffix)
+}
+
+func (i Installation) sidePath(suffix string) string {
+	return filepath.Join(i.Folder(), "."+i.Name()+suffix)
+}
+
+func (i Installation) LogValue() any {
+	return map[string]any{"version": i.Version, "path": i.Path, "platform": string(i.Platform), "installable": i.Installable}
+}

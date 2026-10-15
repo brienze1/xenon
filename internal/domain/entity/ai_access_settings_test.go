@@ -59,7 +59,7 @@ func TestAppSettingsMergeKeepsOmittedFields(t *testing.T) {
 	if logged := merged.LogValue().(map[string]any); logged["history_ai_cap"] != 250 {
 		t.Errorf("LogValue() = %v", logged)
 	}
-	if logged := (AppSettingsPatch{}).LogValue().(map[string]any); len(logged) != 4 {
+	if logged := (AppSettingsPatch{}).LogValue().(map[string]any); len(logged) != 5 {
 		t.Errorf("patch LogValue() = %v", logged)
 	}
 	for limit, valid := range map[int]bool{99: false, 100: true, 20000: true, 20001: false} {

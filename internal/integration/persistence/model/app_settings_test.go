@@ -32,7 +32,7 @@ func TestAppSettingsRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(data) != `{"aiAccess":{"enabled":false,"port":48000,"skipApprovals":true},"scriptTimeoutMs":2500,"historyUserCap":10000,"historyAiCap":100}` {
+	if string(data) != `{"aiAccess":{"enabled":false,"port":48000,"skipApprovals":true},"autoUpdate":false,"scriptTimeoutMs":2500,"historyUserCap":10000,"historyAiCap":100}` {
 		t.Fatalf("json = %s", data)
 	}
 	var decoded AppSettings
@@ -70,5 +70,21 @@ func TestHistoryEntryLinesWithoutSourceReadAsUserSends(t *testing.T) {
 	round := decoded.ToEntity()
 	if !round.IsAction() || round.Client != entity.DefaultAIClientName || round.Activity.Target.Name != "A" || decoded.Request != nil {
 		t.Fatalf("action round trip = %+v (%s)", round, data)
+	}
+}
+
+func TestAppSettingsAutoUpdateIsOnWhenNeverStored(t *testing.T) {
+	var stored AppSettings
+	if err := json.Unmarshal([]byte(`{"scriptTimeoutMs":3000}`), &stored); err != nil {
+		t.Fatal(err)
+	}
+	if !stored.ToEntity().UpdatesAutomatically() {
+		t.Fatal("a machine that never stored the setting updates automatically")
+	}
+	if err := json.Unmarshal([]byte(`{"scriptTimeoutMs":3000,"autoUpdate":false}`), &stored); err != nil {
+		t.Fatal(err)
+	}
+	if stored.ToEntity().UpdatesAutomatically() {
+		t.Fatal("a stored false is kept")
 	}
 }

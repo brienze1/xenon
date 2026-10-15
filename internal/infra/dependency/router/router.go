@@ -38,6 +38,7 @@ func GetRouter() adapter.Router {
 				binding.GetExportService(),
 				binding.GetSyncService(),
 				binding.GetAIAccessService(),
+				binding.GetUpdateService(),
 			)
 		})
 	}

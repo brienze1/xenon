@@ -152,6 +152,7 @@ func (t *testUtils) startApp() {
 		binding.GetExportService(),
 		binding.GetSyncService(),
 		binding.GetAIAccessService(),
+		binding.GetUpdateService(),
 	}
 	t.startMcpServer()
 }
