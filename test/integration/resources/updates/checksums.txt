@@ -1,0 +1,5 @@
+4d338ecd3a3600add3d6e31cdfe0cb04231501ca1b1f48d7b0fb73ba14aeec9a  xenon-0.1.7-darwin-universal.tar.gz
+554016bcc29cb51703bccf300af6966b9e00866179454018c5483903f07dc01a  xenon-0.1.7-evil-amd64.tar.gz
+52737c994343633552d69ccf2bb1828bec9f4fbd7eff46d00332f067a674a4f6  xenon-0.1.7-linux-amd64.tar.gz
+eb18d86d338a099e13dcf379d104c1fdebd8ad151f21a51facba95affc5a3970  xenon-0.1.7-multi-amd64.tar.gz
+32f96a8c6c131cb8645431888fc676e51ae9dc951434f40615cdfab9f35f090f  xenon-0.1.7-windows-amd64.zip

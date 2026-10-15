@@ -7,6 +7,7 @@ type AppSettings struct {
 	HistoryUserCap  *int              `json:"history_user_cap,omitempty"`
 	HistoryAICap    *int              `json:"history_ai_cap,omitempty"`
 	AIAccess        *AIAccessSettings `json:"ai_access,omitempty"`
+	AutoUpdate      *bool             `json:"auto_update,omitempty"`
 }
 
 func NewAppSettings(settings entity.AppSettings, aiPortOverride *int) AppSettings {
@@ -16,6 +17,7 @@ func NewAppSettings(settings entity.AppSettings, aiPortOverride *int) AppSetting
 		HistoryUserCap:  &settings.HistoryUserCap,
 		HistoryAICap:    &settings.HistoryAICap,
 		AIAccess:        &access,
+		AutoUpdate:      &settings.AutoUpdate,
 	}
 }
 
@@ -24,7 +26,7 @@ func NewPartialAppSettings(scriptTimeoutMs, historyUserCap, historyAICap *int) A
 }
 
 func (a *AppSettings) ToEntity() entity.AppSettingsPatch {
-	patch := entity.AppSettingsPatch{ScriptTimeoutMs: a.ScriptTimeoutMs, HistoryUserCap: a.HistoryUserCap, HistoryAICap: a.HistoryAICap}
+	patch := entity.AppSettingsPatch{ScriptTimeoutMs: a.ScriptTimeoutMs, HistoryUserCap: a.HistoryUserCap, HistoryAICap: a.HistoryAICap, AutoUpdate: a.AutoUpdate}
 	if a.AIAccess != nil {
 		access := a.AIAccess.ToEntity()
 		patch.AIAccess = &access
@@ -33,5 +35,5 @@ func (a *AppSettings) ToEntity() entity.AppSettingsPatch {
 }
 
 func (a AppSettings) LogValue() any {
-	return map[string]any{"script_timeout_ms": a.ScriptTimeoutMs, "history_user_cap": a.HistoryUserCap, "history_ai_cap": a.HistoryAICap, "ai_access": a.AIAccess}
+	return map[string]any{"script_timeout_ms": a.ScriptTimeoutMs, "history_user_cap": a.HistoryUserCap, "history_ai_cap": a.HistoryAICap, "ai_access": a.AIAccess, "auto_update": a.AutoUpdate}
 }

@@ -28,6 +28,8 @@ import { LinkRepoDialog } from '@/features/sync/components/LinkRepoDialog'
 import { SyncPanel } from '@/features/sync/components/SyncPanel'
 import type { EnvironmentTabTarget, OpenMode } from '@/features/tabs/model'
 import { useTabsStore } from '@/features/tabs/store'
+import { FooterUpdateNotice } from '@/features/updates/components/FooterUpdateNotice'
+import { UpdateReadyToast } from '@/features/updates/components/UpdateReadyToast'
 import { MissingFolderNotice } from '@/features/workspaces/components/MissingFolderNotice'
 import { WelcomeScreen } from '@/features/workspaces/components/WelcomeScreen'
 import { WorkspaceSwitcher } from '@/features/workspaces/components/WorkspaceSwitcher'
@@ -99,6 +101,10 @@ const LINK_REPO_DIALOG = <LinkRepoDialog />
 const CLONE_WORKSPACE_DIALOG = <CloneWorkspaceDialog />
 
 const CONFLICT_VIEW = <ConflictView />
+
+const UPDATE_READY_TOAST = <UpdateReadyToast />
+
+const FOOTER_UPDATE_NOTICE = <FooterUpdateNotice />
 
 const TOP_BAR_END_WITH_ENVIRONMENTS = (
   <>
@@ -254,6 +260,7 @@ export function App() {
       {active ? CONFLICT_VIEW : null}
       {CLONE_WORKSPACE_DIALOG}
       {active ? QUICK_SEARCH : null}
+      {UPDATE_READY_TOAST}
       <Footer>
         {active ? (
           <>
@@ -264,6 +271,7 @@ export function App() {
             {COOKIES_BUTTON}
           </>
         ) : null}
+        {FOOTER_UPDATE_NOTICE}
       </Footer>
     </AppShell>
   )

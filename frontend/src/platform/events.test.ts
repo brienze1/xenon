@@ -155,4 +155,23 @@ describe('platform events', () => {
     handlers.get(events.IMPORT_REQUESTED)?.({ data: { source: 'menu' } })
     expect(requested).toHaveBeenCalledOnce()
   })
+
+  it('maps update:status payloads', () => {
+    const callback = vi.fn()
+    expect(events.onUpdateStatus(callback)).toBe(unsubscribe)
+    handlers.get(events.UPDATE_STATUS)?.({
+      data: { state: 'downloading', reason: '', current_version: '0.1.4', latest_version: '0.1.7', release_url: 'https://x/v0.1.7', folder: '', received: 5, total: 10, automatic: true },
+    })
+    expect(callback).toHaveBeenCalledWith({
+      state: 'downloading',
+      reason: null,
+      currentVersion: '0.1.4',
+      latestVersion: '0.1.7',
+      releaseUrl: 'https://x/v0.1.7',
+      folder: '',
+      received: 5,
+      total: 10,
+      automatic: true,
+    })
+  })
 })

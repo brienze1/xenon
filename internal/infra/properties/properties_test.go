@@ -129,3 +129,54 @@ func TestExecutablePathFallsBackToTheAppName(t *testing.T) {
 func intPointer(value int) *int {
 	return &value
 }
+
+func TestUpdatePropertiesDefaultAndOverride(t *testing.T) {
+	t.Setenv("XENON_UPDATE_API_URL", "")
+	t.Setenv("XENON_UPDATE_PLATFORM", "")
+	t.Setenv("XENON_INSTALL_PATH", "")
+	defaults := Properties().Update
+	if defaults.ApiURL != defaultUpdateApiURL || defaults.Platform == "" || defaults.InstallPath == "" || defaults.Installable {
+		t.Fatalf("unexpected defaults %+v", defaults)
+	}
+	t.Setenv("XENON_UPDATE_API_URL", "http://127.0.0.1:1")
+	t.Setenv("XENON_UPDATE_PLATFORM", "linux-amd64")
+	t.Setenv("XENON_INSTALL_PATH", "/tmp/apps/xenon")
+	overridden := Properties().Update
+	if overridden.ApiURL != "http://127.0.0.1:1" || overridden.Platform != "linux-amd64" || overridden.InstallPath != "/tmp/apps/xenon" || !overridden.Installable {
+		t.Fatalf("unexpected overrides %+v", overridden)
+	}
+}
+
+func TestUpdatePlatformPerOperatingSystem(t *testing.T) {
+	cases := map[[2]string]string{{"darwin", "arm64"}: "darwin-universal", {"darwin", "amd64"}: "darwin-universal", {"windows", "amd64"}: "windows-amd64", {"linux", "arm64"}: "linux-arm64"}
+	for input, want := range cases {
+		if got := updatePlatform(input[0], input[1]); got != want {
+			t.Errorf("updatePlatform(%v) = %q, want %q", input, got, want)
+		}
+	}
+}
+
+func TestInstallPathIsTheBundleOrTheExecutable(t *testing.T) {
+	bundled := filepath.Join("/Applications", "Xenon.app", "Contents", "MacOS", "xenon")
+	if got := installPath(bundled); got != filepath.Join("/Applications", "Xenon.app") {
+		t.Errorf("installPath(bundle) = %q", got)
+	}
+	plain := filepath.Join("/opt", "xenon", "xenon")
+	if got := installPath(plain); got != plain {
+		t.Errorf("installPath(plain) = %q", got)
+	}
+}
+
+func TestVersionComesFromTheBuildWhenNotOverridden(t *testing.T) {
+	t.Setenv("XENON_VERSION", "")
+	previous := version
+	t.Cleanup(func() { version = previous })
+	version = "0.3.2"
+	application := Properties().Application
+	if application.Version != "0.3.2" {
+		t.Fatalf("unexpected application %+v", application)
+	}
+	if !Properties().Update.Installable {
+		t.Fatal("a packaged build is installable")
+	}
+}

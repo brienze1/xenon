@@ -16,7 +16,7 @@ const aiAccess = await import('@/platform/services/ai-access')
 const { defaultAppSettings } = await import('@/platform/mappers/settings')
 const { isSettingsDirty, useSettingsStore } = await import('./store')
 
-const saved = { scriptTimeoutMs: 2500, historyUserCap: 5000, historyAiCap: 200, aiAccess: { enabled: true, port: 47821, skipApprovals: false } }
+const saved = { scriptTimeoutMs: 2500, historyUserCap: 5000, historyAiCap: 200, aiAccess: { enabled: true, port: 47821, skipApprovals: false }, autoUpdate: true }
 const running = { state: 'running' as const, address: 'http://127.0.0.1:47821/mcp', reason: null, code: null, clients: 0, stdioCommand: 'xenon mcp', httpConfig: '{}', stdioConfig: '{}' }
 
 function settings() {
@@ -35,7 +35,7 @@ describe('settings store', () => {
     vi.mocked(service.getSettings).mockResolvedValue(saved)
     await settings().load()
     expect(settings()).toMatchObject({ status: 'ready', settings: saved, aiStatus: running })
-    expect(settings().draft).toEqual({ scriptTimeoutSeconds: '2.5', historyUserCap: '5000', historyAiCap: '200', aiEnabled: true, aiPort: '47821', skipApprovals: false })
+    expect(settings().draft).toEqual({ scriptTimeoutSeconds: '2.5', historyUserCap: '5000', historyAiCap: '200', aiEnabled: true, aiPort: '47821', skipApprovals: false, autoUpdate: true })
     expect(isSettingsDirty(settings())).toBe(false)
   })
 
@@ -74,9 +74,9 @@ describe('settings store', () => {
 
   it('saves every field together', async () => {
     vi.mocked(service.saveSettings).mockImplementation(async (value) => value)
-    settings().edit({ scriptTimeoutSeconds: '30', historyUserCap: '10000', historyAiCap: '100', aiEnabled: false, aiPort: '50000', skipApprovals: true })
+    settings().edit({ scriptTimeoutSeconds: '30', historyUserCap: '10000', historyAiCap: '100', aiEnabled: false, aiPort: '50000', skipApprovals: true, autoUpdate: false })
     await expect(settings().save()).resolves.toEqual({ ok: true, value: true })
-    const expected = { scriptTimeoutMs: 30000, historyUserCap: 10000, historyAiCap: 100, aiAccess: { enabled: false, port: 50000, skipApprovals: true } }
+    const expected = { scriptTimeoutMs: 30000, historyUserCap: 10000, historyAiCap: 100, aiAccess: { enabled: false, port: 50000, skipApprovals: true }, autoUpdate: false }
     expect(service.saveSettings).toHaveBeenCalledWith(expected)
     expect(settings().settings).toEqual(expected)
     expect(isSettingsDirty(settings())).toBe(false)

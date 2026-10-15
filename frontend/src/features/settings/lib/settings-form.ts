@@ -32,6 +32,7 @@ export function toDraft(settings: AppSettings): SettingsDraft {
     aiEnabled: settings.aiAccess.enabled,
     aiPort: String(settings.aiAccess.port),
     skipApprovals: settings.aiAccess.skipApprovals,
+    autoUpdate: settings.autoUpdate,
   }
 }
 
@@ -42,7 +43,8 @@ export function sameDraft(a: SettingsDraft, b: SettingsDraft): boolean {
     a.historyAiCap.trim() === b.historyAiCap.trim() &&
     a.aiEnabled === b.aiEnabled &&
     a.aiPort.trim() === b.aiPort.trim() &&
-    a.skipApprovals === b.skipApprovals
+    a.skipApprovals === b.skipApprovals &&
+    a.autoUpdate === b.autoUpdate
   )
 }
 
@@ -73,6 +75,7 @@ export function checkDraft(draft: SettingsDraft): DraftCheck {
       historyUserCap,
       historyAiCap,
       aiAccess: { enabled: draft.aiEnabled, port: aiPort, skipApprovals: draft.skipApprovals },
+      autoUpdate: draft.autoUpdate,
     },
   }
 }

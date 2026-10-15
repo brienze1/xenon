@@ -17,6 +17,7 @@ type AppSettings struct {
 	ScriptTimeoutMs int
 	HistoryUserCap  int
 	HistoryAICap    int
+	AutoUpdate      bool
 }
 
 func DefaultAppSettings() AppSettings {
@@ -25,6 +26,7 @@ func DefaultAppSettings() AppSettings {
 		HistoryUserCap:  DefaultHistoryCap,
 		HistoryAICap:    DefaultHistoryCap,
 		AIAccess:        DefaultAIAccessSettings(),
+		AutoUpdate:      true,
 	}
 }
 
@@ -81,6 +83,10 @@ func (a AppSettings) OrDefault() AppSettings {
 	return a
 }
 
+func (a AppSettings) UpdatesAutomatically() bool {
+	return a.AutoUpdate
+}
+
 func (a AppSettings) SkipsAIApprovals() bool {
 	return a.AIAccess.SkipApprovals
 }
@@ -103,5 +109,6 @@ func (a AppSettings) LogValue() any {
 		"history_user_cap":  a.HistoryUserCap,
 		"history_ai_cap":    a.HistoryAICap,
 		"ai_access":         a.AIAccess.LogValue(),
+		"auto_update":       a.AutoUpdate,
 	}
 }

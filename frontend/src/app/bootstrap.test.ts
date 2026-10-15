@@ -5,6 +5,7 @@ import type { SyncStatus } from '@/platform/mappers/sync'
 import type { ConsoleEntriesEvent } from '@/platform/mappers/console'
 import type { VaultStatus } from '@/platform/mappers/vault'
 import type { AIAccessRuntime, PendingApproval } from '@/platform/mappers/ai-access'
+import { idleUpdateStatus, type UpdateStatus } from '@/platform/mappers/update-status'
 
 const unsubscribe = vi.fn()
 const handlers: {
@@ -28,6 +29,7 @@ const handlers: {
   approvalRequested?: (approval: PendingApproval) => void
   approvalResolved?: (resolved: { id: string; outcome: string }) => void
   aiAccessStatusChanged?: (status: AIAccessRuntime) => void
+  updateStatus?: (status: UpdateStatus) => void
 } = {}
 
 vi.mock('@/platform/events', () => ({
@@ -111,6 +113,18 @@ vi.mock('@/platform/events', () => ({
     handlers.exportRequested = callback
     return unsubscribe
   }),
+  onUpdateStatus: vi.fn((callback) => {
+    handlers.updateStatus = callback
+    return unsubscribe
+  }),
+}))
+vi.mock('@/platform/services/updates', () => ({
+  getUpdateStatus: vi.fn(),
+  checkForUpdates: vi.fn(),
+  checkOnStartup: vi.fn(),
+  startUpdate: vi.fn(),
+  restartToUpdate: vi.fn(),
+  openReleasePage: vi.fn(),
 }))
 vi.mock('@/platform/services/export', () => ({
   getExportOptions: vi.fn(),
@@ -169,6 +183,8 @@ const variables = await import('@/platform/services/variables')
 const environments = await import('@/platform/services/environments')
 const sync = await import('@/platform/services/sync')
 const aiAccess = await import('@/platform/services/ai-access')
+const updates = await import('@/platform/services/updates')
+const { useUpdatesStore } = await import('@/features/updates/store')
 const { useAIAccessStore } = await import('@/features/ai-access/store')
 const { useSettingsStore } = await import('@/features/settings/store')
 const { useSyncStore } = await import('@/features/sync/store')
@@ -250,6 +266,9 @@ describe('bootstrap', () => {
     vi.mocked(sync.getSyncStatus).mockResolvedValue(syncStatus)
     vi.mocked(sync.listChanges).mockResolvedValue([])
     vi.mocked(aiAccess.listPendingApprovals).mockResolvedValue([])
+    vi.mocked(updates.getUpdateStatus).mockResolvedValue({ ...idleUpdateStatus(), currentVersion: '0.1.4' })
+    vi.mocked(updates.checkOnStartup).mockResolvedValue({ ...idleUpdateStatus(), state: 'up_to_date', currentVersion: '0.1.4', latestVersion: '0.1.4' })
+    useUpdatesStore.setState({ status: idleUpdateStatus(), toast: 'unseen' })
     useAIAccessStore.setState({ pending: [], answering: null, error: null })
     useSyncStore.getState().reset(null)
     useWorkspacesStore.setState({ workspaces: [], activeLocalId: null, missingLocalId: null, status: 'idle', error: null })
@@ -292,7 +311,20 @@ describe('bootstrap', () => {
     expect(useGitAccountsStore.getState().hostKeyPrompt).toEqual(prompt)
     useGitAccountsStore.setState({ hostKeyPrompt: null })
     cleanup()
-    expect(unsubscribe).toHaveBeenCalledTimes(20)
+    expect(unsubscribe).toHaveBeenCalledTimes(21)
+  })
+
+  it('runs the startup update check exactly once and follows update:status', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [], activeLocalId: null })
+    const cleanup = await started()
+    await vi.waitFor(() => expect(useUpdatesStore.getState().status.state).toBe('up_to_date'))
+    expect(updates.getUpdateStatus).toHaveBeenCalledTimes(1)
+    expect(updates.checkOnStartup).toHaveBeenCalledTimes(1)
+    expect(updates.checkForUpdates).not.toHaveBeenCalled()
+    handlers.updateStatus?.({ ...idleUpdateStatus(), state: 'ready', currentVersion: '0.1.4', latestVersion: '0.1.7', automatic: true })
+    expect(useUpdatesStore.getState()).toMatchObject({ status: { state: 'ready' }, toast: 'open' })
+    cleanup()
+    expect(updates.checkOnStartup).toHaveBeenCalledTimes(1)
   })
 
   it('opens the import dialog from the menu and from dropped files only when a workspace is active', async () => {

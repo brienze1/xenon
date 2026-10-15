@@ -1,0 +1,5 @@
+{
+  "name": "xenon-release-tools",
+  "private": true,
+  "type": "module"
+}

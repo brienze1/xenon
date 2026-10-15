@@ -250,7 +250,7 @@ func TestAppSettingsFallBackToTheDefault(t *testing.T) {
 	if got := (AppSettings{ScriptTimeoutMs: 2500}).OrDefault(); got.ScriptTimeoutMs != 2500 {
 		t.Errorf("valid = %+v", got)
 	}
-	if got := (AppSettings{ScriptTimeoutMs: 5, AIAccess: DefaultAIAccessSettings()}).OrDefault(); got != DefaultAppSettings() {
+	if got := (AppSettings{ScriptTimeoutMs: 5, AIAccess: DefaultAIAccessSettings(), AutoUpdate: true}).OrDefault(); got != DefaultAppSettings() {
 		t.Errorf("invalid = %+v", got)
 	}
 	if got := (AppSettings{ScriptTimeoutMs: 5}).LogValue().(map[string]any); got["script_timeout_ms"] != 5 {

@@ -12,6 +12,7 @@ export interface SettingsDraft {
   aiEnabled: boolean
   aiPort: string
   skipApprovals: boolean
+  autoUpdate: boolean
 }
 
 /** The form fields Save validates, each with its own inline error. */
