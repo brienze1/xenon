@@ -4,6 +4,7 @@ import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import type { AppError } from '@/platform/errors'
 import type { EditableScope, VariableUsage } from '@/platform/mappers/inspection'
+import { useFitHeight } from '@/shared/hooks/use-fit-height'
 import { withNextStep } from '@/shared/lib/next-step'
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import styles from './VariableCard.module.css'
@@ -30,14 +31,8 @@ const TARGETS: readonly Target[] = [
 
 const NEXT_STEP = 'Check the name and value, then try again.'
 
-const CHARS_PER_ROW = 36
-const MAX_ROWS = 6
-
 /** Grows the value box with its text, like Postman's, up to a few lines. */
-function rowsFor(text: string): number {
-  const rows = text.split('\n').reduce((total, line) => total + Math.max(1, Math.ceil(line.length / CHARS_PER_ROW)), 0)
-  return Math.min(MAX_ROWS, rows)
-}
+const MAX_LINES = 6
 
 function isEditableScope(scope: string): scope is EditableScope {
   return scope === 'environment' || scope === 'collection' || scope === 'globals'
@@ -111,6 +106,8 @@ function DefinedVariable({ tabId, usage, close }: DefinedVariableProps) {
   const [saving, startSave] = useTransition()
   const target = targetOf(usage.scope as EditableScope)
   const locked = usage.status === 'locked_secret'
+  const valueRef = useRef<HTMLTextAreaElement>(null)
+  useFitHeight(valueRef, draft, MAX_LINES)
 
   // The value the variable has now: an edit equal to it needs no save. A secret's is never known here, so it starts empty.
   const committed = useRef(shown)
@@ -163,8 +160,9 @@ function DefinedVariable({ tabId, usage, close }: DefinedVariableProps) {
         </button>
       ) : (
         <textarea
+          ref={valueRef}
           name="variable-value"
-          rows={rowsFor(draft)}
+          rows={1}
           autoComplete="off"
           spellCheck={false}
           translate="no"
@@ -208,6 +206,8 @@ function NewVariable({ tabId, name }: NewVariableProps) {
   const [value, setValue] = useState('')
   const [failure, setFailure] = useState<AppError | null>(null)
   const [adding, startAdd] = useTransition()
+  const valueRef = useRef<HTMLTextAreaElement>(null)
+  useFitHeight(valueRef, value, MAX_LINES)
 
   function add(scope: EditableScope) {
     const table = scopes?.[scope]
@@ -226,8 +226,9 @@ function NewVariable({ tabId, name }: NewVariableProps) {
   return (
     <>
       <textarea
+        ref={valueRef}
         name="new-variable-value"
-        rows={rowsFor(value)}
+        rows={1}
         autoComplete="off"
         spellCheck={false}
         translate="no"
