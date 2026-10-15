@@ -18,5 +18,7 @@ const (
 	XenonZip             enums.ImportKind = "xenon_zip"
 	XenonRequest         enums.ImportKind = "xenon_request"
 	XenonEnvironment     enums.ImportKind = "xenon_environment"
+	Folder               enums.ImportKind = "folder"
+	Mixed                enums.ImportKind = "mixed"
 	Unknown              enums.ImportKind = "unknown"
 )

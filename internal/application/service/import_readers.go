@@ -19,25 +19,75 @@ type importReaders struct {
 	readBrunoCollection    usecase.ReadBrunoCollection
 	readCurlCommand        usecase.ReadCurlCommand
 	readXenonExport        usecase.ReadXenonExport
+	readImportFolderFiles  usecase.ReadImportFolderFiles
 }
 
-func (i importReaders) detected(ctx context.Context, inputs []entity.ImportInput, tempDirs []string) (*entity.ImportSource, error) {
-	detected := make([]entity.ImportInput, 0, len(inputs))
-	for _, input := range inputs {
-		kind, version, err := usecase.DetectImportFormat(input.Probe)
-		if err != nil {
-			return nil, err
-		}
-		detected = append(detected, input.Detected(kind, version))
+func (i importReaders) detected(ctx context.Context, inputs []entity.ImportInput, tempDirs []string) (*entity.ImportSource, []string, error) {
+	detected, expandedDirs, skippedWarnings, err := i.expanded(ctx, inputs)
+	if err != nil {
+		return nil, expandedDirs, err
 	}
 	read := entity.NewImportReadout(len(detected))
 	for _, input := range detected {
 		if err := i.read(ctx, input, &read); err != nil {
-			return nil, err
+			return nil, expandedDirs, err
 		}
 	}
-	source := entity.NewImportSource(idutils.NewUlid(), detected, tempDirs, timeutils.Now()).WithItems(read.Items).WithSourceWarnings(read.Warnings).WithEncryptedSecrets(read.EncryptedSecrets)
-	return &source, nil
+	read.Warn(skippedWarnings)
+	allTempDirs := append(append([]string{}, tempDirs...), expandedDirs...)
+	source := entity.NewImportSource(idutils.NewUlid(), detected, allTempDirs, timeutils.Now()).WithItems(read.Items).WithSourceWarnings(read.Warnings).WithEncryptedSecrets(read.EncryptedSecrets)
+	return &source, expandedDirs, nil
+}
+
+func (i importReaders) expanded(ctx context.Context, inputs []entity.ImportInput) ([]entity.ImportInput, []string, []entity.ImportWarning, error) {
+	expanded := make([]entity.ImportInput, 0, len(inputs))
+	tempDirs := make([]string, 0)
+	warnings := make([]entity.ImportWarning, 0)
+	for _, input := range inputs {
+		kind, version, err := usecase.DetectImportFormat(input.Probe)
+		if err != nil {
+			return nil, tempDirs, nil, err
+		}
+		input = input.Detected(kind, version)
+		if !input.IsLooseFolder() {
+			expanded = append(expanded, input)
+			continue
+		}
+		files, dirs, skipped, err := i.looseFolder(ctx, input)
+		tempDirs = append(tempDirs, dirs...)
+		if err != nil {
+			return nil, tempDirs, nil, err
+		}
+		expanded = append(expanded, files...)
+		if len(skipped) > 0 {
+			warnings = append(warnings, entity.NewSkippedEntriesWarning(input.Name(), skipped))
+		}
+	}
+	return expanded, tempDirs, warnings, nil
+}
+
+func (i importReaders) looseFolder(ctx context.Context, folder entity.ImportInput) ([]entity.ImportInput, []string, []entity.ImportSkippedEntry, error) {
+	files, tempDirs, skipped, err := i.readImportFolderFiles.ReadFolderFiles(ctx, folder)
+	if err != nil {
+		return nil, tempDirs, nil, err
+	}
+	detected := make([]entity.ImportInput, 0, len(files))
+	for _, file := range files {
+		kind, version, err := usecase.DetectImportFormat(file.Probe)
+		file = file.Detected(kind, version)
+		if err == nil && file.IsLooseFolder() {
+			err = usecase.RejectUnimportableFolder(file.Name())
+		}
+		if err != nil {
+			skipped = append(skipped, entity.NewImportSkippedEntry(file.Name(), err))
+			continue
+		}
+		detected = append(detected, file)
+	}
+	if len(detected) == 0 {
+		return nil, tempDirs, nil, usecase.RejectUnimportableFolder(folder.Name())
+	}
+	return detected, tempDirs, skipped, nil
 }
 
 func (i importReaders) read(ctx context.Context, input entity.ImportInput, read *entity.ImportReadout) error {

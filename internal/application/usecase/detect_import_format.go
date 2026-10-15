@@ -10,12 +10,13 @@ import (
 )
 
 const (
-	unsupportedFormatMsg = " is not a Xenon, Postman, Bruno or cURL export"
-	invalidJsonMsg       = " is not valid JSON"
-	mixedBrunoFormatsMsg = " mixes Bruno .bru and YAML files"
-	postmanV1Msg         = "Postman v1 collections are not supported; export the collection as v2.1"
-	newerXenonMsg        = " was written by a newer Xenon (format "
-	updateXenonMsg       = "); update Xenon to import it"
+	unsupportedFormatMsg  = " is not a Xenon, Postman, Bruno or cURL export"
+	invalidJsonMsg        = " is not valid JSON"
+	mixedBrunoFormatsMsg  = " mixes Bruno .bru and YAML files"
+	postmanV1Msg          = "Postman v1 collections are not supported; export the collection as v2.1"
+	newerXenonMsg         = " was written by a newer Xenon (format "
+	updateXenonMsg        = "); update Xenon to import it"
+	unimportableFolderMsg = " has no file Xenon can import; pass a Postman v3 workspace or collection folder, a Postman data dump (archive.json), a Bruno collection (bruno.json or opencollection.yml), a Xenon workspace folder, or a folder of standalone export files"
 )
 
 func DetectImportFormat(probe entity.ImportProbe) (enums.ImportKind, string, error) {
@@ -39,6 +40,10 @@ func DetectImportFormat(probe entity.ImportProbe) (enums.ImportKind, string, err
 	}
 }
 
+func RejectUnimportableFolder(name string) error {
+	return unsupportedImportError(name + unimportableFolderMsg)
+}
+
 func detectFolder(probe entity.ImportProbe) (enums.ImportKind, string, error) {
 	switch {
 	case probe.IsPostmanDump():
@@ -54,7 +59,7 @@ func detectFolder(probe entity.ImportProbe) (enums.ImportKind, string, error) {
 	case probe.IsPostmanV3CollectionFolder():
 		return importkind.PostmanCollection, entity.PostmanV3Version, nil
 	default:
-		return importkind.Unknown, "", unsupportedImportError(probe.Name + unsupportedFormatMsg)
+		return importkind.Folder, "", nil
 	}
 }
 

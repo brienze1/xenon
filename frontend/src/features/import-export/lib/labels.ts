@@ -11,6 +11,7 @@ const KIND_LABELS: Readonly<Record<string, string>> = {
   bruno_bru: 'Bruno collection (.bru)',
   bruno_yaml: 'Bruno collection (YAML)',
   curl: 'cURL command',
+  mixed: 'Multiple sources',
 }
 
 const COUNT_LABELS: ReadonlyArray<[keyof ImportCounts, string, string]> = [

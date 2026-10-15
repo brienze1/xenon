@@ -81,6 +81,42 @@ func (i *importSourcePersistence) Read(ctx context.Context, request entity.Impor
 	return inputs, tempDirs, nil
 }
 
+func (i *importSourcePersistence) ReadFolderFiles(ctx context.Context, folder entity.ImportInput) ([]entity.ImportInput, []string, []entity.ImportSkippedEntry, error) {
+	logger.Debug(ctx, "Started", folder)
+
+	listing, err := os.ReadDir(folder.Path)
+	if err != nil {
+		return nil, nil, nil, errs.NotFoundError(folder.Name()+" cannot be found", "IMP-08404")
+	}
+	inputs := make([]entity.ImportInput, 0, len(listing))
+	tempDirs := make([]string, 0)
+	skipped := make([]entity.ImportSkippedEntry, 0)
+	for _, entry := range listing {
+		if strings.HasPrefix(entry.Name(), ".") {
+			continue
+		}
+		if entry.IsDir() {
+			skipped = append(skipped, entity.NewSkippedFolderEntry(entry.Name()))
+			continue
+		}
+		if !entry.Type().IsRegular() {
+			continue
+		}
+		input, tempDir, err := i.readPath(filepath.Join(folder.Path, entry.Name()))
+		if tempDir != "" {
+			tempDirs = append(tempDirs, tempDir)
+		}
+		if err != nil {
+			skipped = append(skipped, entity.NewImportSkippedEntry(entry.Name(), err))
+			continue
+		}
+		inputs = append(inputs, *input)
+	}
+
+	logger.Debug(ctx, "Finished", map[string]any{"inputs": inputs, "tempDirs": tempDirs, "skipped": skipped})
+	return inputs, tempDirs, skipped, nil
+}
+
 func (i *importSourcePersistence) Save(ctx context.Context, source entity.ImportSource) error {
 	logger.Debug(ctx, "Started", source)
 	i.mu.Lock()
@@ -143,11 +179,11 @@ func (i *importSourcePersistence) readPath(path string) (*entity.ImportInput, st
 	}
 	if info.IsDir() {
 		input, err := readImportFolder(path, name)
-		return input, "", err
+		return locatedAt(input, path), "", err
 	}
 	if !strings.EqualFold(filepath.Ext(path), zipExtension) {
 		input, err := readImportFile(path, name, info.Size())
-		return input, "", err
+		return locatedAt(input, path), "", err
 	}
 	tempDir, err := os.MkdirTemp(properties.Properties().Application.TempDir, importTempPattern)
 	if err != nil {
@@ -156,8 +192,16 @@ func (i *importSourcePersistence) readPath(path string) (*entity.ImportInput, st
 	if err := i.archive.Extract(path, tempDir, properties.Properties().Import.ArchiveLimitBytes); err != nil {
 		return nil, tempDir, err
 	}
-	input, err := readImportFolder(singleFolderInside(tempDir), name)
-	return input, tempDir, err
+	extracted := singleFolderInside(tempDir)
+	input, err := readImportFolder(extracted, name)
+	return locatedAt(input, extracted), tempDir, err
+}
+
+func locatedAt(input *entity.ImportInput, path string) *entity.ImportInput {
+	if input != nil {
+		input.Path = path
+	}
+	return input
 }
 
 func readPastedText(text string) (*entity.ImportInput, error) {

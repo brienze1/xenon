@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 
@@ -47,6 +48,14 @@ func NewProtocolScriptWarning(scriptType, owner, protocol, path string) ImportWa
 
 func NewLinkedSecretWarning(key, path string) ImportWarning {
 	return NewImportWarning(warningcode.LinkedSecret, key+" is linked to a Postman vault secret; enter its value in Xenon", "", path)
+}
+
+func NewSkippedEntriesWarning(folder string, entries []ImportSkippedEntry) ImportWarning {
+	parts := make([]string, 0, len(entries))
+	for _, entry := range slices.SortedFunc(slices.Values(entries), compareSkippedEntries) {
+		parts = append(parts, entry.Name+" ("+entry.ShortReason()+")")
+	}
+	return NewImportWarning(warningcode.SkippedPart, "Skipped in "+folder+": "+strings.Join(parts, ", "), "", "")
 }
 
 func (i ImportWarning) Relocated(move ImportRelocation) ImportWarning {

@@ -11,6 +11,10 @@ describe('import labels', () => {
     expect(sourceLabel('postman_workspace', '3')).toBe('Postman workspace v3')
   })
 
+  it('names a batch of several kinds', () => {
+    expect(sourceLabel('mixed', '')).toBe('Multiple sources')
+  })
+
   it('lists the non-zero counts with singular and plural words', () => {
     expect(countsLabel({ collections: 1, folders: 3, requests: 14, examples: 1, variables: 0, scripts: 0, environments: 0 })).toBe(
       '1 collection · 3 folders · 14 requests · 1 example',

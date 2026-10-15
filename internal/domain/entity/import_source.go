@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/importkind"
 )
 
 const ImportSourceLifetime = 30 * time.Minute
@@ -21,9 +22,17 @@ type ImportSource struct {
 
 func NewImportSource(id string, inputs []ImportInput, tempDirs []string, now time.Time) ImportSource {
 	source := ImportSource{ID: id, TempDirs: tempDirs, Items: []ImportItem{}, SourceWarnings: []ImportWarning{}, ExpiresAt: now.Add(ImportSourceLifetime)}
-	if len(inputs) > 0 {
-		source.Kind = inputs[0].Kind
-		source.Version = inputs[0].Version
+	if len(inputs) == 0 {
+		return source
+	}
+	source.Kind = inputs[0].Kind
+	source.Version = inputs[0].Version
+	for _, input := range inputs[1:] {
+		if input.Kind != source.Kind || input.Version != source.Version {
+			source.Kind = importkind.Mixed
+			source.Version = ""
+			break
+		}
 	}
 	return source
 }
