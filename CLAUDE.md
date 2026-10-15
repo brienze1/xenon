@@ -107,7 +107,7 @@ Tasks are **GitHub issues** on `brienze1/xenon` (there is no Linear), read and u
 
 ```
 /research-task → /spec-task → /create-tests → /implement-task
-  (issue desc)     (specs/)     (red .feature)   (green code → push)
+  (issue desc)     (specs/)     (red .feature)   (green code → push → PR → merge on green CI)
 ```
 
 - `/research-task <issue>` — verify the issue against the code, resolve questions, rewrite the
@@ -117,7 +117,8 @@ Tasks are **GitHub issues** on `brienze1/xenon` (there is no Linear), read and u
 - `/create-tests <issue>` — red BDD features in `test/integration/features/` from the spec,
   commit + push to the task branch.
 - `/implement-task <issue | description>` — branch fresh off `origin/main` (reusing the task
-  branch), red → green, `/refactor-diff` until clean, push. Never opens a PR.
+  branch), red → green, `/refactor-diff` until clean, push, then opens a PR into `main` and merges it
+  once GitHub Actions pass (always; never merges red).
 - `/refactor-diff` — PR-diff-scoped refactor; touches only files changed vs `main` plus
   uncommitted work. Autonomous, never commits.
 

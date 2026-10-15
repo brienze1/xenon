@@ -1,8 +1,8 @@
 ---
-description: "Implement a task end-to-end (GitHub issue or free description): research → plan → branch → red BDD → green impl → refactor-diff loop → push (no PR)"
+description: "Implement a task end-to-end (GitHub issue or free description): research → plan → branch → red BDD → green impl → refactor-diff loop → push → PR → merge once CI passes"
 ---
 
-You are implementing a task end-to-end. Execute the phases below **strictly in order**. Do not skip a phase, do not reorder, and do not open a pull request at any point.
+You are implementing a task end-to-end. Execute the phases below **strictly in order**. Do not skip a phase and do not reorder. The run ends with a pull request that is merged once GitHub Actions pass (Phase 9).
 
 This is a **single repo**: the service code (`cmd/`, `internal/`, `pkg/`), its BDD suite (`test/integration/`) and its Spec Kit specs (`specs/`) all live here. Everything — spec, tests, implementation — ships on **one branch**.
 
@@ -146,7 +146,7 @@ The BDD suite in `test/integration/` is part of this task and changing it is man
 
 ---
 
-## Phase 8 — Push (NO PR)
+## Phase 8 — Push
 
 1. Commit the work with clear, scoped messages (one logical commit per concern is fine; reference the task id, e.g. `feat(XEN-008): …`, in issue mode). Spec/test commits from earlier steps stay as they are.
 2. Push the branch:
@@ -154,10 +154,31 @@ The BDD suite in `test/integration/` is part of this task and changing it is man
    git push -u origin <branch>
    ```
    If the branch was rebased in Phase 3 and already existed on origin, use `git push --force-with-lease` — never a bare `--force`.
-3. **Do NOT open a pull request.** Leave the branch pushed and available for review.
-4. Report back: branch name, commit SHAs, what shipped, test status, and anything logged-but-skipped (out-of-scope findings, pre-existing failures).
+3. Report back: branch name, commit SHAs, what shipped, test status, and anything logged-but-skipped (out-of-scope findings, pre-existing failures).
    - **Issue mode:** comment on the issue with what was built (format per `.claude/skills/github-issues.md`), calling out anything that diverged from the description. Do not close the issue; it closes when the work merges to `main`.
    - **Description mode:** report back to the user only — touch no issue.
+
+---
+
+## Phase 9 — Pull request, then merge once CI passes (always)
+
+The user wants every task to end merged into `main`. Always do this — do not stop and ask.
+
+1. Open the PR from the task branch into `main`:
+   ```bash
+   gh pr create --repo brienze1/xenon --base main --head <branch> --title "<XEN-ID> <issue title>" --body-file <file>
+   ```
+   Body: `Closes #<issue>` (issue mode), a short summary, the spec folder, and test status, including anything
+   not done (e.g. a by-eye check still pending). End with the PR attribution lines from the system prompt.
+2. Wait for GitHub Actions: `gh pr checks <n> --repo brienze1/xenon --watch` (run it in the background; you are
+   notified when it ends).
+3. **All checks green** → merge with a merge commit, as earlier tasks were merged:
+   `gh pr merge <n> --repo brienze1/xenon --merge`. Keep the branch.
+4. **Any check red** → read the failing job's log (`gh run view <run-id> --log-failed`), fix the cause on the
+   task branch (red → green as in Phases 4–5, `make validate` green), push, and watch again. Repeat until green.
+   Never merge with a failing or pending check, never use `--admin`, never skip or disable a check.
+5. After the merge: confirm the PR state is `MERGED`, that the issue closed (issue mode), and remove its
+   `in progress` label. Report the PR link and merge commit.
 
 ---
 
@@ -172,5 +193,5 @@ The BDD suite in `test/integration/` is part of this task and changing it is man
 - Red before green — always prove the test fails first.
 - Loop `/refactor-diff` until CLEAN, then stop.
 - `REFACTORING_REPORT.md` is git-ignored, never committed.
-- Push, never open a PR.
+- Push, open a PR into `main`, and merge it once every GitHub Actions check passes — always; never merge red.
 - Honour the repo's Clean Architecture skills and BDD-first discipline throughout.
