@@ -76,8 +76,8 @@ task id, e.g. `xen-008`; see `.claude/skills/github-issues.md`):
    `/create-tests` and `/implement-task` (often run from other sessions /
    worktrees) pick the spec up from that branch, so the artifacts must
    actually be on GitHub when this command finishes. Still **don't open a
-   PR** — just push the branch. Only stage the `specs/<XEN-ID>-<slug>/` folder (and
-   `.specify/feature.json`) for this commit, nothing else you didn't touch.
+   PR** — just push the branch. Only stage the `specs/<XEN-ID>-<slug>/` folder for this commit, nothing else
+   you didn't touch (`.specify/feature.json` is git-ignored — it is local to each worktree).
    **Do not commit until Step 7's gate passes** — never push a spec with open
    items in it.
 
@@ -279,12 +279,11 @@ the task) can link back to from the issue.
 
    The spec **folder** keeps the uppercase id (`specs/XEN-008-<slug>/`); only
    the branch is lowercase.
-2. Confirm `git status` shows only the new `specs/<XEN-ID>-<slug>/` folder (and
-   `.specify/feature.json` if it changed) — do not sweep in unrelated
+2. Confirm `git status` shows only the new `specs/<XEN-ID>-<slug>/` folder — do not sweep in unrelated
    in-progress work with a blanket `git add -A`.
 3. Commit:
    ```
-   git add specs/<XEN-ID>-<slug> .specify/feature.json
+   git add specs/<XEN-ID>-<slug>
    git commit -m "spec($TASK_ID): add spec/plan/tasks for <short-name>"
    ```
 4. Push the branch to `origin` and set upstream:
