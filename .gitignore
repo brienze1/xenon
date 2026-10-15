@@ -27,3 +27,6 @@ REFACTORING_REPORT.md
 
 # Node tooling outside the frontend
 tools/*/node_modules/
+
+# Spec Kit active-feature pointer — local to each worktree
+.specify/feature.json

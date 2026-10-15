@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
@@ -13,6 +13,7 @@ vi.mock('@/platform/services/environments', () => ({
   updateEnvironment: vi.fn(),
   duplicateEnvironment: vi.fn(),
   deleteEnvironment: vi.fn(),
+  reorderEnvironment: vi.fn(),
 }))
 vi.mock('@/platform/services/variables', () => ({ CONFIRM_REVEAL_REQUIRED: 'VAR-01409', getVariableTable: vi.fn() }))
 vi.mock('@/platform/services/vault', () => ({ PASSPHRASE_SETUP_REQUIRED: 'VLT-05409', VAULT_LOCKED: 'VLT-04409' }))
@@ -31,6 +32,32 @@ const broken = { id: 'error:x.yaml', name: 'x.yaml', color: 'none', confirmBefor
 const detail = (id: string, name: string): Environment => ({ id, name, description: '', color: 'none', confirmBeforeSend: false, variables: [] })
 
 const onOpen = vi.fn()
+
+const qa = { id: 'e3', name: 'qa', color: 'none', confirmBeforeSend: false, error: null } as const
+
+const ROW_HEIGHT = 30
+
+/** jsdom has no layout: give each environment row a stacked rectangle so dnd-kit can measure it. */
+function layOutRows(list: HTMLElement) {
+  within(list)
+    .getAllByRole('button')
+    .forEach((row, index) => {
+      vi.spyOn(row, 'getBoundingClientRect').mockImplementation(() => DOMRect.fromRect({ x: 0, y: index * ROW_HEIGHT, width: 200, height: ROW_HEIGHT }))
+    })
+}
+
+function announcement() {
+  return screen.getByRole('status').textContent
+}
+
+async function nextTick() {
+  await act(() => new Promise((resolve) => setTimeout(resolve)))
+}
+
+/** dnd-kit swallows clicks for 50 ms after a drag ends; later clicks must not land in that window. */
+async function afterDrag() {
+  await act(() => new Promise((resolve) => setTimeout(resolve, 60)))
+}
 
 function renderView(selected: Parameters<typeof EnvironmentsView>[0]['selected'] = null) {
   render(<EnvironmentsView selected={selected} onOpen={onOpen} />)
@@ -187,5 +214,125 @@ describe('EnvironmentsView', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Import' }))
     expect(useImportStore.getState().step).toBe('choose')
     useImportStore.getState().close()
+  })
+  describe('reordering', () => {
+    beforeEach(() => {
+      useEnvironmentsStore.setState({ environments: [dev, hml, qa, broken], activeId: 'e1', status: 'ready' })
+    })
+
+    it('drags an environment with the pointer to a new place and saves the order', async () => {
+      vi.mocked(services.reorderEnvironment).mockResolvedValue({ environments: [qa, dev, hml, broken], activeId: 'e1' })
+      const list = renderView()
+      layOutRows(list)
+      const row = screen.getByRole('button', { name: 'qa' })
+      fireEvent.pointerDown(row, { isPrimary: true, button: 0, clientX: 10, clientY: 3 * ROW_HEIGHT + 15 })
+      fireEvent.pointerMove(document, { isPrimary: true, clientX: 10, clientY: 2 * ROW_HEIGHT + 15 })
+      fireEvent.pointerMove(document, { isPrimary: true, clientX: 10, clientY: ROW_HEIGHT + 10 })
+      fireEvent.pointerUp(document, { isPrimary: true, clientX: 10, clientY: ROW_HEIGHT + 10 })
+      await waitFor(() => expect(services.reorderEnvironment).toHaveBeenCalledWith('A', 'e3', 0))
+      await waitFor(() =>
+        expect(within(list).getAllByRole('button').map((item) => item.getAttribute('aria-label'))).toEqual(['Globals', 'qa', 'dev, active', 'hml']),
+      )
+      expect(onOpen).not.toHaveBeenCalled()
+      await afterDrag()
+    })
+
+    it('reorders from the keyboard with announcements: Space picks up, arrows move, Space drops', async () => {
+      vi.mocked(services.reorderEnvironment).mockResolvedValue({ environments: [hml, dev, qa, broken], activeId: 'e1' })
+      const list = renderView()
+      layOutRows(list)
+      const row = screen.getByRole('button', { name: 'hml' })
+      row.focus()
+      await userEvent.keyboard('[Space]')
+      expect(announcement()).toBe('Picked up hml.')
+      await nextTick()
+      await userEvent.keyboard('[ArrowUp]')
+      expect(announcement()).toBe('hml moved to position 1 of 3.')
+      await userEvent.keyboard('[Space]')
+      expect(announcement()).toBe('hml dropped at position 1 of 3.')
+      await waitFor(() => expect(services.reorderEnvironment).toHaveBeenCalledWith('A', 'e2', 0))
+      expect(onOpen).not.toHaveBeenCalled()
+      await waitFor(() => expect(screen.getByRole('button', { name: 'hml' })).toHaveFocus())
+      await afterDrag()
+    })
+
+    it('cancels a keyboard reorder with Escape and saves nothing', async () => {
+      const list = renderView()
+      layOutRows(list)
+      screen.getByRole('button', { name: 'hml' }).focus()
+      await userEvent.keyboard('[Space]')
+      await nextTick()
+      await userEvent.keyboard('[ArrowUp]')
+      await userEvent.keyboard('[Escape]')
+      expect(announcement()).toBe('Reordering cancelled. hml is back at position 2 of 3.')
+      expect(services.reorderEnvironment).not.toHaveBeenCalled()
+      expect(within(list).getAllByRole('button').map((item) => item.getAttribute('aria-label'))).toEqual(['Globals', 'dev, active', 'hml', 'qa'])
+      expect(onOpen).not.toHaveBeenCalled()
+      await afterDrag()
+    })
+
+    it('tells screen reader users how to reorder', () => {
+      renderView()
+      expect(
+        screen.getByText('To reorder an environment, press Space to pick it up, use the arrow keys to move it, then press Space again to drop it or Escape to cancel.'),
+      ).toBeInTheDocument()
+    })
+
+    it('keeps Globals first and never picks it up', async () => {
+      const list = renderView()
+      layOutRows(list)
+      screen.getByRole('button', { name: 'Globals' }).focus()
+      await userEvent.keyboard('[Space]')
+      await nextTick()
+      await userEvent.keyboard('[ArrowDown][Space]')
+      expect(announcement()).toBe('')
+      expect(services.reorderEnvironment).not.toHaveBeenCalled()
+      expect(within(list).getAllByRole('button')[0]).toHaveAccessibleName('Globals')
+      expect(screen.getByRole('button', { name: 'Globals' })).not.toHaveAttribute('aria-roledescription')
+    })
+
+    it('does not reorder while the search filters the list', async () => {
+      const list = renderView()
+      await userEvent.type(screen.getByRole('searchbox', { name: 'Search environments' }), 'a')
+      layOutRows(list)
+      const row = screen.getByRole('button', { name: 'qa' })
+      row.focus()
+      await userEvent.keyboard('[Space]')
+      await nextTick()
+      await userEvent.keyboard('[ArrowUp][Space]')
+      expect(announcement()).toBe('')
+      fireEvent.pointerDown(row, { isPrimary: true, button: 0, clientX: 10, clientY: ROW_HEIGHT * 2 + 15 })
+      fireEvent.pointerMove(document, { isPrimary: true, clientX: 10, clientY: 10 })
+      fireEvent.pointerUp(document, { isPrimary: true, clientX: 10, clientY: 10 })
+      expect(services.reorderEnvironment).not.toHaveBeenCalled()
+      expect(row).not.toHaveAttribute('aria-disabled')
+    })
+
+    it('does not reorder the row being renamed', async () => {
+      vi.mocked(services.getEnvironment).mockResolvedValue(detail('e2', 'hml'))
+      renderView()
+      openMenu('hml')
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Rename' }))
+      const input = screen.getByRole('textbox', { name: 'Name' })
+      fireEvent.pointerDown(input, { isPrimary: true, button: 0, clientX: 10, clientY: 45 })
+      fireEvent.pointerMove(document, { isPrimary: true, clientX: 10, clientY: 5 })
+      fireEvent.pointerUp(document, { isPrimary: true, clientX: 10, clientY: 5 })
+      expect(services.reorderEnvironment).not.toHaveBeenCalled()
+      expect(input).toBeInTheDocument()
+    })
+
+    it('puts the order back and shows the error when it cannot be saved', async () => {
+      vi.mocked(services.reorderEnvironment).mockRejectedValue(new AppError('WKS-26500', 'permission denied'))
+      const list = renderView()
+      layOutRows(list)
+      screen.getByRole('button', { name: 'qa' }).focus()
+      await userEvent.keyboard('[Space]')
+      await nextTick()
+      await userEvent.keyboard('[ArrowUp][ArrowUp][Space]')
+      await waitFor(() => expect(services.reorderEnvironment).toHaveBeenCalledWith('A', 'e3', 0))
+      expect(await screen.findByText(/permission denied/)).toHaveTextContent('Check that the workspace folder exists and is writable, then try again.')
+      expect(within(list).getAllByRole('button').map((item) => item.getAttribute('aria-label'))).toEqual(['Globals', 'dev, active', 'hml', 'qa'])
+      await afterDrag()
+    })
   })
 })

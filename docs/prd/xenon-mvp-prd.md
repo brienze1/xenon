@@ -111,6 +111,7 @@ A workspace is a hard boundary: switching workspace swaps the whole sidebar, the
 - Drag a request within a folder to change its order.
 - Drag folders to reorder them or nest them in another folder.
 - Collections can be reordered too.
+- Environments can be reordered in the Environments view, with the mouse or the keyboard; Globals stays first, and reordering is off while the search filters the list.
 - The order is saved to disk, so it survives a restart and an export.
 - Moving between workspaces is not drag and drop; use export and import (or a later "Move to workspace" action).
 
@@ -520,3 +521,4 @@ Stages 4 (scripts) and the OAuth 2.0 part of 5 carry most of the risk. Everythin
 
 - [ ] Open-source Xenon once it replaces Postman, or keep it private? (Not needed for the MVP.)
 - [ ] Which scripts in the current Postman collections use parts of `pm` beyond the list in Scripts? A quick scan of the exports would settle the MVP scope.
+- [x] **Environment order** (XEN-011, GitHub issue #8). Environments are listed in the order the user drags them into (mouse, or Space / arrows / Space with screen-reader announcements). The order is stored in `workspace.yaml` under `environments.order` as environment ids, so renames never break it and it syncs through git, merging like the collections' `order`. Environments the order does not name follow alphabetically, ids with no file are ignored and broken files come last. Created, duplicated and imported environments go last (also in a workspace never reordered), an import that replaces an environment keeps its place, and deleting one removes its id. The switcher and the AI `env_edit` tool (`reorder` action) use the same order.

@@ -11,6 +11,7 @@ import {
   duplicateEnvironment,
   getEnvironment,
   listEnvironments,
+  reorderEnvironment,
   setActiveEnvironment,
   updateEnvironment,
 } from '@/platform/services/environments'
@@ -63,6 +64,8 @@ interface EnvironmentsState {
   updateEnvironmentLook: (id: string, look: EnvironmentLook) => Promise<AppError | null>
   duplicateEnvironment: (id: string) => Promise<Result<Environment, AppError>>
   deleteEnvironment: (id: string) => Promise<AppError | null>
+  /** Moves the environment to `index` (0 = first environment) at once, then saves; restores and returns the error on failure. */
+  reorderEnvironment: (id: string, index: number) => Promise<AppError | null>
   loadTable: (scope: string) => Promise<void>
   editDraft: (scope: string, change: (rows: DraftRow[]) => DraftRow[]) => void
   /** Drops the unsaved edits of a table and shows its stored rows again. */
@@ -141,6 +144,20 @@ function wantedPrompt(status: VaultStatus): PassphrasePrompt | null {
   }
   const localId = activeLocalId()
   return localId !== null && status.lockedLocalIds.includes(localId) ? 'unlock' : null
+}
+
+/** The list with environment `id` moved to `index` among the readable ones (broken ones stay last); null when nothing moves. */
+function movedEnvironments(environments: EnvironmentSummary[], id: string, index: number): EnvironmentSummary[] | null {
+  const readable = environments.filter((environment) => environment.error === null)
+  const from = readable.findIndex((environment) => environment.id === id)
+  const to = Math.min(index, readable.length - 1)
+  if (from < 0 || from === to) {
+    return null
+  }
+  const reordered = [...readable]
+  const [moving] = reordered.splice(from, 1)
+  reordered.splice(to, 0, moving!)
+  return [...reordered, ...environments.filter((environment) => environment.error !== null)]
 }
 
 export const useEnvironmentsStore = create<EnvironmentsState>()((set, get) => {
@@ -349,6 +366,22 @@ export const useEnvironmentsStore = create<EnvironmentsState>()((set, get) => {
         return { activeId: deleted.value, tables, drafts, nameDrafts: withoutName(state.nameDrafts, id) }
       })
       await get().load()
+      return null
+    },
+
+    reorderEnvironment: async (id, index) => {
+      const previous = get().environments
+      const moved = movedEnvironments(previous, id, index)
+      if (moved === null) {
+        return null
+      }
+      set({ environments: moved })
+      const saved = await inWorkspace((localId) => reorderEnvironment(localId, id, index))
+      if (!saved.ok) {
+        set({ environments: previous })
+        return saved.error
+      }
+      set({ environments: saved.value.environments, activeId: saved.value.activeId })
       return null
     },
 

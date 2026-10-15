@@ -15,6 +15,7 @@ type importVariablesWriter struct {
 	deleteEnvironment    usecase.DeleteEnvironment
 	saveWorkspaceFile    usecase.SaveWorkspaceFile
 	loadWorkspace        usecase.LoadWorkspace
+	orders               environmentOrders
 	values               scopeValues
 	vaults               vaultWriter
 	publishVariableEvent usecase.PublishVariableEvent
@@ -46,6 +47,11 @@ func (w importVariablesWriter) written(ctx context.Context, target importTarget,
 }
 
 func (w importVariablesWriter) environment(ctx context.Context, workspace entity.RegisteredWorkspace, write entity.ImportVariablesWrite) error {
+	list, err := w.orders.list(ctx, workspace.Path, "")
+	if err != nil {
+		return err
+	}
+	order := list.OrderAfterImport(write)
 	vault, err := w.storeSecrets(ctx, workspace.LocalID, write.Scope(), write.Environment.Variables, map[string]string{}, write.Secrets)
 	if err != nil {
 		return err
@@ -61,6 +67,9 @@ func (w importVariablesWriter) environment(ctx context.Context, workspace entity
 			w.restoreReplaced(ctx, workspace.Path, *write.Replaced)
 		}
 		w.vaults.restore(ctx, vault, write.Scope(), nil)
+		return err
+	}
+	if err := w.orders.write(ctx, workspace.Path, order); err != nil {
 		return err
 	}
 	if write.ReplacesEnvironment() {

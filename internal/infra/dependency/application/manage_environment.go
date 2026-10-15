@@ -20,6 +20,8 @@ func GetManageEnvironmentService() adapter.ManageEnvironmentService {
 				integration.GetEnvironmentPersistence(),
 				integration.GetEnvironmentPersistence(),
 				integration.GetEnvironmentPersistence(),
+				integration.GetWorkspacePersistence(),
+				integration.GetWorkspacePersistence(),
 				integration.GetLocalVariablesPersistence(),
 				integration.GetLocalVariablesPersistence(),
 				integration.GetVaultPersistence(),

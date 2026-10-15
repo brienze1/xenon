@@ -75,6 +75,21 @@ button.item:focus-visible {
   box-shadow: inset var(--focus-ring);
 }
 
+.dragging {
+  position: relative;
+  z-index: 1;
+  opacity: 0.8;
+  background: var(--color-surface-raised);
+}
+
+button.item:not([aria-roledescription]) {
+  cursor: default;
+}
+
+button.item[aria-roledescription]:active {
+  cursor: grabbing;
+}
+
 .selected {
   background: var(--color-selection);
 }

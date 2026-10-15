@@ -32,3 +32,7 @@ func validateSetActiveEnvironment(request *dto.SetActiveEnvironment) error {
 func validateDeleteEnvironment(request *dto.EnvironmentReference) error {
 	return validator.CustomValidator().Struct("ENV-15400", request)
 }
+
+func validateReorderEnvironment(request *dto.ReorderEnvironment) error {
+	return validator.CustomValidator().Struct("ENV-18400", request)
+}
