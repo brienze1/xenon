@@ -27,8 +27,8 @@ MUTATION_SKIP := true
 MUTATION_SKIP_NOTE := "Mutation gates skipped on Windows: gremlins $(GREMLINS_VERSION) keys coverage by backslash paths and reports every mutant NOT COVERED there. macOS and Linux enforce them on the same code."
 endif
 
-.PHONY: setup setup-ci dev bindings build package ensure-dist sort-imports fix-struct-alignment vet \
-	check-dead-code dependency-check tests tests-without-coverage bdd validate-coverage mutation-test \
+.PHONY: setup setup-ci install-wails dev bindings build package ensure-dist sort-imports fix-struct-alignment vet \
+	check-dead-code dependency-check tests tests-without-coverage unit-tests bdd-shard bdd validate-coverage mutation-test \
 	validate-mutation-coverage validate-test-efficacy validate-mutation frontend-check release-check validate \
 	sandbox-assets parity-oracle parity-diff parity script-reference snippet-golden newman
 
@@ -44,10 +44,12 @@ setup:
 	cd frontend && npm ci
 	@echo "Setup completed!"
 
-# CI installs only what its jobs run: no gremlins (mutation testing is not part of CI)
-setup-ci:
-	@echo "Installing pinned CI tools..."
+install-wails:
 	go install github.com/wailsapp/wails/v3/cmd/wails3@$(WAILS_VERSION)
+
+# CI installs only what its jobs run: no gremlins (mutation testing is not part of CI)
+setup-ci: install-wails
+	@echo "Installing pinned CI tools..."
 	go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)
 	go install github.com/dkorunic/betteralign/cmd/betteralign@$(BETTERALIGN_VERSION)
 	go install golang.org/x/tools/cmd/deadcode@$(DEADCODE_VERSION)
@@ -165,6 +167,16 @@ tests-without-coverage: ensure-dist
 	@echo "Running tests..."
 	go test ./... -p=100
 	@echo "Tests completed!"
+
+# Every Go test except the BDD suite, which CI runs in shards with bdd-shard
+unit-tests: ensure-dist
+	@echo "Running unit tests..."
+	go test $$(go list ./... | grep -v '/test/integration/steps$$') -p=100
+	@echo "Unit tests completed!"
+
+# One shard of the BDD suite: make bdd-shard SHARD=1/4 (feature files split evenly by size)
+bdd-shard: ensure-dist
+	XENON_BDD_SHARD=$(SHARD) go test ./test/integration/steps/... -count=1
 
 bdd: ensure-dist
 	@if [ -d test/integration/steps ]; then \

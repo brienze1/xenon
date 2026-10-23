@@ -1,10 +1,11 @@
 name: CI
 
-# main is not listed: only pull requests that passed this workflow are merged, and release.yml
-# builds and publishes each merge without re-running the tests.
+# Pull requests run CI. main is not listed (only pull requests that passed this workflow are merged, and
+# release.yml builds and publishes each merge), and task branches are not either: their pull request runs
+# the same jobs, so a push trigger would only run everything twice.
 on:
   push:
-    branches: [init, 'xen-*']
+    branches: [init]
   pull_request:
 
 permissions:
@@ -67,8 +68,90 @@ jobs:
       - name: Release tooling tests
         run: make release-check
 
-  tests:
-    name: tests & build (${{ matrix.os }})
+  coverage:
+    name: tests with coverage (ubuntu-24.04)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install the snippet runtimes (curl, node, go and python requests run generated snippets in BDD)
+        run: python -m pip install requests==2.32.3
+
+      - name: Install Linux webview dependencies (cached)
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+          version: webview-1
+
+      - name: Unit and BDD tests with the coverage threshold
+        run: |
+          make tests
+          make validate-coverage
+
+  bdd:
+    name: tests (${{ matrix.os }}, shard ${{ matrix.shard }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, shard: 1/4 }
+          - { os: windows-latest, shard: 2/4 }
+          - { os: windows-latest, shard: 3/4 }
+          - { os: windows-latest, shard: 4/4 }
+          - { os: macos-latest, shard: 1/2 }
+          - { os: macos-latest, shard: 2/2 }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install the snippet runtimes (curl, node, go and python requests run generated snippets in BDD)
+        run: python -m pip install requests==2.32.3
+
+      - name: Ensure make is available
+        if: runner.os == 'Windows'
+        run: command -v make || choco install make -y
+
+      - name: Unit tests (first shard only)
+        if: startsWith(matrix.shard, '1/')
+        run: make unit-tests
+
+      - name: BDD shard ${{ matrix.shard }}
+        run: make bdd-shard SHARD=${{ matrix.shard }}
+
+  build:
+    name: build (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -91,17 +174,6 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install the snippet runtimes (curl, node, go and python requests run generated snippets in BDD)
-        run: |
-          python -m pip install requests==2.32.3
-          curl --version
-          node --version
-          go version
-
       - name: Install Linux webview dependencies (cached)
         if: runner.os == 'Linux'
         uses: awalsh128/cache-apt-pkgs-action@v1.6.3
@@ -113,21 +185,13 @@ jobs:
         if: runner.os == 'Windows'
         run: command -v make || choco install make -y
 
-      - name: Setup tools and frontend dependencies
-        run: make setup-ci
+      - name: Install wails3 and the frontend dependencies
+        run: |
+          make install-wails
+          cd frontend && npm ci
 
       - name: Generate bindings
         run: make bindings
-
-      - name: Unit and BDD tests with the coverage threshold
-        if: runner.os == 'Linux'
-        run: |
-          make tests
-          make validate-coverage
-
-      - name: Unit and BDD tests
-        if: runner.os != 'Linux'
-        run: make tests-without-coverage
 
       - name: Build
         run: make build

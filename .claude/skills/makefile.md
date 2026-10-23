@@ -355,8 +355,14 @@ validate-test-efficacy:
 
 ## CI-only targets
 
-- `make setup-ci` — the tools CI uses (wails3, goimports, betteralign, deadcode, govulncheck) plus `npm ci`; it skips
-  gremlins, which only mutation testing needs.
-- `make tests-without-coverage` — `go test ./...` without the coverage profile. CI runs it on macOS and Windows; the
-  Linux job runs `make tests` + `make validate-coverage`, and the OS-independent checks run once in the `checks` job.
-  Locally, `make validate` is still the single quality gate.
+- `make setup-ci` — the tools CI uses (wails3 via `make install-wails`, goimports, betteralign, deadcode,
+  govulncheck) plus `npm ci`; it skips gremlins, which only mutation testing needs.
+- `make tests-without-coverage` — `go test ./...` without the coverage profile.
+- `make unit-tests` — every Go test except the BDD suite.
+- `make bdd-shard SHARD=i/n` — one shard of the BDD suite. `XENON_BDD_SHARD=i/n` splits the feature files evenly by
+  size, deterministically, and every file lands in exactly one shard.
+
+CI layout (`.github/workflows/ci.yml`, pull requests only): `checks` (Linux: bindings drift, imports, alignment, vet,
+dead code, govulncheck, frontend, release tooling), `coverage` (Linux: `make tests` + `make validate-coverage`), `bdd`
+shards (Windows ×4, macOS ×2; the first shard also runs `make unit-tests`), `build` (×3 OS), plus the sandbox and
+Newman jobs. Locally, `make validate` is still the single quality gate.
