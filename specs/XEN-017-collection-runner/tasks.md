@@ -355,8 +355,8 @@ profile.
   - add a "Collection runner" section that summarises the spec;
   - change the L507 runner-only note to "work inside collection runs; outside a run they are no-ops";
   - add **Decisions (Oct 23, 2026)** listing every decision from the spec's decision tables and clarifications.
-- [ ] T070 Run `make sort-imports`, then the full `make bdd` (every pre-existing scenario included), `cd frontend && npm run lint && npm run typecheck && npm test`, and `make validate`. All must be green.
-- [ ] T071 Run `/refactor-diff` until clean, then re-run `make validate`.
+- [x] T070 Run `make sort-imports`, then the full `make bdd` (every pre-existing scenario included), `cd frontend && npm run lint && npm run typecheck && npm test`, and `make validate`. All must be green.
+- [x] T071 Run `/refactor-diff` until clean, then re-run `make validate`.
 - [ ] T072 Walk through quickstart.md's manual checks in `wails3 dev` (functional, order, data, control flow, keep values, performance, past runs, sidebar Run…, toast, MCP). Include SC-006: a 100-user, 60-minute performance run against a local mock, during which tabs open, edit and send without visible lag.
 
 ---
