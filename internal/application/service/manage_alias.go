@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"slices"
 
 	"github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/application/usecase"
@@ -57,7 +56,7 @@ func (m *manageAlias) Create(ctx context.Context, localId, requestId, name strin
 		return nil, err
 	}
 	created := entity.NewRequestAlias(idutils.NewUlid(), name, loaded.request, environmentIds)
-	if err := m.checkEnvironments(ctx, loaded.root, created.EnvironmentIDs); err != nil {
+	if err := m.checkEnvironments(ctx, loaded.root, created); err != nil {
 		return nil, err
 	}
 	saved, err := m.save(ctx, *loaded, created, loaded.request.WithAliasAppended(created))
@@ -102,7 +101,7 @@ func (m *manageAlias) SetEnvironments(ctx context.Context, localId, requestId, a
 		return nil, err
 	}
 	linked := stored.WithEnvironments(environmentIds)
-	if err := m.checkEnvironments(ctx, loaded.root, linked.EnvironmentIDs); err != nil {
+	if err := m.checkEnvironments(ctx, loaded.root, linked); err != nil {
 		return nil, err
 	}
 	saved, err := m.saveRequestAliases.SaveAliases(ctx, loaded.root, loaded.request.WithAlias(linked))
@@ -155,18 +154,16 @@ func (m *manageAlias) load(ctx context.Context, localId, requestId, baseRevision
 	return &loadedRequest{root: workspace.Path, request: *request}, nil
 }
 
-func (m *manageAlias) checkEnvironments(ctx context.Context, root string, ids []string) error {
-	if len(ids) == 0 {
+func (m *manageAlias) checkEnvironments(ctx context.Context, root string, alias entity.RequestAlias) error {
+	if !alias.IsLinked() {
 		return nil
 	}
 	environments, err := m.listEnvironments.List(ctx, root)
 	if err != nil {
 		return err
 	}
-	for _, id := range ids {
-		if !slices.ContainsFunc(environments, func(environment entity.Environment) bool { return environment.ID == id && environment.Error == "" }) {
-			return usecase.RejectUnknownEnvironment()
-		}
+	if !alias.HasKnownEnvironments(environments) {
+		return usecase.RejectUnknownEnvironment()
 	}
 	return nil
 }

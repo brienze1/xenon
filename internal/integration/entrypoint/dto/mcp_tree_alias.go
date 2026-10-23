@@ -15,11 +15,6 @@ type MCPTreeAlias struct {
 	Headers      []KeyValue            `json:"headers"`
 }
 
-type MCPAliasEnvironment struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
-}
-
 func NewMCPTreeAlias(alias RequestAlias, environments []entity.Environment) MCPTreeAlias {
 	version := alias.Request
 	return MCPTreeAlias{
@@ -27,7 +22,7 @@ func NewMCPTreeAlias(alias RequestAlias, environments []entity.Environment) MCPT
 		Name:         alias.Name,
 		Method:       version.Method,
 		Url:          version.Url,
-		Environments: newMCPAliasEnvironments(alias.EnvironmentIds, environments),
+		Environments: NewMCPAliasEnvironments(alias.EnvironmentIds, environments),
 		Params:       version.Params,
 		Headers:      version.Headers,
 		Body:         version.Body,
@@ -40,15 +35,6 @@ func NewMCPTreeAliases(aliases []RequestAlias, environments []entity.Environment
 	result := make([]MCPTreeAlias, 0, len(aliases))
 	for _, alias := range aliases {
 		result = append(result, NewMCPTreeAlias(alias, environments))
-	}
-	return result
-}
-
-func newMCPAliasEnvironments(ids []string, environments []entity.Environment) []MCPAliasEnvironment {
-	labels := entity.AliasEnvironmentLabels(ids, environments)
-	result := make([]MCPAliasEnvironment, 0, len(ids))
-	for index, id := range ids {
-		result = append(result, MCPAliasEnvironment{Id: id, Name: labels[index]})
 	}
 	return result
 }

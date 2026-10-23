@@ -146,7 +146,6 @@ func (e ExportNode) AliasRequests(labels func(ids []string) []string) []ExportNo
 	return nodes
 }
 
-// aliasExportDescription notes a linked alias's environments, which Postman cannot enforce, after the request's description.
 func aliasExportDescription(description string, alias RequestAlias, labels func(ids []string) []string) string {
 	if !alias.IsLinked() {
 		return description

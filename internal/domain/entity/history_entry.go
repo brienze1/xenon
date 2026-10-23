@@ -63,13 +63,8 @@ func (h HistoryEntry) ForAlias(alias RequestAlias) HistoryEntry {
 	return h
 }
 
-// InEnvironment records the environment active for the send, or none.
 func (h HistoryEntry) InEnvironment(active *Environment) HistoryEntry {
-	if active == nil {
-		h.Environment = nil
-		return h
-	}
-	h.Environment = &HistoryEnvironment{ID: active.ID, Name: active.Name, Color: active.Color}
+	h.Environment = NewHistoryEnvironment(active)
 	return h
 }
 

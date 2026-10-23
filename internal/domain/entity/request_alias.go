@@ -72,6 +72,20 @@ func (a RequestAlias) IsAvailableIn(active *Environment) bool {
 	return active != nil && slices.Contains(a.EnvironmentIDs, active.ID)
 }
 
+// HasKnownEnvironments is an alias whose every linked environment exists and is well formed.
+func (a RequestAlias) HasKnownEnvironments(environments []Environment) bool {
+	for _, id := range a.EnvironmentIDs {
+		if !slices.ContainsFunc(environments, func(environment Environment) bool { return environment.HasID(id) }) {
+			return false
+		}
+	}
+	return true
+}
+
+func (a RequestAlias) EnvironmentLabels(environments []Environment) []string {
+	return AliasEnvironmentLabels(a.EnvironmentIDs, environments)
+}
+
 func (a RequestAlias) WithEnvironments(ids []string) RequestAlias {
 	a.EnvironmentIDs = NormalizedEnvironmentIDs(ids)
 	return a

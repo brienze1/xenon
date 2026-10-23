@@ -235,7 +235,7 @@ func (s *sendRequest) unavailableAlias(ctx context.Context, root string, alias e
 	if err != nil {
 		return err
 	}
-	return usecase.RejectUnavailableAlias(alias.Name, entity.AliasEnvironmentLabels(alias.EnvironmentIDs, environments))
+	return usecase.RejectUnavailableAlias(alias.Name, alias.EnvironmentLabels(environments))
 }
 
 func (s *sendRequest) alias(ctx context.Context, root, requestId, aliasId string) (entity.RequestAlias, error) {

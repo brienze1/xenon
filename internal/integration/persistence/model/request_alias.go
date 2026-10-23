@@ -93,7 +93,6 @@ func (a *RequestAlias) Node() *yaml.Node {
 	)
 }
 
-// environmentsField writes an alias's environments only when it is limited to some, so an alias for all environments is written as before.
 func environmentsField(environments []string) yamlnode.Field {
 	if len(environments) == 0 {
 		return yamlnode.Absent(environmentsKey)

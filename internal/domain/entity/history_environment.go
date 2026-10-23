@@ -8,3 +8,11 @@ type HistoryEnvironment struct {
 	Name  string
 	Color enums.EnvColor
 }
+
+// NewHistoryEnvironment snapshots the active environment, or is nil when none is active.
+func NewHistoryEnvironment(active *Environment) *HistoryEnvironment {
+	if active == nil {
+		return nil
+	}
+	return &HistoryEnvironment{ID: active.ID, Name: active.Name, Color: active.Color}
+}
