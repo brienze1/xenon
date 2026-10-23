@@ -31,7 +31,7 @@ innermost outward: domain → application → integration → infra → frontend
 
 ## Phase 1: Setup
 
-- [ ] T001 Set up the work: on `xen-017` (rebased on a freshly fetched `origin/main`), run `cd frontend && npm ci` and `make bindings` before any Vitest run (fresh-worktree note). Then confirm `make bdd` and `cd frontend && npm test` are green before any change.
+- [x] T001 Set up the work: on `xen-017` (rebased on a freshly fetched `origin/main`), run `cd frontend && npm ci` and `make bindings` before any Vitest run (fresh-worktree note). Then confirm `make bdd` and `cd frontend && npm test` are green before any change.
 
 ---
 
@@ -187,7 +187,7 @@ and order, and that Reset restores the sidebar order.
 **Independent Test**: from a folder's context menu choose Run…. Its tab shows Runner with only
 that folder's requests, and a run still applies the collection's scripts and auth.
 
-- [ ] T036 [P] [US3] Add folder-target scenarios to `test/integration/features/runner/run_functional.feature` (only the folder's requests, including subfolders; the collection and folder auth and scripts still apply) and prove them red.
+- [x] T036 [P] [US3] Add folder-target scenarios to `test/integration/features/runner/run_functional.feature` (only the folder's requests, including subfolders; the collection and folder auth and scripts still apply) and prove them red.
 - [x] T037 [US3] Make target resolution in `manage_runner.go` accept folder ids, and make `FlattenRunRows` start at the folder. Each row's ancestors still come from `FindAncestors`. T036 must go green.
 - [x] T038 [P] [US3] FR-002, SC-001 (Run…, then Start run): add **Run…** after Open for containers, in both the context menu and the ⋯ menu, with a new `onRunItem(id, kind)` prop, in `frontend/src/features/sidebar/components/TreeItem.tsx`, with `TreeItem.test.tsx` cases. In `app/` (where `onOpenItem` is wired), implement it: `useTabsStore.openItemTab(target, 'pinned')`, then set the item section to `runner` through `useItemSettingsStore.setSection`, and select the sub-tab (Results while a run is active there, else Setup) in `useRunnerStore`.
 
