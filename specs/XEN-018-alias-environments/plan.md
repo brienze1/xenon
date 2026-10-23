@@ -148,7 +148,11 @@ frontend/src/
 ├── features/request-builder/components/EnvironmentPicker.tsx (+ .module.css) NEW  shared by both dialogs
 ├── features/request-builder/components/CreateAliasDialog.tsx (+ NEW .test.tsx) CHG  picker preset All environments
 ├── features/request-builder/components/UnavailableAliasBanner.tsx (+ .test.tsx) NEW  message + Switch to <env>
-├── features/request-builder/components/RequestBar.tsx (+ NEW .test.tsx)  CHG  Send button disabled and UnavailableAliasBanner shown when unavailable
+├── features/request-builder/components/RequestBar.tsx                CHG  Send button disabled while unavailable (tested with the banner in UnavailableAliasBanner.test.tsx)
+├── features/request-builder/components/RequestBuilder.tsx            CHG  renders UnavailableAliasBanner under the request bar
+├── features/request-builder/hooks/use-unavailable-alias.ts           NEW  shared by RequestBar and the banner
+├── features/request-builder/lib/environment-choice.ts                NEW  picker state helpers
+├── shared/ui/swatch/Swatch.tsx (+ .module.css, .test.tsx)           NEW  colour dot shared by the picker, AliasMenu, banner and History
 └── features/sidebar/components/HistoryView.tsx (+ test) CHG  environment dot + name on the row
 docs/prd/xenon-mvp-prd.md                       CHG  Decisions (Oct 23, 2026): alias environments
 ```

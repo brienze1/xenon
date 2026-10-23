@@ -23,6 +23,10 @@ func (a *AliasService) Save(ctx context.Context, request dto.SaveAlias) (*dto.Re
 	return a.manage.Save(ctx, request)
 }
 
+func (a *AliasService) SetEnvironments(ctx context.Context, request dto.SetAliasEnvironments) (*dto.Request, error) {
+	return a.manage.SetEnvironments(ctx, request)
+}
+
 func (a *AliasService) Delete(ctx context.Context, request dto.AliasReference) (*dto.Request, error) {
 	return a.manage.Delete(ctx, request)
 }

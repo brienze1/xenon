@@ -1,0 +1,43 @@
+.picker {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  margin-bottom: var(--space-2);
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.option,
+.environment {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0 0 0 var(--space-5);
+  list-style: none;
+}
+
+.deleted {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.hint {
+  margin: 0;
+  color: var(--status-error);
+  font-size: var(--font-size-sm);
+}

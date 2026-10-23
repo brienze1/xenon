@@ -108,7 +108,7 @@ func ExportableChildren(node TreeNode) []TreeNode {
 }
 
 // WithAliasesAsRequests writes every request's aliases as requests right after it, since Postman has no aliases.
-func (e ExportNode) WithAliasesAsRequests() ExportNode {
+func (e ExportNode) WithAliasesAsRequests(labels func(ids []string) []string) ExportNode {
 	if e.IsRequest() {
 		request := *e.Request
 		request.Aliases = nil
@@ -117,18 +117,18 @@ func (e ExportNode) WithAliasesAsRequests() ExportNode {
 	}
 	children := make([]ExportNode, 0, len(e.Children))
 	for _, child := range e.Children {
-		children = append(children, child.WithAliasRequests()...)
+		children = append(children, child.WithAliasRequests(labels)...)
 	}
 	e.Children = children
 	return e
 }
 
-func (e ExportNode) WithAliasRequests() []ExportNode {
-	return append([]ExportNode{e.WithAliasesAsRequests()}, e.AliasRequests()...)
+func (e ExportNode) WithAliasRequests(labels func(ids []string) []string) []ExportNode {
+	return append([]ExportNode{e.WithAliasesAsRequests(labels)}, e.AliasRequests(labels)...)
 }
 
 // AliasRequests are a request's aliases as requests named "<request> (<alias>)", without examples.
-func (e ExportNode) AliasRequests() []ExportNode {
+func (e ExportNode) AliasRequests(labels func(ids []string) []string) []ExportNode {
 	if !e.IsRequest() {
 		return []ExportNode{}
 	}
@@ -138,9 +138,22 @@ func (e ExportNode) AliasRequests() []ExportNode {
 		version := e.Request.Version(alias.ID)
 		name := version.Name + " (" + alias.Name + ")"
 		version = version.Identified(version.ID+"-"+alias.ID, name)
+		version.Description = aliasExportDescription(version.Description, alias, labels)
 		version.Examples = nil
 		version.Aliases = nil
 		nodes = append(nodes, ExportNode{Request: &version, Path: parent + name, Children: []ExportNode{}, InheritedScripts: e.InheritedScripts})
 	}
 	return nodes
+}
+
+// aliasExportDescription notes a linked alias's environments, which Postman cannot enforce, after the request's description.
+func aliasExportDescription(description string, alias RequestAlias, labels func(ids []string) []string) string {
+	if !alias.IsLinked() {
+		return description
+	}
+	note := aliasEnvironmentsNote + strings.Join(labels(alias.EnvironmentIDs), ", ")
+	if description == "" {
+		return note
+	}
+	return description + "\n\n" + note
 }

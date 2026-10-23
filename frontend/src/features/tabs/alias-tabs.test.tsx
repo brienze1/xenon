@@ -42,7 +42,7 @@ function draftOf(name: string, url: string): RequestDraft {
 const SAVED: SavedRequest = {
   draft: draftOf('Login', 'https://x/v1'),
   revision: 'rev-1',
-  aliases: [{ id: 'a1', name: 'mx-test-user', draft: draftOf('mx-test-user', 'https://x/v2') }],
+  aliases: [{ id: 'a1', name: 'mx-test-user', environmentIds: [], draft: draftOf('mx-test-user', 'https://x/v2') }],
 }
 
 function builder() {
@@ -97,7 +97,7 @@ describe('request tabs with aliases', () => {
     act(() => builder().setUrl(tabId, 'https://x/v1?edited'))
     act(() => builder().selectVersion(tabId, 'a1'))
     act(() => builder().setUrl(tabId, 'https://x/v2?edited'))
-    vi.mocked(aliasService.saveAlias).mockResolvedValue({ ...SAVED, revision: 'rev-2', aliases: [{ id: 'a1', name: 'mx-test-user', draft: draftOf('mx-test-user', 'https://x/v2?edited') }] })
+    vi.mocked(aliasService.saveAlias).mockResolvedValue({ ...SAVED, revision: 'rev-2', aliases: [{ id: 'a1', name: 'mx-test-user', environmentIds: [], draft: draftOf('mx-test-user', 'https://x/v2?edited') }] })
     vi.mocked(requests.saveRequest).mockResolvedValue({ ...SAVED, draft: draftOf('Login', 'https://x/v1?edited'), revision: 'rev-3' })
     render(
       <>

@@ -39,7 +39,7 @@ export interface EnvironmentUpdate {
   confirmBeforeSend: boolean
 }
 
-function toEnvironmentColor(color: string): EnvironmentColor {
+export function toEnvironmentColor(color: string): EnvironmentColor {
   return (ENVIRONMENT_COLORS as readonly string[]).includes(color) ? (color as EnvironmentColor) : 'none'
 }
 

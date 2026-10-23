@@ -13,6 +13,10 @@ func validateSaveAlias(request *dto.SaveAlias) error {
 	return validator.CustomValidator().Struct("ALS-07400", request)
 }
 
+func validateSetAliasEnvironments(request *dto.SetAliasEnvironments) error {
+	return validator.CustomValidator().Struct("ALS-11400", request)
+}
+
 func validateDeleteAlias(request *dto.AliasReference) error {
 	return validator.CustomValidator().Struct("ALS-08400", request)
 }

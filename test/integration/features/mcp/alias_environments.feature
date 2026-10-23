@@ -3,8 +3,9 @@
 
 @all @xen_018 @mcp @aliases @alias_environments @mcp_alias_environments
 Feature: AI clients read and set an alias's environments, and cannot send it in another environment
-  Reading a request through "tree" lists, for each alias, its environments by id and name (empty for
-  all environments; "Deleted environment" for an id with no environment). "tree_edit" with kind
+  Reading a request through "tree" lists, for each alias, its environments by id and name (absent for
+  all environments, as MCP output leaves out every empty list; "Deleted environment" for an id with
+  no environment). "tree_edit" with kind
   "alias" takes environment_ids on create and update: omitted keeps the link, [] allows all
   environments. "send" with alias_id is refused with ALS-09403 when the active environment is not
   one of the alias's, with no approval asked and nothing sent. History reads show the environment
@@ -95,7 +96,7 @@ Feature: AI clients read and set an alias's environments, and cannot send it in 
     And the response should contain the field "aliases.0.environments.0.name" equal to "HML"
     And the response should contain the field "aliases.0.environments.1.id" equal to "{{gone}}"
     And the response should contain the field "aliases.0.environments.1.name" equal to "Deleted environment"
-    And the response should contain the field "aliases.1.environments" array length equal to 0
+    And the response field "aliases.1.environments" should not exist
 
   @create
   Scenario: Creating an alias with environment_ids links it
@@ -133,7 +134,7 @@ Feature: AI clients read and set an alias's environments, and cannot send it in 
       { "action": "update", "kind": "alias", "request_id": "{{login}}", "id": "{{v2}}", "environment_ids": [] }
       """
     Then the call should succeed
-    And the response should contain the field "environments" array length equal to 0
+    And the response field "environments" should not exist
     And the workspace file "acme/collections/billing/login.yaml" should not contain the field "aliases.1.environments"
     And the workspace file "acme/collections/billing/login.yaml" should contain the field "aliases.1.url" equal to "{{api}}/v3/login"
 

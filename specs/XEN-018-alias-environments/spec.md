@@ -180,7 +180,7 @@ a link, and send a linked alias with another environment active.
 **Acceptance Scenarios**:
 
 1. **Given** a request with linked and unlinked aliases, **When** an AI client reads it, **Then**
-   each alias reports its environments (id and name) or an empty list meaning all environments.
+   each alias reports its environments (id and name), or none meaning all environments.
 2. **Given** an alias, **When** an AI client edits it with an environments list, **Then** the link
    is stored; with an empty list, the alias becomes All environments.
 3. **Given** an AI client creates an alias with an environments list, **Then** the alias is
@@ -257,8 +257,8 @@ a link, and send a linked alias with another environment active.
   workspace MUST never make the alias available, MUST NOT widen it to All environments, and MUST
   be shown in the dropdown and the Environments dialog as **Deleted environment**, which the user
   can remove by saving a new choice.
-- **FR-013**: AI clients MUST see each alias's environments (ids and names, or an empty list for
-  All environments) when reading a request's aliases, and MUST be able to set and clear them when
+- **FR-013**: AI clients MUST see each alias's environments (ids and names, or none for All
+  environments) when reading a request's aliases, and MUST be able to set and clear them when
   creating or editing an alias.
 - **FR-014**: The other existing alias behaviour (XEN-016) MUST keep working unchanged for linked
   and unlinked aliases.

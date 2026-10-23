@@ -124,12 +124,14 @@ All decisions below are grounded in `main` at `db23057` (2026-10-23). No open it
 
 ## R11. MCP shape
 
-- **Decision**: `MCPTreeAlias.Environments []MCPAliasEnvironment{Id, Name}` (always present, `[]`
-  for all environments). `MCPTreeEdit.EnvironmentIds *[]string` (`environment_ids`), used by
-  `create` and `update` with `kind:"alias"`: nil leaves the link unchanged, `[]` clears it. `create`
-  passes the ids to `Create`. `update` saves content as today (unchanged fields keep their stored values)
-  and then calls `SetEnvironments` with `force: true`, the same stale-write stance MCP alias edits
-  already take (`SaveAlias(..., true)`). `send` is unchanged; it inherits the guard.
+- **Decision**: `MCPTreeAlias.Environments []MCPAliasEnvironment{Id, Name}`, left out for an alias
+  for all environments because MCP output drops every empty list (`mcp_compact_json.go`).
+  `MCPTreeEdit.EnvironmentIds *[]string` (`environment_ids`), used by `create` and `update` with
+  `kind:"alias"`: nil leaves the link unchanged, `[]` clears it. `create` passes the ids to `Create`.
+  `update` calls `SetEnvironments` with `force: true` first, so an unknown id is refused before
+  anything is written, and then saves content as today (unchanged fields keep their stored values).
+  This is the same stale-write stance MCP alias edits already take (`SaveAlias(..., true)`). `send`
+  is unchanged; it inherits the guard.
 - **Rationale**: Clarifications (ids, as every MCP tool). The `tree` alias read needs names, so the
   tree controller resolves them through the existing environment listing.
 

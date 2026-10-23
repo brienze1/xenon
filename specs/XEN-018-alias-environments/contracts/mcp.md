@@ -6,7 +6,8 @@
 { "id": "01J…", "name": "mx-test-user", "environments": [ { "id": "01HML…", "name": "HML" } ], "method": "POST", "url": "…", … }
 ```
 
-`environments` is always present (`[]` means all environments). An id that matches no environment
+`environments` is left out for an alias for all environments, as MCP output leaves out every
+empty list (`mcp_compact_json.go`). An id that matches no environment
 reads `{ "id": "<id>", "name": "Deleted environment" }`.
 
 ## `tree_edit` with `kind: "alias"` (changed)

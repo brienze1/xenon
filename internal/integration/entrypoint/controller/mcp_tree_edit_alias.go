@@ -36,11 +36,11 @@ func (m *mcpTreeEdit) createAlias(ctx context.Context, call dto.MCPToolCall, ent
 		return dto.MCPToolResult{}, err
 	}
 
-	saved, err := m.manageAliasService.Create(ctx, request.LocalId, request.RequestId, request.Name, request.BaseRevision, true)
+	saved, err := m.manageAliasService.Create(ctx, request.LocalId, request.RequestId, request.Name, request.EnvironmentIds, request.BaseRevision, true)
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
-	return m.aliasEdited(ctx, call, entry, dto.NewRequest(*saved), saved.NewestAliasID()), nil
+	return m.aliasEdited(ctx, call, entry, dto.NewRequest(*saved), saved.NewestAliasID())
 }
 
 func (m *mcpTreeEdit) saveAlias(ctx context.Context, call dto.MCPToolCall, entry entity.TreeEntry, arguments dto.MCPTreeEdit) (dto.MCPToolResult, error) {
@@ -53,16 +53,33 @@ func (m *mcpTreeEdit) saveAlias(ctx context.Context, call dto.MCPToolCall, entry
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
+	if call.Action == mcpTreeEditUpdateAction && arguments.SetsAliasEnvironments() {
+		if _, err := m.setAliasEnvironments(ctx, arguments.SetAliasEnvironments(call.LocalId, stored)); err != nil {
+			return dto.MCPToolResult{}, err
+		}
+	}
 
 	saved, err := m.manageAliasService.Save(ctx, request.LocalId, request.RequestId, request.ToEntity(), request.BaseRevision, request.Force)
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
-	return m.aliasEdited(ctx, call, entry, dto.NewRequest(*saved), request.Alias.Id), nil
+	return m.aliasEdited(ctx, call, entry, dto.NewRequest(*saved), request.Alias.Id)
 }
 
-func (m *mcpTreeEdit) aliasEdited(ctx context.Context, call dto.MCPToolCall, entry entity.TreeEntry, saved dto.Request, aliasId string) dto.MCPToolResult {
+func (m *mcpTreeEdit) setAliasEnvironments(ctx context.Context, request dto.SetAliasEnvironments) (*entity.Request, error) {
+	err := validateSetAliasEnvironments(&request)
+	if err != nil {
+		return nil, err
+	}
+	return m.manageAliasService.SetEnvironments(ctx, request.LocalId, request.RequestId, request.AliasId, request.EnvironmentIds, request.BaseRevision, true)
+}
+
+func (m *mcpTreeEdit) aliasEdited(ctx context.Context, call dto.MCPToolCall, entry entity.TreeEntry, saved dto.Request, aliasId string) (dto.MCPToolResult, error) {
 	scheduleAutoSync(ctx, m.errorHandler, m.autoSyncService.Saved, call.LocalId)
-	alias := dto.NewMCPTreeAlias(saved.AliasOrEmpty(aliasId))
-	return dto.NewMCPToolResult(alias).WithTarget(entry.Target()).WithChange(dto.NewRequestAIChange(saved.Id, saved.Revision))
+	environments, err := m.manageEnvironmentService.List(ctx, call.LocalId)
+	if err != nil {
+		return dto.MCPToolResult{}, err
+	}
+	alias := dto.NewMCPTreeAlias(saved.AliasOrEmpty(aliasId), environments.Environments)
+	return dto.NewMCPToolResult(alias).WithTarget(entry.Target()).WithChange(dto.NewRequestAIChange(saved.Id, saved.Revision)), nil
 }

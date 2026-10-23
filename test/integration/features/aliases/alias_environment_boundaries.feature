@@ -173,7 +173,7 @@ Feature: History records the active environment, and alias environments travel w
       { "local_id": "{{Acme.local_id}}", "id": "{{old}}" }
       """
     Then the call should succeed
-    And the response field "environment" should not exist
+    And the response field "entry.environment" should not exist
     And the app data file "workspaces/{{Acme.local_id}}/history.jsonl" line 2 should contain the field "environment.id" equal to "{{hml}}"
     And the app data file "workspaces/{{Acme.local_id}}/history.jsonl" line 2 should contain the field "environment.color" equal to "green"
 

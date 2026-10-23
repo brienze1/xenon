@@ -1,11 +1,15 @@
 import { useId, useRef, useState, useTransition, type FormEvent } from 'react'
 import { flushSync } from 'react-dom'
+import { useShallow } from 'zustand/react/shallow'
 import type { AppError } from '@/platform/errors'
 import { Button } from '@/shared/ui/button/Button'
 import { Dialog } from '@/shared/ui/dialog/Dialog'
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
+import { useEnvironmentsStore } from '@/features/environments/store'
+import { choiceOf, chosenIds, isChoiceComplete } from '@/features/request-builder/lib/environment-choice'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { useTabsStore } from '@/features/tabs/store'
+import { EnvironmentPicker } from './EnvironmentPicker'
 import styles from './AliasDialog.module.css'
 
 const NAME_REQUIRED = 'Enter a name for the alias.'
@@ -33,7 +37,10 @@ interface CreateAliasFormProps {
 function CreateAliasForm({ tabId, onClose }: CreateAliasFormProps) {
   const createAlias = useRequestBuilderStore((state) => state.createAlias)
   const pin = useTabsStore((state) => state.pin)
+  const environments = useEnvironmentsStore(useShallow((state) => state.environments))
   const [name, setName] = useState('')
+  const [choice, setChoice] = useState(() => choiceOf([]))
+  const complete = isChoiceComplete(choice, environments)
   const [error, setError] = useState<string | null>(null)
   const [creating, startCreate] = useTransition()
   const nameRef = useRef<HTMLInputElement>(null)
@@ -46,8 +53,11 @@ function CreateAliasForm({ tabId, onClose }: CreateAliasFormProps) {
       nameRef.current?.focus()
       return
     }
+    if (!complete) {
+      return
+    }
     startCreate(async () => {
-      const failure: AppError | null = await createAlias(tabId, name)
+      const failure: AppError | null = await createAlias(tabId, name, chosenIds(choice, environments))
       if (failure === null) {
         pin(tabId)
         onClose()
@@ -86,12 +96,13 @@ function CreateAliasForm({ tabId, onClose }: CreateAliasFormProps) {
           </p>
         ) : null}
         <p className={styles.hint}>The alias starts as a copy of the saved Default. Editing it never changes the Default.</p>
+        <EnvironmentPicker choice={choice} complete={complete} onChange={setChoice} />
       </Dialog.Body>
       <Dialog.Actions>
         <Button variant="ghost" onClick={onClose}>
           Cancel
         </Button>
-        <Button type="submit" variant="primary" disabled={creating}>
+        <Button type="submit" variant="primary" disabled={creating || !complete}>
           {creating ? 'Creating…' : 'Create Alias'}
         </Button>
       </Dialog.Actions>

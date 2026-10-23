@@ -234,13 +234,14 @@ function Item({ onSelect, disabled, className, children }: ItemProps) {
 interface RadioItemProps {
   checked: boolean
   onSelect: () => void
+  disabled?: boolean
   className?: string
   children: ReactNode
 }
 
-function RadioItem({ checked, onSelect, className, children }: RadioItemProps) {
+function RadioItem({ checked, onSelect, disabled, className, children }: RadioItemProps) {
   return (
-    <MenuButton role="menuitemradio" checked={checked} onSelect={onSelect} className={className}>
+    <MenuButton role="menuitemradio" checked={checked} onSelect={onSelect} disabled={disabled} className={className}>
       {children}
     </MenuButton>
   )

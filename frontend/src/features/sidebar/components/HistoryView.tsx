@@ -9,6 +9,7 @@ import { Button } from '@/shared/ui/button/Button'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
 import { ClockArt } from '@/shared/ui/empty-state/illustrations/ClockArt'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
+import { Swatch } from '@/shared/ui/swatch/Swatch'
 import { aiTag } from '@/features/sidebar/lib/history-labels'
 import { historyRows, sentTime } from '@/features/sidebar/lib/history-rows'
 import { selectLocation, useSidebarStore } from '@/features/sidebar/store'
@@ -67,12 +68,22 @@ function HistoryEntryButton({ entry, onOpen }: HistoryEntryButtonProps) {
     <button
       type="button"
       className={styles.entry}
-      aria-label={`${entry.source === 'ai' ? `${aiTag(entry.client)} — ` : ''}${version ? `${version}, ` : ''}${entry.method} ${entry.url || 'no URL'}, ${result.label}, ${time}`}
+      aria-label={`${entry.source === 'ai' ? `${aiTag(entry.client)} — ` : ''}${version ? `${version}, ` : ''}${entry.method} ${entry.url || 'no URL'}${entry.environment ? `, in ${entry.environment.name}` : ''}, ${result.label}, ${time}`}
       onClick={() => onOpen(entry.id)}
     >
-      {version ? (
-        <span className={styles.version} translate="no">
-          {version}
+      {version || entry.environment ? (
+        <span className={styles.labels}>
+          {version ? (
+            <span className={styles.version} translate="no">
+              {version}
+            </span>
+          ) : null}
+          {entry.environment ? (
+            <span className={styles.environment}>
+              <Swatch color={entry.environment.color} />
+              <span translate="no">{entry.environment.name}</span>
+            </span>
+          ) : null}
         </span>
       ) : null}
       <span className={styles.line}>

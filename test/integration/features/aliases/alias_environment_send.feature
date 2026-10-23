@@ -121,7 +121,8 @@ Feature: An alias limited to environments can only be sent while one of them is 
 
   @unavailable @errors
   Scenario Outline: A linked alias is refused and nothing happens when its environment is not active - <case>
-    Given I call "EnvironmentService.SetActive" with
+    Given I call "ConsoleService.Clear"
+    And I call "EnvironmentService.SetActive" with
       """
       { "local_id": "{{Acme.local_id}}", "id": "<active>" }
       """

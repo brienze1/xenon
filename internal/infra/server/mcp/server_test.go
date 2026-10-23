@@ -100,8 +100,8 @@ func realToolControllers() []adapter.MCPToolController {
 	return []adapter.MCPToolController{
 		controller.NewMCPWorkspace(nil, nil, nil),
 		controller.NewMCPWorkspaceEdit(nil, nil, nil, nil, nil, nil),
-		controller.NewMCPTree(nil, nil, nil, nil, nil, nil, nil),
-		controller.NewMCPTreeEdit(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil),
+		controller.NewMCPTree(nil, nil, nil, nil, nil, nil, nil, nil),
+		controller.NewMCPTreeEdit(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil),
 		controller.NewMCPEnv(nil, nil, nil, nil, nil, nil),
 		controller.NewMCPEnvEdit(nil, nil, nil, nil, nil, nil),
 		controller.NewMCPHistory(nil, nil),

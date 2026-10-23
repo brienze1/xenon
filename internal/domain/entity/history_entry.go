@@ -21,6 +21,7 @@ type HistoryEntry struct {
 	SourceRequestID string
 	AliasID         string
 	AliasName       string
+	Environment     *HistoryEnvironment
 	Outcome         enums.SendOutcome
 	Result          HistoryResult
 	Request         Request
@@ -59,6 +60,16 @@ func NewActionHistoryEntry(id string, at time.Time, client string, activity AIAc
 func (h HistoryEntry) ForAlias(alias RequestAlias) HistoryEntry {
 	h.AliasID = alias.ID
 	h.AliasName = alias.Name
+	return h
+}
+
+// InEnvironment records the environment active for the send, or none.
+func (h HistoryEntry) InEnvironment(active *Environment) HistoryEntry {
+	if active == nil {
+		h.Environment = nil
+		return h
+	}
+	h.Environment = &HistoryEnvironment{ID: active.ID, Name: active.Name, Color: active.Color}
 	return h
 }
 

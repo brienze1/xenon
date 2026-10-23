@@ -1,5 +1,7 @@
 package dto
 
+import "github.com/brienze1/xenon/internal/domain/entity"
+
 type MCPTreeRequest struct {
 	Scripts     *Scripts       `json:"scripts,omitempty"`
 	Auth        Auth           `json:"auth"`
@@ -15,7 +17,7 @@ type MCPTreeRequest struct {
 	Aliases     []MCPTreeAlias `json:"aliases"`
 }
 
-func NewMCPTreeRequest(request Request, path string) MCPTreeRequest {
+func NewMCPTreeRequest(request Request, path string, environments []entity.Environment) MCPTreeRequest {
 	return MCPTreeRequest{
 		Id:          request.Id,
 		Name:        request.Name,
@@ -28,6 +30,6 @@ func NewMCPTreeRequest(request Request, path string) MCPTreeRequest {
 		Scripts:     request.Scripts,
 		Description: request.Description,
 		Path:        path,
-		Aliases:     NewMCPTreeAliases(request.Aliases),
+		Aliases:     NewMCPTreeAliases(request.Aliases, environments),
 	}
 }
