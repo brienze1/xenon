@@ -92,6 +92,9 @@ specs/XEN-019-request-pane-overlap/
 ### Source Code (repository root)
 
 ```text
+frontend/
+└── eslint.config.js                         # boundaries: *.test.ts(x) files may import src/test (test-support)
+
 frontend/src/
 ├── test/
 │   ├── setup.ts                             # afterEach also removes injected test stylesheets
@@ -130,7 +133,8 @@ is in the file that already owns the rule. Layer placement per `frontend-archite
 Full rule list: [contracts/layout-contract.md](contracts/layout-contract.md).
 
 **`ScriptsEditor.module.css`** (R1): `.header`, `.toolbar`, `.hint` → `flex: none`;
-`.toolbar` → `flex-wrap: wrap`; `.tabs`, `.panel`, `.phase` → remove `min-height: 0`;
+`.toolbar` → `flex-wrap: wrap`; `.tabs`, `.panel` → `min-height: auto` (overrides the `Tabs`
+parts' own `min-height: 0`); `.phase` → remove `min-height: 0`;
 `.panel` → `overflow: visible`. `.scripts` keeps `height: 100%` (definite height chain → the
 editor fills tall panes, FR-010). `.editor` keeps `flex: 1; min-height: 160px`. No TSX change;
 the hint text stays (decision 3).
@@ -145,11 +149,11 @@ clamping, `onRatioChange`, keyboard and `aria-value*` untouched (FR-011).
 `minSize={layout.split === 'side-by-side' ? undefined : LAYOUT_LIMITS.split.minSize}`.
 
 **`RequestBuilder.module.css` / `RequestTabs.module.css`** (R4): `.builder` → `overflow-x:
-hidden; overflow-y: auto`; RequestTabs `.tabs` → remove `min-height: 0`; RequestTabs `.panel` → `min-height: 80px`
+hidden; overflow-y: auto`; RequestTabs `.tabs` → `min-height: auto`; RequestTabs `.panel` → `min-height: 80px`
 (keeps `flex: 1; overflow: auto; padding-block`).
 
-**`ExampleTab.module.css`** (R2): `.response` → `overflow-x: hidden; overflow-y: auto`; `.tabs` → remove
-`min-height: 0`; `.panel` → `min-height: 160px`.
+**`ExampleTab.module.css`** (R2): `.response` → `overflow-x: hidden; overflow-y: auto`; `.tabs` → `min-height:
+auto`; `.panel` → `min-height: 160px`.
 
 **Test helper `frontend/src/test/stylesheets.ts`**: `injectStylesheets(...paths: string[])`
 reads each path (relative to `frontend/`) with `readFileSync(path, 'utf8')` and appends one

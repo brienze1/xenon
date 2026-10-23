@@ -39,7 +39,7 @@ and verified on its own.
 
 **Purpose**: The test helper every red test uses.
 
-- [ ] T002 Create `frontend/src/test/stylesheets.ts` exporting `injectStylesheets(...paths: string[]): void` — for each path (relative to `frontend/`, e.g. `'src/shared/ui/tabs/Tabs.module.css'`) read it with `readFileSync(path, 'utf8')` from `node:fs` and append a `<style data-test-stylesheet>` element with that text to `document.head`, in argument order. In `frontend/src/test/setup.ts`, extend the existing `afterEach` to also remove every `style[data-test-stylesheet]` (Vitest hooks cannot be registered from inside a test body, so cleanup lives in the global setup). Do not import stylesheets with `?raw` (yields a non-string under Vitest — Phase 0 finding R5)
+- [ ] T002 Create `frontend/src/test/stylesheets.ts` exporting `injectStylesheets(...paths: string[]): void` — for each path (relative to `frontend/`, e.g. `'src/shared/ui/tabs/Tabs.module.css'`) read it with `readFileSync(path, 'utf8')` from `node:fs` and append a `<style data-test-stylesheet>` element with that text to `document.head`, in argument order. In `frontend/src/test/setup.ts`, extend the existing `afterEach` to also remove every `style[data-test-stylesheet]` (Vitest hooks cannot be registered from inside a test body, so cleanup lives in the global setup). In `frontend/eslint.config.js`, add the boundaries file category `test` (`src/**/*.test.{ts,tsx}`) and a policy allowing it to import the `test-support` element — test files only; product code stays forbidden (done with the red tests). Do not import stylesheets with `?raw` (yields a non-string under Vitest — Phase 0 finding R5)
 
 **Checkpoint**: helper ready — story phases can start.
 
@@ -59,7 +59,7 @@ of being drawn over itself (FR-001, FR-002, FR-003, FR-007, FR-010).
 
 ### Implementation for User Story 1
 
-- [ ] T004 [US1] In `frontend/src/features/scripts/components/ScriptsEditor.module.css`: add `flex: none` to `.header`, `.toolbar` and `.hint`; add `flex-wrap: wrap` to `.toolbar`; remove `min-height: 0` from `.tabs`, `.panel` and `.phase`; add `overflow: visible` to `.panel`. Keep `.scripts { height: 100%; min-height: 0 }` and `.editor { flex: 1; min-height: 160px }` unchanged (contract table). No change to `ScriptsEditor.tsx`. T003 and every existing case in `ScriptsEditor.test.tsx` green
+- [ ] T004 [US1] In `frontend/src/features/scripts/components/ScriptsEditor.module.css`: add `flex: none` to `.header`, `.toolbar` and `.hint`; add `flex-wrap: wrap` to `.toolbar`; change `min-height: 0` to `min-height: auto` on `.tabs` and `.panel` (explicit, because these elements are also `Tabs.Root` / `Tabs.Panel`, whose own `min-height: 0` would otherwise stay in force) and remove `min-height: 0` from `.phase`; add `overflow: visible` to `.panel`. Keep `.scripts { height: 100%; min-height: 0 }` and `.editor { flex: 1; min-height: 160px }` unchanged (contract table). No change to `ScriptsEditor.tsx`. T003 and every existing case in `ScriptsEditor.test.tsx` green
 
 **Checkpoint**: US1 complete — the reported overlap is gone on request, folder and collection Scripts (same component).
 
@@ -82,7 +82,7 @@ FR-008, FR-011).
 
 ### Implementation for User Story 2
 
-- [ ] T006 [US2] In `frontend/src/features/request-builder/components/RequestBuilder.module.css` add `overflow-x: hidden; overflow-y: auto` to `.builder`; in `frontend/src/features/request-builder/components/RequestTabs.module.css` remove `min-height: 0` from `.tabs` and change `.panel`'s `min-height: 0` to `min-height: 80px` (keep `flex: 1; overflow: auto; padding-block: var(--space-4)`). T005 and the existing `RequestBuilder.test.tsx` cases green
+- [ ] T006 [US2] In `frontend/src/features/request-builder/components/RequestBuilder.module.css` add `overflow-x: hidden; overflow-y: auto` to `.builder`; in `frontend/src/features/request-builder/components/RequestTabs.module.css` change `.tabs`'s `min-height: 0` to `min-height: auto` (it is also a `Tabs.Root`) and change `.panel`'s `min-height: 0` to `min-height: 80px` (keep `flex: 1; overflow: auto; padding-block: var(--space-4)`). T005 and the existing `RequestBuilder.test.tsx` cases green
 - [ ] T008 [US2] In `frontend/src/shared/ui/split-pane/SplitPane.tsx` add `minSize?: number` to `RootProps` with the doc comment "Smallest size of the first pane in px, applied in the column direction; the ratio still applies above it."; destructure it in `Root` and set the root's style to `{ '--split-ratio': value, ...(minSize === undefined ? {} : { '--split-min-size': `${minSize}px`, '--split-max': max }) } as CSSProperties`; do not change `clampRatio`, `actions`, `meta`, the divider or `aria-value*`. In `frontend/src/shared/ui/split-pane/SplitPane.module.css` add, after `.pane:first-child`, the rule `.column > .pane:first-child { min-height: min(var(--split-min-size, 0px), calc(var(--split-max, 1) * 100%)); }`. T007 and the existing `SplitPane.test.tsx` cases green
 - [ ] T010 [US2] In `frontend/src/features/workspaces/lib/layout.ts` change `split` to `{ min: 0.2, max: 0.8, minSize: 200 }` (leave `clampLayout` unchanged); in `frontend/src/app/layout/RequestWorkspace.tsx` pass `minSize={layout.split === 'side-by-side' ? undefined : LAYOUT_LIMITS.split.minSize}` to `SplitPane.Root`. T009 and the existing `RequestWorkspace.test.tsx` cases green (depends on T008)
 
@@ -103,7 +103,7 @@ environment and globals tabs are confirmed unaffected beyond the shared Scripts 
 
 ### Implementation for User Story 3
 
-- [ ] T012 [US3] In `frontend/src/features/examples/components/ExampleTab.module.css` add `overflow-x: hidden; overflow-y: auto` to `.response`; remove `min-height: 0` from `.tabs`; change `.panel`'s `min-height: 0` to `min-height: 160px` (keep `flex: 1; padding-top; overflow: auto`). T011 and the existing `ExampleTab.test.tsx` cases green
+- [ ] T012 [US3] In `frontend/src/features/examples/components/ExampleTab.module.css` add `overflow-x: hidden; overflow-y: auto` to `.response`; change `.tabs`'s `min-height: 0` to `min-height: auto` (it is also a `Tabs.Root`); change `.panel`'s `min-height: 0` to `min-height: 160px` (keep `flex: 1; padding-top; overflow: auto`). T011 and the existing `ExampleTab.test.tsx` cases green
 - [ ] T013 [US3] Verify the tabs that Phase 0 finding R2 lists as unaffected stay unchanged: `git diff --stat origin/main -- frontend/src/features/item-settings frontend/src/features/documentation frontend/src/features/environments frontend/src/features/auth frontend/src/shared/ui/tabs` prints nothing, and `npx vitest run src/features/item-settings src/features/documentation src/features/environments` is green (expected outcome decided: no edits there; the collection/folder Scripts section is fixed by T004)
 
 **Checkpoint**: all stories complete.

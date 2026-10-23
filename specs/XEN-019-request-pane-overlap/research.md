@@ -26,7 +26,7 @@ All findings verified against `origin/main` at `db23057` on 2026-10-23.
     enough: it also needs `overflow: visible`, so its minimum becomes its content (toolbar +
     160 px editor). The editor keeps its own internal scrolling (CodeMirror), so the phase panel
     never needs to scroll.
-- **Consequences**: In `ScriptsEditor.module.css`: `.tabs`, `.panel` and `.phase` drop
+- **Consequences**: In `ScriptsEditor.module.css`: `.tabs` and `.panel` set `min-height: auto` (an explicit `min-height: auto`, because the same elements also carry `Tabs.module.css` `.root` / `.panel`, which set `min-height: 0`; deleting the feature rule alone leaves that one in force — found when the red tests were run against the fix on 2026-10-23); `.phase` drops its
   `min-height: 0`; `.panel` gets `overflow: visible`; `.header`, `.toolbar` and `.hint` get
   `flex: none`; `.toolbar` gets `flex-wrap: wrap` (the disabled-script notice). With
   `.tabs` refusing to shrink below its content, the hint is laid out after it, `.scripts`
@@ -67,7 +67,7 @@ All findings verified against `origin/main` at `db23057` on 2026-10-23.
     120px`). At the minimum window size `.tabs` collapses and the response tab list and editor
     are clipped with no way to reach them. Fix: `.response` gets `overflow-x: hidden; overflow-y:
   auto` (same reasoning as R4; it has 16 px side padding); `.tabs`
-    drops `min-height: 0`; `.panel` gets `min-height: 160px` (view switch 32 px + gap + 120 px
+    sets `min-height: auto` (it is also a `Tabs.Root`, see R1); `.panel` gets `min-height: 160px` (view switch 32 px + gap + 120 px
     editor — it is a scroll container, so it needs an explicit minimum).
 - **Alternatives considered**: blanket-removing every `min-height: 0` in the frontend — many are
   load-bearing for scroll boxes (sidebar, console, response viewer); rejected.
@@ -103,7 +103,7 @@ All findings verified against `origin/main` at `db23057` on 2026-10-23.
   `min-width: 0`, the breadcrumb `min-width: 0`, and the sub-tab panel is its own scroll box, so
   wide tables still scroll sideways inside it; focus rings stay inside the 16 px side padding of
   the URL bar and the sub-tab gutter of `Tabs.module.css`);
-  `RequestTabs.module.css .tabs` drops `min-height: 0`; `RequestTabs.module.css .panel` gets
+  `RequestTabs.module.css .tabs` sets `min-height: auto` (it is also a `Tabs.Root`, see R1); `RequestTabs.module.css .panel` gets
   `min-height: 80px`.
 - **Facts**: `.tabs` is a column flex item holding the sub-tab row (automatic minimum = its
   height) and the panel (`flex: 1`, basis 0, scroll container → its minimum is the explicit

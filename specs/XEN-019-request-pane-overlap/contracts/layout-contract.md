@@ -37,18 +37,20 @@ Passes `minSize={LAYOUT_LIMITS.split.minSize}` when `layout.split === 'stacked'`
 | File · selector | Rule after the change | Asserted as |
 |---|---|---|
 | `ScriptsEditor.module.css` `.header` | `flex: none` | `flexShrink` `0` |
-| `ScriptsEditor.module.css` `.tabs` | no `min-height` | `minHeight` `auto` |
-| `ScriptsEditor.module.css` `.panel` | no `min-height`; `overflow: visible` | `minHeight` `auto`; `overflow` `visible` |
-| `ScriptsEditor.module.css` `.phase` | no `min-height` | `minHeight` `auto` |
+| `ScriptsEditor.module.css` `.tabs` | `min-height: auto` (replaces `0`) | `minHeight` `auto` |
+| `ScriptsEditor.module.css` `.panel` | `min-height: auto` (replaces `0`); `overflow: visible` | `minHeight` `auto`; `overflow` `visible` |
+| `ScriptsEditor.module.css` `.phase` | no `min-height` (delete the `0`; not a `Tabs` part) | `minHeight` `auto` |
 | `ScriptsEditor.module.css` `.toolbar` | `flex: none; flex-wrap: wrap` | `flexShrink` `0`; `flexWrap` `wrap` |
 | `ScriptsEditor.module.css` `.editor` | unchanged `flex: 1; min-height: 160px` | `minHeight` `160px` |
 | `ScriptsEditor.module.css` `.hint` | `flex: none` | `flexShrink` `0` |
 | `RequestBuilder.module.css` `.builder` | `overflow-x: hidden; overflow-y: auto` | `overflowX` `hidden`; `overflowY` `auto` |
-| `RequestTabs.module.css` `.tabs` | no `min-height` | `minHeight` `auto` |
+| `RequestTabs.module.css` `.tabs` | `min-height: auto` (replaces `0`) | `minHeight` `auto` |
 | `RequestTabs.module.css` `.panel` | `min-height: 80px` (keeps `overflow: auto`) | `minHeight` `80px` |
 | `ExampleTab.module.css` `.response` | `overflow-x: hidden; overflow-y: auto` (drops nothing else) | `overflowX` `hidden`; `overflowY` `auto` |
-| `ExampleTab.module.css` `.tabs` | no `min-height` | `minHeight` `auto` |
+| `ExampleTab.module.css` `.tabs` | `min-height: auto` (replaces `0`) | `minHeight` `auto` |
 | `ExampleTab.module.css` `.panel` | `min-height: 160px` (keeps `overflow: auto`) | `minHeight` `160px` |
+
+Why `auto` is written out: every `.tabs` above is also a `Tabs.Root` (`Tabs.module.css .root { min-height: 0 }`) and the Scripts `.panel` is also a `Tabs.Panel` (`.panel { min-height: 0 }`), so only an explicit `min-height: auto` in the feature stylesheet overrides them.
 
 Cascade order: `ScriptsEditor.tsx`, `RequestTabs.tsx` and `ExampleTab.tsx` import `Tabs` before
 their own stylesheet, so their single-class rules come after `Tabs.module.css` and win at equal
