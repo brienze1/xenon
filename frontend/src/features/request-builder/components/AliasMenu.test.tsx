@@ -151,15 +151,17 @@ describe('AliasMenu with environments', () => {
 
   afterEach(() => useEnvironmentsStore.setState({ environments: [], activeId: null }))
 
-  it('shows each alias’s environments and greys out the ones not for the active environment', async () => {
+  it('shows only the alias names and greys out the aliases not for the active environment', async () => {
     const user = userEvent.setup()
     render(<AliasMenu tabId={TAB} />)
     const menu = await openMenu(user)
     const mx = within(menu).getByRole('menuitemradio', { name: /^mx-test-user/ })
-    expect(mx).toHaveTextContent('mx-test-userHML')
+    expect(mx).toHaveTextContent(/^mx-test-user$/)
     expect(mx).toBeEnabled()
     const smoke = within(menu).getByRole('menuitemradio', { name: /^prod-smoke-user/ })
-    expect(smoke).toHaveTextContent('prod-smoke-userProdDeleted environment')
+    expect(smoke).toHaveTextContent(/^prod-smoke-user, not available in HML$/)
+    expect(within(menu).queryByText('Prod')).not.toBeInTheDocument()
+    expect(within(menu).queryByText('Deleted environment')).not.toBeInTheDocument()
     expect(smoke).toBeDisabled()
     expect(smoke).toHaveAccessibleName(/, not available in HML$/)
     expect(within(menu).getByRole('menuitemradio', { name: 'v2' })).toBeEnabled()
@@ -168,13 +170,13 @@ describe('AliasMenu with environments', () => {
     expect(tab().aliasId).toBeNull()
   })
 
-  it('greys out every linked alias when no environment is active and shows renamed environments by their new name', async () => {
+  it('greys out every linked alias when no environment is active', async () => {
     useEnvironmentsStore.setState({ environments: [{ ...environments[0]!, name: 'Staging' }, environments[1]!], activeId: null })
     const user = userEvent.setup()
     render(<AliasMenu tabId={TAB} />)
     const menu = await openMenu(user)
     expect(within(menu).getByRole('menuitemradio', { name: /^mx-test-user/ })).toBeDisabled()
-    expect(within(menu).getByRole('menuitemradio', { name: /^mx-test-user/ })).toHaveTextContent('Staging')
+    expect(within(menu).queryByText('Staging')).not.toBeInTheDocument()
     expect(within(menu).getByRole('menuitemradio', { name: /^mx-test-user/ })).toHaveAccessibleName(/, not available in no environment$/)
     expect(within(menu).getByRole('menuitemradio', { name: 'v2' })).toBeEnabled()
   })

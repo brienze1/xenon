@@ -3,9 +3,8 @@
 ## Aliases dropdown (`AliasMenu`)
 
 - Order unchanged: Default, aliases, separator, Create new alias….
-- A linked alias row shows, after its name, one colour dot + name per linked environment (current
-  name and colour from the environments store). A deleted id shows a neutral dot + "Deleted
-  environment".
+- Each alias row shows only the alias name; its environments are not listed in the dropdown (they
+  are shown in the Environments… dialog and the Send-blocked banner).
 - A row is **unavailable** when `isAliasAvailable(alias, activeId)` is false. It is then rendered
   greyed out, its radio item is `disabled` (not selectable by mouse or keyboard), and its accessible
   name ends with ", not available in <active env name | no environment>".

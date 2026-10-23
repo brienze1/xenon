@@ -2,9 +2,8 @@ import { useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import type { SavedAlias } from '@/platform/mappers/request'
 import { Dropdown } from '@/shared/ui/dropdown/Dropdown'
-import { Swatch } from '@/shared/ui/swatch/Swatch'
 import { useEnvironmentsStore } from '@/features/environments/store'
-import { aliasEnvironmentLabels, isAliasAvailable } from '@/features/request-builder/lib/alias-availability'
+import { isAliasAvailable } from '@/features/request-builder/lib/alias-availability'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { useTabsStore } from '@/features/tabs/store'
 import { AliasEnvironmentsDialog } from './AliasEnvironmentsDialog'
@@ -26,9 +25,8 @@ export function AliasMenu({ tabId }: AliasMenuProps) {
   const aliases = useRequestBuilderStore(useShallow((state) => state.tabs[tabId]?.aliases ?? NO_ALIASES))
   const requestName = useRequestBuilderStore((state) => state.tabs[tabId]?.savedDefault?.name ?? '')
   const selectVersion = useRequestBuilderStore((state) => state.selectVersion)
-  const environments = useEnvironmentsStore(useShallow((state) => state.environments))
   const activeId = useEnvironmentsStore((state) => state.activeId)
-  const activeName = environments.find((environment) => environment.id === activeId)?.name ?? NO_ENVIRONMENT
+  const activeName = useEnvironmentsStore((state) => state.environments.find((environment) => environment.id === state.activeId)?.name ?? NO_ENVIRONMENT)
   const pin = useTabsStore((state) => state.pin)
   const [open, setOpen] = useState(false)
   const [actionsFor, setActionsFor] = useState<SavedAlias | null>(null)
@@ -82,12 +80,6 @@ export function AliasMenu({ tabId }: AliasMenuProps) {
                 <div key={alias.id} className={styles.row} data-unavailable={available ? undefined : true}>
                   <Dropdown.RadioItem checked={alias.id === aliasId} disabled={!available} onSelect={() => choose(alias.id)} className={styles.name}>
                     <span translate="no">{alias.name}</span>
-                    {aliasEnvironmentLabels(alias, environments).map((label) => (
-                      <span key={label.id} className={styles.environment}>
-                        <Swatch color={label.color} />
-                        <span translate="no">{label.name}</span>
-                      </span>
-                    ))}
                     {available ? null : <span className="visually-hidden">, not available in {activeName}</span>}
                   </Dropdown.RadioItem>
                   <Dropdown.Item onSelect={() => showActions(alias)} className={styles.more}>
