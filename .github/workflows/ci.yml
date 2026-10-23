@@ -1,8 +1,10 @@
 name: CI
 
+# main is not listed: only pull requests that passed this workflow are merged, and release.yml
+# builds and publishes each merge without re-running the tests.
 on:
   push:
-    branches: [init, main, 'xen-*']
+    branches: [init, 'xen-*']
   pull_request:
 
 permissions:
