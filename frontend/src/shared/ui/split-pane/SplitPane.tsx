@@ -57,11 +57,13 @@ interface RootProps {
   onRatioChange: (ratio: number) => void
   min?: number
   max?: number
+  /** Smallest size of the first pane in px, applied in the column direction; the ratio still applies above it. */
+  minSize?: number
   className?: string
   children: ReactNode
 }
 
-function Root({ direction, ratio, onRatioChange, min = 0.2, max = 0.8, className, children }: RootProps) {
+function Root({ direction, ratio, onRatioChange, min = 0.2, max = 0.8, minSize, className, children }: RootProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const value = clampRatio(ratio, min, max)
   const state = useMemo(() => ({ ratio: value }), [value])
@@ -72,7 +74,7 @@ function Root({ direction, ratio, onRatioChange, min = 0.2, max = 0.8, className
       <div
         ref={rootRef}
         className={cn(styles.root, styles[direction], className)}
-        style={{ '--split-ratio': value } as CSSProperties}
+        style={{ '--split-ratio': value, ...(minSize === undefined ? {} : { '--split-min-size': `${minSize}px`, '--split-max': max }) } as CSSProperties}
       >
         {children}
       </div>

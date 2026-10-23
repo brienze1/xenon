@@ -2,13 +2,15 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  min-height: 0;
+  min-height: auto;
   padding: 0 var(--space-5);
 }
 
+/* Size containment keeps the panel's content out of the tabs' minimum height, so the panel scrolls instead of growing. */
 .panel {
   flex: 1;
-  min-height: 0;
+  min-height: 64px;
+  contain: size;
   overflow: auto;
   padding-block: var(--space-4);
 }

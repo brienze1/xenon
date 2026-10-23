@@ -109,7 +109,9 @@ describe('RequestBuilder', () => {
     expect(builder.overflowY).toBe('auto')
     expect(builder.overflowX).toBe('hidden')
     expect(getComputedStyle(screen.getByRole('tablist', { name: 'Request' }).closest('.tabs')!).minHeight).toBe('auto')
-    expect(getComputedStyle(screen.getByRole('tabpanel')).minHeight).toBe('80px')
+    const panel = getComputedStyle(screen.getByRole('tabpanel'))
+    expect(panel.minHeight).toBe('64px')
+    expect(panel.contain).toBe('size')
   })
 
   it('shows the sub-tabs in Postman order with Params first', () => {
