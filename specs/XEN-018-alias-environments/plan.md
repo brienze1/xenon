@@ -25,7 +25,7 @@ Every send's history entry records the active environment's id, name and colour 
 send time (`environment` on the entry, omitted when none). History rows and MCP history reads show
 it. Postman export adds `Xenon alias for environments: …` to an alias request's description.
 
-In the UI, the Aliases dropdown shows environment dots and names, greys out unavailable aliases and
+In the UI, the Aliases dropdown greys out unavailable aliases (rows show only the alias name) and
 adds an **Environments…** item to each ⋯ menu (opening a new `AliasEnvironmentsDialog`). The Create
 dialog gets the same picker. The request bar disables the Send button (and the store's `send` ignores Mod+Enter) and shows a
 banner with **Switch to <env>** buttons while the alias on screen is unavailable. See
@@ -152,7 +152,7 @@ frontend/src/
 ├── features/request-builder/components/RequestBuilder.tsx            CHG  renders UnavailableAliasBanner under the request bar
 ├── features/request-builder/hooks/use-unavailable-alias.ts           NEW  shared by RequestBar and the banner
 ├── features/request-builder/lib/environment-choice.ts                NEW  picker state helpers
-├── shared/ui/swatch/Swatch.tsx (+ .module.css, .test.tsx)           NEW  colour dot shared by the picker, AliasMenu, banner and History
+├── shared/ui/swatch/Swatch.tsx (+ .module.css, .test.tsx)           NEW  colour dot shared by the picker, banner and History
 └── features/sidebar/components/HistoryView.tsx (+ test) CHG  environment dot + name on the row
 docs/prd/xenon-mvp-prd.md                       CHG  Decisions (Oct 23, 2026): alias environments
 ```

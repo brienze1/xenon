@@ -67,6 +67,7 @@ has) or a chosen set of the workspace's environments.
 - Settled from the code (not asked): duplicating a request copies its file, so its aliases keep their links; duplicating an environment creates a new id (`Environment.Duplicated`, `internal/domain/entity/environment.go`), so aliases linked to the original are not linked to the copy.
 - Settled from the code (not asked): changing an alias's environments is its own alias write (like Delete) that saves immediately; it never saves or discards the alias's unsaved content edits.
 - Settled from the code (not asked): AI clients name environments by id when setting the link, as every other MCP tool does (ids from the `env` tool), and read back ids with names.
+- Q (after release, user 2026-10-23): Should the Aliases dropdown show each alias's environments? → A: No — rows show only the alias name (the environment dots squeezed the name and add little); unavailable aliases stay greyed out. The environments are shown in the Environments… dialog and in the Send-blocked banner.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -75,8 +76,7 @@ has) or a chosen set of the workspace's environments.
 Luis's **Login** request has the alias `mx-test-user`, whose user only exists in HML. He opens the
 Aliases dropdown, opens the ⋯ menu next to `mx-test-user` and picks **Environments…**. A dialog
 lists **All environments** and every environment of the workspace, each with its colour dot. He
-picks **HML** only and saves. The dropdown now shows `mx-test-user` with HML's colour dot and
-name. With HML active he sends it as before. He switches the active environment to Prod: the tab
+picks **HML** only and saves. With HML active he sends it as before. He switches the active environment to Prod: the tab
 keeps showing `mx-test-user`, Send is disabled and a message says the alias is only for HML. Even
 if a send reaches the backend (for example from an AI client), it is refused with a clear error
 and nothing is sent.
@@ -110,15 +110,15 @@ active (refused, nothing sent).
 
 ---
 
-### User Story 2 - See which environment each alias belongs to (Priority: P1)
+### User Story 2 - See which aliases are usable in the active environment (Priority: P1)
 
-Luis opens the Aliases dropdown with HML active. `mx-test-user` (HML) is selectable and shows
-HML's colour dot and name; `prod-smoke-user` (Prod) is listed greyed out with Prod's colour dot
-and name and can't be picked; `v2` (All environments) shows no environment and is selectable, as
-is the Default.
+Luis opens the Aliases dropdown with HML active. `mx-test-user` (HML) is selectable;
+`prod-smoke-user` (Prod) is listed greyed out and can't be picked; `v2` (All environments) is
+selectable, as is the Default. Each row shows only the alias name; which environments an alias is
+for is shown in its Environments… dialog and in the banner when it is on screen.
 
 **Why this priority**: The dropdown is where aliases are picked; without the marking the user
-can't tell why an alias is unavailable or which one to use.
+can't tell which aliases can be used right now.
 
 **Independent Test**: With linked and unlinked aliases on a request, open the dropdown under
 different active environments and check which entries are selectable and what each shows.
@@ -128,9 +128,8 @@ different active environments and check which entries are selectable and what ea
 1. **Given** aliases linked to HML, to Prod, and to All environments, **When** the dropdown is
    opened with HML active, **Then** the HML and All environments aliases and the Default are
    selectable, and the Prod alias is listed greyed out and not selectable.
-2. **Given** a linked alias, **When** the dropdown lists it, **Then** each of its environments is
-   shown with the environment's current colour dot and name (a renamed environment shows its new
-   name).
+2. **Given** a linked alias, **When** the dropdown lists it, **Then** its row shows only the alias
+   name, not its environments.
 3. **Given** a greyed-out alias, **When** its ⋯ menu is opened, **Then** **Environments…** and
    **Delete** both work.
 4. **Given** no environment is active, **When** the dropdown is opened, **Then** every linked
@@ -241,9 +240,8 @@ a link, and send a linked alias with another environment active.
   any set of the workspace's environments (each with its colour dot and name).
 - **FR-008**: The Create New Alias dialog MUST offer the same environments choice, preset to All
   environments.
-- **FR-009**: The Aliases dropdown MUST show each linked alias's environments (colour dot and
-  current name), MUST list unavailable aliases greyed out and not selectable, and MUST keep their
-  ⋯ menu working.
+- **FR-009**: The Aliases dropdown MUST show each alias by its name only (not its environments),
+  MUST list unavailable aliases greyed out and not selectable, and MUST keep their ⋯ menu working.
 - **FR-010**: When the alias on screen is or becomes unavailable (the active environment changes,
   or the alias is linked elsewhere), the tab MUST keep showing it with its unsaved edits, MUST
   disable Send and MUST show a message naming the alias's environments, with one **Switch to
@@ -291,7 +289,7 @@ a link, and send a linked alias with another environment active.
 - **SC-003**: A user can link an existing alias to an environment in under 15 seconds from the
   Aliases dropdown, and when creating an alias with no extra dialog.
 - **SC-004**: In the Aliases dropdown a user can tell, without opening anything else, which
-  environments each alias belongs to and which aliases are usable right now.
+  aliases are usable right now.
 - **SC-005**: Renaming a linked environment never breaks or changes any alias's link.
 
 ## Assumptions
