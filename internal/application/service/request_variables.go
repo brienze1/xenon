@@ -26,6 +26,10 @@ type requestScopes struct {
 }
 
 func (r requestVariables) load(ctx context.Context, localId, root, requestId string) (*requestScopes, error) {
+	return r.loadIn(ctx, localId, root, requestId, "")
+}
+
+func (r requestVariables) loadIn(ctx context.Context, localId, root, requestId, environmentId string) (*requestScopes, error) {
 	ancestors := make([]entity.Collection, 0)
 	if entity.IsSavedRequestID(requestId) {
 		found, err := r.findTreeItem.FindAncestors(ctx, root, requestId)
@@ -34,15 +38,19 @@ func (r requestVariables) load(ctx context.Context, localId, root, requestId str
 		}
 		ancestors = found
 	}
-	return r.loadChain(ctx, localId, root, ancestors)
+	return r.loadChainIn(ctx, localId, root, ancestors, environmentId)
 }
 
 func (r requestVariables) loadChain(ctx context.Context, localId, root string, ancestors []entity.Collection) (*requestScopes, error) {
+	return r.loadChainIn(ctx, localId, root, ancestors, "")
+}
+
+func (r requestVariables) loadChainIn(ctx context.Context, localId, root string, ancestors []entity.Collection, environmentId string) (*requestScopes, error) {
 	local, err := r.findLocalVariables.Find(ctx, localId)
 	if local, err = localVariablesOrDefaults(ctx, localId, local, err); err != nil {
 		return nil, err
 	}
-	environment, err := r.activeEnvironment(ctx, root, *local)
+	environment, err := r.environment(ctx, root, *local, environmentId)
 	if err != nil {
 		return nil, err
 	}
@@ -71,6 +79,17 @@ func (r requestVariables) vault(ctx context.Context, localId string, needed bool
 	return r.findVault.Find(ctx, localId)
 }
 
+func (r requestVariables) environment(ctx context.Context, root string, local entity.LocalVariables, environmentId string) (*entity.Environment, error) {
+	switch environmentId {
+	case "":
+		return r.activeEnvironment(ctx, root, local)
+	case entity.NoEnvironmentID:
+		return nil, nil
+	default:
+		return r.runEnvironment(ctx, root, environmentId)
+	}
+}
+
 func (r requestVariables) activeEnvironment(ctx context.Context, root string, local entity.LocalVariables) (*entity.Environment, error) {
 	if !local.HasActiveEnvironment() {
 		return nil, nil
@@ -81,4 +100,25 @@ func (r requestVariables) activeEnvironment(ctx context.Context, root string, lo
 		return nil, nil
 	}
 	return environment, err
+}
+
+func (r requestVariables) runEnvironment(ctx context.Context, root, environmentId string) (*entity.Environment, error) {
+	environment, err := r.findEnvironment.Find(ctx, root, environmentId)
+	if errs.IsNotFoundError(err) {
+		logger.Info(ctx, "The run's environment no longer exists, resolving without one", map[string]any{"environmentId": environmentId})
+		return nil, nil
+	}
+	return environment, err
+}
+
+func (r *requestScopes) inRun(runContext entity.RunContext) *requestScopes {
+	if runContext.Variables != nil {
+		r.scripts = runContext.Variables.Over(r.scripts)
+		r.vault = runContext.Variables.OverVault(r.vault)
+		r.context = r.context.WithScriptScopes(r.scripts)
+	}
+	if runContext.IterationData != nil {
+		r.context = r.context.WithIterationData(runContext.IterationData)
+	}
+	return r
 }

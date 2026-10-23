@@ -22,6 +22,7 @@ type scriptVariables struct {
 	saveLocalVariables   usecase.SaveLocalVariables
 	vaults               vaultWriter
 	publishVariableEvent usecase.PublishVariableEvent
+	lockLocalVariables   usecase.LockLocalVariables
 }
 
 type scriptChange struct {
@@ -31,6 +32,8 @@ type scriptChange struct {
 }
 
 func (s scriptVariables) persist(ctx context.Context, localId, root string, refs map[enums.VariableScope]entity.ScopeRef, before, after entity.ScriptScopes, vaultBefore, vaultAfter map[string]string) error {
+	unlock := s.lockLocalVariables.LockVariables(ctx, localId)
+	defer unlock()
 	changed := make([]entity.ScopeRef, 0, len(persistedScopes))
 	for _, kind := range persistedScopes {
 		ref, found := refs[kind]

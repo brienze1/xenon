@@ -145,6 +145,14 @@ func (c ConsoleEntry) WithoutRoutedBody() ConsoleEntry {
 	return c
 }
 
+func (c ConsoleEntry) WithoutResponseBody() ConsoleEntry {
+	if c.Response != nil {
+		response := c.Response.WithoutBody()
+		c.Response = &response
+	}
+	return c
+}
+
 func (c ConsoleEntry) IsRequest() bool {
 	return c.Kind == consoleentrykind.Request
 }

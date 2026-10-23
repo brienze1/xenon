@@ -7,6 +7,7 @@ type ScriptContext struct {
 	Dynamic         DynamicValue
 	Console         ScriptLogSink
 	Vault           map[string]string
+	IterationData   map[string]any
 	Info            ScriptInfo
 	Scopes          ScriptScopes
 	Cookies         []ScriptCookie

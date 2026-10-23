@@ -6,11 +6,18 @@ type ScriptInfo struct {
 	RequestName    string
 	Current        string
 	Location       []string
+	Iteration      int
 	IterationCount int
 }
 
 func NewScriptInfo(requestId, requestName, current string, location []string) ScriptInfo {
 	return ScriptInfo{RequestID: requestId, RequestName: requestName, Current: current, Location: append([]string{}, location...), IterationCount: 1}
+}
+
+func (s ScriptInfo) ForIteration(iteration, count int) ScriptInfo {
+	s.Iteration = iteration
+	s.IterationCount = count
+	return s
 }
 
 func (s ScriptInfo) HasIteration() bool {

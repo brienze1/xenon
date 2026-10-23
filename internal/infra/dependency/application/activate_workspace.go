@@ -22,6 +22,7 @@ func GetActivateWorkspaceService() adapter.ActivateWorkspaceService {
 				integration.GetUIStatePersistence(),
 				integration.GetWorkspaceWatcherWebservice(),
 				integration.GetWorkspaceEventPublisher(),
+				integration.GetActiveRunsPersistence(),
 			)
 		})
 	}

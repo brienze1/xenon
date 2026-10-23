@@ -18,12 +18,14 @@ type sendRun struct {
 	caller     *entity.ScriptRef
 	token      *entity.OAuth2Token
 	localId    string
+	jarId      string
 	tabId      string
 	aliasId    string
 	root       string
 	appVersion string
 	sendId     string
 	secrets    []string
+	runContext entity.RunContext
 	settings   entity.AppSettings
 	depth      int
 }
@@ -46,14 +48,15 @@ func (r sendRun) runScripts(ctx context.Context, execution *entity.SendExecution
 	for _, script := range chain {
 		before, vaultBefore := execution.Scopes, cloneVault(execution.Vault)
 		cookies := execution.ScriptCookies()
-		base := entity.ScriptContext{Info: entity.NewScriptInfo(request.ID, request.Name, script.OwnerName, location), Cookies: cookies, ResponseCookies: cookies, Dynamic: r.dynamic(ctx), Console: r.console(ctx, execution, script)}
+		info := r.runContext.ScriptInfo(entity.NewScriptInfo(request.ID, request.Name, script.OwnerName, location))
+		base := entity.ScriptContext{Info: info, IterationData: r.runContext.IterationData, Cookies: cookies, ResponseCookies: cookies, Dynamic: r.dynamic(ctx), Console: r.console(ctx, execution, script)}
 		run := r.service.runScript.Run(ctx, script, execution.ScriptContext(base), r.calledBy(script), r, r.settings)
 		mask := r.mask(r.secretsOf(execution))
 		execution.AddRun(run)
-		r.service.console.append(ctx, r.runEntries(run, mask)...)
-		if err := r.service.scriptVariables.persist(ctx, r.localId, r.root, entity.ScriptScopeRefs(r.scopes.environment, r.scopes.ancestors), before, run.Scopes, vaultBefore, run.Vault); err != nil {
+		r.log(ctx, r.runEntries(run, mask)...)
+		if err := r.keepVariables(ctx, before, run, vaultBefore); err != nil {
 			logger.Warn(ctx, err, "The variable changes of a script could not be saved", map[string]any{"script": script.Label()})
-			r.service.console.append(ctx, entity.NewConsoleErrorEntry(idutils.NewUlid(), r.sendId, entity.NewUnsavedVariablesError(script, err.Error()), timeutils.Now()).WithSecretsMasked(mask))
+			r.log(ctx, entity.NewConsoleErrorEntry(idutils.NewUlid(), r.sendId, entity.NewUnsavedVariablesError(script, err.Error()), timeutils.Now()).WithSecretsMasked(mask))
 		}
 		if run.StopsSend() {
 			return
@@ -61,10 +64,18 @@ func (r sendRun) runScripts(ctx context.Context, execution *entity.SendExecution
 	}
 }
 
+func (r sendRun) keepVariables(ctx context.Context, before entity.ScriptScopes, run entity.ScriptRun, vaultBefore map[string]string) error {
+	if !r.runContext.KeepsVariables() {
+		r.runContext.Variables.Apply(before, run.Scopes, vaultBefore, run.Vault)
+		return nil
+	}
+	return r.service.scriptVariables.persist(ctx, r.localId, r.root, entity.ScriptScopeRefs(r.scopes.environment, r.scopes.ancestors), before, run.Scopes, vaultBefore, run.Vault)
+}
+
 func (r sendRun) send(ctx context.Context, tabId string, request entity.Request, ancestors []entity.Collection, execution *entity.SendExecution) error {
 	resolved, resolvedAncestors := usecase.ResolveRequestVariables(execution.Request, ancestors, r.variables(execution), r.dynamic(ctx))
-	effective := usecase.ResolveEffectiveRequest(resolved, resolvedAncestors, r.root).WithCookieJar(r.localId)
-	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, r.appVersion, r.service.cookies.header(ctx, r.localId, effective))).ForAlias(resolved.ID, r.aliasId).WithAuthOwner(r.tabId)
+	effective := usecase.ResolveEffectiveRequest(resolved, resolvedAncestors, r.root).WithCookieJar(r.jarId)
+	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, r.appVersion, r.service.cookies.header(ctx, r.jarId, effective))).ForAlias(resolved.ID, r.aliasId).WithAuthOwner(r.tabId)
 	effective, err := r.authorize(ctx, effective)
 	if err != nil {
 		return err
@@ -74,13 +85,13 @@ func (r sendRun) send(ctx context.Context, tabId string, request entity.Request,
 		return err
 	}
 	response = response.WithMaskedValues(r.secrets).WithSentRequest(request)
-	if tabId != "" {
-		if err := r.service.saveResponse.Save(ctx, tabId, response); err != nil {
+	if key := r.responseKey(tabId); key != "" {
+		if err := r.service.saveResponse.Save(ctx, key, response); err != nil {
 			return err
 		}
 	}
 	execution.RecordResponse(effective, response)
-	r.service.console.append(ctx, r.requestEntry(effective, response, r.depth > 0).WithSecretsMasked(r.mask(r.secretsOf(execution))))
+	r.log(ctx, r.requestEntry(effective, response, r.depth > 0).WithSecretsMasked(r.mask(r.secretsOf(execution))))
 	return nil
 }
 
@@ -121,7 +132,7 @@ func (r sendRun) exchange(ctx context.Context, request entity.EffectiveRequest) 
 	if !challenged || !digest.RetriesChallenge() {
 		return request, response, nil
 	}
-	r.service.console.append(ctx, r.requestEntry(request, response.WithMaskedValues(r.secrets), false).WithSecretsMasked(r.mask(r.secrets)))
+	r.log(ctx, r.requestEntry(request, response.WithMaskedValues(r.secrets), false).WithSecretsMasked(r.mask(r.secrets)))
 	fresh, readable := r.service.answerDigest.ReadChallenge(ctx, challenge)
 	if !readable {
 		return request, response, nil
@@ -157,7 +168,7 @@ func (r sendRun) dynamic(ctx context.Context) entity.DynamicValue {
 func (r sendRun) console(ctx context.Context, execution *entity.SendExecution, script entity.ScriptRef) entity.ScriptLogSink {
 	return func(log entity.ScriptLog) {
 		if log.IsClear() {
-			r.service.console.clear(ctx)
+			r.clear(ctx)
 			return
 		}
 		secrets := r.secretsOf(execution)
@@ -165,8 +176,32 @@ func (r sendRun) console(ctx context.Context, execution *entity.SendExecution, s
 			secrets = append(secrets, r.scopes.context.WithScriptScopes(*log.Scopes).SecretValues()...)
 		}
 		entry := entity.NewConsoleLogEntry(idutils.NewUlid(), r.sendId, script, log, timeutils.Now())
-		r.service.console.append(ctx, entry.WithSecretsMasked(r.mask(secrets)))
+		r.log(ctx, entry.WithSecretsMasked(r.mask(secrets)))
 	}
+}
+
+func (r sendRun) log(ctx context.Context, entries ...entity.ConsoleEntry) {
+	if r.runContext.Collects() {
+		for _, entry := range entries {
+			r.runContext.Collect(entry)
+		}
+	}
+	if !r.runContext.MuteConsole {
+		r.service.console.append(ctx, entries...)
+	}
+}
+
+func (r sendRun) clear(ctx context.Context) {
+	if !r.runContext.MuteConsole {
+		r.service.console.clear(ctx)
+	}
+}
+
+func (r sendRun) responseKey(tabId string) string {
+	if tabId != "" || r.depth > 0 {
+		return tabId
+	}
+	return r.runContext.ResponseKey
 }
 
 func (r sendRun) runEntries(run entity.ScriptRun, mask func(string) (string, bool)) []entity.ConsoleEntry {

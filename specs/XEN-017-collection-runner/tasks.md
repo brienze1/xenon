@@ -40,13 +40,13 @@ innermost outward: domain → application → integration → infra → frontend
 **Purpose**: the run model, the shared send core with `RunContext`, the active-run registry, the
 event publisher and the `RunnerService` skeleton every story needs.
 
-- [ ] T002 [P] Add the enums `RunType`, `RunStatus`, `RunRowOutcome`, `LoadProfileKind`, `RunResultFilter` and `RunExportFormat`, each with its value package, in `internal/domain/enums/` (`run_type.go`, `runtype/value.go`, …), following `.claude/skills/enums.md`.
-- [ ] T003 [P] Write red Go unit tests in `internal/domain/entity/run_config_test.go` for `RunConfig.Validate`:
+- [x] T002 [P] Add the enums `RunType`, `RunStatus`, `RunRowOutcome`, `LoadProfileKind`, `RunResultFilter` and `RunExportFormat`, each with its value package, in `internal/domain/enums/` (`run_type.go`, `runtype/value.go`, …), following `.claude/skills/enums.md`.
+- [x] T003 [P] Write red Go unit tests in `internal/domain/entity/run_config_test.go` for `RunConfig.Validate`:
   - an empty selection gives `RUN-03400`;
   - iterations < 1, a delay outside 0–3,600,000, users outside 1–100 and a duration outside 1–3600 each give `RUN-04400`, naming the field;
   - profile parameters outside the duration or user count give `RUN-04400`;
   - Postman's defaults come from `NewRunConfig()`.
-- [ ] T004 Add the following entities to `internal/domain/entity/` per data-model.md: `RunTarget` (`run_target.go`), `RunRow` (`run_row.go`), `FunctionalSettings` (`functional_settings.go`), `LoadProfile` (fields only, `load_profile.go`), `PerformanceSettings` (`performance_settings.go`), `RunConfig` (`NewRunConfig`, `Validate`, `SelectedRows`, `run_config.go`) and `RunnerPreferences` (`runner_preferences.go`). T003 must go green.
+- [x] T004 Add the following entities to `internal/domain/entity/` per data-model.md: `RunTarget` (`run_target.go`), `RunRow` (`run_row.go`), `FunctionalSettings` (`functional_settings.go`), `LoadProfile` (fields only, `load_profile.go`), `PerformanceSettings` (`performance_settings.go`), `RunConfig` (`NewRunConfig`, `Validate`, `SelectedRows`, `run_config.go`) and `RunnerPreferences` (`runner_preferences.go`). T003 must go green.
 - [ ] T005 [P] Add the `RUN-` error constructors in `internal/application/usecase/reject_invalid_run.go`:
   - `RejectUnknownRun` (`RUN-01404`);
   - `RejectActiveRun` (`RUN-02409`, details `run_id`);
@@ -57,22 +57,22 @@ event publisher and the `RunnerService` skeleton every story needs.
   - `RejectUnknownRunTarget` (`RUN-07404`).
 
   Follow the `errs` helpers used by `reject_unconfirmed_send.go`.
-- [ ] T006 Add `RunContext` (`NoRunContext()`, `RunCookieJarID(localId, runId)`, `RunResponseKey(runId, index)`) in `internal/domain/entity/run_context.go`. Add `RunVariables` (`Apply`, `Over`) in `internal/domain/entity/run_variables.go`, with red-then-green unit tests in `run_variables_test.go`:
+- [x] T006 Add `RunContext` (`NoRunContext()`, `RunCookieJarID(localId, runId)`, `RunResponseKey(runId, index)`) in `internal/domain/entity/run_context.go`. Add `RunVariables` (`Apply`, `Over`) in `internal/domain/entity/run_variables.go`, with red-then-green unit tests in `run_variables_test.go`:
   - an overlay change is visible through `Over`;
   - an unset removes the value;
   - vault changes are tracked.
-- [ ] T007 Add `Iteration int` to `ScriptInfo` (`internal/domain/entity/script_info.go`) and `IterationData map[string]any` to `ScriptContext` (`internal/domain/entity/script_context.go`). Add `VariableContext.WithIterationData(row)`, a layer after local and before environment, in `internal/domain/entity/variable_context.go`, with unit cases in `variable_context_test.go` showing that iteration data wins over environment and loses to local.
-- [ ] T008 Extract the shared send core from `internal/application/service/send_request.go` into `internal/application/service/send_core.go`. The core takes an `entity.RunContext`, and `Send` calls it with `NoRunContext()`.
+- [x] T007 Add `Iteration int` to `ScriptInfo` (`internal/domain/entity/script_info.go`) and `IterationData map[string]any` to `ScriptContext` (`internal/domain/entity/script_context.go`). Add `VariableContext.WithIterationData(row)`, a layer after local and before environment, in `internal/domain/entity/variable_context.go`, with unit cases in `variable_context_test.go` showing that iteration data wins over environment and loses to local.
+- [x] T008 Extract the shared send core from `internal/application/service/send_request.go` into `internal/application/service/send_core.go`. The core takes an `entity.RunContext`, and `Send` calls it with `NoRunContext()`.
   - `send_run.go` reads its jar id, console mute and collector, response key, overlay and iteration info from the context.
   - `request_variables.go` `loadChain` takes the environment override (`""` = active, `entity.NoEnvironmentID` = none) and applies an overlay when one is given.
   - `cookie_jar.go` takes a jar id.
 
   No behaviour changes for a single send: `make bdd TAG=@sending`, `@history`, `@cookies`, `@variables`, `@scripts`, `@console` and `@aliases` must stay green.
-- [ ] T009 Add `DropJar(ctx, jarId)` to `usecase.ManageCookieJar` (`internal/application/usecase/manage_cookie_jar.go`) and implement it in `internal/integration/webservice/cookie_jar.go`. Add `entity.MergeCookies(workspace, run)` (same name, domain and path replace; others add) in `internal/domain/entity/cookie.go`, with unit cases in `cookie_test.go`.
-- [ ] T010 [P] Add a `sync.Mutex` to `localVariablesPersistence` in `internal/integration/persistence/local_variables.go`. Add a per-workspace lock around the find → apply → save sequence of `scriptVariables.persist` in `internal/application/service/script_variables.go` (research R4).
-- [ ] T011 [P] Add `usecase.ManageActiveRuns` (`Claim`, `Release`, `Find`, `ListActive`, `ListWorkspace`) in `internal/application/usecase/manage_active_runs.go`, and its in-memory, mutex-guarded implementation in `internal/integration/persistence/active_runs.go`. `Claim` returns `RUN-02409` for an occupied target.
-- [ ] T012 [P] Add the entities `RunRowResult` (`NewRunRowOutcome`), `RunSummary` (computed from rows), `RunProgress` and `Run` (state transitions per data-model.md) in `internal/domain/entity/`. Add unit tests for `NewRunRowOutcome` in `run_row_result_test.go` and for the transitions in `run_test.go`.
-- [ ] T013 [P] Add `usecase.PublishRunEvent` (`Progress`, `Finished`) in `internal/application/usecase/publish_run_event.go`. Add the publisher in `internal/integration/publisher/run_event.go`, throttled to 10/s per run with the last state always emitted, and the DTOs `RunProgressChanged` (`runner:progress`) and `RunFinished` (`runner:finished`) in `internal/integration/publisher/dto/`. Register both in `internal/infra/server/event/events.go`.
+- [x] T009 Add `DropJar(ctx, jarId)` to `usecase.ManageCookieJar` (`internal/application/usecase/manage_cookie_jar.go`) and implement it in `internal/integration/webservice/cookie_jar.go`. Add `entity.MergeCookies(workspace, run)` (same name, domain and path replace; others add) in `internal/domain/entity/cookie.go`, with unit cases in `cookie_test.go`.
+- [x] T010 [P] Add a `sync.Mutex` to `localVariablesPersistence` in `internal/integration/persistence/local_variables.go`. Add a per-workspace lock around the find → apply → save sequence of `scriptVariables.persist` in `internal/application/service/script_variables.go` (research R4).
+- [x] T011 [P] Add `usecase.ManageActiveRuns` (`Claim`, `Release`, `Find`, `ListActive`, `ListWorkspace`) in `internal/application/usecase/manage_active_runs.go`, and its in-memory, mutex-guarded implementation in `internal/integration/persistence/active_runs.go`. `Claim` returns `RUN-02409` for an occupied target.
+- [x] T012 [P] Add the entities `RunRowResult` (`NewRunRowOutcome`), `RunSummary` (computed from rows), `RunProgress` and `Run` (state transitions per data-model.md) in `internal/domain/entity/`. Add unit tests for `NewRunRowOutcome` in `run_row_result_test.go` and for the transitions in `run_test.go`.
+- [x] T013 [P] Add `usecase.PublishRunEvent` (`Progress`, `Finished`) in `internal/application/usecase/publish_run_event.go`. Add the publisher in `internal/integration/publisher/run_event.go`, throttled to 10/s per run with the last state always emitted, and the DTOs `RunProgressChanged` (`runner:progress`) and `RunFinished` (`runner:finished`) in `internal/integration/publisher/dto/`. Register both in `internal/infra/server/event/events.go`.
 - [ ] T014 Add `adapter.ManageRunnerService` in `internal/application/adapter/manage_runner.go` with the full method set from contracts/bindings.md. Add `service.manageRunner` in `internal/application/service/manage_runner.go`; it builds its own send core with the same dependencies as `NewSendRequestService`. Add `adapter.RunnerController` in `internal/integration/adapter/runner_controller.go`.
 - [ ] T015 Add the DTOs per contracts/bindings.md in `internal/integration/entrypoint/dto/`:
   - `run_config.go`, `run_plan.go`, `run.go`, `run_summary_view.go`;
@@ -97,7 +97,7 @@ callable with no behaviour behind it yet.
 requests are sent in order with inherited auth and scripts, the results hold their statuses and
 tests, and History is unchanged.
 
-- [ ] T019 [P] [US1] Write the red `test/integration/features/runner/run_functional.feature` (`@runner @run_functional`), covering:
+- [x] T019 [P] [US1] Write the red `test/integration/features/runner/run_functional.feature` (`@runner @run_functional`), covering:
   - FR-016: order; inherited auth and headers; the collection → folder → request script chain; tests collected.
   - FR-017: a draft differing from disk does not affect the run.
   - FR-021: `skipRequest` gives `skipped`.
@@ -107,32 +107,32 @@ tests, and History is unchanged.
   - `RUN-06404` for a request deleted before its turn.
   - SC-002: each row's status and test outcomes equal those of the same request sent alone.
   - SC-008: no workspace file changes when keep values is off.
-- [ ] T020 [P] [US1] Write the red `test/integration/features/runner/run_lifecycle.feature` (`@runner @run_lifecycle`), covering:
+- [x] T020 [P] [US1] Write the red `test/integration/features/runner/run_lifecycle.feature` (`@runner @run_lifecycle`), covering:
   - FR-028: `runner:progress` after every row.
   - FR-029: pause holds, resume continues, stop gives a `cancelled` row and status `stopped`.
   - FR-030: a second start on the same target gives `RUN-02409`, while a run on another collection overlaps and a tab send during a run works.
   - FR-031: activating another workspace stops the run and stores it as `stopped`.
   - The `runner:finished` payload.
   - SC-003: each `runner:progress` event is emitted within 1000 ms of its row's response.
-- [ ] T021 [P] [US1] Write the red `test/integration/features/runner/run_validation.feature` (`@runner @run_validation`), covering:
+- [x] T021 [P] [US1] Write the red `test/integration/features/runner/run_validation.feature` (`@runner @run_validation`), covering:
   - FR-014: an empty selection gives `RUN-03400`; each out-of-range field gives `RUN-04400`; missing secrets give `SND-06409`, and a restart with `acknowledge_missing_secrets` runs; an active run gives `RUN-02409`.
   - An expired, non-refreshable OAuth 2.0 token is sent without `SND-07409`.
   - FR-015: `SND-05409` on start; a restart with `confirmed_environment_id` sends every row with no further rejection.
 
   Run `make bdd TAG=@runner` and record that T019–T021 are red.
-- [ ] T022 [US1] Implement `FlattenRunRows` (depth-first sidebar order, examples skipped, folder path relative to the target) in `internal/domain/entity/run_plan_row.go`, with unit tests in `run_plan_row_test.go`.
-- [ ] T023 [US1] Implement `manageRunner.Start`, `Get` and `Active` in `internal/application/service/manage_runner.go`:
+- [x] T022 [US1] Implement `FlattenRunRows` (depth-first sidebar order, examples skipped, folder path relative to the target) in `internal/domain/entity/run_plan_row.go`, with unit tests in `run_plan_row_test.go`.
+- [x] T023 [US1] Implement `manageRunner.Start`, `Get` and `Active` in `internal/application/service/manage_runner.go`:
   1. Resolve the target (`RUN-07404`) and validate the config.
   2. Resolve the environment and run the preflight once: confirm (`SND-05409`) and missing secrets over every selected row.
   3. `Claim` the target.
   4. Start the run goroutine on a context detached from the call, then return the summary view.
-- [ ] T024 [US1] Implement the row loop in `internal/application/service/run_functional.go` and the row step in `internal/application/service/run_row.go`:
+- [x] T024 [US1] Implement the row loop in `internal/application/service/run_functional.go` and the row step in `internal/application/service/run_row.go`:
   - The row step loads the saved request at its turn (`FindRequest` and `Version(aliasId)`; a missing request gives a `RUN-06404` row error).
   - It calls the core with a `RunContext`: no History, run jar seeded from the workspace jar, the confirmed acknowledgement.
   - It builds the `RunRowResult` with the sent request and console masked through `usecase.MaskSecrets`, then publishes progress.
   - At the end it computes the summary, saves the run, `Release`s the target, drops the run jar and publishes `Finished`.
-- [ ] T025 [US1] Implement `Pause`, `Resume` and `Stop` (a gate checked before each row; context cancel gives a `Cancelled` outcome mapped to `cancelled`) in `internal/application/service/manage_runner.go` and `run_functional.go`. Add `StopWorkspace(localId)` and call it from `internal/application/service/activate_workspace.go` and `remove_workspace.go`.
-- [ ] T026 [US1] Add the stored-run persistence needed to finish a run: `usecase.SaveRun` and `usecase.FindRuns` (`internal/application/usecase/save_run.go`, `find_runs.go`), with the model in `internal/integration/persistence/model/run.go` and the implementation in `internal/integration/persistence/run.go` (atomic write to `runs/<targetId>/<runId>.json`, per-workspace mutex). T019–T021 must go green.
+- [x] T025 [US1] Implement `Pause`, `Resume` and `Stop` (a gate checked before each row; context cancel gives a `Cancelled` outcome mapped to `cancelled`) in `internal/application/service/manage_runner.go` and `run_functional.go`. Add `StopWorkspace(localId)` and call it from `internal/application/service/activate_workspace.go` and `remove_workspace.go`.
+- [x] T026 [US1] Add the stored-run persistence needed to finish a run: `usecase.SaveRun` and `usecase.FindRuns` (`internal/application/usecase/save_run.go`, `find_runs.go`), with the model in `internal/integration/persistence/model/run.go` and the implementation in `internal/integration/persistence/run.go` (atomic write to `runs/<targetId>/<runId>.json`, per-workspace mutex). T019–T021 must go green.
 - [ ] T027 [P] [US1] FR-001: add `'runner'` to `ItemSection` in `frontend/src/features/item-settings/model.ts`. Add a `runner` render prop and the Runner tab trigger last in `frontend/src/features/item-settings/components/ItemTab.tsx`, with cases in `ItemTab.test.tsx`. Compose `RunnerSection` in `frontend/src/app/layout/ItemWorkspace.tsx`.
 - [ ] T028 [US1] FR-001, FR-009, SC-001 (Runner, then Start run): build `RunnerSection` (sub-tabs Setup / Results / Runs; Start and Run again switch to Results) in `frontend/src/features/runner/components/RunnerSection.tsx`, a read-only `RunOrderList` (numbers, folder path, method badge, name, all checked) and Start run, with `RunnerSection.test.tsx`.
 - [ ] T029 [US1] Build `RunProgress` (status, current row and iteration, bar, counts, elapsed, Pause/Resume/Stop) and `RunResults` (summary strip and rows grouped by iteration, each expanding to `TestResultsTab`, script errors and console) in `frontend/src/features/runner/components/`, with tests. In `frontend/src/features/runner/store.ts`:
@@ -188,7 +188,7 @@ and order, and that Reset restores the sidebar order.
 that folder's requests, and a run still applies the collection's scripts and auth.
 
 - [ ] T036 [P] [US3] Add folder-target scenarios to `test/integration/features/runner/run_functional.feature` (only the folder's requests, including subfolders; the collection and folder auth and scripts still apply) and prove them red.
-- [ ] T037 [US3] Make target resolution in `manage_runner.go` accept folder ids, and make `FlattenRunRows` start at the folder. Each row's ancestors still come from `FindAncestors`. T036 must go green.
+- [x] T037 [US3] Make target resolution in `manage_runner.go` accept folder ids, and make `FlattenRunRows` start at the folder. Each row's ancestors still come from `FindAncestors`. T036 must go green.
 - [ ] T038 [P] [US3] FR-002, SC-001 (Run…, then Start run): add **Run…** after Open for containers, in both the context menu and the ⋯ menu, with a new `onRunItem(id, kind)` prop, in `frontend/src/features/sidebar/components/TreeItem.tsx`, with `TreeItem.test.tsx` cases. In `app/` (where `onOpenItem` is wired), implement it: `useTabsStore.openItemTab(target, 'pinned')`, then set the item section to `runner` through `useItemSettingsStore.setSection`, and select the sub-tab (Results while a run is active there, else Setup) in `useRunnerStore`.
 
 ---

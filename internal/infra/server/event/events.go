@@ -28,4 +28,6 @@ func init() {
 	wails.RegisterEvent[dto.AIApprovalResolved](dto.AIApprovalResolvedEvent)
 	wails.RegisterEvent[dto.HistoryChanged](dto.HistoryChangedEvent)
 	wails.RegisterEvent[dto.WorkspacesChanged](dto.WorkspacesChangedEvent)
+	wails.RegisterEvent[dto.RunProgressChanged](dto.RunProgressChangedEvent)
+	wails.RegisterEvent[dto.RunFinished](dto.RunFinishedEvent)
 }

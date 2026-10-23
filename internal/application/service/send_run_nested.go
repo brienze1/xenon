@@ -29,11 +29,11 @@ func (r sendRun) Send(ctx context.Context, request entity.Request, scopes entity
 		return rejected
 	}
 	resolved, _ := usecase.ResolveRequestVariables(request, nil, variables, r.dynamic(ctx))
-	effective := usecase.ResolveEffectiveRequest(resolved, nil, r.root).WithCookieJar(r.localId)
-	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, r.appVersion, r.service.cookies.header(ctx, r.localId, effective)))
+	effective := usecase.ResolveEffectiveRequest(resolved, nil, r.root).WithCookieJar(r.jarId)
+	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, r.appVersion, r.service.cookies.header(ctx, r.jarId, effective)))
 	response := r.service.sendHttpRequest.Send(ctx, effective).WithMaskedValues(r.secrets)
 	sent := entity.NewSentNestedRequest(effective, response)
-	r.service.console.append(ctx, r.requestEntry(effective, response, true).WithSecretsMasked(r.mask(append(slices.Clone(r.secrets), variables.SecretValues()...))))
+	r.log(ctx, r.requestEntry(effective, response, true).WithSecretsMasked(r.mask(append(slices.Clone(r.secrets), variables.SecretValues()...))))
 
 	logger.Info(ctx, "Finished", map[string]any{"request": request, "result": sent})
 	return sent

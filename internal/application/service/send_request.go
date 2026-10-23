@@ -8,7 +8,6 @@ import (
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/pkg/idutils"
 	"github.com/brienze1/xenon/pkg/logger"
-	"github.com/brienze1/xenon/pkg/timeutils"
 )
 
 type sendRequest struct {
@@ -74,7 +73,94 @@ func NewSendRequestService(
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
 	registerKnownSecrets usecase.RegisterKnownSecrets,
 	publishAIEvent usecase.PublishAIEvent,
+	lockLocalVariables usecase.LockLocalVariables,
 ) adapter.SendRequestService {
+	return newSendRequest(
+		findWorkspaceRegistry,
+		findTreeItem,
+		saveTreeItem,
+		findRequest,
+		loadWorkspace,
+		saveWorkspaceFile,
+		findEnvironment,
+		saveEnvironment,
+		findLocalVariables,
+		saveLocalVariables,
+		findVault,
+		saveVault,
+		findVaultSettings,
+		saveVaultSettings,
+		probeKeychain,
+		publishVariableEvent,
+		findAppSettings,
+		runScript,
+		appendConsoleEntries,
+		clearConsole,
+		publishConsoleEntries,
+		generateDynamicValue,
+		sendHttpRequest,
+		saveResponse,
+		releaseResponse,
+		saveHistoryEntry,
+		lockOAuthToken,
+		refreshOAuthToken,
+		signAwsRequest,
+		answerDigest,
+		findDigestState,
+		saveDigestState,
+		manageCookieJar,
+		findCookies,
+		saveCookies,
+		findCookieAllowlist,
+		publishWorkspaceEvent,
+		registerKnownSecrets,
+		publishAIEvent,
+		lockLocalVariables,
+	)
+}
+
+func newSendRequest(
+	findWorkspaceRegistry usecase.FindWorkspaceRegistry,
+	findTreeItem usecase.FindTreeItem,
+	saveTreeItem usecase.SaveTreeItem,
+	findRequest usecase.FindRequest,
+	loadWorkspace usecase.LoadWorkspace,
+	saveWorkspaceFile usecase.SaveWorkspaceFile,
+	findEnvironment usecase.FindEnvironment,
+	saveEnvironment usecase.SaveEnvironment,
+	findLocalVariables usecase.FindLocalVariables,
+	saveLocalVariables usecase.SaveLocalVariables,
+	findVault usecase.FindVault,
+	saveVault usecase.SaveVault,
+	findVaultSettings usecase.FindVaultSettings,
+	saveVaultSettings usecase.SaveVaultSettings,
+	probeKeychain usecase.ProbeKeychain,
+	publishVariableEvent usecase.PublishVariableEvent,
+	findAppSettings usecase.FindAppSettings,
+	runScript usecase.RunScript,
+	appendConsoleEntries usecase.AppendConsoleEntries,
+	clearConsole usecase.ClearConsole,
+	publishConsoleEntries usecase.PublishConsoleEntries,
+	generateDynamicValue usecase.GenerateDynamicValue,
+	sendHttpRequest usecase.SendHttpRequest,
+	saveResponse usecase.SaveResponse,
+	releaseResponse usecase.ReleaseResponse,
+	saveHistoryEntry usecase.SaveHistoryEntry,
+	lockOAuthToken usecase.LockOAuthToken,
+	refreshOAuthToken usecase.RefreshOAuthToken,
+	signAwsRequest usecase.SignAwsRequest,
+	answerDigest usecase.AnswerDigestChallenge,
+	findDigestState usecase.FindDigestState,
+	saveDigestState usecase.SaveDigestState,
+	manageCookieJar usecase.ManageCookieJar,
+	findCookies usecase.FindCookies,
+	saveCookies usecase.SaveCookies,
+	findCookieAllowlist usecase.FindCookieAllowlist,
+	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
+	registerKnownSecrets usecase.RegisterKnownSecrets,
+	publishAIEvent usecase.PublishAIEvent,
+	lockLocalVariables usecase.LockLocalVariables,
+) *sendRequest {
 	scopes := variableScopes{findEnvironment: findEnvironment, findTreeItem: findTreeItem, loadWorkspace: loadWorkspace}
 	vaults := vaultWriter{
 		findVault:            findVault,
@@ -122,6 +208,7 @@ func NewSendRequestService(
 			saveLocalVariables:   saveLocalVariables,
 			vaults:               vaults,
 			publishVariableEvent: publishVariableEvent,
+			lockLocalVariables:   lockLocalVariables,
 		},
 		console: consoleLog{
 			appendConsoleEntries:  appendConsoleEntries,
@@ -136,64 +223,20 @@ func NewSendRequestService(
 func (s *sendRequest) Send(ctx context.Context, localId, tabId, aliasId string, request entity.Request, appVersion string, acknowledgement entity.SendAcknowledgement, origin entity.SendOrigin) (*entity.SendExecution, error) {
 	logger.Info(ctx, "Started", origin, map[string]any{"localId": localId, "tabId": tabId, "aliasId": aliasId, "request": request, "appVersion": appVersion, "acknowledgement": acknowledgement})
 
-	workspace, err := s.findWorkspaceRegistry.FindWorkspace(ctx, localId)
+	sent, err := s.send(ctx, sendCall{localId: localId, tabId: tabId, aliasId: aliasId, request: request, appVersion: appVersion, acknowledgement: acknowledgement}, entity.NoRunContext())
 	if err != nil {
 		return nil, err
 	}
-	scopes, err := s.variables.load(ctx, localId, workspace.Path, request.ID)
-	if err != nil {
-		return nil, err
-	}
-	alias, err := s.alias(ctx, workspace.Path, request.ID, aliasId)
-	if err != nil {
-		return nil, err
-	}
-	effective := usecase.ResolveEffectiveRequest(request, scopes.ancestors, workspace.Path).ForAlias(request.ID, aliasId).WithAuthOwner(tabId)
-	preflight := usecase.CheckSendPreflight(request.Inheriting(effective), scopes.context, scopes.environment)
-	if preflight.AwaitsConfirmation(acknowledgement) {
-		return nil, usecase.RejectUnconfirmedSend(preflight)
-	}
-	if preflight.AwaitsSecretsAcknowledgement(acknowledgement) {
-		return nil, usecase.RejectUnavailableSecrets(preflight)
-	}
-	token, err := s.oauthToken(ctx, localId, effective, scopes.context, acknowledgement)
-	if err != nil {
-		return nil, err
-	}
-	owners, err := s.scriptOwners(ctx, workspace.Path, request, aliasId, scopes.ancestors)
-	if err != nil {
-		return nil, err
-	}
-	settings, err := s.findAppSettings.FindAppSettings(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if err := s.cookies.load(ctx, localId); err != nil {
-		return nil, err
-	}
-	cookiesBefore := s.cookies.revision(ctx, localId)
-	secrets := append(scopes.context.SecretValues(), token.SecretsOrNone()...)
-	ctx = logger.WithRedactions(ctx, secrets...)
-	sentAt := timeutils.Now()
-	execution := entity.NewSendExecution(idutils.NewUlid())
-	execution.Start(request, scopes.scripts, scopes.vault)
-	run := sendRun{service: s, scopes: scopes, token: token, localId: localId, tabId: tabId, aliasId: aliasId, root: workspace.Path, appVersion: appVersion, sendId: execution.ID, secrets: secrets, settings: *settings}
-	if err := run.execute(ctx, tabId, request, scopes.ancestors, owners, &execution); err != nil {
-		return nil, err
-	}
-	if err := s.cookies.settle(ctx, localId, cookiesBefore); err != nil {
-		return nil, err
-	}
-	s.registerKnownSecrets.Register(ctx, append(secrets, execution.DerivedSecrets(secrets)...)...)
-	if err := s.saveHistoryEntry.Save(ctx, localId, entity.NewHistoryEntry(idutils.NewUlid(), sentAt, request, execution, origin).ForAlias(alias), settings.HistoryCaps()); err != nil {
+	ctx = logger.WithRedactions(ctx, sent.secrets...)
+	if err := s.saveHistoryEntry.Save(ctx, localId, entity.NewHistoryEntry(idutils.NewUlid(), sent.sentAt, request, *sent.execution, origin).ForAlias(sent.alias), sent.settings.HistoryCaps()); err != nil {
 		return nil, err
 	}
 	if err := s.publishAIEvent.HistoryChanged(ctx, localId); err != nil {
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", origin, map[string]any{"localId": localId, "tabId": tabId, "aliasId": aliasId, "request": request, "appVersion": appVersion, "acknowledgement": acknowledgement, "result": &execution})
-	return &execution, nil
+	logger.Info(ctx, "Finished", origin, map[string]any{"localId": localId, "tabId": tabId, "aliasId": aliasId, "request": request, "appVersion": appVersion, "acknowledgement": acknowledgement, "result": sent.execution})
+	return sent.execution, nil
 }
 
 func (s *sendRequest) oauthToken(ctx context.Context, localId string, effective entity.EffectiveRequest, variables entity.VariableContext, acknowledgement entity.SendAcknowledgement) (*entity.OAuth2Token, error) {

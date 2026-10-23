@@ -51,6 +51,19 @@ func (s SendPreflight) IsClear() bool {
 	return !s.NeedsConfirmation() && !s.HasUnavailableSecrets()
 }
 
+func (s SendPreflight) Merged(other SendPreflight) SendPreflight {
+	if s.ConfirmEnvironment == nil {
+		s.ConfirmEnvironment = other.ConfirmEnvironment
+	}
+	for _, name := range other.MissingSecrets {
+		s.MissingSecrets = withName(s.MissingSecrets, name)
+	}
+	for _, name := range other.LockedSecrets {
+		s.LockedSecrets = withName(s.LockedSecrets, name)
+	}
+	return s
+}
+
 func (s SendPreflight) WithUnavailable(variable ContextVariable) SendPreflight {
 	if variable.IsLockedSecret() {
 		s.LockedSecrets = withName(s.LockedSecrets, variable.Name)

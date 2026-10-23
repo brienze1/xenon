@@ -33,14 +33,43 @@ func (v VariableContext) WithLocal(values map[string]any) VariableContext {
 	return updated
 }
 
+// WithIterationData puts the run's data row right after the send's script variables, before every stored scope.
+func (v VariableContext) WithIterationData(row map[string]any) VariableContext {
+	variables := make(map[string]ContextVariable, len(row))
+	for name, value := range row {
+		variables[name] = ContextVariable{Name: name, Value: LocalVariableText(value), Scope: variablescope.Data}
+	}
+	layers := make([]VariableLayer, 0, len(v.Layers)+1)
+	inserted := false
+	for _, layer := range v.Layers {
+		if !inserted && layer.Scope != variablescope.Local {
+			layers = append(layers, VariableLayer{Scope: variablescope.Data, Variables: variables})
+			inserted = true
+		}
+		if layer.Scope != variablescope.Data {
+			layers = append(layers, layer)
+		}
+	}
+	if !inserted {
+		layers = append(layers, VariableLayer{Scope: variablescope.Data, Variables: variables})
+	}
+	updated := NewVariableContext(layers...)
+	updated.Vault = v.Vault
+	return updated
+}
+
 // WithScriptScopes puts the scopes as the send's scripts left them over the stored values; unavailable secrets keep their state.
 func (v VariableContext) WithScriptScopes(scopes ScriptScopes) VariableContext {
 	layers := make([]VariableLayer, 0, len(v.Layers))
 	for _, layer := range v.Layers {
-		if layer.Scope == variablescope.Local {
+		switch layer.Scope {
+		case variablescope.Local:
 			continue
+		case variablescope.Data:
+			layers = append(layers, layer)
+		default:
+			layers = append(layers, layer.withScriptScope(scopes.Scope(layer.Scope)))
 		}
-		layers = append(layers, layer.withScriptScope(scopes.Scope(layer.Scope)))
 	}
 	updated := NewVariableContext(layers...).WithLocal(scopes.Local.ValueMap())
 	updated.Vault = v.Vault

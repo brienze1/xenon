@@ -133,6 +133,7 @@ func (t *testUtils) startApp() {
 		binding.GetTreeService(),
 		binding.GetDialogService(),
 		binding.GetRequestService(),
+		binding.GetRunnerService(),
 		binding.GetUIStateService(),
 		binding.GetHistoryService(),
 		binding.GetWindowService(),

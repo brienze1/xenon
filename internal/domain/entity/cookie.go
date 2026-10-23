@@ -65,3 +65,17 @@ func CookieHeader(cookies []Cookie) string {
 	}
 	return strings.Join(pairs, "; ")
 }
+
+// MergeCookies puts the run's cookies over the workspace's: the same name, domain and path replace, others are added.
+func MergeCookies(workspace, run []Cookie) []Cookie {
+	merged := slices.Clone(workspace)
+	for _, cookie := range run {
+		index := slices.IndexFunc(merged, func(existing Cookie) bool { return existing.Is(cookie.Domain, cookie.Path, cookie.Name) })
+		if index < 0 {
+			merged = append(merged, cookie)
+			continue
+		}
+		merged[index] = cookie
+	}
+	return merged
+}
