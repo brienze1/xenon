@@ -9,6 +9,7 @@ import (
 func (t *testUtils) registerGivenTimeSteps(ctx *godog.ScenarioContext) {
 	ctx.Given(`^the current time is "([^"]*)"$`, t.theCurrentTimeIs)
 	ctx.Step(`^(\d+) seconds? pass(?:es)?$`, t.secondsPass)
+	ctx.Step(`^I wait (\d+) ms$`, t.iWaitMs)
 }
 
 func (t *testUtils) secondsPass(seconds int) error {
@@ -22,5 +23,10 @@ func (t *testUtils) theCurrentTimeIs(value string) error {
 		return err
 	}
 	t.time.SetCurrentTime(parsed)
+	return nil
+}
+
+func (t *testUtils) iWaitMs(milliseconds int) error {
+	time.Sleep(time.Duration(milliseconds) * time.Millisecond)
 	return nil
 }

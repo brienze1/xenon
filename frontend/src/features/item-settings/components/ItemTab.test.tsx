@@ -94,7 +94,15 @@ const EDITED = {
   stale: false,
 } as const
 
-function renderTab(settings: ItemSettings, onSave = vi.fn()) {
+function runner(itemId: string, kind: string) {
+  return (
+    <p>
+      Runner of {kind} {itemId}
+    </p>
+  )
+}
+
+function renderTab(settings: ItemSettings, onSave = vi.fn(), withRunner = false) {
   vi.mocked(tree.getItemSettings).mockResolvedValue(settings)
   render(
     <ItemTab
@@ -105,6 +113,7 @@ function renderTab(settings: ItemSettings, onSave = vi.fn()) {
       scriptsEditor={scriptsEditor}
       collectionVariables={collectionVariables}
       documentation={documentation}
+      runner={withRunner ? runner : undefined}
     />,
   )
   return onSave
@@ -142,6 +151,33 @@ describe('ItemTab', () => {
     expect(within(tab).queryByRole('textbox', { name: /name/i })).not.toBeInTheDocument()
     expect(await within(tab).findByText('billing', { selector: 'strong' })).toBeInTheDocument()
     expect(within(tab).getByRole('button', { name: 'Save' })).toBeDisabled()
+  })
+
+  it('adds the Runner section last for collections and folders, on the section the store asks for', async () => {
+    renderTab(collection, vi.fn(), true)
+    const tab = await screen.findByRole('region', { name: 'Billing collection' })
+    expect(within(tab).getAllByRole('tab').map((item) => item.textContent)).toEqual(['Overview', 'Authorization', 'Headers', 'Scripts', 'Variables', 'Documentation', 'Runner'])
+    await userEvent.click(within(tab).getByRole('tab', { name: 'Runner' }))
+    expect(store().items.c1?.section).toBe('runner')
+    expect(within(tab).getByRole('tabpanel')).toHaveTextContent('Runner of collection c1')
+  })
+
+  it('opens a folder on its Runner when Run… asked for it', async () => {
+    vi.mocked(tree.getItemSettings).mockResolvedValue(folder)
+    store().setSection('f1', 'runner')
+    renderTab(folder, vi.fn(), true)
+    const tab = await screen.findByRole('region', { name: 'Invoices folder' })
+    expect(within(tab).getByRole('tab', { name: 'Runner' })).toHaveAttribute('aria-selected', 'true')
+    expect(within(tab).getByRole('tabpanel')).toHaveTextContent('Runner of folder f1')
+  })
+
+  it('falls back to the Overview when no Runner is composed', async () => {
+    vi.mocked(tree.getItemSettings).mockResolvedValue(collection)
+    store().setSection('c1', 'runner')
+    renderTab(collection)
+    const tab = await screen.findByRole('region', { name: 'Billing collection' })
+    expect(within(tab).queryByRole('tab', { name: 'Runner' })).not.toBeInTheDocument()
+    expect(within(tab).getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true')
   })
 
   it('edits the description in markdown and saves it', async () => {

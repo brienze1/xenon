@@ -17,6 +17,7 @@ type activateWorkspace struct {
 	findUIState           usecase.FindUIState
 	watchWorkspace        usecase.WatchWorkspace
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent
+	findActiveRunControls usecase.FindActiveRunControls
 }
 
 func NewActivateWorkspaceService(
@@ -27,6 +28,7 @@ func NewActivateWorkspaceService(
 	findUIState usecase.FindUIState,
 	watchWorkspace usecase.WatchWorkspace,
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
+	findActiveRunControls usecase.FindActiveRunControls,
 ) adapter.ActivateWorkspaceService {
 	return &activateWorkspace{
 		findWorkspaceRegistry: findWorkspaceRegistry,
@@ -36,6 +38,7 @@ func NewActivateWorkspaceService(
 		findUIState:           findUIState,
 		watchWorkspace:        watchWorkspace,
 		publishWorkspaceEvent: publishWorkspaceEvent,
+		findActiveRunControls: findActiveRunControls,
 	}
 }
 
@@ -58,6 +61,9 @@ func (a *activateWorkspace) Activate(ctx context.Context, localId string) (*enti
 	registry, err := a.findWorkspaceRegistry.Find(ctx)
 	if err != nil {
 		return nil, err
+	}
+	if !registry.IsActive(localId) {
+		stopActiveRuns(ctx, a.findActiveRunControls, registry.ActiveLocalID)
 	}
 	activated, _ := registry.Activate(localId, workspace.Name)
 	if err := a.saveWorkspaceRegistry.Save(ctx, *registry); err != nil {

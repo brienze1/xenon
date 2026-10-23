@@ -117,3 +117,10 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
+
+.runnerPanel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 360px;
+}

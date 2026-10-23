@@ -43,12 +43,8 @@ func (c *cookieJarWebservice) JarState(ctx context.Context, localId string) enti
 	c.mu.Lock()
 	loaded, saved := workspace.loaded, workspace.savedRevision
 	c.mu.Unlock()
-	state := entity.CookieJarState{
-		Cookies:       dto.NewJarCookies(workspace.jar.All(timeutils.Now())),
-		Revision:      workspace.jar.Revision(),
-		SavedRevision: saved,
-		Loaded:        loaded,
-	}
+	jarState := dto.NewJarState(workspace.jar.All(timeutils.Now()), workspace.jar.Revision(), saved, loaded)
+	state := jarState.ToEntity()
 
 	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "cookies": len(state.Cookies), "revision": state.Revision})
 	return state
@@ -66,6 +62,18 @@ func (c *cookieJarWebservice) LoadCookies(ctx context.Context, localId string, c
 	c.mu.Lock()
 	workspace.loaded = true
 	c.mu.Unlock()
+
+	logger.Debug(ctx, "Finished", map[string]any{"localId": localId})
+}
+
+func (c *cookieJarWebservice) StoreCookies(ctx context.Context, localId string, cookies []entity.Cookie) {
+	logger.Debug(ctx, "Started", map[string]any{"localId": localId, "cookies": len(cookies)})
+
+	entries := make([]cookiejar.Entry, 0, len(cookies))
+	for _, cookie := range cookies {
+		entries = append(entries, dto.NewJarCookie(cookie).Entry())
+	}
+	c.workspace(localId).jar.Store(entries, timeutils.Now())
 
 	logger.Debug(ctx, "Finished", map[string]any{"localId": localId})
 }
@@ -130,6 +138,16 @@ func (c *cookieJarWebservice) RemoveCookies(ctx context.Context, localId string,
 	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "cookies": len(cookies)})
 }
 
+func (c *cookieJarWebservice) DropJar(ctx context.Context, jarId string) {
+	logger.Debug(ctx, "Started", map[string]any{"jarId": jarId})
+
+	c.mu.Lock()
+	delete(c.jars, c.key(jarId))
+	c.mu.Unlock()
+
+	logger.Debug(ctx, "Finished", map[string]any{"jarId": jarId})
+}
+
 func (c *cookieJarWebservice) HttpJar(localId string, sendCookies bool) http.CookieJar {
 	jar := c.workspace(localId).jar
 	if sendCookies {
@@ -139,7 +157,7 @@ func (c *cookieJarWebservice) HttpJar(localId string, sendCookies bool) http.Coo
 }
 
 func (c *cookieJarWebservice) workspace(localId string) *workspaceJar {
-	key := filepath.Join(properties.Properties().Application.DataDir, localId)
+	key := c.key(localId)
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	workspace, found := c.jars[key]
@@ -156,4 +174,8 @@ func (s storingJar) SetCookies(u *url.URL, cookies []*http.Cookie) {
 
 func (s storingJar) Cookies(*url.URL) []*http.Cookie {
 	return nil
+}
+
+func (c *cookieJarWebservice) key(jarId string) string {
+	return filepath.Join(properties.Properties().Application.DataDir, jarId)
 }

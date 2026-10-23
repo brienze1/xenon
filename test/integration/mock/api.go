@@ -24,6 +24,7 @@ type ApiMock struct {
 	echoes          map[string]int
 	requests        map[string]receivedRequest
 	callCount       map[string]int
+	sequence        []string
 	mu              sync.RWMutex
 }
 
@@ -39,6 +40,7 @@ type apiRedirect struct {
 }
 
 type receivedRequest struct {
+	at       time.Time
 	headers  http.Header
 	query    url.Values
 	rawQuery string
@@ -82,6 +84,7 @@ func (m *ApiMock) Reset() {
 	m.echoes = make(map[string]int)
 	m.requests = make(map[string]receivedRequest)
 	m.callCount = make(map[string]int)
+	m.sequence = nil
 }
 
 func (m *ApiMock) SetResponse(index int, method, path string, status int, body []byte, contentType string) {
@@ -217,7 +220,8 @@ func (m *ApiMock) handler(w http.ResponseWriter, r *http.Request) {
 	route := routeKey(r.Method, r.URL.Path)
 	m.callCount[route]++
 	index := m.callCount[route]
-	m.requests[requestKey(r.Method, r.URL.Path, index)] = receivedRequest{headers: r.Header.Clone(), query: r.URL.Query(), rawQuery: r.URL.RawQuery, body: body}
+	m.requests[requestKey(r.Method, r.URL.Path, index)] = receivedRequest{headers: r.Header.Clone(), query: r.URL.Query(), rawQuery: r.URL.RawQuery, body: body, at: time.Now()}
+	m.sequence = append(m.sequence, r.Method+" "+r.URL.Path)
 	delay := m.delays[route]
 	redirect, redirected := m.redirects[r.URL.Path]
 	echoStatus, echoed := m.echoes[r.URL.Path]
@@ -262,4 +266,15 @@ func requestKey(method, path string, index int) string {
 func (m *ApiMock) GetRequest(index int, method, path string) (http.Header, url.Values, []byte, bool) {
 	request, found := m.request(index, method, path)
 	return request.headers, request.query, request.body, found
+}
+
+func (m *ApiMock) Sequence() []string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return append([]string{}, m.sequence...)
+}
+
+func (m *ApiMock) GetReceivedAt(index int, method, path string) (time.Time, bool) {
+	request, found := m.request(index, method, path)
+	return request.at, found
 }

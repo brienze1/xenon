@@ -1,6 +1,7 @@
 import { Events } from '@wailsio/runtime'
 import { toAIAccessRuntime, toPendingApproval, type AIAccessRuntime, type PendingApproval } from './mappers/ai-access'
 import { toConsoleEntriesEvent, type ConsoleEntriesEvent } from './mappers/console'
+import { toRunFinishedEvent, toRunProgressEvent, type RunFinishedEvent, type RunProgressEvent } from './mappers/runner'
 import { toSyncStatus, type SyncStatus } from './mappers/sync'
 import { toUpdateStatus, type UpdateStatus } from './mappers/update-status'
 import { toVaultStatus, type VaultStatus } from './mappers/vault'
@@ -28,6 +29,8 @@ export const AI_APPROVAL_RESOLVED = 'ai:approval-resolved'
 export const HISTORY_CHANGED = 'history:changed'
 export const WORKSPACES_CHANGED = 'workspaces:changed'
 export const UPDATE_STATUS = 'update:status'
+export const RUNNER_PROGRESS = 'runner:progress'
+export const RUNNER_FINISHED = 'runner:finished'
 
 export interface WorkspaceTreeChanged {
   localId: string
@@ -238,5 +241,19 @@ export function onCookiesChanged(callback: (localId: string) => void): Unsubscri
 export function onUpdateStatus(callback: (status: UpdateStatus) => void): Unsubscribe {
   return Events.On(UPDATE_STATUS, (event) => {
     callback(toUpdateStatus(event.data))
+  })
+}
+
+/** A run's progress: after every functional row and status change, once per second for a performance run. */
+export function onRunProgress(callback: (event: RunProgressEvent) => void): Unsubscribe {
+  return Events.On(RUNNER_PROGRESS, (event) => {
+    callback(toRunProgressEvent(event.data))
+  })
+}
+
+/** A run ended (completed, stopped or stopped on error) and was stored. */
+export function onRunFinished(callback: (event: RunFinishedEvent) => void): Unsubscribe {
+  return Events.On(RUNNER_FINISHED, (event) => {
+    callback(toRunFinishedEvent(event.data))
   })
 }

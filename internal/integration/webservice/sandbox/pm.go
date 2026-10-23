@@ -47,7 +47,7 @@ func (e *execution) finishLegacy() {
 }
 
 func (e *execution) effects() entity.ScriptEffects {
-	effects := entity.ScriptEffects{Request: e.scope.Request, Scopes: e.scope.Scopes, Vault: e.scope.Vault, Logs: e.logs, Notices: e.notices, Nested: e.nested, Tests: []entity.TestResult{}}
+	effects := entity.ScriptEffects{Request: e.scope.Request, Scopes: e.scope.Scopes, Vault: e.scope.Vault, Logs: e.logs, Notices: e.notices, Nested: e.nested, Tests: []entity.TestResult{}, NextRequest: e.nextRequest}
 	if e.pmInternal == nil {
 		return effects
 	}

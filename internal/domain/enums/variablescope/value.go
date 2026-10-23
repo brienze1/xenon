@@ -8,6 +8,7 @@ import (
 
 const (
 	Local       enums.VariableScope = "local"
+	Data        enums.VariableScope = "data"
 	Environment enums.VariableScope = "environment"
 	Collection  enums.VariableScope = "collection"
 	Globals     enums.VariableScope = "globals"
@@ -20,6 +21,8 @@ func GetVariableScope(s string) enums.VariableScope {
 	switch strings.ToLower(strings.TrimSpace(s)) {
 	case "local":
 		return Local
+	case "data":
+		return Data
 	case "environment":
 		return Environment
 	case "collection":

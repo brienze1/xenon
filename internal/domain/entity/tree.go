@@ -1,6 +1,12 @@
 package entity
 
-import "github.com/brienze1/xenon/internal/domain/enums/itemkind"
+import (
+	"slices"
+	"sort"
+
+	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
+	"github.com/brienze1/xenon/pkg/errs"
+)
 
 type Tree struct {
 	Root TreeNode
@@ -30,6 +36,14 @@ func (t Tree) Container(id string) (*TreeNode, bool) {
 		return nil, false
 	}
 	return item, true
+}
+
+func (t Tree) RunTarget(id string) (*TreeNode, error) {
+	container, found := t.Container(id)
+	if !found {
+		return nil, errs.NotFoundError("no collection or folder with the id "+id, "RUN-07404")
+	}
+	return container, nil
 }
 
 func (t Tree) SiblingEntries(id string) []string {
@@ -67,4 +81,31 @@ func ancestorsOf(nodes []TreeNode, id string) ([]TreeNode, bool) {
 		}
 	}
 	return nil, false
+}
+
+func (t Tree) ContainerIDs() []string {
+	return containerIDs(t.Root.Children)
+}
+
+func (t Tree) StaleRunnerTargets(preferences map[string]RunnerPreferences) []string {
+	live := t.ContainerIDs()
+	stale := make([]string, 0)
+	for itemId := range preferences {
+		if !slices.Contains(live, itemId) {
+			stale = append(stale, itemId)
+		}
+	}
+	sort.Strings(stale)
+	return stale
+}
+
+func containerIDs(nodes []TreeNode) []string {
+	ids := make([]string, 0)
+	for _, node := range nodes {
+		if node.IsContainer() && node.IsItem() {
+			ids = append(ids, node.ID)
+			ids = append(ids, containerIDs(node.Children)...)
+		}
+	}
+	return ids
 }

@@ -26,19 +26,25 @@ export function ApprovalPrompt() {
           {TITLE}
           <Dialog.Body>
             <p className={styles.intro}>
-              <strong translate="no">{head.client || 'An AI client'}</strong> wants to send this request with the environment{' '}
+              <strong translate="no">{head.client || 'An AI client'}</strong> wants to {head.summary ? 'run this' : 'send this request'} with the environment{' '}
               <span className={styles.environment}>
                 <span className={styles.chip} data-color={head.environment.color} aria-hidden="true" />
                 <strong translate="no">{head.environment.name}</strong>
               </span>
               , which asks for confirmation before every send.
             </p>
-            <p className={styles.request}>
-              <MethodBadge method={head.method} className={styles.method} />
-              <span className={styles.url} translate="no">
-                {head.url}
-              </span>
-            </p>
+            {head.summary ? (
+              <p className={styles.request} translate="no">
+                {head.summary}
+              </p>
+            ) : (
+              <p className={styles.request}>
+                <MethodBadge method={head.method} className={styles.method} />
+                <span className={styles.url} translate="no">
+                  {head.url}
+                </span>
+              </p>
+            )}
             {waiting > 0 ? <p className={styles.more}>+{waiting} more waiting</p> : null}
             {error ? (
               <Banner.Root tone="error" className={styles.error}>

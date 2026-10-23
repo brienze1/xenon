@@ -168,6 +168,21 @@ func TestImportAddsMissingCookiesWithoutCountingAChange(t *testing.T) {
 	}
 }
 
+func TestStoreReplacesAndAddsCookiesCountingAChange(t *testing.T) {
+	jar := New()
+	_, _ = setCookie(t, jar, "http://host.test", "a=memory", tNow)
+	revision := jar.Revision()
+	jar.Store([]Entry{
+		{Name: "a", Value: "run", Domain: "host.test", Path: "/", HostOnly: true, Expires: endOfTime},
+		{Name: "b", Value: "run", Domain: "host.test", Path: "/", HostOnly: true, Expires: endOfTime},
+		{Name: "c", Value: "old", Domain: "host.test", Path: "/", HostOnly: true, Persistent: true, Expires: tNow},
+	}, tNow)
+	all := jar.All(tNow)
+	if jar.Revision() == revision || !reflect.DeepEqual(names(all), []string{"a", "b"}) || all[0].Value != "run" {
+		t.Errorf("All = %+v, revision %d", all, jar.Revision())
+	}
+}
+
 func TestCookiesAndSetCookiesUseTheCurrentTime(t *testing.T) {
 	timeutils.SetCurrentTimeProvider(func() time.Time { return tNow })
 	t.Cleanup(func() { timeutils.SetCurrentTimeProvider(time.Now) })

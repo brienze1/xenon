@@ -1,10 +1,10 @@
 // Runs a Postman collection with Newman and exits as soon as the run is done (Newman alone can linger on Windows).
 import newman from 'newman';
 
-const [collection, environment, workingDir] = process.argv.slice(2);
+const [collection, environment, workingDir, iterationData] = process.argv.slice(2);
 
 newman.run(
-  { collection, environment, workingDir, reporters: 'cli', color: 'off', disableUnicode: true },
+  { collection, environment, workingDir, iterationData, reporters: 'cli', color: 'off', disableUnicode: true },
   (error, summary) => {
     if (error) {
       console.error(error);

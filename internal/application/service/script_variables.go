@@ -7,13 +7,10 @@ import (
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/domain/enums"
-	"github.com/brienze1/xenon/internal/domain/enums/variablescope"
 	"github.com/brienze1/xenon/pkg/logger"
 )
 
 const scriptChangeReason = "script"
-
-var persistedScopes = []enums.VariableScope{variablescope.Environment, variablescope.Collection, variablescope.Globals}
 
 type scriptVariables struct {
 	scopes               variableScopes
@@ -22,32 +19,19 @@ type scriptVariables struct {
 	saveLocalVariables   usecase.SaveLocalVariables
 	vaults               vaultWriter
 	publishVariableEvent usecase.PublishVariableEvent
-}
-
-type scriptChange struct {
-	set    []entity.KeyValue
-	unset  []string
-	secret bool
+	lockLocalVariables   usecase.LockLocalVariables
 }
 
 func (s scriptVariables) persist(ctx context.Context, localId, root string, refs map[enums.VariableScope]entity.ScopeRef, before, after entity.ScriptScopes, vaultBefore, vaultAfter map[string]string) error {
-	changed := make([]entity.ScopeRef, 0, len(persistedScopes))
-	for _, kind := range persistedScopes {
-		ref, found := refs[kind]
-		set, unset := after.Scope(kind).ChangesFrom(before.Scope(kind))
-		if !found || (len(set) == 0 && len(unset) == 0) {
-			continue
-		}
-		if err := s.apply(ctx, localId, root, ref, scriptChange{set: set, unset: unset}); err != nil {
+	unlock := s.lockLocalVariables.LockVariables(ctx, localId)
+	defer unlock()
+	changes := after.ChangesFrom(before, refs, vaultBefore, vaultAfter)
+	changed := make([]entity.ScopeRef, 0, len(changes))
+	for _, change := range changes {
+		if err := s.apply(ctx, localId, root, change); err != nil {
 			return err
 		}
-		changed = entity.AppendScopeRef(changed, ref)
-	}
-	if set, unset := entity.VaultChangesFrom(vaultBefore, vaultAfter); len(set) > 0 || len(unset) > 0 {
-		if err := s.apply(ctx, localId, root, entity.NewGlobalsScopeRef(), scriptChange{set: set, unset: unset, secret: true}); err != nil {
-			return err
-		}
-		changed = entity.AppendScopeRef(changed, entity.NewGlobalsScopeRef())
+		changed = entity.AppendScopeRef(changed, change.Ref)
 	}
 	if len(changed) == 0 {
 		return nil
@@ -56,7 +40,8 @@ func (s scriptVariables) persist(ctx context.Context, localId, root string, refs
 	return s.publishVariableEvent.VariablesChanged(ctx, localId, changed, scriptChangeReason)
 }
 
-func (s scriptVariables) apply(ctx context.Context, localId, root string, ref entity.ScopeRef, change scriptChange) error {
+func (s scriptVariables) apply(ctx context.Context, localId, root string, change entity.ScriptScopeChange) error {
+	ref := change.Ref
 	rows, err := s.scopes.rows(ctx, root, ref)
 	if err != nil {
 		return err
@@ -70,7 +55,7 @@ func (s scriptVariables) apply(ctx context.Context, localId, root string, ref en
 		return err
 	}
 	original := entity.NewVariableTable(ref, rows, *local, *vault)
-	edited := original.WithScriptChanges(change.set, change.unset, change.secret)
+	edited := original.WithScriptChanges(change.Set, change.Unset, change.Secret)
 	if edited.SecretsDiffer(original) {
 		if _, err := s.vaults.write(ctx, *vault, ref, edited.StoredSecrets()); err != nil {
 			return err

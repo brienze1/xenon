@@ -205,7 +205,7 @@ describe('App', () => {
 
   it('mounts the AI approval prompt', async () => {
     await renderWorkspace()
-    act(() => useAIAccessStore.getState().add({ id: 'a1', client: 'Claude Code', method: 'GET', url: '{{base}}/x', environment: { id: 'e1', name: 'Production', color: 'red' }, createdAt: 't' }))
+    act(() => useAIAccessStore.getState().add({ id: 'a1', client: 'Claude Code', method: 'GET', url: '{{base}}/x', environment: { id: 'e1', name: 'Production', color: 'red' }, createdAt: 't', summary: null }))
     expect(screen.getByRole('dialog', { name: 'Approve AI Request?' })).toBeInTheDocument()
     act(() => useAIAccessStore.getState().resolve('a1'))
     expect(screen.queryByRole('dialog', { name: 'Approve AI Request?' })).not.toBeInTheDocument()

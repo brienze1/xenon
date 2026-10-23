@@ -3,12 +3,15 @@ package mock
 import (
 	"strings"
 	"sync"
+
+	"github.com/brienze1/xenon/internal/domain/entity"
 )
 
 type Dialog struct {
 	answers        []string
 	titles         []string
 	suggestedNames []string
+	filters        [][]string
 	mu             sync.Mutex
 }
 
@@ -26,7 +29,12 @@ func (d *Dialog) PickFolder(title string) (string, error) {
 	return d.answer(title)
 }
 
-func (d *Dialog) PickFile(title string) (string, error) {
+func (d *Dialog) PickFile(title string, filters []entity.FileFilter) (string, error) {
+	labels := make([]string, 0, len(filters))
+	for _, filter := range filters {
+		labels = append(labels, filter.DisplayName+" ("+filter.Pattern+")")
+	}
+	d.RecordFilters(labels)
 	return d.answer(title)
 }
 
@@ -81,4 +89,20 @@ func (d *Dialog) Reset() {
 	d.answers = nil
 	d.titles = nil
 	d.suggestedNames = nil
+	d.filters = nil
+}
+
+func (d *Dialog) RecordFilters(filters []string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.filters = append(d.filters, append([]string{}, filters...))
+}
+
+func (d *Dialog) LastFilters() []string {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if len(d.filters) == 0 {
+		return nil
+	}
+	return d.filters[len(d.filters)-1]
 }

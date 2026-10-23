@@ -6,16 +6,17 @@ import (
 )
 
 type UIState struct {
-	LocalId       string           `json:"local_id" validate:"required,not_blank"`
-	ActiveTabId   string           `json:"active_tab_id"`
-	PreviewTabId  string           `json:"preview_tab_id"`
-	HistorySource string           `json:"history_source"`
-	Sidebar       SidebarState     `json:"sidebar"`
-	Tabs          []Tab            `json:"tabs" validate:"dive"`
-	ClosedTabs    []ClosedTab      `json:"closed_tabs" validate:"dive"`
-	Snippets      []SnippetOptions `json:"snippet_options" validate:"dive"`
-	Layout        Layout           `json:"layout"`
-	Version       int              `json:"version"`
+	Runners       map[string]RunConfig `json:"runners,omitempty"`
+	LocalId       string               `json:"local_id" validate:"required,not_blank"`
+	ActiveTabId   string               `json:"active_tab_id"`
+	PreviewTabId  string               `json:"preview_tab_id"`
+	HistorySource string               `json:"history_source"`
+	Sidebar       SidebarState         `json:"sidebar"`
+	Tabs          []Tab                `json:"tabs" validate:"dive"`
+	ClosedTabs    []ClosedTab          `json:"closed_tabs" validate:"dive"`
+	Snippets      []SnippetOptions     `json:"snippet_options" validate:"dive"`
+	Layout        Layout               `json:"layout"`
+	Version       int                  `json:"version"`
 }
 
 func NewUIState(localId string, state entity.UIState) UIState {
@@ -39,6 +40,12 @@ func NewUIState(localId string, state entity.UIState) UIState {
 	result.Snippets = make([]SnippetOptions, 0, len(state.Snippets))
 	for _, options := range state.Snippets {
 		result.Snippets = append(result.Snippets, NewSnippetOptions(options))
+	}
+	if len(state.Runners) > 0 {
+		result.Runners = make(map[string]RunConfig, len(state.Runners))
+		for itemId, preferences := range state.Runners {
+			result.Runners[itemId] = NewRunConfig(preferences.Config)
+		}
 	}
 	return result
 }

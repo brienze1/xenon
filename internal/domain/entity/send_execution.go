@@ -2,6 +2,7 @@ package entity
 
 import (
 	"maps"
+	"time"
 
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/senderrorkind"
@@ -41,11 +42,7 @@ func (s *SendExecution) Start(request Request, scopes ScriptScopes, vault map[st
 
 // ScriptContext is what the next script sees: the request so far, the response, and the scopes and vault as earlier scripts left them.
 func (s *SendExecution) ScriptContext(base ScriptContext) ScriptContext {
-	base.Request = s.Request
-	base.Response = s.Response
-	base.Scopes = s.Scopes
-	base.Vault = maps.Clone(s.Vault)
-	return base
+	return base.Over(s.Request, s.Response, s.Scopes, s.Vault)
 }
 
 func (s *SendExecution) Variables(context VariableContext) VariableContext {
@@ -91,6 +88,17 @@ func (s *SendExecution) RecordResponse(sent EffectiveRequest, response Response)
 	}
 }
 
+func (s *SendExecution) HasResponse() bool {
+	return s.Response != nil
+}
+
+func (s *SendExecution) Latency() time.Duration {
+	if !s.HasResponse() {
+		return 0
+	}
+	return s.Response.Timings.Total
+}
+
 func (s *SendExecution) ScriptCookies() []ScriptCookie {
 	if s.Response == nil || s.SentRequest == nil {
 		return []ScriptCookie{}
@@ -117,6 +125,17 @@ func (s *SendExecution) ScriptErrors() []ScriptError {
 		}
 	}
 	return errors
+}
+
+// NextRequest is the last pm.execution.setNextRequest call across the pre-request and post-response scripts.
+func (s *SendExecution) NextRequest() *NextRequest {
+	var next *NextRequest
+	for _, run := range append(append([]ScriptRun{}, s.PreRuns...), s.PostRuns...) {
+		if run.NextRequest != nil {
+			next = run.NextRequest
+		}
+	}
+	return next
 }
 
 func (s *SendExecution) AddNested(nested NestedRequest) {

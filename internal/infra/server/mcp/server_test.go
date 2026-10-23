@@ -93,6 +93,8 @@ func fakeControllers(call adapter.MCPCallController) Controllers {
 		Import:        fakeTool("import"),
 		Export:        fakeTool("export"),
 		Delete:        fakeTool("delete"),
+		Run:           fakeTool("run"),
+		Runs:          fakeTool("runs"),
 	}
 }
 
@@ -122,6 +124,8 @@ func realToolControllers() []adapter.MCPToolController {
 		controller.NewMCPImport(nil, nil),
 		controller.NewMCPExport(nil, nil, nil, nil, nil),
 		controller.NewMCPDelete(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil),
+		controller.NewMCPRun(nil, nil, nil),
+		controller.NewMCPRuns(nil, nil),
 	}
 }
 
@@ -181,7 +185,7 @@ func TestListenerServesTheToolsThroughTheCallController(t *testing.T) {
 	port := listen(t, testListener, func(context.Context) { changes.Add(1) })
 	session := connect(t, port, "Claude Code")
 	listed, err := session.ListTools(context.Background(), nil)
-	if err != nil || len(listed.Tools) != 24 {
+	if err != nil || len(listed.Tools) != 26 {
 		t.Fatalf("ListTools() = %d tools, %v", len(listed.Tools), err)
 	}
 	eventually(t, func() bool { return testListener.Clients() == 1 })
@@ -276,7 +280,7 @@ func TestToolDefinitionsCarryTheContractHints(t *testing.T) {
 			t.Errorf("%s: no action enum", spec.Name)
 		}
 	}
-	if counts[aitooleffect.ReadOnly] != 12 || counts[aitooleffect.Write] != 2 || counts[aitooleffect.Destructive] != 10 {
+	if counts[aitooleffect.ReadOnly] != 13 || counts[aitooleffect.Write] != 2 || counts[aitooleffect.Destructive] != 11 {
 		t.Errorf("hint counts = %v", counts)
 	}
 }

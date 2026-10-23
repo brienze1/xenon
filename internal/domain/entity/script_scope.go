@@ -41,6 +41,17 @@ func (s ScriptScope) WithValue(key string, value any) ScriptScope {
 	return s
 }
 
+func (s ScriptScope) WithoutValue(key string) ScriptScope {
+	values := make([]ScriptVariable, 0, len(s.Values))
+	for _, variable := range s.Values {
+		if variable.Key != key {
+			values = append(values, variable)
+		}
+	}
+	s.Values = values
+	return s
+}
+
 func (s ScriptScope) ValueMap() map[string]any {
 	values := make(map[string]any, len(s.Values))
 	for _, variable := range s.Values {

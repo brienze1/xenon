@@ -152,4 +152,12 @@ describe('item settings store', () => {
     store().drop('c1')
     expect(store().items.c1).toBeUndefined()
   })
+  it('opens an item not tracked yet on the section asked for (Run… on a closed tab) and loads it once', async () => {
+    store().setSection('c1', 'runner')
+    expect(store().items.c1).toMatchObject({ status: 'loading', section: 'runner' })
+    await vi.waitFor(() => expect(store().items.c1?.draft).toEqual(billing))
+    await store().open('c1')
+    expect(tree.getItemSettings).toHaveBeenCalledTimes(1)
+    expect(store().items.c1?.section).toBe('runner')
+  })
 })

@@ -379,7 +379,7 @@ function toTestResult(dto: TestResultDto): TestResult {
   }
 }
 
-function toScriptFailure(dto: ScriptErrorDto): ScriptFailure {
+export function toScriptFailure(dto: ScriptErrorDto): ScriptFailure {
   return { kind: dto.kind, message: dto.message, line: dto.line ?? null, column: dto.column ?? null, scriptLabel: dto.script.label }
 }
 

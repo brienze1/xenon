@@ -48,5 +48,7 @@ func mcpControllers() mcp.Controllers {
 		Import:        controller.GetMCPImportController(),
 		Export:        controller.GetMCPExportController(),
 		Delete:        controller.GetMCPDeleteController(),
+		Run:           controller.GetMCPRunController(),
+		Runs:          controller.GetMCPRunsController(),
 	}
 }

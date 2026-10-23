@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/brienze1/xenon/internal/domain/entity"
+
 	serverAdapter "github.com/brienze1/xenon/internal/infra/server/adapter"
 	httpClient "github.com/brienze1/xenon/pkg/http"
 )
@@ -14,10 +16,10 @@ func (f *fakeEmitter) Emit(name string, _ any) { f.names = append(f.names, name)
 
 type fakeDialog struct{}
 
-func (f *fakeDialog) PickFolder(string) (string, error)           { return "/picked", nil }
-func (f *fakeDialog) PickFile(string) (string, error)             { return "/file", nil }
-func (f *fakeDialog) PickSaveFile(string, string) (string, error) { return "/saved", nil }
-func (f *fakeDialog) PickSources(string) ([]string, error)        { return []string{"/a"}, nil }
+func (f *fakeDialog) PickFolder(string) (string, error)                    { return "/picked", nil }
+func (f *fakeDialog) PickFile(string, []entity.FileFilter) (string, error) { return "/file", nil }
+func (f *fakeDialog) PickSaveFile(string, string) (string, error)          { return "/saved", nil }
+func (f *fakeDialog) PickSources(string) ([]string, error)                 { return []string{"/a"}, nil }
 
 func TestEventEmitterFactoryIsASingletonThatCanBeReplaced(t *testing.T) {
 	first := GetEventEmitter()

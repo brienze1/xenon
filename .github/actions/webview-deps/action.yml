@@ -1,0 +1,23 @@
+name: Linux webview dependencies
+description: Installs the GTK 4 / WebKitGTK 6 build dependencies Wails needs on Linux, reusing cached .deb downloads.
+runs:
+  using: composite
+  steps:
+    - name: Restore the downloaded packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.apt-archives
+        key: apt-webview-${{ runner.os }}-${{ runner.arch }}-v1
+
+    - name: Install the packages
+      shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p ~/.apt-archives/partial
+        sudo rm -f /var/lib/man-db/auto-update
+        printf 'path-exclude /usr/share/doc/*\npath-exclude /usr/share/man/*\npath-exclude /usr/share/info/*\n' | sudo tee /etc/dpkg/dpkg.cfg.d/01-nodoc >/dev/null
+        timeout 300 sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 update
+        timeout 600 sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Dir::Cache::Archives="$HOME/.apt-archives" install -y --no-install-recommends \
+          build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+        sudo chown -R "$(id -u):$(id -g)" ~/.apt-archives
+        pkg-config --exists gtk4 webkitgtk-6.0

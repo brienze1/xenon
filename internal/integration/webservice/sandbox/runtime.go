@@ -44,6 +44,7 @@ type execution struct {
 	unsupported      map[*goja.Object]bool
 	noticed          map[string]bool
 	failure          *entity.ScriptError
+	nextRequest      *entity.NextRequest
 	script           entity.ScriptRef
 	logs             []entity.ScriptLog
 	notices          []entity.ScriptLog

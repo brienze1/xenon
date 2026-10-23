@@ -19,6 +19,8 @@ export interface TreeItemActions {
   onPinExample: (requestId: string, exampleId: string) => void
   /** Opens a collection or folder in a main-area tab (a single click previews, a double click pins). */
   onOpenItem: (id: string, kind: ContainerKind, mode: OpenMode) => void
+  /** Run…: opens a collection or folder pinned on its Runner (Setup, or Results while a run is active there). */
+  onRunItem: (id: string, kind: ContainerKind) => void
   onDelete: (node: TreeNode) => void
   /** A row was renamed; `previousName` lets open tabs tell a pending name of their own from the old one. */
   onRenamed: (id: string, previousName: string) => void
@@ -65,7 +67,7 @@ const CHEVRON = (
   </svg>
 )
 
-export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenExample, onPinExample, onOpenItem, onDelete, onRenamed }: TreeItemProps) {
+export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenExample, onPinExample, onOpenItem, onRunItem, onDelete, onRenamed }: TreeItemProps) {
   const { node, depth, expanded, code, requestId } = row
   const selected = useSidebarStore((state) => state.selectedId === node.id)
   const renaming = useSidebarStore((state) => state.renamingId === node.id)
@@ -153,7 +155,12 @@ export function TreeItem({ row, focusable, onOpenRequest, onPinRequest, onOpenEx
   }
 
   // The right-click menu has everything; the row's + button only the adds and its … button the rest.
-  const openItem = containerKind ? <ContextMenu.Item onSelect={() => onOpenItem(node.id, containerKind, 'pinned')}>Open</ContextMenu.Item> : null
+  const openItem = containerKind ? (
+    <>
+      <ContextMenu.Item onSelect={() => onOpenItem(node.id, containerKind, 'pinned')}>Open</ContextMenu.Item>
+      <ContextMenu.Item onSelect={() => onRunItem(node.id, containerKind)}>Run…</ContextMenu.Item>
+    </>
+  ) : null
   const addItems = containerKind ? (
     <>
       <ContextMenu.Item onSelect={() => void createRequest(node.id)}>Add Request</ContextMenu.Item>

@@ -60,3 +60,19 @@ func TestAIApprovalQueuedStartsAFreshPendingApproval(t *testing.T) {
 		t.Errorf("queued = %+v", queued)
 	}
 }
+
+func TestNewRunApprovalSummary(t *testing.T) {
+	if summary := NewRunApprovalSummary("Shop", 4); summary != "Run Shop · 4 requests" {
+		t.Errorf("summary = %q", summary)
+	}
+	if summary := NewRunApprovalSummary("Orders", 1); summary != "Run Orders · 1 request" {
+		t.Errorf("summary = %q", summary)
+	}
+}
+
+func TestAIApprovalQueuedKeepsTheSummary(t *testing.T) {
+	queued := AIApproval{Client: "Claude Code", Summary: "Run Shop · 4 requests"}.Queued("id", time.Now())
+	if queued.Summary != "Run Shop · 4 requests" || queued.ID != "id" {
+		t.Errorf("queued = %+v", queued)
+	}
+}

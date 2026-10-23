@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"slices"
+	"time"
 
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
@@ -13,17 +14,20 @@ import (
 )
 
 type sendRun struct {
-	service    *sendRequest
+	pipeline   *sendPipeline
 	scopes     *requestScopes
 	caller     *entity.ScriptRef
 	token      *entity.OAuth2Token
 	localId    string
+	jarId      string
 	tabId      string
 	aliasId    string
 	root       string
 	appVersion string
 	sendId     string
 	secrets    []string
+	collect    func(entity.ConsoleEntry)
+	runContext entity.RunContext
 	settings   entity.AppSettings
 	depth      int
 }
@@ -46,14 +50,16 @@ func (r sendRun) runScripts(ctx context.Context, execution *entity.SendExecution
 	for _, script := range chain {
 		before, vaultBefore := execution.Scopes, cloneVault(execution.Vault)
 		cookies := execution.ScriptCookies()
-		base := entity.ScriptContext{Info: entity.NewScriptInfo(request.ID, request.Name, script.OwnerName, location), Cookies: cookies, ResponseCookies: cookies, Dynamic: r.dynamic(ctx), Console: r.console(ctx, execution, script)}
-		run := r.service.runScript.Run(ctx, script, execution.ScriptContext(base), r.calledBy(script), r, r.settings)
+		info := r.runContext.ScriptInfo(entity.NewScriptInfo(request.ID, request.Name, script.OwnerName, location))
+		base := entity.NewScriptContext(info, r.runContext.IterationData, cookies, cookies, r.dynamic(ctx), r.console(ctx, execution, script))
+		run := r.pipeline.runScript.Run(ctx, script, execution.ScriptContext(base), r.calledBy(script), r, r.settings)
 		mask := r.mask(r.secretsOf(execution))
 		execution.AddRun(run)
-		r.service.console.append(ctx, r.runEntries(run, mask)...)
-		if err := r.service.scriptVariables.persist(ctx, r.localId, r.root, entity.ScriptScopeRefs(r.scopes.environment, r.scopes.ancestors), before, run.Scopes, vaultBefore, run.Vault); err != nil {
+		ids, ats := consoleStamps(run.ConsoleEntryCount())
+		r.log(ctx, run.ConsoleEntries(ids, r.sendId, ats, mask)...)
+		if err := r.keepVariables(ctx, before, run, vaultBefore); err != nil {
 			logger.Warn(ctx, err, "The variable changes of a script could not be saved", map[string]any{"script": script.Label()})
-			r.service.console.append(ctx, entity.NewConsoleErrorEntry(idutils.NewUlid(), r.sendId, entity.NewUnsavedVariablesError(script, err.Error()), timeutils.Now()).WithSecretsMasked(mask))
+			r.log(ctx, entity.NewConsoleErrorEntry(idutils.NewUlid(), r.sendId, entity.NewUnsavedVariablesError(script, err.Error()), timeutils.Now()).WithSecretsMasked(mask))
 		}
 		if run.StopsSend() {
 			return
@@ -61,10 +67,18 @@ func (r sendRun) runScripts(ctx context.Context, execution *entity.SendExecution
 	}
 }
 
+func (r sendRun) keepVariables(ctx context.Context, before entity.ScriptScopes, run entity.ScriptRun, vaultBefore map[string]string) error {
+	if !r.runContext.KeepsVariables() {
+		r.runContext.Variables.Apply(before, run.Scopes, vaultBefore, run.Vault)
+		return nil
+	}
+	return r.pipeline.scriptVariables.persist(ctx, r.localId, r.root, entity.ScriptScopeRefs(r.scopes.environment, r.scopes.ancestors), before, run.Scopes, vaultBefore, run.Vault)
+}
+
 func (r sendRun) send(ctx context.Context, tabId string, request entity.Request, ancestors []entity.Collection, execution *entity.SendExecution) error {
 	resolved, resolvedAncestors := usecase.ResolveRequestVariables(execution.Request, ancestors, r.variables(execution), r.dynamic(ctx))
-	effective := usecase.ResolveEffectiveRequest(resolved, resolvedAncestors, r.root).WithCookieJar(r.localId)
-	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, r.appVersion, r.service.cookies.header(ctx, r.localId, effective))).ForAlias(resolved.ID, r.aliasId).WithAuthOwner(r.tabId)
+	effective := usecase.ResolveEffectiveRequest(resolved, resolvedAncestors, r.root).WithCookieJar(r.jarId)
+	effective = effective.WithAutoHeaders(usecase.ComputeAutoHeaders(effective, r.appVersion, r.pipeline.cookies.header(ctx, r.jarId, effective))).ForAlias(resolved.ID, r.aliasId).WithAuthOwner(r.tabId)
 	effective, err := r.authorize(ctx, effective)
 	if err != nil {
 		return err
@@ -74,13 +88,13 @@ func (r sendRun) send(ctx context.Context, tabId string, request entity.Request,
 		return err
 	}
 	response = response.WithMaskedValues(r.secrets).WithSentRequest(request)
-	if tabId != "" {
-		if err := r.service.saveResponse.Save(ctx, tabId, response); err != nil {
+	if r.runContext.KeepsResponseFor(tabId, r.depth > 0) {
+		if err := r.pipeline.saveResponse.Save(ctx, r.runContext.ResponseKeyFor(tabId, r.depth > 0), response); err != nil {
 			return err
 		}
 	}
 	execution.RecordResponse(effective, response)
-	r.service.console.append(ctx, r.requestEntry(effective, response, r.depth > 0).WithSecretsMasked(r.mask(r.secretsOf(execution))))
+	r.log(ctx, r.requestEntry(effective, response, r.depth > 0).WithSecretsMasked(r.mask(r.secretsOf(execution))))
 	return nil
 }
 
@@ -92,7 +106,7 @@ func (r sendRun) authorize(ctx context.Context, request entity.EffectiveRequest)
 	case auth.IsOAuth2():
 		return usecase.ApplyOAuthToken(request, auth.OAuth2, r.token), nil
 	case auth.IsAwsV4():
-		signed, err := r.service.signAwsRequest.Sign(ctx, request, auth.AwsV4)
+		signed, err := r.pipeline.signAwsRequest.Sign(ctx, request, auth.AwsV4)
 		if err != nil {
 			return request, err
 		}
@@ -104,10 +118,10 @@ func (r sendRun) authorize(ctx context.Context, request entity.EffectiveRequest)
 
 func (r sendRun) exchange(ctx context.Context, request entity.EffectiveRequest) (entity.EffectiveRequest, entity.Response, error) {
 	if !request.Auth.IsDigest() {
-		return request, r.service.sendHttpRequest.Send(ctx, request), nil
+		return request, r.pipeline.sendHttpRequest.Send(ctx, request), nil
 	}
 	digest := request.Auth.Digest
-	stored, err := r.service.findDigestState.FindDigestState(ctx, r.localId, request.AuthOwner)
+	stored, err := r.pipeline.findDigestState.FindDigestState(ctx, r.localId, request.AuthOwner)
 	if err != nil {
 		return request, entity.Response{}, err
 	}
@@ -116,29 +130,29 @@ func (r sendRun) exchange(ctx context.Context, request entity.EffectiveRequest) 
 			return request, entity.Response{}, err
 		}
 	}
-	response := r.service.sendHttpRequest.Send(ctx, request)
+	response := r.pipeline.sendHttpRequest.Send(ctx, request)
 	challenge, challenged := response.DigestChallenge()
 	if !challenged || !digest.RetriesChallenge() {
 		return request, response, nil
 	}
-	r.service.console.append(ctx, r.requestEntry(request, response.WithMaskedValues(r.secrets), false).WithSecretsMasked(r.mask(r.secrets)))
-	fresh, readable := r.service.answerDigest.ReadChallenge(ctx, challenge)
+	r.log(ctx, r.requestEntry(request, response.WithMaskedValues(r.secrets), false).WithSecretsMasked(r.mask(r.secrets)))
+	fresh, readable := r.pipeline.answerDigest.ReadChallenge(ctx, challenge)
 	if !readable {
 		return request, response, nil
 	}
 	if request, err = r.answerDigest(ctx, request, *fresh); err != nil {
 		return request, entity.Response{}, err
 	}
-	return request, r.service.sendHttpRequest.Send(ctx, request), nil
+	return request, r.pipeline.sendHttpRequest.Send(ctx, request), nil
 }
 
 func (r sendRun) answerDigest(ctx context.Context, request entity.EffectiveRequest, state entity.DigestState) (entity.EffectiveRequest, error) {
 	next := state.Next()
-	header, err := r.service.answerDigest.Answer(ctx, request, request.Auth.Digest, next)
+	header, err := r.pipeline.answerDigest.Answer(ctx, request, request.Auth.Digest, next)
 	if err != nil {
 		return request, err
 	}
-	if err := r.service.saveDigestState.SaveDigestState(ctx, r.localId, request.AuthOwner, next); err != nil {
+	if err := r.pipeline.saveDigestState.SaveDigestState(ctx, r.localId, request.AuthOwner, next); err != nil {
 		return request, err
 	}
 	return request.WithHeader(entity.HeaderAuthorization, header), nil
@@ -150,14 +164,14 @@ func (r sendRun) variables(execution *entity.SendExecution) entity.VariableConte
 
 func (r sendRun) dynamic(ctx context.Context) entity.DynamicValue {
 	return func(name string) (string, bool) {
-		return r.service.generateDynamicValue.Generate(ctx, name)
+		return r.pipeline.generateDynamicValue.Generate(ctx, name)
 	}
 }
 
 func (r sendRun) console(ctx context.Context, execution *entity.SendExecution, script entity.ScriptRef) entity.ScriptLogSink {
 	return func(log entity.ScriptLog) {
 		if log.IsClear() {
-			r.service.console.clear(ctx)
+			r.clear(ctx)
 			return
 		}
 		secrets := r.secretsOf(execution)
@@ -165,21 +179,25 @@ func (r sendRun) console(ctx context.Context, execution *entity.SendExecution, s
 			secrets = append(secrets, r.scopes.context.WithScriptScopes(*log.Scopes).SecretValues()...)
 		}
 		entry := entity.NewConsoleLogEntry(idutils.NewUlid(), r.sendId, script, log, timeutils.Now())
-		r.service.console.append(ctx, entry.WithSecretsMasked(r.mask(secrets)))
+		r.log(ctx, entry.WithSecretsMasked(r.mask(secrets)))
 	}
 }
 
-func (r sendRun) runEntries(run entity.ScriptRun, mask func(string) (string, bool)) []entity.ConsoleEntry {
-	entries := make([]entity.ConsoleEntry, 0, len(run.Tests)+1)
-	for _, test := range run.Tests {
-		if test.IsFailed() {
-			entries = append(entries, entity.NewConsoleTestFailureEntry(idutils.NewUlid(), r.sendId, test, timeutils.Now()).WithSecretsMasked(mask))
+func (r sendRun) log(ctx context.Context, entries ...entity.ConsoleEntry) {
+	if r.runContext.Collects() {
+		for _, entry := range entries {
+			r.collect(entry)
 		}
 	}
-	if run.HasFailed() {
-		entries = append(entries, entity.NewConsoleErrorEntry(idutils.NewUlid(), r.sendId, *run.Error, timeutils.Now()).WithSecretsMasked(mask))
+	if r.runContext.WritesConsole() {
+		r.pipeline.console.append(ctx, entries...)
 	}
-	return entries
+}
+
+func (r sendRun) clear(ctx context.Context) {
+	if r.runContext.WritesConsole() {
+		r.pipeline.console.clear(ctx)
+	}
 }
 
 func (r sendRun) requestEntry(request entity.EffectiveRequest, response entity.Response, nested bool) entity.ConsoleEntry {
@@ -203,4 +221,14 @@ func (r sendRun) mask(secrets []string) func(string) (string, bool) {
 	return func(text string) (string, bool) {
 		return usecase.MaskSecrets(text, secrets)
 	}
+}
+
+func consoleStamps(count int) ([]string, []time.Time) {
+	ids := make([]string, 0, count)
+	ats := make([]time.Time, 0, count)
+	for range count {
+		ids = append(ids, idutils.NewUlid())
+		ats = append(ats, timeutils.Now())
+	}
+	return ids, ats
 }

@@ -23,6 +23,7 @@ interface ItemSettingsState {
   /** Reads every open item again (after the workspace tree changed). */
   refreshAll: () => Promise<void>
   edit: (itemId: string, patch: Partial<Omit<ItemSettings, 'id' | 'kind' | 'name'>>) => void
+  /** Shows a section; an item not tracked yet starts loading on it (Run… on a closed tab). */
   setSection: (itemId: string, section: ItemSection) => void
   /** Switches the headers between the table and `key:value` lines. */
   setBulk: (itemId: string, bulk: boolean) => Promise<void>
@@ -139,7 +140,15 @@ export const useItemSettingsStore = create<ItemSettingsState>()((set, get) => {
 
     edit: (itemId, update) => patch(itemId, (entry) => (entry.draft ? { draft: { ...entry.draft, ...update }, dirty: true } : {})),
 
-    setSection: (itemId, section) => patch(itemId, { section }),
+    setSection: (itemId, section) => {
+      if (get().items[itemId]) {
+        patch(itemId, { section })
+        return
+      }
+      // Run… opens the tab on its Runner before the tab mounted: track the item with that section and read it.
+      set((state) => ({ items: { ...state.items, [itemId]: { ...loadingEntry(), section } } }))
+      void get().load(itemId)
+    },
 
     setBulk: async (itemId, bulk) => {
       const entry = get().items[itemId]

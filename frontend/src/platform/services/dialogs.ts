@@ -13,9 +13,15 @@ export async function pickFolder(title: string): Promise<string | null> {
   }
 }
 
-export async function pickFile(title: string): Promise<string | null> {
+/** A file type choice of the native open dialog, e.g. `{ displayName: 'Data files', pattern: '*.csv;*.json' }`. */
+export interface FileFilter {
+  displayName: string
+  pattern: string
+}
+
+export async function pickFile(title: string, filters: FileFilter[] = []): Promise<string | null> {
   try {
-    return pickedPath(await DialogService.PickFile({ title }))
+    return pickedPath(await DialogService.PickFile({ title, filters: filters.map((filter) => ({ display_name: filter.displayName, pattern: filter.pattern })) }))
   } catch (error) {
     throw toAppError(error)
   }

@@ -36,7 +36,7 @@ describe('platform events', () => {
     handlers.get(events.AI_APPROVAL_REQUESTED)?.({
       data: { id: 'a1', client: 'Claude Code', method: 'POST', url: '{{base}}/orders', environment: { id: 'e1', name: 'Production', color: 'red' }, created_at: '2026-10-13T10:00:00Z' },
     })
-    expect(requested).toHaveBeenCalledWith({ id: 'a1', client: 'Claude Code', method: 'POST', url: '{{base}}/orders', environment: { id: 'e1', name: 'Production', color: 'red' }, createdAt: '2026-10-13T10:00:00Z' })
+    expect(requested).toHaveBeenCalledWith({ id: 'a1', client: 'Claude Code', method: 'POST', url: '{{base}}/orders', environment: { id: 'e1', name: 'Production', color: 'red' }, createdAt: '2026-10-13T10:00:00Z', summary: null })
     const resolved = vi.fn()
     events.onApprovalResolved(resolved)
     handlers.get(events.AI_APPROVAL_RESOLVED)?.({ data: { id: 'a1', outcome: 'denied' } })
@@ -173,5 +173,24 @@ describe('platform events', () => {
       total: 10,
       automatic: true,
     })
+  })
+  it('maps the runner progress and finished events', () => {
+    const progress = vi.fn()
+    const finished = vi.fn()
+    expect(events.onRunProgress(progress)).toBe(unsubscribe)
+    expect(events.onRunFinished(finished)).toBe(unsubscribe)
+    const progressDto = { current_row: 2, current_name: 'Get order', iteration: 0, completed: 1, planned: 6, tests_passed: 3, tests_failed: 1, elapsed_ms: 420, metrics: null }
+    handlers.get(events.RUNNER_PROGRESS)?.({ data: { local_id: 'L1', run_id: 'R1', item_id: 'c1', type: 'functional', status: 'paused', progress: progressDto } })
+    expect(progress).toHaveBeenCalledWith({
+      localId: 'L1',
+      runId: 'R1',
+      itemId: 'c1',
+      type: 'functional',
+      status: 'paused',
+      progress: { currentRow: 2, currentName: 'Get order', iteration: 0, completed: 1, planned: 6, testsPassed: 3, testsFailed: 1, elapsedMs: 420, metrics: null },
+    })
+    const summary = { iterations: 1, total_requests: 6, tests_passed: 10, tests_failed: 1, tests_skipped: 0, avg_response_ms: 120, duration_ms: 1840, passed: 5, failed: 1, skipped: 0, errors: 0, cancelled: 0 }
+    handlers.get(events.RUNNER_FINISHED)?.({ data: { local_id: 'L1', run_id: 'R1', item_id: 'c1', target_name: 'Orders API', type: 'functional', status: 'stopped_on_error', summary } })
+    expect(finished).toHaveBeenCalledWith(expect.objectContaining({ runId: 'R1', targetName: 'Orders API', status: 'stopped_on_error', summary: expect.objectContaining({ testsPassed: 10, testsFailed: 1 }) }))
   })
 })

@@ -350,3 +350,26 @@ validate-test-efficacy:
 ---
 
 - [ ] Follows the comments skill — no inline comments, no unnecessary Go doc comments (see comments.md)
+
+---
+
+## CI-only targets
+
+- `make setup-ci` — the tools CI uses (wails3 via `make install-wails`, goimports, betteralign, deadcode,
+  govulncheck) plus `npm ci`; it skips gremlins, which only mutation testing needs.
+- `make tests-without-coverage` — `go test ./...` without the coverage profile.
+- `make unit-tests` — every Go test except the BDD suite.
+- `make bdd-shard SHARD=i/n` — one shard of the BDD suite. `XENON_BDD_SHARD=i/n` splits the feature files evenly by
+  size, deterministically, and every file lands in exactly one shard.
+
+CI layout (`.github/workflows/ci.yml`, pull requests only):
+- `image` builds `ghcr.io/<repo>-ci:<hash of .github/ci-image/Dockerfile>` only when that tag is missing. Every Linux
+  job that compiles Wails (`checks`, `coverage`, `build-linux`, `newman-linux`) runs inside it, so no CI job runs
+  apt-get; change the Dockerfile to change the Linux toolchain dependencies.
+- `checks` (bindings drift, imports, alignment, vet, dead code, govulncheck, frontend, release tooling), `coverage`
+  (`make tests` + `make validate-coverage`), `bdd` shards (Windows ×4, macOS ×2; the first shard also runs
+  `make unit-tests`), `build` and `newman` (macOS, Windows, and a Linux job each), `sandbox` (×3 OS).
+- Every job has a `timeout-minutes`; a new push to a pull request cancels its previous run.
+- `release.yml` installs the Linux packages with `.github/actions/webview-deps` (apt with retries, HTTP timeouts and
+  cached downloads).
+Locally, `make validate` is still the single quality gate.

@@ -29,7 +29,7 @@ The MVP is done when everything Luis does in Postman daily works in Xenon, and n
 - Accounts, a Xenon cloud, live collaboration or teams. Sharing goes through Git sync and export.
 - Mock servers, monitors, hosted or published API docs, and API design beyond the Documentation tab of a collection or folder (decided Oct 12, 2026: each collection, and each folder, is shown and edited as an offline OpenAPI document, see the decisions log).
 - Protocols other than HTTP: GraphQL gets a body type only; gRPC, WebSocket and SSE come later.
-- Collection runner and CLI (useful, but not needed to replace daily use).
+- CLI (useful, but not needed to replace daily use). The collection runner is in scope since Oct 23, 2026 (see Collection runner).
 - Visual polish beyond clean and usable: colours and fonts are Xenon's own.
 
 ## Screen layout
@@ -419,6 +419,42 @@ Cursor and similar) can work with everything in Xenon on the user's behalf. Adde
 - Settings opens as a **main-area tab** (gear button or Cmd/Ctrl+,), not a dialog. It has sections for Scripts,
   History, AI access (MCP), Git accounts and Shortcuts.
 
+## Collection runner
+
+Added Oct 23, 2026 (XEN-017, GitHub issue #24) as a user decision. Postman's Collection Runner, inside Xenon's own tabs.
+
+- **Where:** every collection and folder tab has a **Runner** section next to Overview, Authorization, Headers, Scripts,
+  Variables and Documentation, with three sub-tabs: **Setup**, **Results** and **Runs**. **Run…** in a collection's or
+  folder's context menu opens that tab on its Runner. There is no separate Runner tab.
+- **What runs:** every request under the collection or folder, in sidebar order, numbered, with its folder path, method
+  and name. Each row has a checkbox, and there is a select-all, an "N of M selected" counter and Reset. Rows reorder by
+  drag and drop or keyboard. A request with aliases runs its Default unless another alias is picked in its row. The
+  selection, order and settings are remembered on this machine per collection or folder, never in the workspace files.
+  A run sends each request as saved on disk; tab drafts are ignored and the UI stays usable.
+- **Functional runs:** the selected requests in order with their scripts, inherited auth, headers and scripts. Postman's
+  settings apply:
+  - iterations, and iteration data from CSV or JSON (`pm.iterationData`, `{{field}}`);
+  - a delay between requests;
+  - stop on error;
+  - keep variable values;
+  - run without stored cookies, and save cookies after the run;
+  - persist responses for the session;
+  - turn off logs.
+
+  The environment defaults to the active one and can be changed for the run. `pm.execution.setNextRequest` and
+  `skipRequest` steer the run, and `pm.info.iteration` / `iterationCount` are set.
+- **Performance runs:** up to 100 virtual users for up to 60 minutes with a Fixed, Ramp up, Spike or Peak profile.
+  Scripts run, nothing is persisted or logged. The run reports average, p90, p95, p99, min and max response time,
+  throughput, error rate and status counts, overall and per request, plus a per-second series.
+- **Results:** live progress with Pause/Resume (functional) and Stop; per-request status, time, size, tests, script
+  errors and console; the sent request and, when persisted, the response; filters; Run again; export as JSON or JUnit
+  XML (functional runs).
+- **Runs:** runner sends are not in History. The last 25 runs per collection or folder are kept in the app-data folder
+  with every secret masked, listed under Runs, deletable one by one or all at once. Response bodies are kept in memory
+  only, and only when persisted.
+- **AI access:** the `run` MCP tool starts and stops runs and `runs` reads them; a "Confirm before send" environment
+  asks once per run.
+
 ## Hotkeys and environment switcher
 
 Hotkeys copy Postman's, so muscle memory carries over; on Windows and Linux, Cmd becomes Ctrl.
@@ -504,7 +540,7 @@ Stages 4 (scripts) and the OAuth 2.0 part of 5 carry most of the risk. Everythin
 - [x] Variables? **Postman's initial + current values**, full list of **Postman dynamic variables**; keychain unavailable → **passphrase fallback**.
 - [x] Import scope (stage 3): **Postman v2.0/v2.1 JSON**, environments, globals and data dump (each item assigned to a workspace, since dumps carry no workspace membership); **Bruno .bru and OpenCollection YAML** with bru→pm script translation; **cURL**. Xenon YAML import ships with export (stage 6). Postman v3 (JSON, git-native YAML and workspace folders) is imported through the v2.1 mapping (XEN-009); export stays v2.1.
 - [x] **Saved examples** (Postman "examples") are a Xenon feature from stage 3: listed under their request, open in a tab, "Save response as example", round-trip with Postman.
-- [x] Scripts (stage 4): the **full `pm` API** (runner-only calls such as `setNextRequest` exist as no-ops), **every library Postman's sandbox ships** via `require()`/globals, and a **legacy API shim** (`postman.*`, `tests[...]`, `responseBody`…). This widens the PRD's original `pm` subset.
+- [x] Scripts (stage 4): the **full `pm` API** (runner-only calls such as `setNextRequest` work inside collection runs; outside a run they are no-ops), **every library Postman's sandbox ships** via `require()`/globals, and a **legacy API shim** (`postman.*`, `tests[...]`, `responseBody`…). This widens the PRD's original `pm` subset.
 - [x] Stage 5: OAuth 2.0 authorization-code login in the **system browser with a loopback redirect** (RFC 8252); tokens are **secrets in the vault, auto-refreshed** when expired; the **cookie jar persists** across restarts, **encrypted** with the workspace vault key.
 - [x] Stage 6: "Include secrets" (passphrase-encrypted) applies to **Xenon YAML exports only**; **Postman exports never contain secret values**. The export dialog **asks each time** whether to export current values as initial values (default: initial only).
 - [x] Stage 7: Xenon keeps **its own sparse clone per workspace** (never your dev checkouts); sign-in via **GitHub browser (device code)**, **personal access tokens** (any host) and **SSH keys**. Pull replays local commits on top of the remote (linear history). **To do (Luis):** register a GitHub OAuth App with device flow enabled and give its client id to the project.
@@ -567,6 +603,21 @@ Stages 4 (scripts) and the OAuth 2.0 part of 5 carry most of the risk. Everythin
   All environments. A Postman export notes the environments in the alias request's description
   (`Xenon alias for environments: HML`). Every send's history entry records the environment that was active (id,
   name and colour at send time), shown as a dot and name on the History row and in AI history reads.
+- [x] **Collection runner** (XEN-017, GitHub issue #24). User decision: moved out of the non-goals ("CLI" stays one).
+  - **Scope:** functional and performance runs now; run method Local only (no Schedule, CLI or CI/CD).
+  - **Placement:** a Runner section (Setup / Results / Runs) in every collection and folder tab, plus **Run…** in the
+    sidebar menu; never a separate tab. A running indicator on the tab and a toast when a run ends.
+  - **Order and settings:** remembered locally per collection or folder, including the data file; Reset restores the
+    sidebar order.
+  - **Aliases:** each row runs the Default, with a per-row alias picker.
+  - **History and storage:** runs are not in History; the last 25 per collection or folder are stored locally with
+    secrets masked, with Delete and Clear runs; response bodies stay in memory, only when persisted.
+  - **Performance:** at most 100 virtual users and 60 minutes; Fixed, Ramp up, Spike and Peak; scripts run; Stop only.
+  - **Confirm before send:** once per run. Missing secrets: the send dialog with **Run anyway**. Expired tokens never
+    stop a run.
+  - **Concurrency:** runs send saved requests, the UI stays usable, one active run per collection or folder.
+  - **MCP:** two tools, `run` (start/stop) and `runs` (get/list); the `tools/list` size budget is raised from 36,000
+    to 39,000 characters to fit them.
 
 **Open questions**
 

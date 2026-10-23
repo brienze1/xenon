@@ -39,6 +39,11 @@ func (s SendPreflight) AwaitsConfirmation(acknowledgement SendAcknowledgement) b
 	return s.NeedsConfirmation() && !acknowledgement.Confirms(*s.ConfirmEnvironment)
 }
 
+// RunConfirmation is the confirmation a run of target awaits; only valid when NeedsConfirmation.
+func (s SendPreflight) RunConfirmation(target RunTarget) RunConfirmation {
+	return RunConfirmation{Target: target, Environment: *s.ConfirmEnvironment}
+}
+
 func (s SendPreflight) AwaitsSecretsAcknowledgement(acknowledgement SendAcknowledgement) bool {
 	return s.HasUnavailableSecrets() && !acknowledgement.MissingSecrets
 }
@@ -49,6 +54,19 @@ func (s SendPreflight) UnavailableSecretsMessage() string {
 
 func (s SendPreflight) IsClear() bool {
 	return !s.NeedsConfirmation() && !s.HasUnavailableSecrets()
+}
+
+func (s SendPreflight) Merged(other SendPreflight) SendPreflight {
+	if s.ConfirmEnvironment == nil {
+		s.ConfirmEnvironment = other.ConfirmEnvironment
+	}
+	for _, name := range other.MissingSecrets {
+		s.MissingSecrets = withName(s.MissingSecrets, name)
+	}
+	for _, name := range other.LockedSecrets {
+		s.LockedSecrets = withName(s.LockedSecrets, name)
+	}
+	return s
 }
 
 func (s SendPreflight) WithUnavailable(variable ContextVariable) SendPreflight {

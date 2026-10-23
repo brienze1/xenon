@@ -28,4 +28,6 @@ type Controllers struct {
 	Import        adapter.MCPToolController
 	Export        adapter.MCPToolController
 	Delete        adapter.MCPToolController
+	Run           adapter.MCPToolController
+	Runs          adapter.MCPToolController
 }

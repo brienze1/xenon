@@ -18,6 +18,8 @@ type removeWorkspace struct {
 	unwatchWorkspace      usecase.UnwatchWorkspace
 	deleteVault           usecase.DeleteVault
 	deleteLocalVariables  usecase.DeleteLocalVariables
+	findActiveRunControls usecase.FindActiveRunControls
+	deleteWorkspaceRuns   usecase.DeleteWorkspaceRuns
 }
 
 func NewRemoveWorkspaceService(
@@ -28,6 +30,8 @@ func NewRemoveWorkspaceService(
 	unwatchWorkspace usecase.UnwatchWorkspace,
 	deleteVault usecase.DeleteVault,
 	deleteLocalVariables usecase.DeleteLocalVariables,
+	findActiveRunControls usecase.FindActiveRunControls,
+	deleteWorkspaceRuns usecase.DeleteWorkspaceRuns,
 ) adapter.RemoveWorkspaceService {
 	return &removeWorkspace{
 		findWorkspaceRegistry: findWorkspaceRegistry,
@@ -37,6 +41,8 @@ func NewRemoveWorkspaceService(
 		unwatchWorkspace:      unwatchWorkspace,
 		deleteVault:           deleteVault,
 		deleteLocalVariables:  deleteLocalVariables,
+		findActiveRunControls: findActiveRunControls,
+		deleteWorkspaceRuns:   deleteWorkspaceRuns,
 	}
 }
 
@@ -47,6 +53,7 @@ func (r *removeWorkspace) Remove(ctx context.Context, localId string, moveToTras
 	if err != nil {
 		return nil, err
 	}
+	stopActiveRuns(ctx, r.findActiveRunControls, localId)
 	if moveToTrash && !registered.IsMissing() {
 		if err := r.moveToTrash.MoveToTrash(ctx, registered.Path); err != nil {
 			return nil, err
@@ -68,6 +75,9 @@ func (r *removeWorkspace) Remove(ctx context.Context, localId string, moveToTras
 		logger.Warn(ctx, err, "The workspace vault could not be fully deleted", map[string]any{"localId": localId})
 	}
 	if err := r.deleteLocalVariables.Delete(ctx, localId); err != nil {
+		return nil, err
+	}
+	if err := r.deleteWorkspaceRuns.DeleteWorkspaceRuns(ctx, localId); err != nil {
 		return nil, err
 	}
 	if err := r.deleteUIState.Delete(ctx, localId); err != nil {

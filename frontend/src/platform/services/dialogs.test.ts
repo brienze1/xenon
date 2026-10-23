@@ -34,7 +34,14 @@ describe('pickFile and pickSaveFile', () => {
     vi.mocked(DialogService.PickSaveFile).mockResolvedValue({ path: '' } as never)
     await expect(pickFile('Choose a file')).resolves.toBe('/a.bin')
     await expect(pickSaveFile('Save', 'body.json')).resolves.toBeNull()
+    expect(DialogService.PickFile).toHaveBeenCalledWith({ title: 'Choose a file', filters: [] })
     expect(DialogService.PickSaveFile).toHaveBeenCalledWith({ title: 'Save', suggested_name: 'body.json' })
+  })
+
+  it('passes the file type filters to the native dialog', async () => {
+    vi.mocked(DialogService.PickFile).mockResolvedValue({ path: '/users.csv' } as never)
+    await expect(pickFile('Choose iteration data', [{ displayName: 'Data files', pattern: '*.csv;*.json' }])).resolves.toBe('/users.csv')
+    expect(DialogService.PickFile).toHaveBeenCalledWith({ title: 'Choose iteration data', filters: [{ display_name: 'Data files', pattern: '*.csv;*.json' }] })
   })
 
   it('convert failures into AppError', async () => {

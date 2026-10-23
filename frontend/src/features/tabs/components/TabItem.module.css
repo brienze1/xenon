@@ -127,3 +127,25 @@
 .kindBadge[data-color='red'] {
   color: var(--neon-red);
 }
+
+.running {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--neon-cyan);
+  box-shadow: var(--glow-cyan);
+  animation: running-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes running-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .running {
+    animation: none;
+  }
+}

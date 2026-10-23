@@ -48,6 +48,19 @@ func NewConsoleLogEntry(id, sendId string, script ScriptRef, log ScriptLog, crea
 	}
 }
 
+func NewConsoleWarningEntry(id, sendId, message string, createdAt time.Time) ConsoleEntry {
+	return ConsoleEntry{
+		ID:        id,
+		SendID:    sendId,
+		Kind:      consoleentrykind.Log,
+		Level:     consolelevel.Warn,
+		Summary:   ConsoleSummary(message),
+		Arguments: []string{message},
+		Values:    []any{},
+		CreatedAt: createdAt,
+	}
+}
+
 func NewConsoleErrorEntry(id, sendId string, scriptError ScriptError, createdAt time.Time) ConsoleEntry {
 	script := scriptError.Script
 	return ConsoleEntry{
@@ -139,6 +152,14 @@ func (c ConsoleEntry) ServesBodyByRoute() bool {
 
 func (c ConsoleEntry) WithoutRoutedBody() ConsoleEntry {
 	if c.ServesBodyByRoute() {
+		response := c.Response.WithoutBody()
+		c.Response = &response
+	}
+	return c
+}
+
+func (c ConsoleEntry) WithoutResponseBody() ConsoleEntry {
+	if c.Response != nil {
 		response := c.Response.WithoutBody()
 		c.Response = &response
 	}

@@ -25,7 +25,7 @@ func TestPickSourcesWithoutRunningApplicationFails(t *testing.T) {
 
 func TestPickFileAndSaveFileWithoutRunningApplicationFail(t *testing.T) {
 	for name, pick := range map[string]func() (string, error){
-		"file": func() (string, error) { return NewDialog().PickFile("Choose a file") },
+		"file": func() (string, error) { return NewDialog().PickFile("Choose a file", nil) },
 		"save": func() (string, error) { return NewDialog().PickSaveFile("Save", "body.json") },
 	} {
 		path, err := pick()

@@ -1,32 +1,73 @@
 name: CI
 
+# Pull requests run CI. main is not listed (only pull requests that passed this workflow are merged, and
+# release.yml builds and publishes each merge), and task branches are not either: their pull request runs
+# the same jobs, so a push trigger would only run everything twice.
 on:
   push:
-    branches: [init, main, 'xen-*']
+    branches: [init]
   pull_request:
 
 permissions:
   contents: read
+  packages: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  validate:
-    name: validate (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, windows-latest, ubuntu-24.04]
-    runs-on: ${{ matrix.os }}
+  # Linux jobs run inside a prebuilt image with the GTK/WebKit build dependencies, so no job runs apt-get.
+  # The image is tagged with the Dockerfile's hash and only built when that tag does not exist yet.
+  image:
+    name: linux ci image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      ref: ${{ steps.tag.outputs.ref }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tag the image with the Dockerfile's hash
+        id: tag
+        run: |
+          set -euo pipefail
+          repository="ghcr.io/${GITHUB_REPOSITORY,,}-ci"
+          echo "ref=${repository}:${{ hashFiles('.github/ci-image/Dockerfile') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push the image when it is missing
+        env:
+          REF: ${{ steps.tag.outputs.ref }}
+        run: |
+          set -euo pipefail
+          echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          if docker manifest inspect "$REF" > /dev/null 2>&1; then
+            echo "$REF already exists"
+            exit 0
+          fi
+          docker build --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" -t "$REF" .github/ci-image
+          docker push "$REF"
+
+  checks:
+    name: checks (static analysis, frontend, release tooling)
+    needs: image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    container:
+      image: ${{ needs.image.outputs.ref }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
     defaults:
       run:
         shell: bash
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
@@ -37,38 +78,185 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
+      - name: Setup tools and frontend dependencies
+        run: make setup-ci
+
+      - name: Generate bindings
+        run: make bindings
+
+      - name: Sort imports and fix struct alignment
+        run: |
+          make sort-imports
+          make fix-struct-alignment
+
+      - name: Fail on files changed by bindings, imports or alignment
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git diff --exit-code
+
+      - name: Vet, dead code and dependency check
+        run: |
+          make vet
+          make check-dead-code
+          make dependency-check
+
+      - name: Frontend lint, typecheck and tests
+        run: make frontend-check
+
+      - name: Release tooling tests
+        run: make release-check
+
+  coverage:
+    name: tests with coverage (ubuntu-24.04)
+    needs: image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    container:
+      image: ${{ needs.image.outputs.ref }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Unit and BDD tests with the coverage threshold
+        run: |
+          make tests
+          make validate-coverage
+
+  bdd:
+    name: tests (${{ matrix.os }}, shard ${{ matrix.shard }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, shard: 1/4 }
+          - { os: windows-latest, shard: 2/4 }
+          - { os: windows-latest, shard: 3/4 }
+          - { os: windows-latest, shard: 4/4 }
+          - { os: macos-latest, shard: 1/2 }
+          - { os: macos-latest, shard: 2/2 }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
       - name: Install the snippet runtimes (curl, node, go and python requests run generated snippets in BDD)
-        run: |
-          python -m pip install requests==2.32.3
-          curl --version
-          node --version
-          go version
-
-      - name: Install Linux webview dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+        run: python -m pip install requests==2.32.3
 
       - name: Ensure make is available
         if: runner.os == 'Windows'
         run: command -v make || choco install make -y
 
-      - name: Setup tools and frontend dependencies
-        run: make setup
+      - name: Unit tests (first shard only)
+        if: startsWith(matrix.shard, '1/')
+        run: make unit-tests
+
+      - name: BDD shard ${{ matrix.shard }}
+        run: make bdd-shard SHARD=${{ matrix.shard }}
+
+  build:
+    name: build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Ensure make is available
+        if: runner.os == 'Windows'
+        run: command -v make || choco install make -y
+
+      - name: Install wails3 and the frontend dependencies
+        run: |
+          make install-wails
+          cd frontend && npm ci
 
       - name: Generate bindings
         run: make bindings
 
-      - name: Validate
-        run: make validate
+      - name: Build
+        run: make build
 
-      - name: Fail on files changed by validate
-        run: git diff --exit-code
+  build-linux:
+    name: build (ubuntu-24.04)
+    needs: image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    container:
+      image: ${{ needs.image.outputs.ref }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install wails3 and the frontend dependencies
+        run: |
+          make install-wails
+          cd frontend && npm ci
+
+      - name: Generate bindings
+        run: make bindings
 
       - name: Build
         run: make build
@@ -80,13 +268,14 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest, ubuntu-24.04]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     defaults:
       run:
         shell: bash
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
@@ -117,15 +306,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-24.04]
+        os: [macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     defaults:
       run:
         shell: bash
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
@@ -136,15 +326,38 @@ jobs:
           cache: npm
           cache-dependency-path: tools/newman/package-lock.json
 
-      - name: Install Linux webview dependencies (the BDD harness links the Wails bindings)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
-
       - name: Ensure make is available
         if: runner.os == 'Windows'
         run: command -v make || choco install make -y
+
+      - name: Export the Xenon-created corpus to Postman and run it with Newman (SC-002)
+        run: make newman
+  newman-linux:
+    name: newman (ubuntu-24.04)
+    needs: image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    container:
+      image: ${{ needs.image.outputs.ref }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: tools/newman/package-lock.json
 
       - name: Export the Xenon-created corpus to Postman and run it with Newman (SC-002)
         run: make newman

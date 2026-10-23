@@ -17,6 +17,7 @@ type router struct {
 	tree         *binding.TreeService
 	dialog       *binding.DialogService
 	request      *binding.RequestService
+	runner       *binding.RunnerService
 	uiState      *binding.UIStateService
 	history      *binding.HistoryService
 	window       *binding.WindowService
@@ -45,6 +46,7 @@ func NewRouter(
 	tree *binding.TreeService,
 	dialog *binding.DialogService,
 	request *binding.RequestService,
+	runner *binding.RunnerService,
 	uiState *binding.UIStateService,
 	history *binding.HistoryService,
 	window *binding.WindowService,
@@ -72,6 +74,7 @@ func NewRouter(
 		tree:         tree,
 		dialog:       dialog,
 		request:      request,
+		runner:       runner,
 		uiState:      uiState,
 		history:      history,
 		window:       window,
@@ -151,6 +154,7 @@ func (r *router) registerServices() []wails.Service {
 		r.registerTreeRoutes(),
 		r.registerDialogRoutes(),
 		r.registerRequestRoutes(),
+		r.registerRunnerRoutes(),
 		r.registerUIStateRoutes(),
 		r.registerHistoryRoutes(),
 		r.registerResponseBodyRoutes(),

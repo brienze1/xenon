@@ -194,7 +194,7 @@
       return pm.globals.unset(key);
     },
     setNextRequest (next) {
-      return next && undefined;
+      pm.execution.setNextRequest(next);
     }
   });
 

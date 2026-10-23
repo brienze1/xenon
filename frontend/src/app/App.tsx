@@ -12,6 +12,7 @@ import { PassphraseDialog } from '@/features/environments/components/PassphraseD
 import { useEnvironmentsStore } from '@/features/environments/store'
 import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
+import { RunFinishedToast } from '@/features/runner/components/RunFinishedToast'
 import { QuickSearch } from '@/features/search/components/QuickSearch'
 import { useSearchStore } from '@/features/search/store'
 import { SidePanel } from '@/features/side-panel/components/SidePanel'
@@ -46,7 +47,7 @@ import { RightPanel } from './layout/regions/RightPanel'
 import { Sidebar } from './layout/regions/Sidebar'
 import { TopBar } from './layout/regions/TopBar'
 import { TabsArea } from './layout/TabsArea'
-import { adoptTreeRename, openItemTab } from './tree-actions'
+import { adoptTreeRename, openItemTab, openRunResults, runItemTab } from './tree-actions'
 import { useAppHotkeys } from './use-app-hotkeys'
 
 let didInit = false
@@ -107,6 +108,8 @@ const CLONE_WORKSPACE_DIALOG = <CloneWorkspaceDialog />
 const CONFLICT_VIEW = <ConflictView />
 
 const UPDATE_READY_TOAST = <UpdateReadyToast />
+
+const RUN_FINISHED_TOAST = <RunFinishedToast onOpenResults={openRunResults} />
 
 const FOOTER_UPDATE_NOTICE = <FooterUpdateNotice />
 
@@ -230,6 +233,7 @@ export function App() {
               onOpenVariables={openEnvironmentTab}
               selectedVariables={selectedVariables}
               onOpenItem={openItemTab}
+              onRunItem={runItemTab}
             />
           </Sidebar>
           <MainArea>
@@ -264,6 +268,7 @@ export function App() {
       {active ? CONFLICT_VIEW : null}
       {CLONE_WORKSPACE_DIALOG}
       {active ? QUICK_SEARCH : null}
+      {active ? RUN_FINISHED_TOAST : null}
       {UPDATE_READY_TOAST}
       <Footer>
         {active ? (

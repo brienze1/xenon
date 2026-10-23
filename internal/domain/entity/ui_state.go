@@ -8,6 +8,7 @@ import (
 const uiStateVersion = 1
 
 type UIState struct {
+	Runners       map[string]RunnerPreferences
 	ActiveTabID   string
 	PreviewTabID  string
 	HistorySource enums.HistoryFilter

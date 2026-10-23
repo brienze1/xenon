@@ -3,6 +3,7 @@ package steps
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +14,7 @@ func (t *testUtils) registerThenResponseSteps(ctx *godog.ScenarioContext) {
 	t.registerThenResponseListSteps(ctx)
 	t.registerThenResponseMatchSteps(ctx)
 	ctx.Then(`^the call should succeed$`, t.theCallShouldSucceed)
+	ctx.Then(`^the response field "([^"]*)" should be between (-?[\d.]+) and (-?[\d.]+)$`, t.theResponseFieldShouldBeBetween)
 	ctx.Then(`^the last call should have taken less than (\d+) ms$`, t.theLastCallShouldHaveTakenLessThan)
 	ctx.Then(`^the call should fail with code "([^"]*)"$`, t.theCallShouldFailWithCode)
 	ctx.Then(`^the error should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theErrorShouldContainTheFieldEqualTo)
@@ -136,6 +138,21 @@ func (t *testUtils) theResponseShouldContainTheFieldContaining(path, expected st
 	}
 	if !strings.Contains(stringify(actual), t.substitute(expected)) {
 		return fmt.Errorf("%s: expected %q to contain %q", path, stringify(actual), expected)
+	}
+	return nil
+}
+
+func (t *testUtils) theResponseFieldShouldBeBetween(path string, minimum, maximum float64) error {
+	actual, err := t.responseField(path)
+	if err != nil {
+		return err
+	}
+	value, err := strconv.ParseFloat(stringify(actual), 64)
+	if err != nil {
+		return fmt.Errorf("%s: %q is not a number", path, stringify(actual))
+	}
+	if value < minimum || value > maximum {
+		return fmt.Errorf("%s: expected between %g and %g, got %g", path, minimum, maximum, value)
 	}
 	return nil
 }

@@ -10,6 +10,7 @@ type AIApprovalRequested struct {
 	Client      string                `json:"client"`
 	Method      string                `json:"method"`
 	Url         string                `json:"url"`
+	Summary     string                `json:"summary"`
 	CreatedAt   string                `json:"created_at"`
 }
 
@@ -19,6 +20,7 @@ func NewAIApprovalRequested(approval entity.AIApproval) AIApprovalRequested {
 		Client:      approval.Client,
 		Method:      approval.Method,
 		Url:         approval.RawURL,
+		Summary:     approval.Summary,
 		CreatedAt:   approval.CreatedAt.UTC().Format("2006-01-02T15:04:05.000Z"),
 		Environment: NewAIApprovalEnvironment(approval.Environment),
 	}

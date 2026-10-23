@@ -82,6 +82,7 @@ func (t *testUtils) before() error {
 }
 
 func (t *testUtils) after() {
+	_ = binding.GetRunnerService().ServiceShutdown()
 	t.closeMcp()
 	t.stopMcpServer()
 	for _, path := range t.readOnly {
@@ -133,6 +134,7 @@ func (t *testUtils) startApp() {
 		binding.GetTreeService(),
 		binding.GetDialogService(),
 		binding.GetRequestService(),
+		binding.GetRunnerService(),
 		binding.GetUIStateService(),
 		binding.GetHistoryService(),
 		binding.GetWindowService(),

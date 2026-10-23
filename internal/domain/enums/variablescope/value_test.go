@@ -11,6 +11,7 @@ func TestGetVariableScope(t *testing.T) {
 		want any
 	}{
 		{raw: "local", want: Local},
+		{raw: "data", want: Data},
 		{raw: "environment", want: Environment},
 		{raw: "collection", want: Collection},
 		{raw: "globals", want: Globals},

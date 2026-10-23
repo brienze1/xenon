@@ -1,0 +1,51 @@
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.types {
+  display: inline-flex;
+  align-self: flex-start;
+  margin: 0;
+  padding: var(--space-1);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.type {
+  position: relative;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-md);
+  cursor: pointer;
+}
+
+.type:has(:checked) {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+.type:has(:focus-visible) {
+  box-shadow: var(--focus-ring);
+}
+
+.typeInput {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.note {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}

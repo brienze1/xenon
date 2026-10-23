@@ -5,6 +5,7 @@ import (
 
 	wails "github.com/wailsapp/wails/v3/pkg/application"
 
+	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 )
 
@@ -27,16 +28,19 @@ func (w *wailsDialog) PickFolder(title string) (string, error) {
 		PromptForSingleSelection()
 }
 
-func (w *wailsDialog) PickFile(title string) (string, error) {
+func (w *wailsDialog) PickFile(title string, filters []entity.FileFilter) (string, error) {
 	app, err := runningApp()
 	if err != nil {
 		return "", err
 	}
-	return app.Dialog.OpenFile().
+	dialog := app.Dialog.OpenFile().
 		CanChooseFiles(true).
 		CanChooseDirectories(false).
-		SetTitle(title).
-		PromptForSingleSelection()
+		SetTitle(title)
+	for _, filter := range filters {
+		dialog = dialog.AddFilter(filter.DisplayName, filter.Pattern)
+	}
+	return dialog.PromptForSingleSelection()
 }
 
 func (w *wailsDialog) PickSources(title string) ([]string, error) {

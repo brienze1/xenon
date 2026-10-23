@@ -25,6 +25,7 @@ const actions = {
   onOpenExample: vi.fn(),
   onPinExample: vi.fn(),
   onOpenItem: vi.fn(),
+  onRunItem: vi.fn(),
   onDelete: vi.fn(),
   onRenamed: vi.fn(),
 }
@@ -147,6 +148,21 @@ describe('CollectionTree drag and drop', () => {
     expect(actions.onOpenItem).toHaveBeenCalledWith('f1', 'folder', 'pinned')
   })
 
+  it('runs a collection or folder from its context menu and its … button, right after Open; requests have no Run…', async () => {
+    await act(() => new Promise((resolve) => setTimeout(resolve, DND_CLICK_GUARD_MS)))
+    render(<CollectionTree {...actions} />)
+    fireEvent.contextMenu(row('c1'), { clientX: 10, clientY: 10 })
+    const menu = screen.getByRole('menu', { name: 'Name c1 actions' })
+    expect(within(menu).getAllByRole('menuitem').map((item) => item.textContent).slice(0, 2)).toEqual(['Open', 'Run…'])
+    fireEvent.click(within(menu).getByRole('menuitem', { name: 'Run…' }))
+    expect(actions.onRunItem).toHaveBeenCalledWith('c1', 'collection')
+    fireEvent.click(within(row('f1')).getByRole('button', { name: 'More actions for Name f1' }))
+    fireEvent.click(within(screen.getByRole('menu', { name: 'More actions for Name f1' })).getByRole('menuitem', { name: 'Run…' }))
+    expect(actions.onRunItem).toHaveBeenLastCalledWith('f1', 'folder')
+    fireEvent.contextMenu(row('r2'), { clientX: 10, clientY: 10 })
+    expect(screen.queryByRole('menuitem', { name: 'Run…' })).not.toBeInTheDocument()
+  })
+
   it('exports collections, folders and requests from their context menu, but not examples', async () => {
     vi.mocked(exportService.getExportOptions).mockResolvedValue({ suggestedFileName: 'x', formats: [], hasSecrets: false, hasCurrentValues: false })
     useSidebarStore.setState({ tree: [node('c1', 'collection', [node('f1', 'folder'), { ...node('r2', 'request'), examples: [{ id: 'e1', name: 'Name e1', code: 200 }] }])], expanded: { c1: true, r2: true } })
@@ -174,7 +190,7 @@ describe('CollectionTree drag and drop', () => {
     fireEvent.keyDown(add, { key: 'Escape' })
     fireEvent.click(within(row('f1')).getByRole('button', { name: 'More actions for Name f1' }))
     const more = screen.getByRole('menu', { name: 'More actions for Name f1' })
-    expect(within(more).getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['Open', 'Rename', 'Duplicate', 'Export…', 'Delete'])
+    expect(within(more).getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['Open', 'Run…', 'Rename', 'Duplicate', 'Export…', 'Delete'])
     fireEvent.keyDown(more, { key: 'Escape' })
     fireEvent.click(within(row('r2')).getByRole('button', { name: 'More actions for Name r2' }))
     expect(within(screen.getByRole('menu', { name: 'More actions for Name r2' })).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([

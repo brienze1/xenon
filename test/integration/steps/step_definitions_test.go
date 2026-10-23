@@ -76,11 +76,16 @@ var (
 func TestFeatures(t *testing.T) {
 	flag.Parse()
 
+	paths, err := featurePaths()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	runner := godog.TestSuite{
 		ScenarioInitializer: InitializeScenario,
 		Options: &godog.Options{
 			Format:   "pretty",
-			Paths:    []string{"../features"},
+			Paths:    paths,
 			Tags:     tags,
 			Strict:   true,
 			TestingT: t,

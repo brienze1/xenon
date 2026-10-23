@@ -20,6 +20,7 @@ func (t *testUtils) registerThenAppDataSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the app data file "([^"]*)" should contain the field "([^"]*)" equal to$`, t.theAppDataFileShouldContainTheFieldEqualToText)
 	ctx.Then(`^the app data file "([^"]*)" should contain the field "([^"]*)" array length equal to (\d+)$`, t.theAppDataFileShouldContainTheFieldArrayLengthEqualTo)
 	ctx.Then(`^the app data file "([^"]*)" should not contain "([^"]*)"$`, t.theAppDataFileShouldNotContain)
+	ctx.Then(`^the app data file "([^"]*)" should contain "([^"]*)"$`, t.theAppDataFileShouldContain)
 	ctx.Then(`^the app data file "([^"]*)" should have (\d+) lines$`, t.theAppDataFileShouldHaveLines)
 	ctx.Then(`^the app data file "([^"]*)" line (\d+) should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theAppDataFileLineShouldContainTheFieldEqualTo)
 	ctx.Then(`^the app data path "([^"]*)" should have the permissions "([^"]*)"$`, t.theAppDataPathShouldHaveThePermissions)
@@ -75,6 +76,17 @@ func (t *testUtils) theAppDataFileShouldNotContain(path, text string) error {
 	}
 	if bytes.Contains(content, []byte(t.substitute(text))) {
 		return fmt.Errorf("app data %s contains %q", path, t.substitute(text))
+	}
+	return nil
+}
+
+func (t *testUtils) theAppDataFileShouldContain(path, text string) error {
+	content, err := os.ReadFile(t.appDataPath(path))
+	if err != nil {
+		return err
+	}
+	if !bytes.Contains(content, []byte(t.substitute(text))) {
+		return fmt.Errorf("app data %s does not contain %q", path, t.substitute(text))
 	}
 	return nil
 }
