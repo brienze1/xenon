@@ -2,7 +2,7 @@ module github.com/brienze1/xenon
 
 go 1.26.0
 
-toolchain go1.27.2
+toolchain go1.27.3
 
 require (
 	filippo.io/age v1.3.2
