@@ -68,6 +68,7 @@ async function renderPanel() {
     onOpenVariables: vi.fn(),
     selectedVariables: null,
     onOpenItem: vi.fn(),
+    onRunItem: vi.fn(),
   }
   render(<SidebarPanel {...actions} />)
   await act(() => useSidebarStore.getState().load())

@@ -23,6 +23,7 @@ function approval(id: string, overrides: Partial<PendingApproval> = {}): Pending
     url: '{{base_url}}/orders',
     environment: { id: 'e1', name: 'Production', color: 'red' },
     createdAt: '2026-10-13T10:00:00Z',
+    summary: null,
     ...overrides,
   }
 }
@@ -39,6 +40,15 @@ describe('ApprovalPrompt', () => {
 
   afterEach(() => {
     act(() => useAIAccessStore.setState({ pending: [], answering: null, error: null }))
+  })
+
+  it('shows the summary of a run instead of a method and URL', () => {
+    act(() => store().add(approval('a1', { method: '', url: '', summary: 'Run Orders API · 6 requests' })))
+    render(<ApprovalPrompt />)
+    const dialog = screen.getByRole('dialog', { name: 'Approve AI Request?' })
+    expect(dialog).toHaveTextContent('Run Orders API · 6 requests')
+    expect(dialog).toHaveTextContent('wants to run this with the environment')
+    expect(dialog.querySelector('[data-method]')).toBeNull()
   })
 
   it('shows nothing while no AI send waits', () => {

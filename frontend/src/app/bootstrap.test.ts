@@ -6,6 +6,7 @@ import type { ConsoleEntriesEvent } from '@/platform/mappers/console'
 import type { VaultStatus } from '@/platform/mappers/vault'
 import type { AIAccessRuntime, PendingApproval } from '@/platform/mappers/ai-access'
 import { idleUpdateStatus, type UpdateStatus } from '@/platform/mappers/update-status'
+import type { RunFinishedEvent, RunProgressEvent } from '@/platform/mappers/runner'
 
 const unsubscribe = vi.fn()
 const handlers: {
@@ -30,6 +31,8 @@ const handlers: {
   approvalResolved?: (resolved: { id: string; outcome: string }) => void
   aiAccessStatusChanged?: (status: AIAccessRuntime) => void
   updateStatus?: (status: UpdateStatus) => void
+  runProgress?: (event: RunProgressEvent) => void
+  runFinished?: (event: RunFinishedEvent) => void
 } = {}
 
 vi.mock('@/platform/events', () => ({
@@ -117,6 +120,20 @@ vi.mock('@/platform/events', () => ({
     handlers.updateStatus = callback
     return unsubscribe
   }),
+  onRunProgress: vi.fn((callback) => {
+    handlers.runProgress = callback
+    return unsubscribe
+  }),
+  onRunFinished: vi.fn((callback) => {
+    handlers.runFinished = callback
+    return unsubscribe
+  }),
+}))
+vi.mock('@/platform/services/runner', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/platform/services/runner')>()),
+  activeRuns: vi.fn(async () => []),
+  getRun: vi.fn(),
+  listRuns: vi.fn(),
 }))
 vi.mock('@/platform/services/updates', () => ({
   getUpdateStatus: vi.fn(),
@@ -182,6 +199,8 @@ const vault = await import('@/platform/services/vault')
 const variables = await import('@/platform/services/variables')
 const environments = await import('@/platform/services/environments')
 const sync = await import('@/platform/services/sync')
+const runner = await import('@/platform/services/runner')
+const { useRunnerStore } = await import('@/features/runner/store')
 const aiAccess = await import('@/platform/services/ai-access')
 const updates = await import('@/platform/services/updates')
 const { useUpdatesStore } = await import('@/features/updates/store')
@@ -262,6 +281,7 @@ describe('bootstrap', () => {
     vi.mocked(tree.searchTree).mockResolvedValue({ matchIds: [], ancestorIds: [] })
     vi.mocked(history.listHistory).mockResolvedValue([])
     vi.mocked(vault.getVaultStatus).mockResolvedValue(lockedVault)
+    vi.mocked(runner.activeRuns).mockResolvedValue([])
     vi.mocked(environments.listEnvironments).mockResolvedValue({ environments: [], activeId: null })
     vi.mocked(sync.getSyncStatus).mockResolvedValue(syncStatus)
     vi.mocked(sync.listChanges).mockResolvedValue([])
@@ -311,7 +331,7 @@ describe('bootstrap', () => {
     expect(useGitAccountsStore.getState().hostKeyPrompt).toEqual(prompt)
     useGitAccountsStore.setState({ hostKeyPrompt: null })
     cleanup()
-    expect(unsubscribe).toHaveBeenCalledTimes(21)
+    expect(unsubscribe).toHaveBeenCalledTimes(23)
   })
 
   it('runs the startup update check exactly once and follows update:status', async () => {
@@ -420,7 +440,7 @@ describe('bootstrap', () => {
   })
 
   it('queues AI approvals from start and from events, and follows the AI access status', async () => {
-    const approval = { id: 'a1', client: 'Claude Code', method: 'POST', url: '{{base}}/orders', environment: { id: 'e1', name: 'Production', color: 'red' }, createdAt: 't' }
+    const approval = { id: 'a1', client: 'Claude Code', method: 'POST', url: '{{base}}/orders', environment: { id: 'e1', name: 'Production', color: 'red' }, createdAt: 't', summary: null }
     vi.mocked(aiAccess.listPendingApprovals).mockResolvedValue([approval])
     vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
     const cleanup = await started()
@@ -604,6 +624,28 @@ describe('bootstrap', () => {
     useWorkspacesStore.getState().setLayout({ sidebarWidth: 420 })
     await vi.advanceTimersByTimeAsync(PERSIST_DELAY_MS)
     expect(uiState.saveUIState).toHaveBeenCalledWith('A', expect.objectContaining({ layout: expect.objectContaining({ sidebarWidth: 420 }) }))
+    cleanup()
+  })
+
+  it('restores the running indicators on workspace activation, follows run events, and resets the runner on a switch', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
+    const summary = { iterations: 1, totalRequests: 1, testsPassed: 2, testsFailed: 0, testsSkipped: 0, avgResponseMs: 1, durationMs: 1, passed: 1, failed: 0, skipped: 0, errors: 0, cancelled: 0 }
+    const progress = { currentRow: 1, currentName: 'Login', iteration: 0, completed: 1, planned: 2, testsPassed: 1, testsFailed: 0, elapsedMs: 10, metrics: null }
+    vi.mocked(runner.activeRuns).mockResolvedValue([
+      { id: 'R1', itemId: 'c1', targetKind: 'collection', targetName: 'Orders', type: 'functional', status: 'running', environmentName: '', startedAt: '', finishedAt: '', progress, summary },
+    ])
+    const cleanup = await started()
+    useWorkspacesStore.setState({ activeLocalId: 'A' })
+    expect(runner.activeRuns).toHaveBeenCalledWith('A')
+    await vi.waitFor(() => expect(Object.keys(useRunnerStore.getState().active)).toEqual(['c1']))
+    handlers.runProgress?.({ localId: 'A', runId: 'R2', itemId: 'f1', type: 'functional', status: 'running', progress })
+    expect(Object.keys(useRunnerStore.getState().active)).toEqual(['c1', 'f1'])
+    handlers.runFinished?.({ localId: 'A', runId: 'R1', itemId: 'c1', targetName: 'Orders', type: 'functional', status: 'completed', summary })
+    expect(Object.keys(useRunnerStore.getState().active)).toEqual(['f1'])
+    expect(useRunnerStore.getState().notice).toMatchObject({ itemId: 'c1', targetName: 'Orders', passed: 2 })
+    useWorkspacesStore.setState({ activeLocalId: null })
+    expect(useRunnerStore.getState().active).toEqual({})
+    expect(useRunnerStore.getState().notice).toBeNull()
     cleanup()
   })
 

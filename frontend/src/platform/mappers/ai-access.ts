@@ -34,6 +34,8 @@ export interface PendingApproval {
   url: string
   environment: { id: string; name: string; color: string }
   createdAt: string
+  /** What the approval is for when it is not a single send (a run: "Run Orders API · 6 requests"); shown instead of method and URL. */
+  summary: string | null
 }
 
 const STATES: readonly AIAccessState[] = ['off', 'running', 'error']
@@ -66,5 +68,6 @@ export function toPendingApproval(dto: AIApprovalRowDto | AIApprovalDto): Pendin
     url: dto.url,
     environment: { id: dto.environment.id, name: dto.environment.name, color: dto.environment.color },
     createdAt: dto.created_at,
+    summary: dto.summary ? dto.summary : null,
   }
 }

@@ -33,6 +33,7 @@ const HEADERS_TAB = <Tabs.Tab value="headers">Headers</Tabs.Tab>
 const SCRIPTS_TAB = <Tabs.Tab value="scripts">Scripts</Tabs.Tab>
 const VARIABLES_TAB = <Tabs.Tab value="variables">Variables</Tabs.Tab>
 const DOCUMENTATION_TAB = <Tabs.Tab value="documentation">Documentation</Tabs.Tab>
+const RUNNER_TAB = <Tabs.Tab value="runner">Runner</Tabs.Tab>
 
 const KIND_LABEL: Record<ContainerKind, string> = { collection: 'Collection', folder: 'Folder' }
 
@@ -58,6 +59,8 @@ interface ItemTabProps {
   collectionVariables?: (collectionId: string) => ReactNode
   /** Renders the OpenAPI documentation of a collection or folder (what it holds); composed by the app. */
   documentation?: (itemId: string, kind: ContainerKind) => ReactNode
+  /** Renders the Runner (run order, settings, results and stored runs); composed by the app. */
+  runner?: (itemId: string, kind: ContainerKind) => ReactNode
 }
 
 /**
@@ -65,7 +68,7 @@ interface ItemTabProps {
  * description) and the defaults its requests inherit — authorization, headers, scripts and, for
  * a collection, variables.
  */
-export function ItemTab({ itemId, kind, onSave, authEditor, scriptsEditor, collectionVariables, documentation }: ItemTabProps) {
+export function ItemTab({ itemId, kind, onSave, authEditor, scriptsEditor, collectionVariables, documentation, runner }: ItemTabProps) {
   const open = useItemSettingsStore((state) => state.open)
   const load = useItemSettingsStore((state) => state.load)
   const status = useItemSettingsStore((state) => state.items[itemId]?.status ?? 'loading')
@@ -104,6 +107,7 @@ export function ItemTab({ itemId, kind, onSave, authEditor, scriptsEditor, colle
       scriptsEditor={scriptsEditor}
       collectionVariables={collectionVariables}
       documentation={documentation}
+      runner={runner}
     />
   )
 }
@@ -112,7 +116,7 @@ interface ItemEditorProps extends Omit<ItemTabProps, 'itemId'> {
   settings: ItemSettings
 }
 
-function ItemEditor({ settings, kind, onSave, authEditor, scriptsEditor, collectionVariables, documentation }: ItemEditorProps) {
+function ItemEditor({ settings, kind, onSave, authEditor, scriptsEditor, collectionVariables, documentation, runner }: ItemEditorProps) {
   const itemId = settings.id
   const section = useItemSettingsStore((state) => state.items[itemId]?.section ?? 'overview')
   const saving = useItemSettingsStore((state) => state.items[itemId]?.saving === true)
@@ -134,7 +138,11 @@ function ItemEditor({ settings, kind, onSave, authEditor, scriptsEditor, collect
   const label = KIND_LABEL[kind]
   const variables = kind === 'collection' && collectionVariables ? collectionVariables(itemId) : null
   const docs = documentation ? documentation(itemId, kind) : null
-  const shown: ItemSection = (section === 'variables' && variables === null) || (section === 'documentation' && docs === null) ? 'overview' : section
+  const runnerSection = runner ? runner(itemId, kind) : null
+  const shown: ItemSection =
+    (section === 'variables' && variables === null) || (section === 'documentation' && docs === null) || (section === 'runner' && runnerSection === null)
+      ? 'overview'
+      : section
 
   return (
     <section className={styles.tab} aria-label={`${savedName} ${label.toLowerCase()}`}>
@@ -183,6 +191,7 @@ function ItemEditor({ settings, kind, onSave, authEditor, scriptsEditor, collect
           {SCRIPTS_TAB}
           {variables ? VARIABLES_TAB : null}
           {docs ? DOCUMENTATION_TAB : null}
+          {runnerSection ? RUNNER_TAB : null}
         </Tabs.List>
         <Tabs.Panel value="overview" className={styles.panel}>
           <ItemOverview settings={settings} label={label} />
@@ -213,6 +222,11 @@ function ItemEditor({ settings, kind, onSave, authEditor, scriptsEditor, collect
         {docs ? (
           <Tabs.Panel value="documentation" className={styles.documentationPanel}>
             {docs}
+          </Tabs.Panel>
+        ) : null}
+        {runnerSection ? (
+          <Tabs.Panel value="runner" className={styles.runnerPanel}>
+            {runnerSection}
           </Tabs.Panel>
         ) : null}
       </Tabs.Root>

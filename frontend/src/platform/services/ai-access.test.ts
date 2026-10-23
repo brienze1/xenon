@@ -38,7 +38,7 @@ describe('ai-access service', () => {
       { id: 'a1', client: 'Claude Code', method: 'POST', url: '{{base}}/orders', environment: { id: 'e1', name: 'Production', color: 'red' }, created_at: 't' },
     ] as never)
     await expect(service.listPendingApprovals()).resolves.toEqual([
-      { id: 'a1', client: 'Claude Code', method: 'POST', url: '{{base}}/orders', environment: { id: 'e1', name: 'Production', color: 'red' }, createdAt: 't' },
+      { id: 'a1', client: 'Claude Code', method: 'POST', url: '{{base}}/orders', environment: { id: 'e1', name: 'Production', color: 'red' }, createdAt: 't', summary: null },
     ])
     vi.mocked(AIAccessService.PendingApprovals).mockResolvedValueOnce(null as never)
     await expect(service.listPendingApprovals()).resolves.toEqual([])

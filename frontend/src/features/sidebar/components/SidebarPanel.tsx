@@ -31,6 +31,8 @@ interface SidebarPanelProps {
   selectedVariables: VariablesItem | null
   /** Opens a collection or folder (its overview and the defaults its requests inherit) in a main-area tab. */
   onOpenItem: (id: string, kind: ContainerKind, mode: OpenMode) => void
+  /** Run…: opens a collection or folder pinned on its Runner. */
+  onRunItem: (id: string, kind: ContainerKind) => void
 }
 
 const SIDEBAR_VIEW_SELECT = <SidebarViewSelect />
@@ -66,6 +68,7 @@ export function SidebarPanel({
   onOpenVariables,
   selectedVariables,
   onOpenItem,
+  onRunItem,
 }: SidebarPanelProps) {
   const view = useSidebarStore((state) => state.view)
   const openHistoryEntry = useSidebarStore((state) => state.openHistoryEntry)
@@ -125,6 +128,7 @@ export function SidebarPanel({
           onOpenExample={onOpenExample}
           onPinExample={onPinExample}
           onOpenItem={onOpenItem}
+          onRunItem={onRunItem}
           onDelete={setDeleting}
           onRenamed={onRenamed}
         />

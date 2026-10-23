@@ -11,6 +11,7 @@ import { useRequestBuilderStore } from '@/features/request-builder/store'
 import { useGitAccountsStore, useSettingsStore } from '@/features/settings/store'
 import type { ResponseEntry } from '@/features/response-viewer/model'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
+import { useRunnerStore } from '@/features/runner/store'
 import { useSidebarStore } from '@/features/sidebar/store'
 import { STATUS_REFRESH_MS, useSyncStore } from '@/features/sync/store'
 import { useTabsStore } from '@/features/tabs/store'
@@ -33,6 +34,8 @@ import {
   onImportRequested,
   onUpdateStatus,
   onRequestChangedOnDisk,
+  onRunFinished,
+  onRunProgress,
   onVariablesChanged,
   onVaultStatusChanged,
   onWorkspaceFolderMissing,
@@ -103,6 +106,8 @@ export function bootstrap(): () => void {
     onExportProgress((progress) => useExportStore.getState().applyProgress(progress)),
     onExportRequested(() => void useExportStore.getState().openWorkspace()),
     onUpdateStatus((status) => useUpdatesStore.getState().applyEvent(status)),
+    onRunProgress((event) => useRunnerStore.getState().applyProgress(event)),
+    onRunFinished((event) => useRunnerStore.getState().applyFinished(event)),
     onImportFilesDropped((paths) => {
       if (openImport()) {
         void useImportStore.getState().detect({ paths })
@@ -183,6 +188,10 @@ export function bootstrap(): () => void {
       if (state.activeLocalId !== previous.activeLocalId) {
         useSyncStore.getState().reset(state.activeLocalId)
         refreshSync()
+        useRunnerStore.getState().reset()
+        if (state.activeLocalId !== null) {
+          void useRunnerStore.getState().restoreActive()
+        }
       }
     }),
     useResponseViewerStore.subscribe((state, previous) => {

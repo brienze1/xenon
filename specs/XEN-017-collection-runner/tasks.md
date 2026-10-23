@@ -81,8 +81,8 @@ event publisher and the `RunnerService` skeleton every story needs.
 
   Each comes with `ToEntity` and constructors, and `validate` tags on the required fields.
 - [x] T016 Add `controller.runner` in `internal/integration/entrypoint/controller/runner.go`, following the full controller skill pattern (validate, `ToEntity`, service, error handler, panic recovery), with the DTO validation codes `RUN-08400`…`RUN-12400` in `validate_runner.go`. Add the binding `RunnerService` in `internal/infra/server/binding/runner.go`, wire DI under `internal/infra/dependency/`, and register the service in the Wails service list.
-- [ ] T017 [P] Add `frontend/src/platform/services/runner.ts` and `frontend/src/platform/mappers/runner.ts`, with tests `runner.test.ts` for each. Add `onRunProgress` and `onRunFinished` to `frontend/src/platform/events.ts`. Run `make bindings`.
-- [ ] T018 [P] Add the empty feature shell `frontend/src/features/runner/model.ts` and `store.ts` (state shape per contracts/ui.md, `reset()`), and register its reset on workspace switch in `frontend/src/app/bootstrap.ts`.
+- [x] T017 [P] Add `frontend/src/platform/services/runner.ts` and `frontend/src/platform/mappers/runner.ts`, with tests `runner.test.ts` for each. Add `onRunProgress` and `onRunFinished` to `frontend/src/platform/events.ts`. Run `make bindings`.
+- [x] T018 [P] Add the empty feature shell `frontend/src/features/runner/model.ts` and `store.ts` (state shape per contracts/ui.md, `reset()`), and register its reset on workspace switch in `frontend/src/app/bootstrap.ts`.
 
 **Checkpoint**: the single-send suites are green on the shared core, and `RunnerService` is
 callable with no behaviour behind it yet.
@@ -133,9 +133,9 @@ tests, and History is unchanged.
   - At the end it computes the summary, saves the run, `Release`s the target, drops the run jar and publishes `Finished`.
 - [x] T025 [US1] Implement `Pause`, `Resume` and `Stop` (a gate checked before each row; context cancel gives a `Cancelled` outcome mapped to `cancelled`) in `internal/application/service/manage_runner.go` and `run_functional.go`. Add `StopWorkspace(localId)` and call it from `internal/application/service/activate_workspace.go` and `remove_workspace.go`.
 - [x] T026 [US1] Add the stored-run persistence needed to finish a run: `usecase.SaveRun` and `usecase.FindRuns` (`internal/application/usecase/save_run.go`, `find_runs.go`), with the model in `internal/integration/persistence/model/run.go` and the implementation in `internal/integration/persistence/run.go` (atomic write to `runs/<targetId>/<runId>.json`, per-workspace mutex). T019–T021 must go green.
-- [ ] T027 [P] [US1] FR-001: add `'runner'` to `ItemSection` in `frontend/src/features/item-settings/model.ts`. Add a `runner` render prop and the Runner tab trigger last in `frontend/src/features/item-settings/components/ItemTab.tsx`, with cases in `ItemTab.test.tsx`. Compose `RunnerSection` in `frontend/src/app/layout/ItemWorkspace.tsx`.
-- [ ] T028 [US1] FR-001, FR-009, SC-001 (Runner, then Start run): build `RunnerSection` (sub-tabs Setup / Results / Runs; Start and Run again switch to Results) in `frontend/src/features/runner/components/RunnerSection.tsx`, a read-only `RunOrderList` (numbers, folder path, method badge, name, all checked) and Start run, with `RunnerSection.test.tsx`.
-- [ ] T029 [US1] Build `RunProgress` (status, current row and iteration, bar, counts, elapsed, Pause/Resume/Stop) and `RunResults` (summary strip and rows grouped by iteration, each expanding to `TestResultsTab`, script errors and console) in `frontend/src/features/runner/components/`, with tests. In `frontend/src/features/runner/store.ts`:
+- [x] T027 [P] [US1] FR-001: add `'runner'` to `ItemSection` in `frontend/src/features/item-settings/model.ts`. Add a `runner` render prop and the Runner tab trigger last in `frontend/src/features/item-settings/components/ItemTab.tsx`, with cases in `ItemTab.test.tsx`. Compose `RunnerSection` in `frontend/src/app/layout/ItemWorkspace.tsx`.
+- [x] T028 [US1] FR-001, FR-009, SC-001 (Runner, then Start run): build `RunnerSection` (sub-tabs Setup / Results / Runs; Start and Run again switch to Results) in `frontend/src/features/runner/components/RunnerSection.tsx`, a read-only `RunOrderList` (numbers, folder path, method badge, name, all checked) and Start run, with `RunnerSection.test.tsx`.
+- [x] T029 [US1] Build `RunProgress` (status, current row and iteration, bar, counts, elapsed, Pause/Resume/Stop) and `RunResults` (summary strip and rows grouped by iteration, each expanding to `TestResultsTab`, script errors and console) in `frontend/src/features/runner/components/`, with tests. In `frontend/src/features/runner/store.ts`:
   - implement `start` (handling `SND-05409` with a confirm dialog that reuses the request-builder `ConfirmSendDialog` pattern, and `SND-06409` with the missing-secrets dialog whose **Run anyway** restarts with `acknowledge_missing_secrets`), `pause`, `resume`, `stop`, `applyProgress` and `applyFinished`;
   - wire the events in `frontend/src/app/bootstrap.ts`;
   - add `store.test.ts`.
@@ -170,13 +170,13 @@ and order, and that Reset restores the sidebar order.
   - delete preferences of targets that no longer exist in the tree when the plan is read.
 
   T030 must go green.
-- [ ] T034 [US2] FR-004, FR-005, FR-008: make `RunOrderList` interactive in `frontend/src/features/runner/components/RunOrderList.tsx`:
+- [x] T034 [US2] FR-004, FR-005, FR-008: make `RunOrderList` interactive in `frontend/src/features/runner/components/RunOrderList.tsx`:
   - row checkboxes, a select-all checkbox with `aria-checked="mixed"`, "N of M selected" and Reset;
   - a per-row alias select (Default first);
   - dnd-kit `SortableContext` with `PointerSensor` and `KeyboardSensor`, using `frontend/src/features/runner/hooks/use-run-order-reorder.ts` (modelled on `features/sidebar/hooks/use-environment-reorder.ts`, with announcements).
 
   Add `RunOrderList.test.tsx` and `use-run-order-reorder.test.ts`.
-- [ ] T035 [US2] Implement `load`, `updateConfig` (`SavePreferences` debounced by 300 ms) and `reset` in `frontend/src/features/runner/store.ts`, with tests.
+- [x] T035 [US2] Implement `load`, `updateConfig` (`SavePreferences` debounced by 300 ms) and `reset` in `frontend/src/features/runner/store.ts`, with tests.
 
 ---
 
@@ -189,7 +189,7 @@ that folder's requests, and a run still applies the collection's scripts and aut
 
 - [ ] T036 [P] [US3] Add folder-target scenarios to `test/integration/features/runner/run_functional.feature` (only the folder's requests, including subfolders; the collection and folder auth and scripts still apply) and prove them red.
 - [x] T037 [US3] Make target resolution in `manage_runner.go` accept folder ids, and make `FlattenRunRows` start at the folder. Each row's ancestors still come from `FindAncestors`. T036 must go green.
-- [ ] T038 [P] [US3] FR-002, SC-001 (Run…, then Start run): add **Run…** after Open for containers, in both the context menu and the ⋯ menu, with a new `onRunItem(id, kind)` prop, in `frontend/src/features/sidebar/components/TreeItem.tsx`, with `TreeItem.test.tsx` cases. In `app/` (where `onOpenItem` is wired), implement it: `useTabsStore.openItemTab(target, 'pinned')`, then set the item section to `runner` through `useItemSettingsStore.setSection`, and select the sub-tab (Results while a run is active there, else Setup) in `useRunnerStore`.
+- [x] T038 [P] [US3] FR-002, SC-001 (Run…, then Start run): add **Run…** after Open for containers, in both the context menu and the ⋯ menu, with a new `onRunItem(id, kind)` prop, in `frontend/src/features/sidebar/components/TreeItem.tsx`, with `TreeItem.test.tsx` cases. In `app/` (where `onOpenItem` is wired), implement it: `useTabsStore.openItemTab(target, 'pinned')`, then set the item section to `runner` through `useItemSettingsStore.setSection`, and select the sub-tab (Results while a run is active there, else Setup) in `useRunnerStore`.
 
 ---
 
@@ -213,7 +213,7 @@ the delay, and the effects of the variable and cookie settings.
   - FR-027: logs off gives no `console:entries` and an empty row console.
 
   Prove T039 and T040 red.
-- [ ] T041 [P] [US4] Add the `filters` field to `internal/integration/entrypoint/dto/pick_file.go` and pass it in `internal/infra/server/binding/dialog.go`. Extend `test/integration/features/dialogs/pick_file.feature` (red, then green) and `frontend/src/platform/services/dialogs.ts` (+ test).
+- [x] T041 [P] [US4] Add the `filters` field to `internal/integration/entrypoint/dto/pick_file.go` and pass it in `internal/infra/server/binding/dialog.go`. Extend `test/integration/features/dialogs/pick_file.feature` (red, then green) and `frontend/src/platform/services/dialogs.ts` (+ test).
 - [x] T042 [US4] Add `IterationData` (`Row`, `WrappedRow`, `Count`) in `internal/domain/entity/iteration_data.go` and `usecase.ParseIterationData` in `internal/application/usecase/parse_iteration_data.go`, with unit tests in `parse_iteration_data_test.go`. Add `usecase.FindIterationData` in `internal/application/usecase/find_iteration_data.go`, implemented in `internal/integration/persistence/iteration_data.go`.
 - [x] T043 [US4] Feed the iteration to the sandbox:
   - `internal/integration/webservice/dto/script_sandbox_info.go` takes the iteration from `ScriptInfo`;
@@ -227,7 +227,7 @@ the delay, and the effects of the variable and cookie settings.
   - always `DropJar`.
 
   Also implement logs-off (`MuteConsole`, no row collection). T039 and T040 must go green.
-- [ ] T046 [US4] FR-009, FR-010, FR-012, FR-013: build `RunSettings` (Postman labels and defaults, inline `RUN-04400` field errors, data file pick with the CSV/JSON filter, a clear button, the `data_file_missing` banner) and `EnvironmentSelect` in `frontend/src/features/runner/components/`, with tests.
+- [x] T046 [US4] FR-009, FR-010, FR-012, FR-013: build `RunSettings` (Postman labels and defaults, inline `RUN-04400` field errors, data file pick with the CSV/JSON filter, a clear button, the `data_file_missing` banner) and `EnvironmentSelect` in `frontend/src/features/runner/components/`, with tests.
 
 ---
 
@@ -269,8 +269,8 @@ again reuses the settings, and the export file contents.
   Also write the red `test/integration/features/runner/run_responses.feature` (`@runner @run_responses`) for FR-040: `RunnerService.Response` returns the response when persisted, and `RUN-01404` when not or after the run is deleted.
 - [x] T052 [US6] Add `usecase.BuildRunJUnit` in `internal/application/usecase/build_run_junit.go`, with unit tests. Implement `manageRunner.Export`, which writes through the existing export file writer (`internal/integration/persistence/export_file.go`).
 - [x] T053 [US6] Implement persisted responses: when `PersistResponses` is on, `RunContext.ResponseKey = RunResponseKey(runId, index)` and `sendRun.send` saves under that key. Implement `manageRunner.Response`, which finds the response by key or returns `RUN-01404`. T051 must go green.
-- [ ] T054 [US6] FR-032 (virtualized list, with a test rendering 10,000 rows and only the visible ones mounted), FR-034, FR-035: build the filter chips (All / Passed / Failed / Skipped, per FR-034) in `RunResults.tsx`, and `RunRowDetail.tsx` (Request: method, URL, headers, body; Response: `StatusLine`, `ResponseHeaders`, and `ResponseBody` with `tabId` set to the run response key, or the "not persisted" note), with tests.
-- [ ] T055 [US6] FR-036, FR-037: implement **Run again** (`start` with the stored run's target and config) and **Export** (`PickSaveFile`, then `RunnerService.Export`; JUnit hidden for performance runs) in `frontend/src/features/runner/store.ts` and the Results header, with tests.
+- [x] T054 [US6] FR-032 (virtualized list, with a test rendering 10,000 rows and only the visible ones mounted), FR-034, FR-035: build the filter chips (All / Passed / Failed / Skipped, per FR-034) in `RunResults.tsx`, and `RunRowDetail.tsx` (Request: method, URL, headers, body; Response: `StatusLine`, `ResponseHeaders`, and `ResponseBody` with `tabId` set to the run response key, or the "not persisted" note), with tests.
+- [x] T055 [US6] FR-036, FR-037: implement **Run again** (`start` with the stored run's target and config) and **Export** (`PickSaveFile`, then `RunnerService.Export`; JUnit hidden for performance runs) in `frontend/src/features/runner/store.ts` and the Results header, with tests.
 
 ---
 
@@ -293,8 +293,8 @@ work; nothing is in History or the workspace; workspaces stay isolated.
   - An unreadable run file is left out of `List`.
   - Secrets set by a script during the run, and secrets in test error messages, are masked.
 - [x] T057 [US7] Add the 25-per-target cap after each save in `internal/integration/persistence/run.go`, plus `DeleteRun`, `ClearRuns` and `DeleteWorkspaceRuns` (`internal/application/usecase/delete_runs.go`). Make `FindRuns` skip unreadable files with a logged warning. Call `DeleteWorkspaceRuns` from `internal/application/service/remove_workspace.go`. Make `Plan` delete the runs folders of targets that no longer exist. Implement `manageRunner.List`, `Delete` and `Clear`; each releases the persisted response keys of the deleted runs through `ReleaseResponse`. T056 must go green.
-- [ ] T058 [US7] Build `RunsList.tsx` (newest first; the FR-041 fields; open switches to Results; a ⋯ menu with Delete) and `ClearRunsDialog.tsx` (`shared/ui/dialog`) in `frontend/src/features/runner/components/`, with tests.
-- [ ] T059 [US7] FR-001a, FR-001b: add the running indicator to `frontend/src/features/tabs/components/TabItem.tsx`, reading `useRunnerStore.active` (pulsing accent dot, `aria-label` suffix), with `TabItem.test.tsx`. Add `RunFinishedToast.tsx`, rendered from `frontend/src/app/App.tsx` on `runner:finished` with **Open results** (focus or open the tab, set section `runner`, Results, that run; auto-dismiss after 8 s). Add tests in `RunFinishedToast.test.tsx` and `bootstrap.test.ts`. Restore the indicators after a reload with `RunnerService.Active`.
+- [x] T058 [US7] Build `RunsList.tsx` (newest first; the FR-041 fields; open switches to Results; a ⋯ menu with Delete) and `ClearRunsDialog.tsx` (`shared/ui/dialog`) in `frontend/src/features/runner/components/`, with tests.
+- [x] T059 [US7] FR-001a, FR-001b: add the running indicator to `frontend/src/features/tabs/components/TabItem.tsx`, reading `useRunnerStore.active` (pulsing accent dot, `aria-label` suffix), with `TabItem.test.tsx`. Add `RunFinishedToast.tsx`, rendered from `frontend/src/app/App.tsx` on `runner:finished` with **Open results** (focus or open the tab, set section `runner`, Results, that run; auto-dismiss after 8 s). Add tests in `RunFinishedToast.test.tsx` and `bootstrap.test.ts`. Restore the indicators after a reload with `RunnerService.Active`.
 
 ---
 
@@ -325,7 +325,7 @@ profile.
   - at the end, store the stats and series and drop every user jar.
 
   T060 must go green.
-- [ ] T064 [US8] Build `PerformanceSettings.tsx` (users, duration, profile and its fields with the FR-011 defaults recomputed until edited, the inline-SVG curve preview) and `PerformanceResults.tsx` (stats table and inline-SVG time series) in `frontend/src/features/runner/components/`, with tests.
+- [x] T064 [US8] Build `PerformanceSettings.tsx` (users, duration, profile and its fields with the FR-011 defaults recomputed until edited, the inline-SVG curve preview) and `PerformanceResults.tsx` (stats table and inline-SVG time series) in `frontend/src/features/runner/components/`, with tests.
 
 ---
 
@@ -342,7 +342,7 @@ profile.
   - The errors `RUN-02409`, `RUN-03400` and `MCP-07400`.
   - Recorded changes: no `history`.
   - FR-048: a UI-started run is readable over MCP, and an MCP-started run appears in `RunnerService.Active`.
-- [ ] T066 [US9] Add the optional `Summary` to `entity.AIApproval` (`internal/domain/entity/ai_approval.go`) and to `dto.AIApprovalRequest` (`internal/integration/entrypoint/dto/ai_approval_request.go`). Show it in place of the method and URL in the approval dialog (`frontend/src/features/ai-access/`), with a test.
+- [x] T066 [US9] Add the optional `Summary` to `entity.AIApproval` (`internal/domain/entity/ai_approval.go`) and to `dto.AIApprovalRequest` (`internal/integration/entrypoint/dto/ai_approval_request.go`). Show it in place of the method and URL in the approval dialog (`frontend/src/features/ai-access/`), with a test.
 - [x] T067 [US9] Add `controller.mcpRun` (`internal/integration/entrypoint/controller/mcp_run.go`; destructive and open-world; resolves the target like `tree`; approval on `SND-05409` as in `mcp_send.go`; records changes) and `controller.mcpRuns` (`mcp_runs.go`; read-only; output through `guardAIOutputService`), with DTOs `dto/mcp_run.go` and `dto/mcp_runs.go` whose argument descriptions are filled per XEN-014.
 - [x] T068 [US9] Register the tools in `internal/infra/server/mcp/tool_run.go`, `tool_runs.go`, `controllers.go` and `routes.go`, and wire them in `internal/infra/dependency/server/mcp_routes.go` and the controller DI. T065 must go green.
 
@@ -350,7 +350,7 @@ profile.
 
 ## Phase 12: Polish & cross-cutting
 
-- [ ] T069 Update `docs/prd/xenon-mvp-prd.md` (FR-049):
+- [x] T069 Update `docs/prd/xenon-mvp-prd.md` (FR-049):
   - the non-goal line becomes "CLI (useful, but not needed to replace daily use)";
   - add a "Collection runner" section that summarises the spec;
   - change the L507 runner-only note to "work inside collection runs; outside a run they are no-ops";

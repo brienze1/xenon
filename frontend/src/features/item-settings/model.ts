@@ -1,8 +1,8 @@
 import type { AppError } from '@/platform/errors'
 import type { ItemSettings } from '@/platform/mappers/tree'
 
-/** The inner tabs of a collection or folder tab; `variables` and `documentation` exist for collections only. */
-export type ItemSection = 'overview' | 'auth' | 'headers' | 'scripts' | 'variables' | 'documentation'
+/** The inner tabs of a collection or folder tab; `variables` exists for collections only, `runner` is last. */
+export type ItemSection = 'overview' | 'auth' | 'headers' | 'scripts' | 'variables' | 'documentation' | 'runner'
 
 export type ItemStatus = 'loading' | 'ready'
 

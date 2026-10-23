@@ -5,6 +5,7 @@ import { isScopeDirty, useEnvironmentsStore } from '@/features/environments/stor
 import { useExamplesStore } from '@/features/examples/store'
 import { isItemDirty, useItemSettingsStore } from '@/features/item-settings/store'
 import { selectDirtyHiddenVersions, useRequestBuilderStore } from '@/features/request-builder/store'
+import { useRunnerStore } from '@/features/runner/store'
 import { isSettingsDirty, useSettingsStore } from '@/features/settings/store'
 import { collectionScope } from '@/platform/mappers/variable'
 import { cn } from '@/shared/lib/cn'
@@ -40,6 +41,8 @@ const SETTINGS_ICON = (
 
 const DIRTY_DOT = <span className={styles.dirty} role="img" aria-label="Unsaved changes" />
 
+const RUNNING_DOT = <span className={styles.running} aria-hidden="true" />
+
 const CLOSE_GLYPH = <span aria-hidden="true">×</span>
 
 interface TabItemProps {
@@ -67,6 +70,7 @@ export function TabItem({ tabId }: TabItemProps) {
     (state) => state.environments.find((environment) => environment.id === environmentId)?.color ?? 'none',
   )
   const appSettingsDirty = useSettingsStore((state) => kind === 'settings' && isSettingsDirty(state))
+  const running = useRunnerStore((state) => (kind === 'collection' || kind === 'folder') && itemId !== null && state.active[itemId] !== undefined)
   const namePending = useNamePending(tabId)
   const dirty = draftDirty || responseDirty || variablesDirty || settingsDirty || collectionVariablesDirty || appSettingsDirty || namePending
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({ id: tabId, attributes: { role: 'tab' } })
@@ -118,6 +122,7 @@ export function TabItem({ tabId }: TabItemProps) {
         {...listeners}
         role="tab"
         aria-selected={active}
+        aria-label={running ? `${name}, run in progress` : undefined}
         tabIndex={active ? 0 : -1}
         inert={pointerDragging}
         title={preview ? `${name} (preview)` : name}
@@ -144,6 +149,7 @@ export function TabItem({ tabId }: TabItemProps) {
           <MethodBadge method={method} className={styles.method} />
         )}
         <span className={styles.name}>{name}</span>
+        {running ? RUNNING_DOT : null}
         {dirty ? DIRTY_DOT : null}
         <button type="button" tabIndex={-1} aria-label={`Close ${name}`} className={styles.close} onClick={onClose} onPointerDown={(event) => event.stopPropagation()}>
           {CLOSE_GLYPH}
