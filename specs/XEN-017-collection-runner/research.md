@@ -169,6 +169,12 @@ final. None is left open.
   `ManageRunnerService.StopWorkspace(localId)`, which stops every active run of that workspace and
   stores them as `Stopped`.
 - **App quit**: active runs are abandoned and not stored (edge case).
+- **Real time for waits**: the delay between rows, the performance duration, the controller tick
+  and the once-per-second metrics wait on real time (`time.NewTimer` / `time.Ticker`, or `select`
+  on `time.After` with the run context). They never use `timeutils.AfterFunc`: the BDD fake clock
+  fires those timers only when a scenario advances time, so a run would never end. Timestamps
+  (`StartedAt`, `FinishedAt`, durations) still come from `timeutils.Now()`, which the fake clock
+  keeps moving with real time.
 
 ## R10 — Progress events
 
@@ -246,7 +252,9 @@ final. None is left open.
 - **JUnit XML**: built by a pure application function, `usecase.BuildRunJUnit(run)`, with
   `encoding/xml`.
   - Each row and iteration is a `<testsuite name="<folder path>/<request name> [iteration N]"
-    tests= failures= errors= skipped= time=>`.
+    tests= failures= errors= skipped= time=>`. N is 1-based. The folder path is relative to the
+    run target and joined with `/`, and it is omitted (no leading slash) for requests at the target's
+    root: `Login [iteration 1]`, `Orders/Create [iteration 1]`.
   - Each `pm.test` is a `<testcase name= classname="<request name>">`, with `<failure
     message=>` or `<skipped/>`.
   - A row that errored or was cancelled gets one `<testcase name="request"><error message=>`.
