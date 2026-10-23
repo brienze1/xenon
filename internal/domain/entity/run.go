@@ -103,3 +103,23 @@ func (r Run) Iterations() int {
 func (r Run) elapsed(at time.Time) int64 {
 	return at.Sub(r.StartedAt).Milliseconds()
 }
+
+// ResponseKeys are the keys of the responses the run kept for this app session.
+func (r Run) ResponseKeys() []string {
+	keys := make([]string, 0)
+	for _, row := range r.Rows {
+		if row.ResponseKey != "" {
+			keys = append(keys, row.ResponseKey)
+		}
+	}
+	return keys
+}
+
+func (r Run) Row(index int) (RunRowResult, bool) {
+	for _, row := range r.Rows {
+		if row.Index == index {
+			return row, true
+		}
+	}
+	return RunRowResult{}, false
+}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/brienze1/xenon/internal/application/adapter"
 	"github.com/brienze1/xenon/internal/application/usecase"
+	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/pkg/logger"
 )
 
@@ -28,15 +29,15 @@ func (p *pickPath) PickFolder(ctx context.Context, title string) (string, error)
 	return path, nil
 }
 
-func (p *pickPath) PickFile(ctx context.Context, title string) (string, error) {
-	logger.Info(ctx, "Started", map[string]any{"title": title})
+func (p *pickPath) PickFile(ctx context.Context, title string, filters []entity.FileFilter) (string, error) {
+	logger.Info(ctx, "Started", map[string]any{"title": title, "filters": filters})
 
-	path, err := p.picker.PickFile(ctx, title)
+	path, err := p.picker.PickFile(ctx, title, filters)
 	if err != nil {
 		return "", err
 	}
 
-	logger.Info(ctx, "Finished", map[string]any{"title": title, "path": path})
+	logger.Info(ctx, "Finished", map[string]any{"title": title, "filters": filters, "path": path})
 	return path, nil
 }
 

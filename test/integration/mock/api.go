@@ -40,11 +40,11 @@ type apiRedirect struct {
 }
 
 type receivedRequest struct {
+	at       time.Time
 	headers  http.Header
 	query    url.Values
 	rawQuery string
 	body     []byte
-	at       time.Time
 }
 
 var apiInstance *ApiMock

@@ -4,6 +4,8 @@ import (
 	"archive/zip"
 	"context"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -41,6 +43,20 @@ func (e *exportFilePersistence) SaveFile(ctx context.Context, target string, dat
 	})
 	if err != nil {
 		return exportError(ctx, err)
+	}
+
+	logger.Debug(ctx, "Finished", map[string]any{"path": target})
+	return nil
+}
+
+func (e *exportFilePersistence) SaveRunExport(ctx context.Context, target string, data []byte) error {
+	logger.Debug(ctx, "Started", map[string]any{"path": target, "bytes": len(data)})
+
+	if err := os.MkdirAll(filepath.Dir(target), exportDirMode); err != nil {
+		return errs.FileError(err, "EXP-24500")
+	}
+	if err := e.SaveFile(ctx, target, data); err != nil {
+		return err
 	}
 
 	logger.Debug(ctx, "Finished", map[string]any{"path": target})

@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"strings"
+
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/runrowoutcome"
 	"github.com/brienze1/xenon/internal/domain/enums/sendoutcome"
@@ -127,4 +129,40 @@ func (r RunRowResult) WithSecretsMasked(mask func(text string) (string, bool)) R
 	}
 	r.Console = console
 	return r
+}
+
+func (r RunRowResult) IsError() bool {
+	return r.Outcome == runrowoutcome.Error
+}
+
+func (r RunRowResult) WithResponseKey(key string) RunRowResult {
+	r.ResponseKey = key
+	return r
+}
+
+func (r RunRowResult) WithConsoleEntry(entry ConsoleEntry) RunRowResult {
+	r.Console = append(append([]ConsoleEntry{}, r.Console...), entry)
+	return r
+}
+
+// Breaks is true for a row that errored or was cancelled, which reports as an error rather than through its tests.
+func (r RunRowResult) Breaks() bool {
+	return r.Outcome == runrowoutcome.Error || r.Outcome == runrowoutcome.Cancelled
+}
+
+// BreakMessage is why a breaking row did not complete: its error, else its first script error, else its outcome.
+func (r RunRowResult) BreakMessage() string {
+	switch {
+	case r.Error != "":
+		return r.Error
+	case len(r.ScriptErrors) > 0:
+		return r.ScriptErrors[0].Message
+	default:
+		return r.Outcome.String()
+	}
+}
+
+// Path is the folder path relative to the run target joined with the request name, without a leading slash.
+func (r RunRowResult) Path() string {
+	return strings.Join(append(append([]string{}, r.FolderPath...), r.Name), "/")
 }

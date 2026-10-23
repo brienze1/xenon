@@ -234,7 +234,7 @@ Feature: The Runner lists a collection's requests and remembers the selection, o
   Scenario: Saving the UI state keeps the runner preferences
     Given I call "RunnerService.SavePreferences" with
       """
-      { "local_id": "{{Acme.local_id}}", "item_id": "{{shop}}", "config": { "type": "functional", "rows": [{ "request_id": "{{logout}}", "alias_id": "", "selected": true }], "functional": { "iterations": 1, "data_file": "", "delay_ms": 0, "persist_responses": false, "disable_logs": false, "stop_on_error": false, "keep_variable_values": true, "skip_stored_cookies": false, "save_cookies": false }, "environment_id": "" } }
+      { "local_id": "{{Acme.local_id}}", "item_id": "{{shop}}", "config": { "type": "functional", "rows": [{ "request_id": "{{logout}}", "alias_id": "", "selected": true }, { "request_id": "{{get}}", "alias_id": "", "selected": true }, { "request_id": "{{create}}", "alias_id": "", "selected": true }, { "request_id": "{{login}}", "alias_id": "", "selected": true }], "functional": { "iterations": 1, "data_file": "", "delay_ms": 0, "persist_responses": false, "disable_logs": false, "stop_on_error": false, "keep_variable_values": true, "skip_stored_cookies": false, "save_cookies": false }, "environment_id": "" } }
       """
     When I call "UIStateService.Save" with
       """
@@ -246,6 +246,8 @@ Feature: The Runner lists a collection's requests and remembers the selection, o
       { "local_id": "{{Acme.local_id}}", "item_id": "{{shop}}" }
       """
     Then the response should contain the field "rows.0.request_id" equal to "{{logout}}"
+    And the response should contain the field "rows.1.request_id" equal to "{{get}}"
+    And the response should contain the field "rows.3.request_id" equal to "{{login}}"
 
   @reconcile
   Scenario: Removed requests drop out and new requests join, selected, after their preceding sidebar sibling

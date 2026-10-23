@@ -65,7 +65,7 @@ func (d *dialog) PickFile(bindingCtx context.Context, request dto.PickFile) (res
 		return nil, err
 	}
 
-	path, err := d.pickPathService.PickFile(ctx, request.Title)
+	path, err := d.pickPathService.PickFile(ctx, request.Title, request.FiltersEntity())
 	if err != nil {
 		return nil, err
 	}

@@ -88,6 +88,7 @@ func (m *manageRunner) launch(ctx context.Context, start entity.RunStart, run fu
 	}
 	started := entity.NewRun(run.id, run.target, start.Config, len(run.rows)*start.Config.Functional.Iterations, timeutils.Now())
 	started.EnvironmentName = run.environment.name
+	started.DataFileName = run.data.FileName
 	runCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	control := entity.NewRunControl(cancel)
 	if err := m.manageActiveRuns.Claim(ctx, started, control); err != nil {
@@ -102,6 +103,17 @@ func (m *manageRunner) launch(ctx context.Context, start entity.RunStart, run fu
 	run.control = control
 	go m.runFunctional(runCtx, run)
 	return &started, nil
+}
+
+func (m *manageRunner) iterationData(ctx context.Context, path string) (*entity.IterationData, error) {
+	if path == "" {
+		return &entity.IterationData{}, nil
+	}
+	content, err := m.findIterationData.FindIterationData(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+	return usecase.ParseIterationData(path, content)
 }
 
 func (m *manageRunner) seedJar(ctx context.Context, start entity.RunStart, jarId string) error {

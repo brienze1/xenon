@@ -14,16 +14,23 @@ type manageRunner struct {
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry
 	findRequest           usecase.FindRequest
 	findLocalVariables    usecase.FindLocalVariables
+	listEnvironments      usecase.ListEnvironments
 	loadTree              usecase.LoadTree
 	manageCookieJar       usecase.ManageCookieJar
 	manageActiveRuns      usecase.ManageActiveRuns
 	saveRun               usecase.SaveRun
 	findRuns              usecase.FindRuns
+	deleteRuns            usecase.DeleteRuns
 	publishRunEvent       usecase.PublishRunEvent
+	findRunnerPreferences usecase.FindRunnerPreferences
+	saveRunnerPreferences usecase.SaveRunnerPreferences
+	findIterationData     usecase.FindIterationData
+	findResponse          usecase.FindResponse
+	releaseResponse       usecase.ReleaseResponse
+	saveRunExport         usecase.SaveRunExport
 }
 
 func NewManageRunnerService(
-
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry,
 	findTreeItem usecase.FindTreeItem,
 	saveTreeItem usecase.SaveTreeItem,
@@ -69,6 +76,13 @@ func NewManageRunnerService(
 	saveRun usecase.SaveRun,
 	findRuns usecase.FindRuns,
 	publishRunEvent usecase.PublishRunEvent,
+	deleteRuns usecase.DeleteRuns,
+	listEnvironments usecase.ListEnvironments,
+	findRunnerPreferences usecase.FindRunnerPreferences,
+	saveRunnerPreferences usecase.SaveRunnerPreferences,
+	findIterationData usecase.FindIterationData,
+	findResponse usecase.FindResponse,
+	saveRunExport usecase.SaveRunExport,
 ) adapter.ManageRunnerService {
 	return &manageRunner{
 		core: newSendRequest(
@@ -122,6 +136,14 @@ func NewManageRunnerService(
 		saveRun:               saveRun,
 		findRuns:              findRuns,
 		publishRunEvent:       publishRunEvent,
+		deleteRuns:            deleteRuns,
+		listEnvironments:      listEnvironments,
+		findRunnerPreferences: findRunnerPreferences,
+		saveRunnerPreferences: saveRunnerPreferences,
+		findIterationData:     findIterationData,
+		findResponse:          findResponse,
+		releaseResponse:       releaseResponse,
+		saveRunExport:         saveRunExport,
 	}
 }
 
@@ -139,6 +161,10 @@ func (m *manageRunner) Start(ctx context.Context, start entity.RunStart, appVers
 	if err := start.Config.Validate(); err != nil {
 		return nil, err
 	}
+	data, err := m.iterationData(ctx, start.Config.DataFile())
+	if err != nil {
+		return nil, err
+	}
 	environment, err := m.environment(ctx, start, workspace.Path)
 	if err != nil {
 		return nil, err
@@ -146,7 +172,7 @@ func (m *manageRunner) Start(ctx context.Context, start entity.RunStart, appVers
 	if err := m.preflight(ctx, start, workspace.Path, environment.id, rows); err != nil {
 		return nil, err
 	}
-	run, err := m.launch(ctx, start, functionalRun{target: target, rows: rows, root: workspace.Path, environment: environment, appVersion: appVersion})
+	run, err := m.launch(ctx, start, functionalRun{target: target, rows: rows, root: workspace.Path, environment: environment, data: *data, appVersion: appVersion})
 	if err != nil {
 		return nil, err
 	}
@@ -158,11 +184,7 @@ func (m *manageRunner) Start(ctx context.Context, start entity.RunStart, appVers
 func (m *manageRunner) Get(ctx context.Context, localId, runId string) (*entity.Run, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "runId": runId})
 
-	if active, found := m.manageActiveRuns.Find(ctx, localId, runId); found {
-		logger.Info(ctx, "Finished", map[string]any{"localId": localId, "runId": runId, "status": active.Run.Status})
-		return &active.Run, nil
-	}
-	run, err := m.findRuns.FindRun(ctx, localId, runId)
+	run, err := m.run(ctx, localId, runId)
 	if err != nil {
 		return nil, err
 	}
@@ -219,6 +241,18 @@ func (m *manageRunner) Stop(ctx context.Context, localId, runId string) (*entity
 
 	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "runId": runId})
 	return &active.Run, nil
+}
+
+func (m *manageRunner) Abandon(ctx context.Context) {
+	logger.Info(ctx, "Started")
+
+	active := m.manageActiveRuns.ListActive(ctx)
+	for _, run := range active {
+		run.Control.Abandon()
+	}
+	awaitRuns(ctx, active)
+
+	logger.Info(ctx, "Finished", map[string]any{"runs": len(active)})
 }
 
 func (m *manageRunner) steer(ctx context.Context, localId, runId string, change func(*entity.Run) bool, steer func(*entity.RunControl)) (*entity.Run, error) {

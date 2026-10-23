@@ -119,6 +119,17 @@ func (s *SendExecution) ScriptErrors() []ScriptError {
 	return errors
 }
 
+// NextRequest is the last pm.execution.setNextRequest call across the pre-request and post-response scripts.
+func (s *SendExecution) NextRequest() *NextRequest {
+	var next *NextRequest
+	for _, run := range append(append([]ScriptRun{}, s.PreRuns...), s.PostRuns...) {
+		if run.NextRequest != nil {
+			next = run.NextRequest
+		}
+	}
+	return next
+}
+
 func (s *SendExecution) AddNested(nested NestedRequest) {
 	s.Nested = append(s.Nested, nested)
 }

@@ -23,6 +23,16 @@ func (e *execution) skipRequest(goja.FunctionCall) goja.Value {
 	return goja.Undefined()
 }
 
+func (e *execution) setNextRequest(call goja.FunctionCall) goja.Value {
+	target := call.Argument(0)
+	next := entity.NewStopNextRequest()
+	if !goja.IsNull(target) && !goja.IsUndefined(target) {
+		next = entity.NewNextRequest(target.String())
+	}
+	e.nextRequest = &next
+	return goja.Undefined()
+}
+
 func isSkipInterrupt(err error) bool {
 	var interrupted *goja.InterruptedError
 	return errors.As(err, &interrupted) && interrupted.Value() == skipSignal

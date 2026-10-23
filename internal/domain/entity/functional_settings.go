@@ -37,3 +37,15 @@ func (f FunctionalSettings) Validate() error {
 func (f FunctionalSettings) Delay() time.Duration {
 	return time.Duration(f.DelayMs) * time.Millisecond
 }
+
+// DelayBefore is the wait before a row: none before the run's first row, the delay before every later one.
+func (f FunctionalSettings) DelayBefore(executed int) time.Duration {
+	if executed == 0 {
+		return 0
+	}
+	return f.Delay()
+}
+
+func (f FunctionalSettings) StopsAfter(row RunRowResult) bool {
+	return f.StopOnError && row.IsError()
+}

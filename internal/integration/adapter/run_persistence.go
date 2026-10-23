@@ -5,4 +5,6 @@ import "github.com/brienze1/xenon/internal/application/usecase"
 type RunPersistence interface {
 	usecase.SaveRun
 	usecase.FindRuns
+	usecase.DeleteRuns
+	usecase.DeleteWorkspaceRuns
 }

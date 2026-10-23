@@ -23,6 +23,7 @@ func GetRemoveWorkspaceService() adapter.RemoveWorkspaceService {
 				integration.GetVaultPersistence(),
 				integration.GetLocalVariablesPersistence(),
 				integration.GetActiveRunsPersistence(),
+				integration.GetRunPersistence(),
 			)
 		})
 	}

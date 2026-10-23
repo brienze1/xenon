@@ -30,3 +30,15 @@ func TestRunControlGatesOnPauseAndStop(t *testing.T) {
 		t.Error("done is closed when the run finished")
 	}
 }
+
+func TestRunControlAbandonStopsTheRun(t *testing.T) {
+	stopped := false
+	control := NewRunControl(func() { stopped = true })
+	if control.IsAbandoned() {
+		t.Fatal("a new run is not abandoned")
+	}
+	control.Abandon()
+	if !control.IsAbandoned() || !stopped {
+		t.Error("abandon marks the run and stops it")
+	}
+}

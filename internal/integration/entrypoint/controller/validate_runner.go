@@ -5,6 +5,22 @@ import (
 	"github.com/brienze1/xenon/internal/integration/entrypoint/validator"
 )
 
+func validateRunTargetReference(request *dto.RunTargetReference) error {
+	return validator.CustomValidator().Struct("RUN-08400", request)
+}
+
+func validateSaveRunnerPreferences(request *dto.SaveRunnerPreferences) error {
+	return validator.CustomValidator().Struct("RUN-09400", request)
+}
+
+func validateRunRowReference(request *dto.RunRowReference) error {
+	return validator.CustomValidator().Struct("RUN-10400", request)
+}
+
+func validateExportRun(request *dto.ExportRun) error {
+	return validator.CustomValidator().Struct("RUN-11400", request)
+}
+
 func validateStartRun(request *dto.StartRun) error {
 	return validator.CustomValidator().Struct("RUN-09400", request)
 }

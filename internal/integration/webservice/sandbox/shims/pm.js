@@ -67,7 +67,9 @@
       });
     });
   }
-  const iterationData = new VariableScope();
+  const iterationData = new VariableScope({
+    values: Object.keys(context.iterationData || {}).map((key) => ({ key, value: context.iterationData[key] }))
+  });
   const local = scopes.local;
   local.addLayer(iterationData.values);
   local.addLayer(scopes.environment.values);
@@ -225,7 +227,7 @@
       },
       location: readonly((context.location && context.location.path ? context.location.path.slice() : []), { current: context.location ? context.location.current : undefined }),
       setNextRequest (next) {
-        return next && undefined;
+        host.setNextRequest(next === undefined || next === null ? null : String(next));
       },
       runRequest (requestId, options) {
         return new Promise((resolve, reject) => {

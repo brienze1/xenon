@@ -240,6 +240,17 @@ func (j *Jar) All(now time.Time) []Entry {
 	return all
 }
 
+// Store puts the entries over the ones the jar holds, counting as a change.
+func (j *Jar) Store(entries []Entry, now time.Time) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	for _, e := range entries {
+		if !e.isExpired(now) {
+			j.put(e)
+		}
+	}
+}
+
 // Import adds the entries the jar does not hold yet without counting as a change.
 func (j *Jar) Import(entries []Entry, now time.Time) {
 	j.mu.Lock()

@@ -9,19 +9,20 @@ import (
 )
 
 type ScriptRun struct {
-	StartedAt time.Time
-	Error     *ScriptError
-	Vault     map[string]string
-	Script    ScriptRef
-	Status    enums.ScriptRunStatus
-	Scopes    ScriptScopes
-	Logs      []ScriptLog
-	Notices   []ScriptLog
-	Nested    []NestedRequest
-	Tests     []TestResult
-	Request   Request
-	Duration  time.Duration
-	TestCount int
+	StartedAt   time.Time
+	Error       *ScriptError
+	NextRequest *NextRequest
+	Vault       map[string]string
+	Script      ScriptRef
+	Status      enums.ScriptRunStatus
+	Scopes      ScriptScopes
+	Logs        []ScriptLog
+	Notices     []ScriptLog
+	Nested      []NestedRequest
+	Tests       []TestResult
+	Request     Request
+	Duration    time.Duration
+	TestCount   int
 }
 
 func NewScriptRun(script ScriptRef, startedAt time.Time) ScriptRun {
@@ -30,6 +31,7 @@ func NewScriptRun(script ScriptRef, startedAt time.Time) ScriptRun {
 
 func (r ScriptRun) WithEffects(effects ScriptEffects) ScriptRun {
 	r.Request = effects.Request
+	r.NextRequest = effects.NextRequest
 	r.Scopes = effects.Scopes
 	r.Vault = maps.Clone(effects.Vault)
 	r.Logs = append([]ScriptLog{}, effects.Logs...)

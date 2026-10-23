@@ -12,7 +12,7 @@ type ScriptSandboxInfo struct {
 func NewScriptSandboxInfo(info entity.ScriptInfo) ScriptSandboxInfo {
 	sandbox := ScriptSandboxInfo{RequestName: info.RequestName, RequestId: info.RequestID}
 	if info.HasIteration() {
-		iteration := 0
+		iteration := info.Iteration
 		count := info.IterationCount
 		sandbox.Iteration = &iteration
 		sandbox.IterationCount = &count

@@ -7,5 +7,5 @@ import (
 )
 
 type SaveRun interface {
-	SaveRun(ctx context.Context, run entity.Run) error
+	SaveRun(ctx context.Context, run entity.Run) ([]entity.Run, error)
 }

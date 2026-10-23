@@ -3,6 +3,7 @@ package webservice
 import (
 	"context"
 
+	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/pkg/errs"
 	"github.com/brienze1/xenon/pkg/logger"
@@ -28,15 +29,15 @@ func (d *dialogWebservice) PickFolder(ctx context.Context, title string) (string
 	return path, nil
 }
 
-func (d *dialogWebservice) PickFile(ctx context.Context, title string) (string, error) {
-	logger.Debug(ctx, "Started", map[string]any{"title": title})
+func (d *dialogWebservice) PickFile(ctx context.Context, title string, filters []entity.FileFilter) (string, error) {
+	logger.Debug(ctx, "Started", map[string]any{"title": title, "filters": filters})
 
-	path, err := d.dialog.PickFile(title)
+	path, err := d.dialog.PickFile(title, filters)
 	if err != nil {
 		return "", errs.InternalServerError(err, "DLG-01500", "the file picker could not be opened")
 	}
 
-	logger.Debug(ctx, "Finished", map[string]any{"title": title, "path": path})
+	logger.Debug(ctx, "Finished", map[string]any{"title": title, "filters": filters, "path": path})
 	return path, nil
 }
 

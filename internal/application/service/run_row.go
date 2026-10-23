@@ -14,29 +14,40 @@ type rowConsole struct {
 	mutex   sync.Mutex
 }
 
-func (m *manageRunner) runRow(ctx context.Context, run *functionalRun, index, iteration int, row entity.RunPlanRow) entity.RunRowResult {
+type ranRow struct {
+	next   *entity.NextRequest
+	sendId string
+	result entity.RunRowResult
+}
+
+func (m *manageRunner) runRow(ctx context.Context, run *functionalRun, index, iteration int, row entity.RunPlanRow) ranRow {
 	result := entity.NewRunRowResult(index, iteration, row)
 	stored, err := m.findRequest.Find(ctx, run.root, row.RequestID)
 	if err != nil {
-		return result.Failed(rowError(usecase.NewMissingRunRequest(row.RequestID)))
+		return ranRow{result: result.Failed(rowError(usecase.NewMissingRunRequest(row.RequestID)))}
 	}
 	alias, _ := stored.Alias(row.AliasID)
 	request := stored.Version(row.AliasID)
 	result = result.ForRequest(request, alias)
 	console := &rowConsole{entries: []entity.ConsoleEntry{}}
-	sent, err := m.core.send(ctx, sendCall{localId: run.target.LocalID, aliasId: row.AliasID, request: request, appVersion: run.appVersion, acknowledgement: run.acknowledgement}, run.context(iteration, console))
+	runContext := run.context(iteration, index, console)
+	sent, err := m.core.send(ctx, sendCall{localId: run.target.LocalID, aliasId: row.AliasID, request: request, appVersion: run.appVersion, acknowledgement: run.acknowledgement}, runContext)
 	result = result.WithConsole(console.collected())
 	if err != nil && ctx.Err() != nil {
-		return result.Cancelled()
+		return ranRow{result: result.Cancelled()}
 	}
 	if err != nil {
-		return result.Failed(rowError(err)).WithSecretsMasked(run.mask())
+		return ranRow{result: result.Failed(rowError(err)).WithSecretsMasked(run.mask())}
 	}
 	run.remember(sent.secrets)
-	return result.WithExecution(*sent.execution).WithSecretsMasked(run.mask())
+	result = result.WithExecution(*sent.execution)
+	if sent.execution.Response != nil {
+		result = result.WithResponseKey(runContext.ResponseKey)
+	}
+	return ranRow{result: result.WithSecretsMasked(run.mask()), next: sent.execution.NextRequest(), sendId: sent.execution.ID}
 }
 
-func (r *functionalRun) context(iteration int, console *rowConsole) entity.RunContext {
+func (r *functionalRun) context(iteration, index int, console *rowConsole) entity.RunContext {
 	runContext := entity.RunContext{
 		RunID:           r.id,
 		EnvironmentID:   r.environment.id,
@@ -45,7 +56,11 @@ func (r *functionalRun) context(iteration int, console *rowConsole) entity.RunCo
 		Acknowledgement: r.acknowledgement,
 		Iteration:       iteration,
 		IterationCount:  r.config.Functional.Iterations,
+		IterationData:   r.data.Row(iteration),
 		MuteConsole:     r.config.Functional.DisableLogs,
+	}
+	if r.config.Functional.PersistResponses {
+		runContext.ResponseKey = entity.RunResponseKey(r.id, index)
 	}
 	if !r.config.Functional.DisableLogs {
 		runContext.Collect = console.collect

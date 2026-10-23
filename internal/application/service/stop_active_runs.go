@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/brienze1/xenon/internal/application/usecase"
+	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/pkg/logger"
 )
 
@@ -15,12 +16,16 @@ func stopActiveRuns(ctx context.Context, manageActiveRuns usecase.ManageActiveRu
 	for _, run := range active {
 		run.Control.Stop()
 	}
+	awaitRuns(ctx, active)
+}
+
+func awaitRuns(ctx context.Context, active []entity.ActiveRun) {
 	deadline := time.After(stoppedRunWait)
 	for _, run := range active {
 		select {
 		case <-run.Control.Done():
 		case <-deadline:
-			logger.Info(ctx, "A stopped run is still finishing", map[string]any{"localId": localId, "runId": run.Run.ID})
+			logger.Info(ctx, "A stopped run is still finishing", map[string]any{"localId": run.Run.Target.LocalID, "runId": run.Run.ID})
 			return
 		}
 	}

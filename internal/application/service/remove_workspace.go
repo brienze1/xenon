@@ -19,6 +19,7 @@ type removeWorkspace struct {
 	deleteVault           usecase.DeleteVault
 	deleteLocalVariables  usecase.DeleteLocalVariables
 	manageActiveRuns      usecase.ManageActiveRuns
+	deleteWorkspaceRuns   usecase.DeleteWorkspaceRuns
 }
 
 func NewRemoveWorkspaceService(
@@ -30,6 +31,7 @@ func NewRemoveWorkspaceService(
 	deleteVault usecase.DeleteVault,
 	deleteLocalVariables usecase.DeleteLocalVariables,
 	manageActiveRuns usecase.ManageActiveRuns,
+	deleteWorkspaceRuns usecase.DeleteWorkspaceRuns,
 ) adapter.RemoveWorkspaceService {
 	return &removeWorkspace{
 		findWorkspaceRegistry: findWorkspaceRegistry,
@@ -40,6 +42,7 @@ func NewRemoveWorkspaceService(
 		deleteVault:           deleteVault,
 		deleteLocalVariables:  deleteLocalVariables,
 		manageActiveRuns:      manageActiveRuns,
+		deleteWorkspaceRuns:   deleteWorkspaceRuns,
 	}
 }
 
@@ -72,6 +75,9 @@ func (r *removeWorkspace) Remove(ctx context.Context, localId string, moveToTras
 		logger.Warn(ctx, err, "The workspace vault could not be fully deleted", map[string]any{"localId": localId})
 	}
 	if err := r.deleteLocalVariables.Delete(ctx, localId); err != nil {
+		return nil, err
+	}
+	if err := r.deleteWorkspaceRuns.DeleteWorkspaceRuns(ctx, localId); err != nil {
 		return nil, err
 	}
 	if err := r.deleteUIState.Delete(ctx, localId); err != nil {

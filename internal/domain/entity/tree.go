@@ -68,3 +68,19 @@ func ancestorsOf(nodes []TreeNode, id string) ([]TreeNode, bool) {
 	}
 	return nil, false
 }
+
+// ContainerIDs lists the id of every collection and folder in the tree.
+func (t Tree) ContainerIDs() []string {
+	return containerIDs(t.Root.Children)
+}
+
+func containerIDs(nodes []TreeNode) []string {
+	ids := make([]string, 0)
+	for _, node := range nodes {
+		if node.IsContainer() && node.IsItem() {
+			ids = append(ids, node.ID)
+			ids = append(ids, containerIDs(node.Children)...)
+		}
+	}
+	return ids
+}

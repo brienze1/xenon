@@ -70,6 +70,18 @@ func (c *cookieJarWebservice) LoadCookies(ctx context.Context, localId string, c
 	logger.Debug(ctx, "Finished", map[string]any{"localId": localId})
 }
 
+func (c *cookieJarWebservice) StoreCookies(ctx context.Context, localId string, cookies []entity.Cookie) {
+	logger.Debug(ctx, "Started", map[string]any{"localId": localId, "cookies": len(cookies)})
+
+	entries := make([]cookiejar.Entry, 0, len(cookies))
+	for _, cookie := range cookies {
+		entries = append(entries, dto.NewJarCookie(cookie).Entry())
+	}
+	c.workspace(localId).jar.Store(entries, timeutils.Now())
+
+	logger.Debug(ctx, "Finished", map[string]any{"localId": localId})
+}
+
 func (c *cookieJarWebservice) MarkCookiesSaved(ctx context.Context, localId string, revision uint64) {
 	logger.Debug(ctx, "Started", map[string]any{"localId": localId, "revision": revision})
 

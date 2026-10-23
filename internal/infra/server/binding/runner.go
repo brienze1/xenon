@@ -38,3 +38,35 @@ func (r *RunnerService) Resume(ctx context.Context, request dto.RunReference) (*
 func (r *RunnerService) Stop(ctx context.Context, request dto.RunReference) (*dto.RunSummaryView, error) {
 	return r.runner.Stop(ctx, request)
 }
+
+func (r *RunnerService) Plan(ctx context.Context, request dto.RunTargetReference) (*dto.RunPlan, error) {
+	return r.runner.Plan(ctx, request)
+}
+
+func (r *RunnerService) SavePreferences(ctx context.Context, request dto.SaveRunnerPreferences) error {
+	return r.runner.SavePreferences(ctx, request)
+}
+
+func (r *RunnerService) List(ctx context.Context, request dto.RunTargetReference) ([]dto.RunSummaryView, error) {
+	return r.runner.List(ctx, request)
+}
+
+func (r *RunnerService) Response(ctx context.Context, request dto.RunRowReference) (*dto.SendResult, error) {
+	return r.runner.Response(ctx, request)
+}
+
+func (r *RunnerService) Delete(ctx context.Context, request dto.RunReference) error {
+	return r.runner.Delete(ctx, request)
+}
+
+func (r *RunnerService) Clear(ctx context.Context, request dto.RunTargetReference) error {
+	return r.runner.Clear(ctx, request)
+}
+
+func (r *RunnerService) Export(ctx context.Context, request dto.ExportRun) error {
+	return r.runner.Export(ctx, request)
+}
+
+func (r *RunnerService) ServiceShutdown() error {
+	return r.runner.Abandon(context.Background())
+}

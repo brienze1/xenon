@@ -6,15 +6,16 @@ import (
 )
 
 type UIState struct {
-	ActiveTabId   string           `json:"active_tab_id"`
-	PreviewTabId  string           `json:"preview_tab_id"`
-	HistorySource string           `json:"history_source,omitempty"`
-	Sidebar       Sidebar          `json:"sidebar"`
-	Tabs          []Tab            `json:"tabs"`
-	ClosedTabs    []ClosedTab      `json:"closed_tabs"`
-	Snippets      []SnippetOptions `json:"snippet_options"`
-	Layout        Layout           `json:"layout"`
-	Version       int              `json:"version"`
+	Runners       RunnerPreferences `json:"runners,omitempty"`
+	ActiveTabId   string            `json:"active_tab_id"`
+	PreviewTabId  string            `json:"preview_tab_id"`
+	HistorySource string            `json:"history_source,omitempty"`
+	Sidebar       Sidebar           `json:"sidebar"`
+	Tabs          []Tab             `json:"tabs"`
+	ClosedTabs    []ClosedTab       `json:"closed_tabs"`
+	Snippets      []SnippetOptions  `json:"snippet_options"`
+	Layout        Layout            `json:"layout"`
+	Version       int               `json:"version"`
 }
 
 func NewUIState(state entity.UIState) UIState {
@@ -26,6 +27,9 @@ func NewUIState(state entity.UIState) UIState {
 		Sidebar:       NewSidebar(state.Sidebar),
 		Layout:        NewLayout(state.Layout),
 		HistorySource: state.HistorySource.String(),
+	}
+	if len(state.Runners) > 0 {
+		model.Runners = NewRunnerPreferences(state.Runners)
 	}
 	for _, tab := range state.Tabs {
 		model.Tabs = append(model.Tabs, NewTab(tab))
@@ -57,5 +61,6 @@ func (u *UIState) ToEntity() entity.UIState {
 	state.Sidebar = u.Sidebar.ToEntity()
 	state.Layout = u.Layout.ToEntity()
 	state.HistorySource = historyfilter.GetHistoryFilter(u.HistorySource)
+	state.Runners = u.Runners.ToEntity()
 	return state.Normalized()
 }

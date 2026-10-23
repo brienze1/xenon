@@ -60,6 +60,13 @@ func GetManageRunnerService() adapter.ManageRunnerService {
 				integration.GetRunPersistence(),
 				integration.GetRunPersistence(),
 				integration.GetRunEventPublisher(),
+				integration.GetRunPersistence(),
+				integration.GetEnvironmentPersistence(),
+				integration.GetUIStatePersistence(),
+				integration.GetUIStatePersistence(),
+				integration.GetIterationDataPersistence(),
+				integration.GetResponseBodyPersistence(),
+				integration.GetExportFilePersistence(),
 			)
 		})
 	}

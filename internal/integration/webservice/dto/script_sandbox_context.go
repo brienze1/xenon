@@ -9,14 +9,15 @@ const (
 
 // ScriptSandboxContext is everything the pm shims are built from for one script.
 type ScriptSandboxContext struct {
-	Response *ScriptResponse       `json:"response,omitempty"`
-	Vault    map[string]string     `json:"vault"`
-	Info     ScriptSandboxInfo     `json:"info"`
-	Location ScriptSandboxLocation `json:"location"`
-	Phase    string                `json:"phase"`
-	Scopes   ScriptSandboxScopes   `json:"scopes"`
-	Cookies  []ScriptSandboxCookie `json:"cookies"`
-	Request  ScriptRequest         `json:"request"`
+	Response      *ScriptResponse       `json:"response,omitempty"`
+	Vault         map[string]string     `json:"vault"`
+	IterationData map[string]any        `json:"iterationData"`
+	Info          ScriptSandboxInfo     `json:"info"`
+	Location      ScriptSandboxLocation `json:"location"`
+	Phase         string                `json:"phase"`
+	Scopes        ScriptSandboxScopes   `json:"scopes"`
+	Cookies       []ScriptSandboxCookie `json:"cookies"`
+	Request       ScriptRequest         `json:"request"`
 }
 
 func NewScriptSandboxContext(script entity.ScriptRef, context entity.ScriptContext) ScriptSandboxContext {
@@ -34,6 +35,11 @@ func NewScriptSandboxContext(script entity.ScriptRef, context entity.ScriptConte
 	}
 	if sandbox.Vault == nil {
 		sandbox.Vault = map[string]string{}
+	}
+	if context.IterationData != nil {
+		sandbox.IterationData = context.IterationData
+	} else {
+		sandbox.IterationData = map[string]any{}
 	}
 	if context.Response != nil && !script.IsPreRequest() {
 		response := NewScriptResponse(*context.Response)

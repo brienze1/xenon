@@ -3,6 +3,8 @@ package mock
 import (
 	"strings"
 	"sync"
+
+	"github.com/brienze1/xenon/internal/domain/entity"
 )
 
 type Dialog struct {
@@ -27,7 +29,12 @@ func (d *Dialog) PickFolder(title string) (string, error) {
 	return d.answer(title)
 }
 
-func (d *Dialog) PickFile(title string) (string, error) {
+func (d *Dialog) PickFile(title string, filters []entity.FileFilter) (string, error) {
+	labels := make([]string, 0, len(filters))
+	for _, filter := range filters {
+		labels = append(labels, filter.DisplayName+" ("+filter.Pattern+")")
+	}
+	d.RecordFilters(labels)
 	return d.answer(title)
 }
 

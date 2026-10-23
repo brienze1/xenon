@@ -37,7 +37,7 @@ func (v VariableContext) WithLocal(values map[string]any) VariableContext {
 func (v VariableContext) WithIterationData(row map[string]any) VariableContext {
 	variables := make(map[string]ContextVariable, len(row))
 	for name, value := range row {
-		variables[name] = ContextVariable{Name: name, Value: LocalVariableText(value), Scope: variablescope.Data}
+		variables[name] = ContextVariable{Name: name, Value: IterationDataText(value), Scope: variablescope.Data}
 	}
 	layers := make([]VariableLayer, 0, len(v.Layers)+1)
 	inserted := false

@@ -2,7 +2,10 @@ package usecase
 
 import "github.com/brienze1/xenon/pkg/errs"
 
-const runIdAttribute = "run_id"
+const (
+	runIdAttribute  = "run_id"
+	reasonAttribute = "reason"
+)
 
 func RejectUnknownRun(runId string) error {
 	return errs.NotFoundError("no active or stored run with the id "+runId, "RUN-01404")
@@ -16,6 +19,11 @@ func RejectActiveRun(runId string) error {
 func RejectInvalidRunSetting(field, reason string) error {
 	return errs.BadRequestError("the run setting "+field+" "+reason, "RUN-04400",
 		errs.ErrorDetails{Attribute: field, Messages: []string{reason}})
+}
+
+func RejectInvalidIterationData(reason string) error {
+	return errs.BadRequestError("the iteration data file cannot be used: "+reason, "RUN-05400",
+		errs.ErrorDetails{Attribute: reasonAttribute, Messages: []string{reason}})
 }
 
 func NewMissingRunRequest(requestId string) error {

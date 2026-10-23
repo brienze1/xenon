@@ -21,6 +21,7 @@ const (
 	uiStateFile       = "state.json"
 	digestStateKey    = "digest_state"
 	allowlistKey      = "cookie_allowlist"
+	runnersKey        = "runners"
 )
 
 type uiStatePersistence struct {
@@ -143,6 +144,74 @@ func (u *uiStatePersistence) SaveCookieAllowlist(ctx context.Context, localId st
 
 	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "allowlist": allowlist})
 	return nil
+}
+
+func (u *uiStatePersistence) FindRunnerPreferences(ctx context.Context, localId string) (map[string]entity.RunnerPreferences, error) {
+	logger.Debug(ctx, "Started", map[string]any{"localId": localId})
+
+	u.mu.Lock()
+	runners, err := u.runners(localId)
+	u.mu.Unlock()
+	if err != nil {
+		return nil, err
+	}
+	preferences := runners.ToEntity()
+
+	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "targets": len(preferences)})
+	return preferences, nil
+}
+
+func (u *uiStatePersistence) SaveRunnerPreferences(ctx context.Context, localId, itemId string, preferences entity.RunnerPreferences) error {
+	logger.Debug(ctx, "Started", map[string]any{"localId": localId, "itemId": itemId})
+
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	runners, err := u.runners(localId)
+	if err != nil {
+		return err
+	}
+	runners[itemId] = model.NewRunConfig(preferences.Config)
+	if err := u.patchRunners(localId, runners); err != nil {
+		return err
+	}
+
+	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "itemId": itemId})
+	return nil
+}
+
+func (u *uiStatePersistence) DeleteRunnerPreferences(ctx context.Context, localId string, itemIds []string) error {
+	logger.Debug(ctx, "Started", map[string]any{"localId": localId, "itemIds": itemIds})
+
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	runners, err := u.runners(localId)
+	if err != nil {
+		return err
+	}
+	for _, itemId := range itemIds {
+		delete(runners, itemId)
+	}
+	if err := u.patchRunners(localId, runners); err != nil {
+		return err
+	}
+
+	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "itemIds": itemIds})
+	return nil
+}
+
+func (u *uiStatePersistence) runners(localId string) (model.RunnerPreferences, error) {
+	fields, err := readStateFields(localId)
+	if err != nil {
+		return nil, err
+	}
+	runners := model.RunnerPreferences{}
+	_ = json.Unmarshal(fields[runnersKey], &runners)
+	return runners, nil
+}
+
+func (u *uiStatePersistence) patchRunners(localId string, runners model.RunnerPreferences) error {
+	data, _ := json.Marshal(runners)
+	return u.patch(localId, map[string]json.RawMessage{runnersKey: data}, "UIS-16500", "UIS-17500")
 }
 
 func (u *uiStatePersistence) digestStates(localId string) (map[string]model.DigestState, error) {

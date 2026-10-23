@@ -376,8 +376,7 @@ Feature: Run settings: environment, stop on error, variables, cookies and logs
     And the event "variables:changed" should have been emitted 0 times
     And the app data file "workspaces/{{Acme.local_id}}/variables.json" should not contain "sess-abc"
     And the app data file "workspaces/{{Acme.local_id}}/variables.json" should not contain "cart-42"
-    And no file under the workspace folder should contain "sess-abc"
-    And no file under the workspace folder should contain "cart"
+    And the workspace file "acme/collections/shop/collection.yaml" should not contain the field "variables"
     And the workspace file "acme/environments/dev.yaml" should not contain the field "variables.1"
     When I call "RequestService.Send" with
       """

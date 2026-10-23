@@ -10,6 +10,8 @@ type UIStatePersistence interface {
 	usecase.SaveDigestState
 	usecase.FindCookieAllowlist
 	usecase.SaveCookieAllowlist
+	usecase.FindRunnerPreferences
+	usecase.SaveRunnerPreferences
 	usecase.FindLocalSyncSettings
 	usecase.SaveLocalSyncSettings
 	usecase.LocateClone

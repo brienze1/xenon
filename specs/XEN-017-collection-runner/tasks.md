@@ -47,7 +47,7 @@ event publisher and the `RunnerService` skeleton every story needs.
   - profile parameters outside the duration or user count give `RUN-04400`;
   - Postman's defaults come from `NewRunConfig()`.
 - [x] T004 Add the following entities to `internal/domain/entity/` per data-model.md: `RunTarget` (`run_target.go`), `RunRow` (`run_row.go`), `FunctionalSettings` (`functional_settings.go`), `LoadProfile` (fields only, `load_profile.go`), `PerformanceSettings` (`performance_settings.go`), `RunConfig` (`NewRunConfig`, `Validate`, `SelectedRows`, `run_config.go`) and `RunnerPreferences` (`runner_preferences.go`). T003 must go green.
-- [ ] T005 [P] Add the `RUN-` error constructors in `internal/application/usecase/reject_invalid_run.go`:
+- [x] T005 [P] Add the `RUN-` error constructors in `internal/application/usecase/reject_invalid_run.go`:
   - `RejectUnknownRun` (`RUN-01404`);
   - `RejectActiveRun` (`RUN-02409`, details `run_id`);
   - `RejectEmptyRun` (`RUN-03400`);
@@ -73,14 +73,14 @@ event publisher and the `RunnerService` skeleton every story needs.
 - [x] T011 [P] Add `usecase.ManageActiveRuns` (`Claim`, `Release`, `Find`, `ListActive`, `ListWorkspace`) in `internal/application/usecase/manage_active_runs.go`, and its in-memory, mutex-guarded implementation in `internal/integration/persistence/active_runs.go`. `Claim` returns `RUN-02409` for an occupied target.
 - [x] T012 [P] Add the entities `RunRowResult` (`NewRunRowOutcome`), `RunSummary` (computed from rows), `RunProgress` and `Run` (state transitions per data-model.md) in `internal/domain/entity/`. Add unit tests for `NewRunRowOutcome` in `run_row_result_test.go` and for the transitions in `run_test.go`.
 - [x] T013 [P] Add `usecase.PublishRunEvent` (`Progress`, `Finished`) in `internal/application/usecase/publish_run_event.go`. Add the publisher in `internal/integration/publisher/run_event.go`, throttled to 10/s per run with the last state always emitted, and the DTOs `RunProgressChanged` (`runner:progress`) and `RunFinished` (`runner:finished`) in `internal/integration/publisher/dto/`. Register both in `internal/infra/server/event/events.go`.
-- [ ] T014 Add `adapter.ManageRunnerService` in `internal/application/adapter/manage_runner.go` with the full method set from contracts/bindings.md. Add `service.manageRunner` in `internal/application/service/manage_runner.go`; it builds its own send core with the same dependencies as `NewSendRequestService`. Add `adapter.RunnerController` in `internal/integration/adapter/runner_controller.go`.
-- [ ] T015 Add the DTOs per contracts/bindings.md in `internal/integration/entrypoint/dto/`:
+- [x] T014 Add `adapter.ManageRunnerService` in `internal/application/adapter/manage_runner.go` with the full method set from contracts/bindings.md. Add `service.manageRunner` in `internal/application/service/manage_runner.go`; it builds its own send core with the same dependencies as `NewSendRequestService`. Add `adapter.RunnerController` in `internal/integration/adapter/runner_controller.go`.
+- [x] T015 Add the DTOs per contracts/bindings.md in `internal/integration/entrypoint/dto/`:
   - `run_config.go`, `run_plan.go`, `run.go`, `run_summary_view.go`;
   - `start_run.go`, `run_reference.go`, `run_row_reference.go`, `run_target_reference.go`;
   - `save_runner_preferences.go`, `export_run.go`.
 
   Each comes with `ToEntity` and constructors, and `validate` tags on the required fields.
-- [ ] T016 Add `controller.runner` in `internal/integration/entrypoint/controller/runner.go`, following the full controller skill pattern (validate, `ToEntity`, service, error handler, panic recovery), with the DTO validation codes `RUN-08400`…`RUN-12400` in `validate_runner.go`. Add the binding `RunnerService` in `internal/infra/server/binding/runner.go`, wire DI under `internal/infra/dependency/`, and register the service in the Wails service list.
+- [x] T016 Add `controller.runner` in `internal/integration/entrypoint/controller/runner.go`, following the full controller skill pattern (validate, `ToEntity`, service, error handler, panic recovery), with the DTO validation codes `RUN-08400`…`RUN-12400` in `validate_runner.go`. Add the binding `RunnerService` in `internal/infra/server/binding/runner.go`, wire DI under `internal/infra/dependency/`, and register the service in the Wails service list.
 - [ ] T017 [P] Add `frontend/src/platform/services/runner.ts` and `frontend/src/platform/mappers/runner.ts`, with tests `runner.test.ts` for each. Add `onRunProgress` and `onRunFinished` to `frontend/src/platform/events.ts`. Run `make bindings`.
 - [ ] T018 [P] Add the empty feature shell `frontend/src/features/runner/model.ts` and `store.ts` (state shape per contracts/ui.md, `reset()`), and register its reset on workspace switch in `frontend/src/app/bootstrap.ts`.
 
@@ -152,7 +152,7 @@ keyboard), alias choice per row, all remembered locally.
 **Independent Test**: save preferences, reload the plan, check that the run uses that selection
 and order, and that Reset restores the sidebar order.
 
-- [ ] T030 [P] [US2] Write the red `test/integration/features/runner/runner_plan.feature` (`@runner @runner_plan`), covering:
+- [x] T030 [P] [US2] Write the red `test/integration/features/runner/runner_plan.feature` (`@runner @runner_plan`), covering:
   - FR-003: flattened order with subfolders, examples excluded.
   - FR-006: `SavePreferences` writes `runners` in `state.json`, and no workspace file changes.
   - FR-007: reconcile drops removed requests, inserts added ones checked after the preceding sibling, and keeps the rest.
@@ -161,9 +161,9 @@ and order, and that Reset restores the sidebar order.
   - `RUN-07404`.
 
   Prove it red.
-- [ ] T031 [US2] Implement `ReconcileRunRows` in `internal/domain/entity/run_plan_row.go`, with unit tests covering removed, added-at-sibling, added-first and stale-alias cases.
-- [ ] T032 [US2] Add `Runners map[string]RunnerPreferences` to `internal/domain/entity/ui_state.go`, the model field `runners` (`omitempty`, older files load) to `internal/integration/persistence/model/ui_state.go`, and `runners` to `internal/integration/entrypoint/dto/ui_state.go`. `UIStateService.Save` must preserve `runners`.
-- [ ] T033 [US2] Implement `manageRunner.Plan` and `SavePreferences` in `internal/application/service/manage_runner.go`:
+- [x] T031 [US2] Implement `ReconcileRunRows` in `internal/domain/entity/run_plan_row.go`, with unit tests covering removed, added-at-sibling, added-first and stale-alias cases.
+- [x] T032 [US2] Add `Runners map[string]RunnerPreferences` to `internal/domain/entity/ui_state.go`, the model field `runners` (`omitempty`, older files load) to `internal/integration/persistence/model/ui_state.go`, and `runners` to `internal/integration/entrypoint/dto/ui_state.go`. `UIStateService.Save` must preserve `runners`.
+- [x] T033 [US2] Implement `manageRunner.Plan` and `SavePreferences` in `internal/application/service/manage_runner.go`:
   - reconcile the rows;
   - include the environments and the active run;
   - clear a missing data file (`data_file_missing`);
@@ -201,11 +201,11 @@ and the environment override.
 **Independent Test**: run with a 3-row CSV and check the 3 iterations, the row values, `pm.info`,
 the delay, and the effects of the variable and cookie settings.
 
-- [ ] T039 [P] [US4] Write the red `test/integration/features/runner/run_iterations.feature` (`@runner @run_iterations`), covering:
+- [x] T039 [P] [US4] Write the red `test/integration/features/runner/run_iterations.feature` (`@runner @run_iterations`), covering:
   - FR-018: `pm.info.iteration` and `iterationCount`, `pm.iterationData.get`, and `{{field}}` overriding an environment variable of the same name.
   - FR-019: the CSV header, extra and missing cells, a UTF-8 BOM, a JSON array with number, boolean, null and object values (typed in `pm.iterationData`, text form in `{{}}`), fewer iterations than rows, last-row reuse, the default count, and the `RUN-05400` reasons.
   - FR-022: mock API receive times are ≥ the delay apart, across iterations too, and the run finishes without a trailing delay.
-- [ ] T040 [P] [US4] Write the red `test/integration/features/runner/run_settings.feature` (`@runner @run_settings`), covering:
+- [x] T040 [P] [US4] Write the red `test/integration/features/runner/run_settings.feature` (`@runner @run_settings`), covering:
   - FR-012: the environment override, the active environment unchanged, and `"none"`.
   - FR-023: stop on a network error and on a script error; a failed assertion continues.
   - FR-024: keep values on persists; off leaves `variables.json`, the vault and the workspace files unchanged while later rows see the value (including a `pm.vault.set` and a secret variable).
@@ -214,14 +214,14 @@ the delay, and the effects of the variable and cookie settings.
 
   Prove T039 and T040 red.
 - [ ] T041 [P] [US4] Add the `filters` field to `internal/integration/entrypoint/dto/pick_file.go` and pass it in `internal/infra/server/binding/dialog.go`. Extend `test/integration/features/dialogs/pick_file.feature` (red, then green) and `frontend/src/platform/services/dialogs.ts` (+ test).
-- [ ] T042 [US4] Add `IterationData` (`Row`, `WrappedRow`, `Count`) in `internal/domain/entity/iteration_data.go` and `usecase.ParseIterationData` in `internal/application/usecase/parse_iteration_data.go`, with unit tests in `parse_iteration_data_test.go`. Add `usecase.FindIterationData` in `internal/application/usecase/find_iteration_data.go`, implemented in `internal/integration/persistence/iteration_data.go`.
-- [ ] T043 [US4] Feed the iteration to the sandbox:
+- [x] T042 [US4] Add `IterationData` (`Row`, `WrappedRow`, `Count`) in `internal/domain/entity/iteration_data.go` and `usecase.ParseIterationData` in `internal/application/usecase/parse_iteration_data.go`, with unit tests in `parse_iteration_data_test.go`. Add `usecase.FindIterationData` in `internal/application/usecase/find_iteration_data.go`, implemented in `internal/integration/persistence/iteration_data.go`.
+- [x] T043 [US4] Feed the iteration to the sandbox:
   - `internal/integration/webservice/dto/script_sandbox_info.go` takes the iteration from `ScriptInfo`;
   - `script_sandbox_context.go` gains `iterationData`;
   - `internal/integration/webservice/sandbox/shims/pm.js` fills its `iterationData` scope from `context.iterationData`;
   - `send_run.go` builds `ScriptInfo` and `ScriptContext` from the `RunContext`, and resolves request variables with `WithIterationData`.
-- [ ] T044 [US4] Implement the iterations, the default count from the data rows, the delay (timer between the end of one row and the start of the next, honouring stop and pause), stop on error (`stopped_on_error`), and the keep-values overlay (`RunVariables` in `RunContext` when off) in `internal/application/service/run_functional.go`.
-- [ ] T045 [US4] Implement the cookie settings in `internal/application/service/run_functional.go`:
+- [x] T044 [US4] Implement the iterations, the default count from the data rows, the delay (timer between the end of one row and the start of the next, honouring stop and pause), stop on error (`stopped_on_error`), and the keep-values overlay (`RunVariables` in `RunContext` when off) in `internal/application/service/run_functional.go`.
+- [x] T045 [US4] Implement the cookie settings in `internal/application/service/run_functional.go`:
   - seed the run jar, or leave it empty for skip-stored;
   - at the end, merge with `MergeCookies` into the workspace jar and `settle` when save-cookies is on;
   - always `DropJar`.
@@ -239,17 +239,17 @@ flow, while a single send stays a no-op.
 **Independent Test**: scripts calling setNextRequest by name, by id, with `null` and with an
 unknown name give the expected request sequences.
 
-- [ ] T047 [P] [US5] Write the red `test/integration/features/runner/run_control_flow.feature` (`@runner @run_control_flow`), covering:
+- [x] T047 [P] [US5] Write the red `test/integration/features/runner/run_control_flow.feature` (`@runner @run_control_flow`), covering:
   - FR-020: by name, by id, backwards, last call wins (including a pre-request call and a call in a skipped row), `null`, an unchecked row treated as not in the run, and an unknown target with its console warning text;
   - the next iteration restarts at row 1;
   - a single send stays a no-op;
   - legacy `postman.setNextRequest`.
-- [ ] T048 [US5] Add `NextRequest` (`internal/domain/entity/next_request.go`), `ScriptRun.NextRequest` (`script_run.go`) and `SendExecution.NextRequest()` (`send_execution.go`, last set wins across the chains), with unit tests.
-- [ ] T049 [US5] In `internal/integration/webservice/sandbox/pm_execution.go`, add the `setNextRequest` host function, which records `{Target, Stop}` on the execution and returns it in the sandbox result. Make `shims/pm.js` `setNextRequest(next)` call the host (a missing argument or `null` means stop), and make `shims/legacy.js` `postman.setNextRequest` call the same host.
-- [ ] T050 [US5] Resolve the next row in `internal/application/service/run_functional.go`: by id, else by the first row with that name, else end the iteration with the console warning `Couldn't find request "<target>" in this run; the iteration ends.` A stop ends the iteration. T047 must go green.
+- [x] T048 [US5] Add `NextRequest` (`internal/domain/entity/next_request.go`), `ScriptRun.NextRequest` (`script_run.go`) and `SendExecution.NextRequest()` (`send_execution.go`, last set wins across the chains), with unit tests.
+- [x] T049 [US5] In `internal/integration/webservice/sandbox/pm_execution.go`, add the `setNextRequest` host function, which records `{Target, Stop}` on the execution and returns it in the sandbox result. Make `shims/pm.js` `setNextRequest(next)` call the host (a missing argument or `null` means stop), and make `shims/legacy.js` `postman.setNextRequest` call the same host.
+- [x] T050 [US5] Resolve the next row in `internal/application/service/run_functional.go`: by id, else by the first row with that name, else end the iteration with the console warning `Couldn't find request "<target>" in this run; the iteration ends.` A stop ends the iteration. T047 must go green.
 
 
-- [ ] T050a [US5] SC-005: write `test/integration/features/runner/run_newman_parity.feature` (`@newman @runner_newman`, run by `make newman` in the CI `newman` job, not by `make bdd`). It runs a collection that uses `setNextRequest` (by name and `null`), `skipRequest`, `pm.iterationData` and `pm.info.iteration`, with a 3-row CSV, through `RunnerService.Start`. Then it exports the collection as Postman and runs Newman with the same data file against the same mock. The method, path, query and body sequence received by the mock must be identical. Extend the generic Newman step in `test/integration/steps/when_newman_steps_test.go` with an optional `with the data file "<path>"` variant that passes `-d` (and `tools/newman/run.mjs` accordingly). Prove it red before T049 and T050, then green.
+- [x] T050a [US5] SC-005: write `test/integration/features/runner/run_newman_parity.feature` (`@newman @runner_newman`, run by `make newman` in the CI `newman` job, not by `make bdd`). It runs a collection that uses `setNextRequest` (by name and `null`), `skipRequest`, `pm.iterationData` and `pm.info.iteration`, with a 3-row CSV, through `RunnerService.Start`. Then it exports the collection as Postman and runs Newman with the same data file against the same mock. The method, path, query and body sequence received by the mock must be identical. Extend the generic Newman step in `test/integration/steps/when_newman_steps_test.go` with an optional `with the data file "<path>"` variant that passes `-d` (and `tools/newman/run.mjs` accordingly). Prove it red before T049 and T050, then green.
 ---
 
 ## Phase 8: User Story 6 — Inspect, filter, re-run and export results (P2)
@@ -260,15 +260,15 @@ JUnit export.
 **Independent Test**: with a passing and a failing row, check the filters and the detail, that Run
 again reuses the settings, and the export file contents.
 
-- [ ] T051 [P] [US6] Write the red `test/integration/features/runner/run_export.feature` (`@runner @run_export`), covering:
+- [x] T051 [P] [US6] Write the red `test/integration/features/runner/run_export.feature` (`@runner @run_export`), covering:
   - FR-037: JSON equals the stored run, masked.
   - JUnit suites per row and iteration, `<failure message>`, `<skipped/>`, and `<error>` for errored or cancelled rows.
   - SC-004: a `<testsuites>` root, and `tests`, `failures`, `errors`, `skipped` and `time` attributes on every suite, whose totals equal the run summary.
   - A performance run with `junit` gives `RUN-04400`.
 
   Also write the red `test/integration/features/runner/run_responses.feature` (`@runner @run_responses`) for FR-040: `RunnerService.Response` returns the response when persisted, and `RUN-01404` when not or after the run is deleted.
-- [ ] T052 [US6] Add `usecase.BuildRunJUnit` in `internal/application/usecase/build_run_junit.go`, with unit tests. Implement `manageRunner.Export`, which writes through the existing export file writer (`internal/integration/persistence/export_file.go`).
-- [ ] T053 [US6] Implement persisted responses: when `PersistResponses` is on, `RunContext.ResponseKey = RunResponseKey(runId, index)` and `sendRun.send` saves under that key. Implement `manageRunner.Response`, which finds the response by key or returns `RUN-01404`. T051 must go green.
+- [x] T052 [US6] Add `usecase.BuildRunJUnit` in `internal/application/usecase/build_run_junit.go`, with unit tests. Implement `manageRunner.Export`, which writes through the existing export file writer (`internal/integration/persistence/export_file.go`).
+- [x] T053 [US6] Implement persisted responses: when `PersistResponses` is on, `RunContext.ResponseKey = RunResponseKey(runId, index)` and `sendRun.send` saves under that key. Implement `manageRunner.Response`, which finds the response by key or returns `RUN-01404`. T051 must go green.
 - [ ] T054 [US6] FR-032 (virtualized list, with a test rendering 10,000 rows and only the visible ones mounted), FR-034, FR-035: build the filter chips (All / Passed / Failed / Skipped, per FR-034) in `RunResults.tsx`, and `RunRowDetail.tsx` (Request: method, URL, headers, body; Response: `StatusLine`, `ResponseHeaders`, and `ResponseBody` with `tabId` set to the run response key, or the "not persisted" note), with tests.
 - [ ] T055 [US6] FR-036, FR-037: implement **Run again** (`start` with the stored run's target and config) and **Export** (`PickSaveFile`, then `RunnerService.Export`; JUnit hidden for performance runs) in `frontend/src/features/runner/store.ts` and the Results header, with tests.
 
@@ -282,7 +282,7 @@ finish toast and the tab indicator.
 **Independent Test**: after 26 runs only 25 are listed and on disk. Each opens; Delete and Clear
 work; nothing is in History or the workspace; workspaces stay isolated.
 
-- [ ] T056 [P] [US7] Write the red `test/integration/features/runner/run_storage.feature` (`@runner @run_storage`), covering:
+- [x] T056 [P] [US7] Write the red `test/integration/features/runner/run_storage.feature` (`@runner @run_storage`), covering:
   - FR-038: the path, the 25 cap per target, and a collection and its folder counted apart.
   - FR-039: secrets masked in the URL, headers, body and console; no response in the file; a scan of the files for every secret value (SC-007).
   - FR-041: List newest first, with its fields.
@@ -292,7 +292,7 @@ work; nothing is in History or the workspace; workspaces stay isolated.
   - Runs of a deleted folder are gone after the next `Plan`.
   - An unreadable run file is left out of `List`.
   - Secrets set by a script during the run, and secrets in test error messages, are masked.
-- [ ] T057 [US7] Add the 25-per-target cap after each save in `internal/integration/persistence/run.go`, plus `DeleteRun`, `ClearRuns` and `DeleteWorkspaceRuns` (`internal/application/usecase/delete_runs.go`). Make `FindRuns` skip unreadable files with a logged warning. Call `DeleteWorkspaceRuns` from `internal/application/service/remove_workspace.go`. Make `Plan` delete the runs folders of targets that no longer exist. Implement `manageRunner.List`, `Delete` and `Clear`; each releases the persisted response keys of the deleted runs through `ReleaseResponse`. T056 must go green.
+- [x] T057 [US7] Add the 25-per-target cap after each save in `internal/integration/persistence/run.go`, plus `DeleteRun`, `ClearRuns` and `DeleteWorkspaceRuns` (`internal/application/usecase/delete_runs.go`). Make `FindRuns` skip unreadable files with a logged warning. Call `DeleteWorkspaceRuns` from `internal/application/service/remove_workspace.go`. Make `Plan` delete the runs folders of targets that no longer exist. Implement `manageRunner.List`, `Delete` and `Clear`; each releases the persisted response keys of the deleted runs through `ReleaseResponse`. T056 must go green.
 - [ ] T058 [US7] Build `RunsList.tsx` (newest first; the FR-041 fields; open switches to Results; a ⋯ menu with Delete) and `ClearRunsDialog.tsx` (`shared/ui/dialog`) in `frontend/src/features/runner/components/`, with tests.
 - [ ] T059 [US7] FR-001a, FR-001b: add the running indicator to `frontend/src/features/tabs/components/TabItem.tsx`, reading `useRunnerStore.active` (pulsing accent dot, `aria-label` suffix), with `TabItem.test.tsx`. Add `RunFinishedToast.tsx`, rendered from `frontend/src/app/App.tsx` on `runner:finished` with **Open results** (focus or open the tab, set section `runner`, Results, that run; auto-dismiss after 8 s). Add tests in `RunFinishedToast.test.tsx` and `bootstrap.test.ts`. Restore the indicators after a reload with `RunnerService.Active`.
 

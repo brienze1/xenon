@@ -210,3 +210,16 @@ func TestCollectionWithSettings(t *testing.T) {
 		t.Error("headers must be copied")
 	}
 }
+
+func TestTreeContainerIDsListsEveryCollectionAndFolder(t *testing.T) {
+	tree := NewTree([]TreeNode{
+		{ID: "shop", Kind: itemkind.Collection, Children: []TreeNode{
+			{ID: "login", Kind: itemkind.Request},
+			{ID: "orders", Kind: itemkind.Folder, Children: []TreeNode{{ID: "nested", Kind: itemkind.Folder}}},
+		}},
+		{ID: "flow", Kind: itemkind.Collection},
+	}, nil)
+	if ids := tree.ContainerIDs(); !reflect.DeepEqual(ids, []string{"shop", "orders", "nested", "flow"}) {
+		t.Errorf("ids = %v", ids)
+	}
+}
