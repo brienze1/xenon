@@ -14,7 +14,8 @@ A layout bug reported in GitHub issue [brienze1/xenon#26](https://github.com/bri
 A request tab shows the request pane (breadcrumb, URL bar, sub-tab row, active sub-tab) above the
 response pane, separated by a draggable divider. The divider can be dragged so the request pane
 takes as little as 20% of the area. At Xenon's minimum window size (960 × 600) that is roughly
-75–100 px — less than the breadcrumb, URL bar and sub-tab row need on their own (about 110 px).
+75–100 px — less than the breadcrumb, URL bar and sub-tab row need on their own (128.5 px,
+measured in the running UI at 100% zoom).
 
 What goes wrong today (verified against `main` at `db23057`): the Scripts sub-tab is laid out so
 that every part of it is allowed to shrink to nothing. When the pane is shorter than its content,
@@ -48,7 +49,9 @@ at the pane's edge with no way to reach them.
   the merge.
 - Q: When exactly does the whole request builder start scrolling (FR-006)? → A (settled from
   the layout, no user input needed): when the pinned rows plus banners leave the panel under
-  the sub-tab row less than 80 px — the room it has at the 200 px floor with no banner. Above
+  the sub-tab row less than 64 px — the room it has at the 200 px floor with no banner (200 −
+  128.5 = 71.5 px measured, rounded down to 64 px for font-metric headroom; first estimated as
+  80 px from a ~110 px chrome guess and corrected during implementation after measuring). Above
   that, only the panel scrolls.
 - Q: Does the pinned URL bar/sub-tab rule apply to example tabs? → A (settled from the code:
   example tabs have no divider; their request part is already one scroll box above the response
@@ -189,7 +192,7 @@ highest point), visit each listed tab and check that nothing overlaps and the co
   200 px and the stored position wins, but the floor never makes the request pane taller than 80%
   of the split area, so the response pane keeps at least 20%. The floor MUST apply to dragging
   and to keyboard resizing alike.
-- **FR-006**: The panel under the sub-tab row MUST keep at least 80 px of height; when the
+- **FR-006**: The panel under the sub-tab row MUST keep at least 64 px of height; when the
   pinned rows plus any banners would leave it less (for example a banner shown while the pane is
   at its floor), the request pane MUST scroll as a whole rather than clip or overlap its content.
 - **FR-007**: The Scripts hint MUST keep its current full text and MUST wrap onto as many lines

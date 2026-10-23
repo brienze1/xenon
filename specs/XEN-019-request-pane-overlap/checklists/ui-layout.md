@@ -18,7 +18,7 @@ Each item was run against the artifacts; failures were fixed in the artifacts be
 ## Requirement Clarity
 
 - [x] CHK006 Is "about 200 px" fixed to an exact value? [Clarity, Spec §Assumptions] — exactly 200 px
-- [x] CHK007 Is the trigger for scrolling the whole request builder quantified? [Clarity, Spec §FR-006] — panel under the sub-tab row below 80 px
+- [x] CHK007 Is the trigger for scrolling the whole request builder quantified? [Clarity, Spec §FR-006] — panel under the sub-tab row below 64 px
 - [x] CHK008 Is "natural height" defined so that wrapped text counts? [Clarity, Spec §FR-002] — fixed: "at least the height of their content, including wrapped lines"
 - [x] CHK009 Is the unit of the 200 px floor defined relative to View → Zoom? [Clarity, Gap] — fixed: UI pixels that scale with the zoom (FR-005, Clarifications; `app/zoom.ts` scales the body with CSS `zoom`)
 

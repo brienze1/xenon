@@ -13,7 +13,7 @@ never overflows and never scrolls. The fix is CSS-first: containers keep their c
 minimum, fixed rows get `flex: none`, and the scroll box under the sub-tab row finally scrolls.
 Around it: a 200 px floor on the request pane in the stacked layout (a new `minSize` on the
 shared `SplitPane`), a fallback that scrolls the whole request builder when banners leave the
-sub-tab panel under 80 px, and the same treatment for the example tab's response part, which is
+sub-tab panel under 64 px, and the same treatment for the example tab's response part, which is
 clipped today. Collection/folder, environment and globals tabs are verified unaffected beyond
 the shared `ScriptsEditor` fix. Frontend only; no Go changes.
 
@@ -113,7 +113,7 @@ frontend/src/
 │   └── ScriptsEditor.test.tsx               # + layout-contract case
 ├── features/request-builder/components/
 │   ├── RequestBuilder.module.css            # .builder overflow-y: auto (fallback)
-│   ├── RequestTabs.module.css               # .tabs auto min; .panel min-height 80px
+│   ├── RequestTabs.module.css               # .tabs auto min; .panel min-height 64px
 │   └── RequestBuilder.test.tsx              # + layout-contract case
 └── features/examples/components/
     ├── ExampleTab.module.css                # .response scrolls; .tabs auto min; .panel 160px
@@ -149,7 +149,7 @@ clamping, `onRatioChange`, keyboard and `aria-value*` untouched (FR-011).
 `minSize={layout.split === 'side-by-side' ? undefined : LAYOUT_LIMITS.split.minSize}`.
 
 **`RequestBuilder.module.css` / `RequestTabs.module.css`** (R4): `.builder` → `overflow-x:
-hidden; overflow-y: auto`; RequestTabs `.tabs` → `min-height: auto`; RequestTabs `.panel` → `min-height: 80px`
+hidden; overflow-y: auto`; RequestTabs `.tabs` → `min-height: auto`; RequestTabs `.panel` → `min-height: 64px; contain: size`
 (keeps `flex: 1; overflow: auto; padding-block`).
 
 **`ExampleTab.module.css`** (R2): `.response` → `overflow-x: hidden; overflow-y: auto`; `.tabs` → `min-height:

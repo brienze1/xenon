@@ -23,7 +23,7 @@ floor (FR-011). In the side-by-side layout the displayed width is `ratio × W`, 
 
 | Item | Minimum |
 |---|---|
-| Request sub-tab panel (under the sub-tab row) | 80 px (new) |
+| Request sub-tab panel (under the sub-tab row) | 64 px (new) |
 | Scripts editor | 160 px (existing) |
 | Body editors | 160 px (existing) |
 | Example response panel | 160 px (new; view switch + 120 px editor) |

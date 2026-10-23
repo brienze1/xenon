@@ -46,7 +46,7 @@ All findings verified against `origin/main` at `db23057` on 2026-10-23.
     sub-tab scroll panel — they overflow and scroll today; no overlap. No change.
   - **Request builder chrome** (`RequestBuilder.module.css .builder`: `height: 100%`, flex
     column; `RequestTabs.module.css .tabs`: `flex: 1; min-height: 0`): when the pane is shorter
-    than breadcrumb + URL bar + sub-tab row (~110 px; the 20 % floor is ~75–100 px at the
+    than breadcrumb + URL bar + sub-tab row (128.5 px measured; the 20 % floor is ~75–100 px at the
     960 × 600 minimum window), `.tabs` collapses and the sub-tab row is clipped by
     `SplitPane .pane { overflow: hidden }`. Fixed by R3 (200 px floor) and R4 (fallback scroll).
   - **Collection/folder tabs** (`ItemTab.module.css`): `.tab` is `overflow: auto`; the Scripts
@@ -104,14 +104,21 @@ All findings verified against `origin/main` at `db23057` on 2026-10-23.
   wide tables still scroll sideways inside it; focus rings stay inside the 16 px side padding of
   the URL bar and the sub-tab gutter of `Tabs.module.css`);
   `RequestTabs.module.css .tabs` sets `min-height: auto` (it is also a `Tabs.Root`, see R1); `RequestTabs.module.css .panel` gets
-  `min-height: 80px`.
+  `min-height: 64px` and `contain: size`.
 - **Facts**: `.tabs` is a column flex item holding the sub-tab row (automatic minimum = its
   height) and the panel (`flex: 1`, basis 0, scroll container → its minimum is the explicit
-  80 px). With `min-height: auto`, `.tabs` never gets shorter than sub-tab row + 80 px; when the
+  64 px). With `min-height: auto`, `.tabs` never gets shorter than sub-tab row + 64 px — but only
+  because the panel has `contain: size`: without it, Chromium/WebKit compute the column flex
+  container's content-based minimum from the panel's *content* (its flex basis is ignored), so
+  `.tabs` grew to the full Scripts content, the panel never scrolled and the whole builder
+  scrolled instead (measured in the running UI on 2026-10-23: panel 294 px tall in a 200 px pane).
+  Size containment makes the panel's intrinsic size that of an empty box, so only its 64 px
+  minimum counts; it still grows with `flex: 1` and scrolls its content. When the
   pinned rows plus banners need more than the pane has, the builder overflows and — now being a
   scroll box — scrolls as a whole (FR-006). Otherwise the panel alone scrolls (FR-004). At the
-  200 px floor with no banner: breadcrumb (~20) + URL bar (56) + sub-tab row (~34) ≈ 110 px,
-  leaving ≈ 90 px ≥ 80 px, so the builder does not scroll in the normal case. 80 px is the
+  200 px floor with no banner the pinned rows measure 128.5 px, leaving 71.5 px ≥ 64 px, so the
+  builder does not scroll in the normal case (first estimated as ~110 px / 80 px; corrected after
+  measuring). 64 px is the
   clarified value (spec Clarifications).
 - **Alternatives considered**: always scrolling the whole builder — contradicts decision 1;
   rejected.

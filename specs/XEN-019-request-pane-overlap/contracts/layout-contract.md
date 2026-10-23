@@ -45,7 +45,7 @@ Passes `minSize={LAYOUT_LIMITS.split.minSize}` when `layout.split === 'stacked'`
 | `ScriptsEditor.module.css` `.hint` | `flex: none` | `flexShrink` `0` |
 | `RequestBuilder.module.css` `.builder` | `overflow-x: hidden; overflow-y: auto` | `overflowX` `hidden`; `overflowY` `auto` |
 | `RequestTabs.module.css` `.tabs` | `min-height: auto` (replaces `0`) | `minHeight` `auto` |
-| `RequestTabs.module.css` `.panel` | `min-height: 80px` (keeps `overflow: auto`) | `minHeight` `80px` |
+| `RequestTabs.module.css` `.panel` | `min-height: 64px; contain: size` (keeps `overflow: auto`) | `minHeight` `64px`; `contain` `size` |
 | `ExampleTab.module.css` `.response` | `overflow-x: hidden; overflow-y: auto` (drops nothing else) | `overflowX` `hidden`; `overflowY` `auto` |
 | `ExampleTab.module.css` `.tabs` | `min-height: auto` (replaces `0`) | `minHeight` `auto` |
 | `ExampleTab.module.css` `.panel` | `min-height: 160px` (keeps `overflow: auto`) | `minHeight` `160px` |

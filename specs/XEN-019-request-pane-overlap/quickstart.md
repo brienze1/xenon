@@ -40,3 +40,14 @@ size (960 × 600), stacked layout.
 
 Take before (`main`) / after screenshots of steps 1 and 7 for the pull request. Windows and
 Linux are covered by CI's `make validate`; no manual check there (spec Clarifications).
+
+### Without a native window (how T014 was run)
+
+When the app window cannot be driven, serve the frontend with `npx vite --port <p>` in
+`frontend/` and open it in Chromium (Playwright) at the step's viewport size. There is no Go
+backend in a browser, so set the state through the app's own stores from the page (Vite serves
+`/src/...` modules): `useWorkspacesStore.setState({ workspaces: [...], activeLocalId, layout:
+{ ..., split: 'stacked', splitRatio: 0.2 } })`, then `useTabsStore.getState().newTab()`. For the
+before shots, serve a detached `origin/main` worktree the same way (symlink `node_modules` and
+`bindings`). Tabs that need backend data (example, collection/folder, environment, globals) cannot
+be reached this way.
