@@ -35,6 +35,6 @@ recorded as a failed send, as for any other send error.
 
 ## `history` reads (changed)
 
-Each send line includes the active environment's name at send time (for example
-`env: HML`), or nothing when none was active. The send detail includes
-`environment: { id, name, color }`.
+Each `list` send line gains `"environment": "HML"` (the active environment's name at send time),
+omitted when none was active. The `get` send detail gains `"environment": { "id", "name", "color" }`,
+also omitted when none was active.
