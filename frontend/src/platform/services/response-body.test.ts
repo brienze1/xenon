@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {} }))
+vi.mock('@wailsio/runtime', () => ({ CancelError: class CancelError extends Error {}, Clipboard: { SetText: vi.fn() } }))
 
-const { fetchResponseText } = await import('./response-body')
+const { Clipboard } = await import('@wailsio/runtime')
+const { copyResponseText, fetchResponseText } = await import('./response-body')
 
 describe('response body route', () => {
   afterEach(() => vi.unstubAllGlobals())
@@ -26,5 +27,16 @@ describe('response body route', () => {
       code: 'UNK-00500',
       description: 'Failed to fetch',
     })
+  })
+
+  it('copies the body through the native clipboard', async () => {
+    vi.mocked(Clipboard.SetText).mockResolvedValue(undefined as never)
+    await expect(copyResponseText('{"a":1}')).resolves.toBe(true)
+    expect(Clipboard.SetText).toHaveBeenCalledWith('{"a":1}')
+  })
+
+  it('maps a clipboard refusal to an AppError', async () => {
+    vi.mocked(Clipboard.SetText).mockRejectedValue(new Error('denied'))
+    await expect(copyResponseText('x')).rejects.toMatchObject({ name: 'AppError', description: 'denied' })
   })
 })
