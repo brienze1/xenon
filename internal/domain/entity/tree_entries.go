@@ -47,3 +47,22 @@ func (t Tree) Search(query string, matchIDs []string, limit int) []TreeEntry {
 	}
 	return found
 }
+
+// ContainerAt finds a collection or folder by its path; "/" separates the names, with or without spaces around it.
+func (t Tree) ContainerAt(path string) (TreeEntry, bool) {
+	wanted := normalizedItemPath(path)
+	for _, entry := range t.Entries() {
+		if entry.IsContainer() && normalizedItemPath(entry.Path) == wanted {
+			return entry, true
+		}
+	}
+	return TreeEntry{}, false
+}
+
+func normalizedItemPath(path string) string {
+	names := strings.Split(path, "/")
+	for index, name := range names {
+		names[index] = strings.TrimSpace(name)
+	}
+	return strings.Join(names, "/")
+}

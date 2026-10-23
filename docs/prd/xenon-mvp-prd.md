@@ -603,6 +603,8 @@ Stages 4 (scripts) and the OAuth 2.0 part of 5 carry most of the risk. Everythin
   - **Confirm before send:** once per run. Missing secrets: the send dialog with **Run anyway**. Expired tokens never
     stop a run.
   - **Concurrency:** runs send saved requests, the UI stays usable, one active run per collection or folder.
+  - **MCP:** two tools, `run` (start/stop) and `runs` (get/list); the `tools/list` size budget is raised from 36,000
+    to 39,000 characters to fit them.
 
 **Open questions**
 

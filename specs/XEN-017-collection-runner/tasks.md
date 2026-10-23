@@ -306,16 +306,16 @@ work; nothing is in History or the workspace; workspaces stay isolated.
 percentiles, throughput and error rate within bounds, and the active-user curve follows the
 profile.
 
-- [ ] T060 [P] [US8] Write the red `test/integration/features/runner/run_performance.feature` (`@runner @run_performance`), with durations of a few seconds, covering:
+- [x] T060 [P] [US8] Write the red `test/integration/features/runner/run_performance.feature` (`@runner @run_performance`), with durations of a few seconds, covering:
   - FR-011: range and profile validation.
   - FR-042: scripts run; per-user variables and cookies; nothing persisted; no History.
   - FR-043: the active users per second follow each profile, read from the `runner:progress` metrics.
   - FR-044: `setNextRequest` is ignored with one run notice, data wraps around, and no `console:entries` are emitted.
   - FR-029: Pause on a performance run gives `RUN-04400`.
   - FR-045 and FR-046: counts, p90/p95/p99 within ±10% of the mock latency, error rate with 500s, status counts, and series length equal to the duration.
-- [ ] T061 [P] [US8] Implement `LoadProfile.ActiveUsersAt` in `internal/domain/entity/load_profile.go` (Fixed, Ramp up, Spike centred, and Peak with equal ramps around the peak, per FR-043), with table-driven unit tests in `load_profile_test.go`.
-- [ ] T062 [P] [US8] Implement `LatencyHistogram` (log-linear, ≤1% relative error, exact min, max, sum and count), `RequestStats`, `PerformanceSecond` and `PerformanceStats` (internal mutex) in `internal/domain/entity/`, with unit tests checking the percentiles against sorted samples.
-- [ ] T063 [US8] Implement `internal/application/service/run_performance.go` (no Pause, so `Pause` on a performance run gives `RUN-04400`; no app console and no per-request console; `pm.test` not reported; the `setNextRequest` notice added once to `Run.Notices`; throughput = completed requests / elapsed seconds):
+- [x] T061 [P] [US8] Implement `LoadProfile.ActiveUsersAt` in `internal/domain/entity/load_profile.go` (Fixed, Ramp up, Spike centred, and Peak with equal ramps around the peak, per FR-043), with table-driven unit tests in `load_profile_test.go`.
+- [x] T062 [P] [US8] Implement `LatencyHistogram` (log-linear, ≤1% relative error, exact min, max, sum and count), `RequestStats`, `PerformanceSecond` and `PerformanceStats` (internal mutex) in `internal/domain/entity/`, with unit tests checking the percentiles against sorted samples.
+- [x] T063 [US8] Implement `internal/application/service/run_performance.go` (no Pause, so `Pause` on a performance run gives `RUN-04400`; no app console and no per-request console; `pm.test` not reported; the `setNextRequest` notice added once to `Run.Notices`; throughput = completed requests / elapsed seconds):
   - a 100 ms controller tick that starts or retires virtual users to `ActiveUsersAt`;
   - each user loops over the selected rows through `run_row.go` with its own `RunVariables` and jar `RunCookieJarID(localId, runId)+":"+vu`, never merged back;
   - `RunContext.Performance` set, so `setNextRequest` is ignored with a warning;
@@ -336,15 +336,15 @@ profile.
 **Independent Test**: start a run over MCP, read it until it finishes, check the results match
 `RunnerService.Get`, then stop another run.
 
-- [ ] T065 [P] [US9] Write the red `test/integration/features/mcp/runner.feature` (`@mcp_runner`), covering:
+- [x] T065 [P] [US9] Write the red `test/integration/features/mcp/runner.feature` (`@mcp_runner`), covering:
   - FR-047: start with defaults, and with explicit rows, settings and environment by name; `get` until completed; `list`; `stop`.
   - The approval asked once for a confirm environment, with denial and timeout.
   - The errors `RUN-02409`, `RUN-03400` and `MCP-07400`.
   - Recorded changes: no `history`.
   - FR-048: a UI-started run is readable over MCP, and an MCP-started run appears in `RunnerService.Active`.
 - [ ] T066 [US9] Add the optional `Summary` to `entity.AIApproval` (`internal/domain/entity/ai_approval.go`) and to `dto.AIApprovalRequest` (`internal/integration/entrypoint/dto/ai_approval_request.go`). Show it in place of the method and URL in the approval dialog (`frontend/src/features/ai-access/`), with a test.
-- [ ] T067 [US9] Add `controller.mcpRun` (`internal/integration/entrypoint/controller/mcp_run.go`; destructive and open-world; resolves the target like `tree`; approval on `SND-05409` as in `mcp_send.go`; records changes) and `controller.mcpRuns` (`mcp_runs.go`; read-only; output through `guardAIOutputService`), with DTOs `dto/mcp_run.go` and `dto/mcp_runs.go` whose argument descriptions are filled per XEN-014.
-- [ ] T068 [US9] Register the tools in `internal/infra/server/mcp/tool_run.go`, `tool_runs.go`, `controllers.go` and `routes.go`, and wire them in `internal/infra/dependency/server/mcp_routes.go` and the controller DI. T065 must go green.
+- [x] T067 [US9] Add `controller.mcpRun` (`internal/integration/entrypoint/controller/mcp_run.go`; destructive and open-world; resolves the target like `tree`; approval on `SND-05409` as in `mcp_send.go`; records changes) and `controller.mcpRuns` (`mcp_runs.go`; read-only; output through `guardAIOutputService`), with DTOs `dto/mcp_run.go` and `dto/mcp_runs.go` whose argument descriptions are filled per XEN-014.
+- [x] T068 [US9] Register the tools in `internal/infra/server/mcp/tool_run.go`, `tool_runs.go`, `controllers.go` and `routes.go`, and wire them in `internal/infra/dependency/server/mcp_routes.go` and the controller DI. T065 must go green.
 
 ---
 

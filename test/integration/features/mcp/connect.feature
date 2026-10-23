@@ -5,7 +5,7 @@
 Feature: AI clients connect to Xenon's MCP server
   Xenon serves MCP over Streamable HTTP at http://127.0.0.1:<port>/mcp while "AI access (MCP)" is on (the default).
   Only loopback requests whose Host and Origin are loopback are handled, there is no token, and bodies over 4 MiB are
-  refused. The server exposes 24 resource tools with an action argument; read-only tools are hinted read-only, the
+  refused. The server exposes 26 resource tools with an action argument; read-only tools are hinted read-only, the
   tools that can remove data are hinted destructive, and every description is one sentence. Turning AI access off or
   changing the port in Settings takes effect at once.
 
@@ -13,11 +13,11 @@ Feature: AI clients connect to Xenon's MCP server
     Given the workspace "Acme" exists
 
   @tool_list
-  Scenario: A client connects and lists the 24 tools quickly and compactly
+  Scenario: A client connects and lists the 26 tools quickly and compactly
     When I list the MCP tools
     Then the last call should have taken less than 1000 ms
-    And the response should contain the field "" array length equal to 24
-    And the response should have at most 36000 characters
+    And the response should contain the field "" array length equal to 26
+    And the response should have at most 39000 characters
     And every item of the response field "" should have the field "description" matching "^[A-Z][^.]*\.$"
     And every item of the response field "" should have the field "name" matching "^[a-z]+(_[a-z]+)?$"
 
@@ -41,6 +41,7 @@ Feature: AI clients connect to Xenon's MCP server
       | git       |
       | scripts   |
       | settings  |
+      | runs      |
 
   @tool_hints
   Scenario Outline: Tools that change data carry the destructive hint they deserve - <tool>
@@ -63,6 +64,7 @@ Feature: AI clients connect to Xenon's MCP server
       | send           | true        | false      |
       | delete         | true        | true       |
       | git_push       | true        | false      |
+      | run            | true        | false      |
 
   @tool_hints
   Scenario Outline: Only tools that reach outside Xenon are open-world - <tool>
@@ -73,6 +75,8 @@ Feature: AI clients connect to Xenon's MCP server
       | tool      | open_world |
       | send      | true       |
       | git_push  | true       |
+      | run       | true       |
+      | runs      | false      |
       | git_edit  | true       |
       | tree_edit | true       |
       | tree      | false      |
@@ -137,7 +141,7 @@ Feature: AI clients connect to Xenon's MCP server
       """
     Then the call should succeed
     When I list the MCP tools
-    Then the response should contain the field "" array length equal to 24
+    Then the response should contain the field "" array length equal to 26
 
   @port_change
   Scenario: Changing the port moves the server at once
@@ -153,7 +157,7 @@ Feature: AI clients connect to Xenon's MCP server
     When I call "AIAccessService.Status"
     Then the response should contain the field "address" equal to "http://127.0.0.1:{{new_port}}/mcp"
     When I list the MCP tools
-    Then the response should contain the field "" array length equal to 24
+    Then the response should contain the field "" array length equal to 26
 
   @port_busy
   Scenario: A port in use is reported in Settings and another port can be picked

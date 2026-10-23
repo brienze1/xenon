@@ -86,7 +86,7 @@ func (m *manageRunner) launch(ctx context.Context, start entity.RunStart, run fu
 	if !start.Config.Functional.KeepVariableValues {
 		run.variables = entity.NewRunVariables()
 	}
-	started := entity.NewRun(run.id, run.target, start.Config, len(run.rows)*start.Config.Functional.Iterations, timeutils.Now())
+	started := entity.NewRun(run.id, run.target, start.Config, start.Config.PlannedRequests(len(run.rows)), timeutils.Now())
 	started.EnvironmentName = run.environment.name
 	started.DataFileName = run.data.FileName
 	runCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
@@ -101,6 +101,10 @@ func (m *manageRunner) launch(ctx context.Context, start entity.RunStart, run fu
 		return nil, err
 	}
 	run.control = control
+	if start.Config.IsPerformance() {
+		go m.runPerformance(runCtx, run)
+		return &started, nil
+	}
 	go m.runFunctional(runCtx, run)
 	return &started, nil
 }

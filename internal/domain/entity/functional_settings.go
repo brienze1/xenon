@@ -25,13 +25,25 @@ func NewFunctionalSettings() FunctionalSettings {
 
 func (f FunctionalSettings) Validate() error {
 	switch {
-	case f.Iterations < 1:
+	case f.Iterations < 1 && !f.IteratesOverData():
 		return invalidRunSetting("iterations", "must be at least 1")
 	case f.DelayMs < 0 || f.DelayMs > MaxRunDelayMs:
 		return invalidRunSetting("delay_ms", "must be between 0 and 3600000")
 	default:
 		return nil
 	}
+}
+
+// IteratesOverData is true when no iteration count was given with a data file: one iteration per data row.
+func (f FunctionalSettings) IteratesOverData() bool {
+	return f.Iterations == 0 && f.DataFile != ""
+}
+
+func (f FunctionalSettings) WithDataIterations(rows int) FunctionalSettings {
+	if f.IteratesOverData() {
+		f.Iterations = max(1, rows)
+	}
+	return f
 }
 
 func (f FunctionalSettings) Delay() time.Duration {

@@ -166,3 +166,8 @@ func (r RunRowResult) BreakMessage() string {
 func (r RunRowResult) Path() string {
 	return strings.Join(append(append([]string{}, r.FolderPath...), r.Name), "/")
 }
+
+// IsMeasured is true for a row a performance run counts: neither skipped by its script nor cancelled.
+func (r RunRowResult) IsMeasured() bool {
+	return r.Outcome != runrowoutcome.Skipped && r.Outcome != runrowoutcome.Cancelled
+}

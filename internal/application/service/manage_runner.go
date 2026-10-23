@@ -150,6 +150,7 @@ func NewManageRunnerService(
 func (m *manageRunner) Start(ctx context.Context, start entity.RunStart, appVersion string) (*entity.Run, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": start.LocalID, "itemId": start.ItemID, "config": start.Config})
 
+	start.Config = start.Config.WithProfileDefaults()
 	workspace, err := m.findWorkspaceRegistry.FindWorkspace(ctx, start.LocalID)
 	if err != nil {
 		return nil, err
@@ -165,6 +166,7 @@ func (m *manageRunner) Start(ctx context.Context, start entity.RunStart, appVers
 	if err != nil {
 		return nil, err
 	}
+	start.Config = start.Config.WithDataIterations(data.Count())
 	environment, err := m.environment(ctx, start, workspace.Path)
 	if err != nil {
 		return nil, err
@@ -188,9 +190,14 @@ func (m *manageRunner) Get(ctx context.Context, localId, runId string) (*entity.
 	if err != nil {
 		return nil, err
 	}
+	released, err := m.releasedResponses(ctx, *run)
+	if err != nil {
+		return nil, err
+	}
+	held := run.WithoutResponses(released)
 
 	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "runId": runId, "status": run.Status})
-	return run, nil
+	return &held, nil
 }
 
 func (m *manageRunner) Active(ctx context.Context, localId string) ([]entity.Run, error) {

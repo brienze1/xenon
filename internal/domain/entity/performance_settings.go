@@ -1,5 +1,7 @@
 package entity
 
+import "time"
+
 const (
 	DefaultVirtualUsers    = 10
 	MaxVirtualUsers        = 100
@@ -27,4 +29,17 @@ func (p PerformanceSettings) Validate() error {
 	default:
 		return p.Profile.Validate(p.VirtualUsers, p.DurationSeconds)
 	}
+}
+
+func (p PerformanceSettings) WithProfileDefaults() PerformanceSettings {
+	p.Profile = p.Profile.WithDefaults(p.VirtualUsers, p.DurationSeconds)
+	return p
+}
+
+func (p PerformanceSettings) Duration() time.Duration {
+	return time.Duration(p.DurationSeconds) * time.Second
+}
+
+func (p PerformanceSettings) ActiveUsersAt(elapsed time.Duration) int {
+	return p.Profile.ActiveUsersAt(elapsed, p.VirtualUsers, p.DurationSeconds)
 }

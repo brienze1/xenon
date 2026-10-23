@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/brienze1/xenon/internal/domain/enums"
@@ -16,6 +17,7 @@ type AIApproval struct {
 	Client      string
 	Method      string
 	RawURL      string
+	Summary     string
 	Outcome     enums.ApprovalOutcome
 }
 
@@ -32,7 +34,18 @@ func NewAIApproval(id, client, method, rawURL string, environment AIApprovalEnvi
 }
 
 func (a AIApproval) Queued(id string, createdAt time.Time) AIApproval {
-	return NewAIApproval(id, a.Client, a.Method, a.RawURL, a.Environment, createdAt)
+	queued := NewAIApproval(id, a.Client, a.Method, a.RawURL, a.Environment, createdAt)
+	queued.Summary = a.Summary
+	return queued
+}
+
+// NewRunApprovalSummary describes a whole run in an approval request, in place of a method and URL.
+func NewRunApprovalSummary(targetName string, requests int) string {
+	noun := " requests"
+	if requests == 1 {
+		noun = " request"
+	}
+	return "Run " + targetName + " · " + strconv.Itoa(requests) + noun
 }
 
 const EverySessionID = ""

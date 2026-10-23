@@ -1,11 +1,14 @@
 package entity
 
 import (
+	"slices"
 	"time"
 
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/runstatus"
 )
+
+const PerformanceNextRequestNotice = "pm.execution.setNextRequest is ignored in performance runs"
 
 type Run struct {
 	StartedAt       time.Time
@@ -18,6 +21,7 @@ type Run struct {
 	Config          RunConfig
 	Rows            []RunRowResult
 	Notices         []string
+	Performance     *PerformanceReport
 	Progress        RunProgress
 	Summary         RunSummary
 }
@@ -82,6 +86,19 @@ func (r *Run) Record(row RunRowResult, at time.Time) {
 	r.Progress.ElapsedMs = r.elapsed(at)
 }
 
+func (r *Run) Measure(report PerformanceReport, metrics PerformanceMetrics, at time.Time) {
+	r.Performance = &report
+	r.Progress = r.Progress.Measured(metrics)
+	r.Progress.ElapsedMs = r.elapsed(at)
+}
+
+// Notice adds a run-level notice once.
+func (r *Run) Notice(notice string) {
+	if !slices.Contains(r.Notices, notice) {
+		r.Notices = append(r.Notices, notice)
+	}
+}
+
 // Finish is a no-op on a run that already ended.
 func (r *Run) Finish(status enums.RunStatus, at time.Time) {
 	if r.IsFinished() {
@@ -91,6 +108,9 @@ func (r *Run) Finish(status enums.RunStatus, at time.Time) {
 	r.FinishedAt = at
 	r.Progress.ElapsedMs = r.elapsed(at)
 	r.Summary = NewRunSummary(r.Iterations(), r.Rows, r.Progress.ElapsedMs)
+	if r.Performance != nil {
+		r.Summary = r.Summary.WithPerformance(r.Performance.Overall)
+	}
 }
 
 func (r Run) Iterations() int {
@@ -113,6 +133,19 @@ func (r Run) ResponseKeys() []string {
 		}
 	}
 	return keys
+}
+
+// WithoutResponses forgets the kept responses with these keys, as when the app no longer holds them.
+func (r Run) WithoutResponses(keys []string) Run {
+	rows := make([]RunRowResult, 0, len(r.Rows))
+	for _, row := range r.Rows {
+		if slices.Contains(keys, row.ResponseKey) {
+			row.ResponseKey = ""
+		}
+		rows = append(rows, row)
+	}
+	r.Rows = rows
+	return r
 }
 
 func (r Run) Row(index int) (RunRowResult, bool) {

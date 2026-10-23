@@ -127,7 +127,7 @@ func (m *manageRunner) abandon(ctx context.Context, run functionalRun) {
 }
 
 func (m *manageRunner) keepCookies(ctx context.Context, run functionalRun) error {
-	if !run.config.Functional.SaveCookies {
+	if !run.config.SavesCookies() {
 		return nil
 	}
 	localId := run.target.LocalID

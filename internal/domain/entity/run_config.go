@@ -78,6 +78,34 @@ func (r RunConfig) Completed() RunConfig {
 	return r
 }
 
+// WithProfileDefaults fills the load profile parameters a performance run left at zero.
+func (r RunConfig) WithProfileDefaults() RunConfig {
+	if r.IsPerformance() {
+		r.Performance = r.Performance.WithProfileDefaults()
+	}
+	return r
+}
+
+func (r RunConfig) WithDataIterations(rows int) RunConfig {
+	if !r.IsPerformance() {
+		r.Functional = r.Functional.WithDataIterations(rows)
+	}
+	return r
+}
+
+// PlannedRequests is rows × iterations for a functional run; a performance run plans none ahead.
+func (r RunConfig) PlannedRequests(rows int) int {
+	if r.IsPerformance() {
+		return 0
+	}
+	return rows * r.Functional.Iterations
+}
+
+// SavesCookies is true when a functional run merges its cookies back; performance runs never do.
+func (r RunConfig) SavesCookies() bool {
+	return !r.IsPerformance() && r.Functional.SaveCookies
+}
+
 func (r RunConfig) SelectedRows() []RunRow {
 	selected := make([]RunRow, 0, len(r.Rows))
 	for _, row := range r.Rows {

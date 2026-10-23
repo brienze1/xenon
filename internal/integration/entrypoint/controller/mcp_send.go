@@ -111,33 +111,12 @@ func (m *mcpSend) sendConfirmed(ctx context.Context, call dto.MCPToolCall, argum
 		return dto.SendResult{}, err
 	}
 	if !settings.SkipsAIApprovals() {
-		err = m.approve(ctx, call, request, environment)
+		err = askMCPApproval(ctx, m.approveAISendService, dto.NewAIApprovalRequest(call.Session, call.Client, request.Method, request.Url, dto.NewAIApprovalEnvironment(environment)))
 		if err != nil {
 			return dto.SendResult{}, err
 		}
 	}
 	return m.sendRequest(ctx, arguments.SendRequest(call.Client, call.LocalId, call.TabId(), environment.ID, request))
-}
-
-func (m *mcpSend) approve(ctx context.Context, call dto.MCPToolCall, request dto.Request, environment entity.AIApprovalEnvironment) error {
-	approvalRequest := dto.NewAIApprovalRequest(call.Session, call.Client, request.Method, request.Url, dto.NewAIApprovalEnvironment(environment))
-	err := validateAIArguments(&approvalRequest)
-	if err != nil {
-		return err
-	}
-
-	approval, err := m.approveAISendService.Request(ctx, approvalRequest.ToEntity(), approvalRequest.Session())
-	if err != nil {
-		return err
-	}
-	switch {
-	case approval.IsApproved():
-		return nil
-	case approval.IsTimedOut():
-		return mcpErrors.RejectTimedOutAISend()
-	default:
-		return mcpErrors.RejectDeniedAISend()
-	}
 }
 
 func (m *mcpSend) sendRequest(ctx context.Context, request dto.SendRequest) (dto.SendResult, error) {

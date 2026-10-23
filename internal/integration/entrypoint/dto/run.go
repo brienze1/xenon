@@ -9,19 +9,19 @@ import (
 const runTimeLayout = "2006-01-02T15:04:05.000Z"
 
 type Run struct {
-	Performance     any            `json:"performance"`
-	Id              string         `json:"id"`
-	EnvironmentName string         `json:"environment_name"`
-	DataFileName    string         `json:"data_file_name"`
-	Status          string         `json:"status"`
-	StartedAt       string         `json:"started_at"`
-	FinishedAt      string         `json:"finished_at"`
-	Target          RunTarget      `json:"target"`
-	Config          RunConfig      `json:"config"`
-	Rows            []RunRowResult `json:"rows"`
-	Notices         []string       `json:"notices"`
-	Progress        RunProgress    `json:"progress"`
-	Summary         RunSummary     `json:"summary"`
+	Performance     *RunPerformance `json:"performance"`
+	Id              string          `json:"id"`
+	EnvironmentName string          `json:"environment_name"`
+	DataFileName    string          `json:"data_file_name"`
+	Status          string          `json:"status"`
+	StartedAt       string          `json:"started_at"`
+	FinishedAt      string          `json:"finished_at"`
+	Target          RunTarget       `json:"target"`
+	Config          RunConfig       `json:"config"`
+	Rows            []RunRowResult  `json:"rows"`
+	Notices         []string        `json:"notices"`
+	Progress        RunProgress     `json:"progress"`
+	Summary         RunSummary      `json:"summary"`
 }
 
 func NewRun(run entity.Run) Run {
@@ -42,6 +42,7 @@ func NewRun(run entity.Run) Run {
 		Summary:         NewRunSummary(run.Summary),
 		Rows:            rows,
 		Notices:         append([]string{}, run.Notices...),
+		Performance:     NewRunPerformance(run.Performance),
 	}
 }
 

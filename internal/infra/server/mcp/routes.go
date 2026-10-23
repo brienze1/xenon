@@ -37,6 +37,7 @@ func (r *routes) Register(server *sdk.Server) {
 	r.registerGitTool(server)
 	r.registerScriptsTool(server)
 	r.registerSettingsTool(server)
+	r.registerRunsTool(server)
 	r.registerWorkspaceEditTool(server)
 	r.registerTreeEditTool(server)
 	r.registerEnvEditTool(server)
@@ -47,6 +48,7 @@ func (r *routes) Register(server *sdk.Server) {
 	r.registerImportTool(server)
 	r.registerExportTool(server)
 	r.registerSendTool(server)
+	r.registerRunTool(server)
 	r.registerDeleteTool(server)
 	r.registerGitPushTool(server)
 }

@@ -17,7 +17,7 @@ func mcpToolControllers() []adapter.MCPToolController {
 		&mcpConsole{}, &mcpCookies{}, &mcpCookiesEdit{}, &mcpDelete{}, &mcpDocs{}, &mcpDocsEdit{}, &mcpEnv{}, &mcpEnvEdit{},
 		&mcpExport{}, &mcpGit{}, &mcpGitEdit{}, &mcpGitPush{}, &mcpHistory{}, &mcpImport{}, &mcpResponse{}, &mcpScripts{},
 		&mcpSend{}, &mcpSettings{}, &mcpSettingsEdit{}, &mcpSnippet{}, &mcpTree{}, &mcpTreeEdit{}, &mcpWorkspace{},
-		&mcpWorkspaceEdit{},
+		&mcpWorkspaceEdit{}, &mcpRun{}, &mcpRuns{},
 	}
 }
 

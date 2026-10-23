@@ -10,19 +10,20 @@ import (
 const runVersion = 1
 
 type Run struct {
-	StartedAt       time.Time      `json:"started_at"`
-	FinishedAt      time.Time      `json:"finished_at"`
-	Id              string         `json:"id"`
-	Status          string         `json:"status"`
-	EnvironmentName string         `json:"environment_name"`
-	DataFileName    string         `json:"data_file_name"`
-	Target          RunTarget      `json:"target"`
-	Config          RunConfig      `json:"config"`
-	Rows            []RunRowResult `json:"rows"`
-	Notices         []string       `json:"notices"`
-	Progress        RunProgress    `json:"progress"`
-	Summary         RunSummary     `json:"summary"`
-	Version         int            `json:"version"`
+	StartedAt       time.Time       `json:"started_at"`
+	FinishedAt      time.Time       `json:"finished_at"`
+	Id              string          `json:"id"`
+	Status          string          `json:"status"`
+	EnvironmentName string          `json:"environment_name"`
+	DataFileName    string          `json:"data_file_name"`
+	Target          RunTarget       `json:"target"`
+	Config          RunConfig       `json:"config"`
+	Rows            []RunRowResult  `json:"rows"`
+	Notices         []string        `json:"notices"`
+	Performance     *RunPerformance `json:"performance,omitempty"`
+	Progress        RunProgress     `json:"progress"`
+	Summary         RunSummary      `json:"summary"`
+	Version         int             `json:"version"`
 }
 
 func NewRun(run entity.Run) Run {
@@ -42,6 +43,7 @@ func NewRun(run entity.Run) Run {
 		Config:          NewRunConfig(run.Config),
 		Rows:            rows,
 		Notices:         append([]string{}, run.Notices...),
+		Performance:     NewRunPerformance(run.Performance),
 		Progress:        NewRunProgress(run.Progress),
 		Summary:         NewRunSummary(run.Summary),
 	}
@@ -63,6 +65,7 @@ func (r *Run) ToEntity(localId string) entity.Run {
 		Config:          r.Config.ToEntity(),
 		Rows:            rows,
 		Notices:         append([]string{}, r.Notices...),
+		Performance:     r.Performance.ToEntity(),
 		Progress:        r.Progress.ToEntity(),
 		Summary:         r.Summary.ToEntity(),
 	}

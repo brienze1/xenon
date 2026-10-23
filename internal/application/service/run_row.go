@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
@@ -15,9 +16,10 @@ type rowConsole struct {
 }
 
 type ranRow struct {
-	next   *entity.NextRequest
-	sendId string
-	result entity.RunRowResult
+	next    *entity.NextRequest
+	sendId  string
+	result  entity.RunRowResult
+	latency time.Duration
 }
 
 func (m *manageRunner) runRow(ctx context.Context, run *functionalRun, index, iteration int, row entity.RunPlanRow) ranRow {
@@ -41,13 +43,19 @@ func (m *manageRunner) runRow(ctx context.Context, run *functionalRun, index, it
 	}
 	run.remember(sent.secrets)
 	result = result.WithExecution(*sent.execution)
+	ran := ranRow{next: sent.execution.NextRequest(), sendId: sent.execution.ID}
 	if sent.execution.Response != nil {
 		result = result.WithResponseKey(runContext.ResponseKey)
+		ran.latency = sent.execution.Response.Timings.Total
 	}
-	return ranRow{result: result.WithSecretsMasked(run.mask()), next: sent.execution.NextRequest(), sendId: sent.execution.ID}
+	ran.result = result.WithSecretsMasked(run.mask())
+	return ran
 }
 
 func (r *functionalRun) context(iteration, index int, console *rowConsole) entity.RunContext {
+	if r.config.IsPerformance() {
+		return r.performanceContext(iteration)
+	}
 	runContext := entity.RunContext{
 		RunID:           r.id,
 		EnvironmentID:   r.environment.id,
@@ -66,6 +74,21 @@ func (r *functionalRun) context(iteration, index int, console *rowConsole) entit
 		runContext.Collect = console.collect
 	}
 	return runContext
+}
+
+func (r *functionalRun) performanceContext(iteration int) entity.RunContext {
+	return entity.RunContext{
+		RunID:           r.id,
+		EnvironmentID:   r.environment.id,
+		CookieJarID:     r.jarId,
+		Variables:       r.variables,
+		Acknowledgement: r.acknowledgement,
+		Iteration:       iteration,
+		IterationCount:  max(1, r.data.Count()),
+		IterationData:   r.data.WrappedRow(iteration),
+		MuteConsole:     true,
+		Performance:     true,
+	}
 }
 
 func (r *functionalRun) mask() func(string) (string, bool) {

@@ -1,6 +1,7 @@
 package entity
 
 type RunProgress struct {
+	Metrics     *PerformanceMetrics
 	CurrentName string
 	CurrentRow  int
 	Iteration   int
@@ -27,5 +28,12 @@ func (r RunProgress) After(row RunRowResult) RunProgress {
 	r.Completed++
 	r.TestsPassed += tests.Passed
 	r.TestsFailed += tests.Failed
+	return r
+}
+
+func (r RunProgress) Measured(metrics PerformanceMetrics) RunProgress {
+	r.Metrics = &metrics
+	r.Completed = metrics.Requests
+	r.Planned = metrics.Requests
 	return r
 }

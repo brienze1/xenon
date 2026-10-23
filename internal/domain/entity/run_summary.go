@@ -52,3 +52,9 @@ func (r *RunSummary) countOutcome(row RunRowResult) {
 		r.Cancelled++
 	}
 }
+
+func (r RunSummary) WithPerformance(overall RequestReport) RunSummary {
+	r.TotalRequests = overall.Count
+	r.AvgResponseMs = int64(overall.AvgMs)
+	return r
+}

@@ -67,3 +67,14 @@ func TestSendPreflightMergedUnitesTheRows(t *testing.T) {
 		t.Errorf("merged = %+v", merged)
 	}
 }
+
+func TestRunWithoutResponsesForgetsOnlyTheReleasedKeys(t *testing.T) {
+	run := Run{Rows: []RunRowResult{{Index: 0, ResponseKey: "run:r:0"}, {Index: 1, ResponseKey: "run:r:1"}}}
+	held := run.WithoutResponses([]string{"run:r:1"})
+	if held.Rows[0].ResponseKey != "run:r:0" || held.Rows[1].ResponseKey != "" {
+		t.Errorf("rows = %+v", held.Rows)
+	}
+	if run.Rows[1].ResponseKey != "run:r:1" {
+		t.Error("the original run must not change")
+	}
+}

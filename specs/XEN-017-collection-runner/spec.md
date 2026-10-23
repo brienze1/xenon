@@ -112,6 +112,7 @@ The PRD lists "Collection runner and CLI" under **Non-goals for the MVP**. Const
 - Q: Is the run configuration remembered per collection/folder? → A: Yes, all of it — run type, functional and performance settings, data file path and environment — locally per collection/folder like the order; a remembered data file that no longer exists is cleared with a notice.
 - Q: Can stored runs be deleted by hand? → A: Yes — each run in the Runs sub-tab has Delete, and the sub-tab has **Clear runs** for that collection/folder behind a confirm dialog; the 25-run cap still applies.
 - Q: Where is a run visible outside its Runner? → A: The collection/folder tab shows a running indicator while a run is active on it, and when a run ends a toast names the target with its status and passed/failed test totals and an **Open results** action that focuses (or opens) the tab on Runner › Results for that run.
+- Q (asked during implementation, 2026-10-23): the `run` and `runs` MCP tools push `tools/list` to about 38,600 characters, over XEN-014's 36,000-character budget. Trim or raise? → A: **Raise the budget to 39,000 characters** (`test/integration/features/mcp/connect.feature`) and keep every argument described.
 - Settled from the code (not asked): the toast reuses the shared toast component (`frontend/src/shared/ui/toast/Toast.tsx`, already used for update notices).
 - Settled (not asked): the Peak profile takes base users and a peak duration; the remaining time is split equally into a linear ramp up before the peak and a linear ramp down after it.
 

@@ -119,3 +119,38 @@ func TestRunConfigValidateRejectsPerformanceSettingsOutOfRange(t *testing.T) {
 		t.Errorf("a performance run ignores the functional settings: %v", err)
 	}
 }
+
+func TestRunConfigIteratesOnceForEachDataRowWithoutAnIterationCount(t *testing.T) {
+	config := selectedRunConfig()
+	config.Functional.Iterations = 0
+	if err := config.Validate(); err == nil {
+		t.Error("no iterations and no data file must be refused")
+	}
+	config.Functional.DataFile = "/data/users.csv"
+	if err := config.Validate(); err != nil {
+		t.Errorf("a data file without iterations must be accepted, got %v", err)
+	}
+	if iterations := config.WithDataIterations(3).Functional.Iterations; iterations != 3 {
+		t.Errorf("iterations = %d", iterations)
+	}
+	config.Functional.Iterations = 2
+	if iterations := config.WithDataIterations(3).Functional.Iterations; iterations != 2 {
+		t.Errorf("an explicit count must be kept, got %d", iterations)
+	}
+}
+
+func TestRunConfigPerformanceHelpers(t *testing.T) {
+	config := selectedRunConfig()
+	config.Functional.SaveCookies = true
+	if config.PlannedRequests(4) != 4 || !config.SavesCookies() {
+		t.Errorf("functional config = %+v", config)
+	}
+	config.Type = runtype.Performance
+	config.Performance.Profile = LoadProfile{Kind: loadprofilekind.Spike}
+	if config.PlannedRequests(4) != 0 || config.SavesCookies() {
+		t.Errorf("a performance run plans nothing ahead and never saves cookies")
+	}
+	if profile := config.WithProfileDefaults().Performance.Profile; profile.BaseUsers != 1 || profile.SpikeSeconds != 60 {
+		t.Errorf("profile = %+v", profile)
+	}
+}

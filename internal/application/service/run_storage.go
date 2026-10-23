@@ -119,3 +119,18 @@ func (m *manageRunner) run(ctx context.Context, localId, runId string) (*entity.
 	}
 	return m.findRuns.FindRun(ctx, localId, runId)
 }
+
+func (m *manageRunner) releasedResponses(ctx context.Context, run entity.Run) ([]string, error) {
+	released := make([]string, 0)
+	for _, key := range run.ResponseKeys() {
+		_, err := m.findResponse.Find(ctx, key)
+		if errs.IsNotFoundError(err) {
+			released = append(released, key)
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	return released, nil
+}

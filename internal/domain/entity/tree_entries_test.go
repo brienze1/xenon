@@ -96,3 +96,17 @@ func TestTreeSearchKeepsTreeOrderAndLimit(t *testing.T) {
 		}
 	}
 }
+
+func TestTreeContainerAtFindsCollectionsAndFoldersByPath(t *testing.T) {
+	tree := entriesTree()
+	for path, want := range map[string]string{"Billing": "c1", "Billing / Invoices": "f1", "Billing/Invoices": "f1", " Users ": "c2"} {
+		if entry, found := tree.ContainerAt(path); !found || entry.ID() != want {
+			t.Errorf("ContainerAt(%q) = %v, %v; want %s", path, entry.ID(), found, want)
+		}
+	}
+	for _, path := range []string{"Billing / Ping", "Nope", ""} {
+		if _, found := tree.ContainerAt(path); found {
+			t.Errorf("ContainerAt(%q) must not find a container", path)
+		}
+	}
+}
