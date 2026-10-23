@@ -36,4 +36,16 @@ describe('RequestWorkspace', () => {
     expect(divider).toHaveAttribute('aria-orientation', 'vertical')
     expect(divider).toHaveAttribute('aria-valuenow', '70')
   })
+
+  it('keeps the request pane at least 200 px tall when stacked', () => {
+    renderWorkspace({ split: 'stacked', splitRatio: 0.2 })
+    const stacked = screen.getByRole('separator', { name: 'Resize request and response' }).parentElement!
+    expect(stacked.style.getPropertyValue('--split-min-size')).toBe('200px')
+  })
+
+  it('adds no pixel floor in the side-by-side layout', () => {
+    renderWorkspace({ split: 'side-by-side', splitRatio: 0.2 })
+    const sideBySide = screen.getByRole('separator', { name: 'Resize request and response' }).parentElement!
+    expect(sideBySide.style.getPropertyValue('--split-min-size')).toBe('')
+  })
 })

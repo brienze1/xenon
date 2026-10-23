@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
 import { emptyDraft, type RequestDraft, type SendResult } from '@/platform/mappers/request'
+import { injectStylesheets } from '@/test/stylesheets'
 
 vi.mock('@/platform/services/requests', async (importOriginal) => {
   const { confirmationOf, expiredTokenOwnerOf, isCurlRefusal, missingSecretsOf } = await importOriginal<typeof import('@/platform/services/requests')>()
@@ -95,6 +96,20 @@ describe('RequestBuilder', () => {
     vi.clearAllTimers()
     vi.useRealTimers()
     resetStores()
+  })
+
+  it('pins the URL bar and sub-tabs and falls back to scrolling the builder', () => {
+    injectStylesheets(
+      'src/shared/ui/tabs/Tabs.module.css',
+      'src/features/request-builder/components/RequestBuilder.module.css',
+      'src/features/request-builder/components/RequestTabs.module.css',
+    )
+    render(<RequestBuilder tabId={tabId} />)
+    const builder = getComputedStyle(screen.getByRole('region', { name: 'Request' }))
+    expect(builder.overflowY).toBe('auto')
+    expect(builder.overflowX).toBe('hidden')
+    expect(getComputedStyle(screen.getByRole('tablist', { name: 'Request' }).closest('.tabs')!).minHeight).toBe('auto')
+    expect(getComputedStyle(screen.getByRole('tabpanel')).minHeight).toBe('80px')
   })
 
   it('shows the sub-tabs in Postman order with Params first', () => {

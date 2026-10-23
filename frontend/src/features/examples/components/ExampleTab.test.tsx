@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
 import type { Example } from '@/platform/mappers/example'
 import { emptyDraft } from '@/platform/mappers/request'
+import { injectStylesheets } from '@/test/stylesheets'
 
 vi.mock('@/platform/services/examples', () => ({ getExample: vi.fn(), saveExample: vi.fn(), createExampleFromResponse: vi.fn() }))
 vi.mock('@/platform/services/requests', () => ({ autoHeaders: vi.fn(async () => []), getRequest: vi.fn() }))
@@ -70,6 +71,16 @@ describe('ExampleTab', () => {
     expect(await screen.findByRole('textbox', { name: 'Raw example body' })).toHaveTextContent('{"id":1}')
     await userEvent.click(screen.getByRole('tab', { name: 'Headers (1)' }))
     expect(await screen.findByText('X-Trace')).toBeInTheDocument()
+  })
+
+  it('scrolls the example response instead of clipping it', async () => {
+    injectStylesheets('src/shared/ui/tabs/Tabs.module.css', 'src/features/examples/components/ExampleTab.module.css')
+    await renderTab(example())
+    const response = getComputedStyle(screen.getByRole('region', { name: 'Example Response' }))
+    expect(response.overflowY).toBe('auto')
+    expect(response.overflowX).toBe('hidden')
+    expect(getComputedStyle(screen.getByRole('tablist', { name: 'Example response' }).closest('.tabs')!).minHeight).toBe('auto')
+    expect(getComputedStyle(screen.getByRole('tabpanel')).minHeight).toBe('160px')
   })
 
   it('opens a large routed body read-only in Raw first', async () => {
