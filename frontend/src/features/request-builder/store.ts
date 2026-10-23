@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { useResponseViewerStore } from '@/features/response-viewer/store'
 import { useSidebarStore } from '@/features/sidebar/store'
+import { useEnvironmentsStore } from '@/features/environments/store'
 import { useWorkspacesStore } from '@/features/workspaces/store'
 import { SAVE_CONFLICT_CODE, toAppError, type AppError } from '@/platform/errors'
 import type { VariableSuggestion } from '@/platform/mappers/inspection'
@@ -34,11 +35,12 @@ import {
   sendRequest,
   type PendingSend,
 } from '@/platform/services/requests'
-import { createAlias, deleteAlias, saveAlias } from '@/platform/services/aliases'
+import { createAlias, deleteAlias, saveAlias, setAliasEnvironments } from '@/platform/services/aliases'
 import { pickFile } from '@/platform/services/dialogs'
 import { inspectVariables, suggestVariables } from '@/platform/services/variables'
 import { keepRowIds } from '@/shared/lib/rows'
 import type { Result } from '@/shared/types/result'
+import { isAliasAvailable } from './lib/alias-availability'
 import { withPastedRequest } from './lib/curl'
 import { fieldText, withFieldText } from './lib/draft-fields'
 import { rowsOf, withRows, withSavedRows } from './lib/draft-rows'
@@ -64,7 +66,9 @@ interface RequestBuilderState {
   /** Shows another version of the request in the tab; the version on screen keeps its unsaved edits aside. */
   selectVersion: (tabId: string, aliasId: string | null) => void
   /** Creates an alias as a copy of the saved Default and shows it; returns why it could not, or null. */
-  createAlias: (tabId: string, name: string) => Promise<AppError | null>
+  createAlias: (tabId: string, name: string, environmentIds?: string[]) => Promise<AppError | null>
+  /** Limits an alias to `environmentIds` (none: all environments), saved at once; the tab's drafts stay as they are. */
+  setAliasEnvironments: (tabId: string, aliasId: string, environmentIds: string[]) => Promise<AppError | null>
   /** Deletes an alias and its unsaved edits; a tab showing it goes back to the Default. Returns why it could not, or null. */
   deleteAlias: (tabId: string, aliasId: string) => Promise<AppError | null>
   /** Puts back, after a restart, the alias a tab showed and the drafts of its other versions, then reads its aliases. */
@@ -172,6 +176,12 @@ function fromDisk(saved: SavedRequest): Pick<TabDraft, 'baseRevision' | 'aliases
 }
 
 /** A version as it is on disk; null for an alias the request no longer has or a Default never read. */
+/** Whether the version on screen may be sent with the active environment; Go refuses an unavailable alias anyway. */
+function shownAliasAvailable(current: TabDraft): boolean {
+  const alias = current.aliases.find((candidate) => candidate.id === current.aliasId)
+  return alias === undefined || isAliasAvailable(alias, useEnvironmentsStore.getState().activeId)
+}
+
 function savedVersion(current: TabDraft, aliasId: string | null): VersionState | null {
   if (aliasId === null) {
     return current.savedDefault === null ? null : { draft: current.savedDefault, savedName: current.savedDefault.name, dirty: false }
@@ -342,19 +352,37 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
       void get().refreshAutoHeaders(tabId)
     },
 
-    createAlias: async (tabId, name) => {
+    createAlias: async (tabId, name, environmentIds = []) => {
       const localId = useWorkspacesStore.getState().activeLocalId
       const current = tab(tabId)
       if (!localId || current.draft.id === '') {
         return null
       }
       try {
-        const saved = await createAlias(localId, current.draft.id, name, current.baseRevision ?? '')
+        const saved = await createAlias(localId, current.draft.id, name, environmentIds, current.baseRevision ?? '')
         patchTab(tabId, fromDisk(saved))
         const created = saved.aliases.at(-1)
         if (created) {
           get().selectVersion(tabId, created.id)
         }
+        return null
+      } catch (error) {
+        const appError = toAppError(error)
+        if (appError.code === SAVE_CONFLICT_CODE) {
+          patchTab(tabId, { conflict: true })
+        }
+        return appError
+      }
+    },
+
+    setAliasEnvironments: async (tabId, aliasId, environmentIds) => {
+      const localId = useWorkspacesStore.getState().activeLocalId
+      const current = tab(tabId)
+      if (!localId || current.draft.id === '') {
+        return null
+      }
+      try {
+        patchTab(tabId, fromDisk(await setAliasEnvironments(localId, current.draft.id, aliasId, environmentIds, current.baseRevision ?? '')))
         return null
       } catch (error) {
         const appError = toAppError(error)
@@ -668,7 +696,7 @@ export const useRequestBuilderStore = create<RequestBuilderState>()((set, get) =
 
     send: async (tabId, acknowledgement = {}) => {
       const localId = useWorkspacesStore.getState().activeLocalId
-      if (!localId || tab(tabId).pending) {
+      if (!localId || tab(tabId).pending || !shownAliasAvailable(tab(tabId))) {
         return
       }
       const acknowledged = { ...noAcknowledgement(), ...acknowledgement }

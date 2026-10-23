@@ -27,6 +27,7 @@ type sendRequest struct {
 	findDigestState       usecase.FindDigestState
 	saveDigestState       usecase.SaveDigestState
 	findCookieAllowlist   usecase.FindCookieAllowlist
+	listEnvironments      usecase.ListEnvironments
 	tokens                oauthTokens
 	cookies               cookieJar
 	variables             requestVariables
@@ -74,6 +75,7 @@ func NewSendRequestService(
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
 	registerKnownSecrets usecase.RegisterKnownSecrets,
 	publishAIEvent usecase.PublishAIEvent,
+	listEnvironments usecase.ListEnvironments,
 ) adapter.SendRequestService {
 	scopes := variableScopes{findEnvironment: findEnvironment, findTreeItem: findTreeItem, loadWorkspace: loadWorkspace}
 	vaults := vaultWriter{
@@ -100,6 +102,7 @@ func NewSendRequestService(
 		findDigestState:       findDigestState,
 		saveDigestState:       saveDigestState,
 		findCookieAllowlist:   findCookieAllowlist,
+		listEnvironments:      listEnvironments,
 		tokens:                oauthTokens{vaults: vaults, lockOAuthToken: lockOAuthToken, refreshOAuthToken: refreshOAuthToken},
 		cookies: cookieJar{
 			manageCookieJar:       manageCookieJar,
@@ -148,6 +151,9 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId, aliasId string, 
 	if err != nil {
 		return nil, err
 	}
+	if !alias.IsAvailableIn(scopes.environment) {
+		return nil, s.unavailableAlias(ctx, workspace.Path, alias)
+	}
 	effective := usecase.ResolveEffectiveRequest(request, scopes.ancestors, workspace.Path).ForAlias(request.ID, aliasId).WithAuthOwner(tabId)
 	preflight := usecase.CheckSendPreflight(request.Inheriting(effective), scopes.context, scopes.environment)
 	if preflight.AwaitsConfirmation(acknowledgement) {
@@ -185,7 +191,7 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId, aliasId string, 
 		return nil, err
 	}
 	s.registerKnownSecrets.Register(ctx, append(secrets, execution.DerivedSecrets(secrets)...)...)
-	if err := s.saveHistoryEntry.Save(ctx, localId, entity.NewHistoryEntry(idutils.NewUlid(), sentAt, request, execution, origin).ForAlias(alias), settings.HistoryCaps()); err != nil {
+	if err := s.saveHistoryEntry.Save(ctx, localId, entity.NewHistoryEntry(idutils.NewUlid(), sentAt, request, execution, origin).ForAlias(alias).InEnvironment(scopes.environment), settings.HistoryCaps()); err != nil {
 		return nil, err
 	}
 	if err := s.publishAIEvent.HistoryChanged(ctx, localId); err != nil {
@@ -222,6 +228,14 @@ func (s *sendRequest) scriptOwners(ctx context.Context, root string, request ent
 		return nil, err
 	}
 	return request.WithScriptsOf(stored.Version(aliasId)).ScriptOwners(ancestors), nil
+}
+
+func (s *sendRequest) unavailableAlias(ctx context.Context, root string, alias entity.RequestAlias) error {
+	environments, err := s.listEnvironments.List(ctx, root)
+	if err != nil {
+		return err
+	}
+	return usecase.RejectUnavailableAlias(alias.Name, alias.EnvironmentLabels(environments))
 }
 
 func (s *sendRequest) alias(ctx context.Context, root, requestId, aliasId string) (entity.RequestAlias, error) {

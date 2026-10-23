@@ -68,7 +68,7 @@ func newTestMCPCall(active string) (adapter.MCPCallController, *fakeAIActivityRe
 
 func TestMCPCallRejectsAnUnknownActionAndRecordsTheActivity(t *testing.T) {
 	call, recorder, _ := newTestMCPCall("ws-1")
-	tree := NewMCPTree(NewErrorHandler(), nil, nil, nil, nil, nil, nil)
+	tree := NewMCPTree(NewErrorHandler(), nil, nil, nil, nil, nil, nil, nil)
 	outcome := call.Call(context.Background(), dto.NewMCPCall("session-1", "Claude Code", json.RawMessage(`{"action":"explode","note":"s3cret"}`)), tree)
 	if !outcome.Failed || !strings.Contains(outcome.Text, `"code":"MCP-07400"`) || strings.Contains(outcome.Text, "s3cret") {
 		t.Fatalf("Call() = %+v", outcome)
@@ -81,7 +81,7 @@ func TestMCPCallRejectsAnUnknownActionAndRecordsTheActivity(t *testing.T) {
 
 func TestMCPCallNeedsAnActiveWorkspaceForScopedTools(t *testing.T) {
 	call, recorder, _ := newTestMCPCall("")
-	tree := NewMCPTree(NewErrorHandler(), nil, nil, nil, nil, nil, nil)
+	tree := NewMCPTree(NewErrorHandler(), nil, nil, nil, nil, nil, nil, nil)
 	scoped := call.Call(context.Background(), dto.NewMCPCall("session-1", "", json.RawMessage(`{"action":"list"}`)), tree)
 	if !scoped.Failed || !strings.Contains(scoped.Text, "MCP-06404") {
 		t.Fatalf("a scoped tool without a workspace = %+v", scoped)

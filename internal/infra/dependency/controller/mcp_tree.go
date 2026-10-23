@@ -22,6 +22,7 @@ func GetMCPTreeController() adapter.MCPToolController {
 				application.GetManageExampleService(),
 				application.GetManageVariableTableService(),
 				application.GetManageOAuthService(),
+				application.GetManageEnvironmentService(),
 			)
 		})
 	}

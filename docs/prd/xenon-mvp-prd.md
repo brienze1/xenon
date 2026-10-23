@@ -552,6 +552,22 @@ Stages 4 (scripts) and the OAuth 2.0 part of 5 carry most of the risk. Everythin
   token. History records the alias. A Postman export writes each alias as its own request, `Login (mx-test-user)`;
   the collection's OpenAPI document shows Defaults only. AI clients list, edit and send aliases over MCP.
 
+**Decisions (Oct 23, 2026)**
+
+- [x] **Alias environments** (XEN-018, GitHub issue #25). User decision, extending request aliases. Each alias has an
+  Environments setting: **All environments** (the default; nothing is written to the file) or a **set of one or more
+  environments**, stored by environment id under the alias in the request file and shared through git. A linked alias
+  can only be sent while one of its environments is active; with no active environment it is unavailable. Go refuses
+  any other send of it, from the app or an AI client, with `ALS-09403` before scripts, confirmation or approval run.
+  The Default can't be linked. In the Aliases dropdown each alias shows its environments' colour dots and names, and
+  aliases for other environments are **greyed out** but keep their ⋯ actions (Environments…, Delete…). The setting is
+  also chosen when creating an alias. If the active environment changes while a tab shows an alias that is no longer
+  available, the tab keeps it (and its unsaved edits), Send is disabled and a banner offers **Switch to <env>**.
+  Deleting an environment leaves the alias linked to its id, shown as "Deleted environment", and never widens it to
+  All environments. A Postman export notes the environments in the alias request's description
+  (`Xenon alias for environments: HML`). Every send's history entry records the environment that was active (id,
+  name and colour at send time), shown as a dot and name on the History row and in AI history reads.
+
 **Open questions**
 
 - [ ] Open-source Xenon once it replaces Postman, or keep it private? (Not needed for the MVP.)

@@ -230,7 +230,7 @@ describe('RequestBuilder', () => {
     vi.mocked(requests.getRequest).mockResolvedValue({
       draft: saved,
       revision: 'rev-1',
-      aliases: [{ id: 'a1', name: 'mx', draft: { ...saved, name: 'mx', body: { ...body, raw: { language: 'json', content: '{"user":"mx"}' } } } }],
+      aliases: [{ id: 'a1', name: 'mx', environmentIds: [], draft: { ...saved, name: 'mx', body: { ...body, raw: { language: 'json', content: '{"user":"mx"}' } } } }],
     })
     await act(() => useRequestBuilderStore.getState().openSaved(tabId, 'r1'))
     act(() => useRequestBuilderStore.getState().setSubTab(tabId, 'body'))

@@ -24,7 +24,7 @@ const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 30)
 const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
 
 function entry(id: string, method: string, url: string, sentAt: Date, extra: Partial<HistoryEntry> = {}): HistoryEntry {
-  return { id, sentAt: sentAt.toISOString(), kind: 'send', source: 'user', client: null, activity: null, method, url, outcome: 'sent', statusCode: 200, errorKind: null, totalMs: 42, sizeBytes: 10, sourceRequestId: null, aliasName: null, ...extra }
+  return { id, sentAt: sentAt.toISOString(), kind: 'send', source: 'user', client: null, activity: null, method, url, outcome: 'sent', statusCode: 200, errorKind: null, totalMs: 42, sizeBytes: 10, sourceRequestId: null, aliasName: null, environment: null, ...extra }
 }
 
 const entries = [
@@ -187,6 +187,26 @@ describe('HistoryView', () => {
     expect(rows[0]).toHaveTextContent('Login · mx-test-user')
     expect(rows[0]).toHaveAccessibleName(/^Login · mx-test-user, POST https:\/\/api\.test\/login, 200, /)
     expect(rows[1]).not.toHaveTextContent('·')
+  })
+
+  it('shows the environment that was active for each send, by its name then', async () => {
+    const login = { id: 'r1', kind: 'request' as const, name: 'Login', method: 'POST', url: null, error: null, warning: null, children: [], examples: [] }
+    vi.mocked(tree.getTree).mockResolvedValue([{ id: 'c1', kind: 'collection', name: 'Billing', method: null, url: null, error: null, warning: null, children: [login], examples: [] }])
+    await useSidebarStore.getState().load()
+    const hml = { id: 'hml', name: 'HML', color: 'green' as const }
+    vi.mocked(history.listHistory).mockResolvedValue([
+      entry('h10', 'POST', 'https://api.test/login', today, { sourceRequestId: 'r1', aliasName: 'mx-test-user', environment: hml }),
+      entry('h11', 'GET', 'https://api.test/ping', today, { environment: hml }),
+      entry('h12', 'GET', 'https://api.test/ping', today),
+    ])
+    await renderHistory()
+    const rows = within(screen.getByRole('list', { name: 'History' })).getAllByRole('button')
+    expect(rows[0]).toHaveTextContent('Login · mx-test-userHML')
+    expect(rows[0]).toHaveAccessibleName(/^Login · mx-test-user, POST https:\/\/api\.test\/login, in HML, 200, /)
+    expect(rows[1]).toHaveTextContent(/^HML/)
+    expect(rows[1]).toHaveAccessibleName(/^GET https:\/\/api\.test\/ping, in HML, 200, /)
+    expect(rows[2]).not.toHaveTextContent('HML')
+    expect(rows[2]).toHaveAccessibleName(/^GET https:\/\/api\.test\/ping, 200, /)
   })
 
   it('tags AI sends with the client and opens them like any send', async () => {

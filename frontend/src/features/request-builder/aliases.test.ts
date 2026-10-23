@@ -45,7 +45,7 @@ function saved(revision: string, aliasUrl = 'https://x/v2', extra: SavedRequest[
   return {
     draft: draftOf('Login', 'https://x/v1'),
     revision,
-    aliases: [{ id: 'a1', name: 'mx', draft: draftOf('mx', aliasUrl) }, ...extra],
+    aliases: [{ id: 'a1', name: 'mx', environmentIds: [], draft: draftOf('mx', aliasUrl) }, ...extra],
   }
 }
 
@@ -102,7 +102,7 @@ describe('request builder - aliases', () => {
     state().editName(TAB, 'mx-renamed')
     vi.mocked(aliasService.saveAlias).mockResolvedValue({
       ...saved('rev-2'),
-      aliases: [{ id: 'a1', name: 'mx-renamed', draft: draftOf('mx-renamed', 'https://x/v2?edited') }],
+      aliases: [{ id: 'a1', name: 'mx-renamed', environmentIds: [], draft: draftOf('mx-renamed', 'https://x/v2?edited') }],
     })
     const result = await state().save(TAB)
     expect(result).toEqual({ ok: true, value: true })
@@ -125,10 +125,10 @@ describe('request builder - aliases', () => {
   it('creates an alias from the saved Default and shows it', async () => {
     await state().openSaved(TAB, 'r1')
     state().setUrl(TAB, 'https://x/v1?unsaved')
-    vi.mocked(aliasService.createAlias).mockResolvedValue(saved('rev-2', 'https://x/v2', [{ id: 'a2', name: 'canary', draft: draftOf('canary', 'https://x/v1') }]))
+    vi.mocked(aliasService.createAlias).mockResolvedValue(saved('rev-2', 'https://x/v2', [{ id: 'a2', name: 'canary', environmentIds: [], draft: draftOf('canary', 'https://x/v1') }]))
     const failure = await state().createAlias(TAB, 'canary')
     expect(failure).toBeNull()
-    expect(aliasService.createAlias).toHaveBeenCalledWith('ws', 'r1', 'canary', 'rev-1')
+    expect(aliasService.createAlias).toHaveBeenCalledWith('ws', 'r1', 'canary', [], 'rev-1')
     expect(tab().aliasId).toBe('a2')
     expect(tab().draft.url).toBe('https://x/v1')
     expect(tab().baseRevision).toBe('rev-2')

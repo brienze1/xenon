@@ -3,6 +3,7 @@ import type {
   HistoryEntry as HistoryEntryDto,
   HistoryEntryDetail as HistoryEntryDetailDto,
 } from '../../../bindings/github.com/brienze1/xenon/internal/integration/entrypoint/dto/models'
+import { toEnvironmentColor, type EnvironmentColor } from './environment'
 import { SEND_ERROR_KIND_SET, SEND_OUTCOME_SET, toRequestDraft, type RequestDraft, type SendErrorKind, type SendOutcome } from './request'
 
 /** Who made a history entry: the human in the UI or an AI client through MCP. */
@@ -34,6 +35,13 @@ export interface HistoryActivity {
   args: string | null
 }
 
+/** The environment active for a send, as it was then. */
+export interface HistoryEnvironment {
+  id: string
+  name: string
+  color: EnvironmentColor
+}
+
 export interface HistoryEntry {
   id: string
   sentAt: string
@@ -51,6 +59,7 @@ export interface HistoryEntry {
   sourceRequestId: string | null
   /** The alias the send used; null for the Default or an unsaved request. */
   aliasName: string | null
+  environment: HistoryEnvironment | null
   activity: HistoryActivity | null
 }
 
@@ -118,10 +127,15 @@ export function toHistoryEntry(dto: HistoryEntryDto): HistoryEntry {
     sizeBytes: dto.size_bytes,
     sourceRequestId: dto.source_request_id ? dto.source_request_id : null,
     aliasName: orNull(dto.alias_name ?? ''),
+    environment: dto.environment ? toHistoryEnvironment(dto.environment) : null,
     activity: dto.activity ? toActivity(dto.activity) : null,
   }
 }
 
 export function toHistoryEntryDetail(dto: HistoryEntryDetailDto): HistoryEntryDetail {
   return { entry: toHistoryEntry(dto.entry), request: toRequestDraft(dto.request), activity: dto.activity ? toActivity(dto.activity) : null }
+}
+
+function toHistoryEnvironment(dto: NonNullable<HistoryEntryDto['environment']>): HistoryEnvironment {
+  return { id: dto.id, name: dto.name, color: toEnvironmentColor(dto.color) }
 }

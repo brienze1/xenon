@@ -7,12 +7,16 @@ import (
 	"github.com/brienze1/xenon/pkg/yamlnode"
 )
 
-const aliasesKey = "aliases"
+const (
+	aliasesKey      = "aliases"
+	environmentsKey = "environments"
+)
 
 type RequestAlias struct {
 	Settings       Settings       `yaml:"settings"`
 	Id             string         `yaml:"id"`
 	Name           string         `yaml:"name"`
+	Environments   []string       `yaml:"environments"`
 	Method         string         `yaml:"method"`
 	Url            string         `yaml:"url"`
 	Body           Body           `yaml:"body"`
@@ -30,6 +34,7 @@ func NewRequestAlias(alias entity.RequestAlias) RequestAlias {
 	model := RequestAlias{
 		Id:             alias.ID,
 		Name:           alias.Name,
+		Environments:   alias.EnvironmentIDs,
 		Method:         version.MethodOrDefault(),
 		Url:            version.URL,
 		Params:         newKeyValues(version.Params),
@@ -66,13 +71,14 @@ func (a *RequestAlias) ToEntity() entity.RequestAlias {
 	version.Settings = a.Settings.ToEntity()
 	version.Scripts = a.Scripts.ToEntity()
 	version.InheritScripts = inheritsScripts(a.InheritScripts)
-	return entity.RequestAlias{ID: a.Id, Name: a.Name, Version: version}
+	return entity.RequestAlias{ID: a.Id, Name: a.Name, EnvironmentIDs: entity.NormalizedEnvironmentIDs(a.Environments), Version: version}
 }
 
 func (a *RequestAlias) Node() *yaml.Node {
 	return yamlnode.MappingNode(
 		yamlnode.String("id", a.Id),
 		yamlnode.String("name", a.Name),
+		environmentsField(a.Environments),
 		yamlnode.String("method", a.Method),
 		yamlnode.String("url", a.Url),
 		yamlnode.List("params", keyValueNodes(a.Params)),
@@ -85,6 +91,13 @@ func (a *RequestAlias) Node() *yaml.Node {
 		yamlnode.Field{Key: scriptsKey, Value: a.Scripts.Node()},
 		yamlnode.Bool("inheritScripts", inheritsScripts(a.InheritScripts)),
 	)
+}
+
+func environmentsField(environments []string) yamlnode.Field {
+	if len(environments) == 0 {
+		return yamlnode.Absent(environmentsKey)
+	}
+	return yamlnode.StringList(environmentsKey, environments)
 }
 
 func newRequestAliases(aliases []entity.RequestAlias) []RequestAlias {

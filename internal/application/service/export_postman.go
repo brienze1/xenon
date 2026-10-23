@@ -49,11 +49,16 @@ func (p postmanExport) item(ctx context.Context, root string, request entity.Exp
 	if err != nil {
 		return err
 	}
-	return p.collection(ctx, node, ancestors, request, local, documents)
+	return p.collection(ctx, root, node, ancestors, request, local, documents)
 }
 
-func (p postmanExport) collection(ctx context.Context, node entity.ExportNode, ancestors []entity.Collection, request entity.ExportRequest, local entity.LocalVariables, documents *exportDocuments) error {
-	exported := usecase.EffectiveExportRoot(node, ancestors).WithAliasesAsRequests()
+func (p postmanExport) collection(ctx context.Context, root string, node entity.ExportNode, ancestors []entity.Collection, request entity.ExportRequest, local entity.LocalVariables, documents *exportDocuments) error {
+	environments, err := p.items.listEnvironments.List(ctx, root)
+	if err != nil {
+		return err
+	}
+	labels := func(ids []string) []string { return entity.AliasEnvironmentLabels(ids, environments) }
+	exported := usecase.EffectiveExportRoot(node, ancestors).WithAliasesAsRequests(labels)
 	if request.CurrentValuesAsInitial {
 		current := local.CurrentValues(exported.ScopeRefWithin(ancestors))
 		exported.Container = exported.Container.WithVariables(usecase.ApplyCurrentValuesAsInitial(exported.Container.Variables, current))
@@ -65,7 +70,7 @@ func (p postmanExport) collection(ctx context.Context, node entity.ExportNode, a
 	documents.add(postmanCollectionsFolder, node.Name(), postmanCollectionSuffix, data)
 	drops := make([]entity.ExportDrop, 0)
 	credentials := make([]entity.ExportWarning, 0)
-	for _, scanned := range node.WithAliasRequests() {
+	for _, scanned := range node.WithAliasRequests(labels) {
 		drops = append(drops, usecase.FindPostmanDrops(scanned)...)
 		credentials = append(credentials, usecase.FindLiteralCredentials(scanned)...)
 	}
@@ -118,7 +123,7 @@ func (p postmanExport) workspace(ctx context.Context, root string, request entit
 		return err
 	}
 	for _, collection := range collections {
-		if err := p.collection(ctx, collection, nil, request, local, documents); err != nil {
+		if err := p.collection(ctx, root, collection, nil, request, local, documents); err != nil {
 			return err
 		}
 	}
