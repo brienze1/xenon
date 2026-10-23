@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ScriptSet } from '@/platform/mappers/request'
+import { injectStylesheets } from '@/test/stylesheets'
 
 vi.mock('@/platform/services/scripts', () => ({ checkScript: vi.fn(), scriptReference: vi.fn(), scriptSnippets: vi.fn() }))
 
@@ -96,6 +97,24 @@ describe('ScriptsEditor', () => {
     await user.click(within(notice).getByRole('button', { name: 'Enable' }))
     expect(onChange).toHaveBeenLastCalledWith({ preRequest: 'x()', postResponse: '', disabled: [] })
     await waitFor(() => expect(screen.queryByText('This script is disabled and does not run.')).not.toBeInTheDocument())
+  })
+  it('keeps its rows from overlapping in a short pane', async () => {
+    injectStylesheets('src/shared/ui/tabs/Tabs.module.css', 'src/features/scripts/components/ScriptsEditor.module.css')
+    const { container } = render(<Harness initial={{ preRequest: '', postResponse: '', disabled: [] }} inherit={true} />)
+    await screen.findByLabelText('Pre-request script')
+    const header = screen.getByRole('tablist', { name: 'Script phase' }).parentElement!
+    const panel = screen.getByRole('tabpanel')
+    const toolbar = screen.getByRole('button', { name: 'Snippets for the Pre-request script' }).closest('.toolbar')!
+    expect(header).toContainElement(screen.getByRole('checkbox', { name: 'Inherit parent scripts' }))
+    expect(getComputedStyle(header).flexShrink).toBe('0')
+    expect(getComputedStyle(screen.getByText(/for the API/).closest('p')!).flexShrink).toBe('0')
+    expect(getComputedStyle(toolbar).flexShrink).toBe('0')
+    expect(getComputedStyle(toolbar).flexWrap).toBe('wrap')
+    for (const element of [container.querySelector('.tabs')!, panel, panel.querySelector('.phase')!]) {
+      expect(getComputedStyle(element).minHeight).toBe('auto')
+    }
+    expect(getComputedStyle(panel).overflow).toBe('visible')
+    expect(getComputedStyle(panel.querySelector('.editor')!).minHeight).toBe('160px')
   })
 })
 

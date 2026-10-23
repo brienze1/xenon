@@ -23,6 +23,11 @@
   flex: 0 0 calc(var(--split-ratio) * 100%);
 }
 
+/* The first pane's pixel floor, capped at the largest ratio so the second pane always keeps its share. */
+.column > .pane:first-child {
+  min-height: min(var(--split-min-size, 0px), calc(var(--split-max, 1) * 100%));
+}
+
 .pane:last-child {
   flex: 1 1 0;
 }
