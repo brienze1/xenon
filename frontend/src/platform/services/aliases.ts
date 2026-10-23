@@ -19,10 +19,29 @@ async function call<T>(operation: () => Promise<T>): Promise<T> {
   }
 }
 
-/** Creates an alias of the saved request as a copy of its saved Default; the request comes back with every alias. */
-export function createAlias(localId: string, requestId: string, name: string, baseRevision: string): Promise<SavedRequest> {
+/** Creates an alias of the saved request as a copy of its saved Default, limited to `environmentIds` (none: all environments). */
+export function createAlias(localId: string, requestId: string, name: string, environmentIds: string[], baseRevision: string): Promise<SavedRequest> {
   return call(async () =>
-    toSavedRequest(required(await AliasService.Create({ local_id: localId, request_id: requestId, base_revision: baseRevision, name }))),
+    toSavedRequest(
+      required(await AliasService.Create({ local_id: localId, request_id: requestId, base_revision: baseRevision, name, environment_ids: environmentIds })),
+    ),
+  )
+}
+
+/** Limits an alias to `environmentIds` (none: all environments) without touching its content. */
+export function setAliasEnvironments(localId: string, requestId: string, aliasId: string, environmentIds: string[], baseRevision: string): Promise<SavedRequest> {
+  return call(async () =>
+    toSavedRequest(
+      required(
+        await AliasService.SetEnvironments({
+          local_id: localId,
+          request_id: requestId,
+          alias_id: aliasId,
+          environment_ids: environmentIds,
+          base_revision: baseRevision,
+        }),
+      ),
+    ),
   )
 }
 

@@ -22,11 +22,12 @@ type sendCall struct {
 }
 
 type sentRequest struct {
-	sentAt    time.Time
-	execution *entity.SendExecution
-	secrets   []string
-	alias     entity.RequestAlias
-	settings  entity.AppSettings
+	sentAt      time.Time
+	execution   *entity.SendExecution
+	environment *entity.Environment
+	secrets     []string
+	alias       entity.RequestAlias
+	settings    entity.AppSettings
 }
 
 func (p *sendPipeline) send(ctx context.Context, call sendCall, runContext entity.RunContext) (*sentRequest, error) {
@@ -43,6 +44,9 @@ func (p *sendPipeline) send(ctx context.Context, call sendCall, runContext entit
 	alias, err := p.alias(ctx, workspace.Path, request.ID, aliasId)
 	if err != nil {
 		return nil, err
+	}
+	if !alias.IsAvailableIn(scopes.environment) {
+		return nil, p.unavailableAlias(ctx, workspace.Path, alias)
 	}
 	effective := usecase.ResolveEffectiveRequest(request, scopes.ancestors, workspace.Path).ForAlias(request.ID, aliasId).WithAuthOwner(tabId)
 	preflight := usecase.CheckSendPreflight(request.Inheriting(effective), scopes.context, scopes.environment)
@@ -85,7 +89,7 @@ func (p *sendPipeline) send(ctx context.Context, call sendCall, runContext entit
 	}
 	known := append(secrets, execution.DerivedSecrets(secrets)...)
 	p.registerKnownSecrets.Register(ctx, known...)
-	return &sentRequest{sentAt: sentAt, execution: &execution, alias: alias, settings: *settings, secrets: append(known, run.secretsOf(&execution)...)}, nil
+	return &sentRequest{sentAt: sentAt, execution: &execution, alias: alias, environment: scopes.environment, settings: *settings, secrets: append(known, run.secretsOf(&execution)...)}, nil
 }
 
 func (p *sendPipeline) loadWorkspaceJar(ctx context.Context, localId string, runContext entity.RunContext) error {

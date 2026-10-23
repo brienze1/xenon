@@ -45,6 +45,7 @@ type mcpTree struct {
 	manageExampleService       appAdapter.ManageExampleService
 	manageVariableTableService appAdapter.ManageVariableTableService
 	manageOAuthService         appAdapter.ManageOAuthService
+	manageEnvironmentService   appAdapter.ManageEnvironmentService
 }
 
 func NewMCPTree(
@@ -55,6 +56,7 @@ func NewMCPTree(
 	manageExampleService appAdapter.ManageExampleService,
 	manageVariableTableService appAdapter.ManageVariableTableService,
 	manageOAuthService appAdapter.ManageOAuthService,
+	manageEnvironmentService appAdapter.ManageEnvironmentService,
 ) adapter.MCPToolController {
 	return &mcpTree{
 		errorHandler:               errorHandler,
@@ -64,6 +66,7 @@ func NewMCPTree(
 		manageExampleService:       manageExampleService,
 		manageVariableTableService: manageVariableTableService,
 		manageOAuthService:         manageOAuthService,
+		manageEnvironmentService:   manageEnvironmentService,
 	}
 }
 
@@ -173,7 +176,11 @@ func (m *mcpTree) request(ctx context.Context, call dto.MCPToolCall, entry entit
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
-	return dto.NewMCPToolResult(dto.NewMCPTreeRequest(dto.NewRequest(*saved), entry.Path)).WithTarget(entry.Target()), nil
+	environments, err := m.manageEnvironmentService.List(ctx, request.LocalId)
+	if err != nil {
+		return dto.MCPToolResult{}, err
+	}
+	return dto.NewMCPToolResult(dto.NewMCPTreeRequest(dto.NewRequest(*saved), entry.Path, environments.Environments)).WithTarget(entry.Target()), nil
 }
 
 func (m *mcpTree) container(ctx context.Context, call dto.MCPToolCall, entry entity.TreeEntry) (dto.MCPToolResult, error) {

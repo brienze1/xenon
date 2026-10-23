@@ -24,6 +24,7 @@ export function RequestWorkspace({ tabId }: RequestWorkspaceProps) {
       ratio={layout.splitRatio}
       min={LAYOUT_LIMITS.split.min}
       max={LAYOUT_LIMITS.split.max}
+      minSize={layout.split === 'side-by-side' ? undefined : LAYOUT_LIMITS.split.minSize}
       onRatioChange={(splitRatio) => update({ splitRatio })}
     >
       <SplitPane.Pane>

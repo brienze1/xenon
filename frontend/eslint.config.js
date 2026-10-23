@@ -44,7 +44,10 @@ export default tseslint.config(
         { type: 'shared', pattern: 'src/shared' },
         { type: 'bindings', pattern: 'bindings' },
       ],
-      'boundaries/files': [{ category: 'store', pattern: 'src/features/*/store.ts' }],
+      'boundaries/files': [
+        { category: 'store', pattern: 'src/features/*/store.ts' },
+        { category: 'test', pattern: 'src/**/*.test.{ts,tsx}' },
+      ],
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
@@ -57,6 +60,10 @@ export default tseslint.config(
             {
               from: { element: { type: 'test-support' } },
               allow: { to: { element: { type: ['test-support', ...SHARED] } } },
+            },
+            {
+              from: { file: { categories: 'test' } },
+              allow: { to: { element: { type: 'test-support' } } },
             },
             {
               from: { element: { type: 'app' } },

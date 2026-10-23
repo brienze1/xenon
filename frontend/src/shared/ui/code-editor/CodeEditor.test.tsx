@@ -17,7 +17,7 @@ describe('CodeEditor', () => {
     const { rerender } = render(<CodeEditor value={'{"a":1}'} language="json" label="Response body" />)
     const content = screen.getByLabelText('Response body')
     expect(content).toHaveTextContent('{"a":1}')
-    expect(content).toHaveAttribute('contenteditable', 'false')
+    expect(content).toHaveAttribute('aria-readonly', 'true')
     rerender(<CodeEditor value={'{"b":2}'} language="json" label="Response body" />)
     await waitFor(() => expect(screen.getByLabelText('Response body')).toHaveTextContent('{"b":2}'))
   })
@@ -28,6 +28,14 @@ describe('CodeEditor', () => {
     rerender(<CodeEditor value={'{"user":"mx"}'} language="json" label="Raw body" onChange={onChange} />)
     await waitFor(() => expect(screen.getByLabelText('Raw body')).toHaveTextContent('{"user":"mx"}'))
     expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('stays focusable when read-only, so select-all and copy reach the text', () => {
+    render(<CodeEditor value={'{"a":1}'} language="json" label="Response body" />)
+    const content = screen.getByLabelText('Response body')
+    expect(content).toHaveAttribute('contenteditable', 'true')
+    content.focus()
+    expect(content).toHaveFocus()
   })
 
   it('is editable when it has an onChange handler', () => {

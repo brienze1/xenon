@@ -4,6 +4,7 @@ import { Button } from '@/shared/ui/button/Button'
 import { Dropdown } from '@/shared/ui/dropdown/Dropdown'
 import { SingleLineEditor, type SingleLineEditorHandle } from '@/shared/ui/single-line-editor/SingleLineEditor'
 import { MethodBadge } from '@/shared/ui/method-badge/MethodBadge'
+import { unavailableAliasMessage, useUnavailableAlias } from '@/features/request-builder/hooks/use-unavailable-alias'
 import { useVariableEditing } from '@/features/request-builder/hooks/use-variable-editing'
 import { isCurlCommand } from '@/features/request-builder/lib/curl'
 import type { RequestBuilderMode } from '@/features/request-builder/model'
@@ -27,6 +28,7 @@ export function RequestBar({ tabId, mode = 'request' }: RequestBarProps) {
   const cancel = useRequestBuilderStore((state) => state.cancel)
   const pasteCurl = useRequestBuilderStore((state) => state.pasteCurl)
   const urlFocusTick = useRequestBuilderStore((state) => state.urlFocusTick)
+  const unavailable = useUnavailableAlias(tabId)
   const urlRef = useRef<SingleLineEditorHandle>(null)
   const mountedFocusTick = useRef(urlFocusTick)
 
@@ -104,7 +106,13 @@ export function RequestBar({ tabId, mode = 'request' }: RequestBarProps) {
           Cancel Request
         </Button>
       ) : (
-        <Button variant="accent" className={styles.send} onClick={() => void send(tabId)}>
+        <Button
+          variant="accent"
+          className={styles.send}
+          disabled={unavailable !== null}
+          title={unavailable ? unavailableAliasMessage(unavailable) : undefined}
+          onClick={() => void send(tabId)}
+        >
           Send
         </Button>
       )}

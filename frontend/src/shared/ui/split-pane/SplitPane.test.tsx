@@ -2,20 +2,23 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
+import { injectStylesheets } from '@/test/stylesheets'
 import { clampRatio, SplitPane, type SplitDirection } from './SplitPane'
 
 interface ExampleProps {
   direction: SplitDirection
   initial: number
   onChange?: (ratio: number) => void
+  minSize?: number
 }
 
-function Example({ direction, initial, onChange }: ExampleProps) {
+function Example({ direction, initial, onChange, minSize }: ExampleProps) {
   const [ratio, setRatio] = useState(initial)
   return (
     <SplitPane.Root
       direction={direction}
       ratio={ratio}
+      minSize={minSize}
       onRatioChange={(next) => {
         setRatio(next)
         onChange?.(next)
@@ -100,6 +103,43 @@ describe('SplitPane', () => {
     fireEvent.pointerMove(window, { clientY: 170 })
     expect(onChange).toHaveBeenLastCalledWith(0.6)
     fireEvent.pointerUp(window)
+  })
+
+  it('carries a pixel floor for the first pane only when one is given', () => {
+    const { unmount } = render(<Example direction="column" initial={0.2} minSize={200} />)
+    const root = screen.getByRole('separator').parentElement!
+    expect(root.style.getPropertyValue('--split-min-size')).toBe('200px')
+    expect(root.style.getPropertyValue('--split-max')).toBe('0.8')
+    expect(root).toHaveStyle({ '--split-ratio': '0.2' })
+    unmount()
+
+    render(<Example direction="column" initial={0.2} />)
+    const plain = screen.getByRole('separator').parentElement!
+    expect(plain.style.getPropertyValue('--split-min-size')).toBe('')
+    expect(plain.style.getPropertyValue('--split-max')).toBe('')
+  })
+
+  it('applies the floor as the first pane minimum height when stacked, never side by side', () => {
+    injectStylesheets('src/shared/ui/split-pane/SplitPane.module.css')
+    const { unmount } = render(<Example direction="column" initial={0.2} minSize={200} />)
+    const stackedMin = getComputedStyle(screen.getByText('request')).minHeight
+    expect(stackedMin).toContain('--split-min-size')
+    expect(stackedMin).toContain('--split-max')
+    unmount()
+
+    render(<Example direction="row" initial={0.2} minSize={200} />)
+    expect(getComputedStyle(screen.getByText('request')).minHeight).toBe('0px')
+  })
+
+  it('keeps reporting the clamped ratio with a floor set', async () => {
+    const onChange = vi.fn()
+    render(<Example direction="column" initial={0.5} minSize={200} onChange={onChange} />)
+    screen.getByRole('separator').focus()
+    await userEvent.keyboard('{Home}')
+    expect(onChange).toHaveBeenLastCalledWith(0.2)
+    await userEvent.keyboard('{ArrowUp}')
+    expect(onChange).toHaveBeenLastCalledWith(0.2)
+    expect(screen.getByRole('separator')).toHaveAttribute('aria-valuenow', '20')
   })
 
   it('clampRatio keeps values in range', () => {

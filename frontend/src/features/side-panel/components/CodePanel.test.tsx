@@ -72,7 +72,7 @@ describe('CodePanel', () => {
         ...state.tabs,
         [tabId]: {
           ...state.tabs[tabId]!,
-          aliases: [{ id: 'a1', name: 'v2', draft: { ...emptyDraft(), url: 'https://api.test/v2/users' } }],
+          aliases: [{ id: 'a1', name: 'v2', environmentIds: [], draft: { ...emptyDraft(), url: 'https://api.test/v2/users' } }],
         },
       },
     }))

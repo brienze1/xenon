@@ -4,7 +4,7 @@ export const LAYOUT_LIMITS = {
   sidebar: { min: 200, max: 600 },
   rightPanel: { min: 240, max: 600 },
   console: { min: 120, maxShare: 0.6 },
-  split: { min: 0.2, max: 0.8 },
+  split: { min: 0.2, max: 0.8, minSize: 200 },
 } as const
 
 function clamp(value: number, min: number, max: number): number {

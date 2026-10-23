@@ -14,7 +14,7 @@ func aliasedRequest() Request {
 	request.Scripts = Scripts{PreRequest: "default()"}
 	request.Examples = []SavedExample{NewSavedExample("e1", "OK")}
 	request.Revision = "rev"
-	alias := NewRequestAlias("a1", "  mx-test-user ", request)
+	alias := NewRequestAlias("a1", "  mx-test-user ", request, nil)
 	alias.Version.URL = "https://api.test/v2/login"
 	alias.Version.Scripts = Scripts{PreRequest: "alias()"}
 	return request.WithAliasAppended(alias)
@@ -115,7 +115,7 @@ func TestAliasAuthOwnersRoundTrip(t *testing.T) {
 func TestPostmanExportWritesAliasesAsRequestsAfterTheirDefault(t *testing.T) {
 	request := aliasedRequest()
 	root := NewContainerExportNode(NewCollection("c1", "Billing"), "Billing", []ExportNode{NewRequestExportNode(request, "Billing/Login")})
-	children := root.WithAliasesAsRequests().Children
+	children := root.WithAliasesAsRequests(noLabels).Children
 	if len(children) != 2 {
 		t.Fatalf("children = %d, want the Default and one alias", len(children))
 	}
@@ -128,5 +128,34 @@ func TestPostmanExportWritesAliasesAsRequestsAfterTheirDefault(t *testing.T) {
 	}
 	if alias.Request.URL != "https://api.test/v2/login" || alias.Request.Examples != nil {
 		t.Errorf("an alias request has the alias content and no examples, got %+v", alias.Request)
+	}
+}
+
+func noLabels(ids []string) []string {
+	return ids
+}
+
+func TestPostmanExportNotesALinkedAliasesEnvironmentsInItsDescription(t *testing.T) {
+	request := NewRequest("r1", "Login")
+	request.Description = "Signs in"
+	linked := NewRequestAlias("a1", "mx-test-user", request, []string{"hml", "gone"})
+	unlinked := NewRequestAlias("a2", "v2", request, nil)
+	request = request.WithAliasAppended(linked).WithAliasAppended(unlinked)
+	labels := func(ids []string) []string {
+		return AliasEnvironmentLabels(ids, []Environment{NewEnvironment("hml", "HML")})
+	}
+
+	nodes := NewRequestExportNode(request, "Billing/Login").AliasRequests(labels)
+	if got := nodes[0].Request.Description; got != "Signs in\n\nXenon alias for environments: HML, Deleted environment" {
+		t.Errorf("linked alias description = %q", got)
+	}
+	if got := nodes[1].Request.Description; got != "Signs in" {
+		t.Errorf("an alias for all environments exports unchanged, got %q", got)
+	}
+
+	request.Description = ""
+	request.Aliases = []RequestAlias{linked}
+	if got := NewRequestExportNode(request, "Billing/Login").AliasRequests(labels)[0].Request.Description; got != "Xenon alias for environments: HML, Deleted environment" {
+		t.Errorf("without a description only the note is written, got %q", got)
 	}
 }

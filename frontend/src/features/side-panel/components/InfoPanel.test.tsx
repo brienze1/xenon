@@ -90,7 +90,7 @@ describe('InfoPanel', () => {
         [tabId()]: {
           ...state.tabs[tabId()]!,
           aliasId: 'a1',
-          aliases: [{ id: 'a1', name: 'mx-test-user', draft: { ...emptyDraft(), id: 'r1', name: 'mx-test-user' } }],
+          aliases: [{ id: 'a1', name: 'mx-test-user', environmentIds: [], draft: { ...emptyDraft(), id: 'r1', name: 'mx-test-user' } }],
           savedDefault: { ...emptyDraft(), id: 'r1', name: 'Create invoice', description: 'Creates an invoice' },
         },
       },

@@ -72,6 +72,7 @@ func newRunStarter(
 	deleteRuns usecase.DeleteRuns,
 	publishRunEvent usecase.PublishRunEvent,
 	findIterationData usecase.FindIterationData,
+	listEnvironments usecase.ListEnvironments,
 ) *runStarter {
 	pipeline := newSendPipeline(
 		findWorkspaceRegistry,
@@ -112,6 +113,7 @@ func newRunStarter(
 		publishWorkspaceEvent,
 		registerKnownSecrets,
 		lockLocalVariables,
+		listEnvironments,
 	)
 	return &runStarter{
 		pipeline:              pipeline,

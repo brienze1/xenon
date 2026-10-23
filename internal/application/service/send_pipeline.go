@@ -21,6 +21,7 @@ type sendPipeline struct {
 	findDigestState       usecase.FindDigestState
 	saveDigestState       usecase.SaveDigestState
 	findCookieAllowlist   usecase.FindCookieAllowlist
+	listEnvironments      usecase.ListEnvironments
 	tokens                oauthTokens
 	cookies               cookieJar
 	variables             requestVariables
@@ -67,6 +68,7 @@ func newSendPipeline(
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
 	registerKnownSecrets usecase.RegisterKnownSecrets,
 	lockLocalVariables usecase.LockLocalVariables,
+	listEnvironments usecase.ListEnvironments,
 ) *sendPipeline {
 	scopes := variableScopes{findEnvironment: findEnvironment, findTreeItem: findTreeItem, loadWorkspace: loadWorkspace}
 	vaults := vaultWriter{
@@ -91,6 +93,7 @@ func newSendPipeline(
 		findDigestState:       findDigestState,
 		saveDigestState:       saveDigestState,
 		findCookieAllowlist:   findCookieAllowlist,
+		listEnvironments:      listEnvironments,
 		tokens:                oauthTokens{vaults: vaults, lockOAuthToken: lockOAuthToken, refreshOAuthToken: refreshOAuthToken},
 		cookies: cookieJar{
 			manageCookieJar:       manageCookieJar,
@@ -166,4 +169,12 @@ func (p *sendPipeline) alias(ctx context.Context, root, requestId, aliasId strin
 		return entity.RequestAlias{}, err
 	}
 	return *alias, nil
+}
+
+func (p *sendPipeline) unavailableAlias(ctx context.Context, root string, alias entity.RequestAlias) error {
+	environments, err := p.listEnvironments.List(ctx, root)
+	if err != nil {
+		return err
+	}
+	return usecase.RejectUnavailableAlias(alias.Name, alias.EnvironmentLabels(environments))
 }

@@ -10,11 +10,12 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  min-height: 0;
+  min-height: auto;
 }
 
 .header {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
@@ -43,7 +44,8 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  min-height: 0;
+  min-height: auto;
+  overflow: visible;
   padding-top: var(--space-2);
 }
 
@@ -52,11 +54,12 @@
   flex: 1;
   flex-direction: column;
   gap: var(--space-2);
-  min-height: 0;
 }
 
 .toolbar {
   display: flex;
+  flex: none;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
 }
@@ -75,6 +78,7 @@
 }
 
 .hint {
+  flex: none;
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
 }

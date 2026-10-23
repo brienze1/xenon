@@ -13,6 +13,7 @@ import { CurlPasteNotice } from './CurlPasteNotice'
 import { ExpiredTokenDialog } from './ExpiredTokenDialog'
 import { MissingSecretsDialog } from './MissingSecretsDialog'
 import { RequestBar } from './RequestBar'
+import { UnavailableAliasBanner } from './UnavailableAliasBanner'
 import styles from './RequestBuilder.module.css'
 import { RequestTabs } from './RequestTabs'
 import { VariableCard } from './VariableCard'
@@ -61,6 +62,7 @@ export function RequestBuilder({ tabId, scripts, auth, breadcrumb, mode = 'reque
           {mode === 'request' && isSaved ? <AliasMenu tabId={tabId} /> : null}
         </div>
         <RequestBar tabId={tabId} mode={mode} />
+        {mode === 'request' ? <UnavailableAliasBanner tabId={tabId} className={styles.banner} /> : null}
         {mode === 'request' ? <CurlPasteNotice tabId={tabId} /> : null}
         {mode === 'request' && conflict ? (
           <Banner.Root tone="warning" className={styles.banner}>

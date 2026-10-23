@@ -57,6 +57,7 @@ func NewSendRequestService(
 	registerKnownSecrets usecase.RegisterKnownSecrets,
 	publishAIEvent usecase.PublishAIEvent,
 	lockLocalVariables usecase.LockLocalVariables,
+	listEnvironments usecase.ListEnvironments,
 ) adapter.SendRequestService {
 	return &sendRequest{
 		pipeline: newSendPipeline(
@@ -98,6 +99,7 @@ func NewSendRequestService(
 			publishWorkspaceEvent,
 			registerKnownSecrets,
 			lockLocalVariables,
+			listEnvironments,
 		),
 		saveHistoryEntry: saveHistoryEntry,
 		publishAIEvent:   publishAIEvent,
@@ -112,7 +114,7 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId, aliasId string, 
 		return nil, err
 	}
 	ctx = logger.WithRedactions(ctx, sent.secrets...)
-	if err := s.saveHistoryEntry.Save(ctx, localId, entity.NewHistoryEntry(idutils.NewUlid(), sent.sentAt, request, *sent.execution, origin).ForAlias(sent.alias), sent.settings.HistoryCaps()); err != nil {
+	if err := s.saveHistoryEntry.Save(ctx, localId, entity.NewHistoryEntry(idutils.NewUlid(), sent.sentAt, request, *sent.execution, origin).ForAlias(sent.alias).InEnvironment(sent.environment), sent.settings.HistoryCaps()); err != nil {
 		return nil, err
 	}
 	if err := s.publishAIEvent.HistoryChanged(ctx, localId); err != nil {

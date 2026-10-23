@@ -13,19 +13,20 @@ import (
 const historyVersion = 1
 
 type HistoryEntry struct {
-	SentAt          time.Time      `json:"sent_at"`
-	Activity        *AIActivity    `json:"activity,omitempty"`
-	Result          *HistoryResult `json:"result,omitempty"`
-	Request         *Request       `json:"request,omitempty"`
-	Id              string         `json:"id"`
-	Kind            string         `json:"kind,omitempty"`
-	Source          string         `json:"source,omitempty"`
-	Client          string         `json:"client,omitempty"`
-	SourceRequestId string         `json:"source_request_id,omitempty"`
-	AliasId         string         `json:"alias_id,omitempty"`
-	AliasName       string         `json:"alias_name,omitempty"`
-	Outcome         string         `json:"outcome,omitempty"`
-	Version         int            `json:"version"`
+	SentAt          time.Time           `json:"sent_at"`
+	Activity        *AIActivity         `json:"activity,omitempty"`
+	Result          *HistoryResult      `json:"result,omitempty"`
+	Request         *Request            `json:"request,omitempty"`
+	Id              string              `json:"id"`
+	Kind            string              `json:"kind,omitempty"`
+	Source          string              `json:"source,omitempty"`
+	Client          string              `json:"client,omitempty"`
+	SourceRequestId string              `json:"source_request_id,omitempty"`
+	AliasId         string              `json:"alias_id,omitempty"`
+	AliasName       string              `json:"alias_name,omitempty"`
+	Environment     *HistoryEnvironment `json:"environment,omitempty"`
+	Outcome         string              `json:"outcome,omitempty"`
+	Version         int                 `json:"version"`
 }
 
 func NewHistoryEntry(entry entity.HistoryEntry) HistoryEntry {
@@ -47,6 +48,7 @@ func NewHistoryEntry(entry entity.HistoryEntry) HistoryEntry {
 	model.SourceRequestId = entry.SourceRequestID
 	model.AliasId = entry.AliasID
 	model.AliasName = entry.AliasName
+	model.Environment = NewHistoryEnvironment(entry.Environment)
 	model.Outcome = entry.Outcome.String()
 	model.Request = &request
 	model.Result = &result
@@ -63,6 +65,7 @@ func (h *HistoryEntry) ToEntity() entity.HistoryEntry {
 		SourceRequestID: h.SourceRequestId,
 		AliasID:         h.AliasId,
 		AliasName:       h.AliasName,
+		Environment:     h.Environment.ToEntity(),
 		Outcome:         historyOutcome(h.Outcome),
 	}
 	if h.Activity != nil {

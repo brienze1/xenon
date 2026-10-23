@@ -3,7 +3,7 @@ package dto
 import "github.com/brienze1/xenon/internal/domain/entity"
 
 func NewRequestAlias(alias entity.RequestAlias) RequestAlias {
-	return RequestAlias{Id: alias.ID, Name: alias.Name, Request: NewRequest(alias.Version)}
+	return RequestAlias{Id: alias.ID, Name: alias.Name, EnvironmentIds: append([]string{}, alias.EnvironmentIDs...), Request: NewRequest(alias.Version)}
 }
 
 func NewRequestAliases(aliases []entity.RequestAlias) []RequestAlias {
@@ -19,5 +19,5 @@ func NewEmptyRequestAlias(id string) RequestAlias {
 }
 
 func NewEditedRequestAlias(alias RequestAlias, edit *MCPTreeEdit) RequestAlias {
-	return RequestAlias{Id: edit.Id, Name: overridden(edit.Name, alias.Name), Request: NewEditedRequest(alias.Request, edit)}
+	return RequestAlias{Id: edit.Id, Name: overridden(edit.Name, alias.Name), EnvironmentIds: alias.EnvironmentIds, Request: NewEditedRequest(alias.Request, edit)}
 }

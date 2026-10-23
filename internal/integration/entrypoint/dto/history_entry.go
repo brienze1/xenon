@@ -3,22 +3,23 @@ package dto
 import "github.com/brienze1/xenon/internal/domain/entity"
 
 type HistoryEntry struct {
-	StatusCode      *int        `json:"status_code,omitempty"`
-	Activity        *AIActivity `json:"activity,omitempty"`
-	SentAt          string      `json:"sent_at"`
-	Id              string      `json:"id"`
-	Kind            string      `json:"kind"`
-	Source          string      `json:"source"`
-	Client          string      `json:"client,omitempty"`
-	Method          string      `json:"method"`
-	Url             string      `json:"url"`
-	ErrorKind       string      `json:"error_kind,omitempty"`
-	SourceRequestId string      `json:"source_request_id"`
-	AliasId         string      `json:"alias_id,omitempty"`
-	AliasName       string      `json:"alias_name,omitempty"`
-	Outcome         string      `json:"outcome"`
-	TotalMs         int64       `json:"total_ms"`
-	SizeBytes       int64       `json:"size_bytes"`
+	StatusCode      *int                `json:"status_code,omitempty"`
+	Environment     *HistoryEnvironment `json:"environment,omitempty"`
+	Activity        *AIActivity         `json:"activity,omitempty"`
+	SentAt          string              `json:"sent_at"`
+	Id              string              `json:"id"`
+	Kind            string              `json:"kind"`
+	Source          string              `json:"source"`
+	Client          string              `json:"client,omitempty"`
+	Method          string              `json:"method"`
+	Url             string              `json:"url"`
+	ErrorKind       string              `json:"error_kind,omitempty"`
+	SourceRequestId string              `json:"source_request_id"`
+	AliasId         string              `json:"alias_id,omitempty"`
+	AliasName       string              `json:"alias_name,omitempty"`
+	Outcome         string              `json:"outcome"`
+	TotalMs         int64               `json:"total_ms"`
+	SizeBytes       int64               `json:"size_bytes"`
 }
 
 func NewHistoryEntry(entry entity.HistoryEntry) HistoryEntry {
@@ -46,6 +47,7 @@ func NewHistoryEntry(entry entity.HistoryEntry) HistoryEntry {
 		SourceRequestId: entry.SourceRequestID,
 		AliasId:         entry.AliasID,
 		AliasName:       entry.AliasName,
+		Environment:     NewHistoryEnvironment(entry.Environment),
 		Outcome:         entry.Outcome.String(),
 		TotalMs:         entry.Result.Total.Milliseconds(),
 		SizeBytes:       entry.Result.SizeBytes,

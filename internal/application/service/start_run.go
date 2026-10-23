@@ -125,6 +125,7 @@ func NewStartRunService(
 			deleteRuns,
 			publishRunEvent,
 			findIterationData,
+			listEnvironments,
 		),
 		planner: newRunPlanner(
 			findWorkspaceRegistry,

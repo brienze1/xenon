@@ -24,6 +24,7 @@ func GetManageAliasService() adapter.ManageAliasService {
 				integration.GetVaultPersistence(),
 				integration.GetKeychainWebservice(),
 				integration.GetVariableEventPublisher(),
+				integration.GetEnvironmentPersistence(),
 			)
 		})
 	}

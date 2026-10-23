@@ -57,6 +57,7 @@ type mcpTreeEdit struct {
 	manageItemSettingsService  appAdapter.ManageItemSettingsService
 	manageVariableTableService appAdapter.ManageVariableTableService
 	manageOAuthService         appAdapter.ManageOAuthService
+	manageEnvironmentService   appAdapter.ManageEnvironmentService
 }
 
 func NewMCPTreeEdit(
@@ -72,6 +73,7 @@ func NewMCPTreeEdit(
 	manageItemSettingsService appAdapter.ManageItemSettingsService,
 	manageVariableTableService appAdapter.ManageVariableTableService,
 	manageOAuthService appAdapter.ManageOAuthService,
+	manageEnvironmentService appAdapter.ManageEnvironmentService,
 ) adapter.MCPToolController {
 	return &mcpTreeEdit{
 		errorHandler:               errorHandler,
@@ -86,6 +88,7 @@ func NewMCPTreeEdit(
 		manageItemSettingsService:  manageItemSettingsService,
 		manageVariableTableService: manageVariableTableService,
 		manageOAuthService:         manageOAuthService,
+		manageEnvironmentService:   manageEnvironmentService,
 	}
 }
 

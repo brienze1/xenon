@@ -1,0 +1,28 @@
+.swatch {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+.swatch[data-color='green'] {
+  background: var(--neon-green);
+}
+
+.swatch[data-color='cyan'] {
+  background: var(--neon-cyan);
+}
+
+.swatch[data-color='magenta'] {
+  background: var(--neon-magenta);
+}
+
+.swatch[data-color='yellow'] {
+  background: var(--neon-yellow);
+}
+
+.swatch[data-color='red'] {
+  background: var(--neon-red);
+}

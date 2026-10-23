@@ -411,6 +411,8 @@ function toFormDataRow(dto: FormDataRowDto): FormDataRow {
 export interface SavedAlias {
   id: string
   name: string
+  /** The environments the alias is limited to; empty means all environments. */
+  environmentIds: string[]
   draft: RequestDraft
 }
 
@@ -567,7 +569,7 @@ export function toSavedRequest(dto: RequestDto): SavedRequest {
 }
 
 function toSavedAlias(requestId: string, dto: RequestAliasDto): SavedAlias {
-  return { id: dto.id, name: dto.name, draft: { ...toRequestDraft(dto.request), id: requestId, name: dto.name } }
+  return { id: dto.id, name: dto.name, environmentIds: dto.environment_ids ?? [], draft: { ...toRequestDraft(dto.request), id: requestId, name: dto.name } }
 }
 
 /** The owner of an alias's own auth (its OAuth 2.0 token), as Go names it: `<request id>:<alias id>`. */
@@ -576,7 +578,7 @@ export function aliasAuthOwner(requestId: string, aliasId: string): string {
 }
 
 export function toRequestAliasDto(aliasId: string, draft: RequestDraft): RequestAliasDto {
-  return { id: aliasId, name: draft.name, request: toRequestDto(draft) }
+  return { id: aliasId, name: draft.name, environment_ids: [], request: toRequestDto(draft) }
 }
 
 export function toRequestDraft(dto: RequestDto): RequestDraft {

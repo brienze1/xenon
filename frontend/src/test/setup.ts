@@ -20,6 +20,9 @@ if (typeof Range !== 'undefined' && !Range.prototype.getClientRects) {
 
 afterEach(() => {
   cleanup()
+  for (const style of document.head.querySelectorAll('style[data-test-stylesheet]')) {
+    style.remove()
+  }
 })
 
 afterAll(() => new Promise<void>((resolve) => setTimeout(resolve, WAILS_RUNTIME_POLL_MS)))

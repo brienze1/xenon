@@ -3,9 +3,10 @@ package dto
 import "github.com/brienze1/xenon/internal/domain/entity"
 
 type RequestAlias struct {
-	Id      string  `json:"id" validate:"required,not_blank"`
-	Name    string  `json:"name"`
-	Request Request `json:"request"`
+	Id             string   `json:"id" validate:"required,not_blank"`
+	Name           string   `json:"name"`
+	EnvironmentIds []string `json:"environment_ids"`
+	Request        Request  `json:"request"`
 }
 
 func (r *RequestAlias) ToEntity() entity.RequestAlias {
@@ -13,5 +14,5 @@ func (r *RequestAlias) ToEntity() entity.RequestAlias {
 }
 
 func (r RequestAlias) LogValue() any {
-	return map[string]any{"id": r.Id, "name": r.Name, "request": r.Request.LogValue()}
+	return map[string]any{"id": r.Id, "name": r.Name, "environment_ids": r.EnvironmentIds, "request": r.Request.LogValue()}
 }

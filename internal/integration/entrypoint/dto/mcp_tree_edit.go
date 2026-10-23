@@ -21,6 +21,7 @@ type MCPTreeEdit struct {
 	Scripts          *Scripts             `json:"scripts" description:"Pre-request and post-response scripts." used_by:"create,update,save_settings" validated_as:"request.scripts,example.request.scripts"`
 	Response         *ExampleResponseEdit `json:"response" description:"Saved response of an example." used_by:"update" validated_as:"example.response"`
 	Variables        *[]MCPVariableRow    `json:"variables" description:"Collection variables; collections only." used_by:"save_settings"`
+	EnvironmentIds   *[]string            `json:"environment_ids" description:"Environments the alias is limited to (ids from env); [] allows all environments; omit to keep the current setting. Alias only." used_by:"create,update"`
 	Index            *int                 `json:"index" description:"New 0-based position among the siblings." used_by:"move"`
 	Id               string               `json:"id" description:"Id of the item, or of the alias with kind alias, to change." used_by:"update,rename,move,duplicate,save_settings" required_for:"update,rename,move,duplicate,save_settings" validated_as:"example_id"`
 	Kind             string               `json:"kind" description:"Kind of item to create; alias creates, updates or renames an alias of request_id." used_by:"create,update,rename" required_for:"create" enum:"collection,folder,request,example,alias"`

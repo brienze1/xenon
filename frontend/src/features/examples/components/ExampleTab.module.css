@@ -25,6 +25,8 @@
   flex-direction: column;
   gap: var(--space-3);
   min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: var(--space-4) var(--space-5);
   border-top: 1px solid var(--color-border);
   background: var(--color-surface);
@@ -92,12 +94,12 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  min-height: 0;
+  min-height: auto;
 }
 
 .panel {
   flex: 1;
-  min-height: 0;
+  min-height: 160px;
   padding-top: var(--space-3);
   overflow: auto;
 }
