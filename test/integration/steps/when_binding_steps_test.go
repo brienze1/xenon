@@ -19,6 +19,7 @@ func (t *testUtils) registerWhenBindingSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^I call "(\w+)\.(\w+)"$`, t.iCall)
 	ctx.Step(`^I call "(\w+)\.(\w+)" with resource fields$`, t.iCallWithResourceFields)
 	ctx.When(`^I call "(\w+)\.(\w+)" (\d+) times cycling through the payloads$`, t.iCallTimesCyclingThroughThePayloads)
+	ctx.When(`^I call "(\w+)\.(\w+)" (\d+) times waiting for a "([^"]*)" event after each call with$`, t.iCallTimesWaitingForAnEventAfterEachCallWith)
 	ctx.When(`^I call "(\w+)\.(\w+)" and cancel it after (\d+)ms with$`, t.iCallAndCancelItAfterWith)
 	ctx.When(`^I call "(\w+)\.(\w+)" already cancelled with$`, t.iCallAlreadyCancelledWith)
 	ctx.When(`^I call "(\w+)\.(\w+)" and cancel it on the (\d+) "([^"]*)" event with$`, t.iCallAndCancelItOnTheEventWith)
@@ -231,4 +232,25 @@ func (t *testUtils) service(name string) (reflect.Value, error) {
 		}
 	}
 	return reflect.Value{}, fmt.Errorf("no binding named %s", name)
+}
+
+const eventPerCallTimeout = 10000
+
+func (t *testUtils) iCallTimesWaitingForAnEventAfterEachCallWith(service, method string, times int, event string, payload *godog.DocString) error {
+	for call := 1; call <= times; call++ {
+		before := t.events.Count(event)
+		if err := t.call(context.Background(), service, method, payload.Content); err != nil {
+			return err
+		}
+		if t.callError != nil {
+			return fmt.Errorf("call %d of %s.%s failed: %s", call, service, method, t.callError)
+		}
+		if err := waitFor(eventPerCallTimeout, func() (bool, error) { return t.events.Count(event) > before, nil }); err != nil {
+			return err
+		}
+		if t.events.Count(event) <= before {
+			return fmt.Errorf("call %d of %s.%s: no %s event within %d ms", call, service, method, event, eventPerCallTimeout)
+		}
+	}
+	return nil
 }

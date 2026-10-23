@@ -17,6 +17,27 @@ Feature: Native file pickers
     And the response should contain the path field "path" equal to "{{temp_root}}/files/payload.bin"
     And the file picker should have been opened with the title "Choose a file"
 
+  @success @xen_017 @file_filters
+  Scenario: File filters reach the native picker
+    Given the file picker will return "{{temp_root}}/data/users.csv"
+    When I call "DialogService.PickFile" with
+      """
+      { "title": "Choose iteration data", "filters": [{ "display_name": "Data files", "pattern": "*.csv;*.json" }] }
+      """
+    Then the call should succeed
+    And the response should contain the path field "path" equal to "{{temp_root}}/data/users.csv"
+    And the file picker should have been opened with the title "Choose iteration data"
+    And the file picker should have been opened with the filters "Data files (*.csv;*.json)"
+
+  @success @xen_017 @file_filters
+  Scenario: Without filters the picker opens unfiltered, as before
+    When I call "DialogService.PickFile" with
+      """
+      { "title": "Choose a file" }
+      """
+    Then the call should succeed
+    And the file picker should have been opened with the filters ""
+
   @success
   Scenario: The save dialog suggests a name and returns the chosen path
     Given the save dialog will return "{{temp_root}}/out/response.json"

@@ -31,6 +31,7 @@ func (t *testUtils) registerThenExportFileSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the file "([^"]*)" should exist$`, t.theFileShouldExist)
 	ctx.Then(`^the file "([^"]*)" should not exist$`, t.theFileShouldNotExist)
 	ctx.Then(`^the file "([^"]*)" should not contain "([^"]*)"$`, t.theFileShouldNotContain)
+	ctx.Then(`^the file "([^"]*)" should contain "([^"]*)"$`, t.theFileShouldContain)
 	ctx.Then(`^the file "([^"]*)" should contain the field "([^"]*)" equal to "([^"]*)"$`, t.theFileShouldContainTheFieldEqualTo)
 	ctx.Then(`^the file "([^"]*)" should contain the field "([^"]*)" equal to$`, t.theFileShouldContainTheFieldEqualToTheText)
 	ctx.Then(`^the file "([^"]*)" should contain the field "([^"]*)" array length equal to (\d+)$`, t.theFileShouldContainTheFieldArrayLengthEqualTo)
@@ -77,6 +78,20 @@ func (t *testUtils) theFileShouldNotContain(path, text string) error {
 		}
 	}
 	return nil
+}
+
+func (t *testUtils) theFileShouldContain(path, text string) error {
+	contents, err := fileContents(t.tempPath(path))
+	if err != nil {
+		return err
+	}
+	needle := []byte(t.substitute(text))
+	for _, content := range contents {
+		if bytes.Contains(content, needle) {
+			return nil
+		}
+	}
+	return fmt.Errorf("%q was not found in %s", text, path)
 }
 
 func (t *testUtils) theFileShouldContainTheFieldEqualTo(path, field, expected string) error {

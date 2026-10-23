@@ -4,12 +4,16 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/cucumber/godog"
 )
 
 func (t *testUtils) registerThenApiSteps(ctx *godog.ScenarioContext) {
 	ctx.Then(`^the "([^"]*)" request to "([^"]*)" should have been received (\d+) times$`, t.theRequestShouldHaveBeenReceivedTimes)
+	ctx.Then(`^the "([^"]*)" request to "([^"]*)" should have been received between (\d+) and (\d+) times$`, t.theRequestShouldHaveBeenReceivedBetweenTimes)
+	ctx.Then(`^the mock API should have received the requests "([^"]*)" in order$`, t.theMockAPIShouldHaveReceivedTheRequestsInOrder)
+	ctx.Then(`^the (\d+) "([^"]*)" request to "([^"]*)" should have been received at least (\d+) ms after the (\d+) "([^"]*)" request to "([^"]*)"$`, t.theRequestShouldHaveBeenReceivedAtLeastAfter)
 	ctx.Then(`^the (\d+) "([^"]*)" request to "([^"]*)" should have the header "([^"]*)" equal to "([^"]*)"$`, t.theRequestShouldHaveTheHeaderEqualTo)
 	ctx.Then(`^the (\d+) "([^"]*)" request to "([^"]*)" should have the header "([^"]*)" matching "([^"]*)"$`, t.theRequestShouldHaveTheHeaderMatching)
 	ctx.Then(`^the (\d+) "([^"]*)" request to "([^"]*)" should not have the header "([^"]*)"$`, t.theRequestShouldNotHaveTheHeader)
@@ -25,6 +29,32 @@ func (t *testUtils) registerThenApiSteps(ctx *godog.ScenarioContext) {
 func (t *testUtils) theRequestShouldHaveBeenReceivedTimes(method, path string, times int) error {
 	if count := t.api.GetCallCount(method, path); count != times {
 		return fmt.Errorf("%s %s: expected %d calls, got %d", method, path, times, count)
+	}
+	return nil
+}
+
+func (t *testUtils) theRequestShouldHaveBeenReceivedBetweenTimes(method, path string, minimum, maximum int) error {
+	if count := t.api.GetCallCount(method, path); count < minimum || count > maximum {
+		return fmt.Errorf("%s %s: expected between %d and %d calls, got %d", method, path, minimum, maximum, count)
+	}
+	return nil
+}
+
+func (t *testUtils) theMockAPIShouldHaveReceivedTheRequestsInOrder(expected string) error {
+	return expectEqual(strings.Join(t.api.Sequence(), ", "), t.substitute(expected), "request order")
+}
+
+func (t *testUtils) theRequestShouldHaveBeenReceivedAtLeastAfter(index int, method, path string, milliseconds, previousIndex int, previousMethod, previousPath string) error {
+	at, found := t.api.GetReceivedAt(index, method, path)
+	if !found {
+		return fmt.Errorf("request %d %s %s was not received", index, method, path)
+	}
+	previous, found := t.api.GetReceivedAt(previousIndex, previousMethod, previousPath)
+	if !found {
+		return fmt.Errorf("request %d %s %s was not received", previousIndex, previousMethod, previousPath)
+	}
+	if gap := at.Sub(previous); gap < time.Duration(milliseconds)*time.Millisecond {
+		return fmt.Errorf("request %d %s %s came %s after request %d %s %s, expected at least %d ms", index, method, path, gap, previousIndex, previousMethod, previousPath, milliseconds)
 	}
 	return nil
 }

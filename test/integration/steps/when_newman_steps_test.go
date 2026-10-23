@@ -26,6 +26,7 @@ var (
 func (t *testUtils) registerWhenNewmanSteps(ctx *godog.ScenarioContext) {
 	ctx.When(`^I send the saved request "([^"]*)" in the workspace "([^"]*)"$`, t.iSendTheSavedRequestInTheWorkspace)
 	ctx.When(`^I run Newman on the file "([^"]*)" with the environment file "([^"]*)" in the workspace folder "([^"]*)"$`, t.iRunNewmanOnTheFile)
+	ctx.When(`^I run Newman on the file "([^"]*)" with the environment file "([^"]*)" and the data file "([^"]*)" in the workspace folder "([^"]*)"$`, t.iRunNewmanOnTheFileWithTheDataFile)
 }
 
 func (t *testUtils) iSendTheSavedRequestInTheWorkspace(id, workspace string) error {
@@ -54,6 +55,14 @@ func (t *testUtils) iSendTheSavedRequestInTheWorkspace(id, workspace string) err
 }
 
 func (t *testUtils) iRunNewmanOnTheFile(collection, environment, folder string) error {
+	return t.runNewman(t.tempPath(collection), t.tempPath(environment), t.workspacePath(folder))
+}
+
+func (t *testUtils) iRunNewmanOnTheFileWithTheDataFile(collection, environment, data, folder string) error {
+	return t.runNewman(t.tempPath(collection), t.tempPath(environment), t.workspacePath(folder), t.tempPath(data))
+}
+
+func (t *testUtils) runNewman(arguments ...string) error {
 	_, missing := os.Stat(newmanInstall)
 	if missing != nil && os.Getenv(newmanSwitch) != newmanOn {
 		return godog.ErrSkip
@@ -67,7 +76,7 @@ func (t *testUtils) iRunNewmanOnTheFile(collection, environment, folder string) 
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), newmanTimeout)
 	defer cancel()
-	command := exec.CommandContext(ctx, node, newmanRunner, t.tempPath(collection), t.tempPath(environment), t.workspacePath(folder))
+	command := exec.CommandContext(ctx, node, append([]string{newmanRunner}, arguments...)...)
 	if output, err := command.CombinedOutput(); err != nil {
 		return fmt.Errorf("newman failed: %w\n%s", err, output)
 	}
