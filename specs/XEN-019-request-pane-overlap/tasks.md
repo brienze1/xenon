@@ -113,8 +113,8 @@ environment and globals tabs are confirmed unaffected beyond the shared Scripts 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 - [x] T014 By-eye check on macOS per [quickstart.md](quickstart.md) steps 1–9 (running app; window sizes, zoom and divider positions as each step states); capture before (`origin/main`) and after screenshots of steps 1 and 7 for the pull request description. *Done 2026-10-23 in Chromium (Playwright) against the Vite dev server, at the viewport sizes listed, with the workspace and tab state set through the app's own stores (no Go backend in a browser), plus `origin/main` served the same way for the before shots; screenshots in `screenshots/`. Steps 1–5 and 7–9 checked on request tabs (0 overlaps measured on all 6 sub-tabs; tall-pane before/after byte-identical). Step 6 (example, collection/folder, environment, globals tabs) needs backend data and was not checked by eye — covered by T011/T013 and Phase 0 finding R2. Found and fixed here: the sub-tab panel needed `contain: size`, and the measured pinned rows (128.5 px) set the panel minimum to 64 px.*
-- [ ] T015 Run `cd frontend && npm run lint && npm run typecheck && npm test`, then `make validate` from the repo root; all green
-- [ ] T016 Run `/refactor-diff` until it reports clean, then re-run T015
+- [x] T015 Run `cd frontend && npm run lint && npm run typecheck && npm test`, then `make validate` from the repo root; all green *(done: 1505/1505 Vitest, `make validate` exit 0 — after bumping the Go toolchain to 1.27.3, since govulncheck newly flags GO-2026-6809 in go1.27.2)*
+- [x] T016 Run `/refactor-diff` until it reports clean, then re-run T015 *(clean on the first pass: the diff has no `.go` source files in its scope)*
 
 ---
 
