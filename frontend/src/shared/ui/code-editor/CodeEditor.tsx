@@ -107,8 +107,8 @@ export function CodeEditor({
           languageRef.current.of([]),
           decorationsExtension(),
           completionExtension(() => completionRef.current),
+          // Read-only still stays editable (focusable), so select-all, copy and find keep working in viewers.
           EditorState.readOnly.of(readOnly),
-          EditorView.editable.of(!readOnly),
           EditorView.contentAttributes.of({ 'aria-label': label }),
           EditorView.updateListener.of((update) => {
             if (update.docChanged && !update.transactions.some((transaction) => transaction.annotation(fromProps))) {

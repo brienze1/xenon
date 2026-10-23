@@ -61,6 +61,7 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
   const bodyStatus = useResponseViewerStore((state) => state.entries[tabId]?.bodyStatus ?? 'idle')
   const loadBody = useResponseViewerStore((state) => state.loadBody)
   const saveBody = useResponseViewerStore((state) => state.saveBody)
+  const copyBody = useResponseViewerStore((state) => state.copyBody)
   const findTick = useResponseViewerStore((state) => state.findTick)
   const editorRef = useRef<CodeEditorHandle>(null)
   const mountedFindTick = useRef(findTick)
@@ -81,14 +82,6 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
 
   const shown = useMemo(() => (body !== null && view === 'pretty' ? prettyBody(body, language) : (body ?? '')), [body, view, language])
 
-  async function copyBody() {
-    if (body === null) {
-      return false
-    }
-    await navigator.clipboard.writeText(body)
-    return true
-  }
-
   return (
     <div className={styles.body}>
       <div className={styles.toolbar}>
@@ -108,7 +101,7 @@ export function ResponseBody({ tabId, result }: ResponseBodyProps) {
           ))}
         </fieldset>
         <div className={styles.actions}>
-          <CopyButton label="Copy body" disabled={body === null} copiedMessage={COPIED_MESSAGE} failedMessage={COPY_FAILED_MESSAGE} onCopy={copyBody} />
+          <CopyButton label="Copy body" disabled={body === null} copiedMessage={COPIED_MESSAGE} failedMessage={COPY_FAILED_MESSAGE} onCopy={() => copyBody(tabId)} />
           <Button size="sm" variant="ghost" onClick={() => void saveBody(tabId)}>
             Save to File
           </Button>

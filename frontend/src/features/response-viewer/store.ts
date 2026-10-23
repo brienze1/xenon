@@ -3,7 +3,7 @@ import { toAppError, type AppError } from '@/platform/errors'
 import type { SendResult } from '@/platform/mappers/request'
 import { pickSaveFile } from '@/platform/services/dialogs'
 import { lastResult, releaseResponse, saveResponseBody } from '@/platform/services/requests'
-import { fetchResponseText } from '@/platform/services/response-body'
+import { copyResponseText, fetchResponseText } from '@/platform/services/response-body'
 import { suggestedFileName } from './lib/body-view'
 import { EMPTY_ENTRY, withResult } from './lib/entry'
 import type { ResponseEntry } from './model'
@@ -21,6 +21,8 @@ interface ResponseViewerState {
   rehydrate: (tabId: string) => Promise<void>
   loadBody: (tabId: string) => Promise<void>
   saveBody: (tabId: string) => Promise<void>
+  /** Copies the loaded body as received; true when the clipboard took it. */
+  copyBody: (tabId: string) => Promise<boolean>
   release: (tabId: string) => Promise<void>
   reset: () => void
 }
@@ -89,6 +91,18 @@ export const useResponseViewerStore = create<ResponseViewerState>()((set, get) =
         }
       } catch (error) {
         patch(tabId, { failure: toAppError(error) })
+      }
+    },
+
+    copyBody: async (tabId) => {
+      const body = get().entries[tabId]?.body ?? null
+      if (body === null) {
+        return false
+      }
+      try {
+        return await copyResponseText(body)
+      } catch {
+        return false
       }
     },
 

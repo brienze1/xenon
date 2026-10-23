@@ -6,7 +6,7 @@ import type { SendResult } from '@/platform/mappers/request'
 
 vi.mock('@/platform/services/requests', () => ({ lastResult: vi.fn(), releaseResponse: vi.fn(), saveResponseBody: vi.fn() }))
 vi.mock('@/platform/services/dialogs', () => ({ pickSaveFile: vi.fn() }))
-vi.mock('@/platform/services/response-body', () => ({ fetchResponseText: vi.fn() }))
+vi.mock('@/platform/services/response-body', () => ({ fetchResponseText: vi.fn(), copyResponseText: vi.fn() }))
 
 const requests = await import('@/platform/services/requests')
 const dialogs = await import('@/platform/services/dialogs')
@@ -169,14 +169,14 @@ describe('ResponseViewer', () => {
 
   it('copies the exact body and saves it to a file', async () => {
     const user = userEvent.setup()
-    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue()
+    vi.mocked(responseBody.copyResponseText).mockResolvedValue(true)
     vi.mocked(dialogs.pickSaveFile).mockResolvedValue('/out/response.json')
     render(<ResponseViewer tabId="tab" />)
     show(result())
     const copy = screen.getByRole('button', { name: 'Copy body' })
     expect(copy.textContent).toBe('')
     await user.click(copy)
-    expect(writeText).toHaveBeenCalledWith('{"a":[1]}')
+    expect(responseBody.copyResponseText).toHaveBeenCalledWith('{"a":[1]}')
     expect(copy).toHaveAttribute('title', 'Copied')
     expect(screen.getByText('copied the response body to the clipboard.', { exact: false })).toHaveTextContent('Xenon copied the response body to the clipboard.')
     await user.click(screen.getByRole('button', { name: 'Save to File' }))
@@ -185,7 +185,7 @@ describe('ResponseViewer', () => {
 
   it('tells the user when the clipboard refuses the copy', async () => {
     const user = userEvent.setup()
-    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'))
+    vi.mocked(responseBody.copyResponseText).mockRejectedValue(new Error('denied'))
     render(<ResponseViewer tabId="tab" />)
     show(result())
     await user.click(screen.getByRole('button', { name: 'Copy body' }))
