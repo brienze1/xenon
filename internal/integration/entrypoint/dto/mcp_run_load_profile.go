@@ -1,5 +1,7 @@
 package dto
 
+import "github.com/brienze1/xenon/internal/domain/entity"
+
 type MCPRunLoadProfile struct {
 	Kind         *string `json:"kind" description:"Profile kind." enum:"fixed,ramp_up,spike,peak"`
 	InitialUsers *int    `json:"initial_users" description:"Ramp up start users."`
@@ -9,15 +11,20 @@ type MCPRunLoadProfile struct {
 	PeakSeconds  *int    `json:"peak_seconds" description:"Peak seconds."`
 }
 
-func (m *MCPRunLoadProfile) Over(profile RunLoadProfile) RunLoadProfile {
+func (m *MCPRunLoadProfile) ToEntity() entity.LoadProfileOverrides {
 	if m == nil {
-		return profile
+		return entity.LoadProfileOverrides{}
 	}
-	profile.Kind = valueOr(m.Kind, profile.Kind)
-	profile.InitialUsers = valueOr(m.InitialUsers, profile.InitialUsers)
-	profile.RampSeconds = valueOr(m.RampSeconds, profile.RampSeconds)
-	profile.BaseUsers = valueOr(m.BaseUsers, profile.BaseUsers)
-	profile.SpikeSeconds = valueOr(m.SpikeSeconds, profile.SpikeSeconds)
-	profile.PeakSeconds = valueOr(m.PeakSeconds, profile.PeakSeconds)
-	return profile
+	overrides := entity.LoadProfileOverrides{
+		InitialUsers: m.InitialUsers,
+		RampSeconds:  m.RampSeconds,
+		BaseUsers:    m.BaseUsers,
+		SpikeSeconds: m.SpikeSeconds,
+		PeakSeconds:  m.PeakSeconds,
+	}
+	if m.Kind != nil {
+		kind := loadProfileKind(*m.Kind)
+		overrides.Kind = &kind
+	}
+	return overrides
 }

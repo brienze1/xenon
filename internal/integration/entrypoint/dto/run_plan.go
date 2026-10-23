@@ -29,7 +29,7 @@ func NewRunPlan(plan entity.RunPlan) RunPlan {
 		Environments:        environments,
 		DataFileMissing:     plan.DataFileMissing,
 	}
-	if plan.ActiveRun != nil {
+	if plan.HasActiveRun() {
 		active := NewRunSummaryView(*plan.ActiveRun)
 		result.ActiveRun = &active
 	}

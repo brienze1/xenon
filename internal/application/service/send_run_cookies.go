@@ -14,7 +14,7 @@ func (r sendRun) Cookies(ctx context.Context, url string) ([]entity.Cookie, erro
 	if err := r.allowCookies(ctx, url); err != nil {
 		return nil, err
 	}
-	cookies, err := r.service.cookies.manageCookieJar.CookiesFor(ctx, r.jarId, url)
+	cookies, err := r.pipeline.cookies.manageCookieJar.CookiesFor(ctx, r.jarId, url)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +29,7 @@ func (r sendRun) SetCookie(ctx context.Context, url, setCookie string) (*entity.
 	if err := r.allowCookies(ctx, url); err != nil {
 		return nil, err
 	}
-	cookie, err := r.service.cookies.manageCookieJar.SetCookie(ctx, r.jarId, url, setCookie)
+	cookie, err := r.pipeline.cookies.manageCookieJar.SetCookie(ctx, r.jarId, url, setCookie)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (r sendRun) Unset(ctx context.Context, url, name string) error {
 	if err != nil {
 		return err
 	}
-	r.service.cookies.manageCookieJar.RemoveCookies(ctx, r.jarId, entity.FirstCookieNamed(cookies, name))
+	r.pipeline.cookies.manageCookieJar.RemoveCookies(ctx, r.jarId, entity.FirstCookieNamed(cookies, name))
 
 	logger.Info(ctx, "Finished", map[string]any{"url": url, "name": name})
 	return nil
@@ -58,14 +58,14 @@ func (r sendRun) Clear(ctx context.Context, url string) error {
 	if err != nil {
 		return err
 	}
-	r.service.cookies.manageCookieJar.RemoveCookies(ctx, r.jarId, cookies)
+	r.pipeline.cookies.manageCookieJar.RemoveCookies(ctx, r.jarId, cookies)
 
 	logger.Info(ctx, "Finished", map[string]any{"url": url, "cookies": len(cookies)})
 	return nil
 }
 
 func (r sendRun) allowCookies(ctx context.Context, url string) error {
-	allowlist, err := r.service.findCookieAllowlist.FindCookieAllowlist(ctx, r.localId)
+	allowlist, err := r.pipeline.findCookieAllowlist.FindCookieAllowlist(ctx, r.localId)
 	if err != nil {
 		return err
 	}

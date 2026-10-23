@@ -12,6 +12,7 @@ type UIStatePersistence interface {
 	usecase.SaveCookieAllowlist
 	usecase.FindRunnerPreferences
 	usecase.SaveRunnerPreferences
+	usecase.DeleteRunnerPreferences
 	usecase.FindLocalSyncSettings
 	usecase.SaveLocalSyncSettings
 	usecase.LocateClone

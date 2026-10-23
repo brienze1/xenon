@@ -3,6 +3,8 @@ package entity
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/brienze1/xenon/pkg/errs"
 )
 
 func TestIterationDataRowReusesTheLastRowAndWrappedRowWraps(t *testing.T) {
@@ -24,5 +26,16 @@ func TestIterationDataTextIsTheValueAsWritten(t *testing.T) {
 		if got := IterationDataText(value); got != expected {
 			t.Errorf("IterationDataText(%v) = %q, expected %q", value, got, expected)
 		}
+	}
+}
+
+func TestIterationDataValidateRefusesAFileWithoutRows(t *testing.T) {
+	err := IterationData{FileName: "header.csv", Rows: []map[string]any{}}.Validate()
+	failure, isBase := err.(errs.BaseError)
+	if !isBase || failure.Code() != "RUN-05400" || failure.Description() != "the iteration data file cannot be used: the file has no rows" {
+		t.Errorf("err = %v", err)
+	}
+	if err := (IterationData{Rows: []map[string]any{{"email": "a"}}}).Validate(); err != nil {
+		t.Errorf("a file with rows is usable: %v", err)
 	}
 }

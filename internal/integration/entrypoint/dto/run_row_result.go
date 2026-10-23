@@ -53,7 +53,7 @@ func NewRunRowResult(row entity.RunRowResult) RunRowResult {
 		SentRequest:  NewRunSentRequest(row.SentRequest),
 		Error:        row.Error,
 	}
-	if row.ResponseKey != "" {
+	if row.KeepsResponse() {
 		result.ResponseBodyUrl = ResponseBodyRoute + "/" + row.ResponseKey
 	}
 	return result

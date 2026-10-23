@@ -1,6 +1,5 @@
 package entity
 
-// ScriptInfo is what pm.info and pm.execution.location describe; an IterationCount of 0 leaves the iteration fields undefined.
 type ScriptInfo struct {
 	RequestID      string
 	RequestName    string

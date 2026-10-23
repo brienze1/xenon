@@ -13,16 +13,8 @@ func (m *MCPRunTarget) IsMissing() bool {
 	return m.Target == "" && m.ItemId == ""
 }
 
-func (m *MCPRunTarget) IsPath() bool {
-	return m.ItemId == ""
-}
-
 func (m *MCPRunTarget) Path() string {
 	return m.Target
-}
-
-func (m *MCPRunTarget) RunTarget() MCPRunTarget {
-	return *m
 }
 
 func (m *MCPRunTarget) TargetItemId() string {

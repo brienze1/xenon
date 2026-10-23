@@ -9,5 +9,5 @@ func (m *MCPRunReference) HasRunId() bool {
 }
 
 func (m *MCPRunReference) RunReference(localId string) RunReference {
-	return RunReference{LocalId: localId, RunId: m.RunId}
+	return NewRunReference(localId, m.RunId)
 }

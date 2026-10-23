@@ -2,13 +2,13 @@ package steps
 
 import (
 	"fmt"
-	"testing"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+	"testing"
 )
 
 const (

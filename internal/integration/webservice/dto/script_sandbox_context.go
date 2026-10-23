@@ -7,7 +7,6 @@ const (
 	scriptPhaseTest       = "test"
 )
 
-// ScriptSandboxContext is everything the pm shims are built from for one script.
 type ScriptSandboxContext struct {
 	Response      *ScriptResponse       `json:"response,omitempty"`
 	Vault         map[string]string     `json:"vault"`

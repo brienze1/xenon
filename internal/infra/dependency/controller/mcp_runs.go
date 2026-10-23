@@ -14,7 +14,7 @@ var mcpRunsControllerInstance adapter.MCPToolController
 func GetMCPRunsController() adapter.MCPToolController {
 	if mcpRunsControllerInstance == nil {
 		mcpRunsControllerOnce.Do(func() {
-			mcpRunsControllerInstance = controller.NewMCPRuns(GetErrorHandler(), application.GetSearchTreeService(), application.GetManageRunnerService())
+			mcpRunsControllerInstance = controller.NewMCPRuns(GetErrorHandler(), application.GetFindRunsService())
 		})
 	}
 	return mcpRunsControllerInstance

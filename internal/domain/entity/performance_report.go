@@ -5,3 +5,7 @@ type PerformanceReport struct {
 	Series     []PerformanceSecond
 	Overall    RequestReport
 }
+
+func NewPerformanceReport(overall RequestReport, perRequest []RequestReport, series []PerformanceSecond) PerformanceReport {
+	return PerformanceReport{Overall: overall, PerRequest: perRequest, Series: series}
+}

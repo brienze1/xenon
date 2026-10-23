@@ -3,17 +3,20 @@ package entity
 import (
 	"reflect"
 	"testing"
+
+	"github.com/brienze1/xenon/internal/domain/enums/itemkind"
 )
 
-func TestStaleRunnerPreferencesListsRemovedTargets(t *testing.T) {
+func TestTreeStaleRunnerTargetsListsRemovedTargets(t *testing.T) {
 	preferences := map[string]RunnerPreferences{"shop": {}, "gone": {}, "orders": {}, "also-gone": {}}
-	if stale := StaleRunnerPreferences(preferences, []string{"shop", "orders"}); !reflect.DeepEqual(stale, []string{"also-gone", "gone"}) {
+	tree := NewTree([]TreeNode{{ID: "shop", Kind: itemkind.Collection, Children: []TreeNode{{ID: "orders", Kind: itemkind.Folder}}}}, nil)
+	if stale := tree.StaleRunnerTargets(preferences); !reflect.DeepEqual(stale, []string{"also-gone", "gone"}) {
 		t.Errorf("stale = %v", stale)
 	}
 }
 
 func TestActiveRunOfFindsTheRunOfATarget(t *testing.T) {
-	active := []ActiveRun{{Run: Run{ID: "one", Target: RunTarget{ItemID: "shop"}}}, {Run: Run{ID: "two", Target: RunTarget{ItemID: "orders"}}}}
+	active := []Run{{ID: "one", Target: RunTarget{ItemID: "shop"}}, {ID: "two", Target: RunTarget{ItemID: "orders"}}}
 	if run, found := ActiveRunOf(active, "orders"); !found || run.ID != "two" {
 		t.Errorf("run = %+v, %v", run, found)
 	}

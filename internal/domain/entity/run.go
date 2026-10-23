@@ -5,10 +5,24 @@ import (
 	"time"
 
 	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/runexportformat"
 	"github.com/brienze1/xenon/internal/domain/enums/runstatus"
+	"github.com/brienze1/xenon/pkg/errs"
 )
 
 const PerformanceNextRequestNotice = "pm.execution.setNextRequest is ignored in performance runs"
+
+const UnsavedRunCookiesNotice = "The cookies of the run could not be saved to the workspace"
+
+const StoredRunsLimit = 25
+
+// RunsBeyondStoredLimit are the stored runs past the per-target limit, given newest first: the oldest ones, which are pruned.
+func RunsBeyondStoredLimit(runs []Run) []Run {
+	if len(runs) <= StoredRunsLimit {
+		return []Run{}
+	}
+	return append([]Run{}, runs[StoredRunsLimit:]...)
+}
 
 type Run struct {
 	StartedAt       time.Time
@@ -39,23 +53,51 @@ func NewRun(id string, target RunTarget, config RunConfig, planned int, startedA
 	}
 }
 
-func (r Run) IsActive() bool {
+func (r *Run) RecordSource(environmentName, dataFileName string) {
+	r.EnvironmentName = environmentName
+	r.DataFileName = dataFileName
+}
+
+func (r *Run) IsActive() bool {
 	return r.Status == runstatus.Running || r.Status == runstatus.Paused
 }
 
-func (r Run) IsPaused() bool {
+func (r *Run) IsPaused() bool {
 	return r.Status == runstatus.Paused
 }
 
-func (r Run) IsFinished() bool {
+func (r *Run) IsFinished() bool {
 	return !r.IsActive()
 }
 
-func (r Run) CanPause() bool {
+func (r *Run) IsPerformance() bool {
+	return r.Config.IsPerformance()
+}
+
+func (r *Run) ValidateExportAs(format enums.RunExportFormat) error {
+	if format == runexportformat.Junit && r.IsPerformance() {
+		return invalidRunSetting("format", "JUnit is not available for performance runs", "RUN-04400")
+	}
+	return nil
+}
+
+func (r *Run) ValidateSteering() error {
+	if r.IsPerformance() {
+		return invalidRunSetting("type", "a performance run cannot pause", "RUN-04400")
+	}
+	return nil
+}
+
+func (r *Run) ActiveConflict() error {
+	return errs.ConflictError("a run is already active on this collection or folder", "RUN-02409",
+		errs.ErrorDetails{Attribute: "run_id", Messages: []string{r.ID}})
+}
+
+func (r *Run) CanPause() bool {
 	return r.Status == runstatus.Running && !r.Config.IsPerformance()
 }
 
-func (r Run) CanResume() bool {
+func (r *Run) CanResume() bool {
 	return r.Status == runstatus.Paused
 }
 
@@ -113,30 +155,30 @@ func (r *Run) Finish(status enums.RunStatus, at time.Time) {
 	}
 }
 
-func (r Run) Iterations() int {
+func (r *Run) Iterations() int {
 	if r.Config.IsPerformance() {
 		return 0
 	}
 	return r.Config.Functional.Iterations
 }
 
-func (r Run) elapsed(at time.Time) int64 {
+func (r *Run) elapsed(at time.Time) int64 {
 	return at.Sub(r.StartedAt).Milliseconds()
 }
 
-// ResponseKeys are the keys of the responses the run kept for this app session.
-func (r Run) ResponseKeys() []string {
+func (r *Run) ResponseKeys() []string {
 	keys := make([]string, 0)
 	for _, row := range r.Rows {
-		if row.ResponseKey != "" {
+		if row.KeepsResponse() {
 			keys = append(keys, row.ResponseKey)
 		}
 	}
 	return keys
 }
 
-// WithoutResponses forgets the kept responses with these keys, as when the app no longer holds them.
-func (r Run) WithoutResponses(keys []string) Run {
+// WithoutResponses clears the ResponseKey of rows whose key is listed.
+func (r *Run) WithoutResponses(keys []string) Run {
+	updated := *r
 	rows := make([]RunRowResult, 0, len(r.Rows))
 	for _, row := range r.Rows {
 		if slices.Contains(keys, row.ResponseKey) {
@@ -144,15 +186,54 @@ func (r Run) WithoutResponses(keys []string) Run {
 		}
 		rows = append(rows, row)
 	}
-	r.Rows = rows
-	return r
+	updated.Rows = rows
+	return updated
 }
 
-func (r Run) Row(index int) (RunRowResult, bool) {
+// KeptResponseKey is the key of the response kept for the row at index; not found when the row or its response is missing.
+func (r *Run) KeptResponseKey(index int) (string, error) {
 	for _, row := range r.Rows {
-		if row.Index == index {
-			return row, true
+		if row.Index != index {
+			continue
+		}
+		if row.KeepsResponse() {
+			return row.ResponseKey, nil
+		}
+		break
+	}
+	return "", errs.NotFoundError("no active or stored run with the id "+r.ID, "RUN-01404")
+}
+
+func (r *Run) MaskSecrets(mask func(text string) (string, bool)) {
+	rows := make([]RunRowResult, 0, len(r.Rows))
+	for _, row := range r.Rows {
+		rows = append(rows, row.WithSecretsMasked(mask))
+	}
+	r.Rows = rows
+}
+
+func (r *Run) FailedTests() int {
+	failed := 0
+	for _, row := range r.Rows {
+		failed += row.FailedTests()
+	}
+	return failed
+}
+
+func (r *Run) SkippedTests() int {
+	skipped := 0
+	for _, row := range r.Rows {
+		skipped += row.SkippedTests()
+	}
+	return skipped
+}
+
+func (r *Run) BrokenRows() int {
+	broken := 0
+	for _, row := range r.Rows {
+		if row.Breaks() {
+			broken++
 		}
 	}
-	return RunRowResult{}, false
+	return broken
 }

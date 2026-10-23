@@ -8,5 +8,5 @@ type FileFilter struct {
 }
 
 func (f *FileFilter) ToEntity() entity.FileFilter {
-	return entity.FileFilter{DisplayName: f.DisplayName, Pattern: f.Pattern}
+	return entity.NewFileFilter(f.DisplayName, f.Pattern)
 }

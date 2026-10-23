@@ -124,8 +124,8 @@ func realToolControllers() []adapter.MCPToolController {
 		controller.NewMCPImport(nil, nil),
 		controller.NewMCPExport(nil, nil, nil, nil, nil),
 		controller.NewMCPDelete(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil),
-		controller.NewMCPRun(nil, nil, nil, nil, nil),
-		controller.NewMCPRuns(nil, nil, nil),
+		controller.NewMCPRun(nil, nil, nil),
+		controller.NewMCPRuns(nil, nil),
 	}
 }
 

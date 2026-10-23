@@ -35,5 +35,6 @@ func (r *RunPerformance) ToEntity() *entity.PerformanceReport {
 	for _, second := range r.Series {
 		series = append(series, second.ToEntity())
 	}
-	return &entity.PerformanceReport{Overall: r.Overall.ToEntity(), PerRequest: perRequest, Series: series}
+	report := entity.NewPerformanceReport(r.Overall.ToEntity(), perRequest, series)
+	return &report
 }

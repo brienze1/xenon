@@ -1,24 +1,11 @@
 package entity
 
-import (
-	"sync"
-	"time"
-)
+import "time"
 
-type secondTally struct {
-	latency     time.Duration
-	activeUsers int
-	requests    int
-	responses   int
-	errors      int
-}
-
-// PerformanceStats aggregates a performance run; it is safe for concurrent use by the virtual users.
 type PerformanceStats struct {
 	PerRequest []RequestStats
 	seconds    []secondTally
 	Overall    RequestStats
-	mutex      sync.Mutex
 }
 
 func NewPerformanceStats(rows []RunPlanRow) *PerformanceStats {
@@ -30,8 +17,6 @@ func NewPerformanceStats(rows []RunPlanRow) *PerformanceStats {
 }
 
 func (p *PerformanceStats) Record(sample PerformanceSample) {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
 	p.Overall.Record(sample)
 	if sample.Row >= 0 && sample.Row < len(p.PerRequest) {
 		p.PerRequest[sample.Row].Record(sample)
@@ -47,30 +32,16 @@ func (p *PerformanceStats) Record(sample PerformanceSample) {
 	}
 }
 
-// Observe keeps the highest active user count seen during a second.
 func (p *PerformanceStats) Observe(second, activeUsers int) {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
 	tally := p.second(second)
 	tally.activeUsers = max(tally.activeUsers, activeUsers)
 }
 
 func (p *PerformanceStats) Metrics(activeUsers int, elapsed time.Duration) PerformanceMetrics {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-	return PerformanceMetrics{
-		ActiveUsers: activeUsers,
-		Requests:    p.Overall.Requests,
-		AvgMs:       latencyMs(p.Overall.Histogram.Mean()),
-		Throughput:  p.Overall.Throughput(elapsed),
-		ErrorRate:   p.Overall.ErrorRate(),
-	}
+	return NewPerformanceMetrics(activeUsers, &p.Overall, elapsed)
 }
 
-// Report gives the figures over the elapsed time, with exactly one series entry for each of the seconds.
 func (p *PerformanceStats) Report(elapsed time.Duration, seconds int) PerformanceReport {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
 	perRequest := make([]RequestReport, 0, len(p.PerRequest))
 	for index := range p.PerRequest {
 		perRequest = append(perRequest, p.PerRequest[index].Report(elapsed))
@@ -79,22 +50,14 @@ func (p *PerformanceStats) Report(elapsed time.Duration, seconds int) Performanc
 	for second := range seconds {
 		series = append(series, p.secondReport(second))
 	}
-	return PerformanceReport{Overall: p.Overall.Report(elapsed), PerRequest: perRequest, Series: series}
+	return NewPerformanceReport(p.Overall.Report(elapsed), perRequest, series)
 }
 
 func (p *PerformanceStats) secondReport(second int) PerformanceSecond {
-	report := PerformanceSecond{Second: second}
 	if second >= len(p.seconds) {
-		return report
+		return NewPerformanceSecond(second, 0, 0, 0, 0, 0)
 	}
-	tally := p.seconds[second]
-	report.ActiveUsers = tally.activeUsers
-	report.Requests = tally.requests
-	report.Errors = tally.errors
-	if tally.responses > 0 {
-		report.AvgMs = latencyMs(tally.latency / time.Duration(tally.responses))
-	}
-	return report
+	return p.seconds[second].Report(second)
 }
 
 func (p *PerformanceStats) second(second int) *secondTally {

@@ -26,7 +26,7 @@ func NewRunSummary(iterations int, rows []RunRowResult, durationMs int64) RunSum
 		summary.TestsPassed += tests.Passed
 		summary.TestsFailed += tests.Failed
 		summary.TestsSkipped += tests.Skipped
-		summary.countOutcome(row)
+		summary = summary.counted(row)
 		if row.Status > 0 {
 			responseMs += row.DurationMs
 			responded++
@@ -38,7 +38,7 @@ func NewRunSummary(iterations int, rows []RunRowResult, durationMs int64) RunSum
 	return summary
 }
 
-func (r *RunSummary) countOutcome(row RunRowResult) {
+func (r RunSummary) counted(row RunRowResult) RunSummary {
 	switch row.Outcome {
 	case runrowoutcome.Passed:
 		r.Passed++
@@ -51,6 +51,7 @@ func (r *RunSummary) countOutcome(row RunRowResult) {
 	case runrowoutcome.Cancelled:
 		r.Cancelled++
 	}
+	return r
 }
 
 func (r RunSummary) WithPerformance(overall RequestReport) RunSummary {

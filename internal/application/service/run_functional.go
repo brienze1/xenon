@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"slices"
 	"time"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
@@ -14,7 +13,7 @@ import (
 )
 
 type functionalRun struct {
-	control         *entity.RunControl
+	control         *runControl
 	variables       *entity.RunVariables
 	target          entity.RunTarget
 	environment     runEnvironment
@@ -30,26 +29,26 @@ type functionalRun struct {
 	executed        int
 }
 
-func (m *manageRunner) runFunctional(ctx context.Context, run functionalRun) {
-	defer run.control.Finished()
+func (e *runExecutor) runFunctional(ctx context.Context, run functionalRun) {
+	defer run.control.finished()
 	logger.Info(ctx, "Started", map[string]any{"localId": run.target.LocalID, "itemId": run.target.ItemID, "runId": run.id})
 
-	status := m.runIterations(ctx, &run)
-	m.finish(context.WithoutCancel(ctx), run, status)
+	status := e.runIterations(ctx, &run)
+	e.finish(context.WithoutCancel(ctx), run, status)
 
 	logger.Info(ctx, "Finished", map[string]any{"localId": run.target.LocalID, "itemId": run.target.ItemID, "runId": run.id, "status": status})
 }
 
-func (m *manageRunner) runIterations(ctx context.Context, run *functionalRun) enums.RunStatus {
+func (e *runExecutor) runIterations(ctx context.Context, run *functionalRun) enums.RunStatus {
 	for iteration := range run.config.Functional.Iterations {
-		if status, ended := m.runIteration(ctx, run, iteration); ended {
+		if status, ended := e.runIteration(ctx, run, iteration); ended {
 			return status
 		}
 	}
 	return runstatus.Completed
 }
 
-func (m *manageRunner) runIteration(ctx context.Context, run *functionalRun, iteration int) (enums.RunStatus, bool) {
+func (e *runExecutor) runIteration(ctx context.Context, run *functionalRun, iteration int) (enums.RunStatus, bool) {
 	position := 0
 	for position < len(run.rows) {
 		if !waitDelay(ctx, run.config.Functional.DelayBefore(run.executed)) {
@@ -59,16 +58,18 @@ func (m *manageRunner) runIteration(ctx context.Context, run *functionalRun, ite
 			return runstatus.Stopped, true
 		}
 		row := run.rows[position]
-		m.change(ctx, *run, func(active *entity.Run) { active.Starting(row, iteration, timeutils.Now()) })
-		ran := m.runRow(ctx, run, run.executed, iteration, row)
+		e.change(ctx, *run, func(active *entity.Run) { active.Starting(row, iteration, timeutils.Now()) })
+		ran := e.runRow(ctx, run, run.executed, iteration, row)
 		run.executed++
 		next, known := entity.NextRunPosition(run.rows, position, ran.next)
 		if !known {
-			ran.result = m.warnUnknownNextRequest(ctx, *run, ran)
+			ran.result = e.warnUnknownNextRequest(ctx, *run, ran)
 		}
 		position = next
-		if recorded, found := m.change(ctx, *run, func(active *entity.Run) { active.Record(ran.result, timeutils.Now()) }); found {
-			m.publishRunEvent.Progress(ctx, recorded.Run)
+		if recorded, found := e.change(ctx, *run, func(active *entity.Run) { active.Record(ran.result, timeutils.Now()) }); found {
+			if err := e.publishRunEvent.Progress(ctx, *recorded); err != nil {
+				logger.Warn(ctx, err, "The run progress could not be published", map[string]any{"runId": run.id})
+			}
 		}
 		if ctx.Err() != nil {
 			return runstatus.Stopped, true
@@ -80,91 +81,98 @@ func (m *manageRunner) runIteration(ctx context.Context, run *functionalRun, ite
 	return "", false
 }
 
-func (m *manageRunner) warnUnknownNextRequest(ctx context.Context, run functionalRun, ran ranRow) entity.RunRowResult {
+func (e *runExecutor) warnUnknownNextRequest(ctx context.Context, run functionalRun, ran ranRow) entity.RunRowResult {
 	warning := entity.NewConsoleWarningEntry(idutils.NewUlid(), ran.sendId, entity.UnknownNextRequestWarning(ran.next.Target), timeutils.Now())
-	if run.config.Functional.DisableLogs {
+	if !run.config.LogsToConsole() {
 		return ran.result
 	}
-	m.core.console.append(ctx, warning)
+	e.pipeline.console.append(ctx, warning)
 	return ran.result.WithConsoleEntry(warning)
 }
 
-func (m *manageRunner) finish(ctx context.Context, run functionalRun, status enums.RunStatus) {
-	defer m.manageCookieJar.DropJar(ctx, run.jarId)
-	if run.control.IsAbandoned() {
-		m.abandon(ctx, run)
+func (e *runExecutor) finish(ctx context.Context, run functionalRun, status enums.RunStatus) {
+	defer e.manageCookieJar.DropJar(ctx, run.jarId)
+	if run.control.isAbandoned() {
+		e.abandon(ctx, run)
 		return
 	}
-	if err := m.keepCookies(ctx, run); err != nil {
-		logger.Warn(ctx, err, "The cookies of the run could not be saved", map[string]any{"runId": run.id})
+	cookiesErr := e.keepCookies(ctx, run)
+	if cookiesErr != nil {
+		logger.Warn(ctx, cookiesErr, "The cookies of the run could not be saved", map[string]any{"runId": run.id})
 	}
 	mask := run.mask()
-	finished, found := m.change(ctx, run, func(active *entity.Run) {
-		rows := make([]entity.RunRowResult, 0, len(active.Rows))
-		for _, row := range active.Rows {
-			rows = append(rows, row.WithSecretsMasked(mask))
+	finished, found := e.change(ctx, run, func(active *entity.Run) {
+		if cookiesErr != nil {
+			active.Notice(entity.UnsavedRunCookiesNotice)
 		}
-		active.Rows = rows
+		active.MaskSecrets(mask)
 		active.Finish(status, timeutils.Now())
 	})
 	if !found {
 		return
 	}
-	pruned, err := m.saveRun.SaveRun(ctx, finished.Run)
+	pruned, err := e.store(ctx, *finished)
 	if err != nil {
 		logger.Warn(ctx, err, "The finished run could not be stored", map[string]any{"runId": run.id})
 	}
-	m.releaseResponses(ctx, pruned...)
-	m.manageActiveRuns.Release(ctx, run.target.LocalID, run.id)
-	m.publishRunEvent.Finished(ctx, finished.Run)
-}
-
-func (m *manageRunner) abandon(ctx context.Context, run functionalRun) {
-	if active, found := m.manageActiveRuns.Find(ctx, run.target.LocalID, run.id); found {
-		m.releaseResponses(ctx, active.Run)
+	if err = releaseRunResponses(ctx, e.releaseResponse, pruned...); err != nil {
+		logger.Warn(ctx, err, "The responses of the pruned runs could not be released", map[string]any{"runId": run.id})
 	}
-	m.manageActiveRuns.Release(ctx, run.target.LocalID, run.id)
+	e.releaseActiveRun.Release(ctx, run.target.LocalID, run.id)
+	if err = e.publishRunEvent.Finished(ctx, *finished); err != nil {
+		logger.Warn(ctx, err, "The finished run could not be published", map[string]any{"runId": run.id})
+	}
 }
 
-func (m *manageRunner) keepCookies(ctx context.Context, run functionalRun) error {
+func (e *runExecutor) store(ctx context.Context, run entity.Run) ([]entity.Run, error) {
+	if err := e.saveRun.SaveRun(ctx, run); err != nil {
+		return nil, err
+	}
+	stored, err := e.findRuns.FindRuns(ctx, run.Target.LocalID, run.Target.ItemID)
+	if err != nil {
+		return nil, err
+	}
+	pruned := make([]entity.Run, 0)
+	for _, overflow := range entity.RunsBeyondStoredLimit(stored) {
+		deleted, err := e.deleteRuns.DeleteRun(ctx, run.Target.LocalID, overflow.ID)
+		if err != nil {
+			return pruned, err
+		}
+		pruned = append(pruned, *deleted)
+	}
+	return pruned, nil
+}
+
+func (e *runExecutor) abandon(ctx context.Context, run functionalRun) {
+	if active, found := e.findActiveRuns.FindById(ctx, run.target.LocalID, run.id); found {
+		if err := releaseRunResponses(ctx, e.releaseResponse, *active); err != nil {
+			logger.Warn(ctx, err, "The responses of the abandoned run could not be released", map[string]any{"runId": run.id})
+		}
+	}
+	e.releaseActiveRun.Release(ctx, run.target.LocalID, run.id)
+}
+
+func (e *runExecutor) keepCookies(ctx context.Context, run functionalRun) error {
 	if !run.config.SavesCookies() {
 		return nil
 	}
 	localId := run.target.LocalID
-	if err := m.core.cookies.load(ctx, localId); err != nil {
+	if err := e.pipeline.cookies.load(ctx, localId); err != nil {
 		return err
 	}
-	before := m.core.cookies.revision(ctx, localId)
-	merged := entity.MergeCookies(m.manageCookieJar.JarState(ctx, localId).Cookies, m.manageCookieJar.JarState(ctx, run.jarId).Cookies)
-	m.manageCookieJar.StoreCookies(ctx, localId, merged)
-	return m.core.cookies.settle(ctx, localId, before)
+	before := e.pipeline.cookies.revision(ctx, localId)
+	merged := entity.MergeCookies(e.manageCookieJar.JarState(ctx, localId).Cookies, e.manageCookieJar.JarState(ctx, run.jarId).Cookies)
+	e.manageCookieJar.StoreCookies(ctx, localId, merged)
+	return e.pipeline.cookies.settle(ctx, localId, before)
 }
 
-func (m *manageRunner) releaseResponses(ctx context.Context, runs ...entity.Run) {
-	for _, run := range runs {
-		for _, key := range run.ResponseKeys() {
-			if err := m.releaseResponse.Release(ctx, key); err != nil {
-				logger.Warn(ctx, err, "A kept response of a run could not be released", map[string]any{"runId": run.ID, "key": key})
-			}
-		}
-	}
+func (e *runExecutor) change(ctx context.Context, run functionalRun, change func(*entity.Run)) (*entity.Run, bool) {
+	return e.changeActiveRun.Change(ctx, run.target.LocalID, run.id, change)
 }
 
-func (m *manageRunner) change(ctx context.Context, run functionalRun, change func(*entity.Run)) (*entity.ActiveRun, bool) {
-	return m.manageActiveRuns.Change(ctx, run.target.LocalID, run.id, change)
-}
-
-func (r *functionalRun) remember(secrets []string) {
-	for _, secret := range secrets {
-		if secret != "" && !slices.Contains(r.secrets, secret) {
-			r.secrets = append(r.secrets, secret)
-		}
-	}
-}
-
-func waitWhilePaused(ctx context.Context, control *entity.RunControl) bool {
+func waitWhilePaused(ctx context.Context, control *runControl) bool {
 	for {
-		resumed, paused := control.Resumed()
+		resumed, paused := control.awaitResume()
 		if !paused {
 			return ctx.Err() == nil
 		}

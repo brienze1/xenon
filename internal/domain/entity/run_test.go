@@ -78,3 +78,17 @@ func TestRunWithoutResponsesForgetsOnlyTheReleasedKeys(t *testing.T) {
 		t.Error("the original run must not change")
 	}
 }
+
+func TestRunsBeyondStoredLimitAreTheOldestPastTheLimit(t *testing.T) {
+	runs := make([]Run, 0, StoredRunsLimit+2)
+	for index := range StoredRunsLimit + 2 {
+		runs = append(runs, Run{ID: string(rune('a' + index))})
+	}
+	if got := RunsBeyondStoredLimit(runs[:StoredRunsLimit]); len(got) != 0 {
+		t.Errorf("runs within the limit are kept: %+v", got)
+	}
+	got := RunsBeyondStoredLimit(runs)
+	if len(got) != 2 || got[0].ID != runs[StoredRunsLimit].ID || got[1].ID != runs[StoredRunsLimit+1].ID {
+		t.Errorf("RunsBeyondStoredLimit() = %+v", got)
+	}
+}

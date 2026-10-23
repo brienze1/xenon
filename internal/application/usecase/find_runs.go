@@ -9,5 +9,4 @@ import (
 type FindRuns interface {
 	FindRun(ctx context.Context, localId, runId string) (*entity.Run, error)
 	FindRuns(ctx context.Context, localId, targetId string) ([]entity.Run, error)
-	FindRunFile(ctx context.Context, localId, runId string) ([]byte, error)
 }

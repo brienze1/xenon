@@ -8,7 +8,11 @@ type RunStart struct {
 	AcknowledgeMissingSecrets bool
 }
 
-// Acknowledgement is what every row of the run sends with: expired tokens are always accepted, as in Postman's runner.
+func NewRunStart(localId, itemId string, config RunConfig) RunStart {
+	return RunStart{LocalID: localId, ItemID: itemId, Config: config}
+}
+
+// Acknowledgement always accepts expired tokens, as Postman's runner does.
 func (r RunStart) Acknowledgement() SendAcknowledgement {
 	return SendAcknowledgement{ConfirmedEnvironmentID: r.ConfirmedEnvironmentID, MissingSecrets: r.AcknowledgeMissingSecrets, ExpiredToken: true}
 }

@@ -39,6 +39,11 @@ func (s SendPreflight) AwaitsConfirmation(acknowledgement SendAcknowledgement) b
 	return s.NeedsConfirmation() && !acknowledgement.Confirms(*s.ConfirmEnvironment)
 }
 
+// RunConfirmation is the confirmation a run of target awaits; only valid when NeedsConfirmation.
+func (s SendPreflight) RunConfirmation(target RunTarget) RunConfirmation {
+	return RunConfirmation{Target: target, Environment: *s.ConfirmEnvironment}
+}
+
 func (s SendPreflight) AwaitsSecretsAcknowledgement(acknowledgement SendAcknowledgement) bool {
 	return s.HasUnavailableSecrets() && !acknowledgement.MissingSecrets
 }

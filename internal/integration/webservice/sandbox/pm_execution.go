@@ -12,10 +12,6 @@ import (
 
 const skipSignal = "pm.execution.skipRequest"
 
-type runRequestOptions struct {
-	Variables map[string]any `json:"variables"`
-}
-
 func (e *execution) skipRequest(goja.FunctionCall) goja.Value {
 	e.skipped = true
 	e.vm.Interrupt(skipSignal)
@@ -43,12 +39,9 @@ func (e *execution) runRequest(call goja.FunctionCall) goja.Value {
 		panic(e.newError("pm.execution.runRequest is not available in this run"))
 	}
 	requestId := call.Argument(0).String()
-	var options runRequestOptions
+	var options dto.ScriptRunRequestOptions
 	_ = json.Unmarshal([]byte(call.Argument(1).String()), &options)
-	scopes := e.currentScopes(call.Argument(2))
-	for name, value := range options.Variables {
-		scopes.Local = scopes.Local.WithValue(name, value)
-	}
+	scopes := options.ToEntity(e.currentScopes(call.Argument(2)))
 	done, _ := goja.AssertFunction(call.Argument(3))
 	e.holdLoop()
 	go func() {

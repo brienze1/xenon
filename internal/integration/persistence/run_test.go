@@ -20,24 +20,35 @@ func storedRunFor(target, id string, keys ...string) entity.Run {
 	return entity.Run{ID: id, Status: runstatus.Completed, Target: entity.RunTarget{LocalID: "ws-1", ItemID: target}, Config: entity.NewRunConfig(), Rows: rows}
 }
 
-func TestRunsAreCappedPerTargetAndPrunedRunsAreReturned(t *testing.T) {
+func TestRunsAreListedNewestFirstPerTargetSoTheOverflowIsPruned(t *testing.T) {
 	t.Setenv("XENON_DATA_DIR", t.TempDir())
 	persistence := NewRunPersistence()
 	ctx := context.Background()
-	for index := range storedRunsLimit {
-		if _, err := persistence.SaveRun(ctx, storedRunFor("shop", fmt.Sprintf("run-%02d", index), "key")); err != nil {
+	for index := range entity.StoredRunsLimit {
+		if err := persistence.SaveRun(ctx, storedRunFor("shop", fmt.Sprintf("run-%02d", index), "key")); err != nil {
 			t.Fatalf("SaveRun() error = %v", err)
 		}
 	}
-	if _, err := persistence.SaveRun(ctx, storedRunFor("orders", "run-00")); err != nil {
+	if err := persistence.SaveRun(ctx, storedRunFor("orders", "orders-00")); err != nil {
 		t.Fatal(err)
 	}
-	pruned, err := persistence.SaveRun(ctx, storedRunFor("shop", "run-99"))
-	if err != nil || len(pruned) != 1 || pruned[0].ID != "run-00" || len(pruned[0].ResponseKeys()) != 1 {
+	if err := persistence.SaveRun(ctx, storedRunFor("shop", "run-99")); err != nil {
+		t.Fatal(err)
+	}
+	stored, err := persistence.FindRuns(ctx, "ws-1", "shop")
+	if err != nil || len(stored) != entity.StoredRunsLimit+1 || stored[0].ID != "run-99" {
+		t.Fatalf("FindRuns() = %d runs, %v", len(stored), err)
+	}
+	overflow := entity.RunsBeyondStoredLimit(stored)
+	if len(overflow) != 1 || overflow[0].ID != "run-00" {
+		t.Fatalf("overflow = %+v", overflow)
+	}
+	pruned, err := persistence.DeleteRun(ctx, "ws-1", overflow[0].ID)
+	if err != nil || pruned.ID != "run-00" || pruned.Target.ItemID != "shop" || len(pruned.ResponseKeys()) != 1 {
 		t.Fatalf("pruned = %+v, %v", pruned, err)
 	}
 	runs, err := persistence.FindRuns(ctx, "ws-1", "shop")
-	if err != nil || len(runs) != storedRunsLimit || runs[0].ID != "run-99" {
+	if err != nil || len(runs) != entity.StoredRunsLimit || runs[0].ID != "run-99" {
 		t.Fatalf("FindRuns() = %d runs, %v", len(runs), err)
 	}
 	if folder, _ := persistence.FindRuns(ctx, "ws-1", "orders"); len(folder) != 1 {
@@ -51,7 +62,7 @@ func TestStoredRunsCanBeReadDeletedClearedAndOrphaned(t *testing.T) {
 	persistence := NewRunPersistence()
 	ctx := context.Background()
 	for _, run := range []entity.Run{storedRunFor("shop", "a", "run:a:0"), storedRunFor("shop", "b"), storedRunFor("gone", "c", "run:c:0"), storedRunFor("orders", "d")} {
-		if _, err := persistence.SaveRun(ctx, run); err != nil {
+		if err := persistence.SaveRun(ctx, run); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -61,8 +72,8 @@ func TestStoredRunsCanBeReadDeletedClearedAndOrphaned(t *testing.T) {
 	if runs, _ := persistence.FindRuns(ctx, "ws-1", "shop"); len(runs) != 2 {
 		t.Errorf("an unreadable file is left out: %d", len(runs))
 	}
-	if data, err := persistence.FindRunFile(ctx, "ws-1", "a"); err != nil || len(data) == 0 {
-		t.Errorf("FindRunFile() = %d bytes, %v", len(data), err)
+	if found, err := persistence.FindRun(ctx, "ws-1", "a"); err != nil || found.ID != "a" {
+		t.Errorf("FindRun() = %+v, %v", found, err)
 	}
 	deleted, err := persistence.DeleteRun(ctx, "ws-1", "a")
 	if err != nil || deleted.ID != "a" || len(deleted.ResponseKeys()) != 1 {

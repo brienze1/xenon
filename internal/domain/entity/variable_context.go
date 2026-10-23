@@ -76,7 +76,7 @@ func (v VariableContext) WithScriptScopes(scopes ScriptScopes) VariableContext {
 	return updated
 }
 
-// WithVault makes {{vault:name}} resolve from these values (the workspace secrets as the send's scripts left them).
+// WithVault makes {{vault:name}} resolve from these values.
 func (v VariableContext) WithVault(vault map[string]string) VariableContext {
 	v.Vault = vault
 	return v

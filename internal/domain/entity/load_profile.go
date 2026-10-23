@@ -32,16 +32,16 @@ func (l LoadProfile) Validate(virtualUsers, durationSeconds int) error {
 	case loadprofilekind.Peak:
 		return l.validatePeak(virtualUsers, durationSeconds)
 	default:
-		return invalidRunSetting("profile.kind", "must be fixed, ramp_up, spike or peak")
+		return invalidRunSetting("profile.kind", "must be "+loadprofilekind.Fixed.String()+", "+loadprofilekind.RampUp.String()+", "+loadprofilekind.Spike.String()+" or "+loadprofilekind.Peak.String(), "RUN-04400")
 	}
 }
 
 func (l LoadProfile) validateRampUp(virtualUsers, durationSeconds int) error {
 	switch {
 	case l.InitialUsers < 1 || l.InitialUsers > virtualUsers:
-		return invalidRunSetting("profile.initial_users", "must be between 1 and the virtual users")
+		return invalidRunSetting("profile.initial_users", "must be between 1 and the virtual users", "RUN-04400")
 	case l.RampSeconds < 1 || l.RampSeconds > durationSeconds:
-		return invalidRunSetting("profile.ramp_seconds", "must be between 1 and the duration")
+		return invalidRunSetting("profile.ramp_seconds", "must be between 1 and the duration", "RUN-04400")
 	default:
 		return nil
 	}
@@ -50,9 +50,9 @@ func (l LoadProfile) validateRampUp(virtualUsers, durationSeconds int) error {
 func (l LoadProfile) validateSpike(virtualUsers, durationSeconds int) error {
 	switch {
 	case l.BaseUsers < 1 || l.BaseUsers > virtualUsers:
-		return invalidRunSetting("profile.base_users", "must be between 1 and the virtual users")
+		return invalidRunSetting("profile.base_users", "must be between 1 and the virtual users", "RUN-04400")
 	case l.SpikeSeconds < 1 || l.SpikeSeconds > durationSeconds:
-		return invalidRunSetting("profile.spike_seconds", "must be between 1 and the duration")
+		return invalidRunSetting("profile.spike_seconds", "must be between 1 and the duration", "RUN-04400")
 	default:
 		return nil
 	}
@@ -61,12 +61,22 @@ func (l LoadProfile) validateSpike(virtualUsers, durationSeconds int) error {
 func (l LoadProfile) validatePeak(virtualUsers, durationSeconds int) error {
 	switch {
 	case l.BaseUsers < 1 || l.BaseUsers > virtualUsers:
-		return invalidRunSetting("profile.base_users", "must be between 1 and the virtual users")
+		return invalidRunSetting("profile.base_users", "must be between 1 and the virtual users", "RUN-04400")
 	case l.PeakSeconds < 1 || l.PeakSeconds >= durationSeconds:
-		return invalidRunSetting("profile.peak_seconds", "must be at least 1 and shorter than the duration")
+		return invalidRunSetting("profile.peak_seconds", "must be at least 1 and shorter than the duration", "RUN-04400")
 	default:
 		return nil
 	}
+}
+
+func (l LoadProfile) Override(overrides LoadProfileOverrides) LoadProfile {
+	l.Kind = overridden(overrides.Kind, l.Kind)
+	l.InitialUsers = overridden(overrides.InitialUsers, l.InitialUsers)
+	l.RampSeconds = overridden(overrides.RampSeconds, l.RampSeconds)
+	l.BaseUsers = overridden(overrides.BaseUsers, l.BaseUsers)
+	l.SpikeSeconds = overridden(overrides.SpikeSeconds, l.SpikeSeconds)
+	l.PeakSeconds = overridden(overrides.PeakSeconds, l.PeakSeconds)
+	return l
 }
 
 // WithDefaults fills the parameters of the kind left at zero with the FR-011 defaults.
@@ -86,7 +96,6 @@ func (l LoadProfile) WithDefaults(virtualUsers, durationSeconds int) LoadProfile
 	return l
 }
 
-// ActiveUsersAt is the number of virtual users the profile wants running at the elapsed time.
 func (l LoadProfile) ActiveUsersAt(elapsed time.Duration, virtualUsers, durationSeconds int) int {
 	at := elapsed.Seconds()
 	switch l.Kind {

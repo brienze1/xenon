@@ -27,13 +27,12 @@ var runsAITool = entity.AITool{
 }
 
 type mcpRuns struct {
-	errorHandler        adapter.ErrorHandler
-	searchTreeService   appAdapter.SearchTreeService
-	manageRunnerService appAdapter.ManageRunnerService
+	errorHandler    adapter.ErrorHandler
+	findRunsService appAdapter.FindRunsService
 }
 
-func NewMCPRuns(errorHandler adapter.ErrorHandler, searchTreeService appAdapter.SearchTreeService, manageRunnerService appAdapter.ManageRunnerService) adapter.MCPToolController {
-	return &mcpRuns{errorHandler: errorHandler, searchTreeService: searchTreeService, manageRunnerService: manageRunnerService}
+func NewMCPRuns(errorHandler adapter.ErrorHandler, findRunsService appAdapter.FindRunsService) adapter.MCPToolController {
+	return &mcpRuns{errorHandler: errorHandler, findRunsService: findRunsService}
 }
 
 func (m *mcpRuns) Tool() dto.MCPTool {
@@ -89,7 +88,7 @@ func (m *mcpRuns) get(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolRes
 		return dto.MCPToolResult{}, err
 	}
 
-	run, err := m.manageRunnerService.Get(ctx, request.LocalId, request.RunId)
+	run, err := m.findRunsService.Get(ctx, request.LocalId, request.RunId)
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
@@ -103,18 +102,12 @@ func (m *mcpRuns) list(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolRe
 		return dto.MCPToolResult{}, err
 	}
 
-	itemId, target, err := resolveMCPRunTarget(ctx, m.searchTreeService, call, arguments.RunTarget())
+	err = validateMCPRunTarget(call, arguments)
 	if err != nil {
-		return dto.NewMCPTargetResult(target), err
+		return dto.NewMCPTargetResult(entity.AIActivityTarget{}), err
 	}
 
-	request := dto.RunTargetReference{LocalId: call.LocalId, ItemId: itemId}
-	err = validateRunTargetReference(&request)
-	if err != nil {
-		return dto.NewMCPTargetResult(target), err
-	}
-
-	runs, err := m.manageRunnerService.List(ctx, request.LocalId, request.ItemId)
+	runs, target, err := m.findRunsService.ListForAI(ctx, call.LocalId, arguments.Path(), arguments.TargetItemId())
 	if err != nil {
 		return dto.NewMCPTargetResult(target), err
 	}

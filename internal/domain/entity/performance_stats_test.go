@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"sync"
 	"testing"
 	"time"
 )
@@ -11,15 +10,9 @@ func TestPerformanceStatsReportsOverallPerRequestAndSeries(t *testing.T) {
 	stats.Observe(0, 2)
 	stats.Observe(0, 1)
 	stats.Observe(1, 3)
-	var waiting sync.WaitGroup
 	for index := range 10 {
-		waiting.Add(1)
-		go func() {
-			defer waiting.Done()
-			stats.Record(PerformanceSample{Row: index % 2, Second: index / 5, Status: 200, Latency: 10 * time.Millisecond})
-		}()
+		stats.Record(PerformanceSample{Row: index % 2, Second: index / 5, Status: 200, Latency: 10 * time.Millisecond})
 	}
-	waiting.Wait()
 	stats.Record(PerformanceSample{Row: 1, Second: 1, Status: 500, Latency: 30 * time.Millisecond})
 	stats.Record(PerformanceSample{Row: 1, Second: 1})
 

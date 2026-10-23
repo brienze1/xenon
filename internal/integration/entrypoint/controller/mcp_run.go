@@ -32,27 +32,13 @@ var runAITool = entity.AITool{
 }
 
 type mcpRun struct {
-	errorHandler             adapter.ErrorHandler
-	searchTreeService        appAdapter.SearchTreeService
-	manageRunnerService      appAdapter.ManageRunnerService
-	manageAppSettingsService appAdapter.ManageAppSettingsService
-	approveAISendService     appAdapter.ApproveAISendService
+	errorHandler      adapter.ErrorHandler
+	startRunService   appAdapter.StartRunService
+	controlRunService appAdapter.ControlRunService
 }
 
-func NewMCPRun(
-	errorHandler adapter.ErrorHandler,
-	searchTreeService appAdapter.SearchTreeService,
-	manageRunnerService appAdapter.ManageRunnerService,
-	manageAppSettingsService appAdapter.ManageAppSettingsService,
-	approveAISendService appAdapter.ApproveAISendService,
-) adapter.MCPToolController {
-	return &mcpRun{
-		errorHandler:             errorHandler,
-		searchTreeService:        searchTreeService,
-		manageRunnerService:      manageRunnerService,
-		manageAppSettingsService: manageAppSettingsService,
-		approveAISendService:     approveAISendService,
-	}
+func NewMCPRun(errorHandler adapter.ErrorHandler, startRunService appAdapter.StartRunService, controlRunService appAdapter.ControlRunService) adapter.MCPToolController {
+	return &mcpRun{errorHandler: errorHandler, startRunService: startRunService, controlRunService: controlRunService}
 }
 
 func (m *mcpRun) Tool() dto.MCPTool {
@@ -99,27 +85,26 @@ func (m *mcpRun) start(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolRe
 		return dto.MCPToolResult{}, err
 	}
 
-	itemId, target, err := resolveMCPRunTarget(ctx, m.searchTreeService, call, arguments.RunTarget())
+	err = validateMCPRunTarget(call, arguments.MCPRunTarget)
 	if err != nil {
-		return dto.NewMCPTargetResult(target), err
+		return dto.NewMCPTargetResult(entity.AIActivityTarget{}), err
 	}
-	plan, err := m.plan(ctx, call.LocalId, itemId)
+	err = validateMCPRun(&arguments)
 	if err != nil {
-		return dto.NewMCPTargetResult(target), err
-	}
-	config, known := arguments.RunConfig(*plan)
-	if !known {
-		return dto.NewMCPTargetResult(target), mcpErrors.RejectInvalidArguments(call.Tool, mcpRunEnvironmentNotFound)
+		return dto.NewMCPTargetResult(entity.AIActivityTarget{}), err
 	}
 
-	run, err := m.startRun(ctx, arguments.StartRun(call.LocalId, itemId, "", config))
-	if environment, unconfirmed := mcpErrors.UnconfirmedSendEnvironment(err); unconfirmed {
-		run, err = m.startConfirmed(ctx, call, arguments.StartRun(call.LocalId, itemId, environment.ID, config), plan.Target.Name, environment)
-	}
+	started, err := m.startRunService.StartForAI(ctx, call.LocalId, arguments.Path(), arguments.TargetItemId(), arguments.ToEntity(), properties.Properties().Application.Version, call.Client, call.Session)
 	if err != nil {
-		return dto.NewMCPTargetResult(target), err
+		return dto.NewMCPTargetResult(started.Target), err
 	}
-	return dto.NewMCPToolResult(dto.NewMCPRunStarted(*run)).WithTarget(target).WithChanges(arguments.Changes(config)...), nil
+	if started.HasUnknownEnvironment() {
+		return dto.NewMCPTargetResult(started.Target), mcpErrors.RejectInvalidArguments(call.Tool, mcpRunEnvironmentNotFound)
+	}
+	if started.IsRefused() {
+		return dto.NewMCPTargetResult(started.Target), rejectRefusedAIApproval(*started.Refused)
+	}
+	return dto.NewMCPToolResult(dto.NewMCPRunStarted(*started.Run)).WithTarget(started.Target).WithChanges(started.Changes...), nil
 }
 
 func (m *mcpRun) stop(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolResult, error) {
@@ -138,47 +123,9 @@ func (m *mcpRun) stop(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolRes
 		return dto.MCPToolResult{}, err
 	}
 
-	run, err := m.manageRunnerService.Stop(ctx, request.LocalId, request.RunId)
+	run, err := m.controlRunService.Stop(ctx, request.LocalId, request.RunId)
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
 	return dto.NewMCPToolResult(dto.NewRunSummaryView(*run)).WithTarget(entity.NewAIItemTarget(run.Target.ItemID)), nil
-}
-
-func (m *mcpRun) plan(ctx context.Context, localId, itemId string) (*dto.RunPlan, error) {
-	request := dto.RunTargetReference{LocalId: localId, ItemId: itemId}
-	err := validateRunTargetReference(&request)
-	if err != nil {
-		return nil, err
-	}
-
-	plan, err := m.manageRunnerService.Plan(ctx, request.LocalId, request.ItemId)
-	if err != nil {
-		return nil, err
-	}
-	result := dto.NewRunPlan(*plan)
-	return &result, nil
-}
-
-func (m *mcpRun) startConfirmed(ctx context.Context, call dto.MCPToolCall, request dto.StartRun, targetName string, environment entity.AIApprovalEnvironment) (*entity.Run, error) {
-	settings, err := m.manageAppSettingsService.Get(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if !settings.SkipsAIApprovals() {
-		summary := entity.NewRunApprovalSummary(targetName, len(request.Config.ToEntity().SelectedRows()))
-		err = askMCPApproval(ctx, m.approveAISendService, dto.NewAIRunApprovalRequest(call.Session, call.Client, summary, dto.NewAIApprovalEnvironment(environment)))
-		if err != nil {
-			return nil, err
-		}
-	}
-	return m.startRun(ctx, request)
-}
-
-func (m *mcpRun) startRun(ctx context.Context, request dto.StartRun) (*entity.Run, error) {
-	err := validateStartRun(&request)
-	if err != nil {
-		return nil, err
-	}
-	return m.manageRunnerService.Start(ctx, request.ToEntity(), properties.Properties().Application.Version)
 }

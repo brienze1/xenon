@@ -4,7 +4,6 @@ import (
 	"context"
 
 	appAdapter "github.com/brienze1/xenon/internal/application/adapter"
-	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/infra/properties"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
@@ -12,12 +11,36 @@ import (
 )
 
 type runner struct {
-	errorHandler        adapter.ErrorHandler
-	manageRunnerService appAdapter.ManageRunnerService
+	errorHandler                 adapter.ErrorHandler
+	planRunService               appAdapter.PlanRunService
+	saveRunnerPreferencesService appAdapter.SaveRunnerPreferencesService
+	startRunService              appAdapter.StartRunService
+	controlRunService            appAdapter.ControlRunService
+	findRunsService              appAdapter.FindRunsService
+	deleteRunsService            appAdapter.DeleteRunsService
+	exportRunService             appAdapter.ExportRunService
 }
 
-func NewRunner(errorHandler adapter.ErrorHandler, manageRunnerService appAdapter.ManageRunnerService) adapter.RunnerController {
-	return &runner{errorHandler: errorHandler, manageRunnerService: manageRunnerService}
+func NewRunner(
+	errorHandler adapter.ErrorHandler,
+	planRunService appAdapter.PlanRunService,
+	saveRunnerPreferencesService appAdapter.SaveRunnerPreferencesService,
+	startRunService appAdapter.StartRunService,
+	controlRunService appAdapter.ControlRunService,
+	findRunsService appAdapter.FindRunsService,
+	deleteRunsService appAdapter.DeleteRunsService,
+	exportRunService appAdapter.ExportRunService,
+) adapter.RunnerController {
+	return &runner{
+		errorHandler:                 errorHandler,
+		planRunService:               planRunService,
+		saveRunnerPreferencesService: saveRunnerPreferencesService,
+		startRunService:              startRunService,
+		controlRunService:            controlRunService,
+		findRunsService:              findRunsService,
+		deleteRunsService:            deleteRunsService,
+		exportRunService:             exportRunService,
+	}
 }
 
 func (r *runner) Start(bindingCtx context.Context, request dto.StartRun) (response *dto.RunSummaryView, err error) {
@@ -38,7 +61,7 @@ func (r *runner) Start(bindingCtx context.Context, request dto.StartRun) (respon
 		return nil, err
 	}
 
-	run, err := r.manageRunnerService.Start(ctx, request.ToEntity(), properties.Properties().Application.Version)
+	run, err := r.startRunService.Start(ctx, request.ToEntity(), properties.Properties().Application.Version)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +89,7 @@ func (r *runner) Get(bindingCtx context.Context, request dto.RunReference) (resp
 		return nil, err
 	}
 
-	run, err := r.manageRunnerService.Get(ctx, request.LocalId, request.RunId)
+	run, err := r.findRunsService.Get(ctx, request.LocalId, request.RunId)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +117,7 @@ func (r *runner) Active(bindingCtx context.Context, request dto.WorkspaceReferen
 		return nil, err
 	}
 
-	runs, err := r.manageRunnerService.Active(ctx, request.LocalId)
+	runs, err := r.findRunsService.Active(ctx, request.LocalId)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +145,7 @@ func (r *runner) Pause(bindingCtx context.Context, request dto.RunReference) (re
 		return nil, err
 	}
 
-	run, err := r.manageRunnerService.Pause(ctx, request.LocalId, request.RunId)
+	run, err := r.controlRunService.Pause(ctx, request.LocalId, request.RunId)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +173,7 @@ func (r *runner) Resume(bindingCtx context.Context, request dto.RunReference) (r
 		return nil, err
 	}
 
-	run, err := r.manageRunnerService.Resume(ctx, request.LocalId, request.RunId)
+	run, err := r.controlRunService.Resume(ctx, request.LocalId, request.RunId)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +201,7 @@ func (r *runner) Stop(bindingCtx context.Context, request dto.RunReference) (res
 		return nil, err
 	}
 
-	run, err := r.manageRunnerService.Stop(ctx, request.LocalId, request.RunId)
+	run, err := r.controlRunService.Stop(ctx, request.LocalId, request.RunId)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +229,7 @@ func (r *runner) Plan(bindingCtx context.Context, request dto.RunTargetReference
 		return nil, err
 	}
 
-	plan, err := r.manageRunnerService.Plan(ctx, request.LocalId, request.ItemId)
+	plan, err := r.planRunService.Plan(ctx, request.LocalId, request.ItemId)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +257,7 @@ func (r *runner) SavePreferences(bindingCtx context.Context, request dto.SaveRun
 		return err
 	}
 
-	if err = r.manageRunnerService.SavePreferences(ctx, request.LocalId, request.ItemId, request.Config.ToEntity()); err != nil {
+	if err = r.saveRunnerPreferencesService.Save(ctx, request.LocalId, request.ItemId, request.ToEntity()); err != nil {
 		return err
 	}
 
@@ -260,7 +283,7 @@ func (r *runner) List(bindingCtx context.Context, request dto.RunTargetReference
 		return nil, err
 	}
 
-	runs, err := r.manageRunnerService.List(ctx, request.LocalId, request.ItemId)
+	runs, err := r.findRunsService.List(ctx, request.LocalId, request.ItemId)
 	if err != nil {
 		return nil, err
 	}
@@ -288,11 +311,11 @@ func (r *runner) Response(bindingCtx context.Context, request dto.RunRowReferenc
 		return nil, err
 	}
 
-	kept, err := r.manageRunnerService.Response(ctx, request.LocalId, request.RunId, *request.Index)
+	kept, err := r.findRunsService.Response(ctx, request.LocalId, request.RunId, *request.Index)
 	if err != nil {
 		return nil, err
 	}
-	result := dto.NewLastSendResult(entity.RunResponseKey(request.RunId, *request.Index), *kept)
+	result := dto.NewRunRowSendResult(request.RunId, *request.Index, *kept)
 
 	logger.Info(ctx, "Finished", result)
 	return &result, nil
@@ -316,7 +339,7 @@ func (r *runner) Delete(bindingCtx context.Context, request dto.RunReference) (e
 		return err
 	}
 
-	if err = r.manageRunnerService.Delete(ctx, request.LocalId, request.RunId); err != nil {
+	if err = r.deleteRunsService.Delete(ctx, request.LocalId, request.RunId); err != nil {
 		return err
 	}
 
@@ -342,7 +365,7 @@ func (r *runner) Clear(bindingCtx context.Context, request dto.RunTargetReferenc
 		return err
 	}
 
-	if err = r.manageRunnerService.Clear(ctx, request.LocalId, request.ItemId); err != nil {
+	if err = r.deleteRunsService.Clear(ctx, request.LocalId, request.ItemId); err != nil {
 		return err
 	}
 
@@ -368,7 +391,7 @@ func (r *runner) Export(bindingCtx context.Context, request dto.ExportRun) (err 
 		return err
 	}
 
-	if err = r.manageRunnerService.Export(ctx, request.LocalId, request.RunId, request.FormatEntity(), request.Path); err != nil {
+	if err = r.exportRunService.Export(ctx, request.LocalId, request.RunId, request.RunExportFormat(), request.Path); err != nil {
 		return err
 	}
 
@@ -389,7 +412,7 @@ func (r *runner) Abandon(bindingCtx context.Context) (err error) {
 		}
 	}(ctx)
 
-	r.manageRunnerService.Abandon(ctx)
+	r.controlRunService.Abandon(ctx)
 
 	logger.Info(ctx, "Finished")
 	return nil

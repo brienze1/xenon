@@ -10,6 +10,7 @@ const (
 	Functional  enums.RunType = "functional"
 	Performance enums.RunType = "performance"
 	Unknown     enums.RunType = "unknown"
+	Unset       enums.RunType = ""
 )
 
 func GetRunType(s string) enums.RunType {

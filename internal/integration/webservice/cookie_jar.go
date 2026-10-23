@@ -43,12 +43,8 @@ func (c *cookieJarWebservice) JarState(ctx context.Context, localId string) enti
 	c.mu.Lock()
 	loaded, saved := workspace.loaded, workspace.savedRevision
 	c.mu.Unlock()
-	state := entity.CookieJarState{
-		Cookies:       dto.NewJarCookies(workspace.jar.All(timeutils.Now())),
-		Revision:      workspace.jar.Revision(),
-		SavedRevision: saved,
-		Loaded:        loaded,
-	}
+	jarState := dto.NewJarState(workspace.jar.All(timeutils.Now()), workspace.jar.Revision(), saved, loaded)
+	state := jarState.ToEntity()
 
 	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "cookies": len(state.Cookies), "revision": state.Revision})
 	return state

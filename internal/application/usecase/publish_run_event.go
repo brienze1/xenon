@@ -7,6 +7,6 @@ import (
 )
 
 type PublishRunEvent interface {
-	Progress(ctx context.Context, run entity.Run)
-	Finished(ctx context.Context, run entity.Run)
+	Progress(ctx context.Context, run entity.Run) error
+	Finished(ctx context.Context, run entity.Run) error
 }

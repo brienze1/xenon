@@ -22,18 +22,21 @@ type ranRow struct {
 	latency time.Duration
 }
 
-func (m *manageRunner) runRow(ctx context.Context, run *functionalRun, index, iteration int, row entity.RunPlanRow) ranRow {
+func (e *runExecutor) runRow(ctx context.Context, run *functionalRun, index, iteration int, row entity.RunPlanRow) ranRow {
 	result := entity.NewRunRowResult(index, iteration, row)
-	stored, err := m.findRequest.Find(ctx, run.root, row.RequestID)
+	stored, err := e.findRequest.Find(ctx, run.root, row.RequestID)
+	if errs.IsNotFoundError(err) {
+		return ranRow{result: result.Failed(rowError(row.MissingRequest()))}
+	}
 	if err != nil {
-		return ranRow{result: result.Failed(rowError(usecase.NewMissingRunRequest(row.RequestID)))}
+		return ranRow{result: result.Failed(rowError(err))}
 	}
 	alias, _ := stored.Alias(row.AliasID)
 	request := stored.Version(row.AliasID)
 	result = result.ForRequest(request, alias)
 	console := &rowConsole{entries: []entity.ConsoleEntry{}}
-	runContext := run.context(iteration, index, console)
-	sent, err := m.core.send(ctx, sendCall{localId: run.target.LocalID, aliasId: row.AliasID, request: request, appVersion: run.appVersion, acknowledgement: run.acknowledgement}, runContext)
+	runContext := run.context(iteration, index)
+	sent, err := e.pipeline.send(ctx, sendCall{localId: run.target.LocalID, aliasId: row.AliasID, request: request, appVersion: run.appVersion, acknowledgement: run.acknowledgement, collect: console.collect}, runContext)
 	result = result.WithConsole(console.collected())
 	if err != nil && ctx.Err() != nil {
 		return ranRow{result: result.Cancelled()}
@@ -41,54 +44,30 @@ func (m *manageRunner) runRow(ctx context.Context, run *functionalRun, index, it
 	if err != nil {
 		return ranRow{result: result.Failed(rowError(err)).WithSecretsMasked(run.mask())}
 	}
-	run.remember(sent.secrets)
+	run.secrets = entity.MergeSecrets(run.secrets, sent.secrets)
 	result = result.WithExecution(*sent.execution)
 	ran := ranRow{next: sent.execution.NextRequest(), sendId: sent.execution.ID}
-	if sent.execution.Response != nil {
+	if sent.execution.HasResponse() {
 		result = result.WithResponseKey(runContext.ResponseKey)
-		ran.latency = sent.execution.Response.Timings.Total
+		ran.latency = sent.execution.Latency()
 	}
 	ran.result = result.WithSecretsMasked(run.mask())
 	return ran
 }
 
-func (r *functionalRun) context(iteration, index int, console *rowConsole) entity.RunContext {
+func (r *functionalRun) context(iteration, index int) entity.RunContext {
 	if r.config.IsPerformance() {
 		return r.performanceContext(iteration)
 	}
-	runContext := entity.RunContext{
-		RunID:           r.id,
-		EnvironmentID:   r.environment.id,
-		CookieJarID:     r.jarId,
-		Variables:       r.variables,
-		Acknowledgement: r.acknowledgement,
-		Iteration:       iteration,
-		IterationCount:  r.config.Functional.Iterations,
-		IterationData:   r.data.Row(iteration),
-		MuteConsole:     r.config.Functional.DisableLogs,
-	}
-	if r.config.Functional.PersistResponses {
-		runContext.ResponseKey = entity.RunResponseKey(r.id, index)
-	}
-	if !r.config.Functional.DisableLogs {
-		runContext.Collect = console.collect
-	}
-	return runContext
+	return r.baseContext(iteration).ForFunctionalRow(r.config.Functional, r.data, index)
 }
 
 func (r *functionalRun) performanceContext(iteration int) entity.RunContext {
-	return entity.RunContext{
-		RunID:           r.id,
-		EnvironmentID:   r.environment.id,
-		CookieJarID:     r.jarId,
-		Variables:       r.variables,
-		Acknowledgement: r.acknowledgement,
-		Iteration:       iteration,
-		IterationCount:  max(1, r.data.Count()),
-		IterationData:   r.data.WrappedRow(iteration),
-		MuteConsole:     true,
-		Performance:     true,
-	}
+	return r.baseContext(iteration).ForPerformance(r.data)
+}
+
+func (r *functionalRun) baseContext(iteration int) entity.RunContext {
+	return entity.NewRunContext(r.id, r.environment.id, r.jarId, r.variables, r.acknowledgement, iteration)
 }
 
 func (r *functionalRun) mask() func(string) (string, bool) {

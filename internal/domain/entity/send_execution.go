@@ -2,6 +2,7 @@ package entity
 
 import (
 	"maps"
+	"time"
 
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/senderrorkind"
@@ -41,11 +42,7 @@ func (s *SendExecution) Start(request Request, scopes ScriptScopes, vault map[st
 
 // ScriptContext is what the next script sees: the request so far, the response, and the scopes and vault as earlier scripts left them.
 func (s *SendExecution) ScriptContext(base ScriptContext) ScriptContext {
-	base.Request = s.Request
-	base.Response = s.Response
-	base.Scopes = s.Scopes
-	base.Vault = maps.Clone(s.Vault)
-	return base
+	return base.Over(s.Request, s.Response, s.Scopes, s.Vault)
 }
 
 func (s *SendExecution) Variables(context VariableContext) VariableContext {
@@ -89,6 +86,17 @@ func (s *SendExecution) RecordResponse(sent EffectiveRequest, response Response)
 	if response.Error != nil && response.Error.Kind == senderrorkind.Cancelled {
 		s.Outcome = sendoutcome.Cancelled
 	}
+}
+
+func (s *SendExecution) HasResponse() bool {
+	return s.Response != nil
+}
+
+func (s *SendExecution) Latency() time.Duration {
+	if !s.HasResponse() {
+		return 0
+	}
+	return s.Response.Timings.Total
 }
 
 func (s *SendExecution) ScriptCookies() []ScriptCookie {

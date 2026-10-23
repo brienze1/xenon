@@ -2,6 +2,7 @@ package entity
 
 import (
 	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/aichangekind"
 	"github.com/brienze1/xenon/internal/domain/enums/runtype"
 	"github.com/brienze1/xenon/pkg/errs"
 )
@@ -30,6 +31,10 @@ func (r RunConfig) DataFile() string {
 		return r.Performance.DataFile
 	}
 	return r.Functional.DataFile
+}
+
+func (r RunConfig) HasDataFile() bool {
+	return r.DataFile() != ""
 }
 
 func (r RunConfig) DataFiles() []string {
@@ -63,7 +68,7 @@ func (r RunConfig) WithRows(rows []RunPlanRow) RunConfig {
 // Completed fills the settings a saved configuration left out with Postman's defaults.
 func (r RunConfig) Completed() RunConfig {
 	defaults := NewRunConfig()
-	if r.Type == "" {
+	if r.Type == runtype.Unset {
 		r.Type = defaults.Type
 	}
 	if r.Functional.Iterations == 0 {
@@ -101,19 +106,86 @@ func (r RunConfig) PlannedRequests(rows int) int {
 	return rows * r.Functional.Iterations
 }
 
+// Override lays the overrides over the configuration; the environment is resolved by the run plan.
+func (r RunConfig) Override(overrides RunOverrides) RunConfig {
+	if overrides.OverridesRows() {
+		r.Rows = overrides.Rows
+	}
+	r.Type = overridden(overrides.Type, r.Type)
+	r.Functional = r.Functional.Override(overrides.Functional)
+	r.Performance = r.Performance.Override(overrides.Performance)
+	return r
+}
+
+// AIChanges are the stored data an AI-started run changes: cookies and variables, only for a functional run.
+func (r RunConfig) AIChanges() []enums.AIChangeKind {
+	changes := make([]enums.AIChangeKind, 0, 2)
+	if r.SavesCookies() {
+		changes = append(changes, aichangekind.Cookies)
+	}
+	if r.KeepsVariableValues() {
+		changes = append(changes, aichangekind.Variables)
+	}
+	return changes
+}
+
 // SavesCookies is true when a functional run merges its cookies back; performance runs never do.
 func (r RunConfig) SavesCookies() bool {
 	return !r.IsPerformance() && r.Functional.SaveCookies
 }
 
+func (r RunConfig) KeepsVariableValues() bool {
+	return !r.IsPerformance() && r.Functional.KeepVariableValues
+}
+
+func (r RunConfig) SeedsStoredCookies() bool {
+	return !r.Functional.SkipStoredCookies
+}
+
+func (r RunConfig) LogsToConsole() bool {
+	return !r.Functional.DisableLogs
+}
+
+// EnvironmentIn is the run's environment, else the active one of local, else NoEnvironmentID.
+func (r RunConfig) EnvironmentIn(local LocalVariables) string {
+	switch {
+	case r.EnvironmentID != "":
+		return r.EnvironmentID
+	case local.HasActiveEnvironment():
+		return local.ActiveEnvironmentID
+	default:
+		return NoEnvironmentID
+	}
+}
+
+func UsesActiveEnvironment(environmentId string) bool {
+	return environmentId == ""
+}
+
+func UsesNoEnvironment(environmentId string) bool {
+	return environmentId == NoEnvironmentID
+}
+
 func (r RunConfig) SelectedRows() []RunRow {
 	selected := make([]RunRow, 0, len(r.Rows))
 	for _, row := range r.Rows {
-		if row.Selected {
+		if row.IsSelected() {
 			selected = append(selected, row)
 		}
 	}
 	return selected
+}
+
+// PlannedRows are the selected rows as the sidebar lists them, numbered in run order.
+func (r RunConfig) PlannedRows(sidebar []RunPlanRow) []RunPlanRow {
+	rows := make([]RunPlanRow, 0, len(r.Rows))
+	for _, row := range r.SelectedRows() {
+		planned, _ := RunPlanRowOf(sidebar, row.RequestID)
+		planned = planned.For(row)
+		planned.Number = len(rows) + 1
+		rows = append(rows, planned)
+	}
+	return rows
 }
 
 // Validate checks the selection first, then the settings of the run type.
@@ -127,6 +199,6 @@ func (r RunConfig) Validate() error {
 	return r.Functional.Validate()
 }
 
-func invalidRunSetting(field, reason string) error {
-	return errs.BadRequestError("the run setting "+field+" "+reason, "RUN-04400", errs.ErrorDetails{Attribute: field, Messages: []string{reason}})
+func invalidRunSetting(field, reason, code string) error {
+	return errs.BadRequestError("the run setting "+field+" "+reason, code, errs.ErrorDetails{Attribute: field, Messages: []string{reason}})
 }

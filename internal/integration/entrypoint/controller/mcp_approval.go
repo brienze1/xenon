@@ -4,6 +4,7 @@ import (
 	"context"
 
 	appAdapter "github.com/brienze1/xenon/internal/application/adapter"
+	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/integration/entrypoint/dto"
 	mcpErrors "github.com/brienze1/xenon/internal/integration/entrypoint/errors"
 )
@@ -18,6 +19,10 @@ func askMCPApproval(ctx context.Context, approveAISendService appAdapter.Approve
 	if err != nil {
 		return err
 	}
+	return rejectRefusedAIApproval(approval)
+}
+
+func rejectRefusedAIApproval(approval entity.AIApproval) error {
 	switch {
 	case approval.IsApproved():
 		return nil

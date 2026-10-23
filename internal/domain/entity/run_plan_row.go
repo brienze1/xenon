@@ -1,6 +1,10 @@
 package entity
 
-import "slices"
+import (
+	"slices"
+
+	"github.com/brienze1/xenon/pkg/errs"
+)
 
 type RunPlanRow struct {
 	RunRow
@@ -9,6 +13,10 @@ type RunPlanRow struct {
 	FolderPath []string
 	Aliases    []RequestAlias
 	Number     int
+}
+
+func (r RunPlanRow) MissingRequest() error {
+	return errs.NotFoundError("request not found: "+r.RequestID, "RUN-06404")
 }
 
 // FlattenRunRows lists the requests under the target in sidebar order, depth first; folder paths are relative to the target.
@@ -71,7 +79,7 @@ func ReconcileRunRows(remembered []RunRow, sidebar []RunPlanRow) []RunPlanRow {
 			continue
 		}
 		at := insertionPoint(rows, sidebar[:index])
-		rows = slices.Insert(rows, at, planned.For(RunRow{RequestID: planned.RequestID, Selected: true}))
+		rows = slices.Insert(rows, at, planned.For(NewSelectedRunRow(planned.RequestID)))
 	}
 	for index := range rows {
 		rows[index].Number = index + 1

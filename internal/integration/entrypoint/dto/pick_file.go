@@ -7,7 +7,7 @@ type PickFile struct {
 	Filters []FileFilter `json:"filters" validate:"dive"`
 }
 
-func (p *PickFile) FiltersEntity() []entity.FileFilter {
+func (p *PickFile) FileFilters() []entity.FileFilter {
 	filters := make([]entity.FileFilter, 0, len(p.Filters))
 	for index := range p.Filters {
 		filters = append(filters, p.Filters[index].ToEntity())

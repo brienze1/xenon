@@ -1,5 +1,7 @@
 package dto
 
+import "github.com/brienze1/xenon/internal/domain/entity"
+
 type MCPRunPerformance struct {
 	VirtualUsers    *int               `json:"virtual_users" description:"Users, 1-100."`
 	DurationSeconds *int               `json:"duration_seconds" description:"Seconds, 1-3600."`
@@ -7,13 +9,14 @@ type MCPRunPerformance struct {
 	Profile         *MCPRunLoadProfile `json:"profile" description:"Load profile; 0 picks a default."`
 }
 
-func (m *MCPRunPerformance) Over(settings RunPerformanceSettings) RunPerformanceSettings {
+func (m *MCPRunPerformance) ToEntity() entity.PerformanceOverrides {
 	if m == nil {
-		return settings
+		return entity.PerformanceOverrides{}
 	}
-	settings.VirtualUsers = valueOr(m.VirtualUsers, settings.VirtualUsers)
-	settings.DurationSeconds = valueOr(m.DurationSeconds, settings.DurationSeconds)
-	settings.DataFile = valueOr(m.DataFile, settings.DataFile)
-	settings.Profile = m.Profile.Over(settings.Profile)
-	return settings
+	return entity.PerformanceOverrides{
+		VirtualUsers:    m.VirtualUsers,
+		DurationSeconds: m.DurationSeconds,
+		DataFile:        m.DataFile,
+		Profile:         m.Profile.ToEntity(),
+	}
 }

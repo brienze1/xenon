@@ -2,6 +2,7 @@ package dto
 
 import (
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/loadprofilekind"
 )
 
@@ -26,16 +27,19 @@ func NewRunLoadProfile(profile entity.LoadProfile) RunLoadProfile {
 }
 
 func (r *RunLoadProfile) ToEntity() entity.LoadProfile {
-	kind := loadprofilekind.GetLoadProfileKind(r.Kind)
-	if r.Kind == "" {
-		kind = loadprofilekind.Fixed
-	}
 	return entity.LoadProfile{
-		Kind:         kind,
+		Kind:         loadProfileKind(r.Kind),
 		InitialUsers: r.InitialUsers,
 		RampSeconds:  r.RampSeconds,
 		BaseUsers:    r.BaseUsers,
 		SpikeSeconds: r.SpikeSeconds,
 		PeakSeconds:  r.PeakSeconds,
 	}
+}
+
+func loadProfileKind(kind string) enums.LoadProfileKind {
+	if kind == "" {
+		return loadprofilekind.Fixed
+	}
+	return loadprofilekind.GetLoadProfileKind(kind)
 }

@@ -10,7 +10,7 @@ func validateRunTargetReference(request *dto.RunTargetReference) error {
 }
 
 func validateSaveRunnerPreferences(request *dto.SaveRunnerPreferences) error {
-	return validator.CustomValidator().Struct("RUN-09400", request)
+	return validator.CustomValidator().Struct("RUN-22400", request)
 }
 
 func validateRunRowReference(request *dto.RunRowReference) error {
@@ -25,8 +25,12 @@ func validateStartRun(request *dto.StartRun) error {
 	return validator.CustomValidator().Struct("RUN-09400", request)
 }
 
+func validateMCPRun(request *dto.MCPRun) error {
+	return validator.CustomValidator().Struct("RUN-24400", request)
+}
+
 func validateRunReference(request *dto.RunReference) error {
-	return validator.CustomValidator().Struct("RUN-10400", request)
+	return validator.CustomValidator().Struct("RUN-23400", request)
 }
 
 func validateWorkspaceReference(request *dto.WorkspaceReference) error {

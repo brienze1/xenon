@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/brienze1/xenon/internal/domain/enums"
@@ -45,7 +46,6 @@ func NewRunRowResult(index, iteration int, row RunPlanRow) RunRowResult {
 	}
 }
 
-// NewRunRowOutcome derives a row's outcome: skipped, cancelled, error (not sent or a script error), failed (a failed test) or passed.
 func NewRunRowOutcome(execution SendExecution) enums.RunRowOutcome {
 	switch {
 	case execution.Outcome == sendoutcome.SkippedByScript:
@@ -135,6 +135,10 @@ func (r RunRowResult) IsError() bool {
 	return r.Outcome == runrowoutcome.Error
 }
 
+func (r RunRowResult) KeepsResponse() bool {
+	return r.ResponseKey != ""
+}
+
 func (r RunRowResult) WithResponseKey(key string) RunRowResult {
 	r.ResponseKey = key
 	return r
@@ -145,12 +149,10 @@ func (r RunRowResult) WithConsoleEntry(entry ConsoleEntry) RunRowResult {
 	return r
 }
 
-// Breaks is true for a row that errored or was cancelled, which reports as an error rather than through its tests.
 func (r RunRowResult) Breaks() bool {
 	return r.Outcome == runrowoutcome.Error || r.Outcome == runrowoutcome.Cancelled
 }
 
-// BreakMessage is why a breaking row did not complete: its error, else its first script error, else its outcome.
 func (r RunRowResult) BreakMessage() string {
 	switch {
 	case r.Error != "":
@@ -167,7 +169,30 @@ func (r RunRowResult) Path() string {
 	return strings.Join(append(append([]string{}, r.FolderPath...), r.Name), "/")
 }
 
-// IsMeasured is true for a row a performance run counts: neither skipped by its script nor cancelled.
 func (r RunRowResult) IsMeasured() bool {
 	return r.Outcome != runrowoutcome.Skipped && r.Outcome != runrowoutcome.Cancelled
+}
+
+func (r RunRowResult) IterationLabel() string {
+	return r.Path() + " [iteration " + strconv.Itoa(r.Iteration+1) + "]"
+}
+
+func (r RunRowResult) FailedTests() int {
+	failed := 0
+	for _, test := range r.Tests {
+		if test.IsFailed() {
+			failed++
+		}
+	}
+	return failed
+}
+
+func (r RunRowResult) SkippedTests() int {
+	skipped := 0
+	for _, test := range r.Tests {
+		if test.IsSkipped() {
+			skipped++
+		}
+	}
+	return skipped
 }

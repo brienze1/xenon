@@ -42,24 +42,7 @@ func (r *RequestStats) ErrorRate() float64 {
 }
 
 func (r *RequestStats) Report(elapsed time.Duration) RequestReport {
-	statusCounts := make(map[int]int, len(r.StatusCounts))
-	for status, count := range r.StatusCounts {
-		statusCounts[status] = count
-	}
-	return RequestReport{
-		RequestID:    r.RequestID,
-		Name:         r.Name,
-		Count:        r.Requests,
-		AvgMs:        latencyMs(r.Histogram.Mean()),
-		P90Ms:        latencyMs(r.Histogram.Percentile(90)),
-		P95Ms:        latencyMs(r.Histogram.Percentile(95)),
-		P99Ms:        latencyMs(r.Histogram.Percentile(99)),
-		MinMs:        latencyMs(r.Histogram.Min),
-		MaxMs:        latencyMs(r.Histogram.Max),
-		Throughput:   r.Throughput(elapsed),
-		ErrorRate:    r.ErrorRate(),
-		StatusCounts: statusCounts,
-	}
+	return NewRequestReport(r, elapsed)
 }
 
 func latencyMs(latency time.Duration) float64 {

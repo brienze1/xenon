@@ -29,7 +29,7 @@ func NewRunEvent(eventEmitter adapter.EventEmitter) adapter.RunEventPublisher {
 	return &runEventPublisher{eventEmitter: eventEmitter, runs: map[string]*throttledRun{}}
 }
 
-func (r *runEventPublisher) Progress(ctx context.Context, run entity.Run) {
+func (r *runEventPublisher) Progress(ctx context.Context, run entity.Run) error {
 	logger.Debug(ctx, "Started", map[string]any{"runId": run.ID, "status": run.Status, "completed": run.Progress.Completed})
 
 	event := dto.NewRunProgressChanged(run)
@@ -52,9 +52,10 @@ func (r *runEventPublisher) Progress(ctx context.Context, run entity.Run) {
 	r.mutex.Unlock()
 
 	logger.Debug(ctx, "Finished", map[string]any{"runId": run.ID})
+	return nil
 }
 
-func (r *runEventPublisher) Finished(ctx context.Context, run entity.Run) {
+func (r *runEventPublisher) Finished(ctx context.Context, run entity.Run) error {
 	logger.Debug(ctx, "Started", map[string]any{"runId": run.ID, "status": run.Status})
 
 	r.mutex.Lock()
@@ -71,6 +72,7 @@ func (r *runEventPublisher) Finished(ctx context.Context, run entity.Run) {
 	r.mutex.Unlock()
 
 	logger.Debug(ctx, "Finished", map[string]any{"runId": run.ID})
+	return nil
 }
 
 func (r *runEventPublisher) flush(runId string) {

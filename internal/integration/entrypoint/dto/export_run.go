@@ -12,6 +12,6 @@ type ExportRun struct {
 	Path    string `json:"path" validate:"required,not_blank"`
 }
 
-func (e *ExportRun) FormatEntity() enums.RunExportFormat {
+func (e *ExportRun) RunExportFormat() enums.RunExportFormat {
 	return runexportformat.GetRunExportFormat(e.Format)
 }

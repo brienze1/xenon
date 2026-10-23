@@ -12,6 +12,7 @@ import (
 )
 
 type sendCall struct {
+	collect         func(entity.ConsoleEntry)
 	localId         string
 	tabId           string
 	aliasId         string
@@ -28,18 +29,18 @@ type sentRequest struct {
 	settings  entity.AppSettings
 }
 
-func (s *sendRequest) send(ctx context.Context, call sendCall, runContext entity.RunContext) (*sentRequest, error) {
+func (p *sendPipeline) send(ctx context.Context, call sendCall, runContext entity.RunContext) (*sentRequest, error) {
 	localId, tabId, aliasId, request := call.localId, call.tabId, call.aliasId, call.request
-	workspace, err := s.findWorkspaceRegistry.FindWorkspace(ctx, localId)
+	workspace, err := p.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
 		return nil, err
 	}
-	scopes, err := s.variables.loadIn(ctx, localId, workspace.Path, request.ID, runContext.EnvironmentID)
+	scopes, err := p.variables.loadIn(ctx, localId, workspace.Path, request.ID, runContext.EnvironmentID)
 	if err != nil {
 		return nil, err
 	}
 	scopes = scopes.inRun(runContext)
-	alias, err := s.alias(ctx, workspace.Path, request.ID, aliasId)
+	alias, err := p.alias(ctx, workspace.Path, request.ID, aliasId)
 	if err != nil {
 		return nil, err
 	}
@@ -51,45 +52,45 @@ func (s *sendRequest) send(ctx context.Context, call sendCall, runContext entity
 	if preflight.AwaitsSecretsAcknowledgement(call.acknowledgement) {
 		return nil, usecase.RejectUnavailableSecrets(preflight)
 	}
-	token, err := s.oauthToken(ctx, localId, effective, scopes.context, call.acknowledgement)
+	token, err := p.oauthToken(ctx, localId, effective, scopes.context, call.acknowledgement)
 	if err != nil {
 		return nil, err
 	}
-	owners, err := s.scriptOwners(ctx, workspace.Path, request, aliasId, scopes.ancestors)
+	owners, err := p.scriptOwners(ctx, workspace.Path, request, aliasId, scopes.ancestors)
 	if err != nil {
 		return nil, err
 	}
-	settings, err := s.findAppSettings.FindAppSettings(ctx)
+	settings, err := p.findAppSettings.FindAppSettings(ctx)
 	if err != nil {
 		return nil, err
 	}
 	jarId := runContext.JarID(localId)
-	if err := s.loadWorkspaceJar(ctx, localId, runContext); err != nil {
+	if err := p.loadWorkspaceJar(ctx, localId, runContext); err != nil {
 		return nil, err
 	}
-	cookiesBefore := s.cookies.revision(ctx, jarId)
+	cookiesBefore := p.cookies.revision(ctx, jarId)
 	secrets := append(scopes.context.SecretValues(), token.SecretsOrNone()...)
 	ctx = logger.WithRedactions(ctx, secrets...)
 	sentAt := timeutils.Now()
 	execution := entity.NewSendExecution(idutils.NewUlid())
 	execution.Start(request, scopes.scripts, scopes.vault)
-	run := sendRun{service: s, scopes: scopes, token: token, runContext: runContext, localId: localId, jarId: jarId, tabId: tabId, aliasId: aliasId, root: workspace.Path, appVersion: call.appVersion, sendId: execution.ID, secrets: secrets, settings: *settings}
+	run := sendRun{pipeline: p, scopes: scopes, token: token, runContext: runContext, collect: call.collect, localId: localId, jarId: jarId, tabId: tabId, aliasId: aliasId, root: workspace.Path, appVersion: call.appVersion, sendId: execution.ID, secrets: secrets, settings: *settings}
 	if err := run.execute(ctx, tabId, request, scopes.ancestors, owners, &execution); err != nil {
 		return nil, err
 	}
 	if runContext.UsesWorkspaceJar(localId) {
-		if err := s.cookies.settle(ctx, localId, cookiesBefore); err != nil {
+		if err := p.cookies.settle(ctx, localId, cookiesBefore); err != nil {
 			return nil, err
 		}
 	}
 	known := append(secrets, execution.DerivedSecrets(secrets)...)
-	s.registerKnownSecrets.Register(ctx, known...)
+	p.registerKnownSecrets.Register(ctx, known...)
 	return &sentRequest{sentAt: sentAt, execution: &execution, alias: alias, settings: *settings, secrets: append(known, run.secretsOf(&execution)...)}, nil
 }
 
-func (s *sendRequest) loadWorkspaceJar(ctx context.Context, localId string, runContext entity.RunContext) error {
+func (p *sendPipeline) loadWorkspaceJar(ctx context.Context, localId string, runContext entity.RunContext) error {
 	if !runContext.UsesWorkspaceJar(localId) {
 		return nil
 	}
-	return s.cookies.load(ctx, localId)
+	return p.cookies.load(ctx, localId)
 }

@@ -39,7 +39,6 @@ func (a AIApproval) Queued(id string, createdAt time.Time) AIApproval {
 	return queued
 }
 
-// NewRunApprovalSummary describes a whole run in an approval request, in place of a method and URL.
 func NewRunApprovalSummary(targetName string, requests int) string {
 	noun := " requests"
 	if requests == 1 {

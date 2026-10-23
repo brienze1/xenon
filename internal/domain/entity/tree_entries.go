@@ -59,6 +59,20 @@ func (t Tree) ContainerAt(path string) (TreeEntry, bool) {
 	return TreeEntry{}, false
 }
 
+// ResolveRunTarget finds the container by itemId, or by path when itemId is empty; an unmatched value is used as the item id.
+func (t Tree) ResolveRunTarget(path, itemId string) (string, AIActivityTarget) {
+	if itemId == "" {
+		if entry, found := t.ContainerAt(path); found {
+			return entry.ID(), entry.Target()
+		}
+		return path, NewAIItemTarget(path)
+	}
+	if entry, found := t.Entry(itemId); found {
+		return entry.ID(), entry.Target()
+	}
+	return itemId, NewAIItemTarget(itemId)
+}
+
 func normalizedItemPath(path string) string {
 	names := strings.Split(path, "/")
 	for index, name := range names {

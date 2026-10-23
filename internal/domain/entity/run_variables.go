@@ -8,9 +8,6 @@ import (
 	"github.com/brienze1/xenon/internal/domain/enums/variablescope"
 )
 
-var runOverlayScopes = []enums.VariableScope{variablescope.Environment, variablescope.Collection, variablescope.Globals}
-
-// RunVariables holds what a run's scripts changed when the values are not kept; it is discarded when the run ends.
 type RunVariables struct {
 	Values       map[enums.VariableScope][]KeyValue
 	Removed      map[enums.VariableScope][]string
@@ -23,7 +20,7 @@ func NewRunVariables() *RunVariables {
 }
 
 func (r *RunVariables) Apply(before, after ScriptScopes, vaultBefore, vaultAfter map[string]string) {
-	for _, kind := range runOverlayScopes {
+	for _, kind := range PersistedScriptScopes {
 		set, unset := after.Scope(kind).ChangesFrom(before.Scope(kind))
 		for _, value := range set {
 			r.set(kind, value)

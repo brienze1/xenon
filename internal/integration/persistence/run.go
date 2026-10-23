@@ -11,7 +11,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/brienze1/xenon/internal/application/usecase"
 	"github.com/brienze1/xenon/internal/domain/entity"
 	"github.com/brienze1/xenon/internal/integration/adapter"
 	"github.com/brienze1/xenon/internal/integration/persistence/model"
@@ -21,9 +20,8 @@ import (
 )
 
 const (
-	runsDataDir     = "runs"
-	runFileSuffix   = ".json"
-	storedRunsLimit = 25
+	runsDataDir   = "runs"
+	runFileSuffix = ".json"
 )
 
 type runPersistence struct {
@@ -34,29 +32,25 @@ func NewRunPersistence() adapter.RunPersistence {
 	return &runPersistence{}
 }
 
-func (r *runPersistence) SaveRun(ctx context.Context, run entity.Run) ([]entity.Run, error) {
+func (r *runPersistence) SaveRun(ctx context.Context, run entity.Run) error {
 	logger.Debug(ctx, "Started", map[string]any{"localId": run.Target.LocalID, "itemId": run.Target.ItemID, "runId": run.ID, "status": run.Status})
 
 	unlock := r.lock(run.Target.LocalID)
 	defer unlock()
 	folder := runsFolder(run.Target.LocalID, run.Target.ItemID)
 	if err := os.MkdirAll(folder, appDataDirMode); err != nil {
-		return nil, errs.FileError(err, "RUN-13500")
+		return errs.FileError(err, "RUN-13500")
 	}
 	data, err := json.MarshalIndent(model.NewRun(run), "", "  ")
 	if err != nil {
-		return nil, errs.FileError(err, "RUN-14500")
+		return errs.FileError(err, "RUN-14500")
 	}
 	if err := fileutils.WriteFileAtomic(filepath.Join(folder, run.ID+runFileSuffix), append(data, '\n'), appDataFileMode); err != nil {
-		return nil, errs.FileError(err, "RUN-15500")
-	}
-	pruned, err := pruneRuns(ctx, folder, run.Target.LocalID)
-	if err != nil {
-		return nil, err
+		return errs.FileError(err, "RUN-15500")
 	}
 
-	logger.Debug(ctx, "Finished", map[string]any{"localId": run.Target.LocalID, "itemId": run.Target.ItemID, "runId": run.ID, "pruned": len(pruned)})
-	return pruned, nil
+	logger.Debug(ctx, "Finished", map[string]any{"localId": run.Target.LocalID, "itemId": run.Target.ItemID, "runId": run.ID, "status": run.Status})
+	return nil
 }
 
 func (r *runPersistence) FindRun(ctx context.Context, localId, runId string) (*entity.Run, error) {
@@ -70,29 +64,11 @@ func (r *runPersistence) FindRun(ctx context.Context, localId, runId string) (*e
 	}
 	run, err := readRun(path, localId)
 	if err != nil {
-		return nil, usecase.RejectUnknownRun(runId)
+		return nil, errs.NotFoundError("no active or stored run with the id "+runId, "RUN-01404")
 	}
 
 	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "runId": runId, "status": run.Status})
 	return run, nil
-}
-
-func (r *runPersistence) FindRunFile(ctx context.Context, localId, runId string) ([]byte, error) {
-	logger.Debug(ctx, "Started", map[string]any{"localId": localId, "runId": runId})
-
-	unlock := r.lock(localId)
-	defer unlock()
-	path, err := runFile(localId, runId)
-	if err != nil {
-		return nil, err
-	}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, usecase.RejectUnknownRun(runId)
-	}
-
-	logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "runId": runId, "bytes": len(data)})
-	return data, nil
 }
 
 func (r *runPersistence) FindRuns(ctx context.Context, localId, targetId string) ([]entity.Run, error) {
@@ -141,7 +117,7 @@ func (r *runPersistence) ClearRuns(ctx context.Context, localId, targetId string
 
 	unlock := r.lock(localId)
 	defer unlock()
-	deleted, err := deleteRunsFolder(runsFolder(localId, targetId), localId, "RUN-18500")
+	deleted, err := deleteRunsFolder(runsFolder(localId, targetId), localId, "RUN-18500", "RUN-36500")
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +143,7 @@ func (r *runPersistence) DeleteOrphanRuns(ctx context.Context, localId string, t
 		if !folder.IsDir() || slices.Contains(targetIds, folder.Name()) {
 			continue
 		}
-		runs, err := deleteRunsFolder(runsFolder(localId, folder.Name()), localId, "RUN-19500")
+		runs, err := deleteRunsFolder(runsFolder(localId, folder.Name()), localId, "RUN-37500", "RUN-38500")
 		if err != nil {
 			return nil, err
 		}
@@ -198,34 +174,17 @@ func (r *runPersistence) lock(localId string) func() {
 	return mutex.Unlock
 }
 
-func pruneRuns(ctx context.Context, folder, localId string) ([]entity.Run, error) {
+func deleteRunsFolder(folder, localId, readCode, removeCode string) ([]entity.Run, error) {
 	files, err := runFiles(folder)
 	if err != nil {
-		return nil, errs.FileError(err, "RUN-21500")
-	}
-	pruned := make([]entity.Run, 0)
-	for len(files) > storedRunsLimit {
-		pruned = append(pruned, storedRun(files[0], localId))
-		if err := os.Remove(files[0]); err != nil {
-			return nil, errs.FileError(err, "RUN-21500")
-		}
-		logger.Debug(ctx, "Pruned a stored run past the limit", map[string]any{"localId": localId, "file": filepath.Base(files[0])})
-		files = files[1:]
-	}
-	return pruned, nil
-}
-
-func deleteRunsFolder(folder, localId, code string) ([]entity.Run, error) {
-	files, err := runFiles(folder)
-	if err != nil {
-		return nil, errs.FileError(err, code)
+		return nil, errs.FileError(err, readCode)
 	}
 	deleted := make([]entity.Run, 0, len(files))
 	for _, path := range files {
 		deleted = append(deleted, storedRun(path, localId))
 	}
 	if err := os.RemoveAll(folder); err != nil {
-		return nil, errs.FileError(err, code)
+		return nil, errs.FileError(err, removeCode)
 	}
 	return deleted, nil
 }
@@ -249,11 +208,11 @@ func runFiles(folder string) ([]string, error) {
 
 func runFile(localId, runId string) (string, error) {
 	if strings.ContainsAny(runId, `/\*?[`) {
-		return "", usecase.RejectUnknownRun(runId)
+		return "", errs.NotFoundError("no active or stored run with the id "+runId, "RUN-01404")
 	}
 	paths, err := filepath.Glob(appDataPath(workspacesDataDir, localId, runsDataDir, "*", runId+runFileSuffix))
 	if err != nil || len(paths) == 0 {
-		return "", usecase.RejectUnknownRun(runId)
+		return "", errs.NotFoundError("no active or stored run with the id "+runId, "RUN-01404")
 	}
 	return paths[0], nil
 }

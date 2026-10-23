@@ -18,7 +18,7 @@ type removeWorkspace struct {
 	unwatchWorkspace      usecase.UnwatchWorkspace
 	deleteVault           usecase.DeleteVault
 	deleteLocalVariables  usecase.DeleteLocalVariables
-	manageActiveRuns      usecase.ManageActiveRuns
+	findActiveRunControls usecase.FindActiveRunControls
 	deleteWorkspaceRuns   usecase.DeleteWorkspaceRuns
 }
 
@@ -30,7 +30,7 @@ func NewRemoveWorkspaceService(
 	unwatchWorkspace usecase.UnwatchWorkspace,
 	deleteVault usecase.DeleteVault,
 	deleteLocalVariables usecase.DeleteLocalVariables,
-	manageActiveRuns usecase.ManageActiveRuns,
+	findActiveRunControls usecase.FindActiveRunControls,
 	deleteWorkspaceRuns usecase.DeleteWorkspaceRuns,
 ) adapter.RemoveWorkspaceService {
 	return &removeWorkspace{
@@ -41,7 +41,7 @@ func NewRemoveWorkspaceService(
 		unwatchWorkspace:      unwatchWorkspace,
 		deleteVault:           deleteVault,
 		deleteLocalVariables:  deleteLocalVariables,
-		manageActiveRuns:      manageActiveRuns,
+		findActiveRunControls: findActiveRunControls,
 		deleteWorkspaceRuns:   deleteWorkspaceRuns,
 	}
 }
@@ -53,7 +53,7 @@ func (r *removeWorkspace) Remove(ctx context.Context, localId string, moveToTras
 	if err != nil {
 		return nil, err
 	}
-	stopActiveRuns(ctx, r.manageActiveRuns, localId)
+	stopActiveRuns(ctx, r.findActiveRunControls, localId)
 	if moveToTrash && !registered.IsMissing() {
 		if err := r.moveToTrash.MoveToTrash(ctx, registered.Path); err != nil {
 			return nil, err

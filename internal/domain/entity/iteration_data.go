@@ -1,12 +1,29 @@
 package entity
 
+import "github.com/brienze1/xenon/pkg/errs"
+
+const noIterationDataRows = "the file has no rows"
+
 type IterationData struct {
 	FileName string
 	Rows     []map[string]any
 }
 
+func (i IterationData) Validate() error {
+	if len(i.Rows) == 0 {
+		return errs.BadRequestError("the iteration data file cannot be used: "+noIterationDataRows, "RUN-05400",
+			errs.ErrorDetails{Attribute: "reason", Messages: []string{noIterationDataRows}})
+	}
+	return nil
+}
+
 func (i IterationData) Count() int {
 	return len(i.Rows)
+}
+
+// IterationCount is one iteration per data row, and one when there is no data.
+func (i IterationData) IterationCount() int {
+	return max(1, i.Count())
 }
 
 // Row is the data row of an iteration; iterations past the last row reuse it.

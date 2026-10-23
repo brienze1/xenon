@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"strconv"
 	"sync"
 	"time"
 
@@ -28,22 +27,23 @@ type performanceRun struct {
 	base      functionalRun
 	waiting   sync.WaitGroup
 	noticed   sync.Once
+	mutex     sync.Mutex
 	started   int
 }
 
-func (m *manageRunner) runPerformance(ctx context.Context, run functionalRun) {
-	defer run.control.Finished()
+func (e *runExecutor) runPerformance(ctx context.Context, run functionalRun) {
+	defer run.control.finished()
 	logger.Info(ctx, "Started", map[string]any{"localId": run.target.LocalID, "itemId": run.target.ItemID, "runId": run.id})
 
-	performance := &performanceRun{base: run, stats: entity.NewPerformanceStats(run.rows), startedAt: time.Now()}
-	status := m.drive(ctx, performance)
-	m.settle(context.WithoutCancel(ctx), performance, status)
-	m.finish(context.WithoutCancel(ctx), run, status)
+	performance := &performanceRun{base: run, stats: entity.NewPerformanceStats(run.rows), startedAt: timeutils.Now()}
+	status := e.drive(ctx, performance)
+	e.settle(context.WithoutCancel(ctx), performance, status)
+	e.finish(context.WithoutCancel(ctx), run, status)
 
 	logger.Info(ctx, "Finished", map[string]any{"localId": run.target.LocalID, "itemId": run.target.ItemID, "runId": run.id, "status": status})
 }
 
-func (m *manageRunner) drive(ctx context.Context, run *performanceRun) enums.RunStatus {
+func (e *runExecutor) drive(ctx context.Context, run *performanceRun) enums.RunStatus {
 	settings := run.base.config.Performance
 	ticker := time.NewTicker(performanceTick)
 	defer ticker.Stop()
@@ -51,16 +51,16 @@ func (m *manageRunner) drive(ctx context.Context, run *performanceRun) enums.Run
 	defer deadline.Stop()
 	reported := 1
 	for {
-		elapsed := time.Since(run.startedAt)
-		if elapsed >= settings.Duration() {
+		elapsed := run.elapsed()
+		if settings.HasElapsed(elapsed) {
 			return runstatus.Completed
 		}
 		active := settings.ActiveUsersAt(elapsed)
-		m.staff(ctx, run, active)
-		second := int(elapsed / time.Second)
-		run.stats.Observe(second, active)
+		e.staff(ctx, run, active)
+		second := settings.SecondAt(elapsed)
+		run.observe(second, active)
 		if second >= reported {
-			m.measure(ctx, run, active, elapsed, second)
+			e.measure(ctx, run, active, elapsed, second)
 			reported = second + 1
 		}
 		select {
@@ -73,9 +73,9 @@ func (m *manageRunner) drive(ctx context.Context, run *performanceRun) enums.Run
 	}
 }
 
-func (m *manageRunner) staff(ctx context.Context, run *performanceRun, active int) {
+func (e *runExecutor) staff(ctx context.Context, run *performanceRun, active int) {
 	for len(run.users) < active {
-		m.startUser(ctx, run)
+		e.startUser(ctx, run)
 	}
 	for len(run.users) > active {
 		last := len(run.users) - 1
@@ -84,70 +84,89 @@ func (m *manageRunner) staff(ctx context.Context, run *performanceRun, active in
 	}
 }
 
-func (m *manageRunner) startUser(ctx context.Context, run *performanceRun) {
+func (e *runExecutor) startUser(ctx context.Context, run *performanceRun) {
 	run.started++
 	user := &virtualUser{retired: make(chan struct{}), run: run.base}
-	user.run.jarId = run.base.jarId + ":" + strconv.Itoa(run.started)
+	user.run.jarId = entity.VirtualUserCookieJarID(run.base.jarId, run.started)
 	user.run.variables = entity.NewRunVariables()
 	user.run.secrets = nil
-	m.manageCookieJar.LoadCookies(ctx, user.run.jarId, m.manageCookieJar.JarState(ctx, run.base.jarId).Cookies)
+	e.manageCookieJar.LoadCookies(ctx, user.run.jarId, e.manageCookieJar.JarState(ctx, run.base.jarId).Cookies)
 	run.jars = append(run.jars, user.run.jarId)
 	run.users = append(run.users, user)
 	run.waiting.Add(1)
-	go m.loopUser(ctx, run, user)
+	go e.loopUser(ctx, run, user)
 }
 
-func (m *manageRunner) loopUser(ctx context.Context, run *performanceRun, user *virtualUser) {
+func (e *runExecutor) loopUser(ctx context.Context, run *performanceRun, user *virtualUser) {
 	defer run.waiting.Done()
 	for pass := 0; ; pass++ {
 		for index, row := range run.base.rows {
 			if user.isRetired() || ctx.Err() != nil {
 				return
 			}
-			ran := m.runRow(ctx, &user.run, 0, pass, row)
+			ran := e.runRow(ctx, &user.run, 0, pass, row)
 			if ctx.Err() != nil {
 				return
 			}
-			m.observe(ctx, run, index, ran)
+			e.observe(ctx, run, index, ran)
 		}
 	}
 }
 
-func (m *manageRunner) observe(ctx context.Context, run *performanceRun, index int, ran ranRow) {
+func (e *runExecutor) observe(ctx context.Context, run *performanceRun, index int, ran ranRow) {
 	if ran.next != nil {
 		run.noticed.Do(func() {
-			m.change(ctx, run.base, func(active *entity.Run) { active.Notice(entity.PerformanceNextRequestNotice) })
+			e.change(ctx, run.base, func(active *entity.Run) { active.Notice(entity.PerformanceNextRequestNotice) })
 		})
 	}
 	if ran.result.IsMeasured() {
-		run.stats.Record(entity.NewPerformanceSample(ran.result, ran.latency, index, run.second()))
+		run.record(entity.NewPerformanceSample(ran.result, ran.latency, index, run.second()))
 	}
 }
 
-func (m *manageRunner) settle(ctx context.Context, run *performanceRun, status enums.RunStatus) {
-	m.staff(ctx, run, 0)
+func (e *runExecutor) settle(ctx context.Context, run *performanceRun, status enums.RunStatus) {
+	e.staff(ctx, run, 0)
 	run.waiting.Wait()
 	for _, jar := range run.jars {
-		m.manageCookieJar.DropJar(ctx, jar)
+		e.manageCookieJar.DropJar(ctx, jar)
 	}
-	elapsed := time.Since(run.startedAt)
-	seconds := run.base.config.Performance.DurationSeconds
-	if status != runstatus.Completed {
-		seconds = min(seconds, int((elapsed+time.Second-1)/time.Second))
-	}
-	m.measure(ctx, run, 0, elapsed, seconds)
+	elapsed := run.elapsed()
+	e.measure(ctx, run, 0, elapsed, run.base.config.Performance.ReportedSeconds(status, elapsed))
 }
 
-func (m *manageRunner) measure(ctx context.Context, run *performanceRun, active int, elapsed time.Duration, seconds int) {
-	metrics := run.stats.Metrics(active, elapsed)
-	report := run.stats.Report(elapsed, seconds)
-	if measured, found := m.change(ctx, run.base, func(active *entity.Run) { active.Measure(report, metrics, timeutils.Now()) }); found {
-		m.publishRunEvent.Progress(ctx, measured.Run)
+func (e *runExecutor) measure(ctx context.Context, run *performanceRun, active int, elapsed time.Duration, seconds int) {
+	metrics, report := run.figures(active, elapsed, seconds)
+	if measured, found := e.change(ctx, run.base, func(active *entity.Run) { active.Measure(report, metrics, timeutils.Now()) }); found {
+		if err := e.publishRunEvent.Progress(ctx, *measured); err != nil {
+			logger.Warn(ctx, err, "The run progress could not be published", map[string]any{"runId": run.base.id})
+		}
 	}
 }
 
 func (r *performanceRun) second() int {
-	return min(int(time.Since(r.startedAt)/time.Second), r.base.config.Performance.DurationSeconds-1)
+	return r.base.config.Performance.SecondAt(r.elapsed())
+}
+
+func (r *performanceRun) elapsed() time.Duration {
+	return timeutils.Now().Sub(r.startedAt)
+}
+
+func (r *performanceRun) record(sample entity.PerformanceSample) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	r.stats.Record(sample)
+}
+
+func (r *performanceRun) observe(second, activeUsers int) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	r.stats.Observe(second, activeUsers)
+}
+
+func (r *performanceRun) figures(activeUsers int, elapsed time.Duration, seconds int) (entity.PerformanceMetrics, entity.PerformanceReport) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	return r.stats.Metrics(activeUsers, elapsed), r.stats.Report(elapsed, seconds)
 }
 
 func (v *virtualUser) isRetired() bool {

@@ -80,10 +80,10 @@ func (r requestVariables) vault(ctx context.Context, localId string, needed bool
 }
 
 func (r requestVariables) environment(ctx context.Context, root string, local entity.LocalVariables, environmentId string) (*entity.Environment, error) {
-	switch environmentId {
-	case "":
+	switch {
+	case entity.UsesActiveEnvironment(environmentId):
 		return r.activeEnvironment(ctx, root, local)
-	case entity.NoEnvironmentID:
+	case entity.UsesNoEnvironment(environmentId):
 		return nil, nil
 	default:
 		return r.runEnvironment(ctx, root, environmentId)
@@ -112,12 +112,12 @@ func (r requestVariables) runEnvironment(ctx context.Context, root, environmentI
 }
 
 func (r *requestScopes) inRun(runContext entity.RunContext) *requestScopes {
-	if runContext.Variables != nil {
+	if !runContext.KeepsVariables() {
 		r.scripts = runContext.Variables.Over(r.scripts)
 		r.vault = runContext.Variables.OverVault(r.vault)
 		r.context = r.context.WithScriptScopes(r.scripts)
 	}
-	if runContext.IterationData != nil {
+	if runContext.HasIterationData() {
 		r.context = r.context.WithIterationData(runContext.IterationData)
 	}
 	return r

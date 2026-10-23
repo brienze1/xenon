@@ -14,7 +14,16 @@ var runnerControllerInstance adapter.RunnerController
 func GetRunnerController() adapter.RunnerController {
 	if runnerControllerInstance == nil {
 		runnerControllerOnce.Do(func() {
-			runnerControllerInstance = controller.NewRunner(GetErrorHandler(), application.GetManageRunnerService())
+			runnerControllerInstance = controller.NewRunner(
+				GetErrorHandler(),
+				application.GetPlanRunService(),
+				application.GetSaveRunnerPreferencesService(),
+				application.GetStartRunService(),
+				application.GetControlRunService(),
+				application.GetFindRunsService(),
+				application.GetDeleteRunsService(),
+				application.GetExportRunService(),
+			)
 		})
 	}
 	return runnerControllerInstance

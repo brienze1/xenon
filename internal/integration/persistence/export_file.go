@@ -3,6 +3,8 @@ package persistence
 import (
 	"archive/zip"
 	"context"
+	"encoding/json"
+	"encoding/xml"
 	"io"
 	"os"
 	"path/filepath"
@@ -12,7 +14,10 @@ import (
 	"golang.org/x/text/unicode/norm"
 
 	"github.com/brienze1/xenon/internal/domain/entity"
+	"github.com/brienze1/xenon/internal/domain/enums"
+	"github.com/brienze1/xenon/internal/domain/enums/runexportformat"
 	"github.com/brienze1/xenon/internal/integration/adapter"
+	"github.com/brienze1/xenon/internal/integration/persistence/model"
 	"github.com/brienze1/xenon/pkg/errs"
 	"github.com/brienze1/xenon/pkg/fileutils"
 	"github.com/brienze1/xenon/pkg/logger"
@@ -49,9 +54,13 @@ func (e *exportFilePersistence) SaveFile(ctx context.Context, target string, dat
 	return nil
 }
 
-func (e *exportFilePersistence) SaveRunExport(ctx context.Context, target string, data []byte) error {
-	logger.Debug(ctx, "Started", map[string]any{"path": target, "bytes": len(data)})
+func (e *exportFilePersistence) SaveRunExport(ctx context.Context, target string, run entity.Run, format enums.RunExportFormat) error {
+	logger.Debug(ctx, "Started", map[string]any{"path": target, "runId": run.ID, "format": format})
 
+	data, err := encodeRunExport(run, format)
+	if err != nil {
+		return err
+	}
 	if err := os.MkdirAll(filepath.Dir(target), exportDirMode); err != nil {
 		return errs.FileError(err, "EXP-24500")
 	}
@@ -59,7 +68,7 @@ func (e *exportFilePersistence) SaveRunExport(ctx context.Context, target string
 		return err
 	}
 
-	logger.Debug(ctx, "Finished", map[string]any{"path": target})
+	logger.Debug(ctx, "Finished", map[string]any{"path": target, "runId": run.ID, "format": format, "bytes": len(data)})
 	return nil
 }
 
@@ -88,6 +97,25 @@ func (e *exportFilePersistence) SaveArchive(ctx context.Context, target string, 
 
 	logger.Debug(ctx, "Finished", map[string]any{"path": target, "entries": len(entries)})
 	return nil
+}
+
+func encodeRunExport(run entity.Run, format enums.RunExportFormat) ([]byte, error) {
+	if format == runexportformat.Junit {
+		return encodeRunJunit(run)
+	}
+	data, err := json.MarshalIndent(model.NewRun(run), "", "  ")
+	if err != nil {
+		return nil, errs.FileError(err, "EXP-25500")
+	}
+	return append(data, '\n'), nil
+}
+
+func encodeRunJunit(run entity.Run) ([]byte, error) {
+	encoded, err := xml.MarshalIndent(model.NewRunJunitSuites(run), "", "  ")
+	if err != nil {
+		return nil, errs.FileError(err, "EXP-26500")
+	}
+	return append(append([]byte(xml.Header), encoded...), '\n'), nil
 }
 
 func writeArchiveEntry(archive *zip.Writer, entry entity.ExportEntry, modified time.Time) error {
