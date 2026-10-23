@@ -350,3 +350,13 @@ validate-test-efficacy:
 ---
 
 - [ ] Follows the comments skill — no inline comments, no unnecessary Go doc comments (see comments.md)
+
+---
+
+## CI-only targets
+
+- `make setup-ci` — the tools CI uses (wails3, goimports, betteralign, deadcode, govulncheck) plus `npm ci`; it skips
+  gremlins, which only mutation testing needs.
+- `make tests-without-coverage` — `go test ./...` without the coverage profile. CI runs it on macOS and Windows; the
+  Linux job runs `make tests` + `make validate-coverage`, and the OS-independent checks run once in the `checks` job.
+  Locally, `make validate` is still the single quality gate.

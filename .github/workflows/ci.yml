@@ -15,8 +15,60 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate:
-    name: validate (${{ matrix.os }})
+  checks:
+    name: checks (static analysis, frontend, release tooling)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Linux webview dependencies (cached)
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+          version: webview-1
+
+      - name: Setup tools and frontend dependencies
+        run: make setup-ci
+
+      - name: Generate bindings
+        run: make bindings
+
+      - name: Sort imports and fix struct alignment
+        run: |
+          make sort-imports
+          make fix-struct-alignment
+
+      - name: Fail on files changed by bindings, imports or alignment
+        run: git diff --exit-code
+
+      - name: Vet, dead code and dependency check
+        run: |
+          make vet
+          make check-dead-code
+          make dependency-check
+
+      - name: Frontend lint, typecheck and tests
+        run: make frontend-check
+
+      - name: Release tooling tests
+        run: make release-check
+
+  tests:
+    name: tests & build (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -50,27 +102,32 @@ jobs:
           node --version
           go version
 
-      - name: Install Linux webview dependencies
+      - name: Install Linux webview dependencies (cached)
         if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+          version: webview-1
 
       - name: Ensure make is available
         if: runner.os == 'Windows'
         run: command -v make || choco install make -y
 
       - name: Setup tools and frontend dependencies
-        run: make setup
+        run: make setup-ci
 
       - name: Generate bindings
         run: make bindings
 
-      - name: Validate
-        run: make validate
+      - name: Unit and BDD tests with the coverage threshold
+        if: runner.os == 'Linux'
+        run: |
+          make tests
+          make validate-coverage
 
-      - name: Fail on files changed by validate
-        run: git diff --exit-code
+      - name: Unit and BDD tests
+        if: runner.os != 'Linux'
+        run: make tests-without-coverage
 
       - name: Build
         run: make build
@@ -138,11 +195,12 @@ jobs:
           cache: npm
           cache-dependency-path: tools/newman/package-lock.json
 
-      - name: Install Linux webview dependencies (the BDD harness links the Wails bindings)
+      - name: Install Linux webview dependencies (cached; the BDD harness links the Wails bindings)
         if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+          version: webview-1
 
       - name: Ensure make is available
         if: runner.os == 'Windows'
