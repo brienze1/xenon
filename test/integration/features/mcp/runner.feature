@@ -157,6 +157,46 @@ Feature: AI clients run collections and read the results
       """
     Then the response should contain the field "" array length equal to 0
 
+  @xen_020 @start_reconciled
+  Scenario: A run started without rows includes requests added after the rows were remembered
+    Given the "refund" variable is set to "01JR0000000000000000000011"
+    And I call "RunnerService.SavePreferences" with
+      """
+      { "local_id": "{{Acme.local_id}}", "item_id": "{{shop}}", "config": { "type": "functional", "rows": [{ "request_id": "{{login}}", "alias_id": "", "selected": true }, { "request_id": "{{create}}", "alias_id": "", "selected": true }, { "request_id": "{{get}}", "alias_id": "", "selected": true }, { "request_id": "{{logout}}", "alias_id": "", "selected": false }], "functional": { "iterations": 1, "data_file": "", "delay_ms": 0, "persist_responses": false, "disable_logs": false, "stop_on_error": false, "keep_variable_values": true, "skip_stored_cookies": false, "save_cookies": false }, "environment_id": "" } }
+      """
+    And the workspace file "acme/collections/shop/orders/folder.yaml" contains
+      """
+      xenon: 1
+      kind: folder
+      id: {{orders}}
+      name: Orders
+      order:
+        - create.yaml
+        - refund.yaml
+        - get.yaml
+      """
+    And the workspace file "acme/collections/shop/orders/refund.yaml" contains
+      """
+      xenon: 1
+      kind: request
+      id: {{refund}}
+      name: Refund
+      method: POST
+      url: "{{api}}/refund"
+      auth:
+        type: inherit
+      """
+    When I call the MCP tool "run" with
+      """
+      { "action": "start", "target": "Shop" }
+      """
+    Then the call should succeed
+    And the response should contain the field "planned" equal to "4"
+    And I save the response field "run_id" as "run"
+    And a "runner:finished" event with the field "run_id" equal to "{{run}}" should have been emitted within 5000 ms
+    And the mock API should have received the requests "POST /login, POST /orders, POST /refund, GET /orders/1" in order
+    And the "POST" request to "/logout" should have been received 0 times
+
   @start_explicit
   Scenario: An AI client chooses the rows, settings and environment by name
     Given the "stage" variable is set to "01JR0000000000000000000011"

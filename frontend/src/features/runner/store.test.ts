@@ -314,3 +314,167 @@ describe('runner store', () => {
     expect(target('f1')).toMatchObject({ view: 'results', runId: 'R1', status: 'idle' })
   })
 })
+
+describe('runner store refreshAll', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+    useRunnerStore.getState().reset()
+    useWorkspacesStore.setState({ activeLocalId: 'L1' })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  function deferred<T>() {
+    let resolve!: (value: T) => void
+    const promise = new Promise<T>((done) => {
+      resolve = done
+    })
+    return { promise, resolve }
+  }
+
+  const added = runPlan({
+    rows: [planRow('r1', 1, { name: 'Sign in', method: 'POST', folderPath: ['Auth'] }), planRow('r2', 2), planRow('r3', 3, { folderPath: ['Payments'] })],
+    activeEnvironmentId: 'e2',
+    dataFileMissing: true,
+  })
+
+  function rowIds(): string[] {
+    return target().rows.map((row) => row.requestId)
+  }
+
+  it('reads every target shown this session again and takes the reconciled rows, settings and environments', async () => {
+    await loaded()
+    vi.mocked(service.planRun).mockResolvedValue(added)
+    await useRunnerStore.getState().refreshAll()
+    expect(service.planRun).toHaveBeenCalledTimes(2)
+    expect(service.planRun).toHaveBeenLastCalledWith('L1', 'c1')
+    expect(rowIds()).toEqual(['r1', 'r2', 'r3'])
+    expect(target().rows[0]).toMatchObject({ number: 1, name: 'Sign in' })
+    expect(target().rows[2]).toMatchObject({ selected: true, folderPath: ['Payments'] })
+    expect(target()).toMatchObject({ status: 'ready', loadError: null, activeEnvironmentId: 'e2', dataFileMissing: true, config: added.config, target: added.target })
+  })
+
+  it('leaves targets that were never read alone', async () => {
+    useRunnerStore.getState().showRunner('c1')
+    await useRunnerStore.getState().refreshAll()
+    expect(service.planRun).not.toHaveBeenCalled()
+    expect(target()).toMatchObject({ status: 'idle', rows: [] })
+  })
+
+  it('keeps the shown view and run', async () => {
+    vi.mocked(service.getRun).mockResolvedValue(run({ status: 'completed' }))
+    await loaded(runPlan({ activeRun: runSummaryView() }))
+    useRunnerStore.getState().showView('c1', 'results')
+    vi.mocked(service.planRun).mockResolvedValue(added)
+    await useRunnerStore.getState().refreshAll()
+    expect(target()).toMatchObject({ view: 'results', runId: 'R1', run: { id: 'R1' } })
+    expect(useRunnerStore.getState().active).toEqual({})
+  })
+
+  it('remembers a pending edit before reading the rows again', async () => {
+    await loaded()
+    vi.useFakeTimers()
+    vi.mocked(service.saveRunnerPreferences).mockResolvedValue(undefined)
+    useRunnerStore.getState().setRows('c1', [planRow('r2', 1), planRow('r1', 2, { selected: false })])
+    vi.mocked(service.planRun).mockResolvedValue(runPlan({ rows: [planRow('r2', 1), planRow('r1', 2, { selected: false }), planRow('r3', 3)] }))
+    await useRunnerStore.getState().refreshAll()
+    expect(service.saveRunnerPreferences).toHaveBeenCalledTimes(1)
+    const [, , config] = vi.mocked(service.saveRunnerPreferences).mock.calls[0]!
+    expect(config.rows).toEqual([
+      { requestId: 'r2', aliasId: '', selected: true },
+      { requestId: 'r1', aliasId: '', selected: false },
+    ])
+    expect(vi.mocked(service.saveRunnerPreferences).mock.invocationCallOrder[0]!).toBeLessThan(vi.mocked(service.planRun).mock.invocationCallOrder[1]!)
+    vi.advanceTimersByTime(SAVE_DELAY_MS)
+    expect(service.saveRunnerPreferences).toHaveBeenCalledTimes(1)
+    expect(rowIds()).toEqual(['r2', 'r1', 'r3'])
+    expect(target().rows[1]?.selected).toBe(false)
+  })
+
+  it('drops a read the user edited during, remembers the edit and reads again', async () => {
+    await loaded()
+    vi.mocked(service.saveRunnerPreferences).mockResolvedValue(undefined)
+    const stale = deferred<typeof added>()
+    vi.mocked(service.planRun).mockReturnValueOnce(stale.promise).mockResolvedValueOnce(runPlan({ rows: [planRow('r2', 1, { selected: false }), planRow('r1', 2), planRow('r3', 3)] }))
+    const refreshed = useRunnerStore.getState().refreshAll()
+    await vi.waitFor(() => expect(service.planRun).toHaveBeenCalledTimes(2))
+    useRunnerStore.getState().setRows('c1', [planRow('r2', 1, { selected: false }), planRow('r1', 2)])
+    stale.resolve(added)
+    await refreshed
+    expect(service.saveRunnerPreferences).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(service.saveRunnerPreferences).mock.calls[0]![2].rows[0]).toEqual({ requestId: 'r2', aliasId: '', selected: false })
+    expect(service.planRun).toHaveBeenCalledTimes(3)
+    expect(rowIds()).toEqual(['r2', 'r1', 'r3'])
+    expect(target().rows[0]?.selected).toBe(false)
+  })
+
+  it('coalesces a burst of tree changes into one read in flight and one trailing read', async () => {
+    await loaded()
+    const first = deferred<typeof added>()
+    vi.mocked(service.planRun).mockReturnValueOnce(first.promise).mockResolvedValueOnce(added)
+    const refreshes = [useRunnerStore.getState().refreshAll()]
+    await vi.waitFor(() => expect(service.planRun).toHaveBeenCalledTimes(2))
+    refreshes.push(useRunnerStore.getState().refreshAll(), useRunnerStore.getState().refreshAll())
+    first.resolve(runPlan({ rows: [planRow('r1', 1)] }))
+    await Promise.all(refreshes)
+    expect(service.planRun).toHaveBeenCalledTimes(3)
+    expect(rowIds()).toEqual(['r1', 'r2', 'r3'])
+  })
+
+  it('shows the load error instead of the rows when the read fails', async () => {
+    await loaded()
+    vi.mocked(service.planRun).mockRejectedValue(new AppError('RUN-07404', 'gone'))
+    await useRunnerStore.getState().refreshAll()
+    expect(target()).toMatchObject({ config: null, rows: [], target: null, loadError: { code: 'RUN-07404' } })
+  })
+
+  it('ignores a read that ends after the workspace changed', async () => {
+    await loaded()
+    const late = deferred<typeof added>()
+    vi.mocked(service.planRun).mockReturnValueOnce(late.promise)
+    const refreshed = useRunnerStore.getState().refreshAll()
+    await vi.waitFor(() => expect(service.planRun).toHaveBeenCalledTimes(2))
+    useWorkspacesStore.setState({ activeLocalId: 'L2' })
+    late.resolve(added)
+    await refreshed
+    expect(rowIds()).toEqual(['r1', 'r2'])
+  })
+
+  it('ignores a read that ends after the store was reset', async () => {
+    await loaded()
+    const late = deferred<typeof added>()
+    vi.mocked(service.planRun).mockReturnValueOnce(late.promise)
+    const refreshed = useRunnerStore.getState().refreshAll()
+    await vi.waitFor(() => expect(service.planRun).toHaveBeenCalledTimes(2))
+    useRunnerStore.getState().reset()
+    late.resolve(added)
+    await refreshed
+    expect(useRunnerStore.getState().targets).toEqual({})
+  })
+
+  it('keeps the newest read when a slow first read ends after a refresh', async () => {
+    const slow = deferred<typeof added>()
+    vi.mocked(service.planRun).mockReturnValueOnce(slow.promise).mockResolvedValueOnce(added)
+    const first = useRunnerStore.getState().load('c1')
+    await useRunnerStore.getState().refreshAll()
+    slow.resolve(runPlan())
+    await first
+    expect(rowIds()).toEqual(['r1', 'r2', 'r3'])
+  })
+
+  it('starts the next run with the refreshed rows', async () => {
+    await loaded()
+    vi.mocked(service.planRun).mockResolvedValue(runPlan({ rows: [planRow('r2', 1, { aliasId: 'a1' }), planRow('r3', 2, { selected: false })] }))
+    await useRunnerStore.getState().refreshAll()
+    vi.mocked(service.startRun).mockResolvedValue(runSummaryView())
+    vi.mocked(service.getRun).mockResolvedValue(run({ status: 'running' }))
+    await useRunnerStore.getState().start('c1')
+    const [, , config] = vi.mocked(service.startRun).mock.calls[0]!
+    expect(config.rows).toEqual([
+      { requestId: 'r2', aliasId: 'a1', selected: true },
+      { requestId: 'r3', aliasId: '', selected: false },
+    ])
+  })
+})
