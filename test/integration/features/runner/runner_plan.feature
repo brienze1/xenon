@@ -337,6 +337,97 @@ Feature: The Runner lists a collection's requests and remembers the selection, o
     And the response should contain the field "rows.0.request_id" equal to "{{first}}"
     And the response should contain the field "rows.1.request_id" equal to "{{logout}}"
 
+  @xen_020 @reconcile @new_subfolder
+  Scenario: A subfolder and requests added after the rows were remembered join selected, after the nearest preceding request in sidebar order
+    Given the "refund" variable is set to "01JR0000000000000000000011"
+    And the "payments" variable is set to "01JR0000000000000000000012"
+    And the "charge" variable is set to "01JR0000000000000000000013"
+    And the "capture" variable is set to "01JR0000000000000000000014"
+    And I call "RunnerService.SavePreferences" with
+      """
+      { "local_id": "{{Acme.local_id}}", "item_id": "{{shop}}", "config": { "type": "functional", "rows": [{ "request_id": "{{logout}}", "alias_id": "", "selected": true }, { "request_id": "{{login}}", "alias_id": "", "selected": true }, { "request_id": "{{create}}", "alias_id": "", "selected": true }, { "request_id": "{{get}}", "alias_id": "", "selected": false }], "functional": { "iterations": 1, "data_file": "", "delay_ms": 0, "persist_responses": false, "disable_logs": false, "stop_on_error": false, "keep_variable_values": true, "skip_stored_cookies": false, "save_cookies": false }, "environment_id": "" } }
+      """
+    And the workspace file "acme/collections/shop/collection.yaml" contains
+      """
+      xenon: 1
+      kind: collection
+      id: {{shop}}
+      name: Shop
+      order:
+        - login.yaml
+        - orders
+        - payments
+        - logout.yaml
+      """
+    And the workspace file "acme/collections/shop/orders/folder.yaml" contains
+      """
+      xenon: 1
+      kind: folder
+      id: {{orders}}
+      name: Orders
+      order:
+        - create.yaml
+        - refund.yaml
+        - get.yaml
+      """
+    And the workspace file "acme/collections/shop/orders/refund.yaml" contains
+      """
+      xenon: 1
+      kind: request
+      id: {{refund}}
+      name: Refund
+      method: POST
+      url: "{{api}}/refund"
+      """
+    And the workspace file "acme/collections/shop/payments/folder.yaml" contains
+      """
+      xenon: 1
+      kind: folder
+      id: {{payments}}
+      name: Payments
+      order:
+        - charge.yaml
+        - capture.yaml
+      """
+    And the workspace file "acme/collections/shop/payments/charge.yaml" contains
+      """
+      xenon: 1
+      kind: request
+      id: {{charge}}
+      name: Charge
+      method: POST
+      url: "{{api}}/charge"
+      """
+    And the workspace file "acme/collections/shop/payments/capture.yaml" contains
+      """
+      xenon: 1
+      kind: request
+      id: {{capture}}
+      name: Capture
+      method: POST
+      url: "{{api}}/capture"
+      """
+    When I call "RunnerService.Plan" with
+      """
+      { "local_id": "{{Acme.local_id}}", "item_id": "{{shop}}" }
+      """
+    Then the call should succeed
+    And the response should contain the field "rows" array length equal to 7
+    And the response should contain the field "rows.0.request_id" equal to "{{logout}}"
+    And the response should contain the field "rows.1.request_id" equal to "{{login}}"
+    And the response should contain the field "rows.2.request_id" equal to "{{create}}"
+    And the response should contain the field "rows.3.request_id" equal to "{{refund}}"
+    And the response should contain the field "rows.3.selected" equal to "true"
+    And the response should contain the field "rows.4.request_id" equal to "{{get}}"
+    And the response should contain the field "rows.4.selected" equal to "false"
+    And the response should contain the field "rows.5.request_id" equal to "{{charge}}"
+    And the response should contain the field "rows.5.selected" equal to "true"
+    And the response should contain the field "rows.5.folder_path" with the items "Payments"
+    And the response should contain the field "rows.6.request_id" equal to "{{capture}}"
+    And the response should contain the field "rows.6.selected" equal to "true"
+    And the response should contain the field "rows.6.number" equal to "7"
+    And the response should contain the field "config.rows" array length equal to 7
+
   @alias_preference
   Scenario: A remembered alias is kept, and falls back to the Default once the alias is deleted
     Given the "mx" variable is set to "01JR0000000000000000000020"
