@@ -125,12 +125,13 @@ Feature: Secrets are write-only for AI clients
   Scenario: A plain variable can be turned into a secret, which moves its value into the vault
     When I call the MCP tool "env_edit" with
       """
-      { "action": "set_vars", "scope": "env:{{dev}}", "vars": [ { "key": "base_url", "secret": true, "secret_value": "{{api}}" } ] }
+      { "action": "set_vars", "scope": "env:{{dev}}", "vars": [ { "key": "base_url", "secret": true, "secret_value": "https://plain-to-secret.example.test" } ] }
       """
     Then the call should succeed
     And the workspace file "acme/environments/dev.yaml" should contain the field "variables.0.secret" equal to "true"
     And the workspace file "acme/environments/dev.yaml" should not contain the field "variables.0.value"
-    And the response should not contain "{{api}}"
+    And the response should not contain "plain-to-secret.example.test"
+    And no file under the workspace folder should contain "plain-to-secret.example.test"
 
   @secret_to_plain
   Scenario: Turning a secret plain would reveal it, so it is refused and nothing changes
