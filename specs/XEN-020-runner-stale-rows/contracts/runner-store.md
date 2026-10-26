@@ -6,20 +6,21 @@ action. No Wails binding, Go service, MCP tool or event changes; `planRun` and
 
 ## `refreshAll(): Promise<void>`
 
-Doc comment: `/** Reads every Runner target again (after the workspace tree changed). */`
+Doc comment: `/** Reads every Runner target shown this session again (after the workspace tree changed). */`
 
 - Targets: every `targets[itemId]` whose `status !== 'idle'`. Targets never read this session are
-  not touched. Resolves when every target's refresh chain (including trailing reads) settled.
+  not touched. Resolves when the reads it started (including their trailing reads) settled; a call
+  that finds a read already in flight only requests that read's trailing read.
 - Per target, in order:
   1. If a refresh for the target is already in flight, request one trailing refresh and return.
   2. If a remembered-rows save is pending (debounce timer), cancel the timer and await the save.
   3. Read `planRun(activeLocalId, itemId)`.
   4. Drop the response when: the active workspace changed, the store was reset, a newer read of
      the target started, or the target was edited since step 2 (then request a trailing refresh).
-  5. Success: replace `target`, `rows`, `config`, `environments`, `activeEnvironmentId`,
+  5. Success: set `status: 'ready'` and replace `target`, `rows`, `config`, `environments`, `activeEnvironmentId`,
      `dataFileMissing`; set `loadError: null`; set `active[itemId]` from `plan.activeRun`.
      Nothing else changes (view, shown run, failure, confirmation, starting…).
-  6. Failure: set `config: null`, `rows: []`, `target: null`, `loadError: <AppError>`.
+  6. Failure: set `status: 'ready'`, `config: null`, `rows: []`, `target: null`, `loadError: <AppError>`.
   7. If a trailing refresh was requested, run it (from step 2).
 - Never throws; errors land in `loadError` (6) or, for the flushed save, in `failure` (existing
   `save()` behaviour).

@@ -398,6 +398,22 @@ describe('bootstrap', () => {
     cleanup()
   })
 
+  it('reads the Runner rows again whenever the sidebar tree changes, from an event or from Xenon itself', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
+    vi.mocked(tree.getTree).mockResolvedValue([])
+    const cleanup = await started()
+    useWorkspacesStore.setState({ activeLocalId: 'A' })
+    const refreshRunner = vi.spyOn(useRunnerStore.getState(), 'refreshAll').mockResolvedValue()
+    handlers.treeChanged?.({ localId: 'other' })
+    expect(refreshRunner).not.toHaveBeenCalled()
+    handlers.treeChanged?.({ localId: 'A' })
+    await vi.waitFor(() => expect(refreshRunner).toHaveBeenCalledTimes(1))
+    useSidebarStore.getState().setTree([])
+    expect(refreshRunner).toHaveBeenCalledTimes(2)
+    refreshRunner.mockRestore()
+    cleanup()
+  })
+
   it('keeps following MCP writes through the tree and request-on-disk events', async () => {
     vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
     const cleanup = await started()

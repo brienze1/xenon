@@ -85,6 +85,8 @@ interface RunnerState {
   /** Loads the target once (when its Runner is first shown). */
   ensure: (itemId: string) => Promise<void>
   load: (itemId: string) => Promise<void>
+  /** Reads every Runner target shown this session again (after the workspace tree changed). */
+  refreshAll: () => Promise<void>
   showView: (itemId: string, view: RunnerView) => void
   /** Run…: shows Results while a run is active on the target, else Setup. */
   showRunner: (itemId: string) => void
@@ -163,6 +165,19 @@ const saveTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const refreshing = new Map<string, boolean>()
 /** Runs that ended before their Start call answered, so the answer does not bring their indicator back. */
 const finishedRuns = new Set<string>()
+/** The latest plan read of each target; the answer of an older read is dropped. */
+const reads = new Map<string, number>()
+/** Edits of each target's rows or settings; a read that overlapped one is dropped and read again. */
+const edits = new Map<string, number>()
+/** Targets being read again; true asks for one more read once the current one ends. */
+const rereading = new Map<string, boolean>()
+let readCount = 0
+
+function nextRead(itemId: string): number {
+  readCount += 1
+  reads.set(itemId, readCount)
+  return readCount
+}
 
 function clearTimers(): void {
   for (const timer of saveTimers.values()) {
@@ -171,6 +186,9 @@ function clearTimers(): void {
   saveTimers.clear()
   refreshing.clear()
   finishedRuns.clear()
+  reads.clear()
+  edits.clear()
+  rereading.clear()
 }
 
 export const useRunnerStore = create<RunnerState>()((set, get) => {
@@ -208,6 +226,7 @@ export const useRunnerStore = create<RunnerState>()((set, get) => {
   }
 
   function scheduleSave(itemId: string) {
+    edits.set(itemId, (edits.get(itemId) ?? 0) + 1)
     clearTimeout(saveTimers.get(itemId))
     saveTimers.set(
       itemId,
@@ -227,6 +246,64 @@ export const useRunnerStore = create<RunnerState>()((set, get) => {
     const saved = await inWorkspace((localId) => saveRunnerPreferences(localId, itemId, config))
     if (saved && !saved.ok) {
       patch(itemId, { failure: failureOf(saved.error, SAVE_NEXT_STEP) })
+    }
+  }
+
+  /** Remembers a pending edit now instead of after the save delay. */
+  async function flushSave(itemId: string) {
+    const timer = saveTimers.get(itemId)
+    if (timer === undefined) {
+      return
+    }
+    clearTimeout(timer)
+    saveTimers.delete(itemId)
+    await save(itemId)
+  }
+
+  /** Reads a shown target again after its pending edit is remembered; one read at a time, plus one trailing read. */
+  async function refresh(itemId: string) {
+    if ((get().targets[itemId]?.status ?? 'idle') === 'idle') {
+      return
+    }
+    if (rereading.has(itemId)) {
+      rereading.set(itemId, true)
+      return
+    }
+    rereading.set(itemId, false)
+    try {
+      await flushSave(itemId)
+      const edited = edits.get(itemId)
+      const read = nextRead(itemId)
+      const loaded = await inWorkspace((localId) => planRun(localId, itemId))
+      if (loaded === null || reads.get(itemId) !== read) {
+        return
+      }
+      if (edits.get(itemId) !== edited) {
+        rereading.set(itemId, true)
+        return
+      }
+      if (!loaded.ok) {
+        patch(itemId, { status: 'ready', loadError: loaded.error, target: null, rows: [], config: null })
+        return
+      }
+      const plan = loaded.value
+      setActive(itemId, plan.activeRun)
+      patch(itemId, {
+        status: 'ready',
+        loadError: null,
+        target: plan.target,
+        rows: plan.rows,
+        config: plan.config,
+        environments: plan.environments,
+        activeEnvironmentId: plan.activeEnvironmentId,
+        dataFileMissing: plan.dataFileMissing,
+      })
+    } finally {
+      const again = rereading.get(itemId) === true
+      rereading.delete(itemId)
+      if (again) {
+        await refresh(itemId)
+      }
     }
   }
 
@@ -289,9 +366,10 @@ export const useRunnerStore = create<RunnerState>()((set, get) => {
     },
 
     load: async (itemId) => {
+      const read = nextRead(itemId)
       patch(itemId, { status: 'loading' })
       const loaded = await inWorkspace((localId) => planRun(localId, itemId))
-      if (loaded === null) {
+      if (loaded === null || reads.get(itemId) !== read) {
         return
       }
       if (!loaded.ok) {
@@ -315,6 +393,11 @@ export const useRunnerStore = create<RunnerState>()((set, get) => {
       if (runId !== null && get().targets[itemId]?.run?.id !== runId) {
         await fetchRun(itemId, runId)
       }
+    },
+
+    refreshAll: async () => {
+      const shown = Object.keys(get().targets).filter((itemId) => get().targets[itemId]?.status !== 'idle')
+      await Promise.all(shown.map((itemId) => refresh(itemId)))
     },
 
     showView: (itemId, view) => {

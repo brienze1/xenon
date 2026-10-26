@@ -60,7 +60,7 @@ Post-design re-check (after Phase 1): all seven still ✅ — the design added n
 | FR-002 reconciliation rules | Backend, unchanged: `entity.ReconcileRunRows` via `run_planner.go` `plan()` | `runner_plan.feature` `@xen_020` scenario + existing `@reconcile` |
 | FR-003 pending edit remembered first | `runner/store.ts` `refresh()` flushes `saveTimers` → `save()`; edit sequence discards stale responses | `store.test.ts` |
 | FR-004 coalescing | `runner/store.ts` per-target in-flight + trailing flag, read sequence | `store.test.ts` |
-| FR-005 view/run untouched | `refresh()` patches only `target`, `rows`, `config`, `environments`, `activeEnvironmentId`, `dataFileMissing`, `loadError`; `setActive` from the plan | `store.test.ts` |
+| FR-005 view/run untouched | `refresh()` patches only `status: 'ready'`, `target`, `rows`, `config`, `environments`, `activeEnvironmentId`, `dataFileMissing`, `loadError`; `setActive` from the plan | `store.test.ts` |
 | FR-006 Runner run sends refreshed rows | `start()` unchanged — reads `target.rows`, now current | `store.test.ts` |
 | FR-007 headless start uses reconciled rows | Backend, unchanged: `start_run.go` `StartForAI` → `planner.plan` | `mcp/runner.feature` `@xen_020` scenario |
 | FR-008 other workspaces ignored | Sidebar tree only holds the active workspace; `inWorkspace` drops cross-switch responses (R3) | `store.test.ts` (response after switch ignored) |

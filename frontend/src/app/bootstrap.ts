@@ -166,6 +166,7 @@ export function bootstrap(): () => void {
         useTabsStore.getState().handleTreeChanged(state.tree)
         void useItemSettingsStore.getState().refreshAll()
         void useDocumentationStore.getState().refreshAll()
+        void useRunnerStore.getState().refreshAll()
       }
       if (
         state.expanded !== previous.expanded ||

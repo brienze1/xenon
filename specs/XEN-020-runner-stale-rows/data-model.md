@@ -17,12 +17,13 @@ Fields a refresh **replaces** from the new plan:
 | `activeEnvironmentId` | `plan.activeEnvironmentId` |
 | `dataFileMissing` | `plan.dataFileMissing` |
 | `loadError` | `null` on success |
+| `status` | `'ready'` (a refresh that overtakes a slow first read also ends that read's loading state) |
 
-Fields a refresh **never touches** (FR-005): `status`, `view`, `runId`, `run`, `runs`, `failure`,
+Fields a refresh **never touches** (FR-005): `view`, `runId`, `run`, `runs`, `failure`,
 `fieldErrors`, `confirmation`, `missingSecrets`, `acknowledgement`, `pendingConfig`, `starting`.
 The store's `active[itemId]` entry is set from `plan.activeRun` (same as `load`).
 
-On a failed refresh (FR-010): `config = null`, `rows = []`, `target = null`, `loadError = error`;
+On a failed refresh (FR-010): `status = 'ready'`, `config = null`, `rows = []`, `target = null`, `loadError = error`;
 the other fields stay.
 
 ## Module-level bookkeeping (new, beside `saveTimers` / `refreshing` / `finishedRuns`)
