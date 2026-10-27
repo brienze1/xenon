@@ -2,6 +2,7 @@ import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SendResult, TestResult } from '@/platform/mappers/request'
+import { injectStylesheets } from '@/test/stylesheets'
 
 vi.mock('@/platform/services/requests', () => ({ lastResult: vi.fn(), releaseResponse: vi.fn(), saveResponseBody: vi.fn() }))
 vi.mock('@/platform/services/dialogs', () => ({ pickSaveFile: vi.fn() }))
@@ -100,6 +101,16 @@ describe('Test results', () => {
     render(<ResponseViewer tabId="tab" />)
     show(result({ tests: [], testSummary: { total: 0, passed: 0, failed: 0, skipped: 0 } }))
     expect(screen.getByRole('tab', { name: 'Test Results' })).toBeInTheDocument()
+  })
+
+  it('sizes each test row to its whole message without baseline alignment', () => {
+    injectStylesheets('src/features/response-viewer/components/TestResultsTab.module.css')
+    const message = `expected ${JSON.stringify({ err: 'invalid country', details: Array.from({ length: 20 }, (_, n) => `field ${n}`) })} to equal 201`
+    const failed: TestResult = { ...tests[0]!, errorMessage: message }
+    render(<TestResultsTab tests={[failed]} summary={{ total: 1, passed: 0, failed: 1, skipped: 0 }} />)
+    const row = within(screen.getByRole('list', { name: 'Test results' })).getByRole('listitem')
+    expect(row).toHaveTextContent(message)
+    expect(getComputedStyle(row).alignItems).toBe('start')
   })
 })
 

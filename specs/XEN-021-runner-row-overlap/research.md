@@ -108,3 +108,21 @@ All findings verified against `origin/main` at `4e25bc5` on 2026-10-27, with
   contract asserts.
 - **No Godog scenario**: no Go code changes; nothing in `test/integration/steps/` can observe CSS
   layout (Constitution V justification in plan.md; precedent XEN-010, XEN-015, XEN-019).
+
+## R7 — Follow-up: the overlap survived in the desktop app (WebKit)
+
+- **Finding**: after PR #36 the reported row still overlapped in the macOS app, whose webview is
+  WebKit, while Chromium laid it out correctly. Two layouts in the expanded row depend on engine
+  sizing quirks: the panel was a flex column with `max-height` + `overflow: auto`, and each test
+  row was a grid with `align-items: baseline` whose middle cell wraps a long failure message.
+  WebKit can size such a baseline-aligned grid row shorter than its wrapped content, so the
+  message spilled onto the console below.
+- **Decision**: the panel uses normal block flow (`display: block`, spacing via
+  `.expansion > :not(:first-child) { margin-top }`), and test rows use `align-items: start` with
+  the status and script cells given the name's line height (13px × 1.5) so the first lines still
+  line up. Block flow and start alignment size every child to its content in every engine,
+  whatever the message length.
+- **Scope note**: the test-row alignment lives in `TestResultsTab.module.css`, so the response
+  viewer's Tests tab gets the same fix; its look is unchanged apart from first-line alignment.
+- **By-eye**: by-eye checks must use the user's real data shape (failed tests with messages,
+  error-level console lines), not only short passing tests.

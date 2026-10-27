@@ -254,7 +254,7 @@ describe('RunResults', () => {
     expect(screen.getByRole('button', { name: 'Run again' })).toBeDisabled()
   })
 
-  it('keeps an expanded row’s parts from shrinking and caps the panel at 320 px', async () => {
+  it('stacks an expanded row’s parts in normal flow and caps the panel at 320 px', async () => {
     injectStylesheets('src/features/runner/components/RunResults.module.css')
     const shown = seed(
       run({
@@ -274,14 +274,10 @@ describe('RunResults', () => {
     await userEvent.click(toggle)
     const panel = toggle.closest('[role="listitem"]')!.querySelector<HTMLElement>('.expansion')!
     const style = getComputedStyle(panel)
+    expect(style.display).toBe('block')
     expect(style.maxHeight).toBe('320px')
     expect(style.overflow).toBe('auto')
-    expect(style.flexGrow).not.toBe('1')
-    expect(style.minHeight).not.toBe('0px')
     expect(panel.children).toHaveLength(4)
-    for (const child of Array.from(panel.children)) {
-      expect(getComputedStyle(child).flexShrink).toBe('0')
-    }
   })
 
   it('lets the keyboard reach and scroll an expanded row’s details', async () => {
