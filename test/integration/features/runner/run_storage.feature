@@ -498,3 +498,115 @@ Feature: Finished runs are stored locally, capped, masked and deletable
     Then the call should succeed
     And the response should contain the field "" array length equal to 1
     And the response should contain the field "0.id" equal to "{{run}}"
+
+  @xen_022 @in_progress_listed
+  Scenario: A run in progress is listed first, with what it has done so far, above the stored runs
+    When I call "RunnerService.Start" with
+      """
+      { "local_id": "{{Acme.local_id}}", "item_id": "{{shop}}", "config": { "type": "functional", "rows": [{ "request_id": "{{login}}", "alias_id": "", "selected": true }], "functional": { "iterations": 1, "data_file": "", "delay_ms": 0, "persist_responses": false, "disable_logs": false, "stop_on_error": false, "keep_variable_values": true, "skip_stored_cookies": false, "save_cookies": false }, "environment_id": "" } }
+      """
+    Then the call should succeed
+    And I save the response field "id" as "older"
+    And a "runner:finished" event with the field "run_id" equal to "{{older}}" should have been emitted within 5000 ms
+    Given the "POST" requests to "/orders" respond after 3000ms
+    When I call "RunnerService.Start" with
+      """
+      { "local_id": "{{Acme.local_id}}", "item_id": "{{shop}}", "config": { "type": "functional", "rows": [{ "request_id": "{{login}}", "alias_id": "", "selected": true }, { "request_id": "{{create}}", "alias_id": "", "selected": true }], "functional": { "iterations": 1, "data_file": "", "delay_ms": 0, "persist_responses": false, "disable_logs": false, "stop_on_error": false, "keep_variable_values": true, "skip_stored_cookies": false, "save_cookies": false }, "environment_id": "" } }
+      """
+    Then the call should succeed
+    And I save the response field "id" as "run"
+    When I wait 300 ms
+    And I call "RunnerService.List" with
+      """
+      { "local_id": "{{Acme.local_id}}", "item_id": "{{shop}}" }
+      """
+    Then the call should succeed
+    And the response should contain the field "" array length equal to 2
+    And the response should contain the field "0.id" equal to "{{run}}"
+    And the response should contain the field "0.status" equal to "running"
+    And the response should contain the field "0.summary.total_requests" equal to "1"
+    And the response should contain the field "1.id" equal to "{{older}}"
+    When I call "RunnerService.Get" with
+      """
+      { "local_id": "{{Acme.local_id}}", "run_id": "{{run}}" }
+      """
+    Then the call should succeed
+    And the response should contain the field "status" equal to "running"
+    When I call "RunnerService.Stop" with
+      """
+      { "local_id": "{{Acme.local_id}}", "run_id": "{{run}}" }
+      """
+    Then the call should succeed
+    And a "runner:finished" event with the field "run_id" equal to "{{run}}" should have been emitted within 2000 ms
+
+  @xen_022 @paused_listed
+  Scenario: A paused run is listed as paused
+    Given the "POST" requests to "/orders" respond after 3000ms
+    When I call "RunnerService.Start" with
+      """
+      { "local_id": "{{Acme.local_id}}", "item_id": "{{shop}}", "config": { "type": "functional", "rows": [{ "request_id": "{{login}}", "alias_id": "", "selected": true }, { "request_id": "{{create}}", "alias_id": "", "selected": true }, { "request_id": "{{get}}", "alias_id": "", "selected": true }], "functional": { "iterations": 1, "data_file": "", "delay_ms": 0, "persist_responses": false, "disable_logs": false, "stop_on_error": false, "keep_variable_values": true, "skip_stored_cookies": false, "save_cookies": false }, "environment_id": "" } }
+      """
+    Then the call should succeed
+    And I save the response field "id" as "run"
+    When I wait 300 ms
+    And I call "RunnerService.Pause" with
+      """
+      { "local_id": "{{Acme.local_id}}", "run_id": "{{run}}" }
+      """
+    Then the call should succeed
+    And a "runner:progress" event with the field "status" equal to "paused" should have been emitted within 4000 ms
+    When I call "RunnerService.List" with
+      """
+      { "local_id": "{{Acme.local_id}}", "item_id": "{{shop}}" }
+      """
+    Then the call should succeed
+    And the response should contain the field "" array length equal to 1
+    And the response should contain the field "0.id" equal to "{{run}}"
+    And the response should contain the field "0.status" equal to "paused"
+    When I call "RunnerService.Stop" with
+      """
+      { "local_id": "{{Acme.local_id}}", "run_id": "{{run}}" }
+      """
+    Then the call should succeed
+    And a "runner:finished" event with the field "run_id" equal to "{{run}}" should have been emitted within 2000 ms
+
+  @xen_022 @listed_once
+  Scenario: A finished run is listed exactly once, with its final status
+    When I call "RunnerService.Start" with
+      """
+      { "local_id": "{{Acme.local_id}}", "item_id": "{{shop}}", "config": { "type": "functional", "rows": [{ "request_id": "{{login}}", "alias_id": "", "selected": true }], "functional": { "iterations": 1, "data_file": "", "delay_ms": 0, "persist_responses": false, "disable_logs": false, "stop_on_error": false, "keep_variable_values": true, "skip_stored_cookies": false, "save_cookies": false }, "environment_id": "" } }
+      """
+    Then the call should succeed
+    And I save the response field "id" as "run"
+    And a "runner:finished" event with the field "run_id" equal to "{{run}}" should have been emitted within 5000 ms
+    When I call "RunnerService.List" with
+      """
+      { "local_id": "{{Acme.local_id}}", "item_id": "{{shop}}" }
+      """
+    Then the call should succeed
+    And the response should contain the field "" array length equal to 1
+    And the response should contain the field "0.id" equal to "{{run}}"
+    And the response should contain the field "0.status" equal to "completed"
+
+  @xen_022 @in_progress_other_target
+  Scenario: A run in progress is not listed for another collection or folder
+    Given the "POST" requests to "/orders" respond after 3000ms
+    When I call "RunnerService.Start" with
+      """
+      { "local_id": "{{Acme.local_id}}", "item_id": "{{shop}}", "config": { "type": "functional", "rows": [{ "request_id": "{{login}}", "alias_id": "", "selected": true }, { "request_id": "{{create}}", "alias_id": "", "selected": true }], "functional": { "iterations": 1, "data_file": "", "delay_ms": 0, "persist_responses": false, "disable_logs": false, "stop_on_error": false, "keep_variable_values": true, "skip_stored_cookies": false, "save_cookies": false }, "environment_id": "" } }
+      """
+    Then the call should succeed
+    And I save the response field "id" as "run"
+    When I wait 300 ms
+    And I call "RunnerService.List" with
+      """
+      { "local_id": "{{Acme.local_id}}", "item_id": "{{orders}}" }
+      """
+    Then the call should succeed
+    And the response should contain the field "" array length equal to 0
+    When I call "RunnerService.Stop" with
+      """
+      { "local_id": "{{Acme.local_id}}", "run_id": "{{run}}" }
+      """
+    Then the call should succeed
+    And a "runner:finished" event with the field "run_id" equal to "{{run}}" should have been emitted within 2000 ms
