@@ -1,4 +1,4 @@
-import type { RunRowResult } from '@/platform/mappers/runner'
+import type { RunRowResult, RunStatus } from '@/platform/mappers/runner'
 import type { ResultFilter } from '@/features/runner/model'
 
 export const RESULT_FILTERS: ReadonlyArray<{ filter: ResultFilter; label: string }> = [
@@ -7,6 +7,11 @@ export const RESULT_FILTERS: ReadonlyArray<{ filter: ResultFilter; label: string
   { filter: 'failed', label: 'Failed' },
   { filter: 'skipped', label: 'Skipped' },
 ]
+
+/** A run still running or paused: it is not stored yet, so it cannot be deleted. */
+export function isRunInProgress(run: { status: RunStatus }): boolean {
+  return run.status === 'running' || run.status === 'paused'
+}
 
 /** FR-034: Passed is no error and every test passed; Failed is a failed test, an error or a cancelled row; Skipped is skipped by a script. */
 export function matchesFilter(row: RunRowResult, filter: ResultFilter): boolean {

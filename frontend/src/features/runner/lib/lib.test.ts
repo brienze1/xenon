@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { TreeNode } from '@/platform/mappers/tree'
 import { planRow, runConfig, runRow } from '@/features/runner/test-fixtures'
 import { curvePoints, defaultParam, usersAt, withProfileKind, withUsersAndDuration } from './load-profile'
-import { filterCounts, matchesFilter, resultItems } from './results'
+import { filterCounts, isRunInProgress, matchesFilter, resultItems } from './results'
 import { chooseAlias, configWithRows, moveRow, resetRows, selectedCount, selectionState, setAllSelected, toggleRow } from './run-order'
 
 function node(id: string, kind: TreeNode['kind'], children: TreeNode[] = []): TreeNode {
@@ -99,5 +99,17 @@ describe('results', () => {
 
   it('groups the filtered rows by iteration', () => {
     expect(resultItems(rows, 'failed').map((item) => (item.kind === 'iteration' ? `#${item.iteration}:${item.count}` : item.row.index))).toEqual(['#0:2', 1, 2, '#1:1', 3])
+  })
+})
+
+describe('isRunInProgress', () => {
+  it.each([
+    ['running', true],
+    ['paused', true],
+    ['completed', false],
+    ['stopped', false],
+    ['stopped_on_error', false],
+  ] as const)('%s → %s', (status, expected) => {
+    expect(isRunInProgress({ status })).toBe(expected)
   })
 })

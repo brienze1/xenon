@@ -16,6 +16,18 @@ const UnsavedRunCookiesNotice = "The cookies of the run could not be saved to th
 
 const StoredRunsLimit = 25
 
+// ListRuns merges a target's stored runs with its active ones, newest first; the stored copy wins for a run in both.
+func ListRuns(targetId string, active, stored []Run) []Run {
+	runs := append([]Run{}, stored...)
+	for _, run := range active {
+		if run.TargetsItem(targetId) && !slices.ContainsFunc(stored, run.Equals) {
+			runs = append(runs, run.Listed())
+		}
+	}
+	slices.SortStableFunc(runs, func(a, b Run) int { return b.StartedAt.Compare(a.StartedAt) })
+	return runs
+}
+
 // RunsBeyondStoredLimit are the stored runs past the per-target limit, given newest first: the oldest ones, which are pruned.
 func RunsBeyondStoredLimit(runs []Run) []Run {
 	if len(runs) <= StoredRunsLimit {
@@ -58,6 +70,14 @@ func (r *Run) RecordSource(environmentName, dataFileName string) {
 	r.DataFileName = dataFileName
 }
 
+func (r *Run) Equals(other Run) bool {
+	return r.ID == other.ID
+}
+
+func (r *Run) TargetsItem(itemId string) bool {
+	return r.Target.ItemID == itemId
+}
+
 func (r *Run) IsActive() bool {
 	return r.Status == runstatus.Running || r.Status == runstatus.Paused
 }
@@ -94,7 +114,7 @@ func (r *Run) ActiveConflict() error {
 }
 
 func (r *Run) CanPause() bool {
-	return r.Status == runstatus.Running && !r.Config.IsPerformance()
+	return r.Status == runstatus.Running && !r.IsPerformance()
 }
 
 func (r *Run) CanResume() bool {
@@ -149,6 +169,19 @@ func (r *Run) Finish(status enums.RunStatus, at time.Time) {
 	r.Status = status
 	r.FinishedAt = at
 	r.Progress.ElapsedMs = r.elapsed(at)
+	r.summarize()
+}
+
+// Listed is the run as a list shows it: an active run carries the summary of the rows recorded so far.
+func (r *Run) Listed() Run {
+	listed := *r
+	if listed.IsActive() {
+		listed.summarize()
+	}
+	return listed
+}
+
+func (r *Run) summarize() {
 	r.Summary = NewRunSummary(r.Iterations(), r.Rows, r.Progress.ElapsedMs)
 	if r.Performance != nil {
 		r.Summary = r.Summary.WithPerformance(r.Performance.Overall)
@@ -156,7 +189,7 @@ func (r *Run) Finish(status enums.RunStatus, at time.Time) {
 }
 
 func (r *Run) Iterations() int {
-	if r.Config.IsPerformance() {
+	if r.IsPerformance() {
 		return 0
 	}
 	return r.Config.Functional.Iterations

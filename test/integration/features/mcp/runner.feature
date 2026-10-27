@@ -399,3 +399,33 @@ Feature: AI clients run collections and read the results
       """
     Then the response should contain the field "0.id" equal to "{{ai}}"
     And a "runner:finished" event with the field "run_id" equal to "{{ai}}" should have been emitted within 5000 ms
+
+  @xen_022 @list_in_progress
+  Scenario: An AI client lists a run while it is in progress, and list agrees with get
+    Given the "POST" requests to "/orders" respond after 3000ms
+    When I call the MCP tool "run" with
+      """
+      { "action": "start", "target": "Shop" }
+      """
+    Then the call should succeed
+    And I save the response field "run_id" as "run"
+    When I wait 300 ms
+    And I call the MCP tool "runs" with
+      """
+      { "action": "list", "target": "Shop" }
+      """
+    Then the call should succeed
+    And the response should contain the field "0.id" equal to "{{run}}"
+    And the response should contain the field "0.status" equal to "running"
+    When I call the MCP tool "runs" with
+      """
+      { "action": "get", "run_id": "{{run}}" }
+      """
+    Then the call should succeed
+    And the response should contain the field "status" equal to "running"
+    When I call the MCP tool "run" with
+      """
+      { "action": "stop", "run_id": "{{run}}" }
+      """
+    Then the call should succeed
+    And a "runner:finished" event with the field "run_id" equal to "{{run}}" should have been emitted within 2000 ms

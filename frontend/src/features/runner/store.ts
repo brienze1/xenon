@@ -34,6 +34,7 @@ import {
   UNKNOWN_RUN,
   type RunAcknowledgement,
 } from '@/platform/services/runner'
+import { isRunInProgress } from './lib/results'
 import { configWithRows } from './lib/run-order'
 import type { ResponseStatus, RunFinishedNotice, RunnerFailure, RunnerTarget, RunnerView } from './model'
 
@@ -554,7 +555,10 @@ export const useRunnerStore = create<RunnerState>()((set, get) => {
         return
       }
       const activeId = get().active[itemId]?.id ?? null
-      patch(itemId, (target) => ({ runs: [], ...(target.runId !== null && target.runId !== activeId ? { runId: null, run: null } : {}) }))
+      patch(itemId, (target) => ({
+        runs: target.runs?.filter(isRunInProgress) ?? [],
+        ...(target.runId !== null && target.runId !== activeId ? { runId: null, run: null } : {}),
+      }))
     },
 
     exportRun: async (itemId, format) => {
@@ -607,6 +611,7 @@ export const useRunnerStore = create<RunnerState>()((set, get) => {
         return
       }
       const known = get().active[event.itemId]
+      const starting = known?.id !== event.runId
       const target = get().targets[event.itemId]
       setActive(
         event.itemId,
@@ -629,10 +634,15 @@ export const useRunnerStore = create<RunnerState>()((set, get) => {
       if (!target || target.status === 'idle') {
         return
       }
-      if (target.runId === null) {
-        patch(event.itemId, { runId: event.runId })
+      if (target.runs !== null && !target.runs.some((run) => run.id === event.runId)) {
+        void get().loadRuns(event.itemId)
       }
-      if ((target.runId ?? event.runId) !== event.runId) {
+      if (target.runId !== event.runId) {
+        // A run of the target that just started, from this tab or anywhere else, is followed once.
+        if (target.runId === null || starting) {
+          patch(event.itemId, { runId: event.runId, run: null, view: 'results' })
+          void refreshRun(event.itemId, event.runId)
+        }
         return
       }
       if (target.run?.id === event.runId) {

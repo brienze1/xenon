@@ -79,6 +79,28 @@ describe('RunsList', () => {
     expect(await screen.findByRole('region', { name: 'No stored runs' })).toBeInTheDocument()
   })
 
+  it('offers no Delete on a run in progress', () => {
+    seed([runSummaryView({ id: 'R3', status: 'running' }), runSummaryView({ id: 'R4', status: 'paused' }), ...stored])
+    render(<RunsList itemId="c1" />)
+    const items = within(screen.getByRole('region', { name: 'Stored runs' })).getAllByRole('listitem')
+    expect(items[0]).toHaveTextContent('Running')
+    expect(within(items[0]!).queryByRole('button', { name: /More actions/ })).not.toBeInTheDocument()
+    expect(within(items[1]!).queryByRole('button', { name: /More actions/ })).not.toBeInTheDocument()
+    expect(within(items[2]!).getByRole('button', { name: /More actions/ })).toBeInTheDocument()
+  })
+
+  it('disables Clear runs when only a run in progress is listed', () => {
+    seed([runSummaryView({ id: 'R3', status: 'running' })])
+    render(<RunsList itemId="c1" />)
+    expect(screen.getByRole('button', { name: 'Clear runs' })).toBeDisabled()
+  })
+
+  it('enables Clear runs when a stored run is listed next to a run in progress', () => {
+    seed([runSummaryView({ id: 'R3', status: 'running' }), ...stored])
+    render(<RunsList itemId="c1" />)
+    expect(screen.getByRole('button', { name: 'Clear runs' })).toBeEnabled()
+  })
+
   it('shows loading until the runs are read', () => {
     seed(null)
     render(<RunsList itemId="c1" />)

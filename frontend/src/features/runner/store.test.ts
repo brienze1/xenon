@@ -40,6 +40,17 @@ async function loaded(plan = runPlan()) {
   await useRunnerStore.getState().ensure('c1')
 }
 
+function progressOf(runId: string, progress: Parameters<typeof runProgress>[0] = {}, itemId = 'c1') {
+  return { localId: 'L1', runId, itemId, type: 'functional' as const, status: 'running' as const, progress: runProgress(progress) }
+}
+
+/** A loaded target whose Results show the stored run R0. */
+async function showingStoredRun() {
+  await loaded()
+  vi.mocked(service.getRun).mockResolvedValue(run({ id: 'R0', status: 'completed' }))
+  await useRunnerStore.getState().openRun('c1', 'R0')
+}
+
 describe('runner store', () => {
   beforeEach(() => {
     vi.resetAllMocks()
@@ -219,6 +230,99 @@ describe('runner store', () => {
     useRunnerStore.getState().applyProgress({ localId: 'L1', runId: 'R9', itemId: 'c1', type: 'functional', status: 'running', progress: runProgress() })
     expect(useRunnerStore.getState().active.c1).toMatchObject({ id: 'R9', targetName: 'Orders API' })
     expect(target().runId).toBe('R9')
+  })
+
+  it('follows a run of the target started elsewhere', async () => {
+    await showingStoredRun()
+    vi.mocked(service.getRun).mockResolvedValue(run({ id: 'R2' }))
+    useRunnerStore.getState().applyProgress(progressOf('R2'))
+    expect(target()).toMatchObject({ runId: 'R2', view: 'results' })
+    await vi.waitFor(() => expect(target().run?.id).toBe('R2'))
+    expect(service.getRun).toHaveBeenLastCalledWith('L1', 'R2')
+  })
+
+  it('follows a new run once; an older run opened during it stays shown', async () => {
+    await showingStoredRun()
+    vi.mocked(service.getRun).mockResolvedValue(run({ id: 'R2' }))
+    useRunnerStore.getState().applyProgress(progressOf('R2'))
+    await vi.waitFor(() => expect(target().run?.id).toBe('R2'))
+    vi.mocked(service.getRun).mockResolvedValue(run({ id: 'R0', status: 'completed' }))
+    await useRunnerStore.getState().openRun('c1', 'R0')
+    useRunnerStore.getState().applyProgress(progressOf('R2', { completed: 2 }))
+    expect(target()).toMatchObject({ runId: 'R0', run: { id: 'R0' } })
+    expect(useRunnerStore.getState().active.c1).toMatchObject({ id: 'R2', progress: { completed: 2 } })
+  })
+
+  it.each(['setup', 'runs'] as const)('follows a run started elsewhere from %s', async (view) => {
+    await loaded()
+    vi.mocked(service.listRuns).mockResolvedValue([])
+    useRunnerStore.getState().showView('c1', view)
+    vi.mocked(service.getRun).mockResolvedValue(run({ id: 'R2' }))
+    useRunnerStore.getState().applyProgress(progressOf('R2'))
+    expect(target()).toMatchObject({ runId: 'R2', view: 'results' })
+  })
+
+  it('progress of another target leaves the tab alone', async () => {
+    await showingStoredRun()
+    useRunnerStore.getState().applyProgress(progressOf('R2', {}, 'c2'))
+    expect(target()).toMatchObject({ runId: 'R0', run: { id: 'R0' } })
+  })
+
+  it('progress after the run finished does not switch the tab', async () => {
+    await showingStoredRun()
+    useRunnerStore.getState().applyFinished({ localId: 'L1', runId: 'R2', itemId: 'c1', targetName: 'Orders API', type: 'functional', status: 'completed', summary: runSummary() })
+    useRunnerStore.getState().applyProgress(progressOf('R2'))
+    expect(target()).toMatchObject({ runId: 'R0', run: { id: 'R0' } })
+    expect(isRunActive(useRunnerStore.getState(), 'c1')).toBe(false)
+  })
+
+  it('pauses, resumes and stops the followed run', async () => {
+    await showingStoredRun()
+    vi.mocked(service.getRun).mockResolvedValue(run({ id: 'R2' }))
+    useRunnerStore.getState().applyProgress(progressOf('R2'))
+    vi.mocked(service.pauseRun).mockResolvedValue(runSummaryView({ id: 'R2', status: 'paused' }))
+    vi.mocked(service.resumeRun).mockResolvedValue(runSummaryView({ id: 'R2' }))
+    vi.mocked(service.stopRun).mockResolvedValue(runSummaryView({ id: 'R2', status: 'stopped' }))
+    await useRunnerStore.getState().pause('c1')
+    await useRunnerStore.getState().resume('c1')
+    await useRunnerStore.getState().stop('c1')
+    expect(service.pauseRun).toHaveBeenCalledWith('L1', 'R2')
+    expect(service.resumeRun).toHaveBeenCalledWith('L1', 'R2')
+    expect(service.stopRun).toHaveBeenCalledWith('L1', 'R2')
+  })
+
+  it("reads a followed run again when it finishes and shows the notice", async () => {
+    await showingStoredRun()
+    vi.mocked(service.getRun).mockResolvedValue(run({ id: 'R2' }))
+    useRunnerStore.getState().applyProgress(progressOf('R2'))
+    await vi.waitFor(() => expect(target().run?.id).toBe('R2'))
+    vi.mocked(service.getRun).mockClear()
+    vi.mocked(service.getRun).mockResolvedValue(run({ id: 'R2', status: 'completed' }))
+    useRunnerStore.getState().applyFinished({ localId: 'L1', runId: 'R2', itemId: 'c1', targetName: 'Orders API', type: 'functional', status: 'completed', summary: runSummary() })
+    expect(service.getRun).toHaveBeenCalledWith('L1', 'R2')
+    expect(useRunnerStore.getState().notice?.runId).toBe('R2')
+    await vi.waitFor(() => expect(target().run?.status).toBe('completed'))
+  })
+
+  it('reads the Runs list again when a run it lacks reports progress', async () => {
+    await loaded()
+    vi.mocked(service.listRuns).mockResolvedValue([runSummaryView({ id: 'R0', status: 'completed' })])
+    await useRunnerStore.getState().loadRuns('c1')
+    vi.mocked(service.getRun).mockResolvedValue(run({ id: 'R2' }))
+    vi.mocked(service.listRuns).mockResolvedValue([runSummaryView({ id: 'R2' }), runSummaryView({ id: 'R0', status: 'completed' })])
+    useRunnerStore.getState().applyProgress(progressOf('R2'))
+    await vi.waitFor(() => expect(target().runs).toHaveLength(2))
+    useRunnerStore.getState().applyProgress(progressOf('R2', { completed: 2 }))
+    expect(service.listRuns).toHaveBeenCalledTimes(2)
+  })
+
+  it('Clear runs keeps the run in progress', async () => {
+    await loaded()
+    useRunnerStore.setState({ active: { c1: runSummaryView({ id: 'R2' }) } })
+    vi.mocked(service.listRuns).mockResolvedValue([runSummaryView({ id: 'R2' }), runSummaryView({ id: 'R0', status: 'completed' })])
+    await useRunnerStore.getState().loadRuns('c1')
+    await useRunnerStore.getState().clearRuns('c1')
+    expect(target().runs?.map((listed) => listed.id)).toEqual(['R2'])
   })
 
   it('on finish clears the indicator, shows the notice, and reloads the shown run and the Runs list', async () => {
