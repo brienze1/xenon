@@ -22,7 +22,7 @@ The DOM and CSS contract the red Vitest cases lock. Paths are under
 | `.line` | `height`, `flex-shrink` | `32px`, `0` (unchanged) |
 | `.iteration` | `height` | `28px` |
 | `.expansion` | `max-height` | `320px` |
-| `.expansion` | `overflow-y` | `auto` (from the unchanged `overflow: auto`) |
+| `.expansion` | `overflow` | `auto` (unchanged; asserted as the shorthand — jsdom does not expand it) |
 | `.expansion` | `flex-grow` / `min-height` | `0` / not `0px` (the `flex: 1; min-height: 0` pair is gone) |
 | every direct child of `.expansion` | `flex-shrink` | `0` |
 | `.expansion:focus-visible` | `outline` / `box-shadow` | `none` / `var(--focus-ring)` |

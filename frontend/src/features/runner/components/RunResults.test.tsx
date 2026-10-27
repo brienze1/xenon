@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SendResult } from '@/platform/mappers/request'
 import type { RunnerSlots } from '@/features/runner/model'
+import { injectStylesheets } from '@/test/stylesheets'
 
 vi.mock('@/platform/services/runner', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/platform/services/runner')>()),
@@ -50,6 +51,25 @@ function seed(shown = run()) {
 
 function results() {
   return screen.getByRole('list', { name: 'Run results' })
+}
+
+function consoleEntry(id: string, summary: string) {
+  return {
+    id,
+    sendId: 's',
+    kind: 'log' as const,
+    level: 'log' as const,
+    summary,
+    createdAt: '',
+    arguments: [],
+    masked: false,
+    scriptLabel: null,
+    line: null,
+    column: null,
+    request: null,
+    response: null,
+    values: null,
+  }
 }
 
 describe('RunResults', () => {
@@ -232,5 +252,86 @@ describe('RunResults', () => {
     useRunnerStore.setState({ active: { c1: runSummaryView({ id: 'R9' }) } })
     render(<RunResults itemId="c1" run={shown} slots={slots} />)
     expect(screen.getByRole('button', { name: 'Run again' })).toBeDisabled()
+  })
+
+  it('keeps an expanded row’s parts from shrinking and caps the panel at 320 px', async () => {
+    injectStylesheets('src/features/runner/components/RunResults.module.css')
+    const shown = seed(
+      run({
+        rows: [
+          runRow(0, {
+            name: 'Login',
+            error: 'timeout',
+            tests: [{ index: 0, name: 'is ok', status: 'passed', errorMessage: '', scriptLabel: '', async: false }],
+            scriptErrors: [{ kind: 'error', message: 'boom', line: null, column: null, scriptLabel: 'Login · Post-response' }],
+            console: [consoleEntry('k1', 'GET https://api.test/health')],
+          }),
+        ],
+      }),
+    )
+    render(<RunResults itemId="c1" run={shown} slots={slots} />)
+    const toggle = screen.getByRole('button', { name: 'Details of Login' })
+    await userEvent.click(toggle)
+    const panel = toggle.closest('[role="listitem"]')!.querySelector<HTMLElement>('.expansion')!
+    const style = getComputedStyle(panel)
+    expect(style.maxHeight).toBe('320px')
+    expect(style.overflow).toBe('auto')
+    expect(style.flexGrow).not.toBe('1')
+    expect(style.minHeight).not.toBe('0px')
+    expect(panel.children).toHaveLength(4)
+    for (const child of Array.from(panel.children)) {
+      expect(getComputedStyle(child).flexShrink).toBe('0')
+    }
+  })
+
+  it('lets the keyboard reach and scroll an expanded row’s details', async () => {
+    const shown = seed(run({ rows: [runRow(0, { name: 'Login', aliasName: 'mx-test-user' })] }))
+    render(<RunResults itemId="c1" run={shown} slots={slots} />)
+    const row = within(results()).getAllByRole('listitem')[1]!
+    await userEvent.click(within(row).getByRole('button', { name: 'Details of Login · mx-test-user' }))
+    const details = screen.getByRole('group', { name: 'Details of Login · mx-test-user' })
+    expect(details).toHaveAttribute('tabindex', '0')
+    expect(details).toHaveTextContent('Tests:')
+    within(row).getByRole('button', { name: 'Login · mx-test-user' }).focus()
+    await userEvent.tab()
+    expect(details).toHaveFocus()
+  })
+
+  it('measures every row instead of giving it a fixed height', async () => {
+    injectStylesheets('src/features/runner/components/RunResults.module.css')
+    const shown = seed(run({ rows: [runRow(0, { name: 'Login' }), runRow(1, { name: 'Get order' }), runRow(2, { name: 'Login', iteration: 1 })] }))
+    render(<RunResults itemId="c1" run={shown} slots={slots} />)
+    await userEvent.click(screen.getAllByRole('button', { name: 'Details of Login' })[0]!)
+    await userEvent.click(screen.getByRole('button', { name: 'Details of Get order' }))
+    const items = within(results()).getAllByRole('listitem')
+    items.forEach((item, position) => {
+      expect(item.dataset.index).toBe(String(position))
+      expect(item.style.height).toBe('')
+      expect(item.style.transform).toMatch(/^translateY\(/)
+    })
+    expect(getComputedStyle(items[0]!.querySelector('p')!).height).toBe('28px')
+    for (const item of items) {
+      const row = item.querySelector('.row')
+      if (row) {
+        expect(getComputedStyle(row).height).not.toBe('100%')
+      }
+    }
+  })
+
+  it('keeps an expanded row expanded and measured while a live run refreshes', async () => {
+    const first = seed(run({ status: 'running', rows: [runRow(0, { name: 'Login', console: [consoleEntry('k1', 'one')] })] }))
+    const { rerender } = render(<RunResults itemId="c1" run={first} slots={slots} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Details of Login' }))
+    const refreshed = run({
+      status: 'running',
+      rows: [runRow(0, { name: 'Login', console: [consoleEntry('k1', 'one'), consoleEntry('k2', 'two')] }), runRow(1, { name: 'Get order' })],
+    })
+    rerender(<RunResults itemId="c1" run={refreshed} slots={slots} />)
+    const details = screen.getByRole('group', { name: 'Details of Login' })
+    expect(within(within(details).getByRole('list', { name: 'Console' })).getAllByRole('listitem')).toHaveLength(2)
+    for (const item of Array.from(results().children) as HTMLElement[]) {
+      expect(item).toHaveAttribute('data-index')
+      expect(item.style.height).toBe('')
+    }
   })
 })
