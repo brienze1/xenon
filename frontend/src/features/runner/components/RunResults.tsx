@@ -1,5 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { Run, RunRowResult } from '@/platform/mappers/runner'
 import { cn } from '@/shared/lib/cn'
 import { formatDateTime } from '@/shared/lib/date-format'
@@ -19,7 +19,7 @@ import styles from './RunResults.module.css'
 
 export const RESULT_ROW_HEIGHT = 32
 export const ITERATION_HEADING_HEIGHT = 28
-/** An expanded row: the row plus its tests, script errors and console panel. */
+/** First estimate of an expanded row before it is measured; the rendered row sets its real height. */
 export const EXPANDED_ROW_HEIGHT = 240
 
 const DATE_TIME: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'medium' }
@@ -140,10 +140,6 @@ function RowResults({ run, slots }: RowResultsProps) {
     overscan: 10,
   })
 
-  useEffect(() => {
-    virtualizer.measure()
-  }, [expanded, virtualizer])
-
   function toggle(index: number) {
     setExpanded((current) => {
       const next = new Set(current)
@@ -172,7 +168,14 @@ function RowResults({ run, slots }: RowResultsProps) {
               {virtualizer.getVirtualItems().map((virtual) => {
                 const item = items[virtual.index]
                 return item ? (
-                  <div key={item.key} role="listitem" className={styles.slot} style={{ height: virtual.size, transform: `translateY(${virtual.start}px)` }}>
+                  <div
+                    key={item.key}
+                    ref={virtualizer.measureElement}
+                    data-index={virtual.index}
+                    role="listitem"
+                    className={styles.slot}
+                    style={{ transform: `translateY(${virtual.start}px)` }}
+                  >
                     {item.kind === 'iteration' ? (
                       <p className={styles.iteration}>
                         Iteration {item.iteration + 1} <span className={styles.count}>{item.count}</span>
@@ -242,7 +245,7 @@ function ResultRow({ row, expanded, selected, tests, onToggle, onOpen }: ResultR
         <span className={styles.metric}>{formatBytes(row.sizeBytes)}</span>
       </div>
       {expanded ? (
-        <div className={styles.expansion}>
+        <div role="group" aria-label={`Details of ${name}`} tabIndex={0} className={styles.expansion}>
           {row.error ? (
             <p role="alert" className={styles.rowError}>
               {row.error}
