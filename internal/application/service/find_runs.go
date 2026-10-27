@@ -53,10 +53,11 @@ func (f *findRuns) List(ctx context.Context, localId, itemId string) ([]entity.R
 	if _, err := f.findWorkspaceRegistry.FindWorkspace(ctx, localId); err != nil {
 		return nil, err
 	}
-	runs, err := f.findRuns.FindRuns(ctx, localId, itemId)
+	stored, err := f.findRuns.FindRuns(ctx, localId, itemId)
 	if err != nil {
 		return nil, err
 	}
+	runs := entity.ListRuns(itemId, f.findActiveRuns.FindByWorkspace(ctx, localId), stored)
 
 	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "itemId": itemId, "runs": len(runs)})
 	return runs, nil
@@ -74,10 +75,11 @@ func (f *findRuns) ListForAI(ctx context.Context, localId, path, itemId string) 
 		return nil, entity.AIActivityTarget{}, err
 	}
 	targetId, target := tree.ResolveRunTarget(path, itemId)
-	runs, err := f.findRuns.FindRuns(ctx, localId, targetId)
+	stored, err := f.findRuns.FindRuns(ctx, localId, targetId)
 	if err != nil {
 		return nil, target, err
 	}
+	runs := entity.ListRuns(targetId, f.findActiveRuns.FindByWorkspace(ctx, localId), stored)
 
 	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "path": path, "itemId": itemId, "targetId": targetId, "runs": len(runs)})
 	return runs, target, nil

@@ -6,6 +6,7 @@ import { Button } from '@/shared/ui/button/Button'
 import { ContextMenu } from '@/shared/ui/context-menu/ContextMenu'
 import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
 import { STATUS_LABELS, TYPE_LABELS } from '@/features/runner/lib/labels'
+import { isRunInProgress } from '@/features/runner/lib/results'
 import { useRunnerStore } from '@/features/runner/store'
 import { ClearRunsDialog } from './ClearRunsDialog'
 import styles from './RunsList.module.css'
@@ -21,7 +22,7 @@ const LOADING = (
 const NO_RUNS = (
   <EmptyState.Root label="No stored runs" size="compact">
     <EmptyState.Title>No Runs Yet</EmptyState.Title>
-    <EmptyState.Description>Finished, stopped and failed runs of this collection or folder show up here.</EmptyState.Description>
+    <EmptyState.Description>Runs of this collection or folder show up here.</EmptyState.Description>
   </EmptyState.Root>
 )
 
@@ -37,7 +38,7 @@ interface RunsListProps {
   itemId: string
 }
 
-/** The stored runs of the target, newest first: open one in Results, delete one, or clear them all. */
+/** The runs of the target, newest first, the one in progress included: open one in Results, delete a stored one, or clear them all. */
 export function RunsList({ itemId }: RunsListProps) {
   const runs = useRunnerStore((state) => state.targets[itemId]?.runs ?? null)
   const openRun = useRunnerStore((state) => state.openRun)
@@ -51,7 +52,7 @@ export function RunsList({ itemId }: RunsListProps) {
     <section className={styles.runs} aria-label="Stored runs">
       <header className={styles.header}>
         <span className={styles.note}>{runs.length === 1 ? '1 run' : `${runs.length} runs`}</span>
-        <Button variant="ghost" size="sm" disabled={runs.length === 0} onClick={() => setClearing(true)}>
+        <Button variant="ghost" size="sm" disabled={!runs.some((run) => !isRunInProgress(run))} onClick={() => setClearing(true)}>
           Clear runs
         </Button>
       </header>
@@ -95,16 +96,18 @@ function RunItem({ run, onOpen, onDelete }: RunItemProps) {
         </span>
         <span className={styles.metric}>{formatDuration(summary.durationMs)}</span>
       </button>
-      <ContextMenu.Root>
-        <ContextMenu.Button label={`More actions for the run of ${started}`} title="More actions" className={styles.more}>
-          {MORE_ICON}
-        </ContextMenu.Button>
-        <ContextMenu.Menu label={`Run of ${started}`}>
-          <ContextMenu.Item tone="danger" onSelect={onDelete}>
-            Delete
-          </ContextMenu.Item>
-        </ContextMenu.Menu>
-      </ContextMenu.Root>
+      {isRunInProgress(run) ? null : (
+        <ContextMenu.Root>
+          <ContextMenu.Button label={`More actions for the run of ${started}`} title="More actions" className={styles.more}>
+            {MORE_ICON}
+          </ContextMenu.Button>
+          <ContextMenu.Menu label={`Run of ${started}`}>
+            <ContextMenu.Item tone="danger" onSelect={onDelete}>
+              Delete
+            </ContextMenu.Item>
+          </ContextMenu.Menu>
+        </ContextMenu.Root>
+      )}
     </li>
   )
 }
