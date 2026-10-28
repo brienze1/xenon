@@ -133,6 +133,21 @@ Spec Kit skills (`speckit-*`) are also available directly.
   quality gate, `make sort-imports` after each batch of Go changes.
 - Secrets never land in workspace files, logs, fixtures or commits (PRD: Environments and secrets).
 
+## CI and flaky tests
+
+- **Test locally before waiting on CI.** Run the affected tests (and `make validate` before pushing) on this
+  machine first; it is far faster than a GitHub Actions round trip. CI confirms, it is not the first test run.
+- **A failing CI check is ours to fix, whatever its scope.** If a check fails on a branch you are working on, fix the
+  cause in that PR (or a dedicated fix branch) even when the failure has nothing to do with the task. Never merge red,
+  never skip or disable a check, never wave a failure through as "unrelated".
+- **A flaky test is worse than a failing one** — it trains everyone to ignore red. Give flakes double focus: find
+  the real cause (timing assumptions, debounce windows, shared state, ordering, slow runners), reproduce it locally
+  (e.g. inject the delay, loop the test with `-count=N`), fix it so the failure mode is impossible, and prove the
+  fix by showing the reproduction fails before and passes after. Re-running a job is never the fix; at most a
+  stopgap while the fix is made.
+- Performance budgets (`the last call should have taken less than N ms`) are product requirements: fix a slow path
+  by making the code faster, not by raising the budget.
+
 ## Context7 usage
 
 Always use Context7 when you need code generation, setup or configuration steps, or

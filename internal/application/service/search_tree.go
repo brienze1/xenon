@@ -45,7 +45,7 @@ func (s *searchTree) Search(ctx context.Context, localId, query string) (*entity
 	if err != nil {
 		return nil, err
 	}
-	result := usecase.SearchTree(*tree, query)
+	result := usecase.SearchTree(*tree, query).WithTree(*tree)
 
 	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "query": query, "result": result})
 	return &result, nil

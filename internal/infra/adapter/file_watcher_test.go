@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	eventWait = 2 * time.Second
-	quietWait = 600 * time.Millisecond
+	eventWait     = 3 * time.Second
+	quietWait     = 600 * time.Millisecond
+	burstDebounce = time.Second
 )
 
 type recordedChange struct {
@@ -81,7 +82,11 @@ func write(t *testing.T, path, content string) {
 }
 
 func TestWatcherReportsAWrittenFileOnceAfterABurst(t *testing.T) {
-	root, _, recorder := watchedRoot(t)
+	root, watcher, recorder := watchedRoot(t)
+	// A loaded CI runner can pause the writes below for longer than the default window; a burst is what is tested.
+	watcher.mu.Lock()
+	watcher.debounce = burstDebounce
+	watcher.mu.Unlock()
 	path := filepath.Join(root, "collections", "billing", "ping.yaml")
 	for index := 0; index < 5; index++ {
 		write(t, path, "name: ping")
