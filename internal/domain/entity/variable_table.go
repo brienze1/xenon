@@ -39,7 +39,7 @@ func (v VariableTable) WithRevision(revision string) VariableTable {
 
 // BlocksSave only guards environment tables, and never an empty baseRevision.
 func (v VariableTable) BlocksSave(baseRevision string, force bool) bool {
-	return v.Scope.IsEnvironment() && baseRevision != "" && !force && v.Revision != baseRevision
+	return v.Scope.IsEnvironment() && Environment{Revision: v.Revision}.BlocksSave(baseRevision, force)
 }
 
 func (v VariableTable) WithWarningsOf(other VariableTable) VariableTable {

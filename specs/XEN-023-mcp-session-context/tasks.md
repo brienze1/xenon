@@ -22,7 +22,7 @@ description: "Task list for XEN-023 Per-Session MCP Context"
 
 ## Phase 1: Setup
 
-- [ ] T001 Fresh worktree on branch `xen-023` (from freshly fetched `origin/main`): run `npm ci` in `frontend/` and `make bindings` so Vitest and the BDD harness start (`.claude/skills/makefile.md`)
+- [x] T001 Fresh worktree on branch `xen-023` (from freshly fetched `origin/main`): run `npm ci` in `frontend/` and `make bindings` so Vitest and the BDD harness start (`.claude/skills/makefile.md`)
 
 ---
 
@@ -51,11 +51,11 @@ description: "Task list for XEN-023 Per-Session MCP Context"
 
 ### Tests (write first, prove red)
 
-- [ ] T010 [P] [US1] Rewrite `@switch` and `@create_open_rename` and the Feature description in `test/integration/features/mcp/workspaces.feature`: switch emits no `workspaces:changed` with the new id, `app.json` `active_local_id` unchanged, the session's `workspace active` = new workspace, a slow run in the window's workspace keeps running (`runner:` events / `RunnerService.Get` status `running`); create/open list the workspace while `app.json` keeps the window's workspace; tag `@xen_023`
-- [ ] T011 [P] [US1] Add a set_active scenario to `test/integration/features/mcp/environments.feature`: `env_edit set_active` Prod → `workspaces/<localId>/variables.json` `activeEnvironmentId` still Dev, no `variables:changed` event, `EnvironmentService.List` `active_id` still Dev; tag `@xen_023 @set_active_session_only`
+- [x] T010 [P] [US1] Rewrite `@switch` and `@create_open_rename` and the Feature description in `test/integration/features/mcp/workspaces.feature`: switch emits no `workspaces:changed` with the new id, `app.json` `active_local_id` unchanged, the session's `workspace active` = new workspace, a slow run in the window's workspace keeps running (`runner:` events / `RunnerService.Get` status `running`); create/open list the workspace while `app.json` keeps the window's workspace; tag `@xen_023`
+- [x] T011 [P] [US1] Add a set_active scenario to `test/integration/features/mcp/environments.feature`: `env_edit set_active` Prod → `workspaces/<localId>/variables.json` `activeEnvironmentId` still Dev, no `variables:changed` event, `EnvironmentService.List` `active_id` still Dev; tag `@xen_023 @set_active_session_only`
 - [x] T012 [P] [US1] Vitest in `frontend/src/app/bootstrap.test.ts`: replace "follows workspace changes made through MCP" with "refreshes the workspace list on MCP changes without switching" (spy `refreshList`)
 - [x] T013 [P] [US1] Vitest in `frontend/src/features/workspaces/store.test.ts`: replace the `follow` cases with `refreshList` cases — keeps the window's workspace when still listed; activates the registry's workspace when the window's was removed; leaves to none when the list is empty
-- [ ] T014 [US1] Run T010–T013 and record that they fail (red)
+- [x] T014 [US1] Run T010–T013 and record that they fail (red)
 
 ### Implementation
 
@@ -64,7 +64,7 @@ description: "Task list for XEN-023 Per-Session MCP Context"
 - [x] T017 [US1] Rework `internal/integration/entrypoint/controller/mcp_workspace_edit.go`: create/open → background variants then `ManageAISessionService.Enter(call.Session, id)`; switch → `Enter` + keep `scheduleAutoSync(...Opened...)`, result with no AI changes; remove `ActivateWorkspaceService`; `Handle` needs the `MCPToolCall` for the session; update DI `internal/infra/dependency/controller/mcp_workspace_edit.go`
 - [x] T018 [US1] In `internal/integration/entrypoint/controller/mcp_env_edit.go`: `set_active` → `ManageAISessionService.ChooseEnvironment(call.Session, id)`, result `NewMCPEnvActive(id or "")`, no `aichangekind.Variables` for this action; remove `SetActiveEnvironmentService`; update DI `internal/infra/dependency/controller/mcp_env_edit.go`
 - [x] T019 [US1] Replace `follow` with `refreshList(activeLocalId)` in `frontend/src/features/workspaces/store.ts` (research R6; reuse the `remove` branch for a vanished window workspace) and call it from `frontend/src/app/bootstrap.ts:95`
-- [ ] T020 [US1] Run T010–T013 green, then `make bdd TAG=@mcp`, the workspaces/bootstrap Vitest suites and `frontend/src/features/tabs/store.test.ts` (its existing changed-on-disk cases lock FR-015: dirty tab keeps edits + notice, clean tab reloads)
+- [x] T020 [US1] Run T010–T013 green, then `make bdd TAG=@mcp`, the workspaces/bootstrap Vitest suites and `frontend/src/features/tabs/store.test.ts` (its existing changed-on-disk cases lock FR-015: dirty tab keeps edits + notice, clean tab reloads)
 
 **Checkpoint**: the window is never driven by MCP.
 
@@ -78,9 +78,9 @@ description: "Task list for XEN-023 Per-Session MCP Context"
 
 ### Tests (write first, prove red)
 
-- [ ] T021 [P] [US2] Create `test/integration/features/mcp/session_context.feature` (`@all @xen_023 @mcp @mcp_session_context`) with scenarios `@seeded`, `@isolated_workspaces`, `@isolated_environments` (HTTP mock asserts the Dev vs Prod host per client), `@send_environment_override` (Prod, `none`, unknown → invalid arguments, next send back on the session env), `@run_session_environment`, `@reenter_keeps_choice`, `@closed_session` (`the MCP session is closed`, window switched via `WorkspaceService.Activate`, reconnect seeded from the window), `@workspace_removed` (`MCP-06404`), `@environment_deleted` (resolves with none), `@snippet_and_inspect_use_session_env`; use only existing steps (`the MCP client is named`, `I call the MCP tool`, `I call "<Service>.<Method>" with`, app-data and HTTP mock steps)
-- [ ] T022 [P] [US2] In `test/integration/features/mcp/connect.feature`: raise the `@tool_list` budget step to `at most 39500 characters`, and add `@xen_023 @per_session_descriptions`: listed tools `workspace`, `workspace_edit`, `env_edit`, `send` have descriptions containing "session"
-- [ ] T023 [US2] Run T021–T022 and record that they fail (red)
+- [x] T021 [P] [US2] Create `test/integration/features/mcp/session_context.feature` (`@all @xen_023 @mcp @mcp_session_context`) with scenarios `@seeded`, `@isolated_workspaces`, `@isolated_environments` (HTTP mock asserts the Dev vs Prod host per client), `@send_environment_override` (Prod, `none`, unknown → invalid arguments, next send back on the session env), `@run_session_environment`, `@reenter_keeps_choice`, `@closed_session` (`the MCP session is closed`, window switched via `WorkspaceService.Activate`, reconnect seeded from the window), `@workspace_removed` (`MCP-06404`), `@environment_deleted` (resolves with none), `@snippet_and_inspect_use_session_env`; use only existing steps (`the MCP client is named`, `I call the MCP tool`, `I call "<Service>.<Method>" with`, app-data and HTTP mock steps)
+- [x] T022 [P] [US2] In `test/integration/features/mcp/connect.feature`: raise the `@tool_list` budget step to `at most 39500 characters`, and add `@xen_023 @per_session_descriptions`: listed tools `workspace`, `workspace_edit`, `env_edit`, `send` have descriptions containing "session"
+- [x] T023 [US2] Run T021–T022 and record that they fail (red)
 
 ### Implementation
 
@@ -93,7 +93,7 @@ description: "Task list for XEN-023 Per-Session MCP Context"
 - [x] T030 [P] [US2] `internal/integration/entrypoint/controller/mcp_run.go`: pass `call.EnvironmentId` to `StartForAI`; `mcp_snippet.go`: set `EnvironmentID` on the snippet input from `call.EnvironmentId`; `mcp_env.go`: `inspect` passes `call.EnvironmentId`, `list` marks `call.EnvironmentId` active (`dto.NewMCPEnvList` takes the active id)
 - [x] T031 [P] [US2] `internal/integration/entrypoint/controller/mcp_workspace.go`: `list` marks `call.LocalId` active (`dto.NewMCPWorkspaceList(registry, activeLocalId)`), `active` loads the session's workspace from the registry and marks `call.EnvironmentId`; no workspace → `RejectInactiveAIWorkspace`
 - [x] T032 [US2] Set the four new tool descriptions exactly as in contracts/mcp-tools.md in `mcp_workspace.go`, `mcp_workspace_edit.go`, `mcp_env_edit.go`, `mcp_send.go` (`internal/integration/entrypoint/controller/`)
-- [ ] T033 [US2] Run T021–T022 green, then `make bdd TAG=@mcp` and `make bdd TAG=@sending` (window sends unchanged)
+- [x] T033 [US2] Run T021–T022 green, then `make bdd TAG=@mcp` and `make bdd TAG=@sending` (window sends unchanged)
 
 **Checkpoint**: parallel sessions are isolated.
 
@@ -107,11 +107,11 @@ description: "Task list for XEN-023 Per-Session MCP Context"
 
 ### Tests (write first, prove red)
 
-- [ ] T034 [P] [US3] Create `test/integration/features/mcp/concurrent_writes.feature` (`@all @xen_023 @mcp @mcp_concurrent_writes`): `@parallel_request_edits` — clients `one` and `two` each start background `tree_edit` calls (`one` sets header A, `two` sets query param B on the same request, 5 rounds each via distinct keys), wait for both, request file contains every edit; `@parallel_env_edits` — both clients `env_edit add_var` distinct keys on Dev in the background, environment file contains all keys
-- [ ] T035 [P] [US3] Create `test/integration/features/environments/environment_revision.feature` (`@all @xen_023 @environments @environment_revision`): `@revision_returned` (`EnvironmentService.Get` and `VariableService.GetTable` return the same non-empty `revision`); `@stale_table_save` (save with an old `base_revision` after an MCP `add_var` → `ENV-19409`, file unchanged); `@stale_settings_save` (same for `EnvironmentService.Update`); `@forced_save` (`force: true` writes); `@fresh_save` (current revision writes and returns a new revision)
+- [x] T034 [P] [US3] Create `test/integration/features/mcp/concurrent_writes.feature` (`@all @xen_023 @mcp @mcp_concurrent_writes`): `@parallel_request_edits` — clients `one` and `two` each start background `tree_edit` calls (`one` sets header A, `two` sets query param B on the same request, 5 rounds each via distinct keys), wait for both, request file contains every edit; `@parallel_env_edits` — both clients `env_edit add_var` distinct keys on Dev in the background, environment file contains all keys
+- [x] T035 [P] [US3] Create `test/integration/features/environments/environment_revision.feature` (`@all @xen_023 @environments @environment_revision`): `@revision_returned` (`EnvironmentService.Get` and `VariableService.GetTable` return the same non-empty `revision`); `@stale_table_save` (save with an old `base_revision` after an MCP `add_var` → `ENV-19409`, file unchanged); `@stale_settings_save` (same for `EnvironmentService.Update`); `@forced_save` (`force: true` writes); `@fresh_save` (current revision writes and returns a new revision)
 - [x] T036 [P] [US3] Vitest in `frontend/src/features/environments/store.test.ts`: save sends `baseRevision`; `ENV-19409` keeps the draft and sets the scope's conflict; `keepMine` resaves with `force: true`; `loadFromDisk` discards the draft and reloads
 - [x] T037 [P] [US3] Vitest in `frontend/src/features/environments/components/EnvironmentTab.test.tsx`: conflict notice text "This environment changed on disk since it was opened" with **Load from disk** and **Keep mine** buttons calling the store
-- [ ] T038 [US3] Run T034–T037 and record that they fail (red)
+- [x] T038 [US3] Run T034–T037 and record that they fail (red)
 
 ### Implementation
 
@@ -125,7 +125,7 @@ description: "Task list for XEN-023 Per-Session MCP Context"
 - [x] T046 [US3] DTOs: `revision` on `internal/integration/entrypoint/dto/environment.go` and `variable_table.go` (environment scopes); `base_revision`, `force` on `update_environment.go` and `save_variable_table.go`; window controllers `environment_manage.go`, `variable_table.go` pass them
 - [x] T047 [P] [US3] Frontend platform: `revision`/`baseRevision`/`force` in `frontend/src/platform/services/environments.ts`, `variables.ts` and their mappers (+ `environments.test.ts`, `variables.test.ts` cases)
 - [x] T048 [US3] `frontend/src/features/environments/store.ts`: keep `revision` per table/environment, `baseRevision` on drafts, `conflicts` state, `keepMine(scope)`, `loadFromDisk(scope)`; `frontend/src/features/environments/components/EnvironmentTab.tsx` (+ `.module.css`) renders the conflict notice
-- [ ] T049 [US3] Run T034–T037 green, then `make bdd TAG=@environments`, `make bdd TAG=@variables`, `make bdd TAG=@requests`, `make bdd TAG=@aliases`, `make bdd TAG=@git` and the environments Vitest suites
+- [x] T049 [US3] Run T034–T037 green, then `make bdd TAG=@environments`, `make bdd TAG=@variables`, `make bdd TAG=@requests`, `make bdd TAG=@aliases`, `make bdd TAG=@git` and the environments Vitest suites
 
 **Checkpoint**: no silent lost writes.
 
@@ -139,9 +139,9 @@ description: "Task list for XEN-023 Per-Session MCP Context"
 
 ### Tests (write first, prove red)
 
-- [ ] T050 [P] [US4] Add `@session_tag` to `test/integration/features/history/ai_activity.feature`: MCP clients named `one` and `two` (one session each) each call `tree`, then `HistoryService.List` with source `ai` shows two action entries whose `session` values are 6 characters long and differ, `HistoryService.List` with `query` = one entry's `session` returns only that session's AI entries; tag `@xen_023`
+- [x] T050 [P] [US4] Add `@session_tag` to `test/integration/features/history/ai_activity.feature`: MCP clients named `one` and `two` (one session each) each call `tree`, then `HistoryService.List` with source `ai` shows two action entries whose `session` values are 6 characters long and differ, `HistoryService.List` with `query` = one entry's `session` returns only that session's AI entries; tag `@xen_023`
 - [x] T051 [P] [US4] Vitest in `frontend/src/features/sidebar/components/HistoryView.test.tsx`: an AI row renders `client · tag`; an action row (`HistoryActionRow`) too
-- [ ] T052 [US4] Run T050–T051 and record that they fail (red)
+- [x] T052 [US4] Run T050–T051 and record that they fail (red)
 
 ### Implementation
 
@@ -149,15 +149,15 @@ description: "Task list for XEN-023 Per-Session MCP Context"
 - [x] T054 [US4] `RecordAIActivityService.Record(ctx, localId, client, session, activity)` (`internal/application/adapter/record_ai_activity.go`, `internal/application/service/record_ai_activity.go`); `dto.AIActivityRecord` carries the tag (`internal/integration/entrypoint/dto/ai_activity_record.go`); `mcp_call.go` passes `toolCall.SessionTag()`; `dto/mcp_send.go` origin carries the tag
 - [x] T055 [US4] Persist and expose: `session,omitempty` in `internal/integration/persistence/model/history_entry.go`, `internal/integration/entrypoint/dto/history_entry.go`, `dto/mcp_history_line.go`
 - [x] T056 [US4] Frontend: `session` in `frontend/src/platform/mappers/history.ts`; `aiTag(client, session)` used by `frontend/src/features/sidebar/components/HistoryView.tsx` and `HistoryActionRow.tsx` (visible text and `aria-label`)
-- [ ] T057 [US4] Run T050–T051 green, then `make bdd TAG=@history`
+- [x] T057 [US4] Run T050–T051 green, then `make bdd TAG=@history`
 
 ---
 
 ## Phase 7: Polish & cross-cutting
 
-- [ ] T058 `make sort-imports`, then `make bdd` (full suite) and the full Vitest run; all green
+- [x] T058 `make sort-imports`, then `make bdd` (full suite) and the full Vitest run; all green
 - [x] T059 Update `docs/prd/xenon-mvp-prd.md`: replace the AI-access bullet "Tools act on the single active workspace. Switching workspace through MCP switches the window too, …" (line 379) with: each MCP session has its own workspace and environment, seeded from the window when it connects; MCP never switches the window, and data changes still show up in it at once; and add an XEN-023 entry to the delivered list noting the `tools/list` budget raised from 39,000 to 39,500 characters
-- [ ] T060 `/refactor-diff` until clean, then `make validate`
+- [x] T060 `/refactor-diff` until clean, then `make validate`
 
 ---
 

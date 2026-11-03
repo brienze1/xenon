@@ -242,7 +242,13 @@ func (m *mcpEnvEdit) setActive(ctx context.Context, call dto.MCPToolCall) (dto.M
 		return dto.MCPToolResult{}, err
 	}
 
-	chosen, err := m.manageAISessionService.ChooseEnvironment(ctx, call.Session, request.Id)
+	session := dto.NewMCPSession(call.Session)
+	err = validateAIArguments(&session)
+	if err != nil {
+		return dto.MCPToolResult{}, err
+	}
+
+	chosen, err := m.manageAISessionService.ChooseEnvironment(ctx, session.SessionId(), request.Id)
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}

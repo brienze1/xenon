@@ -37,7 +37,6 @@ func (r RunPlan) Configured(overrides RunOverrides) (RunConfig, bool) {
 	return config, known
 }
 
-// EnvironmentID resolves an environment name or id, or NoEnvironmentID; false when no environment matches.
 func (r RunPlan) EnvironmentID(ref string) (string, bool) {
 	return ResolveEnvironmentRef(r.Environments, ref)
 }

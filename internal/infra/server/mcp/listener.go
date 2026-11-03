@@ -78,11 +78,14 @@ func (l *listener) Close() {
 	if l.httpServer != nil {
 		_ = l.httpServer.Close()
 	}
-	// Serve runs on its own goroutine, so http.Server may not hold the socket yet: close it here to free the port at once
+	l.closeNetListener()
+	l.httpServer, l.sdkServer, l.netListener = nil, nil, nil
+}
+
+func (l *listener) closeNetListener() {
 	if l.netListener != nil {
 		_ = l.netListener.Close()
 	}
-	l.httpServer, l.sdkServer, l.netListener = nil, nil, nil
 }
 
 func (l *listener) Clients() int {

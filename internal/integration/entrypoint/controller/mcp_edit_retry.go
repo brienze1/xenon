@@ -13,7 +13,6 @@ const mcpEditMaxAttempts = 50
 
 var mcpEditConflictCodes = []string{"REQ-02409", "ENV-19409"}
 
-// retryMCPEdit re-runs a read → merge → save attempt while it loses a revision conflict, returning the last error after 50 attempts.
 func retryMCPEdit[T any](ctx context.Context, attempt func() (T, error)) (T, error) {
 	var result T
 	var err error

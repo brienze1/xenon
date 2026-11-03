@@ -9,10 +9,6 @@ import (
 	"github.com/brienze1/xenon/pkg/logger"
 )
 
-type workspaceLockKey struct {
-	localId string
-}
-
 type workspaceLockPersistence struct {
 	locks sync.Map
 }
@@ -26,6 +22,7 @@ func (w *workspaceLockPersistence) LockWorkspace(ctx context.Context, localId st
 
 	key := workspaceLockKey{localId: localId}
 	if held, ok := ctx.Value(key).(*atomic.Bool); ok && held.Load() {
+		logger.Debug(ctx, "Finished", map[string]any{"localId": localId, "reentrant": true})
 		return ctx, func() {}
 	}
 	lock, _ := w.locks.LoadOrStore(localId, &sync.Mutex{})

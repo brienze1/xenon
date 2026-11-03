@@ -89,8 +89,8 @@ func (m *mcpWorkspace) active(ctx context.Context, call dto.MCPToolCall) (dto.MC
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
-	session := registry.WithActive(call.LocalId)
-	workspace, found := session.Active()
+	sessionRegistry := registry.WithActive(call.LocalId)
+	workspace, found := sessionRegistry.Active()
 	if !found {
 		return dto.MCPToolResult{}, mcpErrors.RejectInactiveAIWorkspace()
 	}
