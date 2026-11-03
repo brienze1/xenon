@@ -88,6 +88,7 @@ Services (`internal/application/service/`, adapters in `internal/application/ada
   - `mcp_workspace.go` — list/active from the session (`call.LocalId`, `call.EnvironmentId`).
   - `mcp_env.go` — list marks `call.EnvironmentId`; inspect passes it.
   - `mcp_env_edit.go` — `set_active` → `ChooseEnvironment`; no `Variables` change for it; drop `SetActiveEnvironmentService`.
+  - `mcp_edit_retry.go` (new) — `retryMCPEdit`: re-run read → merge → save on `REQ-02409`/`ENV-19409`, up to 50 attempts (research R8b); used by `mcp_tree_edit_request.go` (create-with-fields, update), `mcp_tree_edit_alias.go`, `mcp_tree_edit_example.go` and `mcp_env_edit.go` `update` (which now saves with `stored.Revision`).
   - `mcp_send.go` — resolve `arguments.Environment` (or `call.EnvironmentId`) → pass to `Send` (both the first and the confirmed attempt); origin carries the tag.
   - `mcp_run.go` — pass `call.EnvironmentId` as `activeEnvironmentId`.
   - `mcp_snippet.go` — pass `call.EnvironmentId`.

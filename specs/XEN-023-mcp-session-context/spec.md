@@ -169,7 +169,7 @@ The History "AI" activity and AI-sent history rows show the client name plus a s
 - **FR-017**: The request/alias/example revision check MUST be performed in the same serialised step as the write it guards.
 - **FR-018**: Environments MUST carry a revision (derived from the stored environment file) that the window receives when it loads an environment and sends back when saving the environment's settings or variable table; a save whose revision differs from the stored one MUST be refused with `ENV-19409` "the environment changed on disk since it was opened" and write nothing, unless the save is explicitly forced.
 - **FR-019**: When the window's environment save is refused with `ENV-19409`, the environment editor MUST keep the user's draft and offer "Load from disk" (discard the draft, show the latest) and "Keep mine" (save again, forced).
-- **FR-020**: MCP environment edits (`env_edit` update, add_var, set_vars, set_current, reset, persist, reorder, duplicate) MUST apply on top of the latest stored environment inside the serialised step, so concurrent MCP edits never drop each other's changes.
+- **FR-020**: MCP edits MUST apply on top of the latest stored version, so concurrent MCP edits never drop each other's changes and never fail with a conflict: single-step edits (`env_edit` add_var, set_vars, set_current, reset, persist, reorder, duplicate) run inside the serialised step; edits that read and then save (`tree_edit` request create-with-fields/update, alias and example edits, `env_edit` update) save with the revision they read and, when another write landed in between, read again and re-apply their change (up to 50 attempts; each conflict means another write succeeded).
 
 **Visibility and documentation**
 

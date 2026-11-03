@@ -120,11 +120,12 @@ description: "Task list for XEN-023 Per-Session MCP Context"
 - [ ] T041 [US3] Take `LockWorkspace` at the start of every mutating method (use the returned ctx for the rest of the method) in `internal/application/service/`: `save_request.go`, `manage_tree_item.go`, `manage_alias.go`, `manage_example.go`, `manage_item_settings.go`, `manage_documentation.go`, `manage_environment.go`, `reorder_environment.go`, `set_active_environment.go`, `manage_variable_table.go`, `manage_vault.go`, `manage_oauth.go`, `manage_cookies.go`, `rename_workspace.go`, `manage_import.go`, `handle_file_change.go` (variable fix-up), `pull_workspace.go`, `finish_pull.go`, `sync_pull.go`; also inside `vaultWriter.update` in `vault_writer.go` (add a `lockWorkspace` field, set by every constructor that builds a `vaultWriter`); inject the port via each service's DI file in `internal/infra/dependency/application/`
 - [ ] T042 [P] [US3] Add `Revision` to `entity.Environment` (`internal/domain/entity/environment.go`); compute SHA-256 of the file bytes in `internal/integration/persistence/environment.go` `Find`/`List` (not serialised; `model/environment.go` untouched on write)
 - [ ] T043 [P] [US3] Add `usecase.RejectStaleEnvironmentWrite()` → `errs.ConflictError("the environment changed on disk since it was opened", "ENV-19409")` in `internal/application/usecase/reject_stale_environment_write.go`
-- [ ] T044 [US3] `ManageEnvironmentService.Update(ctx, localId, environment, baseRevision, force)` and `ManageVariableTableService.SaveTable(ctx, localId, scope, edits, confirmReveal, baseRevision, force)`: inside the lock, when the scope is an environment, `baseRevision != ""` and `!force`, compare with the stored `Revision` → `RejectStaleEnvironmentWrite` (`internal/application/adapter/` + `internal/application/service/manage_environment.go`, `manage_variable_table.go`); MCP callers (`mcp_env_edit.go`, `mcp_variable_rows.go`) pass `""`, `false`
-- [ ] T045 [US3] DTOs: `revision` on `internal/integration/entrypoint/dto/environment.go` and `variable_table.go` (environment scopes); `base_revision`, `force` on `update_environment.go` and `save_variable_table.go`; window controllers `environment_manage.go`, `variable_table.go` pass them
-- [ ] T046 [P] [US3] Frontend platform: `revision`/`baseRevision`/`force` in `frontend/src/platform/services/environments.ts`, `variables.ts` and their mappers (+ `environments.test.ts`, `variables.test.ts` cases)
-- [ ] T047 [US3] `frontend/src/features/environments/store.ts`: keep `revision` per table/environment, `baseRevision` on drafts, `conflicts` state, `keepMine(scope)`, `loadFromDisk(scope)`; `frontend/src/features/environments/components/EnvironmentTab.tsx` (+ `.module.css`) renders the conflict notice
-- [ ] T048 [US3] Run T034–T037 green, then `make bdd TAG=@environments`, `make bdd TAG=@variables`, `make bdd TAG=@requests`, `make bdd TAG=@aliases`, `make bdd TAG=@git` and the environments Vitest suites
+- [ ] T044 [US3] `ManageEnvironmentService.Update(ctx, localId, environment, baseRevision, force)` and `ManageVariableTableService.SaveTable(ctx, localId, scope, edits, confirmReveal, baseRevision, force)`: inside the lock, when the scope is an environment, `baseRevision != ""` and `!force`, compare with the stored `Revision` → `RejectStaleEnvironmentWrite` (`internal/application/adapter/` + `internal/application/service/manage_environment.go`, `manage_variable_table.go`); MCP single-step callers (`mcp_variable_rows.go`, add_var/set_current/reset/persist paths) pass `""`, `false`; `mcp_env_edit.go` `update` passes the revision it read (T045)
+- [ ] T045 [US3] Add `retryMCPEdit` in `internal/integration/entrypoint/controller/mcp_edit_retry.go` (re-run on `REQ-02409`/`ENV-19409`, max 50 attempts, last error returned) and wrap the read → merge → save sequences in `mcp_tree_edit_request.go` (`createRequest` with fields, `updateRequest`), `mcp_tree_edit_alias.go`, `mcp_tree_edit_example.go` and `mcp_env_edit.go` `update` (pass `stored.Revision` as base revision instead of `""`); add `mcp_edit_retry_test.go` (stops on success, retries only conflicts, cap)
+- [ ] T046 [US3] DTOs: `revision` on `internal/integration/entrypoint/dto/environment.go` and `variable_table.go` (environment scopes); `base_revision`, `force` on `update_environment.go` and `save_variable_table.go`; window controllers `environment_manage.go`, `variable_table.go` pass them
+- [ ] T047 [P] [US3] Frontend platform: `revision`/`baseRevision`/`force` in `frontend/src/platform/services/environments.ts`, `variables.ts` and their mappers (+ `environments.test.ts`, `variables.test.ts` cases)
+- [ ] T048 [US3] `frontend/src/features/environments/store.ts`: keep `revision` per table/environment, `baseRevision` on drafts, `conflicts` state, `keepMine(scope)`, `loadFromDisk(scope)`; `frontend/src/features/environments/components/EnvironmentTab.tsx` (+ `.module.css`) renders the conflict notice
+- [ ] T049 [US3] Run T034–T037 green, then `make bdd TAG=@environments`, `make bdd TAG=@variables`, `make bdd TAG=@requests`, `make bdd TAG=@aliases`, `make bdd TAG=@git` and the environments Vitest suites
 
 **Checkpoint**: no silent lost writes.
 
@@ -138,25 +139,25 @@ description: "Task list for XEN-023 Per-Session MCP Context"
 
 ### Tests (write first, prove red)
 
-- [ ] T049 [P] [US4] Add `@session_tag` to `test/integration/features/history/ai_activity.feature`: MCP clients named `one` and `two` (one session each) each call `tree`, then `HistoryService.List` with source `ai` shows two action entries whose `session` values are 6 characters long and differ, `HistoryService.List` with `query` = one entry's `session` returns only that session's AI entries; tag `@xen_023`
-- [ ] T050 [P] [US4] Vitest in `frontend/src/features/sidebar/components/HistoryView.test.tsx`: an AI row renders `client · tag`; an action row (`HistoryActionRow`) too
-- [ ] T051 [US4] Run T049–T050 and record that they fail (red)
+- [ ] T050 [P] [US4] Add `@session_tag` to `test/integration/features/history/ai_activity.feature`: MCP clients named `one` and `two` (one session each) each call `tree`, then `HistoryService.List` with source `ai` shows two action entries whose `session` values are 6 characters long and differ, `HistoryService.List` with `query` = one entry's `session` returns only that session's AI entries; tag `@xen_023`
+- [ ] T051 [P] [US4] Vitest in `frontend/src/features/sidebar/components/HistoryView.test.tsx`: an AI row renders `client · tag`; an action row (`HistoryActionRow`) too
+- [ ] T052 [US4] Run T050–T051 and record that they fail (red)
 
 ### Implementation
 
-- [ ] T052 [P] [US4] Add `AISessionTag` in `internal/domain/entity/ai_session_tag.go` (+ test); `Session` on `SendOrigin` (`send_origin.go`) and `HistoryEntry` (`history_entry.go`, set from origin; `Matches` also checks the tag for AI entries, + test)
-- [ ] T053 [US4] `RecordAIActivityService.Record(ctx, localId, client, session, activity)` (`internal/application/adapter/record_ai_activity.go`, `internal/application/service/record_ai_activity.go`); `dto.AIActivityRecord` carries the tag (`internal/integration/entrypoint/dto/ai_activity_record.go`); `mcp_call.go` passes `toolCall.SessionTag()`; `dto/mcp_send.go` origin carries the tag
-- [ ] T054 [US4] Persist and expose: `session,omitempty` in `internal/integration/persistence/model/history_entry.go`, `internal/integration/entrypoint/dto/history_entry.go`, `dto/mcp_history_line.go`
-- [ ] T055 [US4] Frontend: `session` in `frontend/src/platform/mappers/history.ts`; `aiTag(client, session)` used by `frontend/src/features/sidebar/components/HistoryView.tsx` and `HistoryActionRow.tsx` (visible text and `aria-label`)
-- [ ] T056 [US4] Run T049–T050 green, then `make bdd TAG=@history`
+- [ ] T053 [P] [US4] Add `AISessionTag` in `internal/domain/entity/ai_session_tag.go` (+ test); `Session` on `SendOrigin` (`send_origin.go`) and `HistoryEntry` (`history_entry.go`, set from origin; `Matches` also checks the tag for AI entries, + test)
+- [ ] T054 [US4] `RecordAIActivityService.Record(ctx, localId, client, session, activity)` (`internal/application/adapter/record_ai_activity.go`, `internal/application/service/record_ai_activity.go`); `dto.AIActivityRecord` carries the tag (`internal/integration/entrypoint/dto/ai_activity_record.go`); `mcp_call.go` passes `toolCall.SessionTag()`; `dto/mcp_send.go` origin carries the tag
+- [ ] T055 [US4] Persist and expose: `session,omitempty` in `internal/integration/persistence/model/history_entry.go`, `internal/integration/entrypoint/dto/history_entry.go`, `dto/mcp_history_line.go`
+- [ ] T056 [US4] Frontend: `session` in `frontend/src/platform/mappers/history.ts`; `aiTag(client, session)` used by `frontend/src/features/sidebar/components/HistoryView.tsx` and `HistoryActionRow.tsx` (visible text and `aria-label`)
+- [ ] T057 [US4] Run T050–T051 green, then `make bdd TAG=@history`
 
 ---
 
 ## Phase 7: Polish & cross-cutting
 
-- [ ] T057 `make sort-imports`, then `make bdd` (full suite) and the full Vitest run; all green
-- [ ] T058 Update `docs/prd/xenon-mvp-prd.md`: replace the AI-access bullet "Tools act on the single active workspace. Switching workspace through MCP switches the window too, …" (line 379) with: each MCP session has its own workspace and environment, seeded from the window when it connects; MCP never switches the window, and data changes still show up in it at once; and add an XEN-023 entry to the delivered list noting the `tools/list` budget raised from 39,000 to 39,500 characters
-- [ ] T059 `/refactor-diff` until clean, then `make validate`
+- [ ] T058 `make sort-imports`, then `make bdd` (full suite) and the full Vitest run; all green
+- [ ] T059 Update `docs/prd/xenon-mvp-prd.md`: replace the AI-access bullet "Tools act on the single active workspace. Switching workspace through MCP switches the window too, …" (line 379) with: each MCP session has its own workspace and environment, seeded from the window when it connects; MCP never switches the window, and data changes still show up in it at once; and add an XEN-023 entry to the delivered list noting the `tools/list` budget raised from 39,000 to 39,500 characters
+- [ ] T060 `/refactor-diff` until clean, then `make validate`
 
 ---
 
@@ -172,8 +173,8 @@ description: "Task list for XEN-023 Per-Session MCP Context"
 - Phase 2: T002, T003, T006 together.
 - US1 tests: T010, T011, T012, T013 together.
 - US2: T024, T025, T026 together; T030 and T031 together.
-- US3: T034–T037 together; T042, T043, T046 together.
-- US4: T049, T050 together.
+- US3: T034–T037 together; T042, T043, T047 together.
+- US4: T050, T051 together.
 
 ## Implementation Strategy
 

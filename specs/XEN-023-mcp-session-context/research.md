@@ -121,8 +121,24 @@ All findings verified on `main` @ `c87aed8` (2026-11-03). No open unknowns remai
   the stored revision with `base_revision` when the scope is an environment and `base_revision` is non-empty and
   `force` is false; mismatch → `errs.ConflictError("the environment changed on disk since it was opened",
   "ENV-19409")` via a new `usecase.RejectStaleEnvironmentWrite()` (mirrors `reject_stale_alias_write.go`).
-- **Empty `base_revision`** means "patch the latest": used only by MCP paths, which read the stored environment and
-  apply their change inside the same locked step (FR-020). The window always sends its revision.
+- **Empty `base_revision`** means "patch the latest": used only by MCP single-step edits (add_var, set_current,
+  reset, persist, reorder, duplicate, set_vars), which load and write inside one locked service call. The window
+  always sends its revision.
+
+## R8b — MCP read-then-save edits (FR-020)
+
+- **Facts**: `mcp_tree_edit_request.go` (`updateRequest`, `createRequest` with fields), `mcp_tree_edit_alias.go`,
+  `mcp_tree_edit_example.go` and `mcp_env_edit.go` (`update`) call an open/get service, merge the arguments into the
+  stored copy in the DTO, then call a save service — two service calls, so the workspace lock cannot span them.
+- **Decision**: these paths save with the revision they read (requests/aliases/examples already do; `env_edit update`
+  now passes `stored.Revision` instead of `""`) and, on `REQ-02409` / `ENV-19409`, re-run read → merge → save, up
+  to 50 attempts, in a controller helper `retryMCPEdit(ctx, attempt func() (T, error))`
+  (`internal/integration/entrypoint/controller/mcp_edit_retry.go`). A conflict means another write completed, so the
+  loop always makes progress; the cap only guards against a broken revision. After 50 conflicts the last
+  conflict error is returned.
+- **Alternatives considered**: passing a closure into a new application `Edit` service method (rejected: moves DTO
+  merge logic across the layer boundary); forcing MCP saves (rejected: silently overwrites the window's or another
+  session's write).
 - **Next free code**: `ENV-19409` (existing ENV codes end at `ENV-18400`).
 
 ## R9 — Window conflict UX for environments
