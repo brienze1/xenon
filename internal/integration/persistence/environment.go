@@ -140,14 +140,18 @@ func readEnvironments(root string) ([]entity.Environment, error) {
 }
 
 func readEnvironment(dir, fileName string) entity.Environment {
+	data, err := os.ReadFile(filepath.Join(dir, fileName))
+	if err != nil {
+		return entity.NewMalformedEnvironment(fileName, fileName+" cannot be read: "+err.Error())
+	}
 	var stored model.Environment
-	if reason := readDocument(filepath.Join(dir, fileName), itemkind.Environment, &stored.Xenon, &stored.Kind, &stored); reason != "" {
+	if reason := decodeDocument(fileName, data, itemkind.Environment, &stored.Xenon, &stored.Kind, &stored); reason != "" {
 		return entity.NewMalformedEnvironment(fileName, reason)
 	}
 	if !stored.HasId() {
 		return entity.NewMalformedEnvironment(fileName, fileName+" has no id")
 	}
-	return stored.ToEntity(fileName)
+	return stored.ToStoredEntity(fileName, revisionOf(data))
 }
 
 func isEnvironmentFile(entry fs.DirEntry) bool {

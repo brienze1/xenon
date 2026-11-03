@@ -15,6 +15,7 @@ type vaultWriter struct {
 	saveVaultSettings    usecase.SaveVaultSettings
 	probeKeychain        usecase.ProbeKeychain
 	publishVariableEvent usecase.PublishVariableEvent
+	lockWorkspace        usecase.LockWorkspace
 }
 
 func (v vaultWriter) write(ctx context.Context, vault entity.Vault, scope entity.ScopeRef, secrets map[string]string) (entity.Vault, error) {
@@ -24,6 +25,8 @@ func (v vaultWriter) write(ctx context.Context, vault entity.Vault, scope entity
 }
 
 func (v vaultWriter) update(ctx context.Context, localId string, change func(entity.Vault) entity.Vault) (entity.Vault, error) {
+	ctx, unlock := v.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	settings, err := v.findVaultSettings.FindSettings(ctx)
 	if err != nil {
 		return entity.Vault{}, err

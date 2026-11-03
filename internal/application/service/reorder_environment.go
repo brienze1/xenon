@@ -15,6 +15,7 @@ type reorderEnvironment struct {
 	findLocalVariables    usecase.FindLocalVariables
 	orders                environmentOrders
 	publishVariableEvent  usecase.PublishVariableEvent
+	lockWorkspace         usecase.LockWorkspace
 }
 
 func NewReorderEnvironmentService(
@@ -25,6 +26,7 @@ func NewReorderEnvironmentService(
 	saveWorkspaceFile usecase.SaveWorkspaceFile,
 	findLocalVariables usecase.FindLocalVariables,
 	publishVariableEvent usecase.PublishVariableEvent,
+	lockWorkspace usecase.LockWorkspace,
 ) adapter.ReorderEnvironmentService {
 	return &reorderEnvironment{
 		findWorkspaceRegistry: findWorkspaceRegistry,
@@ -36,12 +38,15 @@ func NewReorderEnvironmentService(
 			saveWorkspaceFile: saveWorkspaceFile,
 		},
 		publishVariableEvent: publishVariableEvent,
+		lockWorkspace:        lockWorkspace,
 	}
 }
 
 func (r *reorderEnvironment) Reorder(ctx context.Context, localId, id string, index int) (*entity.EnvironmentList, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id, "index": index})
 
+	ctx, unlock := r.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	workspace, err := r.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
 		return nil, err

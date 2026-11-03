@@ -18,6 +18,7 @@ type manageVariableTable struct {
 	saveLocalVariables    usecase.SaveLocalVariables
 	vaults                vaultWriter
 	publishVariableEvent  usecase.PublishVariableEvent
+	lockWorkspace         usecase.LockWorkspace
 }
 
 type loadedTable struct {
@@ -43,6 +44,7 @@ func NewManageVariableTableService(
 	saveVaultSettings usecase.SaveVaultSettings,
 	probeKeychain usecase.ProbeKeychain,
 	publishVariableEvent usecase.PublishVariableEvent,
+	lockWorkspace usecase.LockWorkspace,
 ) adapter.ManageVariableTableService {
 	scopes := variableScopes{findEnvironment: findEnvironment, findTreeItem: findTreeItem, loadWorkspace: loadWorkspace}
 	return &manageVariableTable{
@@ -63,8 +65,10 @@ func NewManageVariableTableService(
 			saveVaultSettings:    saveVaultSettings,
 			probeKeychain:        probeKeychain,
 			publishVariableEvent: publishVariableEvent,
+			lockWorkspace:        lockWorkspace,
 		},
 		publishVariableEvent: publishVariableEvent,
+		lockWorkspace:        lockWorkspace,
 	}
 }
 
@@ -80,12 +84,17 @@ func (m *manageVariableTable) GetTable(ctx context.Context, localId string, scop
 	return &loaded.table, nil
 }
 
-func (m *manageVariableTable) SaveTable(ctx context.Context, localId string, scope entity.ScopeRef, edits []entity.VariableEdit, confirmReveal bool) (*entity.VariableTable, error) {
-	logger.Info(ctx, "Started", map[string]any{"localId": localId, "scope": scope.String(), "edits": edits, "confirmReveal": confirmReveal})
+func (m *manageVariableTable) SaveTable(ctx context.Context, localId string, scope entity.ScopeRef, edits []entity.VariableEdit, confirmReveal bool, baseRevision string, force bool) (*entity.VariableTable, error) {
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "scope": scope.String(), "edits": edits, "confirmReveal": confirmReveal, "baseRevision": baseRevision, "force": force})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	loaded, err := m.load(ctx, localId, scope)
 	if err != nil {
 		return nil, err
+	}
+	if loaded.table.BlocksSave(baseRevision, force) {
+		return nil, usecase.RejectStaleEnvironmentWrite()
 	}
 	if loaded.table.RevealedBy(edits) && !confirmReveal {
 		return nil, errs.ConflictError("turning a secret into a plain variable writes its value to the workspace files; confirm it", "VAR-01409")
@@ -99,13 +108,15 @@ func (m *manageVariableTable) SaveTable(ctx context.Context, localId string, sco
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "scope": scope.String(), "result": *saved})
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "scope": scope.String(), "edits": edits, "confirmReveal": confirmReveal, "baseRevision": baseRevision, "force": force, "result": *saved})
 	return saved, nil
 }
 
 func (m *manageVariableTable) SetCurrent(ctx context.Context, localId string, scope entity.ScopeRef, key, value string) (*entity.VariableTableEntry, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "scope": scope.String(), "key": key, "value": entity.MaskedValue})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	loaded, err := m.load(ctx, localId, scope)
 	if err != nil {
 		return nil, err
@@ -126,6 +137,8 @@ func (m *manageVariableTable) SetCurrent(ctx context.Context, localId string, sc
 func (m *manageVariableTable) Reset(ctx context.Context, localId string, scope entity.ScopeRef, keys []string) (*entity.VariableTable, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "scope": scope.String(), "keys": keys})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	loaded, err := m.load(ctx, localId, scope)
 	if err != nil {
 		return nil, err
@@ -142,6 +155,8 @@ func (m *manageVariableTable) Reset(ctx context.Context, localId string, scope e
 func (m *manageVariableTable) Persist(ctx context.Context, localId string, scope entity.ScopeRef, keys []string) (*entity.VariableTable, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "scope": scope.String(), "keys": keys})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	loaded, err := m.load(ctx, localId, scope)
 	if err != nil {
 		return nil, err
@@ -161,6 +176,8 @@ func (m *manageVariableTable) Persist(ctx context.Context, localId string, scope
 func (m *manageVariableTable) AddVariable(ctx context.Context, localId string, scope entity.ScopeRef, row entity.VariableRow, value string) (*entity.VariableTableEntry, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "scope": scope.String(), "row": row, "value": entity.MaskedValue})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	loaded, err := m.load(ctx, localId, scope)
 	if err != nil {
 		return nil, err
@@ -186,7 +203,7 @@ func (m *manageVariableTable) load(ctx context.Context, localId string, scope en
 	if err != nil {
 		return nil, err
 	}
-	rows, err := m.scopes.rows(ctx, workspace.Path, scope)
+	rows, revision, err := m.scopes.revisionedRows(ctx, workspace.Path, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +215,7 @@ func (m *manageVariableTable) load(ctx context.Context, localId string, scope en
 	if err != nil {
 		return nil, err
 	}
-	return &loadedTable{root: workspace.Path, local: *local, vault: *vault, table: entity.NewVariableTable(scope, rows, *local, *vault)}, nil
+	return &loadedTable{root: workspace.Path, local: *local, vault: *vault, table: entity.NewVariableTable(scope, rows, *local, *vault).WithRevision(revision)}, nil
 }
 
 func (m *manageVariableTable) store(ctx context.Context, localId string, loaded loadedTable, edited entity.VariableTable, rowsChanged bool) (*entity.VariableTable, error) {
@@ -215,8 +232,9 @@ func (m *manageVariableTable) store(ctx context.Context, localId string, loaded 
 		restoreVault()
 		return nil, err
 	}
+	revision := loaded.table.Revision
 	if rowsChanged {
-		if err := m.rowStore.save(ctx, loaded.root, edited.Scope, edited.Rows); err != nil {
+		if revision, err = m.rowStore.save(ctx, loaded.root, edited.Scope, edited.Rows); err != nil {
 			m.restoreLocal(ctx, localId, loaded.local)
 			restoreVault()
 			return nil, err
@@ -225,7 +243,7 @@ func (m *manageVariableTable) store(ctx context.Context, localId string, loaded 
 	if err := m.publishVariableEvent.VariablesChanged(ctx, localId, []entity.ScopeRef{edited.Scope}, ""); err != nil {
 		return nil, err
 	}
-	stored := entity.NewVariableTable(edited.Scope, edited.Rows, loaded.local.WithCurrentValues(edited.Scope, edited.StoredCurrent()), vault).WithWarningsOf(edited)
+	stored := entity.NewVariableTable(edited.Scope, edited.Rows, loaded.local.WithCurrentValues(edited.Scope, edited.StoredCurrent()), vault).WithRevision(revision).WithWarningsOf(edited)
 	return &stored, nil
 }
 

@@ -22,6 +22,7 @@ func GetReorderEnvironmentService() adapter.ReorderEnvironmentService {
 				integration.GetWorkspacePersistence(),
 				integration.GetLocalVariablesPersistence(),
 				integration.GetVariableEventPublisher(),
+				integration.GetWorkspaceLockPersistence(),
 			)
 		})
 	}

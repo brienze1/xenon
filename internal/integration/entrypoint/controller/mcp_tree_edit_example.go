@@ -91,11 +91,13 @@ func (m *mcpTreeEdit) updateExample(ctx context.Context, call dto.MCPToolCall, e
 		return dto.MCPToolResult{}, err
 	}
 
-	stored, err := m.manageExampleService.Get(ctx, request.LocalId, request.RequestId, request.ExampleId)
-	if err != nil {
-		return dto.MCPToolResult{}, err
-	}
-	err = m.saveExample(ctx, arguments.SaveExample(call.LocalId, entry.RequestID, *stored))
+	_, err = retryMCPEdit(ctx, func() (struct{}, error) {
+		stored, err := m.manageExampleService.Get(ctx, request.LocalId, request.RequestId, request.ExampleId)
+		if err != nil {
+			return struct{}{}, err
+		}
+		return struct{}{}, m.saveExample(ctx, arguments.SaveExample(call.LocalId, entry.RequestID, *stored))
+	})
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}

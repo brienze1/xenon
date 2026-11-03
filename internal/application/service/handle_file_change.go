@@ -23,6 +23,7 @@ type handleFileChange struct {
 	findVault             usecase.FindVault
 	saveVault             usecase.SaveVault
 	publishVariableEvent  usecase.PublishVariableEvent
+	lockWorkspace         usecase.LockWorkspace
 }
 
 func NewHandleFileChangeService(
@@ -38,6 +39,7 @@ func NewHandleFileChangeService(
 	findVault usecase.FindVault,
 	saveVault usecase.SaveVault,
 	publishVariableEvent usecase.PublishVariableEvent,
+	lockWorkspace usecase.LockWorkspace,
 ) adapter.HandleFileChangeService {
 	return &handleFileChange{
 		findWorkspaceRegistry: findWorkspaceRegistry,
@@ -50,6 +52,7 @@ func NewHandleFileChangeService(
 		findVault:             findVault,
 		saveVault:             saveVault,
 		publishVariableEvent:  publishVariableEvent,
+		lockWorkspace:         lockWorkspace,
 	}
 }
 
@@ -101,6 +104,8 @@ func (h *handleFileChange) Handle(ctx context.Context, localId, path string) err
 }
 
 func (h *handleFileChange) variablesChanged(ctx context.Context, localId, root string, change entity.FileChange) error {
+	ctx, unlock := h.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	local, err := h.findLocalVariables.Find(ctx, localId)
 	if local, err = localVariablesOrDefaults(ctx, localId, local, err); err != nil {
 		return err

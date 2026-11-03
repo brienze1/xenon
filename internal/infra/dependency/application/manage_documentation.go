@@ -26,6 +26,7 @@ func GetManageDocumentationService() adapter.ManageDocumentationService {
 				integration.GetTreePersistence(),
 				integration.GetOpenApiWebservice(),
 				integration.GetOpenApiWebservice(),
+				integration.GetWorkspaceLockPersistence(),
 			)
 		})
 	}

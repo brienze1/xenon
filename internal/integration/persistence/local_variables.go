@@ -19,8 +19,7 @@ import (
 const localVariablesFile = "variables.json"
 
 type localVariablesPersistence struct {
-	workspaceLocks sync.Map
-	mutex          sync.Mutex
+	mutex sync.Mutex
 }
 
 func NewLocalVariablesPersistence() adapter.LocalVariablesPersistence {
@@ -72,15 +71,4 @@ func (l *localVariablesPersistence) Delete(ctx context.Context, localId string) 
 
 	logger.Debug(ctx, "Finished", map[string]any{"localId": localId})
 	return nil
-}
-
-func (l *localVariablesPersistence) LockVariables(ctx context.Context, localId string) func() {
-	logger.Debug(ctx, "Started", map[string]any{"localId": localId})
-
-	lock, _ := l.workspaceLocks.LoadOrStore(localId, &sync.Mutex{})
-	mutex := lock.(*sync.Mutex)
-	mutex.Lock()
-
-	logger.Debug(ctx, "Finished", map[string]any{"localId": localId})
-	return mutex.Unlock
 }

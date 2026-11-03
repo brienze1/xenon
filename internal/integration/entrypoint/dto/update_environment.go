@@ -13,7 +13,9 @@ type UpdateEnvironment struct {
 	Name              string `json:"name" validate:"required,not_blank"`
 	Description       string `json:"description"`
 	Color             string `json:"color" validate:"oneof=none green cyan magenta yellow red"`
+	BaseRevision      string `json:"base_revision"`
 	ConfirmBeforeSend bool   `json:"confirm_before_send"`
+	Force             bool   `json:"force"`
 }
 
 func (u *UpdateEnvironment) ToEntity() entity.Environment {

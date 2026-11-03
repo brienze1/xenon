@@ -13,14 +13,16 @@ type manageItemSettings struct {
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry
 	findTreeItem          usecase.FindTreeItem
 	saveTreeItem          usecase.SaveTreeItem
+	lockWorkspace         usecase.LockWorkspace
 }
 
 func NewManageItemSettingsService(
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry,
 	findTreeItem usecase.FindTreeItem,
 	saveTreeItem usecase.SaveTreeItem,
+	lockWorkspace usecase.LockWorkspace,
 ) adapter.ManageItemSettingsService {
-	return &manageItemSettings{findWorkspaceRegistry: findWorkspaceRegistry, findTreeItem: findTreeItem, saveTreeItem: saveTreeItem}
+	return &manageItemSettings{findWorkspaceRegistry: findWorkspaceRegistry, findTreeItem: findTreeItem, saveTreeItem: saveTreeItem, lockWorkspace: lockWorkspace}
 }
 
 func (i *manageItemSettings) Get(ctx context.Context, localId, id string) (*entity.Collection, error) {
@@ -42,6 +44,8 @@ func (i *manageItemSettings) Get(ctx context.Context, localId, id string) (*enti
 func (i *manageItemSettings) Save(ctx context.Context, localId string, settings entity.Collection) (*entity.Collection, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "settings": settings})
 
+	ctx, unlock := i.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	workspace, err := i.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
 		return nil, err

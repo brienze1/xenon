@@ -15,25 +15,30 @@ type variableScopes struct {
 }
 
 func (v variableScopes) rows(ctx context.Context, root string, scope entity.ScopeRef) ([]entity.VariableRow, error) {
+	rows, _, err := v.revisionedRows(ctx, root, scope)
+	return rows, err
+}
+
+func (v variableScopes) revisionedRows(ctx context.Context, root string, scope entity.ScopeRef) ([]entity.VariableRow, string, error) {
 	switch {
 	case scope.IsEnvironment():
 		environment, err := v.findEnvironment.Find(ctx, root, scope.ID)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
-		return environment.Variables, nil
+		return environment.Variables, environment.Revision, nil
 	case scope.IsCollection():
 		collection, err := v.collection(ctx, root, scope)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
-		return collection.Variables, nil
+		return collection.Variables, "", nil
 	default:
 		workspace, err := v.loadWorkspace.Load(ctx, root)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
-		return workspace.Variables, nil
+		return workspace.Variables, "", nil
 	}
 }
 

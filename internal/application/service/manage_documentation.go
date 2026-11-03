@@ -14,6 +14,7 @@ type manageDocumentation struct {
 	findWorkspaceRegistry usecase.FindWorkspaceRegistry
 	source                documentationSource
 	writer                documentationWriter
+	lockWorkspace         usecase.LockWorkspace
 }
 
 func NewManageDocumentationService(
@@ -28,6 +29,7 @@ func NewManageDocumentationService(
 	renameTreeItem usecase.RenameTreeItem,
 	writeApiDocument usecase.WriteApiDocument,
 	readApiDocument usecase.ReadApiDocument,
+	lockWorkspace usecase.LockWorkspace,
 ) adapter.ManageDocumentationService {
 	return &manageDocumentation{
 		findWorkspaceRegistry: findWorkspaceRegistry,
@@ -46,6 +48,7 @@ func NewManageDocumentationService(
 			deleteTreeItem:      deleteTreeItem,
 			renameTreeItem:      renameTreeItem,
 		},
+		lockWorkspace: lockWorkspace,
 	}
 }
 
@@ -100,6 +103,8 @@ func (m *manageDocumentation) Plan(ctx context.Context, localId, id, text string
 func (m *manageDocumentation) Apply(ctx context.Context, localId, id, text string, confirmDeletions, keepDeleted bool) (*entity.DocumentationResult, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id, "text": text, "confirmDeletions": confirmDeletions, "keepDeleted": keepDeleted})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	workspace, err := m.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
 		return nil, err

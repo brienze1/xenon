@@ -20,6 +20,7 @@ func GetSaveRequestService() adapter.SaveRequestService {
 				integration.GetRequestPersistence(),
 				integration.GetTreePersistence(),
 				integration.GetTreePersistence(),
+				integration.GetWorkspaceLockPersistence(),
 			)
 		})
 	}

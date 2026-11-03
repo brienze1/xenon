@@ -19,6 +19,7 @@ func GetRenameWorkspaceService() adapter.RenameWorkspaceService {
 				integration.GetRegistryPersistence(),
 				integration.GetWorkspacePersistence(),
 				integration.GetWorkspacePersistence(),
+				integration.GetWorkspaceLockPersistence(),
 			)
 		})
 	}

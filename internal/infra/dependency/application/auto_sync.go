@@ -40,6 +40,7 @@ func GetAutoSyncService() adapter.AutoSyncService {
 				integration.GetSyncSessionPersistence(),
 				integration.GetSyncSessionPersistence(),
 				integration.GetTreePersistence(),
+				integration.GetWorkspaceLockPersistence(),
 			)
 		})
 	}

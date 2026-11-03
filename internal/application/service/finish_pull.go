@@ -21,6 +21,7 @@ type finishPull struct {
 	resolver           syncResolver
 	writer             syncWorktreeWriter
 	status             syncStatusReader
+	lockWorkspace      usecase.LockWorkspace
 }
 
 func NewFinishPullService(
@@ -45,6 +46,7 @@ func NewFinishPullService(
 	loadWorkspace usecase.LoadWorkspace,
 	findSyncSession usecase.FindSyncSession,
 	saveSyncSession usecase.SaveSyncSession,
+	lockWorkspace usecase.LockWorkspace,
 ) adapter.FinishPullService {
 	changes := newSyncChanges(readBranchHeads, readTreeVersions, identifySyncItems)
 	merger := syncMerger{readTreeVersions: readTreeVersions, storeBlobs: storeBlobs, convertSyncDocument: convertSyncDocument}
@@ -59,6 +61,7 @@ func NewFinishPullService(
 		resolver:           syncResolver{readTreeVersions: readTreeVersions, storeBlobs: storeBlobs, convertSyncDocument: convertSyncDocument, changes: changes, merger: merger},
 		writer:             syncWorktreeWriter{readTreeVersions: readTreeVersions, applySyncedFiles: applySyncedFiles, publishWorkspaceEvent: publishWorkspaceEvent},
 		status:             newSyncStatusReader(changes, loadWorkspace, publishGitEvent, findSyncSession),
+		lockWorkspace:      lockWorkspace,
 	}
 }
 
@@ -81,6 +84,8 @@ func (f *finishPull) Finish(ctx context.Context, sessionId string) (*entity.Sync
 	if err != nil {
 		return nil, err
 	}
+	ctx, unlock := f.lockWorkspace.LockWorkspace(ctx, session.LocalID)
+	defer unlock()
 	snapshot, err := f.resolver.changes.snapshot(ctx, *linked)
 	if err != nil {
 		return nil, err

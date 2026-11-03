@@ -14,6 +14,7 @@ type manageCookies struct {
 	findCookieAllowlist   usecase.FindCookieAllowlist
 	saveCookieAllowlist   usecase.SaveCookieAllowlist
 	jar                   cookieJar
+	lockWorkspace         usecase.LockWorkspace
 }
 
 func NewManageCookiesService(
@@ -30,6 +31,7 @@ func NewManageCookiesService(
 	saveVaultSettings usecase.SaveVaultSettings,
 	probeKeychain usecase.ProbeKeychain,
 	publishVariableEvent usecase.PublishVariableEvent,
+	lockWorkspace usecase.LockWorkspace,
 ) adapter.ManageCookiesService {
 	return &manageCookies{
 		findWorkspaceRegistry: findWorkspaceRegistry,
@@ -47,14 +49,18 @@ func NewManageCookiesService(
 				saveVaultSettings:    saveVaultSettings,
 				probeKeychain:        probeKeychain,
 				publishVariableEvent: publishVariableEvent,
+				lockWorkspace:        lockWorkspace,
 			},
 		},
+		lockWorkspace: lockWorkspace,
 	}
 }
 
 func (m *manageCookies) List(ctx context.Context, localId string) ([]entity.CookieDomain, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	var domains []entity.CookieDomain
 	err := m.change(ctx, localId, func() error {
 		domains = entity.GroupCookiesByDomain(m.jar.manageCookieJar.JarState(ctx, localId).Cookies)
@@ -71,6 +77,8 @@ func (m *manageCookies) List(ctx context.Context, localId string) ([]entity.Cook
 func (m *manageCookies) Upsert(ctx context.Context, localId, domain, setCookie string, replaces *entity.Cookie) (*entity.Cookie, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "domain": domain})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	var stored *entity.Cookie
 	err := m.change(ctx, localId, func() error {
 		cookie, err := m.jar.manageCookieJar.SetCookie(ctx, localId, usecase.CookieDomainUrl(domain), setCookie)
@@ -94,6 +102,8 @@ func (m *manageCookies) Upsert(ctx context.Context, localId, domain, setCookie s
 func (m *manageCookies) Delete(ctx context.Context, localId string, cookie entity.Cookie) error {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "cookie": cookie})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	err := m.change(ctx, localId, func() error {
 		m.jar.manageCookieJar.RemoveCookies(ctx, localId, []entity.Cookie{cookie})
 		return nil
@@ -109,6 +119,8 @@ func (m *manageCookies) Delete(ctx context.Context, localId string, cookie entit
 func (m *manageCookies) DeleteDomain(ctx context.Context, localId, domain string) error {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "domain": domain})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	err := m.change(ctx, localId, func() error {
 		cookies := m.jar.manageCookieJar.JarState(ctx, localId).Cookies
 		m.jar.manageCookieJar.RemoveCookies(ctx, localId, entity.CookiesOn(cookies, domain))
@@ -125,6 +137,8 @@ func (m *manageCookies) DeleteDomain(ctx context.Context, localId, domain string
 func (m *manageCookies) Clear(ctx context.Context, localId string) error {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	err := m.change(ctx, localId, func() error {
 		m.jar.manageCookieJar.RemoveCookies(ctx, localId, m.jar.manageCookieJar.JarState(ctx, localId).Cookies)
 		return nil
@@ -155,6 +169,8 @@ func (m *manageCookies) GetAllowlist(ctx context.Context, localId string) (*enti
 func (m *manageCookies) SaveAllowlist(ctx context.Context, localId string, domains []string) (*entity.CookieAllowlist, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "domains": domains})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	if _, err := m.findWorkspaceRegistry.FindWorkspace(ctx, localId); err != nil {
 		return nil, err
 	}

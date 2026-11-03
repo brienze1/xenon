@@ -65,7 +65,7 @@ func (v *variableTable) SaveTable(bindingCtx context.Context, request dto.SaveVa
 		return nil, err
 	}
 
-	table, err := v.manageVariableTableService.SaveTable(ctx, request.LocalId, request.ScopeRef(), request.ToEntity(), request.ConfirmReveal)
+	table, err := v.manageVariableTableService.SaveTable(ctx, request.LocalId, request.ScopeRef(), request.ToEntity(), request.ConfirmReveal, request.BaseRevision, request.Force)
 	if err != nil {
 		return nil, err
 	}

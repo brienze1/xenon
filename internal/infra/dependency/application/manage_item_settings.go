@@ -18,6 +18,7 @@ func GetManageItemSettingsService() adapter.ManageItemSettingsService {
 				integration.GetRegistryPersistence(),
 				integration.GetTreePersistence(),
 				integration.GetTreePersistence(),
+				integration.GetWorkspaceLockPersistence(),
 			)
 		})
 	}

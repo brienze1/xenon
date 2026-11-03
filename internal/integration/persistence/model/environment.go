@@ -55,6 +55,12 @@ func (e *Environment) ToEntity(fileName string) entity.Environment {
 	}
 }
 
+func (e *Environment) ToStoredEntity(fileName, revision string) entity.Environment {
+	environment := e.ToEntity(fileName)
+	environment.Revision = revision
+	return environment
+}
+
 func (e *Environment) HasId() bool {
 	return strings.TrimSpace(e.Id) != ""
 }

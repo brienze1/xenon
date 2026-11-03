@@ -36,6 +36,7 @@ func GetFinishPullService() adapter.FinishPullService {
 				integration.GetWorkspacePersistence(),
 				integration.GetSyncSessionPersistence(),
 				integration.GetSyncSessionPersistence(),
+				integration.GetWorkspaceLockPersistence(),
 			)
 		})
 	}

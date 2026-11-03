@@ -6,7 +6,7 @@ type EnvironmentDetails struct {
 }
 
 func NewEnvironmentDetails(environment Environment, local LocalVariables, vault Vault) EnvironmentDetails {
-	return EnvironmentDetails{Environment: environment, Table: NewVariableTable(environment.ScopeRef(), environment.Variables, local, vault)}
+	return EnvironmentDetails{Environment: environment, Table: NewVariableTable(environment.ScopeRef(), environment.Variables, local, vault).WithRevision(environment.Revision)}
 }
 
 func (e EnvironmentDetails) LogValue() any {

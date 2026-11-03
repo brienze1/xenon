@@ -28,6 +28,7 @@ func GetManageCookiesService() adapter.ManageCookiesService {
 				integration.GetVaultPersistence(),
 				integration.GetKeychainWebservice(),
 				integration.GetVariableEventPublisher(),
+				integration.GetWorkspaceLockPersistence(),
 			)
 		})
 	}

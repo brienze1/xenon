@@ -5,8 +5,10 @@ import "github.com/brienze1/xenon/internal/domain/entity"
 type SaveVariableTable struct {
 	LocalId       string         `json:"local_id" validate:"required,not_blank"`
 	Scope         string         `json:"scope" validate:"variable_scope"`
+	BaseRevision  string         `json:"base_revision"`
 	Rows          []VariableEdit `json:"rows"`
 	ConfirmReveal bool           `json:"confirm_reveal"`
+	Force         bool           `json:"force"`
 }
 
 func (s *SaveVariableTable) ScopeRef() entity.ScopeRef {
@@ -26,5 +28,5 @@ func (s SaveVariableTable) LogValue() any {
 	for _, row := range s.Rows {
 		rows = append(rows, row.LogValue())
 	}
-	return map[string]any{"local_id": s.LocalId, "scope": s.Scope, "confirm_reveal": s.ConfirmReveal, "rows": rows}
+	return map[string]any{"local_id": s.LocalId, "scope": s.Scope, "confirm_reveal": s.ConfirmReveal, "base_revision": s.BaseRevision, "force": s.Force, "rows": rows}
 }

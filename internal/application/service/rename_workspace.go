@@ -14,6 +14,7 @@ type renameWorkspace struct {
 	saveWorkspaceRegistry usecase.SaveWorkspaceRegistry
 	loadWorkspace         usecase.LoadWorkspace
 	saveWorkspaceFile     usecase.SaveWorkspaceFile
+	lockWorkspace         usecase.LockWorkspace
 }
 
 func NewRenameWorkspaceService(
@@ -21,18 +22,22 @@ func NewRenameWorkspaceService(
 	saveWorkspaceRegistry usecase.SaveWorkspaceRegistry,
 	loadWorkspace usecase.LoadWorkspace,
 	saveWorkspaceFile usecase.SaveWorkspaceFile,
+	lockWorkspace usecase.LockWorkspace,
 ) adapter.RenameWorkspaceService {
 	return &renameWorkspace{
 		findWorkspaceRegistry: findWorkspaceRegistry,
 		saveWorkspaceRegistry: saveWorkspaceRegistry,
 		loadWorkspace:         loadWorkspace,
 		saveWorkspaceFile:     saveWorkspaceFile,
+		lockWorkspace:         lockWorkspace,
 	}
 }
 
 func (r *renameWorkspace) Rename(ctx context.Context, localId, name string) (*entity.RegisteredWorkspace, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "name": name})
 
+	ctx, unlock := r.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	registered, err := r.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
 		return nil, err

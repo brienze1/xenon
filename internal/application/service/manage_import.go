@@ -21,6 +21,7 @@ type manageImport struct {
 	readers             importReaders
 	targets             importTargets
 	writer              importWriter
+	lockWorkspace       usecase.LockWorkspace
 }
 
 func NewManageImportService(
@@ -64,6 +65,7 @@ func NewManageImportService(
 	publishImportProgress usecase.PublishImportProgress,
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
 	publishVariableEvent usecase.PublishVariableEvent,
+	lockWorkspace usecase.LockWorkspace,
 ) adapter.ManageImportService {
 	vaults := vaultWriter{
 		findVault:            findVault,
@@ -72,6 +74,7 @@ func NewManageImportService(
 		saveVaultSettings:    saveVaultSettings,
 		probeKeychain:        probeKeychain,
 		publishVariableEvent: publishVariableEvent,
+		lockWorkspace:        lockWorkspace,
 	}
 	return &manageImport{
 		readImportSource:    readImportSource,
@@ -133,6 +136,7 @@ func NewManageImportService(
 				publishVariableEvent: publishVariableEvent,
 			},
 		},
+		lockWorkspace: lockWorkspace,
 	}
 }
 
@@ -194,6 +198,11 @@ func (m *manageImport) Clashes(ctx context.Context, plan entity.ImportPlan) ([]e
 func (m *manageImport) Import(ctx context.Context, plan entity.ImportPlan) (*entity.ImportResult, error) {
 	logger.Info(ctx, "Started", map[string]any{"plan": plan})
 
+	for _, localId := range plan.TargetLocalIDs() {
+		var unlock func()
+		ctx, unlock = m.lockWorkspace.LockWorkspace(ctx, localId)
+		defer unlock()
+	}
 	found, err := m.findImportSource.Find(ctx, plan.SourceID)
 	if err != nil {
 		return nil, err

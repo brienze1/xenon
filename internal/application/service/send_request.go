@@ -56,7 +56,7 @@ func NewSendRequestService(
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
 	registerKnownSecrets usecase.RegisterKnownSecrets,
 	publishAIEvent usecase.PublishAIEvent,
-	lockLocalVariables usecase.LockLocalVariables,
+	lockWorkspace usecase.LockWorkspace,
 	listEnvironments usecase.ListEnvironments,
 ) adapter.SendRequestService {
 	return &sendRequest{
@@ -98,7 +98,7 @@ func NewSendRequestService(
 			findCookieAllowlist,
 			publishWorkspaceEvent,
 			registerKnownSecrets,
-			lockLocalVariables,
+			lockWorkspace,
 			listEnvironments,
 		),
 		saveHistoryEntry: saveHistoryEntry,

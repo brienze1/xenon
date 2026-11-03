@@ -61,7 +61,7 @@ func newRunStarter(
 	findCookieAllowlist usecase.FindCookieAllowlist,
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
 	registerKnownSecrets usecase.RegisterKnownSecrets,
-	lockLocalVariables usecase.LockLocalVariables,
+	lockWorkspace usecase.LockWorkspace,
 	loadTree usecase.LoadTree,
 	claimActiveRun usecase.ClaimActiveRun,
 	changeActiveRun usecase.ChangeActiveRun,
@@ -112,7 +112,7 @@ func newRunStarter(
 		findCookieAllowlist,
 		publishWorkspaceEvent,
 		registerKnownSecrets,
-		lockLocalVariables,
+		lockWorkspace,
 		listEnvironments,
 	)
 	return &runStarter{

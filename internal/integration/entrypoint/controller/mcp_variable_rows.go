@@ -37,7 +37,7 @@ func saveMCPVariableRows(ctx context.Context, manageVariableTableService appAdap
 		return dto.VariableTable{}, mcpErrors.RejectHumanOnlyAIAction(mcpRevealedSecretAction)
 	}
 
-	saved, err := manageVariableTableService.SaveTable(ctx, request.LocalId, request.ScopeRef(), request.ToEntity(), request.ConfirmReveal)
+	saved, err := manageVariableTableService.SaveTable(ctx, request.LocalId, request.ScopeRef(), request.ToEntity(), request.ConfirmReveal, "", false)
 	if err != nil {
 		return dto.VariableTable{}, err
 	}

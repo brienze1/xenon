@@ -32,6 +32,7 @@ func GetManageOAuthService() adapter.ManageOAuthService {
 				integration.GetOAuth2Webservice(),
 				integration.GetVaultPersistence(),
 				integration.GetClipboardWebservice(),
+				integration.GetWorkspaceLockPersistence(),
 			)
 		})
 	}

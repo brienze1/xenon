@@ -148,7 +148,7 @@ func (m *mcpEnvEdit) create(ctx context.Context, call dto.MCPToolCall) (dto.MCPT
 	if !arguments.EditsSettings() {
 		return editedEnvironment(created.Environment), nil
 	}
-	return m.save(ctx, call, created.Environment, arguments.WithoutName())
+	return m.save(ctx, call, created.Environment, "", arguments.WithoutName())
 }
 
 func (m *mcpEnvEdit) update(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolResult, error) {
@@ -164,21 +164,23 @@ func (m *mcpEnvEdit) update(ctx context.Context, call dto.MCPToolCall) (dto.MCPT
 		return dto.MCPToolResult{}, err
 	}
 
-	stored, err := m.manageEnvironmentService.Get(ctx, request.LocalId, request.Id)
-	if err != nil {
-		return dto.MCPToolResult{}, err
-	}
-	return m.save(ctx, call, stored.Environment, arguments)
+	return retryMCPEdit(ctx, func() (dto.MCPToolResult, error) {
+		stored, err := m.manageEnvironmentService.Get(ctx, request.LocalId, request.Id)
+		if err != nil {
+			return dto.MCPToolResult{}, err
+		}
+		return m.save(ctx, call, stored.Environment, stored.Environment.Revision, arguments)
+	})
 }
 
-func (m *mcpEnvEdit) save(ctx context.Context, call dto.MCPToolCall, stored entity.Environment, arguments dto.MCPEnvEdit) (dto.MCPToolResult, error) {
-	request := arguments.UpdateEnvironment(call.LocalId, stored)
+func (m *mcpEnvEdit) save(ctx context.Context, call dto.MCPToolCall, stored entity.Environment, baseRevision string, arguments dto.MCPEnvEdit) (dto.MCPToolResult, error) {
+	request := arguments.UpdateEnvironment(call.LocalId, stored, baseRevision)
 	err := validateUpdateEnvironment(&request)
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
 
-	updated, err := m.manageEnvironmentService.Update(ctx, request.LocalId, request.ToEntity())
+	updated, err := m.manageEnvironmentService.Update(ctx, request.LocalId, request.ToEntity(), request.BaseRevision, request.Force)
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}

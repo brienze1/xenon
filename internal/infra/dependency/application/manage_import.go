@@ -55,6 +55,7 @@ func GetManageImportService() adapter.ManageImportService {
 				integration.GetImportProgressPublisher(),
 				integration.GetWorkspaceEventPublisher(),
 				integration.GetVariableEventPublisher(),
+				integration.GetWorkspaceLockPersistence(),
 			)
 		})
 	}

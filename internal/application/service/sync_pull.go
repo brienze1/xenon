@@ -33,6 +33,7 @@ type syncPull struct {
 	merger             syncMerger
 	writer             syncWorktreeWriter
 	renderer           syncConflictRenderer
+	lockWorkspace      usecase.LockWorkspace
 }
 
 func newSyncPull(
@@ -49,6 +50,7 @@ func newSyncPull(
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
 	saveSyncSession usecase.SaveSyncSession,
 	renderSyncItem usecase.RenderSyncItem,
+	lockWorkspace usecase.LockWorkspace,
 ) syncPull {
 	return syncPull{
 		saveSyncSession:    saveSyncSession,
@@ -61,6 +63,7 @@ func newSyncPull(
 		merger:             syncMerger{readTreeVersions: readTreeVersions, storeBlobs: storeBlobs, convertSyncDocument: convertSyncDocument},
 		writer:             syncWorktreeWriter{readTreeVersions: readTreeVersions, applySyncedFiles: applySyncedFiles, publishWorkspaceEvent: publishWorkspaceEvent},
 		renderer:           syncConflictRenderer{readTreeVersions: readTreeVersions, renderSyncItem: renderSyncItem},
+		lockWorkspace:      lockWorkspace,
 	}
 }
 
@@ -72,6 +75,8 @@ func (p syncPull) pull(ctx context.Context, linked entity.LinkedWorkspace) (*ent
 	if err != nil {
 		return nil, err
 	}
+	ctx, unlock := p.lockWorkspace.LockWorkspace(ctx, linked.LocalID)
+	defer unlock()
 	if heads.HasNothingToPull() {
 		return nil, p.saveSyncSession.DiscardSession(ctx, linked.LocalID)
 	}

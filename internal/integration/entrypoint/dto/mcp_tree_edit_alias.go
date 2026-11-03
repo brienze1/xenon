@@ -27,5 +27,5 @@ func (m *MCPTreeEdit) SetAliasEnvironments(localId string, saved Request) SetAli
 }
 
 func (m *MCPTreeEdit) SaveAlias(localId string, stored Request) SaveAlias {
-	return NewSaveAlias(localId, stored.Id, stored.Revision, NewEditedRequestAlias(stored.AliasOrEmpty(m.Id), m), true)
+	return NewSaveAlias(localId, stored.Id, stored.Revision, NewEditedRequestAlias(stored.AliasOrEmpty(m.Id), m), false)
 }

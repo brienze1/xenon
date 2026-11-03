@@ -16,6 +16,7 @@ type VariableTable struct {
 	Secrets  map[string]string
 	Scope    ScopeRef
 	Vault    enums.VaultState
+	Revision string
 	Rows     []VariableRow
 	Warnings []string
 }
@@ -29,6 +30,16 @@ func NewVariableTable(scope ScopeRef, rows []VariableRow, local LocalVariables, 
 		Vault:    vault.State,
 		Warnings: []string{},
 	}
+}
+
+func (v VariableTable) WithRevision(revision string) VariableTable {
+	v.Revision = revision
+	return v
+}
+
+// BlocksSave only guards environment tables, and never an empty baseRevision.
+func (v VariableTable) BlocksSave(baseRevision string, force bool) bool {
+	return v.Scope.IsEnvironment() && baseRevision != "" && !force && v.Revision != baseRevision
 }
 
 func (v VariableTable) WithWarningsOf(other VariableTable) VariableTable {

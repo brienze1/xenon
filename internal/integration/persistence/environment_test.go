@@ -142,6 +142,7 @@ func TestEnvironmentSaveCreatesPatchesAndRenames(t *testing.T) {
 		t.Error("the write is recorded for the watcher")
 	}
 	environment.Variables[1].InitialValue = ""
+	environment.Revision = revisionOf(content)
 	if !reflect.DeepEqual(*saved, environment) {
 		t.Fatalf("Save() =\n%+v\nwant\n%+v", *saved, environment)
 	}
@@ -151,6 +152,9 @@ func TestEnvironmentSaveCreatesPatchesAndRenames(t *testing.T) {
 		t.Fatalf("Save() in place error = %v", err)
 	}
 	patched, _ := os.ReadFile(path)
+	if found, err := persistence.Find(ctx, root, "01E"); err != nil || found.Revision != revisionOf(patched) || found.Revision == environment.Revision {
+		t.Fatalf("Find() revision after the patch = %+v, %v", found, err)
+	}
 	if !strings.Contains(string(patched), "# kept comment") || !strings.Contains(string(patched), "custom: kept") || !strings.Contains(string(patched), "description: patched") {
 		t.Fatalf("patched staging.yaml =\n%s", patched)
 	}

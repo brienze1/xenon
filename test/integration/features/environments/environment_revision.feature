@@ -73,7 +73,7 @@ Feature: The window's environment saves are refused when the environment changed
       { "local_id": "{{Acme.local_id}}", "scope": "env:{{dev}}", "base_revision": "{{opened}}", "rows": [ { "key": "base_url", "initial_value": "https://dev2.acme.test", "description": "", "enabled": true } ] }
       """
     Then the call should fail with code "ENV-19409"
-    And the error should contain the field "error.message" containing "the environment changed on disk since it was opened"
+    And the error should contain the field "error.description" containing "the environment changed on disk since it was opened"
     And the workspace file "acme/environments/dev.yaml" should contain the field "variables" array length equal to 2
     And the workspace file "acme/environments/dev.yaml" should contain the field "variables.0.value" equal to "https://dev.acme.test"
 
@@ -86,14 +86,14 @@ Feature: The window's environment saves are refused when the environment changed
     And I save the response field "revision" as "opened"
     And I call the MCP tool "env_edit" with
       """
-      { "action": "update", "id": "{{dev}}", "description": "Edited by AI" }
+      { "action": "update", "id": "{{dev}}", "confirm_before_send": true }
       """
     When I call "EnvironmentService.Update" with
       """
       { "local_id": "{{Acme.local_id}}", "id": "{{dev}}", "name": "dev", "description": "", "color": "red", "confirm_before_send": false, "base_revision": "{{opened}}" }
       """
     Then the call should fail with code "ENV-19409"
-    And the workspace file "acme/environments/dev.yaml" should contain the field "description" equal to "Edited by AI"
+    And the workspace file "acme/environments/dev.yaml" should contain the field "confirmBeforeSend" equal to "true"
     And the workspace file "acme/environments/dev.yaml" should contain the field "color" equal to "green"
 
   @forced_save

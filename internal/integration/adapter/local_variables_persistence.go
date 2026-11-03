@@ -6,5 +6,4 @@ type LocalVariablesPersistence interface {
 	usecase.FindLocalVariables
 	usecase.SaveLocalVariables
 	usecase.DeleteLocalVariables
-	usecase.LockLocalVariables
 }

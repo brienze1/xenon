@@ -38,6 +38,7 @@ func GetPullWorkspaceService() adapter.PullWorkspaceService {
 				integration.GetSyncSessionPersistence(),
 				integration.GetSyncSessionPersistence(),
 				integration.GetTreePersistence(),
+				integration.GetWorkspaceLockPersistence(),
 			)
 		})
 	}

@@ -16,6 +16,7 @@ type manageAlias struct {
 	saveRequestAliases    usecase.SaveRequestAliases
 	listEnvironments      usecase.ListEnvironments
 	tokens                oauthTokens
+	lockWorkspace         usecase.LockWorkspace
 }
 
 func NewManageAliasService(
@@ -29,6 +30,7 @@ func NewManageAliasService(
 	probeKeychain usecase.ProbeKeychain,
 	publishVariableEvent usecase.PublishVariableEvent,
 	listEnvironments usecase.ListEnvironments,
+	lockWorkspace usecase.LockWorkspace,
 ) adapter.ManageAliasService {
 	return &manageAlias{
 		findWorkspaceRegistry: findWorkspaceRegistry,
@@ -43,14 +45,18 @@ func NewManageAliasService(
 				saveVaultSettings:    saveVaultSettings,
 				probeKeychain:        probeKeychain,
 				publishVariableEvent: publishVariableEvent,
+				lockWorkspace:        lockWorkspace,
 			},
 		},
+		lockWorkspace: lockWorkspace,
 	}
 }
 
 func (m *manageAlias) Create(ctx context.Context, localId, requestId, name string, environmentIds []string, baseRevision string, force bool) (*entity.Request, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "requestId": requestId, "name": name, "environmentIds": environmentIds, "baseRevision": baseRevision, "force": force})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	loaded, err := m.load(ctx, localId, requestId, baseRevision, force)
 	if err != nil {
 		return nil, err
@@ -71,6 +77,8 @@ func (m *manageAlias) Create(ctx context.Context, localId, requestId, name strin
 func (m *manageAlias) Save(ctx context.Context, localId, requestId string, alias entity.RequestAlias, baseRevision string, force bool) (*entity.Request, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "requestId": requestId, "alias": alias, "baseRevision": baseRevision, "force": force})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	loaded, err := m.load(ctx, localId, requestId, baseRevision, force)
 	if err != nil {
 		return nil, err
@@ -92,6 +100,8 @@ func (m *manageAlias) Save(ctx context.Context, localId, requestId string, alias
 func (m *manageAlias) SetEnvironments(ctx context.Context, localId, requestId, aliasId string, environmentIds []string, baseRevision string, force bool) (*entity.Request, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "requestId": requestId, "aliasId": aliasId, "environmentIds": environmentIds, "baseRevision": baseRevision, "force": force})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	loaded, err := m.load(ctx, localId, requestId, baseRevision, force)
 	if err != nil {
 		return nil, err
@@ -116,6 +126,8 @@ func (m *manageAlias) SetEnvironments(ctx context.Context, localId, requestId, a
 func (m *manageAlias) Delete(ctx context.Context, localId, requestId, aliasId, baseRevision string, force bool) (*entity.Request, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "requestId": requestId, "aliasId": aliasId, "baseRevision": baseRevision, "force": force})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	loaded, err := m.load(ctx, localId, requestId, baseRevision, force)
 	if err != nil {
 		return nil, err
