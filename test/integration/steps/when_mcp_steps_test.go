@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ func (t *testUtils) registerWhenMcpSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^I call the MCP tool "([^"]*)" (\d+) times with$`, t.iCallTheMcpToolTimesWith)
 	ctx.Step(`^I start calling the MCP tool "([^"]*)" in the background with$`, t.iStartCallingTheMcpToolInTheBackgroundWith)
 	ctx.Step(`^I start calling the MCP tool "([^"]*)" in the background as "([^"]*)" with$`, t.iStartCallingTheMcpToolInTheBackgroundAsWith)
+	ctx.Step(`^I start calling the MCP tool "([^"]*)" (\d+) times in the background as "([^"]*)" with$`, t.iStartCallingTheMcpToolTimesInTheBackgroundAsWith)
 	ctx.Step(`^I list the MCP tools$`, t.iListTheMcpTools)
 	ctx.Step(`^the MCP session is closed$`, t.theMcpSessionIsClosed)
 }
@@ -85,6 +87,29 @@ func (t *testUtils) iStartCallingTheMcpToolInTheBackgroundAsWith(tool, name stri
 		return err
 	}
 	t.backgrounds[name] = t.background
+	return nil
+}
+
+func (t *testUtils) iStartCallingTheMcpToolTimesInTheBackgroundAsWith(tool string, times int, name string, arguments *godog.DocString) error {
+	invokes := make([]func() (callResult, error), 0, times)
+	for number := 1; number <= times; number++ {
+		invoke, err := t.prepareMcpCall(tool, strings.ReplaceAll(arguments.Content, callNumberPlaceholder, strconv.Itoa(number)))
+		if err != nil {
+			return err
+		}
+		invokes = append(invokes, invoke)
+	}
+	call := &backgroundCall{done: make(chan struct{}), started: time.Now()}
+	t.background, t.backgrounds[name] = call, call
+	go func() {
+		defer close(call.done)
+		for _, invoke := range invokes {
+			call.result, call.err = invoke()
+			if call.err != nil || call.result.callError != nil {
+				return
+			}
+		}
+	}()
 	return nil
 }
 

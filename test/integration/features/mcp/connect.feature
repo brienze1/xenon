@@ -17,7 +17,7 @@ Feature: AI clients connect to Xenon's MCP server
     When I list the MCP tools
     Then the last call should have taken less than 1000 ms
     And the response should contain the field "" array length equal to 26
-    And the response should have at most 39000 characters
+    And the response should have at most 39500 characters
     And every item of the response field "" should have the field "description" matching "^[A-Z][^.]*\.$"
     And every item of the response field "" should have the field "name" matching "^[a-z]+(_[a-z]+)?$"
 
@@ -211,6 +211,14 @@ Feature: AI clients connect to Xenon's MCP server
       | loopback origin    | Origin | http://127.0.0.1:{{mcp_port}}     |
       | localhost origin   | Origin | http://localhost:{{mcp_port}}     |
       | no origin (CLI)    | Accept | application/json, text/event-stream |
+
+  @xen_023 @per_session_descriptions
+  Scenario: The tools that show or change the workspace and environment say they are per session
+    When I list the MCP tools
+    Then the response field "" should contain an item with "name" equal to "workspace" and "description" equal to "List workspaces or show this session's workspace."
+    And the response field "" should contain an item with "name" equal to "workspace_edit" and "description" equal to "Create, open, switch or rename a workspace; switching only affects this MCP session."
+    And the response field "" should contain an item with "name" equal to "env_edit" and "description" equal to "Create, update or reorder environments, pick this session's active one, and edit variables (secret values are write-only)."
+    And the response field "" should contain an item with "name" equal to "send" and "description" equal to "Send a saved request (or one of its aliases, with alias_id) or an ad-hoc request with the session's environment and return the response."
 
   @size_limit
   Scenario: A request body over 4 MiB is refused

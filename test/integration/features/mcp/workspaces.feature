@@ -3,9 +3,11 @@
 
 @all @xen_008 @mcp @mcp_workspaces
 Feature: AI clients list, create, open, switch, rename and remove workspaces
-  There is one shared active workspace: every workspace-scoped tool acts on it, and switching it through MCP switches
-  the Xenon window too (workspaces:changed). With no active workspace, workspace-scoped tools answer MCP-06404 while
-  listing, creating and opening workspaces still work. An id from another workspace is never reachable (MCP-08404).
+  Every MCP session has its own active workspace, starting from the one the Xenon window shows: every workspace-scoped
+  tool acts on the session's workspace, and switching, creating or opening a workspace through MCP changes only that
+  session, never the window (a created or opened workspace is only added to the window's list). With no active
+  workspace, workspace-scoped tools answer MCP-06404 while listing, creating and opening workspaces still work. An id
+  from another workspace is never reachable (MCP-08404).
 
   @list
   Scenario: Listing workspaces marks the active one
@@ -21,26 +23,32 @@ Feature: AI clients list, create, open, switch, rename and remove workspaces
     And the response field "items" should contain an item with "id" equal to "{{Acme.local_id}}" and "name" equal to "Acme"
     And the response field "items" should contain 1 items with "active" equal to "true"
 
-  @switch
-  Scenario: Switching the workspace moves the window to it
+  @xen_023 @switch
+  Scenario: Switching the workspace changes the session's workspace and leaves the window where it is
     Given the workspace "Acme" exists
     And the workspace "Globex" exists
+    And I call the MCP tool "workspace" with
+      """
+      { "action": "active" }
+      """
     And the emitted events are forgotten
     When I call the MCP tool "workspace_edit" with
       """
       { "action": "switch", "id": "{{Acme.local_id}}" }
       """
     Then the call should succeed
-    And a "workspaces:changed" event with the field "active_local_id" equal to "{{Acme.local_id}}" should have been emitted within 1000 ms
-    And the app data file "app.json" should contain the field "active_local_id" equal to "{{Acme.local_id}}"
+    When I wait 300 ms
+    Then the event "workspaces:changed" should have been emitted 0 times
+    And the event "workspace:tree-changed" should have been emitted 0 times
+    And the app data file "app.json" should contain the field "active_local_id" equal to "{{Globex.local_id}}"
     When I call the MCP tool "workspace" with
       """
       { "action": "active" }
       """
     Then the response should contain the field "id" equal to "{{Acme.local_id}}"
 
-  @create_open_rename
-  Scenario: Creating, renaming and opening workspaces
+  @xen_023 @create_open_rename
+  Scenario: Creating, renaming and opening workspaces adds them to the list without moving the window
     Given the workspace "Acme" exists
     When I call the MCP tool "workspace_edit" with
       """
@@ -49,7 +57,13 @@ Feature: AI clients list, create, open, switch, rename and remove workspaces
     Then the call should succeed
     And I save the response field "id" as "payments"
     And the workspace folder "payments" should exist
-    And the 1 "workspaces:changed" event should contain the field "active_local_id" equal to "{{payments}}"
+    And a "workspaces:changed" event with the field "active_local_id" equal to "{{Acme.local_id}}" should have been emitted within 1000 ms
+    And the app data file "app.json" should contain the field "active_local_id" equal to "{{Acme.local_id}}"
+    When I call the MCP tool "workspace" with
+      """
+      { "action": "active" }
+      """
+    Then the response should contain the field "id" equal to "{{payments}}"
     When I call the MCP tool "workspace_edit" with
       """
       { "action": "rename", "id": "{{payments}}", "name": "Payments API" }
@@ -73,6 +87,9 @@ Feature: AI clients list, create, open, switch, rename and remove workspaces
       { "action": "list" }
       """
     Then the response field "items" should contain an item with "name" equal to "Existing" and "active" equal to "true"
+    And the app data file "app.json" should contain the field "active_local_id" equal to "{{Acme.local_id}}"
+    When I call "WorkspaceService.List"
+    Then the response field "workspaces" should contain an item with "name" equal to "Existing" and "missing" equal to "false"
 
   @remove
   Scenario: Removing a workspace moves its folder to the trash
