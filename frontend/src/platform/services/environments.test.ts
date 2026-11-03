@@ -12,7 +12,7 @@ vi.mock('../../../bindings/github.com/brienze1/xenon/internal/infra/server/bindi
 }))
 
 const EnvironmentService = await import('../../../bindings/github.com/brienze1/xenon/internal/infra/server/binding/environmentservice')
-const { listEnvironments, setActiveEnvironment, getEnvironment, createEnvironment, updateEnvironment, duplicateEnvironment, deleteEnvironment } =
+const { listEnvironments, setActiveEnvironment, getEnvironment, createEnvironment, updateEnvironment, duplicateEnvironment, deleteEnvironment, ENVIRONMENT_CHANGED } =
   await import('./environments')
 
 const environmentDto = {
@@ -21,6 +21,7 @@ const environmentDto = {
   description: 'Development',
   color: 'cyan',
   confirm_before_send: false,
+  revision: 'rev-1',
   variables: [
     {
       key: 'base_url',
@@ -54,6 +55,7 @@ const environment = {
   description: 'Development',
   color: 'cyan',
   confirmBeforeSend: false,
+  revision: 'rev-1',
   variables: [
     {
       key: 'base_url',
@@ -142,8 +144,8 @@ describe('environments service', () => {
     expect(EnvironmentService.Duplicate).toHaveBeenCalledWith({ local_id: 'L1', id: 'e1' })
     vi.mocked(EnvironmentService.Update).mockResolvedValue({ ...environmentDto, name: 'prod', color: 'red' } as never)
     await expect(
-      updateEnvironment('L1', { id: 'e1', name: 'prod', description: 'Development', color: 'red', confirmBeforeSend: true }),
-    ).resolves.toMatchObject({ name: 'prod', color: 'red' })
+      updateEnvironment('L1', { id: 'e1', name: 'prod', description: 'Development', color: 'red', confirmBeforeSend: true, baseRevision: 'rev-1', force: false }),
+    ).resolves.toMatchObject({ name: 'prod', color: 'red', revision: 'rev-1' })
     expect(EnvironmentService.Update).toHaveBeenCalledWith({
       local_id: 'L1',
       id: 'e1',
@@ -151,7 +153,23 @@ describe('environments service', () => {
       description: 'Development',
       color: 'red',
       confirm_before_send: true,
+      base_revision: 'rev-1',
+      force: false,
     })
+  })
+
+  it('forces an update and maps a stale revision', async () => {
+    vi.mocked(EnvironmentService.Update).mockResolvedValue({ ...environmentDto, revision: 'rev-2' } as never)
+    const update = { id: 'e1', name: 'dev', description: '', color: 'none' as const, confirmBeforeSend: false, baseRevision: 'rev-0', force: true }
+    await expect(updateEnvironment('L1', update)).resolves.toMatchObject({ revision: 'rev-2' })
+    expect(EnvironmentService.Update).toHaveBeenCalledWith(expect.objectContaining({ base_revision: 'rev-0', force: true }))
+    vi.mocked(EnvironmentService.Update).mockRejectedValue({ cause: { error: { code: 'ENV-19409', description: 'the environment changed on disk since it was opened' } } })
+    await expect(updateEnvironment('L1', { ...update, force: false })).rejects.toMatchObject({ code: ENVIRONMENT_CHANGED })
+  })
+
+  it('treats a missing revision as none', async () => {
+    vi.mocked(EnvironmentService.Get).mockResolvedValue({ ...environmentDto, revision: undefined } as never)
+    await expect(getEnvironment('L1', 'e1')).resolves.toMatchObject({ revision: '' })
   })
 
   it('reports an empty answer for a single environment as an error', async () => {

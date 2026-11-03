@@ -15,6 +15,7 @@ vi.mock('@/platform/services/requests', () => ({
 }))
 vi.mock('@/platform/services/ui-state', () => ({ getUIState: vi.fn(), saveUIState: vi.fn() }))
 vi.mock('@/platform/services/environments', () => ({
+  ENVIRONMENT_CHANGED: 'ENV-19409',
   listEnvironments: vi.fn(),
   setActiveEnvironment: vi.fn(),
 }))
@@ -76,7 +77,7 @@ describe('environment tabs', () => {
     vi.mocked(requests.autoHeaders).mockResolvedValue([])
     vi.mocked(requests.releaseResponse).mockResolvedValue()
     vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: { ...emptyDraft(), id, name: `Request ${id}` }, revision: `rev-${id}`, aliases: [] }))
-    vi.mocked(variables.getVariableTable).mockImplementation(async (_localId, scope) => ({ scope, rows: [ROW], warnings: [] }))
+    vi.mocked(variables.getVariableTable).mockImplementation(async (_localId, scope) => ({ scope, revision: '', rows: [ROW], warnings: [] }))
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
     useEnvironmentsStore.setState({ environments: [dev, hml], activeId: 'e1', status: 'ready' })
     tabs().hydrate('ws', { ...defaultUIState(), tabs: [{ tabId: 'start', requestId: 'r0', pinned: true, baseRevision: null, draft: null }], activeTabId: 'start' })
@@ -140,10 +141,10 @@ describe('environment tabs', () => {
     tabs().openEnvironmentTab({ kind: 'globals' }, 'pinned')
     const tabId = tabs().activeTabId!
     await editVariables('globals')
-    vi.mocked(variables.saveVariableTable).mockResolvedValue({ scope: 'globals', rows: [{ ...ROW, description: 'edited' }], warnings: [] })
+    vi.mocked(variables.saveVariableTable).mockResolvedValue({ scope: 'globals', revision: '', rows: [{ ...ROW, description: 'edited' }], warnings: [] })
     tabs().requestClose(tabId)
     await tabs().resolveClose('save')
-    expect(variables.saveVariableTable).toHaveBeenCalledWith('ws', 'globals', [expect.objectContaining({ key: 'base_url', description: 'edited' })], false)
+    expect(variables.saveVariableTable).toHaveBeenCalledWith('ws', 'globals', [expect.objectContaining({ key: 'base_url', description: 'edited' })], false, { baseRevision: '', force: false })
     expect(tabs().closePrompt).toBeNull()
     expect(tabs().tabs.some((tab) => tab.id === tabId)).toBe(false)
   })
@@ -175,9 +176,9 @@ describe('environment tabs', () => {
   it('saves the variables of the active environment tab with Save', async () => {
     tabs().openEnvironmentTab({ kind: 'environment', environmentId: 'e1' }, 'pinned')
     await editVariables('env:e1')
-    vi.mocked(variables.saveVariableTable).mockResolvedValue({ scope: 'env:e1', rows: [ROW], warnings: [] })
+    vi.mocked(variables.saveVariableTable).mockResolvedValue({ scope: 'env:e1', revision: '', rows: [ROW], warnings: [] })
     await tabs().save()
-    expect(variables.saveVariableTable).toHaveBeenCalledWith('ws', 'env:e1', expect.any(Array), false)
+    expect(variables.saveVariableTable).toHaveBeenCalledWith('ws', 'env:e1', expect.any(Array), false, { baseRevision: '', force: false })
     tabs().saveAs()
     expect(tabs().saveDialog).toBeNull()
     expect(tabs().duplicateTab(tabs().activeTabId!)).toBeNull()

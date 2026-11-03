@@ -68,7 +68,7 @@ function HistoryEntryButton({ entry, onOpen }: HistoryEntryButtonProps) {
     <button
       type="button"
       className={styles.entry}
-      aria-label={`${entry.source === 'ai' ? `${aiTag(entry.client)} — ` : ''}${version ? `${version}, ` : ''}${entry.method} ${entry.url || 'no URL'}${entry.environment ? `, in ${entry.environment.name}` : ''}, ${result.label}, ${time}`}
+      aria-label={`${entry.source === 'ai' ? `${aiTag(entry.client, entry.session)} — ` : ''}${version ? `${version}, ` : ''}${entry.method} ${entry.url || 'no URL'}${entry.environment ? `, in ${entry.environment.name}` : ''}, ${result.label}, ${time}`}
       onClick={() => onOpen(entry.id)}
     >
       {version || entry.environment ? (
@@ -89,7 +89,7 @@ function HistoryEntryButton({ entry, onOpen }: HistoryEntryButtonProps) {
       <span className={styles.line}>
         {entry.source === 'ai' ? (
           <span className={styles.aiTag} translate="no">
-            {aiTag(entry.client)}
+            {aiTag(entry.client, entry.session)}
           </span>
         ) : null}
         <MethodBadge method={entry.method} className={styles.method} />

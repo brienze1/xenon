@@ -3,7 +3,7 @@ import { useWorkspacesStore } from '@/features/workspaces/store'
 import { AppError, toAppError } from '@/platform/errors'
 import type { VariablesChanged } from '@/platform/events'
 import type { Environment, EnvironmentSummary } from '@/platform/mappers/environment'
-import { environmentScope, type VariableEdit, type VariableRow, type VariableTable } from '@/platform/mappers/variable'
+import { environmentScope, type RevisionCheck, type VariableEdit, type VariableRow, type VariableTable } from '@/platform/mappers/variable'
 import { emptyVaultStatus, type VaultStatus } from '@/platform/mappers/vault'
 import {
   createEnvironment,
@@ -11,6 +11,7 @@ import {
   duplicateEnvironment,
   getEnvironment,
   listEnvironments,
+  ENVIRONMENT_CHANGED,
   reorderEnvironment,
   setActiveEnvironment,
   updateEnvironment,
@@ -49,6 +50,8 @@ interface EnvironmentsState {
   drafts: Record<string, VariableDraft>
   /** Names typed in environment tabs and not saved yet, by environment id. */
   nameDrafts: Record<string, string>
+  /** Scopes whose save was refused because the environment changed on disk since the draft was started. */
+  conflicts: Record<string, true>
   vault: VaultStatus
   passphrasePrompt: PassphrasePrompt | null
   dismissedPrompts: PassphrasePrompt[]
@@ -75,6 +78,10 @@ interface EnvironmentsState {
   confirmDraftSave: (scope: string) => Promise<Result<boolean, AppError>>
   cancelDraftSave: (scope: string) => void
   saveTable: (scope: string, edits: VariableEdit[], confirmReveal: boolean) => Promise<AppError | null>
+  /** Saves the conflicting draft again, overwriting what changed on disk. */
+  keepMine: (scope: string) => Promise<Result<boolean, AppError>>
+  /** Drops the conflicting draft and shows what is on disk now. */
+  loadFromDisk: (scope: string) => Promise<void>
   resetValues: (scope: string, keys: string[]) => Promise<AppError | null>
   persistValues: (scope: string, keys: string[]) => Promise<AppError | null>
   setCurrentValue: (scope: string, key: string, value: string) => Promise<AppError | null>
@@ -104,13 +111,23 @@ const INITIAL_STATE = {
   tables: {},
   drafts: {},
   nameDrafts: {},
+  conflicts: {},
   passphrasePrompt: null,
 } satisfies Partial<EnvironmentsState>
 
-const EMPTY_TABLE: TableState = { rows: [], warnings: [], status: 'idle', error: null }
+const EMPTY_TABLE: TableState = { rows: [], warnings: [], revision: '', status: 'idle', error: null }
 
-function draftOf(rows: VariableRow[]): VariableDraft {
-  return { base: rows, rows: toDraftRows(rows), dirty: false, confirming: null, failure: null, saving: false }
+function draftOf(rows: VariableRow[], revision: string): VariableDraft {
+  return { base: rows, baseRevision: revision, rows: toDraftRows(rows), dirty: false, confirming: null, failure: null, saving: false, forcing: false }
+}
+
+function withoutConflict(conflicts: Record<string, true>, scope: string): Record<string, true> {
+  if (!(scope in conflicts)) {
+    return conflicts
+  }
+  const rest = { ...conflicts }
+  delete rest[scope]
+  return rest
 }
 
 /** Another environment already named `name`, compared like Go's `Environment.HasName`: ignoring case and surrounding spaces. */
@@ -193,9 +210,9 @@ export const useEnvironmentsStore = create<EnvironmentsState>()((set, get) => {
   }
 
   function storeTable(table: VariableTable) {
-    patchTable(table.scope, { rows: table.rows, warnings: table.warnings, status: 'ready', error: null })
+    patchTable(table.scope, { rows: table.rows, warnings: table.warnings, revision: table.revision, status: 'ready', error: null })
     if (!isScopeDirty(get(), table.scope)) {
-      set((state) => ({ drafts: { ...state.drafts, [table.scope]: draftOf(table.rows) } }))
+      set((state) => ({ drafts: { ...state.drafts, [table.scope]: draftOf(table.rows, table.revision) } }))
     }
   }
 
@@ -207,7 +224,17 @@ export const useEnvironmentsStore = create<EnvironmentsState>()((set, get) => {
   }
 
   function freshDraft(scope: string) {
-    set((state) => ({ drafts: { ...state.drafts, [scope]: draftOf(state.tables[scope]?.rows ?? []) } }))
+    set((state) => {
+      const table = state.tables[scope]
+      return { drafts: { ...state.drafts, [scope]: draftOf(table?.rows ?? [], table?.revision ?? '') }, conflicts: withoutConflict(state.conflicts, scope) }
+    })
+  }
+
+  /** The save check of a table: the revision its draft started from (or the stored one), forced after "Keep mine". */
+  function revisionCheck(scope: string): RevisionCheck {
+    const { drafts, tables } = get()
+    const draft = drafts[scope]
+    return { baseRevision: draft?.baseRevision ?? tables[scope]?.revision ?? '', force: draft?.forcing === true }
   }
 
   async function commitDraft(scope: string, confirmReveal: boolean): Promise<Result<boolean, AppError>> {
@@ -218,16 +245,21 @@ export const useEnvironmentsStore = create<EnvironmentsState>()((set, get) => {
     const rows = draft.rows
     patchDraft(scope, { saving: true, failure: null })
     const error = await get().saveTable(scope, toVariableEdits(rows), confirmReveal)
-    if (error?.code === CONFIRM_REVEAL_REQUIRED) {
+    if (error === null) {
+      freshDraft(scope)
+      return { ok: true, value: true }
+    }
+    if (error.code === CONFIRM_REVEAL_REQUIRED) {
       patchDraft(scope, { saving: false, confirming: { toSecret: [], toPlain: typeSwitches(rows).toPlain, reveal: true } })
       return { ok: true, value: false }
     }
-    if (error !== null) {
-      patchDraft(scope, { saving: false, failure: error })
-      return { ok: false, error }
+    if (error.code === ENVIRONMENT_CHANGED) {
+      patchDraft(scope, { saving: false, confirming: null, forcing: false })
+      set((state) => ({ conflicts: { ...state.conflicts, [scope]: true } }))
+      return { ok: true, value: false }
     }
-    freshDraft(scope)
-    return { ok: true, value: true }
+    patchDraft(scope, { saving: false, failure: error, forcing: false })
+    return { ok: false, error }
   }
 
   async function tableAction(scope: string, operation: (localId: string) => Promise<VariableTable>): Promise<AppError | null> {
@@ -320,6 +352,8 @@ export const useEnvironmentsStore = create<EnvironmentsState>()((set, get) => {
           description: current.description,
           color: current.color,
           confirmBeforeSend: current.confirmBeforeSend,
+          baseRevision: current.revision,
+          force: false,
         })
       })
       if (!renamed.ok) {
@@ -336,7 +370,14 @@ export const useEnvironmentsStore = create<EnvironmentsState>()((set, get) => {
     updateEnvironmentLook: async (id, look) => {
       const updated = await inWorkspace(async (localId) => {
         const current = await getEnvironment(localId, id)
-        return updateEnvironment(localId, { id, name: current.name, description: current.description, ...look })
+        return updateEnvironment(localId, {
+          id,
+          name: current.name,
+          description: current.description,
+          ...look,
+          baseRevision: current.revision,
+          force: false,
+        })
       })
       if (!updated.ok) {
         return updated.error
@@ -359,11 +400,12 @@ export const useEnvironmentsStore = create<EnvironmentsState>()((set, get) => {
         return deleted.error
       }
       set((state) => {
+        const scope = environmentScope(id)
         const tables = { ...state.tables }
         const drafts = { ...state.drafts }
-        delete tables[environmentScope(id)]
-        delete drafts[environmentScope(id)]
-        return { activeId: deleted.value, tables, drafts, nameDrafts: withoutName(state.nameDrafts, id) }
+        delete tables[scope]
+        delete drafts[scope]
+        return { activeId: deleted.value, tables, drafts, nameDrafts: withoutName(state.nameDrafts, id), conflicts: withoutConflict(state.conflicts, scope) }
       })
       await get().load()
       return null
@@ -427,7 +469,22 @@ export const useEnvironmentsStore = create<EnvironmentsState>()((set, get) => {
 
     cancelDraftSave: (scope) => patchDraft(scope, { confirming: null }),
 
-    saveTable: (scope, edits, confirmReveal) => tableAction(scope, (localId) => saveVariableTable(localId, scope, edits, confirmReveal)),
+    saveTable: (scope, edits, confirmReveal) => {
+      const revision = revisionCheck(scope)
+      return tableAction(scope, (localId) => saveVariableTable(localId, scope, edits, confirmReveal, revision))
+    },
+
+    keepMine: (scope) => {
+      patchDraft(scope, { forcing: true })
+      return commitDraft(scope, false)
+    },
+
+    loadFromDisk: async (scope) => {
+      if (get().drafts[scope]) {
+        freshDraft(scope)
+      }
+      await get().loadTable(scope)
+    },
 
     resetValues: (scope, keys) => tableAction(scope, (localId) => resetVariables(localId, scope, keys)),
 

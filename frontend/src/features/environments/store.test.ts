@@ -5,6 +5,7 @@ import type { VariableRow } from '@/platform/mappers/variable'
 import type { VaultStatus } from '@/platform/mappers/vault'
 
 vi.mock('@/platform/services/environments', () => ({
+  ENVIRONMENT_CHANGED: 'ENV-19409',
   listEnvironments: vi.fn(),
   setActiveEnvironment: vi.fn(),
   getEnvironment: vi.fn(),
@@ -41,7 +42,7 @@ const { useWorkspacesStore } = await import('@/features/workspaces/store')
 const dev = { id: 'e1', name: 'dev', color: 'green', confirmBeforeSend: false, error: null } as const
 const prod = { id: 'e2', name: 'prod', color: 'red', confirmBeforeSend: true, error: null } as const
 const list: EnvironmentList = { environments: [dev, prod], activeId: 'e1' }
-const devDetail: Environment = { id: 'e1', name: 'dev', description: 'Development', color: 'green', confirmBeforeSend: false, variables: [] }
+const devDetail: Environment = { id: 'e1', name: 'dev', description: 'Development', color: 'green', confirmBeforeSend: false, revision: 'rev-1', variables: [] }
 const row: VariableRow = {
   key: 'base_url',
   initialValue: 'A',
@@ -54,7 +55,7 @@ const row: VariableRow = {
   duplicate: false,
   surroundingSpaces: false,
 }
-const table = { scope: 'env:e1', rows: [row], warnings: [] }
+const table = { scope: 'env:e1', revision: 'rev-1', rows: [row], warnings: [] }
 const unlocked: VaultStatus = { mode: 'passphrase', needsPassphraseSetup: false, lockedLocalIds: [], brokenLocalIds: [] }
 
 function store() {
@@ -172,6 +173,8 @@ describe('environments store', () => {
       description: 'Development',
       color: 'green',
       confirmBeforeSend: false,
+      baseRevision: 'rev-1',
+      force: false,
     })
     vi.mocked(services.duplicateEnvironment).mockResolvedValue({ ...devDetail, id: 'e3', name: 'dev Copy' })
     await expect(store().duplicateEnvironment('e1')).resolves.toMatchObject({ ok: true, value: { id: 'e3' } })
@@ -293,6 +296,61 @@ describe('environments store', () => {
     expect(isScopeDirty(store(), 'env:e1')).toBe(false)
   })
 
+  it('saves a draft with the revision it was started from', async () => {
+    vi.mocked(variables.getVariableTable).mockResolvedValue(table)
+    await store().loadTable('env:e1')
+    expect(store().drafts['env:e1']?.baseRevision).toBe('rev-1')
+    store().editDraft('env:e1', (rows) => rows.map((row) => ({ ...row, description: 'mine' })))
+    vi.mocked(variables.getVariableTable).mockResolvedValue({ ...table, revision: 'rev-2' })
+    await store().loadTable('env:e1')
+    vi.mocked(variables.saveVariableTable).mockResolvedValue({ ...table, revision: 'rev-3' })
+    await expect(store().saveDraft('env:e1')).resolves.toEqual({ ok: true, value: true })
+    expect(variables.saveVariableTable).toHaveBeenCalledWith('A', 'env:e1', expect.any(Array), false, { baseRevision: 'rev-1', force: false })
+    expect(store().tables['env:e1']?.revision).toBe('rev-3')
+    expect(store().drafts['env:e1']).toMatchObject({ dirty: false, baseRevision: 'rev-3' })
+  })
+
+  it('keeps the draft and flags the scope when the environment changed on disk since it was opened', async () => {
+    vi.mocked(variables.getVariableTable).mockResolvedValue(table)
+    await store().loadTable('env:e1')
+    store().editDraft('env:e1', (rows) => rows.map((row) => ({ ...row, description: 'mine' })))
+    const edited = store().drafts['env:e1']?.rows
+    vi.mocked(variables.saveVariableTable).mockRejectedValue(new AppError('ENV-19409', 'the environment changed on disk since it was opened'))
+    await expect(store().saveDraft('env:e1')).resolves.toEqual({ ok: true, value: false })
+    expect(store().conflicts['env:e1']).toBe(true)
+    expect(store().drafts['env:e1']).toMatchObject({ dirty: true, saving: false, failure: null, baseRevision: 'rev-1' })
+    expect(store().drafts['env:e1']?.rows).toBe(edited)
+  })
+
+  it('keeps mine: saves the same edits again, forced, and clears the conflict', async () => {
+    vi.mocked(variables.getVariableTable).mockResolvedValue(table)
+    await store().loadTable('env:e1')
+    store().editDraft('env:e1', (rows) => rows.map((row) => ({ ...row, description: 'mine' })))
+    vi.mocked(variables.saveVariableTable).mockRejectedValueOnce(new AppError('ENV-19409', 'the environment changed on disk since it was opened'))
+    await store().saveDraft('env:e1')
+    const edits = vi.mocked(variables.saveVariableTable).mock.calls[0]![2]
+    vi.mocked(variables.saveVariableTable).mockResolvedValue({ ...table, revision: 'rev-4' })
+    await expect(store().keepMine('env:e1')).resolves.toEqual({ ok: true, value: true })
+    expect(variables.saveVariableTable).toHaveBeenLastCalledWith('A', 'env:e1', edits, false, { baseRevision: 'rev-1', force: true })
+    expect(store().conflicts['env:e1']).toBeUndefined()
+    expect(store().drafts['env:e1']).toMatchObject({ dirty: false, baseRevision: 'rev-4' })
+  })
+
+  it('loads from disk: discards the draft, reloads the table and clears the conflict', async () => {
+    vi.mocked(variables.getVariableTable).mockResolvedValue(table)
+    await store().loadTable('env:e1')
+    store().editDraft('env:e1', (rows) => rows.map((row) => ({ ...row, description: 'mine' })))
+    vi.mocked(variables.saveVariableTable).mockRejectedValue(new AppError('ENV-19409', 'the environment changed on disk since it was opened'))
+    await store().saveDraft('env:e1')
+    const theirs = { ...table, revision: 'rev-5', rows: [{ ...row, initialValue: 'theirs' }] }
+    vi.mocked(variables.getVariableTable).mockResolvedValue(theirs)
+    await store().loadFromDisk('env:e1')
+    expect(variables.getVariableTable).toHaveBeenLastCalledWith('A', 'env:e1')
+    expect(store().conflicts['env:e1']).toBeUndefined()
+    expect(store().drafts['env:e1']).toMatchObject({ dirty: false, base: theirs.rows, baseRevision: 'rev-5' })
+    expect(isScopeDirty(store(), 'env:e1')).toBe(false)
+  })
+
   it('reports a failed draft save on the draft', async () => {
     vi.mocked(variables.getVariableTable).mockResolvedValue(table)
     await store().loadTable('env:e1')
@@ -307,11 +365,11 @@ describe('environments store', () => {
     const loading = store().loadTable('env:e1')
     expect(store().tables['env:e1']?.status).toBe('loading')
     await loading
-    expect(store().tables['env:e1']).toEqual({ rows: [row], warnings: [], status: 'ready', error: null })
+    expect(store().tables['env:e1']).toEqual({ rows: [row], warnings: [], revision: 'rev-1', status: 'ready', error: null })
     const edits = [{ key: 'base_url', previousKey: 'base_url', initialValue: 'A', currentValue: null, secret: true, secretValue: null, enabled: true, description: '' }]
     vi.mocked(variables.saveVariableTable).mockResolvedValue({ ...table, warnings: ['git_history'] })
     await expect(store().saveTable('env:e1', edits, false)).resolves.toBeNull()
-    expect(variables.saveVariableTable).toHaveBeenCalledWith('A', 'env:e1', edits, false)
+    expect(variables.saveVariableTable).toHaveBeenCalledWith('A', 'env:e1', edits, false, { baseRevision: 'rev-1', force: false })
     expect(store().tables['env:e1']?.warnings).toEqual(['git_history'])
     vi.mocked(variables.resetVariables).mockResolvedValue({ ...table, rows: [{ ...row, currentValue: 'A', hasCurrentOverride: false }] })
     await expect(store().resetValues('env:e1', [])).resolves.toBeNull()

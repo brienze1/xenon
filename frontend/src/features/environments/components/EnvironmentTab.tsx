@@ -9,6 +9,7 @@ import { EmptyState } from '@/shared/ui/empty-state/EmptyState'
 import { NoTranslateText } from '@/shared/ui/no-translate/NoTranslateText'
 import { useEnvironmentsStore } from '@/features/environments/store'
 import { selectEnvironmentTabId, selectNameErrorText, useTabsStore } from '@/features/tabs/store'
+import { EnvironmentConflictNotice } from './EnvironmentConflictNotice'
 import { VariableTable } from './VariableTable'
 import styles from './EnvironmentTab.module.css'
 
@@ -87,6 +88,7 @@ function EnvironmentEditor({ environment, active }: EnvironmentEditorProps) {
   const cancelTabName = useTabsStore((state) => state.cancelTabName)
   const [error, setError] = useState<AppError | null>(null)
   const [busy, startAction] = useTransition()
+  const scope = environmentScope(environment.id)
 
   function changeLook(color: EnvironmentColor, confirmBeforeSend: boolean) {
     startAction(async () => setError(await updateEnvironmentLook(environment.id, { color, confirmBeforeSend })))
@@ -143,7 +145,8 @@ function EnvironmentEditor({ environment, active }: EnvironmentEditorProps) {
           </Banner.Message>
         </Banner.Root>
       ) : null}
-      <VariableTable scope={environmentScope(environment.id)} label={`${environment.name} variables`} />
+      <EnvironmentConflictNotice scope={scope} />
+      <VariableTable scope={scope} label={`${environment.name} variables`} />
     </section>
   )
 }

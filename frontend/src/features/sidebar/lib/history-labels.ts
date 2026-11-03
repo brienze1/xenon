@@ -2,9 +2,9 @@ import type { HistoryActivity, HistorySourceFilter } from '@/platform/mappers/hi
 
 export type OutcomeTone = 'success' | 'redirect' | 'error' | 'info'
 
-/** The tag on every AI row: "AI · Claude Code". */
-export function aiTag(client: string | null): string {
-  return client ? `AI · ${client}` : 'AI'
+/** The tag on every AI row: "AI · Claude Code", then the MCP session tag when known: "AI · Claude Code · a1b2c3". */
+export function aiTag(client: string | null, session: string | null): string {
+  return ['AI', client, session].filter(Boolean).join(' · ')
 }
 
 /** "tree.create", or just the tool when the call has no action. */

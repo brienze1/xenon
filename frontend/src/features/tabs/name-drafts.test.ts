@@ -22,6 +22,7 @@ vi.mock('@/platform/services/requests', () => ({
 }))
 vi.mock('@/platform/services/ui-state', () => ({ getUIState: vi.fn(), saveUIState: vi.fn() }))
 vi.mock('@/platform/services/environments', () => ({
+  ENVIRONMENT_CHANGED: 'ENV-19409',
   listEnvironments: vi.fn(),
   setActiveEnvironment: vi.fn(),
   getEnvironment: vi.fn(),
@@ -217,8 +218,8 @@ describe('name drafts in tabs', () => {
     })
     vi.mocked(treeService.getItemSettings).mockImplementation(async (_localId, id) => settingsOf(id))
     vi.mocked(treeService.saveItemSettings).mockImplementation(async (_localId, settings) => settings)
-    vi.mocked(variables.getVariableTable).mockImplementation(async (_localId, scope) => ({ scope, rows: [ROW], warnings: [] }))
-    vi.mocked(variables.saveVariableTable).mockImplementation(async (_localId, scope) => ({ scope, rows: [ROW], warnings: [] }))
+    vi.mocked(variables.getVariableTable).mockImplementation(async (_localId, scope) => ({ scope, revision: '', rows: [ROW], warnings: [] }))
+    vi.mocked(variables.saveVariableTable).mockImplementation(async (_localId, scope) => ({ scope, revision: '', rows: [ROW], warnings: [] }))
     vi.mocked(environmentServices.listEnvironments).mockImplementation(async () => environmentList())
     vi.mocked(environmentServices.setActiveEnvironment).mockResolvedValue('e1')
     vi.mocked(environmentServices.getEnvironment).mockImplementation(async (_localId, id) => ({
@@ -227,11 +228,12 @@ describe('name drafts in tabs', () => {
       description: '',
       color: 'green',
       confirmBeforeSend: false,
+      revision: '',
       variables: [],
     }))
     vi.mocked(environmentServices.updateEnvironment).mockImplementation(async (_localId, update) => {
       environmentNames[update.id] = update.name
-      return { ...update, variables: [] }
+      return { ...update, revision: '', variables: [] }
     })
     vi.mocked(exampleServices.getExample).mockImplementation(async () => example())
     vi.mocked(exampleServices.saveExample).mockImplementation(async (_localId, _requestId, sent) => ({ ...sent, revision: 'rev-x1-saved' }))

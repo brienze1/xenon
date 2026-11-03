@@ -11,6 +11,8 @@ import {
 const EMPTY_RESPONSE = 'UNK-00204'
 export const DUPLICATE_ENVIRONMENT_NAME = 'ENV-02409'
 export const ENVIRONMENT_NOT_FOUND = 'ENV-01404'
+/** A save made against an older revision of the environment file than the one on disk. */
+export const ENVIRONMENT_CHANGED = 'ENV-19409'
 
 function required<T>(value: T | null): T {
   if (value === null) {
@@ -57,6 +59,8 @@ export function updateEnvironment(localId: string, update: EnvironmentUpdate): P
           description: update.description,
           color: update.color,
           confirm_before_send: update.confirmBeforeSend,
+          base_revision: update.baseRevision,
+          force: update.force,
         }),
       ),
     ),
