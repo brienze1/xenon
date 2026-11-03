@@ -28,6 +28,7 @@ func GetManageVaultService() adapter.ManageVaultService {
 				integration.GetVaultPersistence(),
 				integration.GetClipboardWebservice(),
 				integration.GetVariableEventPublisher(),
+				integration.GetWorkspaceLockPersistence(),
 			)
 		})
 	}

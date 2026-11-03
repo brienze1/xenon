@@ -7,5 +7,5 @@ import (
 )
 
 type RecordAIActivityService interface {
-	Record(ctx context.Context, localId, client string, activity entity.AIActivity) error
+	Record(ctx context.Context, localId, client, session string, activity entity.AIActivity) error
 }

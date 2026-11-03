@@ -55,6 +55,7 @@ func NewAutoSyncService(
 	findSyncSession usecase.FindSyncSession,
 	saveSyncSession usecase.SaveSyncSession,
 	renderSyncItem usecase.RenderSyncItem,
+	lockWorkspace usecase.LockWorkspace,
 ) adapter.AutoSyncService {
 	changes := newSyncChanges(readBranchHeads, readTreeVersions, identifySyncItems)
 	return &autoSync{
@@ -63,7 +64,7 @@ func NewAutoSyncService(
 		workspaces:         newLinkedWorkspaces(findWorkspaceRegistry, findLocalSyncSettings, findGitAccounts, findGitCredential, findKnownHosts, scanHostKey, publishGitEvent),
 		committer:          syncCommitter{storeBlobs: storeBlobs, writeSyncCommit: writeSyncCommit},
 		pusher: syncPusher{pushBranch: pushBranch, puller: newSyncPull(changes, publishGitEvent, fetchBranch, readTreeVersions, storeBlobs, convertSyncDocument,
-			listCommitMessages, writeSyncCommit, moveBranch, applySyncedFiles, publishWorkspaceEvent, saveSyncSession, renderSyncItem)},
+			listCommitMessages, writeSyncCommit, moveBranch, applySyncedFiles, publishWorkspaceEvent, saveSyncSession, renderSyncItem, lockWorkspace)},
 		status: newSyncStatusReader(changes, loadWorkspace, publishGitEvent, findSyncSession),
 	}
 }

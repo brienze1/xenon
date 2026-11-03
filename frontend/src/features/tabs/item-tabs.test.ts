@@ -17,7 +17,7 @@ vi.mock('@/platform/services/requests', () => ({
   formatBulk: vi.fn(),
 }))
 vi.mock('@/platform/services/ui-state', () => ({ getUIState: vi.fn(), saveUIState: vi.fn() }))
-vi.mock('@/platform/services/environments', () => ({ listEnvironments: vi.fn(), setActiveEnvironment: vi.fn() }))
+vi.mock('@/platform/services/environments', () => ({ ENVIRONMENT_CHANGED: 'ENV-19409', listEnvironments: vi.fn(), setActiveEnvironment: vi.fn() }))
 vi.mock('@/platform/services/variables', () => ({
   CONFIRM_REVEAL_REQUIRED: 'VAR-01409',
   getVariableTable: vi.fn(),
@@ -113,7 +113,7 @@ describe('collection and folder tabs', () => {
     vi.mocked(requests.getRequest).mockImplementation(async (_localId, id) => ({ draft: { ...emptyDraft(), id, name: `Request ${id}` }, revision: `rev-${id}`, aliases: [] }))
     vi.mocked(tree.getItemSettings).mockImplementation(async (_localId, id) => settingsOf(id))
     vi.mocked(tree.saveItemSettings).mockImplementation(async (_localId, settings) => settings)
-    vi.mocked(variables.getVariableTable).mockImplementation(async (_localId, scope) => ({ scope, rows: [ROW], warnings: [] }))
+    vi.mocked(variables.getVariableTable).mockImplementation(async (_localId, scope) => ({ scope, revision: '', rows: [ROW], warnings: [] }))
     useWorkspacesStore.setState({ activeLocalId: 'ws' })
     useSidebarStore.setState({ tree: TREE, status: 'ready' })
     tabs().hydrate('ws', { ...defaultUIState(), tabs: [{ tabId: 'start', requestId: 'r0', pinned: true, baseRevision: null, draft: null }], activeTabId: 'start' })
@@ -198,10 +198,10 @@ describe('collection and folder tabs', () => {
     await environments.loadTable('collection:c1')
     environments.editDraft('collection:c1', (rows) => rows.map((row) => ({ ...row, description: 'edited' })))
     expect(tabs().closePrompt).toBeNull()
-    vi.mocked(variables.saveVariableTable).mockResolvedValue({ scope: 'collection:c1', rows: [ROW], warnings: [] })
+    vi.mocked(variables.saveVariableTable).mockResolvedValue({ scope: 'collection:c1', revision: '', rows: [ROW], warnings: [] })
     await tabs().save()
     expect(tree.saveItemSettings).toHaveBeenCalledWith('ws', expect.objectContaining({ id: 'c1', description: 'edited' }))
-    expect(variables.saveVariableTable).toHaveBeenCalledWith('ws', 'collection:c1', expect.any(Array), false)
+    expect(variables.saveVariableTable).toHaveBeenCalledWith('ws', 'collection:c1', expect.any(Array), false, { baseRevision: '', force: false })
     expect(items().items.c1?.dirty).toBe(false)
     tabs().saveAs()
     expect(tabs().saveDialog).toBeNull()

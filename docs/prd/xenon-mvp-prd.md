@@ -376,8 +376,13 @@ Cursor and similar) can work with everything in Xenon on the user's behalf. Adde
   - environments, globals and variables;
   - History, import and export, code snippets, cookies, the console, scripts, app settings, and git sync on a linked
     workspace.
-- Tools act on the single active workspace. Switching workspace through MCP switches the window too, and every change
-  shows up in the open window at once.
+- Each MCP session has its own workspace and environment, starting from the ones the window shows when it connects.
+  Switching, creating or opening a workspace, or picking the active environment, through MCP changes only that
+  session, never the window. Every data change still shows up in the open window at once, without moving it or
+  overwriting unsaved edits. `send` also takes an `environment` for one call.
+- Two sessions, or a session and the window, editing one workspace never lose a write: writes are serialised per
+  workspace, MCP edits land on the latest version, and a window save of an environment changed since it was opened is
+  refused with "Load from disk" or "Keep mine". AI rows in History show a short session tag next to the client.
 - Responses are compact: lists give ids and names, 100 per page; text bodies are capped at 16 KB and paged; binary
   bodies are never inlined.
 - Every tool declares every argument its actions read, with its type, a one-sentence description and the actions that
@@ -618,6 +623,10 @@ Stages 4 (scripts) and the OAuth 2.0 part of 5 carry most of the risk. Everythin
   - **Concurrency:** runs send saved requests, the UI stays usable, one active run per collection or folder.
   - **MCP:** two tools, `run` (start/stop) and `runs` (get/list); the `tools/list` size budget is raised from 36,000
     to 39,000 characters to fit them.
+- [x] **Per-session MCP context** (XEN-023, GitHub issue #39). User decisions: an AI never drives the window's
+  workspace or environment; every read-modify-write is serialised per workspace and environments get the
+  "changed since you opened it" check (`ENV-19409`); AI history rows carry a 6-character session tag. The
+  `tools/list` size budget is raised from 39,000 to 39,500 characters.
 
 **Open questions**
 

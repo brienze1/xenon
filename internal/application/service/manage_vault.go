@@ -22,6 +22,7 @@ type manageVault struct {
 	unlockVaults          usecase.UnlockVaults
 	copyToClipboard       usecase.CopyToClipboard
 	publishVariableEvent  usecase.PublishVariableEvent
+	lockWorkspace         usecase.LockWorkspace
 }
 
 func NewManageVaultService(
@@ -38,6 +39,7 @@ func NewManageVaultService(
 	unlockVaults usecase.UnlockVaults,
 	copyToClipboard usecase.CopyToClipboard,
 	publishVariableEvent usecase.PublishVariableEvent,
+	lockWorkspace usecase.LockWorkspace,
 ) adapter.ManageVaultService {
 	return &manageVault{
 		findWorkspaceRegistry: findWorkspaceRegistry,
@@ -51,6 +53,7 @@ func NewManageVaultService(
 		unlockVaults:          unlockVaults,
 		copyToClipboard:       copyToClipboard,
 		publishVariableEvent:  publishVariableEvent,
+		lockWorkspace:         lockWorkspace,
 	}
 }
 
@@ -150,6 +153,8 @@ func (m *manageVault) CopySecret(ctx context.Context, localId string, scope enti
 func (m *manageVault) Reset(ctx context.Context, localId string, confirm bool) (*entity.VaultStatus, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "confirm": confirm})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	if !confirm {
 		return nil, errs.BadRequestError("resetting the vault discards its secret values; confirm it", "VLT-07400")
 	}

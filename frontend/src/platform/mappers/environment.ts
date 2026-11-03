@@ -28,6 +28,8 @@ export interface Environment {
   description: string
   color: EnvironmentColor
   confirmBeforeSend: boolean
+  /** The stored file's revision when this was read; sent back as `baseRevision` when saving. */
+  revision: string
   variables: VariableRow[]
 }
 
@@ -37,6 +39,9 @@ export interface EnvironmentUpdate {
   description: string
   color: EnvironmentColor
   confirmBeforeSend: boolean
+  /** The revision the change was made against; a different stored revision refuses the save unless `force`. */
+  baseRevision: string
+  force: boolean
 }
 
 export function toEnvironmentColor(color: string): EnvironmentColor {
@@ -67,6 +72,7 @@ export function toEnvironment(dto: EnvironmentDto): Environment {
     description: dto.description,
     color: toEnvironmentColor(dto.color),
     confirmBeforeSend: dto.confirm_before_send,
+    revision: dto.revision ?? '',
     variables: (dto.variables ?? []).map(toVariableRow),
   }
 }

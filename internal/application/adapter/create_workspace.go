@@ -8,4 +8,5 @@ import (
 
 type CreateWorkspaceService interface {
 	Create(ctx context.Context, name, path string) (*entity.RegisteredWorkspace, error)
+	CreateInBackground(ctx context.Context, name, path string) (*entity.RegisteredWorkspace, error)
 }

@@ -9,6 +9,7 @@ type MCPHistoryLine struct {
 	Kind        string `json:"kind"`
 	Source      string `json:"source"`
 	Client      string `json:"client,omitempty"`
+	Session     string `json:"session,omitempty"`
 	Method      string `json:"method,omitempty"`
 	Url         string `json:"url,omitempty"`
 	Tool        string `json:"tool,omitempty"`
@@ -21,7 +22,7 @@ type MCPHistoryLine struct {
 
 func NewMCPHistoryLine(historyEntry entity.HistoryEntry) MCPHistoryLine {
 	entry := NewHistoryEntry(historyEntry)
-	line := MCPHistoryLine{Id: entry.Id, At: entry.SentAt, Kind: entry.Kind, Source: entry.Source, Client: entry.Client, Ms: entry.TotalMs}
+	line := MCPHistoryLine{Id: entry.Id, At: entry.SentAt, Kind: entry.Kind, Source: entry.Source, Client: entry.Client, Session: entry.Session, Ms: entry.TotalMs}
 	if entry.Activity == nil {
 		line.Method, line.Url, line.Status, line.Outcome = entry.Method, entry.Url, entry.StatusCode, entry.Outcome
 		if entry.Environment != nil {

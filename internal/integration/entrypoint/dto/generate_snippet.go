@@ -12,6 +12,7 @@ type GenerateSnippet struct {
 	Options        map[string]any `json:"options"`
 	LocalId        string         `json:"local_id" validate:"required,not_blank"`
 	TabId          string         `json:"tab_id"`
+	EnvironmentId  string         `json:"-"`
 	Language       string         `json:"language" validate:"required,oneof=curl js_fetch go_native python_requests"`
 	Request        Request        `json:"request"`
 	IncludeSecrets bool           `json:"include_secrets"`
@@ -29,6 +30,7 @@ func (g *GenerateSnippet) ToEntity() entity.SnippetInput {
 	return entity.SnippetInput{
 		LocalID:        g.LocalId,
 		TabID:          g.TabId,
+		EnvironmentID:  g.EnvironmentId,
 		Request:        request,
 		Options:        entity.SnippetOptions{Language: snippetlanguage.GetSnippetLanguage(g.Language), Options: options},
 		IncludeSecrets: g.IncludeSecrets,

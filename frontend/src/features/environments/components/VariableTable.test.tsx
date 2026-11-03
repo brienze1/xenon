@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/platform/errors'
 import type { VariableRow, VariableTable as VariableTableData } from '@/platform/mappers/variable'
 
-vi.mock('@/platform/services/environments', () => ({ listEnvironments: vi.fn(), setActiveEnvironment: vi.fn() }))
+vi.mock('@/platform/services/environments', () => ({ ENVIRONMENT_CHANGED: 'ENV-19409', listEnvironments: vi.fn(), setActiveEnvironment: vi.fn() }))
 vi.mock('@/platform/services/variables', () => ({
   CONFIRM_REVEAL_REQUIRED: 'VAR-01409',
   getVariableTable: vi.fn(),
@@ -53,7 +53,7 @@ function secret(key: string, secretState: VariableRow['secretState']): VariableR
 }
 
 function tableOf(rows: VariableRow[], warnings: string[] = []): VariableTableData {
-  return { scope: SCOPE, rows, warnings }
+  return { scope: SCOPE, revision: 'rev-1', rows, warnings }
 }
 
 async function renderTable(rows: VariableRow[]) {
@@ -220,6 +220,7 @@ describe('VariableTable', () => {
         { key: 'user', previousKey: null, initialValue: 'ana', currentValue: null, secret: false, secretValue: null, enabled: false, description: '' },
       ],
       false,
+      { baseRevision: 'rev-1', force: false },
     )
     await screen.findByRole('textbox', { name: 'Name of base_url' })
     expect(screen.getAllByRole('row')).toHaveLength(3)
@@ -302,6 +303,7 @@ describe('VariableTable', () => {
         expect.objectContaining({ key: 'token', secret: true, secretValue: null }),
       ],
       false,
+      { baseRevision: 'rev-1', force: false },
     )
   })
 
@@ -316,7 +318,7 @@ describe('VariableTable', () => {
     await saveFromTab()
     vi.mocked(variables.saveVariableTable).mockResolvedValue(tableOf([secret('password', 'set')], ['git_history']))
     await user.click(screen.getByRole('button', { name: 'Make Secret' }))
-    expect(variables.saveVariableTable).toHaveBeenCalledWith('A', SCOPE, [expect.objectContaining({ key: 'password', secret: true })], false)
+    expect(variables.saveVariableTable).toHaveBeenCalledWith('A', SCOPE, [expect.objectContaining({ key: 'password', secret: true })], false, { baseRevision: 'rev-1', force: false })
     expect(await screen.findByText(/may still be in git history\. Rotate them/)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Dismiss' }))
     expect(screen.queryByText(/Rotate them/)).not.toBeInTheDocument()
@@ -330,7 +332,7 @@ describe('VariableTable', () => {
     expect(screen.getByText(/will be written to the workspace files/)).toBeInTheDocument()
     vi.mocked(variables.saveVariableTable).mockResolvedValue(tableOf([plain({ key: 'token', initialValue: 'abc', currentValue: 'abc' })]))
     await user.click(screen.getByRole('button', { name: 'Write Values to Files' }))
-    expect(variables.saveVariableTable).toHaveBeenCalledWith('A', SCOPE, [expect.objectContaining({ key: 'token', secret: false })], true)
+    expect(variables.saveVariableTable).toHaveBeenCalledWith('A', SCOPE, [expect.objectContaining({ key: 'token', secret: false })], true, { baseRevision: 'rev-1', force: false })
     expect(await screen.findByRole('textbox', { name: 'Initial value of token' })).toHaveValue('abc')
   })
 
@@ -342,7 +344,7 @@ describe('VariableTable', () => {
     expect(await screen.findByText(/will be written to the workspace files/)).toBeInTheDocument()
     vi.mocked(variables.saveVariableTable).mockResolvedValue(tableOf([plain({ description: 'API root!' })]))
     await user.click(screen.getByRole('button', { name: 'Write Values to Files' }))
-    expect(variables.saveVariableTable).toHaveBeenLastCalledWith('A', SCOPE, expect.any(Array), true)
+    expect(variables.saveVariableTable).toHaveBeenLastCalledWith('A', SCOPE, expect.any(Array), true, { baseRevision: 'rev-1', force: false })
   })
 
   it('offers to retry a table that cannot be loaded', async () => {

@@ -3,9 +3,10 @@ package dto
 import "github.com/brienze1/xenon/internal/domain/entity"
 
 // NewUpdateEnvironment keeps every stored setting the edit leaves out.
-func NewUpdateEnvironment(localId string, stored entity.Environment, edit *MCPEnvEdit) UpdateEnvironment {
+func NewUpdateEnvironment(localId string, stored entity.Environment, baseRevision string, edit *MCPEnvEdit) UpdateEnvironment {
 	return UpdateEnvironment{
 		LocalId:           localId,
+		BaseRevision:      baseRevision,
 		Id:                stored.ID,
 		Name:              overridden(edit.Name, stored.Name),
 		Description:       stored.Description,

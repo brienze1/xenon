@@ -105,7 +105,7 @@ func (e *environmentManage) Update(bindingCtx context.Context, request dto.Updat
 		return nil, err
 	}
 
-	details, err := e.manageEnvironmentService.Update(ctx, request.LocalId, request.ToEntity())
+	details, err := e.manageEnvironmentService.Update(ctx, request.LocalId, request.ToEntity(), request.BaseRevision, request.Force)
 	if err != nil {
 		return nil, err
 	}

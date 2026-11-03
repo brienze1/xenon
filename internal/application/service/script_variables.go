@@ -19,11 +19,11 @@ type scriptVariables struct {
 	saveLocalVariables   usecase.SaveLocalVariables
 	vaults               vaultWriter
 	publishVariableEvent usecase.PublishVariableEvent
-	lockLocalVariables   usecase.LockLocalVariables
+	lockWorkspace        usecase.LockWorkspace
 }
 
 func (s scriptVariables) persist(ctx context.Context, localId, root string, refs map[enums.VariableScope]entity.ScopeRef, before, after entity.ScriptScopes, vaultBefore, vaultAfter map[string]string) error {
-	unlock := s.lockLocalVariables.LockVariables(ctx, localId)
+	ctx, unlock := s.lockWorkspace.LockWorkspace(ctx, localId)
 	defer unlock()
 	changes := after.ChangesFrom(before, refs, vaultBefore, vaultAfter)
 	changed := make([]entity.ScopeRef, 0, len(changes))
@@ -67,7 +67,8 @@ func (s scriptVariables) apply(ctx context.Context, localId, root string, change
 	if !edited.RowsDiffer(original) {
 		return nil
 	}
-	return s.rowStore.save(ctx, root, ref, edited.Rows)
+	_, err = s.rowStore.save(ctx, root, ref, edited.Rows)
+	return err
 }
 
 func cloneVault(vault map[string]string) map[string]string {

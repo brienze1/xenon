@@ -441,7 +441,7 @@ describe('TabContextMenu', () => {
     expect(envTab).toHaveTextContent('ENV')
     expect(within(strip()).getByRole('tab', { name: /Globals/ })).toHaveAttribute('title', 'Globals (preview)')
     expect(within(envTab).queryByRole('img', { name: 'Unsaved changes' })).not.toBeInTheDocument()
-    const base = { base: [], rows: [], confirming: null, failure: null, saving: false }
+    const base = { base: [], baseRevision: '', rows: [], confirming: null, failure: null, saving: false, forcing: false }
     act(() => useEnvironmentsStore.setState({ drafts: { 'env:e1': { ...base, dirty: true } } }))
     expect(within(envTab).getByRole('img', { name: 'Unsaved changes' })).toBeInTheDocument()
     act(() => useEnvironmentsStore.setState({ environments: [{ id: 'e1', name: 'staging', color: 'green', confirmBeforeSend: false, error: null }] }))

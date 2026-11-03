@@ -18,6 +18,7 @@ type Environment struct {
 	Color             enums.EnvColor
 	FileName          string
 	Error             string
+	Revision          string
 	Variables         []VariableRow
 	ConfirmBeforeSend bool
 }
@@ -81,6 +82,11 @@ func (e Environment) HasValidColor() bool {
 	return e.Color != envcolor.Unknown
 }
 
+// BlocksSave never blocks an empty baseRevision: it patches the latest stored environment.
+func (e Environment) BlocksSave(baseRevision string, force bool) bool {
+	return baseRevision != "" && !force && e.Revision != baseRevision
+}
+
 func (e Environment) WithSettings(settings Environment) Environment {
 	e.Name = strings.TrimSpace(settings.Name)
 	e.Description = settings.Description
@@ -112,6 +118,7 @@ func (e Environment) Duplicated(id, name string) Environment {
 	e.ID = id
 	e.Name = name
 	e.FileName = ""
+	e.Revision = ""
 	return e.WithVariables(e.Variables)
 }
 

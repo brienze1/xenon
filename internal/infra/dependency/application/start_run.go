@@ -52,7 +52,7 @@ func GetStartRunService() adapter.StartRunService {
 				integration.GetUIStatePersistence(),
 				integration.GetWorkspaceEventPublisher(),
 				integration.GetKnownSecretsPersistence(),
-				integration.GetLocalVariablesPersistence(),
+				integration.GetWorkspaceLockPersistence(),
 				integration.GetTreePersistence(),
 				integration.GetActiveRunsPersistence(),
 				integration.GetActiveRunsPersistence(),

@@ -8,6 +8,7 @@ type SendRequest struct {
 	TabId                     string     `json:"tab_id" validate:"required"`
 	AliasId                   string     `json:"alias_id"`
 	ConfirmedEnvironmentId    string     `json:"confirmed_environment_id"`
+	EnvironmentId             string     `json:"-"`
 	Request                   Request    `json:"request"`
 	AcknowledgeMissingSecrets bool       `json:"acknowledge_missing_secrets"`
 	SendWithExpiredToken      bool       `json:"send_with_expired_token"`
@@ -26,7 +27,12 @@ func NewSendRequest(origin SendOrigin, localId, tabId, confirmedEnvironmentId st
 }
 
 func (s SendRequest) LogValue() any {
-	return map[string]any{"local_id": s.LocalId, "tab_id": s.TabId, "alias_id": s.AliasId, "request": s.Request.LogValue(), "acknowledge_missing_secrets": s.AcknowledgeMissingSecrets, "confirmed_environment_id": s.ConfirmedEnvironmentId, "origin": s.Origin.ToEntity().Source.String(), "client": s.Origin.Client}
+	return map[string]any{"local_id": s.LocalId, "tab_id": s.TabId, "alias_id": s.AliasId, "request": s.Request.LogValue(), "acknowledge_missing_secrets": s.AcknowledgeMissingSecrets, "confirmed_environment_id": s.ConfirmedEnvironmentId, "environment_id": s.EnvironmentId, "origin": s.Origin.ToEntity().Source.String(), "client": s.Origin.Client}
+}
+
+func (s SendRequest) InEnvironment(environmentId string) SendRequest {
+	s.EnvironmentId = environmentId
+	return s
 }
 
 func (s SendRequest) WithAlias(aliasId string) SendRequest {

@@ -54,7 +54,7 @@ func GetSendRequestService() adapter.SendRequestService {
 				integration.GetWorkspaceEventPublisher(),
 				integration.GetKnownSecretsPersistence(),
 				integration.GetAIEventPublisher(),
-				integration.GetLocalVariablesPersistence(),
+				integration.GetWorkspaceLockPersistence(),
 				integration.GetEnvironmentPersistence(),
 			)
 		})

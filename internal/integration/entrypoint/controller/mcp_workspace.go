@@ -19,7 +19,7 @@ const (
 
 var workspaceAITool = entity.AITool{
 	Name:        "workspace",
-	Description: "List workspaces or show the active one.",
+	Description: "List workspaces or show this session's workspace.",
 	Actions:     []string{mcpWorkspaceListAction, mcpWorkspaceActiveAction},
 	Effect:      aitooleffect.ReadOnly,
 	Idempotent:  true,
@@ -62,9 +62,9 @@ func (m *mcpWorkspace) Handle(toolCtx context.Context, call dto.MCPToolCall) (re
 
 	switch call.Action {
 	case mcpWorkspaceListAction:
-		result, err = m.list(ctx)
+		result, err = m.list(ctx, call)
 	case mcpWorkspaceActiveAction:
-		result, err = m.active(ctx)
+		result, err = m.active(ctx, call)
 	default:
 		err = mcpErrors.RejectUnsupportedAIAction(call.Tool, call.Action)
 	}
@@ -76,20 +76,21 @@ func (m *mcpWorkspace) Handle(toolCtx context.Context, call dto.MCPToolCall) (re
 	return result, nil
 }
 
-func (m *mcpWorkspace) list(ctx context.Context) (dto.MCPToolResult, error) {
+func (m *mcpWorkspace) list(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolResult, error) {
 	registry, err := m.listWorkspacesService.List(ctx)
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
-	return dto.NewMCPToolResult(dto.NewMCPWorkspaceList(*registry)), nil
+	return dto.NewMCPToolResult(dto.NewMCPWorkspaceList(registry.WithActive(call.LocalId))), nil
 }
 
-func (m *mcpWorkspace) active(ctx context.Context) (dto.MCPToolResult, error) {
+func (m *mcpWorkspace) active(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolResult, error) {
 	registry, err := m.listWorkspacesService.List(ctx)
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
-	workspace, found := registry.Active()
+	sessionRegistry := registry.WithActive(call.LocalId)
+	workspace, found := sessionRegistry.Active()
 	if !found {
 		return dto.MCPToolResult{}, mcpErrors.RejectInactiveAIWorkspace()
 	}
@@ -104,5 +105,5 @@ func (m *mcpWorkspace) active(ctx context.Context) (dto.MCPToolResult, error) {
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
-	return dto.NewMCPToolResult(dto.NewMCPActiveWorkspace(workspace, *environments)).WithTarget(workspace.NamedTarget()), nil
+	return dto.NewMCPToolResult(dto.NewMCPActiveWorkspace(workspace, environments.WithActive(call.EnvironmentId))).WithTarget(workspace.NamedTarget()), nil
 }

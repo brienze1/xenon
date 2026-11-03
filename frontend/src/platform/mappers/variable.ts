@@ -34,8 +34,16 @@ export interface VariableRow {
 
 export interface VariableTable {
   scope: string
+  /** The environment file's revision for an environment scope; `""` for other scopes. */
+  revision: string
   rows: VariableRow[]
   warnings: string[]
+}
+
+/** How a table save checks the stored revision: refused when it moved past `baseRevision`, unless `force`. */
+export interface RevisionCheck {
+  baseRevision: string
+  force: boolean
 }
 
 /**
@@ -78,6 +86,7 @@ export function toVariableRow(dto: VariableRowDto): VariableRow {
 export function toVariableTable(dto: VariableTableDto | null, scope: string): VariableTable {
   return {
     scope: dto?.scope ? dto.scope : scope,
+    revision: dto?.revision ?? '',
     rows: (dto?.rows ?? []).map(toVariableRow),
     warnings: dto?.warnings ?? [],
   }

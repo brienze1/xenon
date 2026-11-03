@@ -23,18 +23,18 @@ const (
 
 var workspaceEditAITool = entity.AITool{
 	Name:        "workspace_edit",
-	Description: "Create, open, switch or rename a workspace.",
+	Description: "Create, open, switch or rename a workspace; switching only affects this MCP session.",
 	Actions:     []string{mcpWorkspaceCreateAction, mcpWorkspaceOpenAction, mcpWorkspaceSwitchAction, mcpWorkspaceRenameAction},
 	Effect:      aitooleffect.Write,
 }
 
 type mcpWorkspaceEdit struct {
-	errorHandler             adapter.ErrorHandler
-	createWorkspaceService   appAdapter.CreateWorkspaceService
-	openWorkspaceService     appAdapter.OpenWorkspaceService
-	renameWorkspaceService   appAdapter.RenameWorkspaceService
-	activateWorkspaceService appAdapter.ActivateWorkspaceService
-	autoSyncService          appAdapter.AutoSyncService
+	errorHandler           adapter.ErrorHandler
+	createWorkspaceService appAdapter.CreateWorkspaceService
+	openWorkspaceService   appAdapter.OpenWorkspaceService
+	renameWorkspaceService appAdapter.RenameWorkspaceService
+	manageAISessionService appAdapter.ManageAISessionService
+	autoSyncService        appAdapter.AutoSyncService
 }
 
 func NewMCPWorkspaceEdit(
@@ -42,16 +42,16 @@ func NewMCPWorkspaceEdit(
 	createWorkspaceService appAdapter.CreateWorkspaceService,
 	openWorkspaceService appAdapter.OpenWorkspaceService,
 	renameWorkspaceService appAdapter.RenameWorkspaceService,
-	activateWorkspaceService appAdapter.ActivateWorkspaceService,
+	manageAISessionService appAdapter.ManageAISessionService,
 	autoSyncService appAdapter.AutoSyncService,
 ) adapter.MCPToolController {
 	return &mcpWorkspaceEdit{
-		errorHandler:             errorHandler,
-		createWorkspaceService:   createWorkspaceService,
-		openWorkspaceService:     openWorkspaceService,
-		renameWorkspaceService:   renameWorkspaceService,
-		activateWorkspaceService: activateWorkspaceService,
-		autoSyncService:          autoSyncService,
+		errorHandler:           errorHandler,
+		createWorkspaceService: createWorkspaceService,
+		openWorkspaceService:   openWorkspaceService,
+		renameWorkspaceService: renameWorkspaceService,
+		manageAISessionService: manageAISessionService,
+		autoSyncService:        autoSyncService,
 	}
 }
 
@@ -83,11 +83,11 @@ func (m *mcpWorkspaceEdit) Handle(toolCtx context.Context, call dto.MCPToolCall)
 
 	switch call.Action {
 	case mcpWorkspaceCreateAction:
-		result, err = m.create(ctx, arguments)
+		result, err = m.create(ctx, call, arguments)
 	case mcpWorkspaceOpenAction:
-		result, err = m.open(ctx, arguments)
+		result, err = m.open(ctx, call, arguments)
 	case mcpWorkspaceSwitchAction:
-		result, err = m.switchTo(ctx, arguments)
+		result, err = m.switchTo(ctx, call, arguments)
 	case mcpWorkspaceRenameAction:
 		result, err = m.rename(ctx, arguments)
 	default:
@@ -101,47 +101,61 @@ func (m *mcpWorkspaceEdit) Handle(toolCtx context.Context, call dto.MCPToolCall)
 	return result, nil
 }
 
-func (m *mcpWorkspaceEdit) create(ctx context.Context, arguments dto.MCPWorkspaceEdit) (dto.MCPToolResult, error) {
+func (m *mcpWorkspaceEdit) create(ctx context.Context, call dto.MCPToolCall, arguments dto.MCPWorkspaceEdit) (dto.MCPToolResult, error) {
 	request := arguments.CreateWorkspace()
 	err := validateCreateWorkspace(&request)
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
 
-	workspace, err := m.createWorkspaceService.Create(ctx, request.Name, request.GetPath())
+	created, err := m.createWorkspaceService.CreateInBackground(ctx, request.Name, request.GetPath())
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
-	return editedWorkspace(*workspace, aichangekind.Workspaces), nil
+	return m.enter(ctx, call, created.LocalID, aichangekind.Workspaces)
 }
 
-func (m *mcpWorkspaceEdit) open(ctx context.Context, arguments dto.MCPWorkspaceEdit) (dto.MCPToolResult, error) {
+func (m *mcpWorkspaceEdit) open(ctx context.Context, call dto.MCPToolCall, arguments dto.MCPWorkspaceEdit) (dto.MCPToolResult, error) {
 	request := arguments.OpenWorkspace()
 	err := validateOpenWorkspace(&request)
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
 
-	workspace, err := m.openWorkspaceService.Open(ctx, request.GetPath())
+	opened, err := m.openWorkspaceService.OpenInBackground(ctx, request.GetPath())
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
-	return editedWorkspace(*workspace, aichangekind.Workspaces), nil
+	return m.enter(ctx, call, opened.LocalID, aichangekind.Workspaces)
 }
 
-func (m *mcpWorkspaceEdit) switchTo(ctx context.Context, arguments dto.MCPWorkspaceEdit) (dto.MCPToolResult, error) {
+func (m *mcpWorkspaceEdit) switchTo(ctx context.Context, call dto.MCPToolCall, arguments dto.MCPWorkspaceEdit) (dto.MCPToolResult, error) {
 	request := arguments.ActivateWorkspace()
 	err := validateActivateWorkspace(&request)
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
 
-	snapshot, err := m.activateWorkspaceService.Activate(ctx, request.LocalId)
+	result, err := m.enter(ctx, call, request.LocalId)
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
 	scheduleAutoSync(ctx, m.errorHandler, m.autoSyncService.Opened, request.LocalId)
-	return editedWorkspace(snapshot.Workspace, aichangekind.Workspaces, aichangekind.Tree), nil
+	return result, nil
+}
+
+func (m *mcpWorkspaceEdit) enter(ctx context.Context, call dto.MCPToolCall, localId string, changes ...enums.AIChangeKind) (dto.MCPToolResult, error) {
+	request := dto.NewMCPSession(call.Session)
+	err := validateAIArguments(&request)
+	if err != nil {
+		return dto.MCPToolResult{}, err
+	}
+
+	workspace, err := m.manageAISessionService.Enter(ctx, request.SessionId(), localId)
+	if err != nil {
+		return dto.MCPToolResult{}, err
+	}
+	return editedWorkspace(*workspace, changes...), nil
 }
 
 func (m *mcpWorkspaceEdit) rename(ctx context.Context, arguments dto.MCPWorkspaceEdit) (dto.MCPToolResult, error) {

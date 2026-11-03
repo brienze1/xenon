@@ -10,6 +10,8 @@ export type PassphrasePrompt = 'setup' | 'unlock'
 export interface TableState {
   rows: VariableRow[]
   warnings: string[]
+  /** The stored revision of an environment table (`""` for other scopes). */
+  revision: string
   status: EnvironmentsStatus
   error: AppError | null
 }
@@ -20,13 +22,16 @@ export interface EnvironmentLook {
   confirmBeforeSend: boolean
 }
 
-/** The unsaved edits of one variable table. `base` is the stored rows the edits started from. */
+/** The unsaved edits of one variable table. `base` is the stored rows the edits started from, at `baseRevision`. */
 export interface VariableDraft {
   base: VariableRow[]
+  baseRevision: string
   rows: DraftRow[]
   dirty: boolean
   /** The type switches waiting for confirmation before a save. */
   confirming: TypeSwitches | null
   failure: AppError | null
   saving: boolean
+  /** Set by "Keep mine": the next save overwrites what changed on disk. */
+  forcing: boolean
 }

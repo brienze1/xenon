@@ -19,6 +19,7 @@ type manageTreeItem struct {
 	duplicateTreeItem     usecase.DuplicateTreeItem
 	deleteTreeItem        usecase.DeleteTreeItem
 	moveTreeItem          usecase.MoveTreeItem
+	lockWorkspace         usecase.LockWorkspace
 }
 
 func NewManageTreeItemService(
@@ -29,6 +30,7 @@ func NewManageTreeItemService(
 	duplicateTreeItem usecase.DuplicateTreeItem,
 	deleteTreeItem usecase.DeleteTreeItem,
 	moveTreeItem usecase.MoveTreeItem,
+	lockWorkspace usecase.LockWorkspace,
 ) adapter.ManageTreeItemService {
 	return &manageTreeItem{
 		findWorkspaceRegistry: findWorkspaceRegistry,
@@ -38,12 +40,15 @@ func NewManageTreeItemService(
 		duplicateTreeItem:     duplicateTreeItem,
 		deleteTreeItem:        deleteTreeItem,
 		moveTreeItem:          moveTreeItem,
+		lockWorkspace:         lockWorkspace,
 	}
 }
 
 func (m *manageTreeItem) CreateCollection(ctx context.Context, localId, name string) (*entity.TreeNode, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "name": name})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	root, tree, err := m.load(ctx, localId)
 	if err != nil {
 		return nil, err
@@ -62,6 +67,8 @@ func (m *manageTreeItem) CreateCollection(ctx context.Context, localId, name str
 func (m *manageTreeItem) CreateFolder(ctx context.Context, localId, parentId, name string) (*entity.TreeNode, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "parentId": parentId, "name": name})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	root, tree, err := m.load(ctx, localId)
 	if err != nil {
 		return nil, err
@@ -84,6 +91,8 @@ func (m *manageTreeItem) CreateFolder(ctx context.Context, localId, parentId, na
 func (m *manageTreeItem) CreateRequest(ctx context.Context, localId, parentId, name string, request entity.Request) (*entity.TreeNode, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "parentId": parentId, "name": name, "request": request})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	root, tree, err := m.load(ctx, localId)
 	if err != nil {
 		return nil, err
@@ -107,6 +116,8 @@ func (m *manageTreeItem) CreateRequest(ctx context.Context, localId, parentId, n
 func (m *manageTreeItem) Rename(ctx context.Context, localId, id, name string) (*entity.TreeNode, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id, "name": name})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	root, tree, err := m.load(ctx, localId)
 	if err != nil {
 		return nil, err
@@ -128,6 +139,8 @@ func (m *manageTreeItem) Rename(ctx context.Context, localId, id, name string) (
 func (m *manageTreeItem) Duplicate(ctx context.Context, localId, id string) (*entity.TreeNode, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	root, tree, err := m.load(ctx, localId)
 	if err != nil {
 		return nil, err
@@ -150,6 +163,8 @@ func (m *manageTreeItem) Duplicate(ctx context.Context, localId, id string) (*en
 func (m *manageTreeItem) Delete(ctx context.Context, localId, id string) ([]string, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	root, tree, err := m.load(ctx, localId)
 	if err != nil {
 		return nil, err
@@ -170,6 +185,8 @@ func (m *manageTreeItem) Delete(ctx context.Context, localId, id string) ([]stri
 func (m *manageTreeItem) Move(ctx context.Context, localId, id, parentId string, index int) (*entity.Tree, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id, "parentId": parentId, "index": index})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	workspace, err := m.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
 		return nil, err

@@ -101,7 +101,7 @@ func (m *mcpSnippet) generate(ctx context.Context, call dto.MCPToolCall) (dto.MC
 		return dto.NewMCPTargetResult(target), err
 	}
 
-	request := arguments.GenerateSnippet(call.LocalId, call.TabId(), resolved)
+	request := arguments.GenerateSnippet(call.LocalId, call.TabId(), call.EnvironmentId, resolved)
 	err = validateGenerateSnippet(&request)
 	if err != nil {
 		return dto.NewMCPTargetResult(target), err

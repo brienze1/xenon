@@ -189,7 +189,7 @@ func (a *aiAccess) Record(bindingCtx context.Context, request dto.AIActivityReco
 		return err
 	}
 
-	if recordErr := a.recordAIActivityService.Record(ctx, request.WorkspaceId(), request.ClientName(), request.ToEntity()); recordErr != nil {
+	if recordErr := a.recordAIActivityService.Record(ctx, request.WorkspaceId(), request.ClientName(), request.SessionTag(), request.ToEntity()); recordErr != nil {
 		a.errorHandler.Handle(ctx, recordErr, request)
 	}
 

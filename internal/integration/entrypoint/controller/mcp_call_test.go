@@ -16,6 +16,7 @@ import (
 type recordedAIActivity struct {
 	localId  string
 	client   string
+	session  string
 	activity entity.AIActivity
 }
 
@@ -24,10 +25,10 @@ type fakeAIActivityRecorder struct {
 	mu      sync.Mutex
 }
 
-func (f *fakeAIActivityRecorder) Record(_ context.Context, localId, client string, activity entity.AIActivity) error {
+func (f *fakeAIActivityRecorder) Record(_ context.Context, localId, client, session string, activity entity.AIActivity) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.records = append(f.records, recordedAIActivity{localId: localId, client: client, activity: activity})
+	f.records = append(f.records, recordedAIActivity{localId: localId, client: client, session: session, activity: activity})
 	return nil
 }
 
@@ -60,10 +61,48 @@ func (a activeWorkspace) List(context.Context) (*entity.AppRegistry, error) {
 	return &entity.AppRegistry{ActiveLocalID: a.localId}, nil
 }
 
+type fakeAISessions struct {
+	localId string
+	opened  []string
+	closed  []string
+}
+
+func (f *fakeAISessions) Open(_ context.Context, sessionId string) (*entity.AISessionContext, error) {
+	f.opened = append(f.opened, sessionId)
+	return f.Current(context.Background(), sessionId)
+}
+
+func (f *fakeAISessions) Current(_ context.Context, sessionId string) (*entity.AISessionContext, error) {
+	current := entity.NewAISessionContext(sessionId, f.localId, "dev")
+	return &current, nil
+}
+
+func (f *fakeAISessions) Enter(context.Context, string, string) (*entity.RegisteredWorkspace, error) {
+	return &entity.RegisteredWorkspace{}, nil
+}
+
+func (f *fakeAISessions) ChooseEnvironment(context.Context, string, string) (*entity.AISessionContext, error) {
+	return &entity.AISessionContext{}, nil
+}
+
+func (f *fakeAISessions) ResolveEnvironment(context.Context, string, string) (string, bool, error) {
+	return "", true, nil
+}
+
+func (f *fakeAISessions) Close(_ context.Context, sessionId string) error {
+	f.closed = append(f.closed, sessionId)
+	return nil
+}
+
 func newTestMCPCall(active string) (adapter.MCPCallController, *fakeAIActivityRecorder, *deniedSessions) {
-	recorder, approvals := &fakeAIActivityRecorder{}, &deniedSessions{}
-	call := NewMCPCall(NewErrorHandler(), activeWorkspace{localId: active}, maskingAIOutputGuard{}, recorder, silentAIChangeNotifier{}, approvals)
+	call, recorder, approvals, _ := newTestMCPCallWithSessions(active)
 	return call, recorder, approvals
+}
+
+func newTestMCPCallWithSessions(active string) (adapter.MCPCallController, *fakeAIActivityRecorder, *deniedSessions, *fakeAISessions) {
+	recorder, approvals, sessions := &fakeAIActivityRecorder{}, &deniedSessions{}, &fakeAISessions{localId: active}
+	call := NewMCPCall(NewErrorHandler(), sessions, maskingAIOutputGuard{}, recorder, silentAIChangeNotifier{}, approvals)
+	return call, recorder, approvals, sessions
 }
 
 func TestMCPCallRejectsAnUnknownActionAndRecordsTheActivity(t *testing.T) {
@@ -96,12 +135,34 @@ func TestMCPCallNeedsAnActiveWorkspaceForScopedTools(t *testing.T) {
 	}
 }
 
-func TestMCPCallClosingASessionDeniesItsApprovals(t *testing.T) {
-	call, _, approvals := newTestMCPCall("ws-1")
+func TestMCPCallClosingASessionDeniesItsApprovalsAndForgetsItsContext(t *testing.T) {
+	call, _, approvals, sessions := newTestMCPCallWithSessions("ws-1")
 	if err := call.CloseSession(context.Background(), dto.NewMCPSession("session-1")); err != nil {
 		t.Fatal(err)
 	}
 	if len(approvals.ids) != 1 || approvals.ids[0] != "session-1" {
 		t.Fatalf("denied sessions = %v", approvals.ids)
+	}
+	if len(sessions.closed) != 1 || sessions.closed[0] != "session-1" {
+		t.Fatalf("closed sessions = %v", sessions.closed)
+	}
+}
+
+func TestMCPCallOpeningASessionSeedsItsContext(t *testing.T) {
+	call, _, _, sessions := newTestMCPCallWithSessions("ws-1")
+	if err := call.OpenSession(context.Background(), dto.NewMCPSession("session-1")); err != nil {
+		t.Fatal(err)
+	}
+	if len(sessions.opened) != 1 || sessions.opened[0] != "session-1" {
+		t.Fatalf("opened sessions = %v", sessions.opened)
+	}
+}
+
+func TestMCPCallRecordsTheSessionTag(t *testing.T) {
+	call, recorder, _ := newTestMCPCall("ws-1")
+	tree := NewMCPTree(NewErrorHandler(), nil, nil, nil, nil, nil, nil, nil)
+	call.Call(context.Background(), dto.NewMCPCall("session-1", "Claude Code", json.RawMessage(`{"action":"explode"}`)), tree)
+	if len(recorder.records) != 1 || recorder.records[0].session != "sessio" {
+		t.Fatalf("records = %+v", recorder.records)
 	}
 }

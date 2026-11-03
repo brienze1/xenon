@@ -448,3 +448,35 @@ Feature: Everything an AI client does is recorded in History
     And the app data file "workspaces/{{Acme.local_id}}/history.jsonl" should not contain "arg-secret-settings-4"
     And the log output should not contain "arg-secret-add-1"
     And the log output should not contain "arg-passphrase-3"
+
+  @xen_023 @session_tag
+  Scenario: Each session's entries carry its own short tag, and searching the tag finds only that session
+    When I call the MCP tool "tree" with
+      """
+      { "action": "list" }
+      """
+    And the MCP session is closed
+    And I call the MCP tool "send" with
+      """
+      { "request": { "method": "GET", "url": "{{api}}/ping" } }
+      """
+    Then the call should succeed
+    When I call "HistoryService.List" with
+      """
+      { "local_id": "{{Acme.local_id}}", "source": "ai" }
+      """
+    Then the response should contain the field "" array length equal to 2
+    And the response should contain the field "0.kind" equal to "send"
+    And the response should contain the field "0.client" equal to "Claude Code"
+    And the response should contain the field "0.session" matching "^[A-Za-z0-9_-]{6}$"
+    And the response should contain the field "1.client" equal to "Claude Code"
+    And the response should contain the field "1.session" matching "^[A-Za-z0-9_-]{6}$"
+    And I save the response field "1.session" as "first"
+    And the response should contain the field "0.session" not equal to "{{first}}"
+    When I call "HistoryService.List" with
+      """
+      { "local_id": "{{Acme.local_id}}", "source": "ai", "query": "{{first}}" }
+      """
+    Then the response should contain the field "" array length equal to 1
+    And the response should contain the field "0.session" equal to "{{first}}"
+    And the response should contain the field "0.activity.tool" equal to "tree"

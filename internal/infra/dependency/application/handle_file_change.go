@@ -27,6 +27,7 @@ func GetHandleFileChangeService() adapter.HandleFileChangeService {
 				integration.GetVaultPersistence(),
 				integration.GetVaultPersistence(),
 				integration.GetVariableEventPublisher(),
+				integration.GetWorkspaceLockPersistence(),
 			)
 		})
 	}

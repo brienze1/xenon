@@ -94,7 +94,7 @@ func (m *mcpRun) start(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolRe
 		return dto.NewMCPTargetResult(entity.AIActivityTarget{}), err
 	}
 
-	started, err := m.startRunService.StartForAI(ctx, call.LocalId, arguments.Path(), arguments.TargetItemId(), arguments.ToEntity(), properties.Properties().Application.Version, call.Client, call.Session)
+	started, err := m.startRunService.StartForAI(ctx, call.LocalId, arguments.Path(), arguments.TargetItemId(), call.EnvironmentId, arguments.ToEntity(), properties.Properties().Application.Version, call.Client, call.Session)
 	if err != nil {
 		return dto.NewMCPTargetResult(started.Target), err
 	}

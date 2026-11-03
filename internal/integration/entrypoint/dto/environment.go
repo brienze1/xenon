@@ -7,6 +7,7 @@ type Environment struct {
 	Name              string        `json:"name"`
 	Description       string        `json:"description"`
 	Color             string        `json:"color"`
+	Revision          string        `json:"revision"`
 	Variables         []VariableRow `json:"variables"`
 	ConfirmBeforeSend bool          `json:"confirm_before_send"`
 }
@@ -18,6 +19,7 @@ func NewEnvironment(details entity.EnvironmentDetails) Environment {
 		Description:       details.Environment.Description,
 		Color:             details.Environment.Color.String(),
 		ConfirmBeforeSend: details.Environment.ConfirmBeforeSend,
+		Revision:          details.Environment.Revision,
 		Variables:         NewVariableRows(details.Table.Entries()),
 	}
 }

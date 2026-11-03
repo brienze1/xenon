@@ -18,6 +18,7 @@ type saveRequest struct {
 	saveRequest           usecase.SaveRequest
 	loadTree              usecase.LoadTree
 	createTreeItem        usecase.CreateTreeItem
+	lockWorkspace         usecase.LockWorkspace
 }
 
 func NewSaveRequestService(
@@ -26,6 +27,7 @@ func NewSaveRequestService(
 	saveRequestFile usecase.SaveRequest,
 	loadTree usecase.LoadTree,
 	createTreeItem usecase.CreateTreeItem,
+	lockWorkspace usecase.LockWorkspace,
 ) adapter.SaveRequestService {
 	return &saveRequest{
 		findWorkspaceRegistry: findWorkspaceRegistry,
@@ -33,6 +35,7 @@ func NewSaveRequestService(
 		saveRequest:           saveRequestFile,
 		loadTree:              loadTree,
 		createTreeItem:        createTreeItem,
+		lockWorkspace:         lockWorkspace,
 	}
 }
 
@@ -55,6 +58,8 @@ func (s *saveRequest) Open(ctx context.Context, localId, id string) (*entity.Req
 func (s *saveRequest) Save(ctx context.Context, localId string, request entity.Request, baseRevision string, force bool) (*entity.Request, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "request": request, "baseRevision": baseRevision, "force": force})
 
+	ctx, unlock := s.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	workspace, err := s.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
 		return nil, err
@@ -78,6 +83,8 @@ func (s *saveRequest) Save(ctx context.Context, localId string, request entity.R
 func (s *saveRequest) SaveAs(ctx context.Context, localId, parentId, name string, request entity.Request) (*entity.Request, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "parentId": parentId, "name": name, "request": request})
 
+	ctx, unlock := s.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	workspace, err := s.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
 		return nil, err

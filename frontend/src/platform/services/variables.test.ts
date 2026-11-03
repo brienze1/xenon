@@ -59,9 +59,10 @@ describe('variables service', () => {
   beforeEach(() => vi.resetAllMocks())
 
   it('gets a table and never keeps a value on a secret row', async () => {
-    vi.mocked(VariableService.GetTable).mockResolvedValue({ scope: 'env:e1', rows: [plainDto, secretDto], warnings: null } as never)
+    vi.mocked(VariableService.GetTable).mockResolvedValue({ scope: 'env:e1', revision: 'rev-1', rows: [plainDto, secretDto], warnings: null } as never)
     await expect(getVariableTable('L1', 'env:e1')).resolves.toEqual({
       scope: 'env:e1',
+      revision: 'rev-1',
       warnings: [],
       rows: [
         plain,
@@ -84,11 +85,11 @@ describe('variables service', () => {
 
   it('treats an empty table answer as no rows for the asked scope', async () => {
     vi.mocked(VariableService.GetTable).mockResolvedValue(null as never)
-    await expect(getVariableTable('L1', 'globals')).resolves.toEqual({ scope: 'globals', rows: [], warnings: [] })
+    await expect(getVariableTable('L1', 'globals')).resolves.toEqual({ scope: 'globals', revision: '', rows: [], warnings: [] })
   })
 
   it('saves edits, sending only what changed for current and secret values', async () => {
-    vi.mocked(VariableService.SaveTable).mockResolvedValue({ scope: 'env:e1', rows: [plainDto], warnings: ['git_history'] } as never)
+    vi.mocked(VariableService.SaveTable).mockResolvedValue({ scope: 'env:e1', revision: 'rev-2', rows: [plainDto], warnings: ['git_history'] } as never)
     const saved = await saveVariableTable(
       'L1',
       'env:e1',
@@ -99,12 +100,16 @@ describe('variables service', () => {
         { key: 'password', previousKey: null, initialValue: '', currentValue: null, secret: true, secretValue: 's3cr3t', enabled: true, description: '' },
       ],
       true,
+      { baseRevision: 'rev-1', force: false },
     )
     expect(saved.warnings).toEqual(['git_history'])
+    expect(saved.revision).toBe('rev-2')
     expect(VariableService.SaveTable).toHaveBeenCalledWith({
       local_id: 'L1',
       scope: 'env:e1',
       confirm_reveal: true,
+      base_revision: 'rev-1',
+      force: false,
       rows: [
         { key: 'base_url', previous_key: 'url', initial_value: 'https://dev', description: 'API root', enabled: true, secret: false, set_current: false },
         { key: 'user', initial_value: 'ana', current_value: '', description: '', enabled: false, secret: false, set_current: true },
@@ -112,6 +117,14 @@ describe('variables service', () => {
         { key: 'password', initial_value: '', secret_value: 's3cr3t', description: '', enabled: true, secret: true, set_current: false },
       ],
     })
+  })
+
+  it('forces a stale save and maps the refused one', async () => {
+    vi.mocked(VariableService.SaveTable).mockResolvedValue({ scope: 'env:e1', revision: 'rev-3', rows: [], warnings: [] } as never)
+    await expect(saveVariableTable('L1', 'env:e1', [], false, { baseRevision: 'rev-1', force: true })).resolves.toMatchObject({ revision: 'rev-3' })
+    expect(VariableService.SaveTable).toHaveBeenCalledWith(expect.objectContaining({ base_revision: 'rev-1', force: true }))
+    vi.mocked(VariableService.SaveTable).mockRejectedValue({ cause: { error: { code: 'ENV-19409', description: 'the environment changed on disk since it was opened' } } })
+    await expect(saveVariableTable('L1', 'env:e1', [], false, { baseRevision: 'rev-1', force: false })).rejects.toMatchObject({ code: 'ENV-19409' })
   })
 
   it('sets a current value, resets and persists rows', async () => {
@@ -128,7 +141,7 @@ describe('variables service', () => {
 
   it('maps backend errors', async () => {
     vi.mocked(VariableService.SaveTable).mockRejectedValue({ cause: { error: { code: 'VAR-01409', description: 'confirm reveal' } } })
-    await expect(saveVariableTable('L1', 'globals', [], false)).rejects.toMatchObject({ code: 'VAR-01409' })
+    await expect(saveVariableTable('L1', 'globals', [], false, { baseRevision: '', force: false })).rejects.toMatchObject({ code: 'VAR-01409' })
     vi.mocked(VariableService.SetCurrent).mockResolvedValue(null as never)
     await expect(setCurrentValue('L1', 'globals', 'k', 'v')).rejects.toMatchObject({ code: 'UNK-00204' })
     vi.mocked(VariableService.Persist).mockRejectedValue({ cause: { error: { code: 'VAR-02422', description: 'secret' } } })

@@ -4,9 +4,10 @@
 @all @xen_008 @mcp @mcp_environments
 Feature: AI clients manage environments, globals and variables
   "env" lists environments and reads a scope's variables; "env_edit" creates, updates and duplicates environments,
-  switches the active one and edits variables (initial and current values, enabled, description, add and remove);
-  "delete" removes an environment. Current values are local and never touch the workspace files; initial values do.
-  Every change emits variables:changed so the open window follows.
+  picks the session's active one and edits variables (initial and current values, enabled, description, add and
+  remove); "delete" removes an environment. Current values are local and never touch the workspace files; initial
+  values do. Every data change emits variables:changed so the open window refreshes; picking the active environment
+  is per MCP session and never changes the window's environment.
 
   Background:
     Given the workspace "Acme" exists
@@ -54,23 +55,35 @@ Feature: AI clients manage environments, globals and variables
     And the response field "items" should contain an item with "name" equal to "Prod" and "color" equal to "red"
     And the response field "items.0.variables" should not exist
 
-  @set_active
-  Scenario: Switching the active environment updates the switcher in the window
-    Given the emitted events are forgotten
+  @xen_023 @set_active @set_active_session_only
+  Scenario: Picking the active environment changes the session, never the window's switcher
+    Given I call "EnvironmentService.SetActive" with
+      """
+      { "local_id": "{{Acme.local_id}}", "id": "{{dev}}" }
+      """
+    And the emitted events are forgotten
     When I call the MCP tool "env_edit" with
       """
       { "action": "set_active", "id": "{{prod}}" }
       """
     Then the call should succeed
-    And a "variables:changed" event with the field "local_id" equal to "{{Acme.local_id}}" should have been emitted within 1000 ms
+    And the response should contain the field "active_id" equal to "{{prod}}"
+    When I wait 300 ms
+    Then the event "variables:changed" should have been emitted 0 times
+    And the app data file "workspaces/{{Acme.local_id}}/variables.json" should contain the field "activeEnvironmentId" equal to "{{dev}}"
     When I call "EnvironmentService.List" with
       """
       { "local_id": "{{Acme.local_id}}" }
       """
-    Then the response should contain the field "active_id" equal to "{{prod}}"
+    Then the response should contain the field "active_id" equal to "{{dev}}"
+    When I call the MCP tool "env" with
+      """
+      { "action": "list" }
+      """
+    Then the response field "items" should contain an item with "id" equal to "{{prod}}" and "active" equal to "true"
 
   @set_active
-  Scenario: No environment can be made active
+  Scenario: No environment can be made active for the session
     Given I call "EnvironmentService.SetActive" with
       """
       { "local_id": "{{Acme.local_id}}", "id": "{{dev}}" }

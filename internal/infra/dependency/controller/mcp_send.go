@@ -23,6 +23,7 @@ func GetMCPSendController() adapter.MCPToolController {
 				application.GetApproveAISendService(),
 				application.GetManageResponseService(),
 				application.GetGuardAIOutputService(),
+				application.GetManageAISessionService(),
 			)
 		})
 	}

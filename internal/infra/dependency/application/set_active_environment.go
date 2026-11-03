@@ -20,6 +20,7 @@ func GetSetActiveEnvironmentService() adapter.SetActiveEnvironmentService {
 				integration.GetLocalVariablesPersistence(),
 				integration.GetLocalVariablesPersistence(),
 				integration.GetVariableEventPublisher(),
+				integration.GetWorkspaceLockPersistence(),
 			)
 		})
 	}

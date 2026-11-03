@@ -59,6 +59,10 @@ func (r *routes) Handler(endpoint http.Handler) http.Handler {
 	return middleware.HTTPMiddleware(r.loopbackGuard, mux)
 }
 
+func (r *routes) OpenSession(ctx context.Context, sessionId string) {
+	_ = r.controllers.Call.OpenSession(ctx, dto.NewMCPSession(sessionId))
+}
+
 func (r *routes) CloseSession(ctx context.Context, sessionId string) {
 	_ = r.controllers.Call.CloseSession(ctx, dto.NewMCPSession(sessionId))
 }

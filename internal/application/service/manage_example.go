@@ -17,6 +17,7 @@ type manageExample struct {
 	saveRequestExamples   usecase.SaveRequestExamples
 	findResponse          usecase.FindResponse
 	saveResponse          usecase.SaveResponse
+	lockWorkspace         usecase.LockWorkspace
 }
 
 func NewManageExampleService(
@@ -25,6 +26,7 @@ func NewManageExampleService(
 	saveRequestExamples usecase.SaveRequestExamples,
 	findResponse usecase.FindResponse,
 	saveResponse usecase.SaveResponse,
+	lockWorkspace usecase.LockWorkspace,
 ) adapter.ManageExampleService {
 	return &manageExample{
 		findWorkspaceRegistry: findWorkspaceRegistry,
@@ -32,6 +34,7 @@ func NewManageExampleService(
 		saveRequestExamples:   saveRequestExamples,
 		findResponse:          findResponse,
 		saveResponse:          saveResponse,
+		lockWorkspace:         lockWorkspace,
 	}
 }
 
@@ -58,6 +61,8 @@ func (m *manageExample) Get(ctx context.Context, localId, requestId, exampleId s
 func (m *manageExample) Create(ctx context.Context, localId, requestId, name string) (*entity.ExampleDetails, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "requestId": requestId, "name": name})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	loaded, err := m.load(ctx, localId, requestId)
 	if err != nil {
 		return nil, err
@@ -75,6 +80,8 @@ func (m *manageExample) Create(ctx context.Context, localId, requestId, name str
 func (m *manageExample) CreateFromResponse(ctx context.Context, localId, requestId, tabId, name string) (*entity.ExampleDetails, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "requestId": requestId, "tabId": tabId, "name": name})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	loaded, err := m.load(ctx, localId, requestId)
 	if err != nil {
 		return nil, err
@@ -96,6 +103,8 @@ func (m *manageExample) CreateFromResponse(ctx context.Context, localId, request
 func (m *manageExample) Save(ctx context.Context, localId, requestId string, example entity.SavedExample, keepBody bool, baseRevision string, force bool) (*entity.ExampleDetails, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "requestId": requestId, "example": example, "keepBody": keepBody, "baseRevision": baseRevision, "force": force})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	workspace, err := m.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
 		return nil, err
@@ -131,6 +140,8 @@ func (m *manageExample) Save(ctx context.Context, localId, requestId string, exa
 func (m *manageExample) Rename(ctx context.Context, localId, requestId, exampleId, name string) (*entity.ExampleDetails, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "requestId": requestId, "exampleId": exampleId, "name": name})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	loaded, err := m.load(ctx, localId, requestId)
 	if err != nil {
 		return nil, err
@@ -152,6 +163,8 @@ func (m *manageExample) Rename(ctx context.Context, localId, requestId, exampleI
 func (m *manageExample) Duplicate(ctx context.Context, localId, requestId, exampleId string) (*entity.ExampleDetails, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "requestId": requestId, "exampleId": exampleId})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	loaded, err := m.load(ctx, localId, requestId)
 	if err != nil {
 		return nil, err
@@ -173,6 +186,8 @@ func (m *manageExample) Duplicate(ctx context.Context, localId, requestId, examp
 func (m *manageExample) Delete(ctx context.Context, localId, requestId, exampleId string) error {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "requestId": requestId, "exampleId": exampleId})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	loaded, err := m.load(ctx, localId, requestId)
 	if err != nil {
 		return err

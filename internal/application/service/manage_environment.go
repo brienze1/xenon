@@ -20,6 +20,7 @@ type manageEnvironment struct {
 	orders                environmentOrders
 	values                scopeValues
 	publishVariableEvent  usecase.PublishVariableEvent
+	lockWorkspace         usecase.LockWorkspace
 }
 
 func NewManageEnvironmentService(
@@ -35,6 +36,7 @@ func NewManageEnvironmentService(
 	findVault usecase.FindVault,
 	saveVault usecase.SaveVault,
 	publishVariableEvent usecase.PublishVariableEvent,
+	lockWorkspace usecase.LockWorkspace,
 ) adapter.ManageEnvironmentService {
 	return &manageEnvironment{
 		findWorkspaceRegistry: findWorkspaceRegistry,
@@ -53,6 +55,7 @@ func NewManageEnvironmentService(
 			saveVault:          saveVault,
 		},
 		publishVariableEvent: publishVariableEvent,
+		lockWorkspace:        lockWorkspace,
 	}
 }
 
@@ -95,6 +98,8 @@ func (m *manageEnvironment) Get(ctx context.Context, localId, id string) (*entit
 func (m *manageEnvironment) Create(ctx context.Context, localId, name string) (*entity.EnvironmentDetails, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "name": name})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	workspace, err := m.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
 		return nil, err
@@ -120,12 +125,17 @@ func (m *manageEnvironment) Create(ctx context.Context, localId, name string) (*
 	return details, nil
 }
 
-func (m *manageEnvironment) Update(ctx context.Context, localId string, settings entity.Environment) (*entity.EnvironmentDetails, error) {
-	logger.Info(ctx, "Started", map[string]any{"localId": localId, "settings": settings})
+func (m *manageEnvironment) Update(ctx context.Context, localId string, settings entity.Environment, baseRevision string, force bool) (*entity.EnvironmentDetails, error) {
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "settings": settings, "baseRevision": baseRevision, "force": force})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	root, current, err := m.environment(ctx, localId, settings.ID)
 	if err != nil {
 		return nil, err
+	}
+	if current.BlocksSave(baseRevision, force) {
+		return nil, usecase.RejectStaleEnvironmentWrite()
 	}
 	saved, err := m.saveNamed(ctx, root, current.WithSettings(settings))
 	if err != nil {
@@ -136,13 +146,15 @@ func (m *manageEnvironment) Update(ctx context.Context, localId string, settings
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "settings": settings, "result": *details})
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "settings": settings, "baseRevision": baseRevision, "force": force, "result": *details})
 	return details, nil
 }
 
 func (m *manageEnvironment) Duplicate(ctx context.Context, localId, id string) (*entity.EnvironmentDetails, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	root, source, err := m.environment(ctx, localId, id)
 	if err != nil {
 		return nil, err
@@ -173,6 +185,8 @@ func (m *manageEnvironment) Duplicate(ctx context.Context, localId, id string) (
 func (m *manageEnvironment) Delete(ctx context.Context, localId, id string) (string, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	root, environment, err := m.environment(ctx, localId, id)
 	if err != nil {
 		return "", err

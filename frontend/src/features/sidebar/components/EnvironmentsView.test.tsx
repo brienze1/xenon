@@ -29,7 +29,7 @@ const { EnvironmentsView } = await import('./EnvironmentsView')
 const dev = { id: 'e1', name: 'dev', color: 'green', confirmBeforeSend: false, error: null } as const
 const hml = { id: 'e2', name: 'hml', color: 'yellow', confirmBeforeSend: false, error: null } as const
 const broken = { id: 'error:x.yaml', name: 'x.yaml', color: 'none', confirmBeforeSend: false, error: 'x.yaml cannot be read' } as const
-const detail = (id: string, name: string): Environment => ({ id, name, description: '', color: 'none', confirmBeforeSend: false, variables: [] })
+const detail = (id: string, name: string): Environment => ({ id, name, description: '', color: 'none', confirmBeforeSend: false, revision: '', variables: [] })
 
 const onOpen = vi.fn()
 

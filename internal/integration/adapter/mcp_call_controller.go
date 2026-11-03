@@ -8,5 +8,6 @@ import (
 
 type MCPCallController interface {
 	Call(ctx context.Context, call dto.MCPCall, tool MCPToolController) dto.MCPOutcome
+	OpenSession(ctx context.Context, session dto.MCPSession) error
 	CloseSession(ctx context.Context, session dto.MCPSession) error
 }

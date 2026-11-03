@@ -408,8 +408,8 @@ describe('App', () => {
   })
 
   it('renames an environment from its heading and saves it with Cmd/Ctrl+S', async () => {
-    vi.mocked(environmentServices.getEnvironment).mockResolvedValue({ id: 'e1', name: 'dev', description: '', color: 'cyan', confirmBeforeSend: false, variables: [] })
-    vi.mocked(environmentServices.updateEnvironment).mockImplementation(async (_localId, update) => ({ ...update, variables: [] }))
+    vi.mocked(environmentServices.getEnvironment).mockResolvedValue({ id: 'e1', name: 'dev', description: '', color: 'cyan', confirmBeforeSend: false, revision: 'rev-1', variables: [] })
+    vi.mocked(environmentServices.updateEnvironment).mockImplementation(async (_localId, update) => ({ ...update, revision: 'rev-2', variables: [] }))
     await renderWorkspace()
     act(() => useTabsStore.getState().openEnvironmentTab({ kind: 'environment', environmentId: 'e1' }, 'pinned'))
     const tab = await screen.findByRole('region', { name: 'dev environment' })
@@ -421,7 +421,7 @@ describe('App', () => {
   })
 
   describe('the eye next to the environment switcher', () => {
-    const dev = { id: 'e1', name: 'dev', description: '', color: 'cyan' as const, confirmBeforeSend: false, variables: [] }
+    const dev = { id: 'e1', name: 'dev', description: '', color: 'cyan' as const, confirmBeforeSend: false, revision: 'rev-1', variables: [] }
 
     function environmentTabs() {
       return useTabsStore.getState().tabs.filter((tab) => tab.kind === 'environment' && tab.environmentId === 'e1')

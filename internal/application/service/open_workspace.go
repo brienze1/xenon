@@ -35,6 +35,28 @@ func NewOpenWorkspaceService(
 func (o *openWorkspace) Open(ctx context.Context, path string) (*entity.RegisteredWorkspace, error) {
 	logger.Info(ctx, "Started", map[string]any{"path": path})
 
+	registered, err := o.open(ctx, path, (*entity.AppRegistry).Register)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info(ctx, "Finished", map[string]any{"path": path, "result": registered})
+	return registered, nil
+}
+
+func (o *openWorkspace) OpenInBackground(ctx context.Context, path string) (*entity.RegisteredWorkspace, error) {
+	logger.Info(ctx, "Started", map[string]any{"path": path})
+
+	registered, err := o.open(ctx, path, (*entity.AppRegistry).Add)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info(ctx, "Finished", map[string]any{"path": path, "result": registered})
+	return registered, nil
+}
+
+func (o *openWorkspace) open(ctx context.Context, path string, register func(*entity.AppRegistry, entity.RegisteredWorkspace)) (*entity.RegisteredWorkspace, error) {
 	registry, err := o.findWorkspaceRegistry.Find(ctx)
 	if err != nil {
 		return nil, err
@@ -51,11 +73,9 @@ func (o *openWorkspace) Open(ctx context.Context, path string) (*entity.Register
 		return nil, err
 	}
 	registered := entity.NewRegisteredWorkspace(idutils.NewUlid(), path, workspace.Name, timeutils.Now())
-	registry.Register(registered)
+	register(registry, registered)
 	if err := o.saveWorkspaceRegistry.Save(ctx, *registry); err != nil {
 		return nil, err
 	}
-
-	logger.Info(ctx, "Finished", map[string]any{"path": path, "result": registered})
 	return &registered, nil
 }

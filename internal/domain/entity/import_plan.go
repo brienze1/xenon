@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"slices"
+
 	"github.com/brienze1/xenon/internal/domain/enums"
 	"github.com/brienze1/xenon/internal/domain/enums/clashresolution"
 )
@@ -29,6 +31,17 @@ func (i ImportPlan) Included() []ImportPlanItem {
 		}
 	}
 	return included
+}
+
+func (i ImportPlan) TargetLocalIDs() []string {
+	localIds := make([]string, 0, len(i.Items))
+	for _, item := range i.Included() {
+		if item.TargetLocalID != "" {
+			localIds = append(localIds, item.TargetLocalID)
+		}
+	}
+	slices.Sort(localIds)
+	return slices.Compact(localIds)
 }
 
 func (i ImportPlan) ResolutionFor(item ImportPlanItem) enums.ClashResolution {

@@ -23,11 +23,13 @@ func (m *mcpTreeEdit) createRequest(ctx context.Context, call dto.MCPToolCall, a
 		return m.edited(ctx, call, node.Id, node.MethodName())
 	}
 
-	stored, err := m.openRequest(ctx, call, node.Id)
-	if err != nil {
-		return dto.MCPToolResult{}, err
-	}
-	saved, err := m.saveRequest(ctx, arguments.SaveCreatedRequest(call.LocalId, node, stored))
+	saved, err := retryMCPEdit(ctx, func() (dto.Request, error) {
+		stored, err := m.openRequest(ctx, call, node.Id)
+		if err != nil {
+			return dto.Request{}, err
+		}
+		return m.saveRequest(ctx, arguments.SaveCreatedRequest(call.LocalId, node, stored))
+	})
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
@@ -35,11 +37,13 @@ func (m *mcpTreeEdit) createRequest(ctx context.Context, call dto.MCPToolCall, a
 }
 
 func (m *mcpTreeEdit) updateRequest(ctx context.Context, call dto.MCPToolCall, entry entity.TreeEntry, arguments dto.MCPTreeEdit) (dto.MCPToolResult, error) {
-	stored, err := m.openRequest(ctx, call, entry.ID())
-	if err != nil {
-		return dto.MCPToolResult{}, err
-	}
-	saved, err := m.saveRequest(ctx, arguments.SaveRequest(call.LocalId, stored))
+	saved, err := retryMCPEdit(ctx, func() (dto.Request, error) {
+		stored, err := m.openRequest(ctx, call, entry.ID())
+		if err != nil {
+			return dto.Request{}, err
+		}
+		return m.saveRequest(ctx, arguments.SaveRequest(call.LocalId, stored))
+	})
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}

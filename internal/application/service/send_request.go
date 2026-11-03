@@ -56,7 +56,7 @@ func NewSendRequestService(
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
 	registerKnownSecrets usecase.RegisterKnownSecrets,
 	publishAIEvent usecase.PublishAIEvent,
-	lockLocalVariables usecase.LockLocalVariables,
+	lockWorkspace usecase.LockWorkspace,
 	listEnvironments usecase.ListEnvironments,
 ) adapter.SendRequestService {
 	return &sendRequest{
@@ -98,7 +98,7 @@ func NewSendRequestService(
 			findCookieAllowlist,
 			publishWorkspaceEvent,
 			registerKnownSecrets,
-			lockLocalVariables,
+			lockWorkspace,
 			listEnvironments,
 		),
 		saveHistoryEntry: saveHistoryEntry,
@@ -106,10 +106,10 @@ func NewSendRequestService(
 	}
 }
 
-func (s *sendRequest) Send(ctx context.Context, localId, tabId, aliasId string, request entity.Request, appVersion string, acknowledgement entity.SendAcknowledgement, origin entity.SendOrigin) (*entity.SendExecution, error) {
-	logger.Info(ctx, "Started", origin, map[string]any{"localId": localId, "tabId": tabId, "aliasId": aliasId, "request": request, "appVersion": appVersion, "acknowledgement": acknowledgement})
+func (s *sendRequest) Send(ctx context.Context, localId, tabId, aliasId, environmentId string, request entity.Request, appVersion string, acknowledgement entity.SendAcknowledgement, origin entity.SendOrigin) (*entity.SendExecution, error) {
+	logger.Info(ctx, "Started", origin, map[string]any{"localId": localId, "tabId": tabId, "aliasId": aliasId, "environmentId": environmentId, "request": request, "appVersion": appVersion, "acknowledgement": acknowledgement})
 
-	sent, err := s.pipeline.send(ctx, sendCall{localId: localId, tabId: tabId, aliasId: aliasId, request: request, appVersion: appVersion, acknowledgement: acknowledgement}, entity.NoRunContext())
+	sent, err := s.pipeline.send(ctx, sendCall{localId: localId, tabId: tabId, aliasId: aliasId, request: request, appVersion: appVersion, acknowledgement: acknowledgement}, entity.NoRunContext().InEnvironment(environmentId))
 	if err != nil {
 		return nil, err
 	}
@@ -121,6 +121,6 @@ func (s *sendRequest) Send(ctx context.Context, localId, tabId, aliasId string, 
 		return nil, err
 	}
 
-	logger.Info(ctx, "Finished", origin, map[string]any{"localId": localId, "tabId": tabId, "aliasId": aliasId, "request": request, "appVersion": appVersion, "acknowledgement": acknowledgement, "result": sent.execution})
+	logger.Info(ctx, "Finished", origin, map[string]any{"localId": localId, "tabId": tabId, "aliasId": aliasId, "environmentId": environmentId, "request": request, "appVersion": appVersion, "acknowledgement": acknowledgement, "result": sent.execution})
 	return sent.execution, nil
 }

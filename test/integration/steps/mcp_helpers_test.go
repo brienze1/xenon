@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	defaultMcpClientName = "bdd-client"
-	mcpCallTimeout       = 30 * time.Second
+	defaultMcpClientName  = "bdd-client"
+	mcpCallTimeout        = 30 * time.Second
+	callNumberPlaceholder = "{{call_number}}"
 )
 
 func (t *testUtils) mcpEndpoint() string {

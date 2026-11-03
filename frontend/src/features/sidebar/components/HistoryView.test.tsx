@@ -24,7 +24,7 @@ const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 30)
 const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
 
 function entry(id: string, method: string, url: string, sentAt: Date, extra: Partial<HistoryEntry> = {}): HistoryEntry {
-  return { id, sentAt: sentAt.toISOString(), kind: 'send', source: 'user', client: null, activity: null, method, url, outcome: 'sent', statusCode: 200, errorKind: null, totalMs: 42, sizeBytes: 10, sourceRequestId: null, aliasName: null, environment: null, ...extra }
+  return { id, sentAt: sentAt.toISOString(), kind: 'send', source: 'user', client: null, activity: null, method, url, outcome: 'sent', statusCode: 200, errorKind: null, totalMs: 42, sizeBytes: 10, sourceRequestId: null, aliasName: null, environment: null, session: null, ...extra }
 }
 
 const entries = [
@@ -219,6 +219,20 @@ describe('HistoryView', () => {
     expect(row).toHaveAccessibleName(/^AI · Claude Code — POST https:\/\/api\.test\/orders, 201, /)
     await userEvent.click(row)
     await waitFor(() => expect(actions.onOpenHistoryEntry).toHaveBeenCalledWith({ ...request, id: '' }))
+  })
+
+  it('tags AI rows with the client and the MCP session tag', async () => {
+    const activity = { tool: 'tree', action: 'create', target: null, outcome: 'ok' as const, code: null, durationMs: 12, args: null }
+    vi.mocked(history.listHistory).mockResolvedValue([
+      entry('h9', 'POST', 'https://api.test/orders', today, { source: 'ai', client: 'Claude Code', session: 'a1b2c3', statusCode: 201 }),
+      entry('a2', '', '', today, { kind: 'action', source: 'ai', client: 'Claude Code', session: 'd4e5f6', activity, totalMs: 12 }),
+    ])
+    await renderHistory()
+    const [send, action] = within(screen.getByRole('list', { name: 'History' })).getAllByRole('button')
+    expect(send).toHaveTextContent('AI · Claude Code · a1b2c3')
+    expect(send).toHaveAccessibleName(/^AI · Claude Code · a1b2c3 — POST https:\/\/api\.test\/orders, 201, /)
+    expect(action).toHaveTextContent('AI · Claude Code · d4e5f6')
+    expect(action).toHaveAccessibleName(/^AI · Claude Code · d4e5f6 — tree\.create, ok, /)
   })
 
   it('shows AI action rows with tool and action, target, outcome and duration, and expands them to their masked arguments', async () => {

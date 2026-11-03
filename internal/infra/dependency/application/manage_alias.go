@@ -25,6 +25,7 @@ func GetManageAliasService() adapter.ManageAliasService {
 				integration.GetKeychainWebservice(),
 				integration.GetVariableEventPublisher(),
 				integration.GetEnvironmentPersistence(),
+				integration.GetWorkspaceLockPersistence(),
 			)
 		})
 	}

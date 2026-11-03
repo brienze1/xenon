@@ -39,6 +39,7 @@ func GetPushWorkspaceService() adapter.PushWorkspaceService {
 				integration.GetSyncSessionPersistence(),
 				integration.GetSyncSessionPersistence(),
 				integration.GetTreePersistence(),
+				integration.GetWorkspaceLockPersistence(),
 			)
 		})
 	}

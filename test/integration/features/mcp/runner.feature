@@ -429,3 +429,57 @@ Feature: AI clients run collections and read the results
       """
     Then the call should succeed
     And a "runner:finished" event with the field "run_id" equal to "{{run}}" should have been emitted within 2000 ms
+
+  @xen_023 @switch_keeps_window_run
+  Scenario: An MCP workspace switch never stops the run the window started
+    Given the workspace "Globex" exists
+    And the "POST" requests to "/orders" respond after 1000ms
+    And I call "WorkspaceService.Activate" with
+      """
+      { "local_id": "{{Acme.local_id}}" }
+      """
+    When I call "RunnerService.Start" with
+      """
+      { "local_id": "{{Acme.local_id}}", "item_id": "{{shop}}", "config": { "type": "functional", "rows": [{ "request_id": "{{login}}", "alias_id": "", "selected": true }, { "request_id": "{{create}}", "alias_id": "", "selected": true }, { "request_id": "{{get}}", "alias_id": "", "selected": true }, { "request_id": "{{logout}}", "alias_id": "", "selected": true }], "functional": { "iterations": 1, "data_file": "", "delay_ms": 0, "persist_responses": false, "disable_logs": false, "stop_on_error": false, "keep_variable_values": true, "skip_stored_cookies": false, "save_cookies": false }, "environment_id": "" } }
+      """
+    Then the call should succeed
+    And I save the response field "id" as "run"
+    When I wait 300 ms
+    And I call the MCP tool "workspace_edit" with
+      """
+      { "action": "switch", "id": "{{Globex.local_id}}" }
+      """
+    Then the call should succeed
+    And a "runner:finished" event with the field "run_id" equal to "{{run}}" should have been emitted within 5000 ms
+    And the last "runner:finished" event should contain the field "status" equal to "completed"
+    And the "POST" request to "/logout" should have been received 1 times
+    And the app data file "app.json" should contain the field "active_local_id" equal to "{{Acme.local_id}}"
+
+  @xen_023 @run_session_environment
+  Scenario: A run started without an environment uses the session's environment, not the window's
+    Given the "stage" variable is set to "01JR0000000000000000000011"
+    And the workspace file "acme/environments/stage.yaml" contains
+      """
+      xenon: 1
+      kind: environment
+      id: {{stage}}
+      name: stage
+      variables:
+        - key: token
+          value: t-stage
+          enabled: true
+          description: ""
+      """
+    And I call the MCP tool "env_edit" with
+      """
+      { "action": "set_active", "id": "{{stage}}" }
+      """
+    When I call the MCP tool "run" with
+      """
+      { "action": "start", "target": "Shop" }
+      """
+    Then the call should succeed
+    And I save the response field "run_id" as "run"
+    And a "runner:finished" event with the field "run_id" equal to "{{run}}" should have been emitted within 5000 ms
+    And the 1 "POST" request to "/login" should have the header "Authorization" equal to "Bearer t-stage"
+    And the app data file "workspaces/{{Acme.local_id}}/variables.json" should contain the field "activeEnvironmentId" equal to "{{dev}}"

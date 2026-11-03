@@ -14,31 +14,34 @@ type variableRowStore struct {
 	saveWorkspaceFile usecase.SaveWorkspaceFile
 }
 
-func (v variableRowStore) save(ctx context.Context, root string, scope entity.ScopeRef, rows []entity.VariableRow) error {
+func (v variableRowStore) save(ctx context.Context, root string, scope entity.ScopeRef, rows []entity.VariableRow) (string, error) {
 	switch {
 	case scope.IsEnvironment():
 		environment, err := v.scopes.findEnvironment.Find(ctx, root, scope.ID)
 		if err != nil {
-			return err
+			return "", err
 		}
-		_, err = v.saveEnvironment.Save(ctx, root, environment.WithVariables(rows))
-		return err
+		saved, err := v.saveEnvironment.Save(ctx, root, environment.WithVariables(rows))
+		if err != nil {
+			return "", err
+		}
+		return saved.Revision, nil
 	case scope.IsCollection():
 		collection, err := v.scopes.collection(ctx, root, scope)
 		if err != nil {
-			return err
+			return "", err
 		}
 		node, err := v.scopes.findTreeItem.FindNode(ctx, root, scope.ID)
 		if err != nil {
-			return err
+			return "", err
 		}
 		_, err = v.saveTreeItem.SaveContainer(ctx, root, collection.WithVariables(rows).WithOrder(node.ChildOrder()))
-		return err
+		return "", err
 	default:
 		workspace, err := v.scopes.loadWorkspace.Load(ctx, root)
 		if err != nil {
-			return err
+			return "", err
 		}
-		return v.saveWorkspaceFile.Save(ctx, root, workspace.WithVariables(rows))
+		return "", v.saveWorkspaceFile.Save(ctx, root, workspace.WithVariables(rows))
 	}
 }

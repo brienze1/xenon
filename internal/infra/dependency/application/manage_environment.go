@@ -27,6 +27,7 @@ func GetManageEnvironmentService() adapter.ManageEnvironmentService {
 				integration.GetVaultPersistence(),
 				integration.GetVaultPersistence(),
 				integration.GetVariableEventPublisher(),
+				integration.GetWorkspaceLockPersistence(),
 			)
 		})
 	}

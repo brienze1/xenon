@@ -35,8 +35,8 @@ func (m *MCPEnvEdit) EnvironmentReference(localId string) EnvironmentReference {
 	return NewEnvironmentReference(localId, m.Id)
 }
 
-func (m *MCPEnvEdit) UpdateEnvironment(localId string, stored entity.Environment) UpdateEnvironment {
-	return NewUpdateEnvironment(localId, stored, m)
+func (m *MCPEnvEdit) UpdateEnvironment(localId string, stored entity.Environment, baseRevision string) UpdateEnvironment {
+	return NewUpdateEnvironment(localId, stored, baseRevision, m)
 }
 
 func (m *MCPEnvEdit) ReorderEnvironment(localId string) ReorderEnvironment {

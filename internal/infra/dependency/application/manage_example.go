@@ -20,6 +20,7 @@ func GetManageExampleService() adapter.ManageExampleService {
 				integration.GetRequestPersistence(),
 				integration.GetResponseBodyPersistence(),
 				integration.GetResponseBodyPersistence(),
+				integration.GetWorkspaceLockPersistence(),
 			)
 		})
 	}

@@ -2,7 +2,15 @@ import * as VariableService from '../../../bindings/github.com/brienze1/xenon/in
 import { AppError, toAppError } from '../errors'
 import { toVariableInspection, toVariableSuggestion, type VariableInspection, type VariableSuggestion } from '../mappers/inspection'
 import { toRequestDto, type RequestDraft } from '../mappers/request'
-import { toVariableEditDto, toVariableRow, toVariableTable, type VariableEdit, type VariableRow, type VariableTable } from '../mappers/variable'
+import {
+  toVariableEditDto,
+  toVariableRow,
+  toVariableTable,
+  type RevisionCheck,
+  type VariableEdit,
+  type VariableRow,
+  type VariableTable,
+} from '../mappers/variable'
 
 const EMPTY_RESPONSE = 'UNK-00204'
 export const INVALID_VARIABLE_KEY = 'VAR-00400'
@@ -30,11 +38,24 @@ export function getVariableTable(localId: string, scope: string): Promise<Variab
   return call(async () => toVariableTable(await VariableService.GetTable({ local_id: localId, scope }), scope))
 }
 
-/** Replaces the whole table: rows left out are removed. */
-export function saveVariableTable(localId: string, scope: string, rows: VariableEdit[], confirmReveal: boolean): Promise<VariableTable> {
+/** Replaces the whole table: rows left out are removed. An environment table checks `revision` (`ENV-19409` when stale). */
+export function saveVariableTable(
+  localId: string,
+  scope: string,
+  rows: VariableEdit[],
+  confirmReveal: boolean,
+  revision: RevisionCheck,
+): Promise<VariableTable> {
   return call(async () =>
     toVariableTable(
-      await VariableService.SaveTable({ local_id: localId, scope, confirm_reveal: confirmReveal, rows: rows.map(toVariableEditDto) }),
+      await VariableService.SaveTable({
+        local_id: localId,
+        scope,
+        confirm_reveal: confirmReveal,
+        base_revision: revision.baseRevision,
+        force: revision.force,
+        rows: rows.map(toVariableEditDto),
+      }),
       scope,
     ),
   )

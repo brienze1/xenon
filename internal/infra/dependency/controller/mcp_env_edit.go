@@ -19,7 +19,7 @@ func GetMCPEnvEditController() adapter.MCPToolController {
 				application.GetManageEnvironmentService(),
 				application.GetReorderEnvironmentService(),
 				application.GetAutoSyncService(),
-				application.GetSetActiveEnvironmentService(),
+				application.GetManageAISessionService(),
 				application.GetManageVariableTableService(),
 			)
 		})

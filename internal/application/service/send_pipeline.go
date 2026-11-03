@@ -67,7 +67,7 @@ func newSendPipeline(
 	findCookieAllowlist usecase.FindCookieAllowlist,
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
 	registerKnownSecrets usecase.RegisterKnownSecrets,
-	lockLocalVariables usecase.LockLocalVariables,
+	lockWorkspace usecase.LockWorkspace,
 	listEnvironments usecase.ListEnvironments,
 ) *sendPipeline {
 	scopes := variableScopes{findEnvironment: findEnvironment, findTreeItem: findTreeItem, loadWorkspace: loadWorkspace}
@@ -78,6 +78,7 @@ func newSendPipeline(
 		saveVaultSettings:    saveVaultSettings,
 		probeKeychain:        probeKeychain,
 		publishVariableEvent: publishVariableEvent,
+		lockWorkspace:        lockWorkspace,
 	}
 	return &sendPipeline{
 		findWorkspaceRegistry: findWorkspaceRegistry,
@@ -116,7 +117,7 @@ func newSendPipeline(
 			saveLocalVariables:   saveLocalVariables,
 			vaults:               vaults,
 			publishVariableEvent: publishVariableEvent,
-			lockLocalVariables:   lockLocalVariables,
+			lockWorkspace:        lockWorkspace,
 		},
 		console: consoleLog{
 			appendConsoleEntries:  appendConsoleEntries,

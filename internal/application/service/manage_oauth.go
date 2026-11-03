@@ -17,6 +17,7 @@ type manageOAuth struct {
 	copyToClipboard       usecase.CopyToClipboard
 	owners                oauthOwners
 	tokens                oauthTokens
+	lockWorkspace         usecase.LockWorkspace
 }
 
 func NewManageOAuthService(
@@ -37,6 +38,7 @@ func NewManageOAuthService(
 	refreshOAuthToken usecase.RefreshOAuthToken,
 	lockOAuthToken usecase.LockOAuthToken,
 	copyToClipboard usecase.CopyToClipboard,
+	lockWorkspace usecase.LockWorkspace,
 ) adapter.ManageOAuthService {
 	return &manageOAuth{
 		findWorkspaceRegistry: findWorkspaceRegistry,
@@ -62,10 +64,12 @@ func NewManageOAuthService(
 				saveVaultSettings:    saveVaultSettings,
 				probeKeychain:        probeKeychain,
 				publishVariableEvent: publishVariableEvent,
+				lockWorkspace:        lockWorkspace,
 			},
 			lockOAuthToken:    lockOAuthToken,
 			refreshOAuthToken: refreshOAuthToken,
 		},
+		lockWorkspace: lockWorkspace,
 	}
 }
 
@@ -150,6 +154,8 @@ func (m *manageOAuth) Copy(ctx context.Context, localId, owner, which string) er
 func (m *manageOAuth) Use(ctx context.Context, localId, owner, useToken string) (*entity.OAuth2Token, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "owner": owner, "useToken": useToken})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	token, err := m.tokens.find(ctx, localId, owner)
 	if err != nil {
 		return nil, err
@@ -169,6 +175,8 @@ func (m *manageOAuth) Use(ctx context.Context, localId, owner, useToken string) 
 func (m *manageOAuth) Clear(ctx context.Context, localId, owner string) error {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "owner": owner})
 
+	ctx, unlock := m.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	if err := m.tokens.delete(ctx, localId, owner); err != nil {
 		return err
 	}

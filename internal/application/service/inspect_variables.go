@@ -37,19 +37,19 @@ func NewInspectVariablesService(
 	}
 }
 
-func (i *inspectVariables) Inspect(ctx context.Context, localId string, request entity.Request) (*entity.VariableInspection, error) {
-	logger.Info(ctx, "Started", map[string]any{"localId": localId, "request": request})
+func (i *inspectVariables) Inspect(ctx context.Context, localId, environmentId string, request entity.Request) (*entity.VariableInspection, error) {
+	logger.Info(ctx, "Started", map[string]any{"localId": localId, "environmentId": environmentId, "request": request})
 
 	workspace, err := i.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
 		return nil, err
 	}
-	scopes, err := i.variables.load(ctx, localId, workspace.Path, request.ID)
+	scopes, err := i.variables.loadIn(ctx, localId, workspace.Path, request.ID, environmentId)
 	if err != nil {
 		return nil, err
 	}
 	inspection := usecase.InspectRequestVariables(request, scopes.ancestors, scopes.context, i.listDynamicValueNames.Names(ctx))
 
-	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "request": request, "result": inspection})
+	logger.Info(ctx, "Finished", map[string]any{"localId": localId, "environmentId": environmentId, "request": request, "result": inspection})
 	return &inspection, nil
 }

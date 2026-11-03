@@ -49,6 +49,8 @@ export interface HistoryEntry {
   source: HistorySource
   /** The AI client's name; null for the human's sends. */
   client: string | null
+  /** The first 6 characters of the AI client's MCP session id; null for the human's entries and older AI ones. */
+  session: string | null
   method: string
   url: string
   outcome: SendOutcome
@@ -118,6 +120,7 @@ export function toHistoryEntry(dto: HistoryEntryDto): HistoryEntry {
     kind: dto.kind === 'action' ? 'action' : 'send',
     source: dto.source === 'ai' ? 'ai' : 'user',
     client: orNull(dto.client),
+    session: orNull(dto.session),
     method: dto.method ?? '',
     url: dto.url ?? '',
     outcome: toOutcome(dto.outcome),

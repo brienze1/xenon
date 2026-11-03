@@ -30,6 +30,7 @@ func GetManageVariableTableService() adapter.ManageVariableTableService {
 				integration.GetVaultPersistence(),
 				integration.GetKeychainWebservice(),
 				integration.GetVariableEventPublisher(),
+				integration.GetWorkspaceLockPersistence(),
 			)
 		})
 	}

@@ -6,8 +6,14 @@ const activity: HistoryActivity = { tool: 'tree', action: 'create', target: null
 
 describe('history labels', () => {
   it('tags AI rows with the client name', () => {
-    expect(aiTag('Claude Code')).toBe('AI · Claude Code')
-    expect(aiTag(null)).toBe('AI')
+    expect(aiTag('Claude Code', null)).toBe('AI · Claude Code')
+    expect(aiTag(null, null)).toBe('AI')
+  })
+
+  it('adds the MCP session tag after the client name', () => {
+    expect(aiTag('Claude Code', 'a1b2c3')).toBe('AI · Claude Code · a1b2c3')
+    expect(aiTag('Claude Code', null)).toBe('AI · Claude Code')
+    expect(aiTag(null, 'a1b2c3')).toBe('AI · a1b2c3')
   })
 
   it('names the tool and action', () => {

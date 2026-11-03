@@ -445,13 +445,16 @@ describe('bootstrap', () => {
     cleanup()
   })
 
-  it('follows workspace changes made through MCP', async () => {
+  it('refreshes the workspace list on MCP changes without switching', async () => {
     vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
     const cleanup = await started()
-    const follow = vi.spyOn(useWorkspacesStore.getState(), 'follow').mockResolvedValue()
+    const activate = vi.spyOn(useWorkspacesStore.getState(), 'activate').mockResolvedValue()
+    const refreshList = vi.spyOn(useWorkspacesStore.getState(), 'refreshList').mockResolvedValue()
     handlers.workspacesChanged?.('A')
-    expect(follow).toHaveBeenCalledWith('A')
-    follow.mockRestore()
+    expect(refreshList).toHaveBeenCalledWith('A')
+    expect(activate).not.toHaveBeenCalled()
+    refreshList.mockRestore()
+    activate.mockRestore()
     cleanup()
   })
 
@@ -519,7 +522,7 @@ describe('bootstrap', () => {
     useEnvironmentsStore.setState({ environments: [dev], status: 'ready' })
     useTabsStore.getState().openEnvironmentTab({ kind: 'environment', environmentId: 'e1' }, 'preview')
     const tabId = useTabsStore.getState().activeTabId!
-    const draft = { base: [], rows: [], dirty: true, confirming: null, failure: null, saving: false }
+    const draft = { base: [], baseRevision: '', rows: [], dirty: true, confirming: null, failure: null, saving: false, forcing: false }
     useEnvironmentsStore.setState({ drafts: { 'env:e1': draft } })
     expect(useTabsStore.getState().previewTabId).toBeNull()
     useEnvironmentsStore.setState({ environments: [], status: 'loading' })
@@ -680,10 +683,10 @@ describe('bootstrap', () => {
 
   it('refreshes the environments and the open variable tables when variables change', async () => {
     vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
-    vi.mocked(variables.getVariableTable).mockResolvedValue({ scope: 'globals', rows: [], warnings: [] })
+    vi.mocked(variables.getVariableTable).mockResolvedValue({ scope: 'globals', revision: '', rows: [], warnings: [] })
     const cleanup = await started()
     useWorkspacesStore.setState({ activeLocalId: 'A' })
-    useEnvironmentsStore.setState({ tables: { globals: { rows: [], warnings: [], status: 'ready', error: null } } })
+    useEnvironmentsStore.setState({ tables: { globals: { rows: [], warnings: [], revision: '', status: 'ready', error: null } } })
     handlers.variablesChanged?.({ localId: 'other', scopes: ['globals'], reason: null })
     expect(variables.getVariableTable).not.toHaveBeenCalled()
     handlers.variablesChanged?.({ localId: 'A', scopes: ['env:e1'], reason: null })

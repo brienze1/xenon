@@ -15,6 +15,7 @@ type setActiveEnvironment struct {
 	findLocalVariables    usecase.FindLocalVariables
 	saveLocalVariables    usecase.SaveLocalVariables
 	publishVariableEvent  usecase.PublishVariableEvent
+	lockWorkspace         usecase.LockWorkspace
 }
 
 func NewSetActiveEnvironmentService(
@@ -23,6 +24,7 @@ func NewSetActiveEnvironmentService(
 	findLocalVariables usecase.FindLocalVariables,
 	saveLocalVariables usecase.SaveLocalVariables,
 	publishVariableEvent usecase.PublishVariableEvent,
+	lockWorkspace usecase.LockWorkspace,
 ) adapter.SetActiveEnvironmentService {
 	return &setActiveEnvironment{
 		findWorkspaceRegistry: findWorkspaceRegistry,
@@ -30,12 +32,15 @@ func NewSetActiveEnvironmentService(
 		findLocalVariables:    findLocalVariables,
 		saveLocalVariables:    saveLocalVariables,
 		publishVariableEvent:  publishVariableEvent,
+		lockWorkspace:         lockWorkspace,
 	}
 }
 
 func (s *setActiveEnvironment) SetActive(ctx context.Context, localId, id string) (string, error) {
 	logger.Info(ctx, "Started", map[string]any{"localId": localId, "id": id})
 
+	ctx, unlock := s.lockWorkspace.LockWorkspace(ctx, localId)
+	defer unlock()
 	workspace, err := s.findWorkspaceRegistry.FindWorkspace(ctx, localId)
 	if err != nil {
 		return "", err

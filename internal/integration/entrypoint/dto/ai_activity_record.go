@@ -9,6 +9,7 @@ type AIActivityRecord struct {
 	Target     AIActivityTarget `json:"target"`
 	LocalId    string           `json:"local_id"`
 	Client     string           `json:"client"`
+	Session    string           `json:"session"`
 	Tool       string           `json:"tool" validate:"required,not_blank"`
 	Action     string           `json:"action"`
 	Outcome    string           `json:"outcome" validate:"required,oneof=ok error denied timed_out"`
@@ -17,11 +18,12 @@ type AIActivityRecord struct {
 	DurationMs int64            `json:"duration_ms" validate:"min=0"`
 }
 
-func NewAIActivityRecord(localId, client, tool, action string, target AIActivityTarget, outcome, code, args string, durationMs int64) AIActivityRecord {
+func NewAIActivityRecord(localId, client, session, tool, action string, target AIActivityTarget, outcome, code, args string, durationMs int64) AIActivityRecord {
 	return AIActivityRecord{
 		Target:     target,
 		LocalId:    localId,
 		Client:     client,
+		Session:    session,
 		Tool:       tool,
 		Action:     action,
 		Outcome:    outcome,
@@ -44,7 +46,7 @@ func (a *AIActivityRecord) ToEntity() entity.AIActivity {
 }
 
 func (a AIActivityRecord) LogValue() any {
-	return map[string]any{"local_id": a.LocalId, "client": a.Client, "tool": a.Tool, "action": a.Action, "outcome": a.Outcome, "code": a.Code, "duration_ms": a.DurationMs}
+	return map[string]any{"local_id": a.LocalId, "client": a.Client, "session": a.Session, "tool": a.Tool, "action": a.Action, "outcome": a.Outcome, "code": a.Code, "duration_ms": a.DurationMs}
 }
 
 func (a *AIActivityRecord) WorkspaceId() string {
@@ -53,4 +55,8 @@ func (a *AIActivityRecord) WorkspaceId() string {
 
 func (a *AIActivityRecord) ClientName() string {
 	return a.Client
+}
+
+func (a *AIActivityRecord) SessionTag() string {
+	return a.Session
 }

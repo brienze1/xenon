@@ -31,12 +31,12 @@ export function HistoryActionRow({ entry, expanded, onToggle }: HistoryActionRow
         className={styles.entry}
         aria-expanded={expanded}
         aria-controls={expanded ? detailsId : undefined}
-        aria-label={`${aiTag(entry.client)} — ${name}${target ? ` ${target}` : ''}, ${result.label}, ${formatDuration(durationMs)}, ${time}`}
+        aria-label={`${aiTag(entry.client, entry.session)} — ${name}${target ? ` ${target}` : ''}, ${result.label}, ${formatDuration(durationMs)}, ${time}`}
         onClick={() => onToggle(entry.id)}
       >
         <span className={styles.line}>
           <span className={styles.aiTag} translate="no">
-            {aiTag(entry.client)}
+            {aiTag(entry.client, entry.session)}
           </span>
           <span className={styles.tool} translate="no">
             {name}

@@ -5,6 +5,7 @@ import { AppError } from '@/platform/errors'
 import type { Environment } from '@/platform/mappers/environment'
 
 vi.mock('@/platform/services/environments', () => ({
+  ENVIRONMENT_CHANGED: 'ENV-19409',
   DUPLICATE_ENVIRONMENT_NAME: 'ENV-02409',
   listEnvironments: vi.fn(),
   setActiveEnvironment: vi.fn(),
@@ -36,7 +37,7 @@ const { GlobalsTab } = await import('./GlobalsTab')
 const dev = { id: 'e1', name: 'dev', color: 'green', confirmBeforeSend: false, error: null } as const
 const hml = { id: 'e2', name: 'hml', color: 'yellow', confirmBeforeSend: false, error: null } as const
 const broken = { id: 'error:x.yaml', name: 'x.yaml', color: 'none', confirmBeforeSend: false, error: 'x.yaml cannot be read' } as const
-const detail = (id: string, name: string): Environment => ({ id, name, description: 'local', color: 'green', confirmBeforeSend: false, variables: [] })
+const detail = (id: string, name: string): Environment => ({ id, name, description: 'local', color: 'green', confirmBeforeSend: false, revision: 'rev-1', variables: [] })
 
 const ROW = {
   key: 'url',
@@ -57,7 +58,7 @@ describe('EnvironmentTab', () => {
     useEnvironmentsStore.getState().reset()
     useWorkspacesStore.setState({ activeLocalId: 'A' })
     useEnvironmentsStore.setState({ environments: [dev, hml, broken], activeId: 'e1', status: 'ready' })
-    vi.mocked(variables.getVariableTable).mockImplementation(async (_localId, scope) => ({ scope, rows: [ROW], warnings: [] }))
+    vi.mocked(variables.getVariableTable).mockImplementation(async (_localId, scope) => ({ scope, revision: 'rev-1', rows: [ROW], warnings: [] }))
     useTabsStore.setState({ tabs: [{ id: 'te1', requestId: null, pinned: true, kind: 'environment', environmentId: 'e1' }], activeTabId: 'te1', nameErrors: {} })
   })
 
@@ -153,9 +154,39 @@ describe('EnvironmentTab', () => {
     vi.mocked(services.listEnvironments).mockResolvedValue({ environments: [{ ...dev, color: 'red' }, hml], activeId: 'e1' })
     render(<EnvironmentTab environmentId="e1" />)
     await userEvent.click(screen.getByRole('radio', { name: 'Neon red' }))
-    expect(services.updateEnvironment).toHaveBeenCalledWith('A', { id: 'e1', name: 'dev', description: 'local', color: 'red', confirmBeforeSend: false })
+    expect(services.updateEnvironment).toHaveBeenCalledWith('A', { id: 'e1', name: 'dev', description: 'local', color: 'red', confirmBeforeSend: false, baseRevision: 'rev-1', force: false })
     await userEvent.click(screen.getByRole('checkbox', { name: 'Confirm before send' }))
-    expect(services.updateEnvironment).toHaveBeenLastCalledWith('A', { id: 'e1', name: 'dev', description: 'local', color: 'red', confirmBeforeSend: true })
+    expect(services.updateEnvironment).toHaveBeenLastCalledWith('A', { id: 'e1', name: 'dev', description: 'local', color: 'red', confirmBeforeSend: true, baseRevision: 'rev-1', force: false })
+  })
+
+  it('offers Load from disk and Keep mine when the environment changed on disk since it was opened', async () => {
+    render(<EnvironmentTab environmentId="e1" />)
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Description of url' }), 'mine')
+    expect(screen.queryByText(/changed on disk/)).not.toBeInTheDocument()
+    vi.mocked(variables.saveVariableTable).mockRejectedValueOnce(new AppError('ENV-19409', 'the environment changed on disk since it was opened'))
+    await act(() => useEnvironmentsStore.getState().saveDraft('env:e1'))
+    expect(screen.getByText('This environment changed on disk since it was opened.')).toBeInTheDocument()
+    vi.mocked(variables.saveVariableTable).mockResolvedValueOnce({ scope: 'env:e1', revision: 'rev-2', rows: [ROW], warnings: [] })
+    await userEvent.click(screen.getByRole('button', { name: 'Keep mine' }))
+    expect(variables.saveVariableTable).toHaveBeenLastCalledWith('A', 'env:e1', expect.any(Array), false, { baseRevision: 'rev-1', force: true })
+    expect(screen.queryByText(/changed on disk/)).not.toBeInTheDocument()
+  })
+
+  it('loads from disk, dropping the unsaved edits', async () => {
+    render(<EnvironmentTab environmentId="e1" />)
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Description of url' }), 'mine')
+    vi.mocked(variables.saveVariableTable).mockRejectedValueOnce(new AppError('ENV-19409', 'the environment changed on disk since it was opened'))
+    await act(() => useEnvironmentsStore.getState().saveDraft('env:e1'))
+    await userEvent.click(screen.getByRole('button', { name: 'Load from disk' }))
+    expect(screen.queryByText(/changed on disk/)).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Description of url' })).toHaveValue('')
+    expect(useEnvironmentsStore.getState().drafts['env:e1']?.dirty).toBe(false)
+  })
+
+  it('shows no conflict notice for another environment', () => {
+    useEnvironmentsStore.setState({ conflicts: { 'env:e2': true } })
+    render(<EnvironmentTab environmentId="e1" />)
+    expect(screen.queryByText(/changed on disk/)).not.toBeInTheDocument()
   })
 
   it('tells when the environment is gone or its file is broken', () => {

@@ -41,13 +41,14 @@ func NewPullWorkspaceService(
 	findSyncSession usecase.FindSyncSession,
 	saveSyncSession usecase.SaveSyncSession,
 	renderSyncItem usecase.RenderSyncItem,
+	lockWorkspace usecase.LockWorkspace,
 ) adapter.PullWorkspaceService {
 	changes := newSyncChanges(readBranchHeads, readTreeVersions, identifySyncItems)
 	return &pullWorkspace{
 		claimSyncOperation: claimSyncOperation,
 		workspaces:         newLinkedWorkspaces(findWorkspaceRegistry, findLocalSyncSettings, findGitAccounts, findGitCredential, findKnownHosts, scanHostKey, publishGitEvent),
 		puller: newSyncPull(changes, publishGitEvent, fetchBranch, readTreeVersions, storeBlobs, convertSyncDocument, listCommitMessages, writeSyncCommit,
-			moveBranch, applySyncedFiles, publishWorkspaceEvent, saveSyncSession, renderSyncItem),
+			moveBranch, applySyncedFiles, publishWorkspaceEvent, saveSyncSession, renderSyncItem, lockWorkspace),
 		status: newSyncStatusReader(changes, loadWorkspace, publishGitEvent, findSyncSession),
 	}
 }

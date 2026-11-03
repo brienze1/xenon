@@ -54,7 +54,7 @@ func NewStartRunService(
 	findCookieAllowlist usecase.FindCookieAllowlist,
 	publishWorkspaceEvent usecase.PublishWorkspaceEvent,
 	registerKnownSecrets usecase.RegisterKnownSecrets,
-	lockLocalVariables usecase.LockLocalVariables,
+	lockWorkspace usecase.LockWorkspace,
 	loadTree usecase.LoadTree,
 	claimActiveRun usecase.ClaimActiveRun,
 	changeActiveRun usecase.ChangeActiveRun,
@@ -114,7 +114,7 @@ func NewStartRunService(
 			findCookieAllowlist,
 			publishWorkspaceEvent,
 			registerKnownSecrets,
-			lockLocalVariables,
+			lockWorkspace,
 			loadTree,
 			claimActiveRun,
 			changeActiveRun,
@@ -158,8 +158,8 @@ func (s *startRun) Start(ctx context.Context, start entity.RunStart, appVersion 
 	return run, nil
 }
 
-func (s *startRun) StartForAI(ctx context.Context, localId, path, itemId string, overrides entity.RunOverrides, appVersion, client, sessionId string) (entity.AIRunStart, error) {
-	logger.Info(ctx, "Started", overrides, map[string]any{"localId": localId, "path": path, "itemId": itemId, "appVersion": appVersion, "client": client, "sessionId": sessionId})
+func (s *startRun) StartForAI(ctx context.Context, localId, path, itemId, activeEnvironmentId string, overrides entity.RunOverrides, appVersion, client, sessionId string) (entity.AIRunStart, error) {
+	logger.Info(ctx, "Started", overrides, map[string]any{"localId": localId, "path": path, "itemId": itemId, "activeEnvironmentId": activeEnvironmentId, "appVersion": appVersion, "client": client, "sessionId": sessionId})
 
 	root, tree, err := s.planner.workspaceTree(ctx, localId)
 	if err != nil {
@@ -176,13 +176,13 @@ func (s *startRun) StartForAI(ctx context.Context, localId, path, itemId string,
 		logger.Info(ctx, "Unknown environment, not started", overrides, map[string]any{"localId": localId, "itemId": targetId})
 		return started.WithUnknownEnvironment(), nil
 	}
-	run, refused, err := s.startForAI(ctx, entity.NewRunStart(localId, targetId, config), appVersion, client, sessionId)
+	run, refused, err := s.startForAI(ctx, entity.NewRunStart(localId, targetId, config.InActiveEnvironment(activeEnvironmentId)), appVersion, client, sessionId)
 	if err != nil {
 		return started, err
 	}
 	started = started.WithOutcome(run, refused, config.AIChanges())
 
-	logger.Info(ctx, "Finished", overrides, map[string]any{"localId": localId, "path": path, "itemId": itemId, "targetId": targetId, "appVersion": appVersion, "client": client, "sessionId": sessionId, "result": started})
+	logger.Info(ctx, "Finished", overrides, map[string]any{"localId": localId, "path": path, "itemId": itemId, "activeEnvironmentId": activeEnvironmentId, "targetId": targetId, "appVersion": appVersion, "client": client, "sessionId": sessionId, "result": started})
 	return started, nil
 }
 
