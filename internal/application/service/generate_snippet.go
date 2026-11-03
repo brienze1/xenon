@@ -80,7 +80,7 @@ func (s *generateSnippet) generate(ctx context.Context, input entity.SnippetInpu
 	if err != nil {
 		return nil, err
 	}
-	scopes, err := s.variables.load(ctx, input.LocalID, workspace.Path, input.Request.ID)
+	scopes, err := s.variables.loadIn(ctx, input.LocalID, workspace.Path, input.Request.ID, input.EnvironmentID)
 	if err != nil {
 		return nil, err
 	}

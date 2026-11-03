@@ -18,7 +18,7 @@ const mcpNotObjectReason = "the arguments must be a JSON object"
 
 type mcpCall struct {
 	errorHandler            adapter.ErrorHandler
-	listWorkspacesService   appAdapter.ListWorkspacesService
+	manageAISessionService  appAdapter.ManageAISessionService
 	guardAIOutputService    appAdapter.GuardAIOutputService
 	recordAIActivityService appAdapter.RecordAIActivityService
 	notifyAIChangeService   appAdapter.NotifyAIChangeService
@@ -27,7 +27,7 @@ type mcpCall struct {
 
 func NewMCPCall(
 	errorHandler adapter.ErrorHandler,
-	listWorkspacesService appAdapter.ListWorkspacesService,
+	manageAISessionService appAdapter.ManageAISessionService,
 	guardAIOutputService appAdapter.GuardAIOutputService,
 	recordAIActivityService appAdapter.RecordAIActivityService,
 	notifyAIChangeService appAdapter.NotifyAIChangeService,
@@ -35,7 +35,7 @@ func NewMCPCall(
 ) adapter.MCPCallController {
 	return &mcpCall{
 		errorHandler:            errorHandler,
-		listWorkspacesService:   listWorkspacesService,
+		manageAISessionService:  manageAISessionService,
 		guardAIOutputService:    guardAIOutputService,
 		recordAIActivityService: recordAIActivityService,
 		notifyAIChangeService:   notifyAIChangeService,
@@ -60,11 +60,11 @@ func (m *mcpCall) Call(mcpCtx context.Context, call dto.MCPCall, tool adapter.MC
 	text, failure := m.respond(ctx, definition, toolCall, result, err)
 	code := codeOf(failure)
 	outcome := entity.AIActivityOutcomeOf(code).String()
-	localId := m.recordedWorkspace(ctx, spec, toolCall.LocalId)
+	localId := m.recordedWorkspace(ctx, spec, toolCall)
 	durationMs := time.Since(started).Milliseconds()
 	logger.Info(ctx, "MCP call", map[string]any{"client": call.Client, "tool": spec.Name, "action": toolCall.Action, "outcome": outcome, "code": code, "duration_ms": durationMs})
 	if result.NeedsRecording() {
-		m.record(ctx, dto.NewAIActivityRecord(localId, call.Client, spec.Name, toolCall.Action, result.Target, outcome, code, string(call.Args()), durationMs))
+		m.record(ctx, dto.NewAIActivityRecord(localId, call.Client, toolCall.SessionTag(), spec.Name, toolCall.Action, result.Target, outcome, code, string(call.Args()), durationMs))
 	}
 	if result.NotifiesChanges(failure != nil, toolCall.LocalId) {
 		m.notify(ctx, dto.NewAIChanges(toolCall.LocalId, result.Changes))
@@ -73,6 +73,33 @@ func (m *mcpCall) Call(mcpCtx context.Context, call dto.MCPCall, tool adapter.MC
 
 	logger.Info(ctx, "Finished", response)
 	return response
+}
+
+func (m *mcpCall) OpenSession(mcpCtx context.Context, session dto.MCPSession) (err error) {
+	ctx := logger.GetContext(mcpCtx)
+	logger.Info(ctx, "Started", session)
+
+	defer func(ctx context.Context, session any) {
+		if recovered := recover(); recovered != nil {
+			err = handlePanic(ctx, session, recovered)
+		}
+		if err != nil {
+			err = m.errorHandler.Handle(ctx, err, session)
+		}
+	}(ctx, session)
+
+	err = validateAIArguments(&session)
+	if err != nil {
+		return err
+	}
+
+	_, err = m.manageAISessionService.Open(ctx, session.SessionId())
+	if err != nil {
+		return err
+	}
+
+	logger.Info(ctx, "Finished", session)
+	return nil
 }
 
 func (m *mcpCall) CloseSession(mcpCtx context.Context, session dto.MCPSession) (err error) {
@@ -98,6 +125,11 @@ func (m *mcpCall) CloseSession(mcpCtx context.Context, session dto.MCPSession) (
 		return err
 	}
 
+	err = m.manageAISessionService.Close(ctx, session.SessionId())
+	if err != nil {
+		return err
+	}
+
 	logger.Info(ctx, "Finished", session)
 	return nil
 }
@@ -114,19 +146,19 @@ func (m *mcpCall) run(ctx context.Context, call dto.MCPCall, spec entity.AITool,
 
 	err = validateAIArguments(&call)
 	if err != nil {
-		return dto.NewMCPToolCall(call, spec.Name, "", ""), result, err
+		return dto.NewMCPToolCall(call, spec.Name, "", "", entity.NoEnvironmentID), result, err
 	}
 
-	localId, err := m.activeWorkspace(ctx)
+	session, err := m.manageAISessionService.Current(ctx, call.Session)
 	if err != nil {
-		return dto.NewMCPToolCall(call, spec.Name, "", ""), result, err
+		return dto.NewMCPToolCall(call, spec.Name, "", "", entity.NoEnvironmentID), result, err
 	}
 	action, err := m.action(call, spec)
-	toolCall = dto.NewMCPToolCall(call, spec.Name, action, localId)
+	toolCall = dto.NewMCPToolCall(call, spec.Name, action, session.LocalID, session.EnvironmentID())
 	if err != nil {
 		return toolCall, result, err
 	}
-	if spec.MissesWorkspace(localId) {
+	if spec.MissesWorkspace(toolCall.LocalId) {
 		return toolCall, result, mcpErrors.RejectInactiveAIWorkspace()
 	}
 
@@ -194,7 +226,7 @@ func (m *mcpCall) record(ctx context.Context, record dto.AIActivityRecord) {
 		m.errorHandler.Handle(ctx, err, record)
 		return
 	}
-	if err := m.recordAIActivityService.Record(ctx, record.WorkspaceId(), record.ClientName(), record.ToEntity()); err != nil {
+	if err := m.recordAIActivityService.Record(ctx, record.WorkspaceId(), record.ClientName(), record.SessionTag(), record.ToEntity()); err != nil {
 		m.errorHandler.Handle(ctx, err, record)
 	}
 }
@@ -215,24 +247,16 @@ func (m *mcpCall) notify(ctx context.Context, changes dto.AIChanges) {
 	}
 }
 
-func (m *mcpCall) recordedWorkspace(ctx context.Context, spec entity.AITool, localId string) string {
+func (m *mcpCall) recordedWorkspace(ctx context.Context, spec entity.AITool, toolCall dto.MCPToolCall) string {
 	if spec.IsWorkspaceScoped() {
-		return localId
+		return toolCall.LocalId
 	}
-	active, err := m.activeWorkspace(ctx)
+	session, err := m.manageAISessionService.Current(ctx, toolCall.Session)
 	if err != nil {
-		m.errorHandler.Handle(ctx, err, nil)
-		return localId
+		m.errorHandler.Handle(ctx, err, toolCall)
+		return toolCall.LocalId
 	}
-	return active
-}
-
-func (m *mcpCall) activeWorkspace(ctx context.Context) (string, error) {
-	registry, err := m.listWorkspacesService.List(ctx)
-	if err != nil {
-		return "", err
-	}
-	return registry.ActiveLocalID, nil
+	return session.LocalID
 }
 
 func failureOf(err error) errs.BaseError {

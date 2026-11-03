@@ -21,6 +21,7 @@ type HistoryEntry struct {
 	Kind            string              `json:"kind,omitempty"`
 	Source          string              `json:"source,omitempty"`
 	Client          string              `json:"client,omitempty"`
+	Session         string              `json:"session,omitempty"`
 	SourceRequestId string              `json:"source_request_id,omitempty"`
 	AliasId         string              `json:"alias_id,omitempty"`
 	AliasName       string              `json:"alias_name,omitempty"`
@@ -37,6 +38,7 @@ func NewHistoryEntry(entry entity.HistoryEntry) HistoryEntry {
 		Kind:    entry.Kind.String(),
 		Source:  entry.Origin().String(),
 		Client:  entry.Client,
+		Session: entry.Session,
 	}
 	if entry.IsAction() {
 		activity := NewAIActivity(*entry.Activity)
@@ -62,6 +64,7 @@ func (h *HistoryEntry) ToEntity() entity.HistoryEntry {
 		Kind:            historykind.GetHistoryKind(h.Kind),
 		Source:          entity.HistoryOrigin(historysource.GetHistorySource(h.Source)),
 		Client:          h.Client,
+		Session:         h.Session,
 		SourceRequestID: h.SourceRequestId,
 		AliasID:         h.AliasId,
 		AliasName:       h.AliasName,

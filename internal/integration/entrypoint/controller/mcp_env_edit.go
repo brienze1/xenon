@@ -26,7 +26,7 @@ const (
 
 var envEditAITool = entity.AITool{
 	Name:        entity.AIEnvEditToolName,
-	Description: "Create, update or reorder environments, switch the active one, and edit variables (secret values are write-only).",
+	Description: "Create, update or reorder environments, pick this session's active one, and edit variables (secret values are write-only).",
 	Actions: []string{
 		mcpEnvEditCreateAction, mcpEnvEditUpdateAction, mcpEnvEditDuplicateAction, mcpEnvEditReorderAction, mcpEnvEditSetActiveAction,
 		entity.AIEnvEditAddVarAction, mcpEnvEditSetVarsAction, entity.AIEnvEditSetCurrentAction, mcpEnvEditResetAction, mcpEnvEditPersistAction,
@@ -36,12 +36,12 @@ var envEditAITool = entity.AITool{
 }
 
 type mcpEnvEdit struct {
-	errorHandler                adapter.ErrorHandler
-	manageEnvironmentService    appAdapter.ManageEnvironmentService
-	reorderEnvironmentService   appAdapter.ReorderEnvironmentService
-	autoSyncService             appAdapter.AutoSyncService
-	setActiveEnvironmentService appAdapter.SetActiveEnvironmentService
-	manageVariableTableService  appAdapter.ManageVariableTableService
+	errorHandler               adapter.ErrorHandler
+	manageEnvironmentService   appAdapter.ManageEnvironmentService
+	reorderEnvironmentService  appAdapter.ReorderEnvironmentService
+	autoSyncService            appAdapter.AutoSyncService
+	manageAISessionService     appAdapter.ManageAISessionService
+	manageVariableTableService appAdapter.ManageVariableTableService
 }
 
 func NewMCPEnvEdit(
@@ -49,16 +49,16 @@ func NewMCPEnvEdit(
 	manageEnvironmentService appAdapter.ManageEnvironmentService,
 	reorderEnvironmentService appAdapter.ReorderEnvironmentService,
 	autoSyncService appAdapter.AutoSyncService,
-	setActiveEnvironmentService appAdapter.SetActiveEnvironmentService,
+	manageAISessionService appAdapter.ManageAISessionService,
 	manageVariableTableService appAdapter.ManageVariableTableService,
 ) adapter.MCPToolController {
 	return &mcpEnvEdit{
-		errorHandler:                errorHandler,
-		manageEnvironmentService:    manageEnvironmentService,
-		reorderEnvironmentService:   reorderEnvironmentService,
-		autoSyncService:             autoSyncService,
-		setActiveEnvironmentService: setActiveEnvironmentService,
-		manageVariableTableService:  manageVariableTableService,
+		errorHandler:               errorHandler,
+		manageEnvironmentService:   manageEnvironmentService,
+		reorderEnvironmentService:  reorderEnvironmentService,
+		autoSyncService:            autoSyncService,
+		manageAISessionService:     manageAISessionService,
+		manageVariableTableService: manageVariableTableService,
 	}
 }
 
@@ -86,6 +86,21 @@ func (m *mcpEnvEdit) Handle(toolCtx context.Context, call dto.MCPToolCall) (resu
 	}(ctx, call)
 
 	switch call.Action {
+	case mcpEnvEditSetActiveAction:
+		result, err = m.setActive(ctx, call)
+	default:
+		result, err = m.edit(ctx, call)
+	}
+	if err != nil {
+		return dto.MCPToolResult{}, err
+	}
+
+	logger.Info(ctx, "Finished", result)
+	return result, nil
+}
+
+func (m *mcpEnvEdit) edit(ctx context.Context, call dto.MCPToolCall) (result dto.MCPToolResult, err error) {
+	switch call.Action {
 	case mcpEnvEditCreateAction:
 		result, err = m.create(ctx, call)
 	case mcpEnvEditUpdateAction:
@@ -94,8 +109,6 @@ func (m *mcpEnvEdit) Handle(toolCtx context.Context, call dto.MCPToolCall) (resu
 		result, err = m.duplicate(ctx, call)
 	case mcpEnvEditReorderAction:
 		result, err = m.reorder(ctx, call)
-	case mcpEnvEditSetActiveAction:
-		result, err = m.setActive(ctx, call)
 	case entity.AIEnvEditAddVarAction:
 		result, err = m.addVariable(ctx, call)
 	case mcpEnvEditSetVarsAction:
@@ -112,10 +125,7 @@ func (m *mcpEnvEdit) Handle(toolCtx context.Context, call dto.MCPToolCall) (resu
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
-	result = result.WithChanges(aichangekind.Variables)
-
-	logger.Info(ctx, "Finished", result)
-	return result, nil
+	return result.WithChanges(aichangekind.Variables), nil
 }
 
 func (m *mcpEnvEdit) create(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolResult, error) {
@@ -214,7 +224,7 @@ func (m *mcpEnvEdit) reorder(ctx context.Context, call dto.MCPToolCall) (dto.MCP
 		return dto.MCPToolResult{}, err
 	}
 	scheduleAutoSync(ctx, m.errorHandler, m.autoSyncService.Saved, request.LocalId)
-	return dto.NewMCPToolResult(dto.NewMCPEnvList(*list)), nil
+	return dto.NewMCPToolResult(dto.NewMCPEnvList(list.WithActive(call.EnvironmentId))), nil
 }
 
 func (m *mcpEnvEdit) setActive(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolResult, error) {
@@ -230,10 +240,11 @@ func (m *mcpEnvEdit) setActive(ctx context.Context, call dto.MCPToolCall) (dto.M
 		return dto.MCPToolResult{}, err
 	}
 
-	activeId, err := m.setActiveEnvironmentService.SetActive(ctx, request.LocalId, request.Id)
+	chosen, err := m.manageAISessionService.ChooseEnvironment(ctx, call.Session, request.Id)
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
+	activeId := chosen.ActiveEnvironmentID()
 	return dto.NewMCPToolResult(dto.NewMCPEnvActive(activeId)).WithTarget(entity.NewAIEnvironmentTarget(activeId)), nil
 }
 

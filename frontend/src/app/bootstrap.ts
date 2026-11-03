@@ -92,7 +92,7 @@ export function bootstrap(): () => void {
         refreshHistory()
       }
     }),
-    onWorkspacesChanged((activeLocalId) => void useWorkspacesStore.getState().follow(activeLocalId)),
+    onWorkspacesChanged((activeLocalId) => void useWorkspacesStore.getState().refreshList(activeLocalId)),
     onApprovalRequested((approval) => useAIAccessStore.getState().add(approval)),
     onApprovalResolved(({ id }) => useAIAccessStore.getState().resolve(id)),
     onAIAccessStatusChanged((status) => useSettingsStore.getState().applyStatus(status)),

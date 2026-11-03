@@ -154,3 +154,24 @@ func TestRunConfigPerformanceHelpers(t *testing.T) {
 		t.Errorf("profile = %+v", profile)
 	}
 }
+
+func TestRunConfigInActiveEnvironment(t *testing.T) {
+	tests := []struct {
+		name       string
+		configured string
+		active     string
+		want       string
+	}{
+		{name: "uses the active environment", configured: "", active: "stage", want: "stage"},
+		{name: "uses the active environment that is none", configured: "", active: NoEnvironmentID, want: NoEnvironmentID},
+		{name: "keeps a pinned environment", configured: "dev", active: "stage", want: "dev"},
+		{name: "keeps no environment", configured: NoEnvironmentID, active: "stage", want: NoEnvironmentID},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := (RunConfig{EnvironmentID: test.configured}).InActiveEnvironment(test.active).EnvironmentID; got != test.want {
+				t.Errorf("EnvironmentID = %q, want %q", got, test.want)
+			}
+		})
+	}
+}

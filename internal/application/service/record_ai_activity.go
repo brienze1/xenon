@@ -35,22 +35,22 @@ func NewRecordAIActivityService(
 	}
 }
 
-func (r *recordAIActivity) Record(ctx context.Context, localId, client string, activity entity.AIActivity) error {
-	logger.Info(ctx, "Started", activity, map[string]any{"localId": localId, "client": client})
+func (r *recordAIActivity) Record(ctx context.Context, localId, client, session string, activity entity.AIActivity) error {
+	logger.Info(ctx, "Started", activity, map[string]any{"localId": localId, "client": client, "session": session})
 
 	if !entity.HasActiveWorkspace(localId) {
-		logger.Info(ctx, "Finished", activity, map[string]any{"localId": localId, "client": client})
+		logger.Info(ctx, "Finished", activity, map[string]any{"localId": localId, "client": client, "session": session})
 		return nil
 	}
-	if err := r.record(ctx, localId, client, activity); err != nil {
+	if err := r.record(ctx, localId, client, session, activity); err != nil {
 		return err
 	}
 
-	logger.Info(ctx, "Finished", activity, map[string]any{"localId": localId, "client": client})
+	logger.Info(ctx, "Finished", activity, map[string]any{"localId": localId, "client": client, "session": session})
 	return nil
 }
 
-func (r *recordAIActivity) record(ctx context.Context, localId, client string, activity entity.AIActivity) error {
+func (r *recordAIActivity) record(ctx context.Context, localId, client, session string, activity entity.AIActivity) error {
 	settings, err := r.findAppSettings.FindAppSettings(ctx)
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func (r *recordAIActivity) record(ctx context.Context, localId, client string, a
 	}
 	known := r.registerKnownSecrets.Register(ctx, usecase.CollectKnownSecrets(vault)...)
 	guarded := activity.WithArgs(usecase.MaskKnownSecrets(activity.RedactedArgs(), known))
-	entry := entity.NewActionHistoryEntry(idutils.NewUlid(), timeutils.Now(), client, guarded)
+	entry := entity.NewActionHistoryEntry(idutils.NewUlid(), timeutils.Now(), client, session, guarded)
 	if err := r.saveHistoryEntry.Save(ctx, localId, entry, settings.HistoryCaps()); err != nil {
 		return err
 	}

@@ -19,7 +19,7 @@ func GetMCPWorkspaceEditController() adapter.MCPToolController {
 				application.GetCreateWorkspaceService(),
 				application.GetOpenWorkspaceService(),
 				application.GetRenameWorkspaceService(),
-				application.GetActivateWorkspaceService(),
+				application.GetManageAISessionService(),
 				application.GetAutoSyncService(),
 			)
 		})

@@ -242,29 +242,47 @@ describe('workspaces store', () => {
     expect(useTabsStore.getState().tabs).toEqual([])
   })
 
-  it('follows workspace changes made through MCP: rereads the list, switches, stays, or leaves', async () => {
+  it('refreshes the list on MCP changes and keeps the window workspace while it is still listed', async () => {
     useWorkspacesStore.setState({ workspaces: [acme], activeLocalId: 'A' })
     useTabsStore.getState().hydrate('A', defaultUIState())
-    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme, { ...globex, name: 'Globex Corp' }], activeLocalId: 'G' })
-    vi.mocked(services.activateWorkspace).mockResolvedValue(snapshot(globex))
-    await store().follow('G')
-    expect(services.activateWorkspace).toHaveBeenCalledWith('G')
-    expect(store()).toMatchObject({ activeLocalId: 'G', workspaces: [acme, globex] })
-    vi.mocked(services.activateWorkspace).mockClear()
     const tabs = useTabsStore.getState().tabs
-    await store().follow('G')
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme, globex], activeLocalId: 'A' })
+    await store().refreshList('A')
     expect(services.activateWorkspace).not.toHaveBeenCalled()
+    expect(store()).toMatchObject({ activeLocalId: 'A', workspaces: [acme, globex], status: 'ready' })
     expect(useTabsStore.getState().tabs).toBe(tabs)
+  })
+
+  it('activates the registry workspace when an AI removed the window workspace', async () => {
+    useWorkspacesStore.setState({ workspaces: [acme, globex], activeLocalId: 'A' })
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [globex], activeLocalId: 'G' })
+    vi.mocked(services.activateWorkspace).mockResolvedValue(snapshot(globex))
+    await store().refreshList('G')
+    expect(services.activateWorkspace).toHaveBeenCalledWith('G')
+    expect(store()).toMatchObject({ activeLocalId: 'G', workspaces: [globex] })
+  })
+
+  it('leaves to no workspace when an AI removed the last one', async () => {
+    useWorkspacesStore.setState({ workspaces: [acme], activeLocalId: 'A' })
+    useTabsStore.getState().hydrate('A', defaultUIState())
     vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [], activeLocalId: null })
-    await store().follow(null)
-    expect(store()).toMatchObject({ workspaces: [], activeLocalId: null })
+    await store().refreshList(null)
+    expect(services.activateWorkspace).not.toHaveBeenCalled()
+    expect(store()).toMatchObject({ workspaces: [], activeLocalId: null, missingLocalId: null })
     expect(useTabsStore.getState().tabs).toEqual([])
+  })
+
+  it('stays on no workspace when nothing was open', async () => {
+    vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: 'A' })
+    await store().refreshList('A')
+    expect(services.activateWorkspace).not.toHaveBeenCalled()
+    expect(store()).toMatchObject({ workspaces: [acme], activeLocalId: null })
   })
 
   it('keeps the active workspace when the list cannot be reread', async () => {
     useWorkspacesStore.setState({ workspaces: [acme], activeLocalId: 'A' })
     vi.mocked(services.listWorkspaces).mockRejectedValue(new AppError('WKS-09500', 'registry unreadable'))
-    await store().follow('G')
+    await store().refreshList('G')
     expect(store()).toMatchObject({ activeLocalId: 'A', error: { code: 'WKS-09500' } })
     expect(services.activateWorkspace).not.toHaveBeenCalled()
   })

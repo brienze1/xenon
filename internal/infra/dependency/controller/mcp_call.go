@@ -16,7 +16,7 @@ func GetMCPCallController() adapter.MCPCallController {
 		mcpCallControllerOnce.Do(func() {
 			mcpCallControllerInstance = controller.NewMCPCall(
 				GetErrorHandler(),
-				application.GetListWorkspacesService(),
+				application.GetManageAISessionService(),
 				application.GetGuardAIOutputService(),
 				application.GetRecordAIActivityService(),
 				application.GetNotifyAIChangeService(),

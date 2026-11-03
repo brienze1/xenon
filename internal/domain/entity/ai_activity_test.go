@@ -16,8 +16,8 @@ func TestSendOriginNamesTheClient(t *testing.T) {
 		client string
 	}{
 		{origin: UserSendOrigin(), source: "user", client: ""},
-		{origin: AISendOrigin(" Claude Code "), source: "ai", client: "Claude Code"},
-		{origin: AISendOrigin(""), source: "ai", client: DefaultAIClientName},
+		{origin: AISendOrigin(" Claude Code ", ""), source: "ai", client: "Claude Code"},
+		{origin: AISendOrigin("", ""), source: "ai", client: DefaultAIClientName},
 		{origin: SendOrigin{}.Normalized(), source: "user", client: ""},
 		{origin: SendOrigin{Source: "ai"}.Normalized(), source: "ai", client: DefaultAIClientName},
 	}
@@ -26,10 +26,10 @@ func TestSendOriginNamesTheClient(t *testing.T) {
 			t.Errorf("origin = %+v, want %s/%s", test.origin, test.source, test.client)
 		}
 	}
-	if !AISendOrigin("x").IsAI() || UserSendOrigin().IsAI() {
+	if !AISendOrigin("x", "").IsAI() || UserSendOrigin().IsAI() {
 		t.Error("IsAI")
 	}
-	if logged := AISendOrigin("x").LogValue().(map[string]any); logged["client"] != "x" {
+	if logged := AISendOrigin("x", "").LogValue().(map[string]any); logged["client"] != "x" {
 		t.Errorf("LogValue() = %v", logged)
 	}
 }
@@ -55,7 +55,7 @@ func TestAIActivityArgsAreCutAt2KB(t *testing.T) {
 
 func TestActionHistoryEntriesMatchTheirActivity(t *testing.T) {
 	at := time.Date(2026, 10, 13, 10, 0, 0, 0, time.UTC)
-	entry := NewActionHistoryEntry("01", at, "", AIActivity{Tool: "tree_edit", Action: "create", Target: AIActivityTarget{Name: "Payments"}, Outcome: aiactivityoutcome.Ok})
+	entry := NewActionHistoryEntry("01", at, "", "", AIActivity{Tool: "tree_edit", Action: "create", Target: AIActivityTarget{Name: "Payments"}, Outcome: aiactivityoutcome.Ok})
 	if !entry.IsAction() || entry.Client != DefaultAIClientName || entry.Origin() != "ai" || !entry.IsIn("ai") || entry.IsIn("user") || !entry.IsIn("all") {
 		t.Fatalf("entry = %+v", entry)
 	}

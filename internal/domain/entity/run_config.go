@@ -158,6 +158,14 @@ func (r RunConfig) EnvironmentIn(local LocalVariables) string {
 	}
 }
 
+// InActiveEnvironment uses environmentId when the run uses the active environment; a pinned environment is kept.
+func (r RunConfig) InActiveEnvironment(environmentId string) RunConfig {
+	if UsesActiveEnvironment(r.EnvironmentID) {
+		r.EnvironmentID = environmentId
+	}
+	return r
+}
+
 func UsesActiveEnvironment(environmentId string) bool {
 	return environmentId == ""
 }

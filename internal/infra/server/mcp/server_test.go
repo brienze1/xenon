@@ -30,12 +30,13 @@ type receivedCall struct {
 
 type fakeCallController struct {
 	calls  []receivedCall
+	opened chan string
 	closed chan string
 	mu     sync.Mutex
 }
 
 func newFakeCallController() *fakeCallController {
-	return &fakeCallController{closed: make(chan string, 4)}
+	return &fakeCallController{opened: make(chan string, 4), closed: make(chan string, 4)}
 }
 
 func (f *fakeCallController) Call(_ context.Context, call dto.MCPCall, tool adapter.MCPToolController) dto.MCPOutcome {
@@ -43,6 +44,11 @@ func (f *fakeCallController) Call(_ context.Context, call dto.MCPCall, tool adap
 	defer f.mu.Unlock()
 	f.calls = append(f.calls, receivedCall{call: call, tool: tool.Tool().Name})
 	return dto.NewMCPOutcome(`{"code":"MCP-07400"}`, true)
+}
+
+func (f *fakeCallController) OpenSession(_ context.Context, session dto.MCPSession) error {
+	f.opened <- session.Id
+	return nil
 }
 
 func (f *fakeCallController) CloseSession(_ context.Context, session dto.MCPSession) error {
@@ -111,7 +117,7 @@ func realToolControllers() []adapter.MCPToolController {
 		controller.NewMCPDocsEdit(nil, nil, nil, nil),
 		controller.NewMCPResponse(nil, nil, nil),
 		controller.NewMCPSnippet(nil, nil, nil, nil),
-		controller.NewMCPSend(nil, nil, nil, nil, nil, nil, nil, nil),
+		controller.NewMCPSend(nil, nil, nil, nil, nil, nil, nil, nil, nil),
 		controller.NewMCPCookies(nil, nil),
 		controller.NewMCPCookiesEdit(nil, nil),
 		controller.NewMCPConsole(nil, nil),
@@ -198,6 +204,14 @@ func TestListenerServesTheToolsThroughTheCallController(t *testing.T) {
 	call.mu.Unlock()
 	if received.tool != "tree" || received.call.Client != "Claude Code" || received.call.Session == "" || !strings.Contains(string(received.call.Arguments), "s3cret") {
 		t.Errorf("received call = %+v", received)
+	}
+	select {
+	case id := <-call.opened:
+		if id != received.call.Session {
+			t.Errorf("opened session %q, want %q", id, received.call.Session)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("the call controller was not told the session opened")
 	}
 	_ = session.Close()
 	select {

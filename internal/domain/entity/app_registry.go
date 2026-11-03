@@ -19,6 +19,17 @@ func (a *AppRegistry) Register(workspace RegisteredWorkspace) {
 	a.ActiveLocalID = workspace.LocalID
 }
 
+func (a *AppRegistry) Add(workspace RegisteredWorkspace) {
+	a.Workspaces = append(a.Workspaces, workspace)
+}
+
+// WithActive is a copy that shows localId as the active workspace, leaving the window's choice untouched.
+func (a *AppRegistry) WithActive(localId string) AppRegistry {
+	shown := *a
+	shown.ActiveLocalID = localId
+	return shown
+}
+
 func (a *AppRegistry) Find(localId string) (*RegisteredWorkspace, bool) {
 	for index := range a.Workspaces {
 		if a.Workspaces[index].LocalID == localId {

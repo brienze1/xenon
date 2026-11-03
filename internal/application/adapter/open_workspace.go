@@ -8,4 +8,5 @@ import (
 
 type OpenWorkspaceService interface {
 	Open(ctx context.Context, path string) (*entity.RegisteredWorkspace, error)
+	OpenInBackground(ctx context.Context, path string) (*entity.RegisteredWorkspace, error)
 }

@@ -18,6 +18,7 @@ type HistoryEntry struct {
 	Kind            enums.HistoryKind
 	Source          enums.HistorySource
 	Client          string
+	Session         string
 	SourceRequestID string
 	AliasID         string
 	AliasName       string
@@ -36,6 +37,7 @@ func NewHistoryEntry(id string, sentAt time.Time, request Request, execution Sen
 		Kind:            historykind.Send,
 		Source:          normalized.Source,
 		Client:          normalized.Client,
+		Session:         normalized.Session,
 		Request:         request,
 		SourceRequestID: request.ID,
 		Outcome:         execution.Outcome,
@@ -46,13 +48,14 @@ func NewHistoryEntry(id string, sentAt time.Time, request Request, execution Sen
 	return entry
 }
 
-func NewActionHistoryEntry(id string, at time.Time, client string, activity AIActivity) HistoryEntry {
+func NewActionHistoryEntry(id string, at time.Time, client, session string, activity AIActivity) HistoryEntry {
 	return HistoryEntry{
 		ID:       id,
 		SentAt:   at,
 		Kind:     historykind.Action,
 		Source:   historysource.AI,
 		Client:   AIClientName(client),
+		Session:  session,
 		Activity: &activity,
 	}
 }
@@ -75,7 +78,7 @@ func (h HistoryEntry) IsAction() bool {
 // Normalized reads an entry of unknown kind, or an action without its activity, as a send.
 func (h HistoryEntry) Normalized() HistoryEntry {
 	if h.IsAction() {
-		return HistoryEntry{ID: h.ID, SentAt: h.SentAt, Kind: h.Kind, Source: h.Source, Client: h.Client, Activity: h.Activity}
+		return HistoryEntry{ID: h.ID, SentAt: h.SentAt, Kind: h.Kind, Source: h.Source, Client: h.Client, Session: h.Session, Activity: h.Activity}
 	}
 	h.Kind = historykind.Send
 	h.Activity = nil
@@ -114,11 +117,18 @@ func (h HistoryEntry) WentOut() bool {
 
 func (h HistoryEntry) Matches(query string) bool {
 	needle := strings.ToLower(strings.TrimSpace(query))
+	if h.matchesSessionTag(needle) {
+		return true
+	}
 	if h.IsAction() {
 		return h.Activity.Mentions(needle)
 	}
 	return strings.Contains(strings.ToLower(h.Request.NormalizedMethod()), needle) ||
 		strings.Contains(strings.ToLower(h.Request.URL), needle)
+}
+
+func (h HistoryEntry) matchesSessionTag(needle string) bool {
+	return h.Origin() == historysource.AI && h.Session != "" && strings.Contains(strings.ToLower(h.Session), needle)
 }
 
 func (h HistoryEntry) HasID(id string) bool {
@@ -131,7 +141,7 @@ func (h HistoryEntry) ActivityTarget() AIActivityTarget {
 
 func (h HistoryEntry) LogValue() any {
 	if h.IsAction() {
-		return map[string]any{"id": h.ID, "kind": h.Kind, "source": h.Source, "client": h.Client, "activity": h.Activity.LogValue()}
+		return map[string]any{"id": h.ID, "kind": h.Kind, "source": h.Source, "client": h.Client, "session": h.Session, "activity": h.Activity.LogValue()}
 	}
 	return map[string]any{"id": h.ID, "kind": h.Kind, "source": h.Source, "request": h.Request.LogValue(), "statusCode": h.Result.StatusCode}
 }

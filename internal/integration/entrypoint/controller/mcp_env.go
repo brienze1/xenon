@@ -104,7 +104,7 @@ func (m *mcpEnv) list(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolRes
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}
-	return dto.NewMCPToolResult(dto.NewMCPEnvList(*list)), nil
+	return dto.NewMCPToolResult(dto.NewMCPEnvList(list.WithActive(call.EnvironmentId))), nil
 }
 
 func (m *mcpEnv) get(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolResult, error) {
@@ -185,7 +185,7 @@ func (m *mcpEnv) inspect(ctx context.Context, call dto.MCPToolCall) (dto.MCPTool
 		return dto.MCPToolResult{}, err
 	}
 
-	inspection, err := m.inspectVariablesService.Inspect(ctx, request.LocalId, request.ToEntity())
+	inspection, err := m.inspectVariablesService.Inspect(ctx, request.LocalId, call.EnvironmentId, request.ToEntity())
 	if err != nil {
 		return dto.MCPToolResult{}, err
 	}

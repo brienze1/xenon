@@ -11,6 +11,7 @@ type HistoryEntry struct {
 	Kind            string              `json:"kind"`
 	Source          string              `json:"source"`
 	Client          string              `json:"client,omitempty"`
+	Session         string              `json:"session,omitempty"`
 	Method          string              `json:"method"`
 	Url             string              `json:"url"`
 	ErrorKind       string              `json:"error_kind,omitempty"`
@@ -31,6 +32,7 @@ func NewHistoryEntry(entry entity.HistoryEntry) HistoryEntry {
 			Kind:     entry.Kind.String(),
 			Source:   entry.Origin().String(),
 			Client:   entry.Client,
+			Session:  entry.Session,
 			Activity: &activity,
 			TotalMs:  entry.Activity.DurationMs,
 		}
@@ -41,6 +43,7 @@ func NewHistoryEntry(entry entity.HistoryEntry) HistoryEntry {
 		Kind:            entry.Kind.String(),
 		Source:          entry.Origin().String(),
 		Client:          entry.Client,
+		Session:         entry.Session,
 		Method:          entry.Request.NormalizedMethod(),
 		Url:             entry.Request.URL,
 		ErrorKind:       entry.Result.ErrorKind.String(),

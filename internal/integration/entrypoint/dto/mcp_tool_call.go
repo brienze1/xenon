@@ -9,16 +9,17 @@ import (
 )
 
 type MCPToolCall struct {
-	Tool      string          `json:"tool"`
-	Action    string          `json:"action"`
-	Session   string          `json:"session"`
-	Client    string          `json:"client"`
-	LocalId   string          `json:"local_id"`
-	Arguments json.RawMessage `json:"arguments"`
+	Tool          string          `json:"tool"`
+	Action        string          `json:"action"`
+	Session       string          `json:"session"`
+	Client        string          `json:"client"`
+	LocalId       string          `json:"local_id"`
+	EnvironmentId string          `json:"environment_id"`
+	Arguments     json.RawMessage `json:"arguments"`
 }
 
-func NewMCPToolCall(call MCPCall, tool, action, localId string) MCPToolCall {
-	return MCPToolCall{Tool: tool, Action: action, Session: call.Session, Client: call.Client, LocalId: localId, Arguments: call.Args()}
+func NewMCPToolCall(call MCPCall, tool, action, localId, environmentId string) MCPToolCall {
+	return MCPToolCall{Tool: tool, Action: action, Session: call.Session, Client: call.Client, LocalId: localId, EnvironmentId: environmentId, Arguments: call.Args()}
 }
 
 // Decode reads the arguments into target; anything that does not fit is rejected as invalid arguments.
@@ -33,6 +34,10 @@ func (m MCPToolCall) TabId() string {
 	return entity.AISessionTabID(m.Session)
 }
 
+func (m MCPToolCall) SessionTag() string {
+	return entity.AISessionTag(m.Session)
+}
+
 func (m MCPToolCall) LogValue() any {
-	return map[string]any{"tool": m.Tool, "action": m.Action, "session": m.Session, "client": m.Client, "local_id": m.LocalId, "arguments_length": len(m.Arguments)}
+	return map[string]any{"tool": m.Tool, "action": m.Action, "session": m.Session, "client": m.Client, "local_id": m.LocalId, "environment_id": m.EnvironmentId, "arguments_length": len(m.Arguments)}
 }

@@ -16,7 +16,7 @@ import (
 
 var sendAITool = entity.AITool{
 	Name:            "send",
-	Description:     "Send a saved request (or one of its aliases, with alias_id) or an ad-hoc request with the active environment and return the response.",
+	Description:     "Send a saved request (or one of its aliases, with alias_id) or an ad-hoc request with the session's environment and return the response.",
 	Effect:          aitooleffect.Destructive,
 	OpenWorld:       true,
 	WorkspaceScoped: true,
@@ -31,6 +31,7 @@ type mcpSend struct {
 	approveAISendService     appAdapter.ApproveAISendService
 	manageResponseService    appAdapter.ManageResponseService
 	guardAIOutputService     appAdapter.GuardAIOutputService
+	manageAISessionService   appAdapter.ManageAISessionService
 }
 
 func NewMCPSend(
@@ -42,6 +43,7 @@ func NewMCPSend(
 	approveAISendService appAdapter.ApproveAISendService,
 	manageResponseService appAdapter.ManageResponseService,
 	guardAIOutputService appAdapter.GuardAIOutputService,
+	manageAISessionService appAdapter.ManageAISessionService,
 ) adapter.MCPToolController {
 	return &mcpSend{
 		errorHandler:             errorHandler,
@@ -52,6 +54,7 @@ func NewMCPSend(
 		approveAISendService:     approveAISendService,
 		manageResponseService:    manageResponseService,
 		guardAIOutputService:     guardAIOutputService,
+		manageAISessionService:   manageAISessionService,
 	}
 }
 
@@ -88,14 +91,19 @@ func (m *mcpSend) send(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolRe
 		return dto.MCPToolResult{}, err
 	}
 
+	environmentId, err := m.environment(ctx, call, arguments)
+	if err != nil {
+		return dto.MCPToolResult{}, err
+	}
+
 	request, target, err := resolveMCPSendTarget(ctx, m.searchTreeService, m.saveRequestService, call, arguments.SendTarget())
 	if err != nil {
 		return dto.NewMCPTargetResult(target), err
 	}
 
-	sent, err := m.sendRequest(ctx, arguments.SendRequest(call.Client, call.LocalId, call.TabId(), "", request))
+	sent, err := m.sendRequest(ctx, arguments.SendRequest(call.Client, call.SessionTag(), call.LocalId, call.TabId(), environmentId, "", request))
 	if environment, unconfirmed := mcpErrors.UnconfirmedSendEnvironment(err); unconfirmed {
-		sent, err = m.sendConfirmed(ctx, call, arguments, request, environment)
+		sent, err = m.sendConfirmed(ctx, call, arguments, environmentId, request, environment)
 	}
 	if err != nil {
 		return dto.NewMCPTargetResult(target), err
@@ -105,7 +113,21 @@ func (m *mcpSend) send(ctx context.Context, call dto.MCPToolCall) (dto.MCPToolRe
 	return dto.NewMCPToolResult(response).WithTarget(target).WithChanges(aichangekind.History, aichangekind.Cookies).AsRecorded(), err
 }
 
-func (m *mcpSend) sendConfirmed(ctx context.Context, call dto.MCPToolCall, arguments dto.MCPSend, request dto.Request, environment entity.AIApprovalEnvironment) (dto.SendResult, error) {
+func (m *mcpSend) environment(ctx context.Context, call dto.MCPToolCall, arguments dto.MCPSend) (string, error) {
+	if !arguments.OverridesEnvironment() {
+		return call.EnvironmentId, nil
+	}
+	environmentId, known, err := m.manageAISessionService.ResolveEnvironment(ctx, call.LocalId, arguments.Environment)
+	if err != nil {
+		return "", err
+	}
+	if !known {
+		return "", mcpErrors.RejectInvalidArguments(call.Tool, mcpRunEnvironmentNotFound)
+	}
+	return environmentId, nil
+}
+
+func (m *mcpSend) sendConfirmed(ctx context.Context, call dto.MCPToolCall, arguments dto.MCPSend, environmentId string, request dto.Request, environment entity.AIApprovalEnvironment) (dto.SendResult, error) {
 	settings, err := m.manageAppSettingsService.Get(ctx)
 	if err != nil {
 		return dto.SendResult{}, err
@@ -116,7 +138,7 @@ func (m *mcpSend) sendConfirmed(ctx context.Context, call dto.MCPToolCall, argum
 			return dto.SendResult{}, err
 		}
 	}
-	return m.sendRequest(ctx, arguments.SendRequest(call.Client, call.LocalId, call.TabId(), environment.ID, request))
+	return m.sendRequest(ctx, arguments.SendRequest(call.Client, call.SessionTag(), call.LocalId, call.TabId(), environmentId, environment.ID, request))
 }
 
 func (m *mcpSend) sendRequest(ctx context.Context, request dto.SendRequest) (dto.SendResult, error) {
@@ -125,7 +147,7 @@ func (m *mcpSend) sendRequest(ctx context.Context, request dto.SendRequest) (dto
 		return dto.SendResult{}, err
 	}
 
-	sent, err := m.sendRequestService.Send(ctx, request.WorkspaceId(), request.TargetTabId(), request.AliasId, request.ToEntity(), properties.Properties().Application.Version, request.ToAcknowledgement(), request.ToSendOrigin())
+	sent, err := m.sendRequestService.Send(ctx, request.WorkspaceId(), request.TargetTabId(), request.AliasId, request.EnvironmentId, request.ToEntity(), properties.Properties().Application.Version, request.ToAcknowledgement(), request.ToSendOrigin())
 	if err != nil {
 		return dto.SendResult{}, err
 	}

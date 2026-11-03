@@ -25,6 +25,11 @@ func NoRunContext() RunContext {
 	return RunContext{IterationCount: 1}
 }
 
+func (r RunContext) InEnvironment(environmentId string) RunContext {
+	r.EnvironmentID = environmentId
+	return r
+}
+
 func NewRunContext(runId, environmentId, cookieJarId string, variables *RunVariables, acknowledgement SendAcknowledgement, iteration int) RunContext {
 	return RunContext{
 		RunID:           runId,

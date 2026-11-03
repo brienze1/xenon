@@ -39,15 +39,7 @@ func (r RunPlan) Configured(overrides RunOverrides) (RunConfig, bool) {
 
 // EnvironmentID resolves an environment name or id, or NoEnvironmentID; false when no environment matches.
 func (r RunPlan) EnvironmentID(ref string) (string, bool) {
-	if UsesActiveEnvironment(ref) || UsesNoEnvironment(ref) {
-		return ref, true
-	}
-	for _, environment := range r.Environments {
-		if environment.ID == ref || environment.Name == ref {
-			return environment.ID, true
-		}
-	}
-	return "", false
+	return ResolveEnvironmentRef(r.Environments, ref)
 }
 
 func (r RunPlan) HasActiveRun() bool {

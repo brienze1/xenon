@@ -13,7 +13,7 @@ import { useSidebarStore } from '@/features/sidebar/store'
 import { useTabsStore } from '@/features/tabs/store'
 import { toAppError, type AppError } from '@/platform/errors'
 import { defaultLayout, type LayoutState } from '@/platform/mappers/ui-state'
-import type { WorkspaceSummary } from '@/platform/mappers/workspace'
+import type { WorkspaceList, WorkspaceSummary } from '@/platform/mappers/workspace'
 import { pickFolder } from '@/platform/services/dialogs'
 import {
   activateWorkspace,
@@ -46,10 +46,11 @@ interface WorkspacesState {
   open: (path: string) => Promise<boolean>
   activate: (localId: string) => Promise<void>
   /**
-   * Catches up with a change made outside the UI (an AI client through MCP): rereads the list and
-   * switches to `activeLocalId`, or leaves the workspace when none is active any more.
+   * Catches up with a workspace list changed outside the UI (an AI client through MCP): rereads the
+   * list and never switches, unless the window's own workspace is gone — then it moves on exactly as
+   * `remove` does (to the registry's workspace, or to none). `activeLocalId` is the event payload.
    */
-  follow: (activeLocalId: string | null) => Promise<void>
+  refreshList: (activeLocalId: string | null) => Promise<void>
   rename: (localId: string, name: string) => Promise<boolean>
   remove: (localId: string, moveToTrash: boolean) => Promise<boolean>
   locate: (localId: string) => Promise<void>
@@ -87,6 +88,15 @@ export const useWorkspacesStore = create<WorkspacesState>()((set, get) => {
   function leaveWorkspace(missingLocalId: string | null) {
     resetWorkspaceStores()
     set({ activeLocalId: null, missingLocalId, layout: defaultLayout() })
+  }
+
+  /** Moves the window off a workspace that is gone: to the registry's pick, or to none. */
+  async function moveOnFrom(nextLocalId: string | null) {
+    if (nextLocalId === null) {
+      leaveWorkspace(null)
+      return
+    }
+    await get().activate(nextLocalId)
   }
 
   return {
@@ -162,23 +172,20 @@ export const useWorkspacesStore = create<WorkspacesState>()((set, get) => {
       }
     },
 
-    follow: async (activeLocalId) => {
+    refreshList: async () => {
       const current = get().activeLocalId
+      let list: WorkspaceList
       try {
-        const list = await listWorkspaces()
-        set({ workspaces: list.workspaces, status: 'ready' })
+        list = await listWorkspaces()
       } catch (error) {
         set({ error: toAppError(error) })
         return
       }
-      if (activeLocalId === current) {
+      set({ workspaces: list.workspaces, status: 'ready' })
+      if (current === null || list.workspaces.some((workspace) => workspace.localId === current)) {
         return
       }
-      if (activeLocalId === null) {
-        leaveWorkspace(null)
-        return
-      }
-      await get().activate(activeLocalId)
+      await moveOnFrom(list.activeLocalId)
     },
 
     rename: async (localId, name) => {
@@ -203,11 +210,7 @@ export const useWorkspacesStore = create<WorkspacesState>()((set, get) => {
       if (!wasActive && get().activeLocalId !== null) {
         return true
       }
-      if (list.activeLocalId === null) {
-        leaveWorkspace(null)
-        return true
-      }
-      await get().activate(list.activeLocalId)
+      await moveOnFrom(list.activeLocalId)
       return true
     },
 

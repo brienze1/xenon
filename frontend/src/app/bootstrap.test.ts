@@ -445,13 +445,16 @@ describe('bootstrap', () => {
     cleanup()
   })
 
-  it('follows workspace changes made through MCP', async () => {
+  it('refreshes the workspace list on MCP changes without switching', async () => {
     vi.mocked(services.listWorkspaces).mockResolvedValue({ workspaces: [acme], activeLocalId: null })
     const cleanup = await started()
-    const follow = vi.spyOn(useWorkspacesStore.getState(), 'follow').mockResolvedValue()
+    const activate = vi.spyOn(useWorkspacesStore.getState(), 'activate').mockResolvedValue()
+    const refreshList = vi.spyOn(useWorkspacesStore.getState(), 'refreshList').mockResolvedValue()
     handlers.workspacesChanged?.('A')
-    expect(follow).toHaveBeenCalledWith('A')
-    follow.mockRestore()
+    expect(refreshList).toHaveBeenCalledWith('A')
+    expect(activate).not.toHaveBeenCalled()
+    refreshList.mockRestore()
+    activate.mockRestore()
     cleanup()
   })
 

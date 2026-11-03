@@ -11,7 +11,7 @@ func TestMCPToolCallDecodesItsArguments(t *testing.T) {
 	var target struct {
 		Name string `json:"name"`
 	}
-	call := NewMCPToolCall(NewMCPCall("s1", "client", []byte(`{"name":"x"}`)), "tree", "list", "ws-1")
+	call := NewMCPToolCall(NewMCPCall("s1", "client", []byte(`{"name":"x"}`)), "tree", "list", "ws-1", "none")
 	if err := call.Decode(&target); err != nil || target.Name != "x" {
 		t.Errorf("Decode() = %v %+v", err, target)
 	}
@@ -19,11 +19,11 @@ func TestMCPToolCallDecodesItsArguments(t *testing.T) {
 		t.Errorf("TabId() = %s", call.TabId())
 	}
 	var custom errs.BaseError
-	wrongType := NewMCPToolCall(NewMCPCall("s1", "", []byte(`{"name":1}`)), "tree", "list", "ws-1")
+	wrongType := NewMCPToolCall(NewMCPCall("s1", "", []byte(`{"name":1}`)), "tree", "list", "ws-1", "none")
 	if err := wrongType.Decode(&target); !errors.As(err, &custom) || custom.Code() != "MCP-07400" {
 		t.Errorf("Decode() of a wrong type = %v", err)
 	}
-	if err := NewMCPToolCall(NewMCPCall("s1", "", nil), "tree", "list", "ws-1").Decode(&target); err != nil {
+	if err := NewMCPToolCall(NewMCPCall("s1", "", nil), "tree", "list", "ws-1", "none").Decode(&target); err != nil {
 		t.Errorf("Decode() of no arguments = %v", err)
 	}
 }

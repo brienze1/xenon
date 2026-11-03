@@ -269,7 +269,7 @@ func TestRecordAIActivityAppendsARedactedGuardedActionEntry(t *testing.T) {
 	service := NewRecordAIActivityService(&fakeAppSettings{settings: settings}, fakeVault{vault: &vault}, &fakeKnownSecrets{}, history, events)
 	activity := entity.AIActivity{Tool: "env_edit", Action: "add_var", Outcome: aiactivityoutcome.Error, Args: `{"action":"add_var","value":"typed-secret","note":"vault-secret"}`}
 
-	if err := service.Record(context.Background(), "ws", "Claude Code", activity); err != nil {
+	if err := service.Record(context.Background(), "ws", "Claude Code", "", activity); err != nil {
 		t.Fatalf("Record() = %v", err)
 	}
 	if len(history.saved) != 1 || history.caps.AI != 100 || strings.Join(events.names, ",") != "history:ws" {
@@ -279,19 +279,19 @@ func TestRecordAIActivityAppendsARedactedGuardedActionEntry(t *testing.T) {
 	if !recorded.IsAction() || recorded.Client != "Claude Code" || recorded.Activity.Args != `{"action":"add_var","note":"•••••","value":"•••••"}` {
 		t.Errorf("recorded = %+v / %s", recorded, recorded.Activity.Args)
 	}
-	if err := service.Record(context.Background(), "", "Claude Code", activity); err != nil {
+	if err := service.Record(context.Background(), "", "Claude Code", "", activity); err != nil {
 		t.Errorf("no workspace must only log: %v", err)
 	}
 	history.err = errors.New("disk full")
-	if err := service.Record(context.Background(), "ws", "Claude Code", activity); err == nil || len(history.saved) != 2 {
+	if err := service.Record(context.Background(), "ws", "Claude Code", "", activity); err == nil || len(history.saved) != 2 {
 		t.Errorf("a failing save must be returned: %v, %d", err, len(history.saved))
 	}
 	failing := NewRecordAIActivityService(&fakeAppSettings{err: errors.New("x")}, fakeVault{}, &fakeKnownSecrets{}, history, events)
-	if err := failing.Record(context.Background(), "ws", "c", activity); err == nil {
+	if err := failing.Record(context.Background(), "ws", "c", "", activity); err == nil {
 		t.Error("a settings failure must be returned")
 	}
 	noVault := NewRecordAIActivityService(&fakeAppSettings{settings: settings}, fakeVault{err: errors.New("x")}, &fakeKnownSecrets{}, history, events)
-	if err := noVault.Record(context.Background(), "ws", "c", activity); err == nil {
+	if err := noVault.Record(context.Background(), "ws", "c", "", activity); err == nil {
 		t.Error("a vault failure must be returned")
 	}
 }
@@ -299,7 +299,7 @@ func TestRecordAIActivityAppendsARedactedGuardedActionEntry(t *testing.T) {
 func TestManageHistoryFiltersBySourceAndPublishesClears(t *testing.T) {
 	settings := entity.DefaultAppSettings()
 	history, events := &fakeHistoryStore{}, &fakeEvents{}
-	history.saved = []entity.HistoryEntry{{ID: "u", Source: "user"}, entity.NewActionHistoryEntry("a", entity.HistoryEntry{}.SentAt, "c", entity.AIActivity{Tool: "tree"})}
+	history.saved = []entity.HistoryEntry{{ID: "u", Source: "user"}, entity.NewActionHistoryEntry("a", entity.HistoryEntry{}.SentAt, "c", "", entity.AIActivity{Tool: "tree"})}
 	service := NewManageHistoryService(fakeWorkspaceRegistry{}, &fakeAppSettings{settings: settings}, history, history, events)
 
 	listed, err := service.List(context.Background(), "ws", entity.NewHistoryQuery("", "", 0).FromSource(historyfilter.AI))

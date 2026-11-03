@@ -38,7 +38,7 @@ func (v *variableInspect) Inspect(bindingCtx context.Context, request dto.Inspec
 		return nil, err
 	}
 
-	inspection, err := v.inspectVariablesService.Inspect(ctx, request.LocalId, request.ToEntity())
+	inspection, err := v.inspectVariablesService.Inspect(ctx, request.LocalId, "", request.ToEntity())
 	if err != nil {
 		return nil, err
 	}

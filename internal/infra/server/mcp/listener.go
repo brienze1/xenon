@@ -115,6 +115,7 @@ func (l *listener) track(ctx context.Context, request *sdk.InitializedRequest) {
 	l.sessionsMu.Lock()
 	l.sessions[session.ID()] = struct{}{}
 	l.sessionsMu.Unlock()
+	l.routes.OpenSession(ctx, session.ID())
 	l.notifyClientsChanged(ctx)
 	go l.untrackWhenClosed(session)
 }

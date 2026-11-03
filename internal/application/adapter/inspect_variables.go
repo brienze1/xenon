@@ -7,5 +7,5 @@ import (
 )
 
 type InspectVariablesService interface {
-	Inspect(ctx context.Context, localId string, request entity.Request) (*entity.VariableInspection, error)
+	Inspect(ctx context.Context, localId, environmentId string, request entity.Request) (*entity.VariableInspection, error)
 }
