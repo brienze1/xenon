@@ -161,6 +161,21 @@
   overflow-wrap: anywhere;
 }
 
+.nameCell {
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+/* A definite width the automatic table layout cannot squeeze; names past 32 characters wrap inside it. */
+.parameterName {
+  display: inline-block;
+  width: max-content;
+  max-width: 32ch;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+
 .required {
   color: var(--neon-red);
   font-family: var(--font-ui);

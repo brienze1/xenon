@@ -56,8 +56,8 @@ function Parameters({ parameters }: ParametersProps) {
       <tbody>
         {parameters.map((parameter) => (
           <tr key={`${parameter.in}:${parameter.name}`}>
-            <td className={styles.code} translate="no">
-              {parameter.name}
+            <td className={styles.nameCell} translate="no">
+              <span className={styles.parameterName}>{parameter.name}</span>
               {parameter.required ? <span className={styles.required}> required</span> : null}
             </td>
             <td>{parameter.variable ? 'path (variable)' : parameter.in}</td>

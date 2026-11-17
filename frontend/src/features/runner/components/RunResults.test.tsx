@@ -179,7 +179,7 @@ describe('RunResults', () => {
     await userEvent.click(within(results()).getByRole('button', { name: 'Login' }))
     const detail = screen.getByRole('complementary', { name: 'Login details' })
     expect(within(detail).getByRole('region', { name: 'Request' })).toHaveTextContent('https://api.test/login')
-    expect(within(detail).getByRole('rowheader', { name: 'Authorization' }).nextSibling).toHaveTextContent('•••••')
+    expect(within(detail).getByText('Authorization', { selector: 'dt' }).nextElementSibling).toHaveTextContent('•••••')
     expect(within(detail).getByLabelText('Request body')).toHaveTextContent('{"user":"luis"}')
     expect(within(detail).getByText('Responses were not persisted for this run.')).toBeInTheDocument()
     expect(service.runResponse).not.toHaveBeenCalled()
