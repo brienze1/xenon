@@ -113,9 +113,9 @@ by eye, `Accept-Encoding required` sits on one line next to a 400-character exam
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 - [x] T016 By-eye check on macOS per `specs/XEN-024-runner-detail-header-wrap/quickstart.md` (scratchpad Vite harness outside the repo): scenarios 1–3 at 280 px (default layout) and 420 px (right panel hidden), before (`origin/main` copies) and after; confirm 5 header lines with every default name on one line at both widths, no single-letter lines, the start of the request body visible without scrolling in the 280 px × 800 px case (SC-002), `scrollWidth === clientWidth` on the panel and on the docs view; save the PNGs to `specs/XEN-024-runner-detail-header-wrap/screenshots/` (`before-long-header.png`, `after-long-header.png`, `after-reported-row.png`, `before-docs-parameters.png`, `after-docs-parameters.png` — the before shot of the reported row needs the long value to reproduce, research R7) and delete any `.playwright-mcp/` folder
-- [ ] T017 Confirm FR-009 holds: `git diff --stat origin/main -- frontend/` lists only `RunRowDetail.tsx`, `RunRowDetail.module.css`, `RunRowDetail.test.tsx`, `RunResults.test.tsx`, `ApiDocView.tsx`, `ApiDocView.module.css`, `ApiDocView.test.tsx`
-- [ ] T018 Run `make validate` from the repo root (lint, typecheck, Vitest, Go tests and BDD suite) and keep it green
-- [ ] T019 Run `/refactor-diff` until it reports clean; never commit `REFACTORING_REPORT.md`
+- [x] T017 Confirm FR-009 holds: `git diff --stat origin/main -- frontend/` lists only `RunRowDetail.tsx`, `RunRowDetail.module.css`, `RunRowDetail.test.tsx`, `RunResults.test.tsx`, `ApiDocView.tsx`, `ApiDocView.module.css`, `ApiDocView.test.tsx`
+- [x] T018 Run `make validate` from the repo root (lint, typecheck, Vitest, Go tests and BDD suite) and keep it green
+- [x] T019 Run `/refactor-diff` until it reports clean; never commit `REFACTORING_REPORT.md`
 
 ---
 
