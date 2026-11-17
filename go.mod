@@ -2,12 +2,12 @@ module github.com/brienze1/xenon
 
 go 1.26.0
 
-toolchain go1.27.3
+toolchain go1.27.4
 
 require (
 	filippo.io/age v1.3.2
 	github.com/Bios-Marcel/wastebasket/v2 v2.0.3
-	github.com/andybalholm/brotli v1.2.6
+	github.com/andybalholm/brotli v1.2.7
 	github.com/aws/aws-sdk-go-v2 v1.47.2
 	github.com/aws/smithy-go v1.28.4
 	github.com/brianvoe/gofakeit/v7 v7.17.1
