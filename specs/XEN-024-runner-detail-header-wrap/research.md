@@ -102,3 +102,20 @@ jsdom probe run in this worktree. No `NEEDS CLARIFICATION` remained after this p
 - **Alternatives considered**: a flat 50% cap (wastes width on short names in wide panels and
   still a percentage of an unknown width); a fixed 16ch cap (wraps long names early in wide
   panels).
+
+## R7 — By-eye results in the system WebKit (recorded during implementation, 2026-11-17)
+
+Measured in the macOS system `WKWebView` (the engine the app runs in) through a scratchpad harness
+that renders the real components; Playwright's Chromium does **not** reproduce the defect (its auto
+table layout keeps the names on one line), so WebKit was driven directly.
+
+| Case (panel width) | Before (`origin/main`) | After |
+|---|---|---|
+| 5 default headers only (280 px) | names one line, 121 px column — the squeeze needs a wide value | names one line, list 98 px tall, body at 264 px |
+| + 61-char name, 400-char value (280 px) | name column 34 px; `Accept-Encoding` 112 px tall (letters stacked, as in the issue); list 834 px | name column 119 px (16ch floor); every default name 18 px (one line); long name wraps at hyphens; list 532 px |
+| same (420 px) | name column 53 px | name column 158 px (40%) |
+| Docs Parameters, 400-char example (640 px) | Name column 66 px, `Accept-Encoding required` 171 px tall | Name column 253 px; `Accept-Encoding` one line with `required` beside it; 51-char name 2 lines × 237 px |
+
+`scrollWidth === clientWidth` in every runner case. The reported request therefore carried at least
+one long value next to the default headers (the issue lists the five names that wrapped, not every
+header sent); the fix holds with or without it. Screenshots: `screenshots/`.

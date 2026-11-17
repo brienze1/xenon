@@ -60,26 +60,27 @@
 }
 
 .headers {
-  border-collapse: collapse;
+  display: grid;
+  /* Names take their own width up to 40% of the list, but never less than 16 characters (Accept-Encoding fits). */
+  grid-template-columns: fit-content(max(40%, 16ch)) minmax(0, 1fr);
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+  margin: 0;
   font-family: var(--font-mono);
   font-size: var(--font-size-sm);
 }
 
-.headers th,
-.headers td {
-  padding: var(--space-1) var(--space-3) var(--space-1) 0;
-  text-align: left;
-  vertical-align: top;
+.headers dt {
+  min-width: 0;
+  color: var(--color-text-muted);
   overflow-wrap: anywhere;
 }
 
-.headers th {
-  color: var(--color-text-muted);
-  font-weight: var(--font-weight-regular);
-}
-
-.headers td {
+.headers dd {
+  min-width: 0;
+  margin: 0;
   color: var(--color-text);
+  overflow-wrap: anywhere;
 }
 
 .body {

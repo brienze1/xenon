@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { Fragment, useEffect } from 'react'
 import { runResponseKey, type RunRowResult } from '@/platform/mappers/runner'
 import { formatBytes } from '@/shared/lib/format-bytes'
 import { formatDuration } from '@/shared/lib/format-duration'
@@ -61,19 +61,14 @@ export function RunRowDetail({ runId, row, response, onClose }: RunRowDetailProp
           </span>
         </p>
         {row.sentRequest.headers.length > 0 ? (
-          <table className={styles.headers}>
-            <caption className="visually-hidden">Request headers</caption>
-            <tbody>
-              {row.sentRequest.headers.map((header, index) => (
-                <tr key={`${header.key}-${index}`}>
-                  <th scope="row" translate="no">
-                    {header.key}
-                  </th>
-                  <td translate="no">{header.value}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <dl className={styles.headers} aria-label="Request headers">
+            {row.sentRequest.headers.map((header, index) => (
+              <Fragment key={`${header.key}-${index}`}>
+                <dt translate="no">{header.key}</dt>
+                <dd translate="no">{header.value}</dd>
+              </Fragment>
+            ))}
+          </dl>
         ) : null}
         {row.sentRequest.body ? (
           <pre className={styles.body} aria-label="Request body" translate="no">
