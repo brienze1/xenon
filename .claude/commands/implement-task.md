@@ -1,8 +1,8 @@
 ---
-description: "Implement a task end-to-end (GitHub issue or free description): research → plan → branch → red BDD → green impl → refactor-diff loop → push → PR → merge once CI passes"
+description: "Implement a task end-to-end (GitHub issue or free description): research → plan → branch → red BDD → green impl → refactor-diff loop → push → PR → merge once CI passes → release published"
 ---
 
-You are implementing a task end-to-end. Execute the phases below **strictly in order**. Do not skip a phase and do not reorder. The run ends with a pull request that is merged once GitHub Actions pass (Phase 9).
+You are implementing a task end-to-end. Execute the phases below **strictly in order**. Do not skip a phase and do not reorder. The run ends with a pull request that is merged once GitHub Actions pass and the release it triggers is published (Phase 9).
 
 This is a **single repo**: the service code (`cmd/`, `internal/`, `pkg/`), its BDD suite (`test/integration/`) and its Spec Kit specs (`specs/`) all live here. Everything — spec, tests, implementation — ships on **one branch**.
 
@@ -178,7 +178,22 @@ The user wants every task to end merged into `main`. Always do this — do not s
    task branch (red → green as in Phases 4–5, `make validate` green), push, and watch again. Repeat until green.
    Never merge with a failing or pending check, never use `--admin`, never skip or disable a check.
 5. After the merge: confirm the PR state is `MERGED`, that the issue closed (issue mode), and remove its
-   `in progress` label. Report the PR link and merge commit.
+   `in progress` label.
+6. **Wait for the release.** Every push to `main` runs the `Release` workflow (`.github/workflows/release.yml`),
+   which builds macOS, Linux and Windows and publishes `v<next>`. The task is not done until that release exists:
+   - Find the run for the merge commit:
+     `gh run list --repo brienze1/xenon --workflow Release --branch main --commit <merge-sha> --json databaseId,status,conclusion`
+     and watch it in the background (`gh run watch <run-id> --repo brienze1/xenon --exit-status`).
+   - **Green** → verify the release: `gh release list --repo brienze1/xenon --limit 1` shows a new `vX.Y.Z` marked
+     Latest, one patch above the previous release, whose tag points at the merge commit
+     (`git ls-remote --tags origin vX.Y.Z`), with the macOS, Linux and Windows assets plus `checksums.txt`
+     (`gh release view vX.Y.Z --repo brienze1/xenon --json assets`).
+   - **A job cancelled with 0 steps** ("not acquired by Runner") is GitHub runner capacity, not a code failure →
+     re-run only the failed jobs (`gh run rerun <run-id> --failed`) until a runner takes it. Before re-running,
+     confirm no `v<next>` tag or release was half-published.
+   - **A job failed with real steps** → read `gh run view <run-id> --log-failed`, fix the cause on a new branch
+     through the same PR → green CI → merge flow, and wait for that release instead.
+   - Report the PR link, merge commit, and the released version (or exactly why it is not out yet).
 
 ---
 
@@ -194,4 +209,5 @@ The user wants every task to end merged into `main`. Always do this — do not s
 - Loop `/refactor-diff` until CLEAN, then stop.
 - `REFACTORING_REPORT.md` is git-ignored, never committed.
 - Push, open a PR into `main`, and merge it once every GitHub Actions check passes — always; never merge red.
+- The run ends only when the `Release` workflow for the merge commit is green and the new version is published.
 - Honour the repo's Clean Architecture skills and BDD-first discipline throughout.
