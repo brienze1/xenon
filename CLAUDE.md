@@ -117,8 +117,9 @@ Tasks are **GitHub issues** on `brienze1/xenon` (there is no Linear), read and u
 - `/create-tests <issue>` — red BDD features in `test/integration/features/` from the spec,
   commit + push to the task branch.
 - `/implement-task <issue | description>` — branch fresh off `origin/main` (reusing the task
-  branch), red → green, `/refactor-diff` until clean, push, then opens a PR into `main` and merges it
-  once GitHub Actions pass (always; never merges red).
+  branch), red → green, `/refactor-diff` until clean, push, then opens a PR into `main`, merges it
+  once GitHub Actions pass (always; never merges red), and waits until the `Release` run it triggers has
+  published the new version.
 - `/refactor-diff` — PR-diff-scoped refactor; touches only files changed vs `main` plus
   uncommitted work. Autonomous, never commits.
 
